@@ -1,0 +1,6 @@
+strategy,timeframe,sharpe_train_median,sharpe_test_median,sharpe_v3default_test_median,delta_vs_default_pct,n_positive_train,n_positive_test
+S1_MA_Reversion,daily,1.3857,0.0,0.3352,-100.0,16,8
+S4_Donchian,daily,0.903,0.1535,0.0467,229.0,17,10
+S4_Donchian,hourly,0.9083,0.4008,0.245,63.6,15,13
+S5_Supertrend,hourly,1.1446,-0.0016,0.1268,-101.3,17,8
+S6_DualMA,hourly,1.4164,0.4621,0.6377,-27.5,17,16

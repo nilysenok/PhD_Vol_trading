@@ -1,0 +1,13 @@
+comm_level,method,wins_24,mean_sharpe,mean_ret_pct,mean_mdd_pct
+gross,EW,11,2.4852,7.44,-2.71
+gross,InvVol,1,1.9061,5.1,-2.33
+gross,MaxSharpe,0,1.9548,6.94,-3.78
+gross,MinVar,12,2.4734,7.04,-2.55
+net_0.05,EW,14,2.3695,7.12,-2.78
+net_0.05,InvVol,1,1.7103,4.71,-2.45
+net_0.05,MaxSharpe,0,1.7884,6.47,-3.88
+net_0.05,MinVar,9,2.3461,6.71,-2.63
+net_0.06,EW,14,2.346,7.06,-2.79
+net_0.06,InvVol,1,1.672,4.63,-2.48
+net_0.06,MaxSharpe,0,1.7545,6.37,-3.91
+net_0.06,MinVar,9,2.3201,6.64,-2.65

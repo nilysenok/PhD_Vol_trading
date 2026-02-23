@@ -1,0 +1,63 @@
+=== Loading data ===
+
+[OK] v4_full_daily.csv: 24 rows, cols: ['Strategy', 'App', 'GrossSharpe', 'Net0.05Sharpe', 'Net0.06Sharpe', 'Tr/yr', 'GrossRet%', 'Net0.05Ret%', 'Net0.06Ret%']
+[OK] v4_full_hourly.csv: 24 rows, cols: ['Strategy', 'App', 'GrossSharpe', 'Net0.04Sharpe', 'Net0.05Sharpe', 'Tr/yr', 'GrossRet%', 'Net0.04Ret%', 'Net0.05Ret%']
+[OK] v4_portfolios_daily.csv: 96 rows, cols: ['strategy', 'approach', 'method', 'net_sharpe', 'ann_ret_pct', 'maxdd_pct']
+[OK] v4_stat_tests.csv: 30 rows
+[OK] stat_tests.csv: 8 rows
+
+[INFO] v4_portfolios_daily.csv has gross_sharpe: False
+[INFO] Available portfolio columns: ['strategy', 'approach', 'method', 'net_sharpe', 'ann_ret_pct', 'maxdd_pct']
+
+--- Table 4_1: Gross Sharpe подход B (адаптивные стопы) ---
+  Saved table_4_1_B_gross.csv
+
+--- Table 4_2: Net Sharpe подход B (адаптивные стопы) ---
+  Saved table_4_2_B_net.csv
+
+--- Table 4_3: Gross Sharpe подход C (режимная фильтрация) ---
+  Saved table_4_3_C_gross.csv
+
+--- Table 4_4: Net Sharpe подход C (режимная фильтрация) ---
+  Saved table_4_4_C_net.csv
+
+--- Table 4_5: Gross Sharpe подход D (vol-gate) ---
+  Saved table_4_5_D_gross.csv
+
+--- Table 4_6: Net Sharpe подход D (vol-gate) ---
+  Saved table_4_6_D_net.csv
+
+--- Table 4.7: Сводная Gross Sharpe (mean per-ticker) ---
+  NOTE: EW portfolio gross Sharpe not available in v4_portfolios_daily.csv
+  Using per-ticker mean gross from v4_full_daily.csv instead
+  Saved table_4_7_summary_gross.csv
+
+--- Table 4.8: Сводная Net Sharpe (EW-портфели, net 0.05%) ---
+  Saved table_4_8_summary_net.csv
+
+  Verification (must match section_4_2_tables.md):
+    S1 Mean Reversion D: 3.2404
+    S2 Bollinger Bands D: 3.0699
+    S3 Donchian Channel D: 1.8499
+    S4 Supertrend D: 2.4578
+    S5 Pivot Points D: 1.6947
+    S6 VWAP D: 3.3334
+
+  Mean: A=1.9850, B=2.3992, C=2.5706, D=2.6077
+  Δ% mean(BCD) vs A: +27.2%
+  Δ% D vs A: +31.4%
+
+--- Hourly summary ---
+  Saved hourly_summary.csv
+
+  Positive net 0.04% by approach:
+    A: 6/6 positive
+    B: 6/6 positive
+    C: 6/6 positive
+    D: 6/6 positive
+    Total: 24/24 positive
+
+--- Generating text_data.txt ---
+  Saved text_data.txt
+
+  Saved data_sources_log.txt

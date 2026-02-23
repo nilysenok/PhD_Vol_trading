@@ -1,0 +1,13 @@
+strategy,timeframe,A,B,C,D
+S1_MeanRev,daily,0.4655,0.5442,0.6948,0.5034
+S1_MeanRev,hourly,-0.0006,0.2143,0.2509,0.0387
+S2_Bollinger,daily,0.4514,0.6123,0.6525,0.4859
+S2_Bollinger,hourly,0.017,0.1775,0.228,0.0422
+S3_Donchian,daily,0.3241,0.6034,0.6678,0.4708
+S3_Donchian,hourly,0.2007,0.4341,0.6978,0.2576
+S4_Supertrend,daily,0.4531,0.6056,0.6986,0.5474
+S4_Supertrend,hourly,0.0965,0.1581,0.5256,0.1782
+S5_PivotPoints,daily,-0.42,-0.0664,-0.4285,-0.3813
+S5_PivotPoints,hourly,-1.3236,-0.9858,-1.0064,-1.2682
+S6_VWAP,daily,0.1321,0.2164,,0.1799
+S6_VWAP,hourly,-0.9874,-0.6052,-0.5865,-0.9303

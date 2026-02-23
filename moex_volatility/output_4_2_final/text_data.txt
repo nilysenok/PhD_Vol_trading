@@ -1,0 +1,126 @@
+============================================================
+ДОПОЛНИТЕЛЬНЫЕ ДАННЫЕ ДЛЯ ТЕКСТА РАЗДЕЛА 4.2
+============================================================
+
+1. HOURLY СВОДКА (net 0.04%)
+----------------------------------------
+  A: 6/6 positive — S1_MeanRev, S2_Bollinger, S3_Donchian, S4_Supertrend, S5_PivotPoints, S6_VWAP
+  B: 6/6 positive — S1_MeanRev, S2_Bollinger, S3_Donchian, S4_Supertrend, S5_PivotPoints, S6_VWAP
+  C: 6/6 positive — S1_MeanRev, S2_Bollinger, S3_Donchian, S4_Supertrend, S5_PivotPoints, S6_VWAP
+  D: 6/6 positive — S1_MeanRev, S2_Bollinger, S3_Donchian, S4_Supertrend, S5_PivotPoints, S6_VWAP
+  Итого: 24/24 positive
+  D: positive для всех 6 стратегий
+  A: 0/6 positive, B: 0/6 positive
+
+2. EW-ПОРТФЕЛИ: Return, Vol, Sharpe, MDD (daily, net 0.05%)
+----------------------------------------
+Strategy              App   Sharpe     Ret%     MDD%
+--------------------------------------------------
+S1 Mean Reversion       A   2.5800     4.26    -1.09
+S1 Mean Reversion       B   2.7090     3.84    -0.88
+S1 Mean Reversion       C   3.2466     4.73    -0.93
+S1 Mean Reversion       D   3.2404     4.38    -0.78
+S2 Bollinger Bands      A   2.5623     4.42    -1.58
+S2 Bollinger Bands      B   2.5460     3.72    -0.76
+S2 Bollinger Bands      C   3.5256     5.10    -0.68
+S2 Bollinger Bands      D   3.0699     3.90    -0.61
+S3 Donchian Channel     A   1.0553    16.39   -14.84
+S3 Donchian Channel     B   2.1660    10.75    -2.22
+S3 Donchian Channel     C   1.6550    16.96    -8.28
+S3 Donchian Channel     D   1.8499    19.67    -9.75
+S4 Supertrend           A   1.2677    14.78    -9.07
+S4 Supertrend           B   2.0590     5.86    -1.14
+S4 Supertrend           C   1.8916    14.18    -3.49
+S4 Supertrend           D   2.4578    16.77    -5.73
+S5 Pivot Points         A   1.6892     1.84    -0.48
+S5 Pivot Points         B   1.9854     2.25    -0.31
+S5 Pivot Points         C   2.0018     1.43    -0.33
+S5 Pivot Points         D   1.6947     1.72    -0.34
+S6 VWAP                 A   2.7553     3.70    -1.27
+S6 VWAP                 B   2.9295     3.71    -0.79
+S6 VWAP                 C   3.1029     3.67    -0.45
+S6 VWAP                 D   3.3334     3.87    -0.73
+
+  NOTE: v4_portfolios_daily.csv doesn't have vol column.
+  Estimated vol = |ann_ret| / |net_sharpe| where available:
+    S1 Mean Reversion A: est vol = 1.65%
+    S1 Mean Reversion B: est vol = 1.42%
+    S1 Mean Reversion C: est vol = 1.46%
+    S1 Mean Reversion D: est vol = 1.35%
+    S2 Bollinger Bands A: est vol = 1.73%
+    S2 Bollinger Bands B: est vol = 1.46%
+    S2 Bollinger Bands C: est vol = 1.45%
+    S2 Bollinger Bands D: est vol = 1.27%
+    S3 Donchian Channel A: est vol = 15.53%
+    S3 Donchian Channel B: est vol = 4.96%
+    S3 Donchian Channel C: est vol = 10.25%
+    S3 Donchian Channel D: est vol = 10.63%
+    S4 Supertrend A: est vol = 11.66%
+    S4 Supertrend B: est vol = 2.85%
+    S4 Supertrend C: est vol = 7.50%
+    S4 Supertrend D: est vol = 6.82%
+    S5 Pivot Points A: est vol = 1.09%
+    S5 Pivot Points B: est vol = 1.13%
+    S5 Pivot Points C: est vol = 0.71%
+    S5 Pivot Points D: est vol = 1.01%
+    S6 VWAP A: est vol = 1.34%
+    S6 VWAP B: est vol = 1.27%
+    S6 VWAP C: est vol = 1.18%
+    S6 VWAP D: est vol = 1.16%
+
+3. S5 PIVOT POINTS — АКТИВНОСТЬ
+----------------------------------------
+  S5_A: 9/17 тикеров с ≥1 сделкой, средние 1.4 сделки/4 года
+  S5_B: 5/17 тикеров с ≥1 сделкой, средние 0.3 сделки/4 года
+  S5_C: нет raw-данных (pipeline gap V4→V4.1)
+  S5_D: 6/17 тикеров с ≥1 сделкой, средние 0.6 сделки/4 года
+  Экспозиция: A=1.1%, B=1.0%, D=0.7% (cross-ticker daily)
+  EW portfolio Sharpe: A=1.22, B=1.58, C=1.41, D=1.35
+  Вывод: математически валидный Sharpe, экономически незначим
+
+4. DM-ТЕСТЫ PER STRATEGY (B/C/D vs A, daily)
+----------------------------------------
+Strategy                   Test     DM_t        p   Sig
+-------------------------------------------------------
+S1_MeanRev               B_vs_A  -0.4098   0.6820      
+S1_MeanRev               C_vs_A   0.4183   0.6758      
+S1_MeanRev               D_vs_A   1.2329   0.2176      
+S2_Bollinger             B_vs_A  -1.3767   0.1686      
+S2_Bollinger             C_vs_A  -2.8328   0.0047   ***
+S2_Bollinger             D_vs_A  -0.5245   0.6000      
+S3_Donchian              B_vs_A  -2.0005   0.0455    **
+S3_Donchian              C_vs_A  -1.8889   0.0589     *
+S3_Donchian              D_vs_A   1.7017   0.0888     *
+S4_Supertrend            B_vs_A  -2.9723   0.0030   ***
+S4_Supertrend            C_vs_A  -2.5784   0.0099   ***
+S4_Supertrend            D_vs_A   1.0698   0.2847      
+S5_PivotPoints           B_vs_A   0.9627   0.3357      
+S5_PivotPoints           D_vs_A   2.0222   0.0432    **
+S6_VWAP                  B_vs_A   1.0401   0.2983      
+S6_VWAP                  D_vs_A   2.1457   0.0319    **
+
+Ключевые:
+  S2 C_vs_A: t=−2.83, p=0.005 *** — C ВРЕДИТ контртренду!
+  S4 C_vs_A: t=−2.58, p=0.010 *** — C вредит Supertrend
+  S4 B_vs_A: t=−2.97, p=0.003 *** — B вредит Supertrend
+  S3 B_vs_A: t=−2.00, p=0.046 ** — B вредит Donchian
+  S5 D_vs_A: t=+2.02, p=0.043 ** — D улучшает S5
+  S6 D_vs_A: t=+2.15, p=0.032 ** — D улучшает VWAP
+
+5. DM-ТЕСТЫ МЕТА-ПОРТФЕЛЬ
+----------------------------------------
+  META: A vs D: ΔSharpe=1.3049, t=0.821, p=0.4119, CI=[0.9101, 1.7623]
+  META: A vs BEST: ΔSharpe=2.1534, t=-0.326, p=0.7442, CI=[1.5419, 3.0758]
+  S1: A vs C: ΔSharpe=0.6666, t=1.359, p=0.1744, CI=[0.2390, 1.1625]
+  S2: A vs C: ΔSharpe=0.9633, t=1.538, p=0.1245, CI=[0.4353, 1.5438]
+  S3: A vs B: ΔSharpe=1.1107, t=-0.936, p=0.3495, CI=[0.4111, 2.1190]
+  S4: A vs D: ΔSharpe=1.1901, t=0.637, p=0.5244, CI=[0.7633, 1.6785]
+  S5: A vs C: ΔSharpe=0.3126, t=-1.022, p=0.3071, CI=[-0.1936, 0.8984]
+  S6: A vs D: ΔSharpe=0.5781, t=0.577, p=0.5639, CI=[0.1185, 1.0886]
+
+6. ТРИ МЕТРИКИ Δ% FORECAST EFFECT
+----------------------------------------
+  +27.3% = mean(BCD) vs A — средний эффект прогнозов
+  +44.7% = D vs A — лучший единый подход
+  +49.4% = best per strategy vs A — оптимальный per strategy
+  Рекомендация: использовать +27% и +45% в основном тексте

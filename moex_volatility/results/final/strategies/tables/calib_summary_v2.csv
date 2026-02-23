@@ -1,0 +1,13 @@
+strategy,timeframe,category,sharpe_default_median,sharpe_calibrated_median,delta_pct,best_freq,best_window,n_positive
+S1_MeanRev,daily,Contrarian,0.1463,0.0141,-90.3,126,252,9
+S1_MeanRev,hourly,Contrarian,-0.3515,-0.0753,78.6,252,504,8
+S2_Bollinger,daily,Contrarian,0.0,-0.1052,0.0,252,504,7
+S2_Bollinger,hourly,Contrarian,0.0487,-0.0388,-179.6,126,252,8
+S3_Donchian,daily,Trend,0.0334,0.3208,859.4,63,504,12
+S3_Donchian,hourly,Trend,0.2845,0.3937,38.4,252,504,10
+S4_Supertrend,daily,Trend,-0.0562,0.1171,308.2,252,504,11
+S4_Supertrend,hourly,Trend,0.0965,0.2213,129.3,63,504,13
+S5_PivotPoints,daily,Range,-0.3087,-0.1052,65.9,126,504,7
+S5_PivotPoints,hourly,Range,-0.4443,-0.1926,56.7,63,504,7
+S6_VWAP,daily,Range,-0.1281,-0.0982,23.3,126,252,8
+S6_VWAP,hourly,Range,-0.328,0.1402,142.8,252,504,9

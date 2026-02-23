@@ -1,0 +1,101 @@
+# Feature Engineering Configuration
+# =================================
+
+# Source data paths
+paths:
+  dataset_final: "../moex_discovery/data/dataset_final"
+  stocks_candles: "../moex_discovery/data/dataset_final/01_stocks/candles_10m"
+  external_candles: "../moex_discovery/data/dataset_final/02_external/candles_10m"
+  output: "data/features"
+
+# Tickers
+tickers:
+  stocks:
+    - SBER
+    - LKOH
+    - TATN
+    - NVTK
+    - VTBR
+    - ALRS
+    - AFLT
+    - HYDR
+    - MGNT
+    - MOEX
+    - RTKM
+    - MTSS
+    - MTLR
+    - IRAO
+    - OGKB
+    - PHOR
+    - LSRG
+
+  external_indices:
+    - IMOEX
+    - MOEXOG
+    - MOEXFN
+    - MOEXMM
+    - MOEXEU
+    - MOEXTL
+    - MOEXCN
+    - MOEXCH
+    - RGBI
+    - RVI
+    - CNYRUB_TOM
+
+# Intraday features from 10-min candles
+intraday_features:
+  # Realized Volatility
+  rv: true  # RV = Σ(log_return²)
+
+  # Bipower Variation (robust to jumps)
+  bv: true  # BV = (π/2) · Σ(|r_i| · |r_{i-1}|)
+
+  # Jump component
+  jump: true  # Jump = max(RV - BV, 0)
+
+  # Signed RV (asymmetric)
+  rsv_positive: true  # RSV+ = Σ(r² | r > 0)
+  rsv_negative: true  # RSV- = Σ(r² | r < 0)
+
+  # Higher moments
+  rskew: true  # RSkew = Σ(r³) / RV^1.5
+  rkurt: true  # RKurt = Σ(r⁴) / RV²
+
+  # Intraday patterns
+  rv_morning: true  # RV of first 2 hours (10:00-12:00)
+  rv_midday: true   # RV of middle hours (12:00-16:00)
+  rv_evening: true  # RV of last 2 hours (16:00-18:50)
+
+  # Trading activity
+  n_bars: true
+  volume: true
+  avg_spread: false  # Not available in candles
+
+# HAR-style lags
+har_lags:
+  rv_d: 1       # Daily lag
+  rv_w: 5       # Weekly (5-day average)
+  rv_2w: 10     # 2-week average
+  rv_m: 22      # Monthly (22-day average)
+  rv_q: 66      # Quarterly (66-day average)
+
+# Extended lags for ML
+extended_lags: [1, 2, 3, 4, 5, 10, 22, 44, 66]
+
+# Rolling statistics
+rolling_windows: [5, 10, 22, 44, 66]
+rolling_stats:
+  - mean
+  - std
+  - min
+  - max
+
+# Time features
+time_features:
+  day_of_week: true
+  month: true
+  quarter: true
+  year: false
+
+# Annualization
+trading_days_per_year: 252

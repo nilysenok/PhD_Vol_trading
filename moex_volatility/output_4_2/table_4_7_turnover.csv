@@ -1,0 +1,8 @@
+Стратегия,A,B,C,D
+S1 Mean Reversion,2.1,1.8,2.5,1.6
+S2 Bollinger Bands,1.5,1.5,1.9,1.2
+S3 Donchian Channel,4.3,5.0,11.1,4.7
+S4 Supertrend,3.1,2.3,9.2,3.1
+S5 Pivot Points,0.7,0.6,0.6,0.5
+S6 VWAP,2.0,1.9,1.9,1.6
+Среднее,2.3,2.2,4.5,2.1

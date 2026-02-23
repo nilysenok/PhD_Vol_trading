@@ -1,0 +1,13 @@
+strategy,timeframe,approach,sharpe_median
+S1_MeanRev,daily,C,1.0156
+S1_MeanRev,hourly,E,0.7703
+S2_Bollinger,daily,C,0.9138
+S2_Bollinger,hourly,C,0.6671
+S3_Donchian,daily,F,0.8408
+S3_Donchian,hourly,C,0.8111
+S4_Supertrend,daily,F,0.9775
+S4_Supertrend,hourly,F,1.0312
+S5_PivotPoints,daily,G,0.7512
+S5_PivotPoints,hourly,G,0.4132
+S6_VWAP,daily,B,0.2644
+S6_VWAP,hourly,G,0.5536

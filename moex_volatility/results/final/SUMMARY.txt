@@ -1,0 +1,65 @@
+======================================================================
+MOEX Volatility Forecasting — Final Results Summary
+Generated: 2026-02-09 08:05:06
+======================================================================
+
+ФИНАЛЬНАЯ МОДЕЛЬ: Adaptive Hybrid (V1)
+------------------------------------------------------------
+- Единый метод для всех горизонтов
+- Алгоритм: HAR-J + лучший ML (XGBoost/LightGBM), выбор и веса на val
+- Обоснование: стабильный top-2-3 на всех горизонтах, никогда не последний
+
+Walk-Forward QLIKE (mean 2017-2026):
+  Hybrid_Adaptive: H=1: 0.3903, H=5: 0.7710, H=22: 0.8639
+  LightGBM       : H=1: 0.3898, H=5: 1.5414, H=22: 0.8544
+  XGBoost        : H=1: 0.4120, H=5: 0.9132, H=22: 1.0814
+  HAR-J          : H=1: 0.5285, H=5: 0.7656, H=22: 0.9297
+
+2026 QLIKE (partial year, Jan 5 — Feb 3, 27 trading days):
+  Hybrid_Adaptive: H=1: 0.4867, H=5: 0.5281, H=22: 0.6502
+  LightGBM       : H=1: 0.4922, H=5: 0.7531, H=22: 0.7117
+  XGBoost        : H=1: 0.5183, H=5: 0.5322, H=22: 0.6680
+  HAR-J          : H=1: 0.5680, H=5: 0.4940, H=22: 0.6497
+
+Hybrid 2026 weights:
+  H=1: best_ml=lightgbm, w_har=0.15 (rank 1)
+  H=5: best_ml=xgboost, w_har=0.05 (rank 2)
+  H=22: best_ml=lightgbm, w_har=0.44 (rank 2)
+
+Test 2019 QLIKE:
+  Hybrid: H=1: 0.2755, H=5: 0.3725, H=22: 0.4407 (лучший на всех горизонтах)
+
+ПОЛНОЕ СРАВНЕНИЕ МОДЕЛЕЙ (QLIKE, Walk-Forward 2017-2026)
+------------------------------------------------------------
+Model                H=1          H=5          H=22        
+------------------------------------------------------------
+HAR-J                0.5285       0.7656       0.9297      
+XGBoost              0.4120       0.9132       1.0814      
+LightGBM             0.3898       1.5414       0.8544      
+V1_Adaptive          0.3903       0.7710       0.8639      
+
+DIEBOLD-MARIANO TESTS (V1_Adaptive vs others)
+------------------------------------------------------------
+  H=1: beats HAR-J (***), beats XGBoost (***), ≈ LightGBM (p=0.81)
+  H=5: ≈ HAR-J (p=0.93), beats XGBoost (***), beats LightGBM (***)
+  H=22: beats HAR-J (**), ≈ XGBoost (p=0.06), ≈ LightGBM (p=0.32)
+
+PREDICTIONS (hybrid_adaptive):
+  data/predictions/walk_forward/hybrid_adaptive_h1_annual.parquet  [OK]
+  data/predictions/walk_forward/hybrid_adaptive_h5_annual.parquet  [OK]
+  data/predictions/walk_forward/hybrid_adaptive_h22_annual.parquet  [OK]
+
+WALK-FORWARD COVERAGE: 2017-2026 (10 years)
+------------------------------------------------------------
+  2017: 4284 obs
+  2018: 4318 obs
+  2019: 4284 obs
+  2020: 4250 obs
+  2021: 4335 obs
+  2022: 3972 obs
+  2023: 4318 obs
+  2024: 4348 obs
+  2025: 5383 obs
+  2026: 442 obs (PARTIAL — 27 trading days)
+
+======================================================================

@@ -1,0 +1,10 @@
+{
+  "name": "HAR",
+  "params": {},
+  "is_fitted": true,
+  "feature_names": [
+    "rv_d",
+    "rv_w",
+    "rv_m"
+  ]
+}

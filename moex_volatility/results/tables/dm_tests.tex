@@ -1,0 +1,29 @@
+\begin{table}[htbp]
+\centering
+\caption{Diebold-Mariano Test Results}
+\label{tab:dm_tests}
+\begin{tabular}{llrrrl}
+\hline
+Horizon & Pair & DM stat & p-value & Winner & Sig. \\
+\hline
+$h=1$ & Hybrid vs XGBoost & 4.499 & 0.0000 & XGBoost & *** \\
+$h=1$ & Hybrid vs LightGBM & 5.787 & 0.0000 & LightGBM & *** \\
+$h=1$ & Hybrid vs HAR-J & -10.952 & 0.0000 & Hybrid & *** \\
+$h=1$ & XGBoost vs LightGBM & 4.741 & 0.0000 & LightGBM & *** \\
+$h=1$ & XGBoost vs HAR-J & -9.883 & 0.0000 & XGBoost & *** \\
+$h=1$ & LightGBM vs HAR-J & -9.923 & 0.0000 & LightGBM & *** \\
+$h=5$ & Hybrid vs XGBoost & 8.541 & 0.0000 & XGBoost & *** \\
+$h=5$ & Hybrid vs LightGBM & -29.356 & 0.0000 & Hybrid & *** \\
+$h=5$ & Hybrid vs HAR-J & 27.430 & 0.0000 & HAR-J & *** \\
+$h=5$ & XGBoost vs LightGBM & -11.538 & 0.0000 & XGBoost & *** \\
+$h=5$ & XGBoost vs HAR-J & 3.250 & 0.0012 & HAR-J & *** \\
+$h=5$ & LightGBM vs HAR-J & 29.246 & 0.0000 & HAR-J & *** \\
+$h=22$ & Hybrid vs XGBoost & -2.032 & 0.0422 & Hybrid & ** \\
+$h=22$ & Hybrid vs LightGBM & 0.186 & 0.8527 & LightGBM &  \\
+$h=22$ & Hybrid vs HAR-J & -4.269 & 0.0000 & Hybrid & *** \\
+$h=22$ & XGBoost vs LightGBM & 1.856 & 0.0635 & LightGBM & * \\
+$h=22$ & XGBoost vs HAR-J & 1.530 & 0.1261 & HAR-J &  \\
+$h=22$ & LightGBM vs HAR-J & -2.547 & 0.0109 & LightGBM & ** \\
+\hline
+\end{tabular}
+\end{table}

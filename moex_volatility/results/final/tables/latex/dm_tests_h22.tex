@@ -1,0 +1,17 @@
+\begin{table}[htbp]
+\centering
+\caption{Diebold-Mariano Tests, Walk-Forward 2017--2026, $h=22$}
+\label{tab:dm_wf_h22}
+\begin{tabular}{llrcl}
+\toprule
+Model 1 & Model 2 & DM stat & $p$-value & Winner \\
+\midrule
+HAR-J & XGBoost & -1.546 & 0.1221 & HAR-J \\
+HAR-J & LightGBM & 2.316 & 0.0206* & LightGBM \\
+HAR-J & V1\_Adaptive & 3.131 & 0.0017** & V1\_Adaptive \\
+XGBoost & LightGBM & 1.843 & 0.0654 & LightGBM \\
+XGBoost & V1\_Adaptive & 1.894 & 0.0582 & V1\_Adaptive \\
+LightGBM & V1\_Adaptive & -1.003 & 0.3161 & LightGBM \\
+\bottomrule
+\end{tabular}
+\end{table}

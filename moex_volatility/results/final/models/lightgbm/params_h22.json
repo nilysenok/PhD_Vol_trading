@@ -1,0 +1,16 @@
+{
+  "n_estimators": 1471,
+  "max_depth": 15,
+  "learning_rate": 0.03391802230798407,
+  "num_leaves": 182,
+  "min_child_samples": 58,
+  "subsample": 0.6022489208534375,
+  "colsample_bytree": 0.9836370549146359,
+  "reg_alpha": 0.0014896680770926391,
+  "reg_lambda": 8.504491280614954e-05,
+  "min_split_gain": 0.09051658716901709,
+  "boosting_type": "dart",
+  "verbosity": -1,
+  "random_state": 42,
+  "n_jobs": -1
+}

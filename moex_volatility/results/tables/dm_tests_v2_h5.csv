@@ -1,0 +1,8 @@
+Horizon,Model1,Model2,DM_stat,p_value,Winner
+5,V1_Adaptive,HAR-J,-0.10041077790975211,0.9200182134776922,V1_Adaptive
+5,V1_Adaptive,XGBoost,-4.90394559770336,9.39305141889335e-07,V1_Adaptive
+5,V1_Adaptive,LightGBM,-24.049203539924477,0.0,V1_Adaptive
+5,V1_Adaptive,V2_MultiVal,-15.924635108792987,0.0,V1_Adaptive
+5,V1_Adaptive,V3_Regime,-18.022807092002434,0.0,V1_Adaptive
+5,V1_Adaptive,V4_Shrinkage,-22.69234274115389,0.0,V1_Adaptive
+5,V1_Adaptive,V5_Combined,-21.031130279378615,0.0,V1_Adaptive

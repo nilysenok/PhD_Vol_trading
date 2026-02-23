@@ -1,0 +1,12 @@
+S5_C and S6_C Source Investigation
+========================================
+
+S5_PivotPoints_C:
+  NOT in raw data
+  But EXISTS in v4_full_daily.csv: True
+  CONCLUSION: Phantom data — exists in summary but not in raw results
+
+S6_VWAP_C:
+  NOT in raw data
+  But EXISTS in v4_full_daily.csv: True
+  CONCLUSION: Phantom data — exists in summary but not in raw results

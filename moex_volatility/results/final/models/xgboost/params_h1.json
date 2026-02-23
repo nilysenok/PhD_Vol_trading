@@ -1,0 +1,16 @@
+{
+  "n_estimators": 764,
+  "max_depth": 8,
+  "learning_rate": 0.030137739058209823,
+  "min_child_weight": 8,
+  "subsample": 0.5523686499861999,
+  "colsample_bytree": 0.7371693920326022,
+  "colsample_bylevel": 0.9978801078436069,
+  "gamma": 0.0017843657002955678,
+  "reg_alpha": 0.42682164527182426,
+  "reg_lambda": 7.933782401368643e-06,
+  "verbosity": 0,
+  "random_state": 42,
+  "n_jobs": -1,
+  "early_stopping_rounds": 50
+}

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
+*.egg-info/
+
+# Large zip files (exceed GitHub 100MB limit)
+moex_discovery/data/external.zip
+moex_discovery/data/final_v4.zip
+moex_discovery/data/final_v6.zip
+moex_volatility/results/прогнозы_финал.zip
+moex_volatility/results/Прогнозы_финал_финал.zip

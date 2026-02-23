@@ -1,0 +1,13 @@
+strategy,timeframe,A,B,C,D
+S1_MeanRev,daily,13.42,9.37,8.83,13.42
+S1_MeanRev,hourly,1.33,1.07,4.18,1.33
+S2_Bollinger,daily,14.05,10.18,8.32,14.05
+S2_Bollinger,hourly,1.42,1.07,4.2,1.42
+S3_Donchian,daily,31.01,17.28,13.3,31.01
+S3_Donchian,hourly,18.96,13.3,7.63,18.96
+S4_Supertrend,daily,22.84,8.45,10.63,22.84
+S4_Supertrend,hourly,13.52,7.92,7.92,13.52
+S5_PivotPoints,daily,3.38,2.65,3.63,3.38
+S5_PivotPoints,hourly,3.96,3.92,2.86,3.96
+S6_VWAP,daily,2.3,2.36,,2.3
+S6_VWAP,hourly,2.23,2.64,2.81,2.23

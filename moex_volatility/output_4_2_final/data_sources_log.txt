@@ -1,0 +1,32 @@
+DATA SOURCES LOG
+==================================================
+Generated: 2026-02-16
+
+Tables 4.1–4.6 (per-approach gross/net):
+  Source: v4_full_daily.csv
+    Columns: GrossSharpe, Net0.05Sharpe, Net0.06Sharpe
+    Definition: mean of per-ticker-year Sharpe (flat average)
+    Period: 2022–2025 (OOS)
+  Source: v4_full_hourly.csv
+    Columns: GrossSharpe, Net0.04Sharpe, Net0.05Sharpe
+    Period: 2022–2025 (OOS)
+
+Table 4.7 (summary gross):
+  Source: v4_full_daily.csv, column GrossSharpe
+  NOTE: This is PER-TICKER MEAN gross, NOT EW portfolio gross
+  (v4_portfolios_daily.csv has only net_sharpe, no gross column)
+
+Table 4.8 (summary net EW portfolio):
+  Source: v4_portfolios_daily.csv, method=EW, column net_sharpe
+  Definition: Sharpe(EW portfolio return series), net 0.05%
+  Period: 2022–2025 (OOS)
+  Verified: matches v4_A_vs_forecast_comparison.csv EW_NetSharpe
+
+DM-tests:
+  Per-strategy: v4_stat_tests.csv
+  Meta-portfolio: stat_tests.csv
+
+METRIC DEFINITIONS:
+  Per-ticker mean (Tables 4.1–4.7): mean of all (ticker,year) Sharpe values
+  EW Portfolio (Table 4.8): Sharpe(mean(r_1,...,r_17)) — aggregate return series
+  Typical ratio portfolio/per-ticker: 2.2x–6.8x (diversification effect)

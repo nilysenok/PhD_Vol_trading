@@ -1,0 +1,17 @@
+strategy,timeframe,category,sl,tp,signal,trailing,max_hold,adx_breakout,sl_pct,tp_pct,signal_pct,trailing_pct,max_hold_pct,adx_breakout_pct
+S1_MA_Reversion,daily,Contrarian,756,292,331,0,2,0,54.7,21.1,24.0,0.0,0.1,0.0
+S1_MA_Reversion,hourly,Contrarian,6958,3323,3201,0,0,0,51.6,24.6,23.7,0.0,0.0,0.0
+S2_Bollinger,daily,Contrarian,566,301,97,0,34,0,56.7,30.2,9.7,0.0,3.4,0.0
+S2_Bollinger,hourly,Contrarian,5234,3052,1170,0,4,0,55.3,32.3,12.4,0.0,0.0,0.0
+S3_RSI_Reversion,daily,Contrarian,61,45,0,0,14,0,50.8,37.5,0.0,0.0,11.7,0.0
+S3_RSI_Reversion,hourly,Contrarian,643,411,15,0,23,0,58.9,37.6,1.4,0.0,2.1,0.0
+S4_Donchian,daily,Trend,0,0,0,844,0,0,0.0,0.0,0.0,100.0,0.0,0.0
+S4_Donchian,hourly,Trend,0,0,0,9042,0,0,0.0,0.0,0.0,100.0,0.0,0.0
+S5_Supertrend,daily,Trend,0,0,0,409,0,0,0.0,0.0,0.0,100.0,0.0,0.0
+S5_Supertrend,hourly,Trend,0,0,0,4585,0,0,0.0,0.0,0.0,100.0,0.0,0.0
+S6_DualMA,daily,Trend,0,0,2,117,0,0,0.0,0.0,1.7,98.3,0.0,0.0
+S6_DualMA,hourly,Trend,0,0,19,2801,0,0,0.0,0.0,0.7,99.3,0.0,0.0
+S7_Keltner,daily,Range,343,259,15,0,44,31,49.6,37.4,2.2,0.0,6.4,4.5
+S7_Keltner,hourly,Range,2976,2622,266,0,16,270,48.4,42.6,4.3,0.0,0.3,4.4
+S8_RSI_Stoch,daily,Range,77,60,0,0,8,18,47.2,36.8,0.0,0.0,4.9,11.0
+S8_RSI_Stoch,hourly,Range,592,577,1,0,12,137,44.9,43.7,0.1,0.0,0.9,10.4

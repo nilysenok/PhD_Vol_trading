@@ -1,0 +1,17 @@
+strategy,timeframe,category,sharpe_v1,sharpe_v2,delta,ann_ret_v1,ann_ret_v2,maxdd_v1,maxdd_v2
+S7_Keltner,hourly,Range,-0.8538,-0.4036,0.4502,-12.4,-3.17,-87.48,-40.29
+S8_RSI_Stoch,hourly,Range,-0.4472,-0.0918,0.3554,-4.85,-0.37,-53.86,-11.68
+S8_RSI_Stoch,daily,Range,-0.192,-0.0063,0.1857,-1.7,-0.01,-27.75,-9.61
+S6_DualMA,daily,Trend,-0.0085,-0.0152,-0.0067,-0.09,-0.13,-22.8,-12.35
+S6_DualMA,hourly,Trend,0.4937,0.4849,-0.0088,5.11,3.4,-22.87,-17.12
+S5_Supertrend,hourly,Trend,0.0466,0.0108,-0.0358,0.62,0.13,-53.15,-35.6
+S3_RSI_Reversion,hourly,Contrarian,-0.2048,-0.25,-0.0452,-4.7,-1.58,-71.45,-21.68
+S5_Supertrend,daily,Trend,0.0426,-0.0043,-0.047,0.89,-0.06,-26.92,-32.97
+S4_Donchian,daily,Trend,0.1711,0.1228,-0.0483,3.64,2.52,-57.47,-52.99
+S1_MA_Reversion,daily,Contrarian,-0.3101,-0.373,-0.0629,-9.25,-6.0,-81.52,-61.42
+S4_Donchian,hourly,Trend,0.3915,0.3114,-0.0801,10.12,6.95,-49.62,-40.8
+S1_MA_Reversion,hourly,Contrarian,-0.4469,-0.5335,-0.0866,-12.5,-9.36,-88.64,-81.32
+S2_Bollinger,hourly,Contrarian,-0.4241,-0.5163,-0.0922,-10.85,-9.03,-96.4,-73.62
+S3_RSI_Reversion,daily,Contrarian,0.1179,0.0199,-0.098,3.14,0.07,-40.09,-7.6
+S2_Bollinger,daily,Contrarian,-0.1728,-0.2828,-0.1099,-4.4,-4.32,-77.31,-52.19
+S7_Keltner,daily,Range,-0.3059,-0.4749,-0.169,-4.02,-4.03,-60.56,-42.17

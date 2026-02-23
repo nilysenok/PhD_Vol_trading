@@ -1,0 +1,95 @@
+======================================================================
+S5 hourly + S6 daily/hourly RERUN
+Tickers: 17, Approaches: A/B/C/D
+======================================================================
+  S5 hourly: 72 signal x (216 pivot + 288 ATR) = 36288 combos
+  S6 daily: 128 signal x (216 ATR + 48 VWAP) = 33792 combos
+  S6 hourly: 128 signal x (216 ATR + 48 VWAP) = 33792 combos
+  B grid (Range): 1125 combos
+Loading data...
+  Daily: 50,906 rows, 2014-06-09 — 2026-02-03
+  Hourly: 457,542 rows
+  Vpred: 39,934 rows, 2017-01-03 — 2026-02-02
+
+Warming up numba...
+  Numba warmup done
+
+Processing 17 tickers with 8 workers...
+  [1/17] LSRG done (221s)
+  [2/17] IRAO done (224s)
+  [3/17] HYDR done (230s)
+  [4/17] MGNT done (233s)
+  [5/17] LKOH done (233s)
+  [6/17] ALRS done (240s)
+  [7/17] AFLT done (242s)
+  [8/17] MOEX done (248s)
+  [9/17] MTSS done (448s)
+  [10/17] RTKM done (451s)
+  [11/17] MTLR done (453s)
+  [12/17] PHOR done (455s)
+  [13/17] NVTK done (456s)
+  [14/17] SBER done (469s)
+  [15/17] OGKB done (470s)
+  [16/17] TATN done (470s)
+  [17/17] VTBR done (650s)
+
+All tickers done in 650s
+
+  Updated: 3416 rows
+  Replaced 762 old rows with 859 new
+
+======================================================================
+=== BEFORE vs AFTER ===
+======================================================================
+
+  S5_PivotPoints hourly:
+    A: BEFORE=-0.7037  AFTER=0.2943  delta=+0.9980
+    B: BEFORE=-0.4133  AFTER=0.4617  delta=+0.8750
+    C: BEFORE=-0.1540  AFTER=0.6185  delta=+0.7726
+    D: BEFORE=-0.6454  AFTER=0.3602  delta=+1.0056
+
+  S6_VWAP daily:
+    A: BEFORE=0.1825  AFTER=0.4680  delta=+0.2855
+    B: BEFORE=0.2788  AFTER=0.6446  delta=+0.3658
+    C: BEFORE=0.6595  AFTER=0.8147  delta=+0.1552
+    D: BEFORE=0.2333  AFTER=0.5367  delta=+0.3034
+
+  S6_VWAP hourly:
+    A: BEFORE=-0.5772  AFTER=-0.1610  delta=+0.4162
+    B: BEFORE=-0.2258  AFTER=0.1199  delta=+0.3457
+    C: BEFORE=-0.4734  AFTER=0.1375  delta=+0.6109
+    D: BEFORE=-0.5030  AFTER=-0.0669  delta=+0.4361
+
+  === S5_PivotPoints hourly (NEW) ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.3432      2.80      7.24    -7.27    8.62   14.55   50.59
+         B      0.4617      2.68      4.93    -4.65    4.72   17.21   53.72
+         C      0.6224      4.09      5.84    -4.73    5.75   11.12   55.34
+         D      0.3602      3.26      9.03    -9.41    7.63   12.21   50.81
+  ΔSharpe vs A:  B=+0.118, C=+0.279, D=+0.017
+  Top-5 (C):   PHOR(1.80), LSRG(1.13), LKOH(1.11), AFLT(1.07), IRAO(0.92)
+  Worst-5 (C): VTBR(0.35), TATN(0.19), HYDR(0.14), RTKM(0.13), NVTK(0.03)
+
+  === S6_VWAP daily (NEW) ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.5143      4.39      6.56    -4.95   16.09   12.87   57.19
+         B      0.6446      5.50      6.84    -4.62   12.41   11.81   59.91
+         C      0.8154      4.24      4.46    -2.71    7.96   10.28   61.91
+         D      0.5367      6.53      9.72    -6.96   14.57   11.62   58.49
+  ΔSharpe vs A:  B=+0.130, C=+0.301, D=+0.022
+  Top-5 (C):   HYDR(2.06), PHOR(1.60), VTBR(1.53), RTKM(1.44), MTSS(1.43)
+  Worst-5 (C): SBER(0.58), AFLT(0.32), IRAO(0.14), NVTK(-0.06), TATN(-0.10)
+
+  === S6_VWAP hourly (NEW) ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A     -0.1794     -0.56      5.69    -6.75    8.46   51.33   53.40
+         B      0.1198      0.50      4.31    -4.65    4.56   33.72   55.96
+         C      0.0757      0.52      5.60    -5.75    5.88   37.87   57.02
+         D     -0.0669     -0.92      7.01    -7.89    5.79   33.66   54.08
+  ΔSharpe vs A:  B=+0.299, C=+0.255, D=+0.113
+  Top-5 (B):   ALRS(1.08), IRAO(1.06), SBER(1.04), VTBR(0.87), TATN(0.45)
+  Worst-5 (B): AFLT(-0.39), MTSS(-0.60), MOEX(-0.63), PHOR(-0.73), MTLR(-1.07)
+
+======================================================================
+DONE in 650s (10.8 min)
+======================================================================

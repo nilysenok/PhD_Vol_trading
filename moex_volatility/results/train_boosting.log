@@ -1,0 +1,227 @@
+2026-02-06 15:53:43 | INFO     | train_boosting | ======================================================================
+2026-02-06 15:53:43 | INFO     | train_boosting | Training Boosting Models (LightGBM, XGBoost)
+2026-02-06 15:53:43 | INFO     | train_boosting | Started: 2026-02-06 15:53:43.289161
+2026-02-06 15:53:43 | INFO     | train_boosting | Optuna trials: 30
+2026-02-06 15:53:43 | INFO     | train_boosting | ======================================================================
+2026-02-06 15:53:43 | INFO     | train_boosting | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 15:53:43 | INFO     | train_boosting | Loaded 50906 rows, 17 tickers
+2026-02-06 15:53:43 | INFO     | train_boosting | 
+============================================================
+2026-02-06 15:53:43 | INFO     | train_boosting | HORIZON: 1 day(s)
+2026-02-06 15:53:43 | INFO     | train_boosting | ============================================================
+2026-02-06 15:53:43 | INFO     | train_boosting | Features: 256
+2026-02-06 15:53:43 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 15:53:43 | INFO     | train_boosting | 
+--- LightGBM (Optuna 30 trials) ---
+2026-02-06 15:54:12 | INFO     | train_boosting | ======================================================================
+2026-02-06 15:54:12 | INFO     | train_boosting | Training Boosting Models (LightGBM, XGBoost)
+2026-02-06 15:54:12 | INFO     | train_boosting | Started: 2026-02-06 15:54:12.169597
+2026-02-06 15:54:12 | INFO     | train_boosting | Optuna trials: 30
+2026-02-06 15:54:12 | INFO     | train_boosting | ======================================================================
+2026-02-06 15:54:12 | INFO     | train_boosting | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 15:54:12 | INFO     | train_boosting | Loaded 50906 rows, 17 tickers
+2026-02-06 15:54:12 | INFO     | train_boosting | 
+============================================================
+2026-02-06 15:54:12 | INFO     | train_boosting | HORIZON: 1 day(s)
+2026-02-06 15:54:12 | INFO     | train_boosting | ============================================================
+2026-02-06 15:54:12 | INFO     | train_boosting | Features: 256
+2026-02-06 15:54:12 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 15:54:12 | INFO     | train_boosting | 
+--- LightGBM (Optuna 30 trials) ---
+2026-02-06 15:54:36 | INFO     | train_boosting | ======================================================================
+2026-02-06 15:54:36 | INFO     | train_boosting | Training Boosting Models (LightGBM, XGBoost)
+2026-02-06 15:54:36 | INFO     | train_boosting | Started: 2026-02-06 15:54:36.866411
+2026-02-06 15:54:36 | INFO     | train_boosting | Optuna trials: 30
+2026-02-06 15:54:36 | INFO     | train_boosting | ======================================================================
+2026-02-06 15:54:36 | INFO     | train_boosting | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 15:54:36 | INFO     | train_boosting | Loaded 50906 rows, 17 tickers
+2026-02-06 15:54:36 | INFO     | train_boosting | 
+============================================================
+2026-02-06 15:54:36 | INFO     | train_boosting | HORIZON: 1 day(s)
+2026-02-06 15:54:36 | INFO     | train_boosting | ============================================================
+2026-02-06 15:54:36 | INFO     | train_boosting | Features: 234
+2026-02-06 15:54:36 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 15:54:36 | INFO     | train_boosting | 
+--- LightGBM (Optuna 30 trials) ---
+2026-02-06 15:54:37 | INFO     | train_boosting | Best LightGBM params: {'n_estimators': 437, 'max_depth': 10, 'learning_rate': 0.05395030966670229, 'num_leaves': 82, 'min_child_samples': 16, 'subsample': 0.7467983561008608, 'colsample_bytree': 0.7174250836504598, 'reg_alpha': 0.08499808989183001, 'reg_lambda': 0.0006440507553993703, 'verbosity': -1, 'random_state': 42, 'n_jobs': -1}
+2026-02-06 15:59:45 | INFO     | train_boosting | ======================================================================
+2026-02-06 15:59:45 | INFO     | train_boosting | Training Boosting Models (LightGBM, XGBoost)
+2026-02-06 15:59:45 | INFO     | train_boosting | Started: 2026-02-06 15:59:45.969236
+2026-02-06 15:59:45 | INFO     | train_boosting | Optuna trials: 30
+2026-02-06 15:59:45 | INFO     | train_boosting | ======================================================================
+2026-02-06 15:59:45 | INFO     | train_boosting | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 15:59:46 | INFO     | train_boosting | Loaded 50906 rows, 17 tickers
+2026-02-06 15:59:46 | INFO     | train_boosting | 
+============================================================
+2026-02-06 15:59:46 | INFO     | train_boosting | HORIZON: 1 day(s)
+2026-02-06 15:59:46 | INFO     | train_boosting | ============================================================
+2026-02-06 15:59:46 | INFO     | train_boosting | Features: 234
+2026-02-06 15:59:46 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 16:00:16 | INFO     | train_boosting | ======================================================================
+2026-02-06 16:00:16 | INFO     | train_boosting | Training Boosting Models (LightGBM, XGBoost)
+2026-02-06 16:00:16 | INFO     | train_boosting | Started: 2026-02-06 16:00:16.004700
+2026-02-06 16:00:16 | INFO     | train_boosting | Optuna trials: 30
+2026-02-06 16:00:16 | INFO     | train_boosting | ======================================================================
+2026-02-06 16:00:16 | INFO     | train_boosting | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 16:00:16 | INFO     | train_boosting | Loaded 50906 rows, 17 tickers
+2026-02-06 16:00:16 | INFO     | train_boosting | 
+============================================================
+2026-02-06 16:00:16 | INFO     | train_boosting | HORIZON: 1 day(s)
+2026-02-06 16:00:16 | INFO     | train_boosting | ============================================================
+2026-02-06 16:00:16 | INFO     | train_boosting | Features: 234
+2026-02-06 16:00:16 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 16:00:16 | INFO     | train_boosting | 
+--- HistGradientBoosting (sklearn fallback) ---
+2026-02-06 16:00:16 | INFO     | train_boosting | Model 1 Test QLIKE: 1.2452
+2026-02-06 16:00:16 | INFO     | train_boosting | Top-5 features: ['rsv_pos', 'yahoo_dxy_lag1', 'yahoo_sp500_ret5', 'yahoo_sp500_ret22', 'yahoo_sp500_ma5']
+2026-02-06 16:00:16 | INFO     | train_boosting | 
+--- XGBoost (Optuna 30 trials) ---
+2026-02-06 16:01:15 | INFO     | train_boosting | Best XGBoost params: {'n_estimators': 971, 'max_depth': 7, 'learning_rate': 0.019579471298520428, 'min_child_weight': 1, 'subsample': 0.9991449506665981, 'colsample_bytree': 0.915323794530997, 'gamma': 0.017582278766084376, 'reg_alpha': 0.0002266679280772381, 'reg_lambda': 1.0589064559372161e-08, 'verbosity': 0, 'random_state': 42, 'n_jobs': -1}
+2026-02-06 16:01:16 | INFO     | train_boosting | Model 2 Test QLIKE: 0.7290
+2026-02-06 16:01:16 | INFO     | train_boosting | Top-5 features: ['volume', 'rsv_neg', 'idx_MOEXOG_rv_annualized_ret1', 'rsv_pos', 'rv_evening']
+2026-02-06 16:01:16 | INFO     | train_boosting | 
+--- Horizon 1 Summary ---
+2026-02-06 16:01:16 | INFO     | train_boosting | HAR QLIKE:      -7.5270
+2026-02-06 16:01:16 | INFO     | train_boosting | GARCH QLIKE:    -7.4440
+2026-02-06 16:01:16 | INFO     | train_boosting | LightGBM QLIKE: 1.2452
+2026-02-06 16:01:16 | INFO     | train_boosting | XGBoost QLIKE:  0.7290
+2026-02-06 16:01:16 | INFO     | train_boosting | 
+============================================================
+2026-02-06 16:01:16 | INFO     | train_boosting | HORIZON: 5 day(s)
+2026-02-06 16:01:16 | INFO     | train_boosting | ============================================================
+2026-02-06 16:01:16 | INFO     | train_boosting | Features: 234
+2026-02-06 16:01:16 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 16:01:16 | INFO     | train_boosting | 
+--- HistGradientBoosting (sklearn fallback) ---
+2026-02-06 16:01:16 | INFO     | train_boosting | Model 1 Test QLIKE: 1.2348
+2026-02-06 16:01:16 | INFO     | train_boosting | Top-5 features: ['rsv_pos', 'yahoo_dxy_lag1', 'yahoo_sp500_ret5', 'yahoo_sp500_ret22', 'yahoo_sp500_ma5']
+2026-02-06 16:01:16 | INFO     | train_boosting | 
+--- XGBoost (Optuna 30 trials) ---
+2026-02-06 16:02:21 | INFO     | train_boosting | Best XGBoost params: {'n_estimators': 839, 'max_depth': 8, 'learning_rate': 0.022534729378782457, 'min_child_weight': 1, 'subsample': 0.8893253030616894, 'colsample_bytree': 0.9701167132268611, 'gamma': 0.012532867936443415, 'reg_alpha': 0.000793207440020742, 'reg_lambda': 5.4006055255486995e-06, 'verbosity': 0, 'random_state': 42, 'n_jobs': -1}
+2026-02-06 16:02:22 | INFO     | train_boosting | Model 2 Test QLIKE: 0.7262
+2026-02-06 16:02:22 | INFO     | train_boosting | Top-5 features: ['yahoo_vix_ret5', 'idx_MOEXCN_rv_annualized_ret1', 'yahoo_brent_ret5', 'rv_evening', 'rsv_neg']
+2026-02-06 16:02:22 | INFO     | train_boosting | 
+--- Horizon 5 Summary ---
+2026-02-06 16:02:22 | INFO     | train_boosting | HAR QLIKE:      -7.4140
+2026-02-06 16:02:22 | INFO     | train_boosting | GARCH QLIKE:    -6.1450
+2026-02-06 16:02:22 | INFO     | train_boosting | LightGBM QLIKE: 1.2348
+2026-02-06 16:02:22 | INFO     | train_boosting | XGBoost QLIKE:  0.7262
+2026-02-06 16:02:22 | INFO     | train_boosting | 
+============================================================
+2026-02-06 16:02:22 | INFO     | train_boosting | HORIZON: 22 day(s)
+2026-02-06 16:02:22 | INFO     | train_boosting | ============================================================
+2026-02-06 16:02:22 | INFO     | train_boosting | Features: 234
+2026-02-06 16:02:22 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 16:02:22 | INFO     | train_boosting | 
+--- HistGradientBoosting (sklearn fallback) ---
+2026-02-06 16:02:22 | INFO     | train_boosting | Model 1 Test QLIKE: 1.2481
+2026-02-06 16:02:22 | INFO     | train_boosting | Top-5 features: ['rsv_pos', 'yahoo_dxy_lag1', 'yahoo_sp500_ret5', 'yahoo_sp500_ret22', 'yahoo_sp500_ma5']
+2026-02-06 16:02:22 | INFO     | train_boosting | 
+--- XGBoost (Optuna 30 trials) ---
+2026-02-06 16:03:26 | INFO     | train_boosting | Best XGBoost params: {'n_estimators': 927, 'max_depth': 9, 'learning_rate': 0.016008733074324436, 'min_child_weight': 1, 'subsample': 0.8845972821122495, 'colsample_bytree': 0.8380470267069632, 'gamma': 0.05902070384025755, 'reg_alpha': 5.5488046832743556e-05, 'reg_lambda': 1.2768025323605301e-08, 'verbosity': 0, 'random_state': 42, 'n_jobs': -1}
+2026-02-06 16:03:27 | INFO     | train_boosting | Model 2 Test QLIKE: 1139.8646
+2026-02-06 16:03:27 | INFO     | train_boosting | Top-5 features: ['idx_RGBI_rv_annualized_ret22', 'idx_RVI_rv_annualized_ret22', 'yahoo_vix_ret22', 'rv_w', 'rv_midday']
+2026-02-06 16:03:27 | INFO     | train_boosting | 
+--- Horizon 22 Summary ---
+2026-02-06 16:03:27 | INFO     | train_boosting | HAR QLIKE:      -7.3400
+2026-02-06 16:03:27 | INFO     | train_boosting | GARCH QLIKE:    -4.2480
+2026-02-06 16:03:27 | INFO     | train_boosting | LightGBM QLIKE: 1.2481
+2026-02-06 16:03:27 | INFO     | train_boosting | XGBoost QLIKE:  1139.8646
+2026-02-06 16:03:27 | INFO     | train_boosting | 
+======================================================================
+2026-02-06 16:03:27 | INFO     | train_boosting | Boosting model training complete!
+2026-02-06 16:03:27 | INFO     | train_boosting | ======================================================================
+2026-02-06 16:04:20 | INFO     | train_boosting | ======================================================================
+2026-02-06 16:04:20 | INFO     | train_boosting | Training Boosting Models (LightGBM, XGBoost)
+2026-02-06 16:04:20 | INFO     | train_boosting | Started: 2026-02-06 16:04:20.670260
+2026-02-06 16:04:20 | INFO     | train_boosting | Optuna trials: 30
+2026-02-06 16:04:20 | INFO     | train_boosting | ======================================================================
+2026-02-06 16:04:20 | INFO     | train_boosting | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 16:04:20 | INFO     | train_boosting | Loaded 50906 rows, 17 tickers
+2026-02-06 16:04:20 | INFO     | train_boosting | 
+============================================================
+2026-02-06 16:04:20 | INFO     | train_boosting | HORIZON: 1 day(s)
+2026-02-06 16:04:20 | INFO     | train_boosting | ============================================================
+2026-02-06 16:04:20 | INFO     | train_boosting | Features: 234
+2026-02-06 16:04:20 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 16:04:20 | INFO     | train_boosting | 
+--- HistGradientBoosting (sklearn fallback) ---
+2026-02-06 16:04:21 | INFO     | train_boosting | Model 1 Test QLIKE: -6.6169
+2026-02-06 16:04:21 | INFO     | train_boosting | Top-5 features: ['rsv_pos', 'yahoo_dxy_lag1', 'yahoo_sp500_ret5', 'yahoo_sp500_ret22', 'yahoo_sp500_ma5']
+2026-02-06 16:04:21 | INFO     | train_boosting | 
+--- XGBoost (Optuna 30 trials) ---
+2026-02-06 16:05:21 | INFO     | train_boosting | Best XGBoost params: {'n_estimators': 971, 'max_depth': 7, 'learning_rate': 0.019579471298520428, 'min_child_weight': 1, 'subsample': 0.9991449506665981, 'colsample_bytree': 0.915323794530997, 'gamma': 0.017582278766084376, 'reg_alpha': 0.0002266679280772381, 'reg_lambda': 1.0589064559372161e-08, 'verbosity': 0, 'random_state': 42, 'n_jobs': -1}
+2026-02-06 16:05:22 | INFO     | train_boosting | Model 2 Test QLIKE: -7.1330
+2026-02-06 16:05:22 | INFO     | train_boosting | Top-5 features: ['volume', 'rsv_neg', 'idx_MOEXOG_rv_annualized_ret1', 'rsv_pos', 'rv_evening']
+2026-02-06 16:05:22 | INFO     | train_boosting | 
+--- Horizon 1 Summary ---
+2026-02-06 16:05:22 | INFO     | train_boosting | HAR QLIKE:      -7.5270
+2026-02-06 16:05:22 | INFO     | train_boosting | GARCH QLIKE:    -7.4440
+2026-02-06 16:05:22 | INFO     | train_boosting | LightGBM QLIKE: -6.6169
+2026-02-06 16:05:22 | INFO     | train_boosting | XGBoost QLIKE:  -7.1330
+2026-02-06 16:05:22 | INFO     | train_boosting | 
+============================================================
+2026-02-06 16:05:22 | INFO     | train_boosting | HORIZON: 5 day(s)
+2026-02-06 16:05:22 | INFO     | train_boosting | ============================================================
+2026-02-06 16:05:22 | INFO     | train_boosting | Features: 234
+2026-02-06 16:05:22 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 16:05:22 | INFO     | train_boosting | 
+--- HistGradientBoosting (sklearn fallback) ---
+2026-02-06 16:05:22 | INFO     | train_boosting | Model 1 Test QLIKE: -6.6227
+2026-02-06 16:05:22 | INFO     | train_boosting | Top-5 features: ['rsv_pos', 'yahoo_dxy_lag1', 'yahoo_sp500_ret5', 'yahoo_sp500_ret22', 'yahoo_sp500_ma5']
+2026-02-06 16:05:22 | INFO     | train_boosting | 
+--- XGBoost (Optuna 30 trials) ---
+2026-02-06 16:06:27 | INFO     | train_boosting | Best XGBoost params: {'n_estimators': 839, 'max_depth': 8, 'learning_rate': 0.022534729378782457, 'min_child_weight': 1, 'subsample': 0.8893253030616894, 'colsample_bytree': 0.9701167132268611, 'gamma': 0.012532867936443415, 'reg_alpha': 0.000793207440020742, 'reg_lambda': 5.4006055255486995e-06, 'verbosity': 0, 'random_state': 42, 'n_jobs': -1}
+2026-02-06 16:06:28 | INFO     | train_boosting | Model 2 Test QLIKE: -7.1313
+2026-02-06 16:06:28 | INFO     | train_boosting | Top-5 features: ['yahoo_vix_ret5', 'idx_MOEXCN_rv_annualized_ret1', 'yahoo_brent_ret5', 'rv_evening', 'rsv_neg']
+2026-02-06 16:06:28 | INFO     | train_boosting | 
+--- Horizon 5 Summary ---
+2026-02-06 16:06:28 | INFO     | train_boosting | HAR QLIKE:      -7.4140
+2026-02-06 16:06:28 | INFO     | train_boosting | GARCH QLIKE:    -6.1450
+2026-02-06 16:06:28 | INFO     | train_boosting | LightGBM QLIKE: -6.6227
+2026-02-06 16:06:28 | INFO     | train_boosting | XGBoost QLIKE:  -7.1313
+2026-02-06 16:06:28 | INFO     | train_boosting | 
+============================================================
+2026-02-06 16:06:28 | INFO     | train_boosting | HORIZON: 22 day(s)
+2026-02-06 16:06:28 | INFO     | train_boosting | ============================================================
+2026-02-06 16:06:28 | INFO     | train_boosting | Features: 234
+2026-02-06 16:06:28 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-06 16:06:28 | INFO     | train_boosting | 
+--- HistGradientBoosting (sklearn fallback) ---
+2026-02-06 16:06:28 | INFO     | train_boosting | Model 1 Test QLIKE: -6.5690
+2026-02-06 16:06:28 | INFO     | train_boosting | Top-5 features: ['rsv_pos', 'yahoo_dxy_lag1', 'yahoo_sp500_ret5', 'yahoo_sp500_ret22', 'yahoo_sp500_ma5']
+2026-02-06 16:06:28 | INFO     | train_boosting | 
+--- XGBoost (Optuna 30 trials) ---
+2026-02-06 16:07:32 | INFO     | train_boosting | Best XGBoost params: {'n_estimators': 927, 'max_depth': 9, 'learning_rate': 0.016008733074324436, 'min_child_weight': 1, 'subsample': 0.8845972821122495, 'colsample_bytree': 0.8380470267069632, 'gamma': 0.05902070384025755, 'reg_alpha': 5.5488046832743556e-05, 'reg_lambda': 1.2768025323605301e-08, 'verbosity': 0, 'random_state': 42, 'n_jobs': -1}
+2026-02-06 16:07:33 | INFO     | train_boosting | Model 2 Test QLIKE: 1132.0475
+2026-02-06 16:07:33 | INFO     | train_boosting | Top-5 features: ['idx_RGBI_rv_annualized_ret22', 'idx_RVI_rv_annualized_ret22', 'yahoo_vix_ret22', 'rv_w', 'rv_midday']
+2026-02-06 16:07:33 | INFO     | train_boosting | 
+--- Horizon 22 Summary ---
+2026-02-06 16:07:33 | INFO     | train_boosting | HAR QLIKE:      -7.3400
+2026-02-06 16:07:33 | INFO     | train_boosting | GARCH QLIKE:    -4.2480
+2026-02-06 16:07:33 | INFO     | train_boosting | LightGBM QLIKE: -6.5690
+2026-02-06 16:07:33 | INFO     | train_boosting | XGBoost QLIKE:  1132.0475
+2026-02-06 16:07:33 | INFO     | train_boosting | 
+======================================================================
+2026-02-06 16:07:33 | INFO     | train_boosting | Boosting model training complete!
+2026-02-06 16:07:33 | INFO     | train_boosting | ======================================================================
+2026-02-07 13:01:48 | INFO     | train_boosting | ======================================================================
+2026-02-07 13:01:48 | INFO     | train_boosting | Training Boosting Models (LightGBM, XGBoost)
+2026-02-07 13:01:48 | INFO     | train_boosting | Started: 2026-02-07 13:01:48.449302
+2026-02-07 13:01:48 | INFO     | train_boosting | Optuna trials: 30
+2026-02-07 13:01:48 | INFO     | train_boosting | ======================================================================
+2026-02-07 13:01:48 | INFO     | train_boosting | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-07 13:01:48 | INFO     | train_boosting | Loaded 50906 rows, 17 tickers
+2026-02-07 13:01:48 | INFO     | train_boosting | 
+============================================================
+2026-02-07 13:01:48 | INFO     | train_boosting | HORIZON: 1 day(s)
+2026-02-07 13:01:48 | INFO     | train_boosting | ============================================================
+2026-02-07 13:01:48 | INFO     | train_boosting | Features: 234
+2026-02-07 13:01:48 | INFO     | train_boosting | Train: 15239, Val: 4318, Test: 4284
+2026-02-07 13:01:48 | INFO     | train_boosting | 
+--- LightGBM (Optuna 30 trials) ---
+2026-02-07 13:02:01 | INFO     | train_boosting | Best LightGBM params: {'n_estimators': 879, 'max_depth': 10, 'learning_rate': 0.017043935145074955, 'num_leaves': 41, 'min_child_samples': 12, 'subsample': 0.9611204144923785, 'colsample_bytree': 0.8202574799419586, 'reg_alpha': 0.003179127290234388, 'reg_lambda': 0.00033622848355931747, 'verbosity': -1, 'random_state': 42, 'n_jobs': -1}
+2026-02-07 13:02:06 | INFO     | train_boosting | Model 1 Test QLIKE: 36683.6377
+2026-02-07 13:02:06 | INFO     | train_boosting | Top-5 features: ['close', 'volume', 'jump_lag1', 'rv_2w', 'rv_w']
+2026-02-07 13:02:06 | INFO     | train_boosting | 
+--- XGBoost (Optuna 30 trials) ---

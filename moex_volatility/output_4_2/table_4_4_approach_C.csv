@@ -1,0 +1,7 @@
+Стратегия,Net Sharpe,Ann. Return (%),Ann. Vol (%),Max Drawdown (%),Экспозиция (%),Сделок/год,Win Rate (%)
+S1 Mean Reversion,-0.1597,-0.49,5.05,-5.24,2.9,2.5,43.19
+S2 Bollinger Bands,-0.2552,-0.12,8.11,-7.98,2.5,1.9,37.45
+S3 Donchian Channel,0.3482,10.87,18.32,-13.51,21.0,11.1,48.86
+S4 Supertrend,0.2094,9.68,14.8,-10.75,14.6,9.2,41.66
+S5 Pivot Points,,,,,,,
+S6 VWAP,,,,,,,

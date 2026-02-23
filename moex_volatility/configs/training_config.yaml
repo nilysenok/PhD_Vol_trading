@@ -1,0 +1,115 @@
+# Training Configuration
+# =====================
+
+# Walk-Forward Cross-Validation Settings
+walk_forward:
+  # Initial training window (trading days)
+  initial_train_days: 756  # ~3 years (252 * 3)
+
+  # Step size for rolling window
+  step_days: 63  # ~3 months (quarterly)
+
+  # Test window size
+  test_days: 63  # ~3 months
+
+  # Window type
+  expanding: true  # true = expanding window, false = rolling window
+
+  # Minimum training samples
+  min_train_samples: 504  # ~2 years
+
+# Data Split (for simple train/test split)
+split:
+  test_ratio: 0.20  # Last 20% for final test
+  val_ratio: 0.15   # 15% of training for validation
+
+  # Specific date splits (alternative to ratio)
+  # train_end: "2023-12-31"
+  # test_start: "2024-01-01"
+
+# Tickers to model
+tickers:
+  # Primary tickers (most liquid)
+  primary:
+    - SBER
+    - LKOH
+    - TATN
+    - NVTK
+
+  # All tickers
+  all:
+    - SBER
+    - LKOH
+    - TATN
+    - NVTK
+    - VTBR
+    - ALRS
+    - AFLT
+    - HYDR
+    - MGNT
+    - MOEX
+    - RTKM
+    - MTSS
+    - MTLR
+    - IRAO
+    - OGKB
+    - PHOR
+    - LSRG
+
+# Training modes
+modes:
+  # Single ticker models (one model per ticker)
+  single_ticker: true
+
+  # Panel model (all tickers together)
+  panel: true
+
+  # Sector models (grouped by sector)
+  sector: false
+
+# Early stopping
+early_stopping:
+  patience: 10
+  min_delta: 1e-6
+  monitor: "val_loss"
+
+# Checkpointing
+checkpoints:
+  save_best: true
+  save_frequency: 10  # epochs
+  path: "models/checkpoints/"
+
+# Logging
+logging:
+  level: "INFO"
+  log_file: "results/training.log"
+  tensorboard: false
+  wandb: false
+
+# Hardware
+hardware:
+  # Device selection
+  device: "auto"  # auto, cpu, cuda, mps
+
+  # Number of workers for data loading
+  num_workers: 4
+
+  # Pin memory for GPU
+  pin_memory: true
+
+# Reproducibility
+reproducibility:
+  seed: 42
+  deterministic: true
+
+# Output
+output:
+  results_dir: "results/"
+  models_dir: "models/"
+  figures_dir: "results/figures/"
+
+  # Save predictions
+  save_predictions: true
+
+  # Save feature importance
+  save_feature_importance: true

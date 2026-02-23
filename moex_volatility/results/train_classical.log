@@ -1,0 +1,446 @@
+2026-02-06 14:12:51 | INFO     | train_classical | ======================================================================
+2026-02-06 14:12:51 | INFO     | train_classical | Training Classical Models (HAR, GARCH)
+2026-02-06 14:12:51 | INFO     | train_classical | Started: 2026-02-06 14:12:51.157525
+2026-02-06 14:12:51 | INFO     | train_classical | ======================================================================
+2026-02-06 14:12:51 | INFO     | train_classical | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 14:12:51 | INFO     | train_classical | Loaded 50906 rows, 17 tickers
+2026-02-06 14:12:51 | INFO     | train_classical | 
+--- Horizon: 1 days ---
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for AFLT
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for ALRS
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for HYDR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for IRAO
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for LKOH
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for LSRG
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MGNT
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MOEX
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MTLR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MTSS
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for NVTK
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for OGKB
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for PHOR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for RTKM
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for SBER
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for TATN
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for VTBR
+2026-02-06 14:12:51 | INFO     | train_classical | 
+Horizon 1 Summary:
+2026-02-06 14:12:51 | INFO     | train_classical | 
+--- Horizon: 5 days ---
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for AFLT
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for ALRS
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for HYDR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for IRAO
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for LKOH
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for LSRG
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MGNT
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MOEX
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MTLR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MTSS
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for NVTK
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for OGKB
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for PHOR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for RTKM
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for SBER
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for TATN
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for VTBR
+2026-02-06 14:12:51 | INFO     | train_classical | 
+Horizon 5 Summary:
+2026-02-06 14:12:51 | INFO     | train_classical | 
+--- Horizon: 22 days ---
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for AFLT
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for ALRS
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for HYDR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for IRAO
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for LKOH
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for LSRG
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MGNT
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MOEX
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MTLR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for MTSS
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for NVTK
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for OGKB
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for PHOR
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for RTKM
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for SBER
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for TATN
+2026-02-06 14:12:51 | WARNING  | train_classical | Insufficient data for VTBR
+2026-02-06 14:12:51 | INFO     | train_classical | 
+Horizon 22 Summary:
+2026-02-06 14:12:51 | INFO     | train_classical | 
+======================================================================
+2026-02-06 14:12:51 | INFO     | train_classical | Classical model training complete!
+2026-02-06 14:12:51 | INFO     | train_classical | ======================================================================
+2026-02-06 14:13:34 | INFO     | train_classical | ======================================================================
+2026-02-06 14:13:34 | INFO     | train_classical | Training Classical Models (HAR, GARCH)
+2026-02-06 14:13:34 | INFO     | train_classical | Started: 2026-02-06 14:13:34.664858
+2026-02-06 14:13:34 | INFO     | train_classical | ======================================================================
+2026-02-06 14:13:34 | INFO     | train_classical | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 14:13:34 | INFO     | train_classical | Loaded 50906 rows, 17 tickers
+2026-02-06 14:13:34 | INFO     | train_classical | 
+--- Horizon: 1 days ---
+2026-02-06 14:13:50 | INFO     | train_classical | ======================================================================
+2026-02-06 14:13:50 | INFO     | train_classical | Training Classical Models (HAR, GARCH)
+2026-02-06 14:13:50 | INFO     | train_classical | Started: 2026-02-06 14:13:50.955773
+2026-02-06 14:13:50 | INFO     | train_classical | ======================================================================
+2026-02-06 14:13:50 | INFO     | train_classical | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 14:13:51 | INFO     | train_classical | Loaded 50906 rows, 17 tickers
+2026-02-06 14:13:51 | INFO     | train_classical | 
+--- Horizon: 1 days ---
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for AFLT
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for ALRS
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for HYDR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for IRAO
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for LKOH
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for LSRG
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MGNT
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MOEX
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MTLR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MTSS
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for NVTK
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for OGKB
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for PHOR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for RTKM
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for SBER
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for TATN
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for VTBR
+2026-02-06 14:13:51 | INFO     | train_classical | 
+Horizon 1 Summary:
+2026-02-06 14:13:51 | INFO     | train_classical | 
+--- Horizon: 5 days ---
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for AFLT
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for ALRS
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for HYDR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for IRAO
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for LKOH
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for LSRG
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MGNT
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MOEX
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MTLR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MTSS
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for NVTK
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for OGKB
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for PHOR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for RTKM
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for SBER
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for TATN
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for VTBR
+2026-02-06 14:13:51 | INFO     | train_classical | 
+Horizon 5 Summary:
+2026-02-06 14:13:51 | INFO     | train_classical | 
+--- Horizon: 22 days ---
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for AFLT
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for ALRS
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for HYDR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for IRAO
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for LKOH
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for LSRG
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MGNT
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MOEX
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MTLR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for MTSS
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for NVTK
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for OGKB
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for PHOR
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for RTKM
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for SBER
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for TATN
+2026-02-06 14:13:51 | WARNING  | train_classical | Insufficient data for VTBR
+2026-02-06 14:13:51 | INFO     | train_classical | 
+Horizon 22 Summary:
+2026-02-06 14:13:51 | INFO     | train_classical | 
+======================================================================
+2026-02-06 14:13:51 | INFO     | train_classical | Classical model training complete!
+2026-02-06 14:13:51 | INFO     | train_classical | ======================================================================
+2026-02-06 14:14:34 | INFO     | train_classical | ======================================================================
+2026-02-06 14:14:34 | INFO     | train_classical | Training Classical Models (HAR, GARCH)
+2026-02-06 14:14:34 | INFO     | train_classical | Started: 2026-02-06 14:14:34.917303
+2026-02-06 14:14:34 | INFO     | train_classical | ======================================================================
+2026-02-06 14:14:34 | INFO     | train_classical | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 14:14:35 | INFO     | train_classical | Loaded 50906 rows, 17 tickers
+2026-02-06 14:14:35 | INFO     | train_classical | 
+--- Horizon: 1 days ---
+2026-02-06 14:14:35 | INFO     | train_classical | Saved predictions to /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/classical_h1.parquet
+2026-02-06 14:14:35 | INFO     | train_classical | 
+Horizon 1 Summary:
+2026-02-06 14:14:35 | INFO     | train_classical |   AFLT: RMSE=0.000171, R²=-0.0508
+2026-02-06 14:14:35 | INFO     | train_classical |   ALRS: RMSE=0.000214, R²=0.0115
+2026-02-06 14:14:35 | INFO     | train_classical |   HYDR: RMSE=0.000207, R²=0.0247
+2026-02-06 14:14:35 | INFO     | train_classical |   IRAO: RMSE=0.000621, R²=0.0415
+2026-02-06 14:14:35 | INFO     | train_classical |   LKOH: RMSE=0.000162, R²=-0.1813
+2026-02-06 14:14:35 | INFO     | train_classical | 
+--- Horizon: 5 days ---
+2026-02-06 14:14:35 | INFO     | train_classical | Saved predictions to /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/classical_h5.parquet
+2026-02-06 14:14:35 | INFO     | train_classical | 
+Horizon 5 Summary:
+2026-02-06 14:14:35 | INFO     | train_classical |   AFLT: RMSE=0.000341, R²=-3.1536
+2026-02-06 14:14:35 | INFO     | train_classical |   ALRS: RMSE=0.000216, R²=-0.0102
+2026-02-06 14:14:35 | INFO     | train_classical |   HYDR: RMSE=0.000217, R²=-0.0177
+2026-02-06 14:14:35 | INFO     | train_classical |   IRAO: RMSE=0.000637, R²=0.0250
+2026-02-06 14:14:35 | INFO     | train_classical |   LKOH: RMSE=0.000151, R²=-0.0287
+2026-02-06 14:14:35 | INFO     | train_classical | 
+--- Horizon: 22 days ---
+2026-02-06 14:14:35 | INFO     | train_classical | Saved predictions to /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/classical_h22.parquet
+2026-02-06 14:14:35 | INFO     | train_classical | 
+Horizon 22 Summary:
+2026-02-06 14:14:35 | INFO     | train_classical |   AFLT: RMSE=0.000372, R²=-2.9417
+2026-02-06 14:14:35 | INFO     | train_classical |   ALRS: RMSE=0.000221, R²=-0.0173
+2026-02-06 14:14:35 | INFO     | train_classical |   HYDR: RMSE=0.000385, R²=-0.0478
+2026-02-06 14:14:35 | INFO     | train_classical |   IRAO: RMSE=0.000669, R²=-0.0175
+2026-02-06 14:14:35 | INFO     | train_classical |   LKOH: RMSE=0.000167, R²=-0.0755
+2026-02-06 14:14:35 | INFO     | train_classical | 
+======================================================================
+2026-02-06 14:14:35 | INFO     | train_classical | Classical model training complete!
+2026-02-06 14:14:35 | INFO     | train_classical | ======================================================================
+2026-02-06 14:32:01 | INFO     | train_classical | ======================================================================
+2026-02-06 14:32:01 | INFO     | train_classical | Training Classical Models (HAR, GARCH-GJR)
+2026-02-06 14:32:01 | INFO     | train_classical | Started: 2026-02-06 14:32:01.335057
+2026-02-06 14:32:01 | INFO     | train_classical | ======================================================================
+2026-02-06 14:32:01 | INFO     | train_classical | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 14:32:01 | INFO     | train_classical | Loaded 50906 rows, 17 tickers
+2026-02-06 14:32:01 | INFO     | train_classical | 
+==================================================
+2026-02-06 14:32:01 | INFO     | train_classical | Horizon: 1 days
+2026-02-06 14:32:01 | INFO     | train_classical | ==================================================
+2026-02-06 14:32:01 | INFO     | train_classical | 
+--- Training HAR models ---
+2026-02-06 14:32:01 | INFO     | train_classical | HAR: Trained 17/17 tickers
+2026-02-06 14:32:01 | INFO     | train_classical | 
+--- Training GARCH-GJR models ---
+2026-02-06 14:32:01 | INFO     | train_classical | GARCH: Trained 0/17 tickers
+2026-02-06 14:32:01 | INFO     | train_classical | Saved HAR predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/har_h1.parquet
+2026-02-06 14:32:01 | INFO     | train_classical | 
+--- Horizon 1 Summary ---
+2026-02-06 14:32:01 | INFO     | train_classical | 
+HAR Results (top 5):
+2026-02-06 14:32:01 | INFO     | train_classical |   AFLT: RMSE=0.000171, R²=-0.0508, QLIKE=-7.6845
+2026-02-06 14:32:01 | INFO     | train_classical |   ALRS: RMSE=0.000214, R²=0.0115, QLIKE=-7.6741
+2026-02-06 14:32:01 | INFO     | train_classical |   HYDR: RMSE=0.000207, R²=0.0247, QLIKE=-7.8187
+2026-02-06 14:32:01 | INFO     | train_classical |   IRAO: RMSE=0.000621, R²=0.0415, QLIKE=-7.1204
+2026-02-06 14:32:01 | INFO     | train_classical |   LKOH: RMSE=0.000162, R²=-0.1813, QLIKE=-7.8149
+2026-02-06 14:32:01 | INFO     | train_classical | 
+==================================================
+2026-02-06 14:32:01 | INFO     | train_classical | Horizon: 5 days
+2026-02-06 14:32:01 | INFO     | train_classical | ==================================================
+2026-02-06 14:32:01 | INFO     | train_classical | 
+--- Training HAR models ---
+2026-02-06 14:32:01 | INFO     | train_classical | HAR: Trained 17/17 tickers
+2026-02-06 14:32:01 | INFO     | train_classical | 
+--- Training GARCH-GJR models ---
+2026-02-06 14:32:02 | INFO     | train_classical | GARCH: Trained 0/17 tickers
+2026-02-06 14:32:02 | INFO     | train_classical | Saved HAR predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/har_h5.parquet
+2026-02-06 14:32:02 | INFO     | train_classical | 
+--- Horizon 5 Summary ---
+2026-02-06 14:32:02 | INFO     | train_classical | 
+HAR Results (top 5):
+2026-02-06 14:32:02 | INFO     | train_classical |   AFLT: RMSE=0.000341, R²=-3.1536, QLIKE=-7.3144
+2026-02-06 14:32:02 | INFO     | train_classical |   ALRS: RMSE=0.000216, R²=-0.0102, QLIKE=-7.6635
+2026-02-06 14:32:02 | INFO     | train_classical |   HYDR: RMSE=0.000217, R²=-0.0177, QLIKE=-7.7358
+2026-02-06 14:32:02 | INFO     | train_classical |   IRAO: RMSE=0.000637, R²=0.0250, QLIKE=-7.0544
+2026-02-06 14:32:02 | INFO     | train_classical |   LKOH: RMSE=0.000151, R²=-0.0287, QLIKE=-7.8468
+2026-02-06 14:32:02 | INFO     | train_classical | 
+==================================================
+2026-02-06 14:32:02 | INFO     | train_classical | Horizon: 22 days
+2026-02-06 14:32:02 | INFO     | train_classical | ==================================================
+2026-02-06 14:32:02 | INFO     | train_classical | 
+--- Training HAR models ---
+2026-02-06 14:32:02 | INFO     | train_classical | HAR: Trained 17/17 tickers
+2026-02-06 14:32:02 | INFO     | train_classical | 
+--- Training GARCH-GJR models ---
+2026-02-06 14:32:02 | INFO     | train_classical | GARCH: Trained 0/17 tickers
+2026-02-06 14:32:02 | INFO     | train_classical | Saved HAR predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/har_h22.parquet
+2026-02-06 14:32:02 | INFO     | train_classical | 
+--- Horizon 22 Summary ---
+2026-02-06 14:32:02 | INFO     | train_classical | 
+HAR Results (top 5):
+2026-02-06 14:32:02 | INFO     | train_classical |   AFLT: RMSE=0.000372, R²=-2.9417, QLIKE=-7.2354
+2026-02-06 14:32:02 | INFO     | train_classical |   ALRS: RMSE=0.000221, R²=-0.0173, QLIKE=-7.5944
+2026-02-06 14:32:02 | INFO     | train_classical |   HYDR: RMSE=0.000385, R²=-0.0478, QLIKE=-7.3456
+2026-02-06 14:32:02 | INFO     | train_classical |   IRAO: RMSE=0.000669, R²=-0.0175, QLIKE=-6.8655
+2026-02-06 14:32:02 | INFO     | train_classical |   LKOH: RMSE=0.000167, R²=-0.0755, QLIKE=-7.7570
+2026-02-06 14:32:02 | INFO     | train_classical | 
+======================================================================
+2026-02-06 14:32:02 | INFO     | train_classical | Classical model training complete!
+2026-02-06 14:32:02 | INFO     | train_classical | ======================================================================
+2026-02-06 14:35:07 | INFO     | train_classical | ======================================================================
+2026-02-06 14:35:07 | INFO     | train_classical | Training Classical Models (HAR, GARCH-GJR)
+2026-02-06 14:35:07 | INFO     | train_classical | Started: 2026-02-06 14:35:07.656417
+2026-02-06 14:35:07 | INFO     | train_classical | ======================================================================
+2026-02-06 14:35:07 | INFO     | train_classical | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 14:35:07 | INFO     | train_classical | Loaded 50906 rows, 17 tickers
+2026-02-06 14:35:07 | INFO     | train_classical | 
+==================================================
+2026-02-06 14:35:07 | INFO     | train_classical | Horizon: 1 days
+2026-02-06 14:35:07 | INFO     | train_classical | ==================================================
+2026-02-06 14:35:07 | INFO     | train_classical | 
+--- Training HAR models ---
+2026-02-06 14:35:07 | INFO     | train_classical | HAR: Trained 17/17 tickers
+2026-02-06 14:35:07 | INFO     | train_classical | 
+--- Training GARCH-GJR models ---
+2026-02-06 14:35:17 | INFO     | train_classical | GARCH: Trained 17/17 tickers
+2026-02-06 14:35:17 | INFO     | train_classical | Saved HAR predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/har_h1.parquet
+2026-02-06 14:35:17 | INFO     | train_classical | Saved GARCH predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/garch_h1.parquet
+2026-02-06 14:35:17 | INFO     | train_classical | 
+--- Horizon 1 Summary ---
+2026-02-06 14:35:17 | INFO     | train_classical | 
+HAR Results (top 5):
+2026-02-06 14:35:17 | INFO     | train_classical |   AFLT: RMSE=0.000171, R²=-0.0508, QLIKE=-7.6845
+2026-02-06 14:35:17 | INFO     | train_classical |   ALRS: RMSE=0.000214, R²=0.0115, QLIKE=-7.6741
+2026-02-06 14:35:17 | INFO     | train_classical |   HYDR: RMSE=0.000207, R²=0.0247, QLIKE=-7.8187
+2026-02-06 14:35:17 | INFO     | train_classical |   IRAO: RMSE=0.000621, R²=0.0415, QLIKE=-7.1204
+2026-02-06 14:35:17 | INFO     | train_classical |   LKOH: RMSE=0.000162, R²=-0.1813, QLIKE=-7.8149
+2026-02-06 14:35:17 | INFO     | train_classical | 
+GARCH Results (top 5):
+2026-02-06 14:35:17 | INFO     | train_classical |   AFLT: RMSE=0.000176, R²=-0.1121, AIC=3854.836312691955
+2026-02-06 14:35:17 | INFO     | train_classical |   ALRS: RMSE=0.000232, R²=-0.1627, AIC=3801.761725209357
+2026-02-06 14:35:17 | INFO     | train_classical |   HYDR: RMSE=0.000217, R²=-0.0668, AIC=3807.063457232252
+2026-02-06 14:35:17 | INFO     | train_classical |   IRAO: RMSE=0.000636, R²=-0.0041, AIC=3747.0296142197826
+2026-02-06 14:35:17 | INFO     | train_classical |   LKOH: RMSE=0.000208, R²=-0.9151, AIC=3316.0164911305146
+2026-02-06 14:35:17 | INFO     | train_classical | 
+==================================================
+2026-02-06 14:35:17 | INFO     | train_classical | Horizon: 5 days
+2026-02-06 14:35:17 | INFO     | train_classical | ==================================================
+2026-02-06 14:35:17 | INFO     | train_classical | 
+--- Training HAR models ---
+2026-02-06 14:35:17 | INFO     | train_classical | HAR: Trained 17/17 tickers
+2026-02-06 14:35:17 | INFO     | train_classical | 
+--- Training GARCH-GJR models ---
+2026-02-06 14:35:17 | WARNING  | train_classical | GARCH forecast failed for AFLT: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:18 | WARNING  | train_classical | GARCH forecast failed for ALRS: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:20 | WARNING  | train_classical | GARCH forecast failed for LSRG: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:21 | WARNING  | train_classical | GARCH forecast failed for MOEX: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:21 | WARNING  | train_classical | GARCH forecast failed for MTLR: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:22 | WARNING  | train_classical | GARCH forecast failed for MTSS: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:23 | WARNING  | train_classical | GARCH forecast failed for OGKB: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:23 | WARNING  | train_classical | GARCH forecast failed for PHOR: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:24 | WARNING  | train_classical | GARCH forecast failed for RTKM: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:25 | WARNING  | train_classical | GARCH forecast failed for TATN: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:25 | WARNING  | train_classical | GARCH forecast failed for VTBR: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:25 | INFO     | train_classical | GARCH: Trained 6/17 tickers
+2026-02-06 14:35:25 | INFO     | train_classical | Saved HAR predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/har_h5.parquet
+2026-02-06 14:35:25 | INFO     | train_classical | Saved GARCH predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/garch_h5.parquet
+2026-02-06 14:35:25 | INFO     | train_classical | 
+--- Horizon 5 Summary ---
+2026-02-06 14:35:25 | INFO     | train_classical | 
+HAR Results (top 5):
+2026-02-06 14:35:25 | INFO     | train_classical |   AFLT: RMSE=0.000341, R²=-3.1536, QLIKE=-7.3144
+2026-02-06 14:35:25 | INFO     | train_classical |   ALRS: RMSE=0.000216, R²=-0.0102, QLIKE=-7.6635
+2026-02-06 14:35:25 | INFO     | train_classical |   HYDR: RMSE=0.000217, R²=-0.0177, QLIKE=-7.7358
+2026-02-06 14:35:25 | INFO     | train_classical |   IRAO: RMSE=0.000637, R²=0.0250, QLIKE=-7.0544
+2026-02-06 14:35:25 | INFO     | train_classical |   LKOH: RMSE=0.000151, R²=-0.0287, QLIKE=-7.8468
+2026-02-06 14:35:25 | INFO     | train_classical | 
+GARCH Results (top 5):
+2026-02-06 14:35:25 | INFO     | train_classical |   HYDR: RMSE=0.000969, R²=-20.0035, AIC=3807.063457232252
+2026-02-06 14:35:25 | INFO     | train_classical |   IRAO: RMSE=0.001923, R²=-8.0373, AIC=3747.0296142197826
+2026-02-06 14:35:25 | INFO     | train_classical |   LKOH: RMSE=0.001305, R²=-75.0892, AIC=3316.0164911305146
+2026-02-06 14:35:25 | INFO     | train_classical |   MGNT: RMSE=0.001664, R²=-124.9102, AIC=3635.9859646756804
+2026-02-06 14:35:25 | INFO     | train_classical |   NVTK: RMSE=0.000870, R²=-62.8076, AIC=3373.7300292143127
+2026-02-06 14:35:25 | INFO     | train_classical | 
+==================================================
+2026-02-06 14:35:25 | INFO     | train_classical | Horizon: 22 days
+2026-02-06 14:35:25 | INFO     | train_classical | ==================================================
+2026-02-06 14:35:25 | INFO     | train_classical | 
+--- Training HAR models ---
+2026-02-06 14:35:25 | INFO     | train_classical | HAR: Trained 17/17 tickers
+2026-02-06 14:35:25 | INFO     | train_classical | 
+--- Training GARCH-GJR models ---
+2026-02-06 14:35:26 | WARNING  | train_classical | GARCH forecast failed for AFLT: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:26 | WARNING  | train_classical | GARCH forecast failed for ALRS: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:29 | WARNING  | train_classical | GARCH forecast failed for LSRG: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:30 | WARNING  | train_classical | GARCH forecast failed for MOEX: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:30 | WARNING  | train_classical | GARCH forecast failed for MTLR: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:31 | WARNING  | train_classical | GARCH forecast failed for MTSS: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:32 | WARNING  | train_classical | GARCH forecast failed for OGKB: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:32 | WARNING  | train_classical | GARCH forecast failed for PHOR: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:32 | WARNING  | train_classical | GARCH forecast failed for RTKM: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:33 | WARNING  | train_classical | GARCH forecast failed for TATN: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:34 | WARNING  | train_classical | GARCH forecast failed for VTBR: Analytic forecasts not available for horizon > 1
+2026-02-06 14:35:34 | INFO     | train_classical | GARCH: Trained 6/17 tickers
+2026-02-06 14:35:34 | INFO     | train_classical | Saved HAR predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/har_h22.parquet
+2026-02-06 14:35:34 | INFO     | train_classical | Saved GARCH predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/garch_h22.parquet
+2026-02-06 14:35:34 | INFO     | train_classical | 
+--- Horizon 22 Summary ---
+2026-02-06 14:35:34 | INFO     | train_classical | 
+HAR Results (top 5):
+2026-02-06 14:35:34 | INFO     | train_classical |   AFLT: RMSE=0.000372, R²=-2.9417, QLIKE=-7.2354
+2026-02-06 14:35:34 | INFO     | train_classical |   ALRS: RMSE=0.000221, R²=-0.0173, QLIKE=-7.5944
+2026-02-06 14:35:34 | INFO     | train_classical |   HYDR: RMSE=0.000385, R²=-0.0478, QLIKE=-7.3456
+2026-02-06 14:35:34 | INFO     | train_classical |   IRAO: RMSE=0.000669, R²=-0.0175, QLIKE=-6.8655
+2026-02-06 14:35:34 | INFO     | train_classical |   LKOH: RMSE=0.000167, R²=-0.0755, QLIKE=-7.7570
+2026-02-06 14:35:34 | INFO     | train_classical | 
+GARCH Results (top 5):
+2026-02-06 14:35:34 | INFO     | train_classical |   HYDR: RMSE=0.005670, R²=-673.4269, AIC=3807.063457232252
+2026-02-06 14:35:34 | INFO     | train_classical |   IRAO: RMSE=0.011500, R²=-302.5368, AIC=3747.0296142197826
+2026-02-06 14:35:34 | INFO     | train_classical |   LKOH: RMSE=0.006154, R²=-1589.7884, AIC=3316.0164911305146
+2026-02-06 14:35:34 | INFO     | train_classical |   MGNT: RMSE=0.009052, R²=-4355.6975, AIC=3635.9859646756804
+2026-02-06 14:35:34 | INFO     | train_classical |   NVTK: RMSE=0.004935, R²=-1977.9751, AIC=3373.7300292143127
+2026-02-06 14:35:34 | INFO     | train_classical | 
+======================================================================
+2026-02-06 14:35:34 | INFO     | train_classical | Classical model training complete!
+2026-02-06 14:35:34 | INFO     | train_classical | ======================================================================
+2026-02-06 14:35:53 | INFO     | train_classical | ======================================================================
+2026-02-06 14:35:53 | INFO     | train_classical | Training Classical Models (HAR, GARCH-GJR)
+2026-02-06 14:35:53 | INFO     | train_classical | Started: 2026-02-06 14:35:53.745702
+2026-02-06 14:35:53 | INFO     | train_classical | ======================================================================
+2026-02-06 14:35:53 | INFO     | train_classical | Loading features from /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/features/features_all.parquet
+2026-02-06 14:35:53 | INFO     | train_classical | Loaded 50906 rows, 17 tickers
+2026-02-06 14:35:53 | INFO     | train_classical | 
+==================================================
+2026-02-06 14:35:53 | INFO     | train_classical | Horizon: 5 days
+2026-02-06 14:35:53 | INFO     | train_classical | ==================================================
+2026-02-06 14:35:53 | INFO     | train_classical | 
+--- Training HAR models ---
+2026-02-06 14:35:54 | INFO     | train_classical | HAR: Trained 17/17 tickers
+2026-02-06 14:35:54 | INFO     | train_classical | 
+--- Training GARCH-GJR models ---
+2026-02-06 14:36:04 | INFO     | train_classical | GARCH: Trained 17/17 tickers
+2026-02-06 14:36:04 | INFO     | train_classical | Saved HAR predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/har_h5.parquet
+2026-02-06 14:36:04 | INFO     | train_classical | Saved GARCH predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/garch_h5.parquet
+2026-02-06 14:36:04 | INFO     | train_classical | 
+--- Horizon 5 Summary ---
+2026-02-06 14:36:04 | INFO     | train_classical | 
+HAR Results (top 5):
+2026-02-06 14:36:04 | INFO     | train_classical |   AFLT: RMSE=0.000341, R²=-3.1536, QLIKE=-7.3144
+2026-02-06 14:36:04 | INFO     | train_classical |   ALRS: RMSE=0.000216, R²=-0.0102, QLIKE=-7.6635
+2026-02-06 14:36:04 | INFO     | train_classical |   HYDR: RMSE=0.000217, R²=-0.0177, QLIKE=-7.7358
+2026-02-06 14:36:04 | INFO     | train_classical |   IRAO: RMSE=0.000637, R²=0.0250, QLIKE=-7.0544
+2026-02-06 14:36:04 | INFO     | train_classical |   LKOH: RMSE=0.000151, R²=-0.0287, QLIKE=-7.8468
+2026-02-06 14:36:04 | INFO     | train_classical | 
+GARCH Results (top 5):
+2026-02-06 14:36:04 | INFO     | train_classical |   AFLT: RMSE=0.001193, R²=-49.4434, AIC=3854.836312691955
+2026-02-06 14:36:04 | INFO     | train_classical |   ALRS: RMSE=0.001251, R²=-32.3036, AIC=3801.761725209357
+2026-02-06 14:36:04 | INFO     | train_classical |   HYDR: RMSE=0.000969, R²=-19.9891, AIC=3807.063457232252
+2026-02-06 14:36:04 | INFO     | train_classical |   IRAO: RMSE=0.001924, R²=-8.0432, AIC=3747.0296142197826
+2026-02-06 14:36:04 | INFO     | train_classical |   LKOH: RMSE=0.001305, R²=-75.0347, AIC=3316.0164911305146
+2026-02-06 14:36:04 | INFO     | train_classical | 
+==================================================
+2026-02-06 14:36:04 | INFO     | train_classical | Horizon: 22 days
+2026-02-06 14:36:04 | INFO     | train_classical | ==================================================
+2026-02-06 14:36:04 | INFO     | train_classical | 
+--- Training HAR models ---
+2026-02-06 14:36:04 | INFO     | train_classical | HAR: Trained 17/17 tickers
+2026-02-06 14:36:04 | INFO     | train_classical | 
+--- Training GARCH-GJR models ---
+2026-02-06 14:36:18 | INFO     | train_classical | GARCH: Trained 17/17 tickers
+2026-02-06 14:36:18 | INFO     | train_classical | Saved HAR predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/har_h22.parquet
+2026-02-06 14:36:18 | INFO     | train_classical | Saved GARCH predictions: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/data/predictions/test_2019/garch_h22.parquet
+2026-02-06 14:36:18 | INFO     | train_classical | 
+--- Horizon 22 Summary ---
+2026-02-06 14:36:18 | INFO     | train_classical | 
+HAR Results (top 5):
+2026-02-06 14:36:18 | INFO     | train_classical |   AFLT: RMSE=0.000372, R²=-2.9417, QLIKE=-7.2354
+2026-02-06 14:36:18 | INFO     | train_classical |   ALRS: RMSE=0.000221, R²=-0.0173, QLIKE=-7.5944
+2026-02-06 14:36:18 | INFO     | train_classical |   HYDR: RMSE=0.000385, R²=-0.0478, QLIKE=-7.3456
+2026-02-06 14:36:18 | INFO     | train_classical |   IRAO: RMSE=0.000669, R²=-0.0175, QLIKE=-6.8655
+2026-02-06 14:36:18 | INFO     | train_classical |   LKOH: RMSE=0.000167, R²=-0.0755, QLIKE=-7.7570
+2026-02-06 14:36:18 | INFO     | train_classical | 
+GARCH Results (top 5):
+2026-02-06 14:36:18 | INFO     | train_classical |   AFLT: RMSE=0.008375, R²=-2354.1336, AIC=3854.836312691955
+2026-02-06 14:36:18 | INFO     | train_classical |   ALRS: RMSE=0.006408, R²=-816.5259, AIC=3801.761725209357
+2026-02-06 14:36:18 | INFO     | train_classical |   HYDR: RMSE=0.005669, R²=-673.0786, AIC=3807.063457232252
+2026-02-06 14:36:18 | INFO     | train_classical |   IRAO: RMSE=0.011431, R²=-298.9090, AIC=3747.0296142197826
+2026-02-06 14:36:18 | INFO     | train_classical |   LKOH: RMSE=0.006157, R²=-1591.1822, AIC=3316.0164911305146
+2026-02-06 14:36:18 | INFO     | train_classical | 
+======================================================================
+2026-02-06 14:36:18 | INFO     | train_classical | Classical model training complete!
+2026-02-06 14:36:18 | INFO     | train_classical | ======================================================================

@@ -1,0 +1,17 @@
+strategy,timeframe,category,positive_tickers,total_tickers,positive_pct
+S3_RSI_Reversion,daily,Contrarian,9,17,52.9
+S4_Donchian,daily,Trend,9,17,52.9
+S5_Supertrend,daily,Trend,8,17,47.1
+S6_DualMA,daily,Trend,8,17,47.1
+S8_RSI_Stoch,daily,Range,8,17,47.1
+S2_Bollinger,daily,Contrarian,5,17,29.4
+S7_Keltner,daily,Range,4,17,23.5
+S1_MA_Reversion,daily,Contrarian,3,17,17.6
+S6_DualMA,hourly,Trend,14,17,82.4
+S4_Donchian,hourly,Trend,12,17,70.6
+S5_Supertrend,hourly,Trend,10,17,58.8
+S8_RSI_Stoch,hourly,Range,6,17,35.3
+S2_Bollinger,hourly,Contrarian,5,17,29.4
+S3_RSI_Reversion,hourly,Contrarian,4,17,23.5
+S1_MA_Reversion,hourly,Contrarian,3,17,17.6
+S7_Keltner,hourly,Range,3,17,17.6

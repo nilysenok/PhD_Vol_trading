@@ -1,0 +1,76 @@
+# Walk-Forward Cross-Validation Configuration
+# ============================================
+
+# Basic settings
+refit_period: 66          # Days between model retraining (~3 months)
+train_window: "expanding"  # 'expanding' or 'rolling'
+rolling_size: 756         # For rolling window (~3 years)
+val_size: 252             # Validation window size (~1 year)
+gap: 1                    # Gap between train and test (= forecast horizon)
+
+# Period definitions
+periods:
+  # Initial training period
+  train_start: "2014-08-26"
+  train_end: "2017-12-31"
+
+  # Validation for hyperparameter tuning
+  val_start: "2018-01-01"
+  val_end: "2018-12-31"
+
+  # Test period (fixed comparison)
+  test_start: "2019-01-01"
+  test_end: "2019-12-31"
+
+  # Walk-forward production period
+  wf_start: "2020-01-01"
+  wf_end: "2026-02-03"
+
+# Refit frequencies
+refit_options:
+  monthly: 22
+  quarterly: 66
+  semi_annual: 126
+  annual: 252
+
+# Hyperparameter retuning
+hyperparameter_tuning:
+  enabled: true
+  retune_frequency: 4     # Retune every N refit periods
+  n_trials: 50            # Optuna trials for retuning
+
+# Models to include in walk-forward
+models:
+  - har
+  - garch
+  - lightgbm
+  - xgboost
+  - gru
+  - lstm
+  - hybrid
+
+# Horizons
+horizons:
+  - 1   # 1-day ahead
+  - 5   # 1-week ahead
+  - 22  # 1-month ahead
+
+# Output settings
+output:
+  save_predictions: true
+  save_models: true        # Save model at each refit
+  save_metrics: true       # Save metrics per period
+  checkpoint_frequency: 4  # Save checkpoint every N refit periods
+
+# Performance tracking
+metrics:
+  primary: "qlike"
+  secondary:
+    - "mse"
+    - "mae"
+    - "r2"
+
+# Parallel processing
+parallel:
+  n_jobs: -1              # Use all available cores
+  backend: "loky"         # joblib backend

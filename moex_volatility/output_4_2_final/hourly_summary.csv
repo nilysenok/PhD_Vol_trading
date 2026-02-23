@@ -1,0 +1,25 @@
+Strategy,App,Gross,Net 0.04%,Net 0.05%,Tr/yr
+S1 Mean Reversion,A,0.247,0.157,0.135,2.46
+S1 Mean Reversion,B,0.396,0.335,0.319,1.82
+S1 Mean Reversion,C,0.243,0.154,0.132,2.42
+S1 Mean Reversion,D,0.401,0.365,0.356,0.85
+S2 Bollinger Bands,A,0.557,0.427,0.394,7.06
+S2 Bollinger Bands,B,0.682,0.514,0.47,6.1
+S2 Bollinger Bands,C,0.679,0.452,0.395,14.58
+S2 Bollinger Bands,D,0.742,0.63,0.603,4.89
+S3 Donchian Channel,A,0.578,0.491,0.469,20.69
+S3 Donchian Channel,B,1.055,0.879,0.835,20.51
+S3 Donchian Channel,C,0.736,0.661,0.643,12.97
+S3 Donchian Channel,D,0.814,0.732,0.711,18.16
+S4 Supertrend,A,0.688,0.591,0.566,17.08
+S4 Supertrend,B,0.694,0.55,0.516,9.42
+S4 Supertrend,C,0.906,0.827,0.807,11.2
+S4 Supertrend,D,0.825,0.749,0.73,12.12
+S5 Pivot Points,A,0.53,0.454,0.434,3.19
+S5 Pivot Points,B,0.613,0.522,0.499,3.04
+S5 Pivot Points,C,0.645,0.576,0.558,2.52
+S5 Pivot Points,D,0.568,0.53,0.52,1.59
+S6 VWAP,A,0.238,0.062,0.019,4.96
+S6 VWAP,B,0.191,0.029,-0.01,4.18
+S6 VWAP,C,0.352,0.191,0.151,3.86
+S6 VWAP,D,0.187,0.171,0.167,0.43

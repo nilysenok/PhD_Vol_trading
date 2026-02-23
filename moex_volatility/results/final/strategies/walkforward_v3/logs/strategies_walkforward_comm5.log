@@ -1,0 +1,300 @@
+======================================================================
+Walk-Forward A/B/C/D Strategy Pipeline (V3)
+Tickers: 17, Strategies: 6, TFs: 2
+A test years: 2020-2026
+B/C/D test years: 2022-2026
+Hourly sigma: v2_sqrtN (no variant loop)
+Commission: 0.0005 per side
+======================================================================
+Loading data...
+  Daily: 50,906 rows, 2014-06-09 — 2026-02-03
+  Hourly: 457,542 rows
+  Vpred: 39,934 rows, 2017-01-03 — 2026-02-02
+  S1_MeanRev daily: 27 signal x 216 RM = 5832 combos
+  S1_MeanRev hourly: 27 signal x 216 RM = 5832 combos
+  S2_Bollinger daily: 9 signal x 216 RM = 1944 combos
+  S2_Bollinger hourly: 9 signal x 216 RM = 1944 combos
+  S3_Donchian daily: 4 signal x 396 RM = 1584 combos
+  S3_Donchian hourly: 4 signal x 396 RM = 1584 combos
+  S4_Supertrend daily: 12 signal x 396 RM = 4752 combos
+  S4_Supertrend hourly: 12 signal x 396 RM = 4752 combos
+  S5_PivotPoints daily: 1 signal x 216 RM = 216 combos
+  S5_PivotPoints hourly: 1 signal x 216 RM = 216 combos
+  S6_VWAP daily: 9 signal x 216 RM = 1944 combos
+  S6_VWAP hourly: 9 signal x 216 RM = 1944 combos
+  B grid (Contrarian): 1125 combos
+  B grid (Range): 1125 combos
+  B grid (Trend): 1890 combos
+  C grid (Trend/Contr): 648 combos
+  C grid (Range): 756 combos
+  D grid: 1620 standard + 81 inverse = 1701 combos
+
+Warming up numba...
+  Numba warmup done
+
+Processing 17 tickers with 8 workers...
+  [1/17] LSRG done (321s)
+  [2/17] MGNT done (384s)
+  [3/17] ALRS done (412s)
+  [4/17] IRAO done (425s)
+  [5/17] HYDR done (428s)
+  [6/17] LKOH done (435s)
+  [7/17] AFLT done (439s)
+  [8/17] MOEX done (443s)
+  [9/17] MTLR done (697s)
+  [10/17] PHOR done (739s)
+  [11/17] RTKM done (743s)
+  [12/17] OGKB done (747s)
+  [13/17] MTSS done (751s)
+  [14/17] NVTK done (833s)
+  [15/17] SBER done (861s)
+  [16/17] TATN done (868s)
+  [17/17] VTBR done (1092s)
+
+All tickers done in 1092s
+
+Generating outputs...
+
+  === Statistical Tests (B-D vs A) ===
+      strategy timeframe comparison    dm_t   dm_p  bs_mean  bs_ci_lo  bs_ci_hi sig
+    S1_MeanRev     daily     B_vs_A -0.3889 0.6974   0.0072   -0.0033    0.0182    
+    S1_MeanRev     daily     C_vs_A -0.3184 0.7502   0.0136   -0.0005    0.0281    
+    S1_MeanRev     daily     D_vs_A  3.0349 0.0024  -0.0031   -0.0096    0.0034 ***
+    S1_MeanRev    hourly     B_vs_A  2.0044 0.0450   0.0035    0.0006    0.0067  **
+    S1_MeanRev    hourly     C_vs_A  0.8266 0.4085   0.0038   -0.0018    0.0100    
+    S1_MeanRev    hourly     D_vs_A  2.0535 0.0400   0.0014   -0.0009    0.0038  **
+  S2_Bollinger     daily     B_vs_A  0.4695 0.6387   0.0081   -0.0014    0.0181    
+  S2_Bollinger     daily     C_vs_A  0.1303 0.8963   0.0193    0.0036    0.0351    
+  S2_Bollinger     daily     D_vs_A  3.1352 0.0017  -0.0009   -0.0078    0.0062 ***
+  S2_Bollinger    hourly     B_vs_A  1.6048 0.1085   0.0039    0.0001    0.0077    
+  S2_Bollinger    hourly     C_vs_A  0.6759 0.4991   0.0050   -0.0030    0.0128    
+  S2_Bollinger    hourly     D_vs_A  2.7052 0.0068   0.0027    0.0005    0.0049 ***
+   S3_Donchian     daily     B_vs_A  0.3484 0.7276   0.0143    0.0034    0.0252    
+   S3_Donchian     daily     C_vs_A  1.4960 0.1347   0.0157    0.0063    0.0258    
+   S3_Donchian     daily     D_vs_A  3.4923 0.0005   0.0052   -0.0016    0.0122 ***
+   S3_Donchian    hourly     B_vs_A  0.8154 0.4149   0.0059    0.0021    0.0097    
+   S3_Donchian    hourly     C_vs_A  3.0072 0.0026   0.0079    0.0051    0.0110 ***
+   S3_Donchian    hourly     D_vs_A  4.4978 0.0000   0.0010   -0.0015    0.0038 ***
+ S4_Supertrend     daily     B_vs_A -0.8879 0.3746   0.0099   -0.0020    0.0212    
+ S4_Supertrend     daily     C_vs_A -0.6936 0.4879   0.0108   -0.0003    0.0224    
+ S4_Supertrend     daily     D_vs_A  2.6864 0.0072   0.0011   -0.0061    0.0079 ***
+ S4_Supertrend    hourly     B_vs_A -1.1661 0.2436   0.0005   -0.0035    0.0044    
+ S4_Supertrend    hourly     C_vs_A  5.0078 0.0000   0.0067    0.0046    0.0088 ***
+ S4_Supertrend    hourly     D_vs_A  2.5135 0.0120  -0.0010   -0.0033    0.0013  **
+S5_PivotPoints     daily     B_vs_A  3.6750 0.0002   0.0184    0.0088    0.0287 ***
+S5_PivotPoints     daily     C_vs_A  0.8841 0.3768   0.0099   -0.0184    0.0423    
+S5_PivotPoints     daily     D_vs_A  0.6450 0.5189   0.0089    0.0027    0.0153    
+S5_PivotPoints    hourly     B_vs_A  6.0980 0.0000   0.0073    0.0046    0.0106 ***
+S5_PivotPoints    hourly     C_vs_A  5.8908 0.0000   0.0083    0.0053    0.0115 ***
+S5_PivotPoints    hourly     D_vs_A  0.5361 0.5919   0.0053    0.0013    0.0084    
+       S6_VWAP     daily     B_vs_A  0.6044 0.5456   0.0033   -0.0060    0.0124    
+       S6_VWAP     daily     C_vs_A  0.6242 0.5328   0.0318   -0.0475    0.1067    
+       S6_VWAP     daily     D_vs_A  1.7674 0.0772   0.0018   -0.0043    0.0083   *
+       S6_VWAP    hourly     B_vs_A  3.5116 0.0004   0.0063    0.0023    0.0109 ***
+       S6_VWAP    hourly     C_vs_A  2.9899 0.0028   0.0076    0.0005    0.0136 ***
+       S6_VWAP    hourly     D_vs_A  0.6367 0.5243   0.0033    0.0002    0.0065    
+
+  === S1_MeanRev daily ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.4918      4.98      8.75    -7.02   13.75    6.59   57.75
+         B      0.6555      5.55      7.38    -5.18    9.50    6.66   59.34
+         C      0.8155      5.93      7.05    -4.60    9.01    9.68   59.55
+         D      0.5793     10.14     15.08   -11.23   14.27    6.75   55.95
+  ΔSharpe vs A:  B=+0.164, C=+0.324, D=+0.088
+  p-value vs A:  B=0.697, C=0.750, D=0.002***
+  Top-5 (C):   TATN(1.49), LSRG(1.37), MTLR(1.24), NVTK(1.18), MGNT(1.15)
+  Worst-5 (C): AFLT(0.75), ALRS(0.73), SBER(0.72), HYDR(0.59), MTSS(0.42)
+
+  === S1_MeanRev hourly ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.1789      1.13      3.77    -3.29    2.75   12.51   55.30
+         B      0.4037      1.70      3.08    -2.36    1.92   10.22   57.48
+         C      0.4209      3.40      6.32    -4.01    4.66   23.07   55.95
+         D      0.2624      2.37      4.47    -3.15    2.19   10.38   55.43
+  ΔSharpe vs A:  B=+0.225, C=+0.242, D=+0.084
+  p-value vs A:  B=0.045**, C=0.408, D=0.040**
+  Top-5 (C):   MTLR(0.81), VTBR(0.81), RTKM(0.71), PHOR(0.53), LSRG(0.21)
+  Worst-5 (C): RTKM(0.71), PHOR(0.53), LSRG(0.21), IRAO(0.13), NVTK(-0.81)
+
+  === S2_Bollinger daily ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.4082      4.34      8.49    -6.95   14.73    6.16   54.03
+         B      0.6517      6.10      7.68    -5.46    9.84    5.88   53.91
+         C      0.7317      5.72      6.28    -3.93    8.37   10.04   57.50
+         D      0.5497      8.97     12.91    -9.90   14.44    6.16   54.45
+  ΔSharpe vs A:  B=+0.243, C=+0.324, D=+0.141
+  p-value vs A:  B=0.639, C=0.896, D=0.002***
+  Top-5 (C):   HYDR(1.79), MOEX(1.77), PHOR(1.31), TATN(1.11), NVTK(1.08)
+  Worst-5 (C): LKOH(0.62), AFLT(0.36), MGNT(0.12), ALRS(0.09), VTBR(-0.09)
+
+  === S2_Bollinger hourly ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.0842      0.62      3.62    -3.29    3.01   12.42   51.87
+         B      0.2741      1.01      2.67    -2.18    1.94   10.43   54.61
+         C      0.2604      1.39      4.28    -3.30    4.52   21.40   54.64
+         D      0.1338      1.33      3.92    -3.28    2.33   10.50   51.49
+  ΔSharpe vs A:  B=+0.190, C=+0.176, D=+0.050
+  p-value vs A:  B=0.108, C=0.499, D=0.007***
+  Top-5 (B):   HYDR(1.47), TATN(0.95), ALRS(0.81), VTBR(0.57), RTKM(0.51)
+  Worst-5 (B): NVTK(-0.02), PHOR(-0.02), MOEX(-0.03), MTSS(-0.05), SBER(-0.51)
+
+  === S3_Donchian daily ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.4368     11.52     19.76   -15.81   31.52    7.36   52.16
+         B      0.6123     11.11     14.16    -9.41   17.21    9.21   55.89
+         C      0.7868     13.44     14.35    -8.19   12.87   12.08   57.52
+         D      0.5484     19.21     29.12   -21.45   31.37    7.97   52.96
+  ΔSharpe vs A:  B=+0.175, C=+0.350, D=+0.112
+  p-value vs A:  B=0.728, C=0.135, D=0.001***
+  Top-5 (C):   MTSS(1.75), OGKB(1.45), ALRS(1.26), AFLT(0.91), SBER(0.86)
+  Worst-5 (C): VTBR(0.59), MOEX(0.58), IRAO(0.49), LSRG(0.38), HYDR(-1.01)
+
+  === S3_Donchian hourly ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.4056      8.37     13.77   -12.28   17.99   34.94   42.59
+         B      0.8055     11.57     11.72    -8.69   12.43   39.91   44.52
+         C      0.9540     13.82     11.31    -7.79    8.35   19.00   51.59
+         D      0.5330     21.07     24.69   -19.86   17.84   36.41   43.23
+  ΔSharpe vs A:  B=+0.400, C=+0.548, D=+0.127
+  p-value vs A:  B=0.415, C=0.003***, D=0.000***
+  Top-5 (C):   LKOH(1.98), RTKM(1.64), SBER(1.50), MTLR(1.45), TATN(1.43)
+  Worst-5 (C): LSRG(0.55), IRAO(0.48), ALRS(0.41), OGKB(0.39), MGNT(0.09)
+
+  === S4_Supertrend daily ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.6401     11.00     13.14    -8.70   23.27    4.73   52.67
+         B      0.6853      7.19      8.49    -4.73    8.55    5.41   50.37
+         C      0.8524      8.04      8.44    -4.76    9.95    9.47   58.83
+         D      0.6019     12.81     17.49   -11.84   22.08    5.07   49.77
+  ΔSharpe vs A:  B=+0.045, C=+0.212, D=-0.038
+  p-value vs A:  B=0.375, C=0.488, D=0.007***
+  Top-5 (C):   HYDR(1.28), OGKB(1.10), TATN(1.09), MGNT(1.08), LKOH(1.07)
+  Worst-5 (C): LSRG(0.78), ALRS(0.70), AFLT(0.70), MOEX(0.59), RTKM(0.57)
+
+  === S4_Supertrend hourly ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.3335      5.16      9.86    -9.00   12.83   20.75   43.82
+         B      0.4154      4.43      7.64    -6.69    7.72   22.49   43.50
+         C      0.6574      8.41      8.99    -6.95    8.60   14.39   48.82
+         D      0.4413      9.61     16.07   -13.94   13.60   22.18   43.29
+  ΔSharpe vs A:  B=+0.082, C=+0.324, D=+0.108
+  p-value vs A:  B=0.244, C=0.000***, D=0.012**
+  Top-5 (C):   RTKM(1.51), AFLT(1.33), HYDR(1.22), MGNT(1.22), MTLR(0.81)
+  Worst-5 (C): MTSS(0.26), OGKB(0.22), MOEX(-0.01), ALRS(-0.02), LSRG(-0.11)
+
+  === S5_PivotPoints daily ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A     -0.2897     -1.00      3.66    -3.50    3.31    4.19   46.37
+         B      0.0806      0.26      3.47    -2.69    2.70    4.16   54.90
+         C     -0.2704     -0.82      2.47    -2.30    3.45    3.62   44.46
+         D     -0.2471     -0.79      6.53    -5.86    3.37    4.37   48.68
+  ΔSharpe vs A:  B=+0.370, C=+0.019, D=+0.043
+  p-value vs A:  B=0.000***, C=0.377, D=0.519
+  Top-5 (B):   MTSS(1.14), ALRS(0.82), VTBR(0.70), MTLR(0.66), LKOH(0.58)
+  Worst-5 (B): TATN(-0.41), PHOR(-0.45), AFLT(-0.51), IRAO(-0.65), RTKM(-0.92)
+
+  === S5_PivotPoints hourly ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A     -0.7460     -2.65      4.42    -5.86    3.63   23.24   47.22
+         B     -0.4325     -0.82      4.43    -5.13    3.45   23.00   48.92
+         C     -0.4915     -1.39      3.68    -4.94    2.83   17.25   49.55
+         D     -0.7807     -2.46      6.65    -7.80    3.58   23.44   46.13
+  ΔSharpe vs A:  B=+0.314, C=+0.255, D=-0.035
+  p-value vs A:  B=0.000***, C=0.000***, D=0.592
+  Top-5 (B):   IRAO(0.90), MTSS(0.54), OGKB(0.43), HYDR(0.36), AFLT(0.22)
+  Worst-5 (B): MGNT(-0.70), TATN(-0.88), MTLR(-1.17), LKOH(-1.36), SBER(-1.58)
+
+  === S6_VWAP daily ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.1781      1.02      2.94    -1.96    2.79    2.20   47.33
+         B      0.2788      1.08      3.08    -1.96    2.54    2.18   51.67
+         C      0.6595      1.55      2.42    -1.06    2.77    4.00   58.35
+         D      0.2333      1.40      4.31    -2.75    2.68    2.22   48.75
+  ΔSharpe vs A:  B=+0.101, C=+0.481, D=+0.055
+  p-value vs A:  B=0.546, C=0.533, D=0.077*
+
+  === S6_VWAP hourly ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A     -0.5347     -1.49      3.68    -4.32    2.92   22.16   51.86
+         B     -0.2258     -0.26      3.93    -4.06    3.07   20.88   53.06
+         C     -0.6071     -1.92      4.17    -4.66    3.58   25.96   52.67
+         D     -0.5030     -1.25      5.39    -5.63    2.85   21.81   51.49
+  ΔSharpe vs A:  B=+0.309, C=-0.072, D=+0.032
+  p-value vs A:  B=0.000***, C=0.003***, D=0.524
+  Top-5 (B):   LSRG(0.89), HYDR(0.87), VTBR(0.56), IRAO(0.29), OGKB(0.29)
+  Worst-5 (B): PHOR(-0.66), AFLT(-0.72), MTLR(-0.84), MGNT(-0.96), ALRS(-1.19)
+
+  === B vs A Holding Bars Diagnosis ===
+    A: mean_hold=7.3, median_hold=5, trades=961,936
+    B: mean_hold=7.2, median_hold=4, trades=651,111
+
+  === Summary: Mean Sharpe ===
+      strategy timeframe       A       B       C       D
+    S1_MeanRev     daily  0.5369  0.6555  0.8261  0.5793
+    S1_MeanRev    hourly  0.2064  0.4037  0.4352  0.2624
+  S2_Bollinger     daily  0.5108  0.6517  0.7436  0.5497
+  S2_Bollinger    hourly  0.0852  0.2741  0.3020  0.1338
+   S3_Donchian     daily  0.3811  0.6123  0.7771  0.5484
+   S3_Donchian    hourly  0.4783  0.8055  0.9540  0.5330
+ S4_Supertrend     daily  0.4969  0.6853  0.8584  0.6019
+ S4_Supertrend    hourly  0.3528  0.4154  0.6495  0.4413
+S5_PivotPoints     daily -0.2902  0.0806 -0.2917 -0.2471
+S5_PivotPoints    hourly -0.8361 -0.4325 -0.5361 -0.7807
+       S6_VWAP     daily  0.1825  0.2788  0.6595  0.2333
+       S6_VWAP    hourly -0.5772 -0.2258 -0.4734 -0.5030
+
+  === Summary: Exposure % ===
+      strategy timeframe     A     B     C     D
+    S1_MeanRev     daily 14.27  9.50  8.79 14.27
+    S1_MeanRev    hourly  2.19  1.92  4.79  2.19
+  S2_Bollinger     daily 14.44  9.84  8.12 14.44
+  S2_Bollinger    hourly  2.33  1.94  4.71  2.33
+   S3_Donchian     daily 31.37 17.21 12.85 31.37
+   S3_Donchian    hourly 17.84 12.43  8.35 17.84
+ S4_Supertrend     daily 22.08  8.55  9.90 22.08
+ S4_Supertrend    hourly 13.60  7.72  8.58 13.60
+S5_PivotPoints     daily  3.37  2.70  3.63  3.37
+S5_PivotPoints    hourly  3.58  3.45  2.81  3.58
+       S6_VWAP     daily  2.68  2.54  2.78  2.68
+       S6_VWAP    hourly  2.85  3.07  3.71  2.85
+
+  === Summary: Trades/yr ===
+      strategy timeframe     A     B     C     D
+    S1_MeanRev     daily  6.75  6.66  9.37  6.75
+    S1_MeanRev    hourly 10.38 10.22 22.59 10.38
+  S2_Bollinger     daily  6.16  5.88  9.77  6.16
+  S2_Bollinger    hourly 10.50 10.43 20.28 10.50
+   S3_Donchian     daily  7.97  9.21 12.11  7.97
+   S3_Donchian    hourly 36.41 39.91 19.00 36.41
+ S4_Supertrend     daily  5.07  5.41  9.42  5.07
+ S4_Supertrend    hourly 22.18 22.49 14.39 22.18
+S5_PivotPoints     daily  4.37  4.16  4.00  4.37
+S5_PivotPoints    hourly 23.44 23.00 16.85 23.44
+       S6_VWAP     daily  2.22  2.18  4.00  2.22
+       S6_VWAP    hourly 21.81 20.88 26.62 21.81
+
+  Full results saved: 3292 rows
+
+  === Sanity Checks ===
+    A: avg exposure=11.0%, avg trades=13.1
+    B: avg exposure=6.7%, avg trades=13.4
+    C: avg exposure=8.3%, avg trades=14.2
+    D: avg exposure=10.9%, avg trades=13.1
+
+  Trade log saved: 1630107 trades → /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/results/final/strategies/walkforward_v3/trade_log.parquet
+  Exit reasons:
+    trail_SL: 784621 (48.1%)
+    SL: 312207 (19.2%)
+    signal: 222818 (13.7%)
+    TP: 181685 (11.1%)
+    breakeven: 77679 (4.8%)
+    max_hold: 26796 (1.6%)
+    position: 16929 (1.0%)
+    ADX_exit: 3922 (0.2%)
+    time_decay: 3319 (0.2%)
+    end_data: 131 (0.0%)
+  Daily positions saved: 4328901 rows → /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/results/final/strategies/walkforward_v3/daily_positions.parquet
+
+======================================================================
+DONE in 1262s (21.0 min)
+======================================================================

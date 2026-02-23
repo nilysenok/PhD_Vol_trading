@@ -1,0 +1,7 @@
+Strategy,Method,Approach,Net_Sharpe,Ann_Ret%,MaxDD%
+S1_MeanRev,EW,D,2.2122,0.83,-0.13
+S2_Bollinger,EW,D,2.622,3.19,-0.93
+S3_Donchian,MinVar,B,3.0064,9.11,-2.3
+S4_Supertrend,MinVar,B,2.4174,3.57,-0.88
+S5_PivotPoints,EW,D,2.4086,2.08,-0.46
+S6_VWAP,MaxSharpe,D,1.5389,0.56,-0.35

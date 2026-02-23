@@ -1,0 +1,141 @@
+# Model Configuration for MOEX Volatility Forecasting
+# =================================================
+
+# Data paths
+data:
+  dataset_path: "../moex_discovery/data/dataset_final/03_master/master_long.parquet"
+  dataset_wide_path: "../moex_discovery/data/dataset_final/03_master/master_wide.parquet"
+  candles_stocks_path: "../moex_discovery/data/dataset_final/01_stocks/candles_10m/"
+  candles_external_path: "../moex_discovery/data/dataset_final/02_external/candles_10m/"
+
+# Target variable
+target:
+  column: "rv_daily"
+  horizon: 1  # 1-day ahead forecast
+
+# Feature groups
+features:
+  # HAR components (lags)
+  har_lags:
+    - 1    # RV(d-1) - daily
+    - 5    # RV(d-5) - weekly avg
+    - 22   # RV(d-22) - monthly avg
+
+  # Extended lags for ML models
+  extended_lags: [1, 2, 3, 4, 5, 10, 22, 44, 66]
+
+  # Rolling window sizes
+  rolling_windows: [5, 10, 22, 44, 66]
+
+  # External factors to include
+  external_rv:
+    - rv_IMOEX
+    - rv_RVI
+    - rv_MOEXOG
+    - rv_MOEXFN
+
+  external_prices:
+    - vix
+    - sp500
+    - brent
+    - gold
+    - dxy
+
+  macro:
+    - key_rate_cbr
+    - fed_rate
+    - si_fut
+
+# Model-specific configurations
+models:
+  har:
+    use_log: true  # log(RV) transformation
+    add_jump_component: false
+
+  garch:
+    p: 1
+    q: 1
+    o: 0  # for GJR-GARCH
+    dist: "normal"  # normal, t, skewt
+    mean: "Zero"
+
+  lightgbm:
+    objective: "regression"
+    metric: "rmse"
+    boosting_type: "gbdt"
+    num_leaves: 31
+    learning_rate: 0.05
+    feature_fraction: 0.8
+    bagging_fraction: 0.8
+    bagging_freq: 5
+    n_estimators: 1000
+    early_stopping_rounds: 50
+    verbose: -1
+    # GPU settings (if available)
+    # device: "gpu"
+    # gpu_platform_id: 0
+    # gpu_device_id: 0
+
+  xgboost:
+    objective: "reg:squarederror"
+    eval_metric: "rmse"
+    max_depth: 6
+    learning_rate: 0.05
+    n_estimators: 1000
+    subsample: 0.8
+    colsample_bytree: 0.8
+    early_stopping_rounds: 50
+    verbosity: 0
+    # GPU settings (if available)
+    # tree_method: "gpu_hist"
+    # predictor: "gpu_predictor"
+
+  gru:
+    hidden_size: 64
+    num_layers: 2
+    dropout: 0.2
+    bidirectional: false
+    sequence_length: 22
+    batch_size: 32
+    learning_rate: 0.001
+    epochs: 100
+    patience: 10
+
+  lstm:
+    hidden_size: 64
+    num_layers: 2
+    dropout: 0.2
+    bidirectional: false
+    sequence_length: 22
+    batch_size: 32
+    learning_rate: 0.001
+    epochs: 100
+    patience: 10
+
+  hybrid:
+    garch_residuals: true
+    combine_method: "stack"  # stack, average, weighted
+
+# Training configuration
+training:
+  test_size: 0.2  # Last 20% for testing
+  validation_size: 0.1  # 10% of training for validation
+  walk_forward:
+    enabled: true
+    initial_train_size: 756  # ~3 years
+    step_size: 63  # ~3 months (quarterly retraining)
+    expanding_window: true
+
+# Evaluation metrics
+evaluation:
+  metrics:
+    - mse
+    - rmse
+    - mae
+    - mape
+    - r2
+    - qlike  # Quasi-likelihood loss
+    - mincer_zarnowitz  # Forecast efficiency test
+
+# Random seed for reproducibility
+seed: 42

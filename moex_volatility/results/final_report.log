@@ -1,0 +1,40 @@
+2026-02-06 14:15:27 | INFO     | final_report | ======================================================================
+2026-02-06 14:15:27 | INFO     | final_report | Generating Final Report
+2026-02-06 14:15:27 | INFO     | final_report | Started: 2026-02-06 14:15:27.551153
+2026-02-06 14:15:27 | INFO     | final_report | ======================================================================
+2026-02-06 14:15:27 | INFO     | final_report | 
+Processing Horizon = 1
+2026-02-06 14:15:27 | INFO     | final_report | 
+Metrics for H=1:
+2026-02-06 14:15:27 | INFO     | final_report |     Model     QLIKE           MSE      RMSE       MAE        R²      Corr  Rank_QLIKE
+0  HAR-RV -7.526845  9.676548e-08  0.000311  0.000128  0.060843  0.262739           1
+2026-02-06 14:15:27 | INFO     | final_report | Saved LaTeX table: comparison_h1.tex
+2026-02-06 14:15:27 | INFO     | final_report | Saved predictions plot for AFLT
+2026-02-06 14:15:27 | INFO     | final_report | 
+Processing Horizon = 5
+2026-02-06 14:15:27 | INFO     | final_report | 
+Metrics for H=5:
+2026-02-06 14:15:27 | INFO     | final_report |     Model     QLIKE           MSE      RMSE      MAE        R²      Corr  Rank_QLIKE
+0  HAR-RV -7.413692  2.526869e-07  0.000503  0.00016 -0.006948  0.106882           1
+2026-02-06 14:15:27 | INFO     | final_report | Saved LaTeX table: comparison_h5.tex
+2026-02-06 14:15:27 | INFO     | final_report | Saved predictions plot for AFLT
+2026-02-06 14:15:27 | INFO     | final_report | 
+Processing Horizon = 22
+2026-02-06 14:15:27 | INFO     | final_report | 
+Metrics for H=22:
+2026-02-06 14:15:27 | INFO     | final_report |     Model    QLIKE           MSE      RMSE       MAE        R²      Corr  Rank_QLIKE
+0  HAR-RV -7.33971  2.936273e-07  0.000542  0.000193 -0.017325  0.083157           1
+2026-02-06 14:15:27 | INFO     | final_report | Saved LaTeX table: comparison_h22.tex
+2026-02-06 14:15:28 | INFO     | final_report | Saved predictions plot for AFLT
+2026-02-06 14:15:28 | INFO     | final_report | Saved QLIKE comparison plot
+2026-02-06 14:15:28 | INFO     | final_report | 
+Summary:
+2026-02-06 14:15:28 | INFO     | final_report |   Horizon Best Model     QLIKE      RMSE        R²
+0     H=1     HAR-RV -7.526845  0.000311  0.060843
+1     H=5     HAR-RV -7.413692  0.000503 -0.006948
+2    H=22     HAR-RV -7.339710  0.000542 -0.017325
+2026-02-06 14:15:29 | INFO     | final_report | 
+======================================================================
+2026-02-06 14:15:29 | INFO     | final_report | Final report generation complete!
+2026-02-06 14:15:29 | INFO     | final_report | Results saved to: /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/results
+2026-02-06 14:15:29 | INFO     | final_report | ======================================================================

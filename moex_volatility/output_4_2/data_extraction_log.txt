@@ -1,0 +1,60 @@
+=== Section 4.2 data extraction — 2026-02-16 02:11 ===
+
+[OK] Loaded results/final/strategies/walkforward_v4/tables/v4_A_vs_forecast_comparison.csv
+[OK] Loaded results/final/strategies/walkforward_v4/tables/v4_S1_daily.csv
+[OK] Loaded results/final/strategies/walkforward_v4/tables/v4_S2_daily.csv
+[OK] Loaded results/final/strategies/walkforward_v4/tables/v4_S3_daily.csv
+[OK] Loaded results/final/strategies/walkforward_v4/tables/v4_S4_daily.csv
+[OK] Loaded results/final/strategies/walkforward_v4/tables/v4_S5_daily.csv
+[OK] Loaded results/final/strategies/walkforward_v4/tables/v4_S6_daily.csv
+[OK] Loaded results/final/strategies/walkforward_v4/tables/v4_full_daily.csv
+[INFO] Exposure: hardcoded cross-ticker daily (2022-2026)
+[INFO] Turnover: hardcoded from summary (2022-2026)
+
+--- Table 4.6: Net Sharpe 6×4 (EW portfolios) ---
+  Saved table_4_6_net_sharpe_summary.csv
+  Mean: A=1.4158, B=1.6822, C=1.6748, D=2.0490
+  Δ% mean(BCD) vs A: +27.3%
+  Δ% D vs A: +44.7%
+
+--- Tables 4.3–4.5: Approach passports ---
+
+  Approach B (Table 4_3):
+  Saved table_4_3_approach_B.csv
+    Mean Net Sharpe: 0.2730
+    Strategies with data: 6/6
+
+  Approach C (Table 4_4):
+    [SKIP] S5_PivotPoints: no approach C data
+    [SKIP] S6_VWAP: no approach C data
+  Saved table_4_4_approach_C.csv
+    Mean Net Sharpe: 0.0357
+    Strategies with data: 4/6
+
+  Approach D (Table 4_5):
+  Saved table_4_5_approach_D.csv
+    Mean Net Sharpe: 0.4096
+    Strategies with data: 6/6
+
+--- Tables 4.7–4.8: Turnover & Exposure (2022-2026) ---
+  Source: hardcoded from final_summary_v6 (cross-ticker daily)
+  Saved table_4_7_turnover.csv
+  Saved table_4_8_exposure.csv
+  Mean turnover A: 2.3 trades/yr
+  Mean turnover B: 2.2 trades/yr
+  Mean turnover C: 4.5 trades/yr
+  Mean turnover D: 2.1 trades/yr
+  Mean exposure A: 15.8%
+  Mean exposure B: 4.1%
+  Mean exposure C: 7.3%
+  Mean exposure D: 12.2%
+
+--- Table 4.9: Forecast effect summary ---
+  Saved table_4_9_forecast_effect.csv
+  Overall: mean(BCD) vs A = +27.3%, best(BCD) vs A = +49.4%
+
+--- Figure 4.3: Net Sharpe comparison ---
+  Saved fig_4_3_net_sharpe_comparison.png
+
+--- Figure 4.4: Exposure & Turnover ---
+  Saved fig_4_4_exposure_turnover.png

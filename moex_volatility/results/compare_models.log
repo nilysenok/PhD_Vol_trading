@@ -1,0 +1,42 @@
+2026-02-06 14:15:20 | INFO     | compare_models | ======================================================================
+2026-02-06 14:15:20 | INFO     | compare_models | Model Comparison
+2026-02-06 14:15:20 | INFO     | compare_models | Started: 2026-02-06 14:15:20.271993
+2026-02-06 14:15:20 | INFO     | compare_models | ======================================================================
+2026-02-06 14:15:20 | INFO     | compare_models | 
+==================================================
+2026-02-06 14:15:20 | INFO     | compare_models | Horizon: 1 days
+2026-02-06 14:15:20 | INFO     | compare_models | ==================================================
+2026-02-06 14:15:20 | INFO     | compare_models | Loaded 4284 predictions
+2026-02-06 14:15:20 | INFO     | compare_models | 
+Aggregate Metrics:
+2026-02-06 14:15:20 | INFO     | compare_models |   model           MSE      RMSE       MAE       MAPE        R2     QLIKE  Correlation  rank_QLIKE  rank_RMSE
+0   har  9.676548e-08  0.000311  0.000128  94.606951  0.060843 -7.526845     0.262739         1.0        1.0
+2026-02-06 14:15:20 | INFO     | compare_models | 
+Model Confidence Set: ['har']
+2026-02-06 14:15:21 | INFO     | compare_models | 
+==================================================
+2026-02-06 14:15:21 | INFO     | compare_models | Horizon: 5 days
+2026-02-06 14:15:21 | INFO     | compare_models | ==================================================
+2026-02-06 14:15:21 | INFO     | compare_models | Loaded 4284 predictions
+2026-02-06 14:15:21 | INFO     | compare_models | 
+Aggregate Metrics:
+2026-02-06 14:15:21 | INFO     | compare_models |   model           MSE      RMSE      MAE        MAPE        R2     QLIKE  Correlation  rank_QLIKE  rank_RMSE
+0   har  2.526869e-07  0.000503  0.00016  121.598369 -0.006948 -7.413692     0.106882         1.0        1.0
+2026-02-06 14:15:21 | INFO     | compare_models | 
+Model Confidence Set: ['har']
+2026-02-06 14:15:21 | INFO     | compare_models | 
+==================================================
+2026-02-06 14:15:21 | INFO     | compare_models | Horizon: 22 days
+2026-02-06 14:15:21 | INFO     | compare_models | ==================================================
+2026-02-06 14:15:21 | INFO     | compare_models | Loaded 4284 predictions
+2026-02-06 14:15:21 | INFO     | compare_models | 
+Aggregate Metrics:
+2026-02-06 14:15:21 | INFO     | compare_models |   model           MSE      RMSE       MAE        MAPE        R2    QLIKE  Correlation  rank_QLIKE  rank_RMSE
+0   har  2.936273e-07  0.000542  0.000193  146.777952 -0.017325 -7.33971     0.083157         1.0        1.0
+2026-02-06 14:15:21 | INFO     | compare_models | 
+Model Confidence Set: ['har']
+2026-02-06 14:15:22 | INFO     | compare_models | 
+======================================================================
+2026-02-06 14:15:22 | INFO     | compare_models | Model comparison complete!
+2026-02-06 14:15:22 | INFO     | compare_models | Results saved to /Users/nilysenok/Desktop/MOEX_ISS/moex_volatility/results
+2026-02-06 14:15:22 | INFO     | compare_models | ======================================================================

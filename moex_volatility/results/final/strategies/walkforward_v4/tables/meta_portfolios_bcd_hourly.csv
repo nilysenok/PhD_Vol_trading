@@ -1,0 +1,7 @@
+portfolio,net_sharpe,ann_ret_pct,ann_vol_pct,maxdd_pct,calmar
+META-A,1.1151,5.97,5.35,-5.74,1.04
+META-B,3.9992,3.01,0.75,-0.31,9.84
+META-C,1.3015,6.64,5.1,-5.56,1.19
+META-D,2.188,6.84,3.13,-1.94,3.53
+META-MEAN(BCD),2.0079,5.5,2.74,-1.91,2.88
+META-BEST,4.2668,3.31,0.78,-0.35,9.37

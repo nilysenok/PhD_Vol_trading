@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{Walk-Forward QLIKE by Year, $h=22$}
+\label{tab:wf_qlike_h22}
+\begin{tabular}{lcccccccccc}
+\hline
+Model & 2017 & 2018 & 2019 & 2020 & 2021 & 2022 & 2023 & 2024 & 2025 & Mean \\
+\hline
+HAR-J & 0.3181 & 0.4593 & 0.4669 & 1.1519 & 0.4924 & 3.8904 & 0.5015 & 0.6427 & 0.7245 & 0.9608 \\
+XGBoost & 0.3478 & 0.4535 & 0.4689 & 1.0057 & 0.5603 & 5.4817 & \textbf{0.4605} & 0.6241 & 0.7441 & 1.1274 \\
+LightGBM & 0.3643 & 0.4620 & 0.4551 & \textbf{0.9607} & 0.4760 & \textbf{3.2009} & 0.6255 & 0.6289 & \textbf{0.6585} & \textbf{0.8702} \\
+Hybrid & \textbf{0.3094} & \textbf{0.4480} & \textbf{0.4442} & 1.0057 & \textbf{0.4526} & 3.4914 & 0.5352 & \textbf{0.5311} & 0.6619 & 0.8755 \\
+\hline
+\end{tabular}
+\end{table}

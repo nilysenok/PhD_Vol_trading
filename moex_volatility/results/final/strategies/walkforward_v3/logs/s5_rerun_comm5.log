@@ -1,0 +1,80 @@
+======================================================================
+S5_PivotPoints RERUN — Improved Pivot Logic
+Tickers: 17, TFs: 2, Approaches: A/B/C/D
+A test years: 2020-2026
+B/C/D test years: 2022-2026
+======================================================================
+  daily: 12 signal x (216 pivot_RM + 288 atr_RM) = 6048 combos
+  hourly: 6 signal x (216 pivot_RM + 288 atr_RM) = 3024 combos
+  B grid (Range): 1125 combos
+Loading data...
+  Daily: 50,906 rows, 2014-06-09 — 2026-02-03
+  Hourly: 457,542 rows
+  Vpred: 39,934 rows, 2017-01-03 — 2026-02-02
+
+Warming up numba...
+  Numba warmup done
+
+Processing 17 tickers with 8 workers...
+  [1/17] LSRG done (36s)
+  [2/17] HYDR done (43s)
+  [3/17] IRAO done (46s)
+  [4/17] LKOH done (47s)
+  [5/17] MOEX done (48s)
+  [6/17] MGNT done (49s)
+  [7/17] ALRS done (49s)
+  [8/17] AFLT done (49s)
+  [9/17] MTSS done (80s)
+  [10/17] MTLR done (88s)
+  [11/17] RTKM done (90s)
+  [12/17] NVTK done (90s)
+  [13/17] PHOR done (90s)
+  [14/17] OGKB done (98s)
+  [15/17] SBER done (99s)
+  [16/17] TATN done (100s)
+  [17/17] VTBR done (123s)
+
+All tickers done in 123s
+
+  Updated results saved: 3319 rows
+  (replaced 520 old S5 rows with 547 new)
+
+======================================================================
+=== S5_PivotPoints BEFORE vs AFTER ===
+======================================================================
+
+  daily:
+    A: BEFORE=-0.2902  AFTER=0.2779  delta=+0.5681
+    B: BEFORE=0.0806  AFTER=0.5291  delta=+0.4486
+    C: BEFORE=-0.2917  AFTER=0.8888  delta=+1.1805
+    D: BEFORE=-0.2471  AFTER=0.3488  delta=+0.5959
+
+  hourly:
+    A: BEFORE=-0.8361  AFTER=-0.7037  delta=+0.1324
+    B: BEFORE=-0.4325  AFTER=-0.4133  delta=+0.0192
+    C: BEFORE=-0.5361  AFTER=-0.1540  delta=+0.3820
+    D: BEFORE=-0.7807  AFTER=-0.6454  delta=+0.1353
+
+  === S5_PivotPoints daily (NEW) ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A      0.2668      2.64      6.47    -4.99    9.68    6.74   51.60
+         B      0.5291      4.05      6.06    -3.67    6.66    6.43   57.72
+         C      0.8564      3.86      4.91    -2.99    6.82    8.75   62.38
+         D      0.3488      5.19      9.90    -6.99    9.14    6.19   52.33
+  ΔSharpe vs A:  B=+0.262, C=+0.590, D=+0.082
+  Top-5 (C):   PHOR(1.74), AFLT(1.72), MTSS(1.56), RTKM(1.47), IRAO(1.43)
+  Worst-5 (C): VTBR(0.77), LKOH(0.49), HYDR(0.41), LSRG(0.19), OGKB(-0.10)
+
+  === S5_PivotPoints hourly (NEW) ===
+  approach  MeanSharpe   AnnRet%   AnnVol%   MaxDD%    Exp%   Tr/yr    Win%
+         A     -0.6348     -2.91      6.11    -7.75    7.53   44.52   46.25
+         B     -0.4133     -1.26      5.84    -6.77    6.00   39.57   48.35
+         C     -0.0936      1.29      5.35    -5.28    4.85   31.95   48.12
+         D     -0.6454     -1.28      7.42    -8.14    6.33   40.49   44.60
+  ΔSharpe vs A:  B=+0.222, C=+0.541, D=-0.011
+  Top-5 (C):   HYDR(0.66), PHOR(0.59), MTSS(0.48), NVTK(0.43), IRAO(0.43)
+  Worst-5 (C): MOEX(-0.71), RTKM(-0.91), VTBR(-1.41), SBER(-1.41), ALRS(-1.42)
+
+======================================================================
+DONE in 123s (2.1 min)
+======================================================================

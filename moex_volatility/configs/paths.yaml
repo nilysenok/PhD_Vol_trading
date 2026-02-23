@@ -1,0 +1,45 @@
+# Paths Configuration
+# ===================
+
+# Input data
+data:
+  # Main dataset from moex_discovery
+  dataset_final: "../moex_discovery/data/dataset_final"
+
+  # Subdirectories
+  stocks_rv: "../moex_discovery/data/dataset_final/01_stocks/rv_daily.parquet"
+  stocks_candles: "../moex_discovery/data/dataset_final/01_stocks/candles_10m"
+
+  external_rv: "../moex_discovery/data/dataset_final/02_external/rv_moex.parquet"
+  external_candles: "../moex_discovery/data/dataset_final/02_external/candles_10m"
+  yahoo: "../moex_discovery/data/dataset_final/02_external/yahoo.parquet"
+  macro: "../moex_discovery/data/dataset_final/02_external/macro.parquet"
+
+  master_long: "../moex_discovery/data/dataset_final/03_master/master_long.parquet"
+  master_wide: "../moex_discovery/data/dataset_final/03_master/master_wide.parquet"
+  dates: "../moex_discovery/data/dataset_final/03_master/dates.csv"
+
+# Output directories
+output:
+  features: "data/features"
+  predictions: "data/predictions"
+  models: "models"
+  results: "results"
+  figures: "results/figures"
+  tables: "results/tables"
+  metrics: "results/metrics"
+
+# Model subdirectories
+models:
+  har: "models/har_rvj"
+  garch: "models/garch_gjr"
+  lightgbm: "models/lightgbm"
+  xgboost: "models/xgboost"
+  gru: "models/gru"
+  lstm: "models/lstm"
+  hybrid: "models/hybrid"
+
+# Walk-forward predictions
+walkforward:
+  test_2019: "data/predictions/test_2019"
+  walkforward_full: "data/predictions/walkforward_2020_2026"
