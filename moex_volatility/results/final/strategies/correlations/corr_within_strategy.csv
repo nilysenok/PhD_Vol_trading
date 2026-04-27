@@ -1,0 +1,7 @@
+strategy,avg_pairwise_corr,n_tickers,n_days
+S1_MeanRev,0.0183,17,1594
+S2_Bollinger,0.0234,17,1594
+S3_Donchian,0.2868,17,1594
+S4_Supertrend,0.2138,17,1594
+S5_PivotPoints,-0.0007,17,1594
+S6_VWAP,0.0143,17,1594

@@ -1,0 +1,13 @@
+strategy,period,avg_pairwise_corr,n_days
+S1_MeanRev,crisis_2022,0.0573,234
+S1_MeanRev,calm_2024,0.0314,256
+S2_Bollinger,crisis_2022,0.0146,234
+S2_Bollinger,calm_2024,0.061,256
+S3_Donchian,crisis_2022,0.2891,234
+S3_Donchian,calm_2024,0.3817,256
+S4_Supertrend,crisis_2022,0.1781,234
+S4_Supertrend,calm_2024,0.2277,256
+S5_PivotPoints,crisis_2022,-0.0181,234
+S5_PivotPoints,calm_2024,-0.0229,256
+S6_VWAP,crisis_2022,0.0166,234
+S6_VWAP,calm_2024,0.0472,256
