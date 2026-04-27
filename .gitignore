@@ -4,9 +4,34 @@ __pycache__/
 .claude/
 *.egg-info/
 
+# Python / Jupyter
+.ipynb_checkpoints/
+.venv/
+venv/
+.env
+
 # Large zip files (exceed GitHub 100MB limit)
 moex_discovery/data/external.zip
 moex_discovery/data/final_v4.zip
 moex_discovery/data/final_v6.zip
 moex_volatility/results/прогнозы_финал.zip
 moex_volatility/results/Прогнозы_финал_финал.zip
+
+# Backup files and intermediate run snapshots
+*_BACKUP.parquet
+*_backup/
+*_hybrid_backup/
+moex_volatility/results/final/strategies/msp_hybrid_backup/
+moex_volatility/results/final/strategies/walkforward_v4_hybrid_backup/
+
+# Large progress logs
+moex_volatility/results/final/strategies/MASTER_PROGRESS_LOG.txt
+moex_volatility/results/final/strategies/STAGE3B_LOG.txt
+moex_volatility/results/final/strategies/test_phases/PROGRESS_LOG.txt
+moex_volatility/results/final/strategies/test_phases/BCD_PROGRESS_LOG.txt
+moex_volatility/results/final/strategies/test_phases/DECISION_LOG.txt
+
+# Older write-ups superseded by FINAL_RESULTS_CORRECTED_V2.md
+moex_volatility/results/final/strategies/FINAL_RESULTS.md
+moex_volatility/results/final/strategies/FINAL_RESULTS_CORRECTED.md
+moex_volatility/results/final/strategies/DASHBOARD.html
