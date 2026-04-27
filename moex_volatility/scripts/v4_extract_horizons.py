@@ -81,8 +81,8 @@ def extract_horizons_ticker(ticker):
     vwap_windows = SIGNAL_GRIDS["S6"].get("vwap_window", [])
     vwap_cache_basic = precompute_vwap_cache(close, high, low, volume, vwap_windows)
 
-    P, S1p, R1p = calc_pivot_daily(high, low, close, "classic")
-    pivot_data = {"classic": (P, S1p, R1p)}
+    P, S1p, R1p, S2p, R2p, S3p, R3p = calc_pivot_daily(high, low, close, "classic")
+    pivot_data = {"classic": (P, S1p, R1p, S2p, R2p, S3p, R3p)}
     daily_trend = None
 
     # sigma_dict

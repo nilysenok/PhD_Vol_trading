@@ -1067,10 +1067,10 @@ def process_ticker_v4(ticker, daily_df, hourly_df, vpred_df):
         pivot_data = {}
         if is_hourly:
             h_dts = tdf["datetime"].values
-            P, S1p, R1p = compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, "classic")
+            P, S1p, R1p, S2p, R2p, S3p, R3p = compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, "classic")
         else:
-            P, S1p, R1p = calc_pivot_daily(high, low, close, "classic")
-        pivot_data["classic"] = (P, S1p, R1p)
+            P, S1p, R1p, S2p, R2p, S3p, R3p = calc_pivot_daily(high, low, close, "classic")
+        pivot_data["classic"] = (P, S1p, R1p, S2p, R2p, S3p, R3p)
 
         daily_trend = None
         if is_hourly:

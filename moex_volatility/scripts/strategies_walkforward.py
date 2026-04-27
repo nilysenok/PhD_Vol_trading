@@ -76,40 +76,55 @@ BCD_TEST_YEARS = list(range(2022, 2027))
 # Signal parameter grids
 # ═══════════════════════════════════════════════════════════════════
 SIGNAL_GRIDS = {
-    "S1": dict(ma_window=[15,20,25], z_entry=[1.5,2.0,2.5], z_exit=[0.3,0.5,0.7]),
-    "S2": dict(bb_window=[15,20,25], bb_std=[1.5,2.0,2.5]),
-    "S3": dict(dc_window=[10,15,20,25]),
-    "S4": dict(atr_period=[10,14,20], multiplier=[2.0,2.5,3.0,3.5]),
-    "S5": {},
-    "S6": dict(vwap_window=[10,15,20], dev_mult=[1.0,1.5,2.0]),
+    "S1": dict(ma_window=[10,15,20,25,30,40,50,60,80,100], z_entry=[0.8,1.0,1.5,2.0,2.5,3.0], z_exit=[0.0,0.2,0.3,0.5], relaxed_filters=[False,True], strength_threshold=[0.0,0.3,0.5]),
+    "S2": dict(bb_window=[10,15,20,25,30,40,50,60], bb_std=[0.8,1.0,1.5,2.0,2.5,3.0], relaxed_filters=[False,True], strength_threshold=[0.0,0.3,0.5]),
+    "S3": dict(dc_window=[5,10,15,20,25,30,40,50,60]),
+    "S4": dict(atr_period=[7,10,14,20,25,30], multiplier=[1.5,2.0,2.5,3.0,3.5,4.0]),
+    "S5": dict(pivot_type=["classic","camarilla","fibonacci","woodie"], entry_level=[1,2,3], pivot_frac=[0.5,0.7,1.0], adx_thresh=[20,25,30,35], min_atr_pctile=[0,25,50]),
+    "S6": dict(vwap_window=[5,10,15,20,25,30], dev_mult=[0.3,0.5,0.75,1.0,1.5,2.0,2.5], exit_mult=[0.3,0.5,0.8]),
 }
+
+# Hourly: scale windows by 9 (9 hourly bars per MOEX trading day)
+# V3: aggressive thresholds + wide windows for higher exposure + Sharpe ~1
+SIGNAL_GRIDS_HOURLY = {
+    "S1": dict(ma_window=[90,135,180,225,270,360], z_entry=[0.8,1.0,1.2,1.5,2.0,2.5], z_exit=[0.0,0.2,0.3,0.5], strength_threshold=[0.0,0.2,0.3,0.4,0.5,0.6]),
+    "S2": dict(bb_window=[90,135,180,225,270,360], bb_std=[0.8,1.0,1.2,1.5,2.0,2.5], strength_threshold=[0.0,0.2,0.3,0.4,0.5,0.6]),
+    "S3": dict(dc_window=[36,45,63,90,135,180,225]),
+    "S4": dict(atr_period=[45,63,90,126,180], multiplier=[1.5,2.0,2.5,3.0,3.5,4.0]),
+    "S5": dict(pivot_type=["classic","camarilla","fibonacci"], entry_level=[1,2,3], pivot_frac=[0.5,0.7,1.0], adx_thresh=[25,35,50], min_atr_pctile=[0,25,50]),
+    "S6": dict(vwap_window=[0,9,18,27,45,90], dev_mult=[0.3,0.5,0.75,1.0,1.5], exit_mult=[0.3,0.5,0.8]),
+}
+
+WARMUP_HOURLY = 1800  # 200 days × 9 bars/day
 
 # ═══════════════════════════════════════════════════════════════════
 # A: RM grids (V3 — enhanced with breakeven, cooldown, etc.)
 # ═══════════════════════════════════════════════════════════════════
 RM_GRIDS_V3 = {
     ("Contrarian", "daily"): dict(
-        sl_mult=[1.0, 1.5, 2.0], tp_mult=[1.5, 2.0, 2.5], max_hold=[10, 15, 20],
+        sl_mult=[1.0, 1.5, 2.0, 3.0], tp_mult=[1.5, 2.0, 3.0, 5.0], max_hold=[10, 15, 20, 30],
         breakeven_trigger=[None, 1.0],
         cooldown_bars=[0, 5],
         partial_exit=[False, True]),
     ("Contrarian", "hourly"): dict(
-        sl_mult=[1.0, 1.5, 2.0], tp_mult=[1.5, 2.0, 2.5], max_hold=[20, 30, 40],
+        sl_mult=[1.0, 1.5, 2.0, 3.0], tp_mult=[1.5, 2.0, 3.0, 5.0],
+        max_hold=[30, 45, 60, 90, 120],
         breakeven_trigger=[None, 1.0],
-        cooldown_bars=[0, 5],
-        partial_exit=[False, True]),
+        cooldown_bars=[0, 9],
+        partial_exit=[False]),
     ("Trend", "daily"): "special",   # built separately
     ("Trend", "hourly"): "special",
     ("Range", "daily"): dict(
-        sl_mult=[0.75, 1.0, 1.5], tp_mult=[0.75, 1.0, 1.5], max_hold=[5, 8, 10],
+        sl_mult=[0.75, 1.0, 1.5, 2.0], tp_mult=[0.75, 1.0, 1.5, 2.0, 3.0], max_hold=[5, 8, 10, 15],
         breakeven_trigger=[None, 1.0],
         cooldown_bars=[0, 5],
         time_decay=[False, True]),
     ("Range", "hourly"): dict(
-        sl_mult=[0.75, 1.0, 1.5], tp_mult=[0.75, 1.0, 1.5], max_hold=[10, 16, 20],
+        sl_mult=[0.5, 0.75, 1.0, 1.5, 2.0], tp_mult=[0.5, 0.75, 1.0, 1.5, 2.0],
+        max_hold=[18, 27, 36, 54, 72],
         breakeven_trigger=[None, 1.0],
-        cooldown_bars=[0, 5],
-        time_decay=[False, True]),
+        cooldown_bars=[0, 9],
+        time_decay=[False]),
 }
 
 def _build_trend_rm_grid():
@@ -417,30 +432,82 @@ def precompute_vwap_cache(close, high, low, volume, windows):
         cache[w] = (vwap, dev)
     return cache
 
+def precompute_session_vwap(close, high, low, volume, datetimes):
+    """Compute intraday session VWAP: reset cumulative sums at each new day."""
+    n = len(close)
+    tp = (high + low + close) / 3.0
+    vwap = np.full(n, np.nan)
+    dev = np.full(n, np.nan)
+
+    dates = pd.to_datetime(datetimes).date
+    cum_tv = 0.0
+    cum_v = 0.0
+    day_prices = []
+    prev_date = None
+
+    for i in range(n):
+        if dates[i] != prev_date:
+            # New day: reset
+            cum_tv = 0.0
+            cum_v = 0.0
+            day_prices = []
+            prev_date = dates[i]
+
+        cum_tv += tp[i] * volume[i]
+        cum_v += volume[i]
+        if cum_v > 1e-12:
+            vwap[i] = cum_tv / cum_v
+            day_prices.append(close[i] - vwap[i])
+            if len(day_prices) >= 2:
+                dev[i] = np.std(day_prices, ddof=1)
+            else:
+                dev[i] = abs(day_prices[0]) if day_prices else 1e-8
+
+    dev = np.where(np.isnan(dev) | (dev < 1e-8), 1e-8, dev)
+    return vwap, dev
+
+
 def calc_pivot_daily(high, low, close, variant):
     n = len(close)
     P = np.full(n, np.nan)
-    S1 = np.full(n, np.nan)
-    R1 = np.full(n, np.nan)
+    S1 = np.full(n, np.nan); R1 = np.full(n, np.nan)
+    S2 = np.full(n, np.nan); R2 = np.full(n, np.nan)
+    S3 = np.full(n, np.nan); R3 = np.full(n, np.nan)
     if variant == "classic":
         P[1:] = (high[:-1] + low[:-1] + close[:-1]) / 3.0
         S1[1:] = 2 * P[1:] - high[:-1]
         R1[1:] = 2 * P[1:] - low[:-1]
+        S2[1:] = P[1:] - (high[:-1] - low[:-1])
+        R2[1:] = P[1:] + (high[:-1] - low[:-1])
+        S3[1:] = low[:-1] - 2 * (high[:-1] - P[1:])
+        R3[1:] = high[:-1] + 2 * (P[1:] - low[:-1])
     elif variant == "fibonacci":
         P[1:] = (high[:-1] + low[:-1] + close[:-1]) / 3.0
         rng = high[:-1] - low[:-1]
         S1[1:] = P[1:] - 0.382 * rng
         R1[1:] = P[1:] + 0.382 * rng
+        S2[1:] = P[1:] - 0.618 * rng
+        R2[1:] = P[1:] + 0.618 * rng
+        S3[1:] = P[1:] - 1.000 * rng
+        R3[1:] = P[1:] + 1.000 * rng
     elif variant == "woodie":
         P[1:] = (high[:-1] + low[:-1] + 2 * close[:-1]) / 4.0
         S1[1:] = 2 * P[1:] - high[:-1]
         R1[1:] = 2 * P[1:] - low[:-1]
+        S2[1:] = P[1:] - (high[:-1] - low[:-1])
+        R2[1:] = P[1:] + (high[:-1] - low[:-1])
+        S3[1:] = S2[1:] - (high[:-1] - low[:-1])
+        R3[1:] = R2[1:] + (high[:-1] - low[:-1])
     elif variant == "camarilla":
         P[1:] = (high[:-1] + low[:-1] + close[:-1]) / 3.0
         rng = high[:-1] - low[:-1]
         S1[1:] = close[:-1] - 1.1 * rng / 12.0
         R1[1:] = close[:-1] + 1.1 * rng / 12.0
-    return P, S1, R1
+        S2[1:] = close[:-1] - 1.1 * rng / 6.0
+        R2[1:] = close[:-1] + 1.1 * rng / 6.0
+        S3[1:] = close[:-1] - 1.1 * rng / 4.0
+        R3[1:] = close[:-1] + 1.1 * rng / 4.0
+    return P, S1, R1, S2, R2, S3, R3
 
 def compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, variant):
     tdf = daily_df[daily_df["ticker"] == ticker].sort_values("date")
@@ -448,18 +515,23 @@ def compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, variant):
     low_d = tdf["low"].values.astype(np.float64)
     close_d = tdf["close"].values.astype(np.float64)
     dates_d = np.array(tdf["date"].values, dtype="datetime64[D]")
-    P_d, S1_d, R1_d = calc_pivot_daily(high_d, low_d, close_d, variant)
+    P_d, S1_d, R1_d, S2_d, R2_d, S3_d, R3_d = calc_pivot_daily(high_d, low_d, close_d, variant)
     h_dates = np.array(h_dts, dtype="datetime64[D]")
     indices = np.searchsorted(dates_d, h_dates, side="right") - 1
     valid = indices >= 0
     nh = len(h_dts)
     P_h = np.full(nh, np.nan)
-    S1_h = np.full(nh, np.nan)
-    R1_h = np.full(nh, np.nan)
+    S1_h = np.full(nh, np.nan); R1_h = np.full(nh, np.nan)
+    S2_h = np.full(nh, np.nan); R2_h = np.full(nh, np.nan)
+    S3_h = np.full(nh, np.nan); R3_h = np.full(nh, np.nan)
     P_h[valid] = P_d[indices[valid]]
     S1_h[valid] = S1_d[indices[valid]]
     R1_h[valid] = R1_d[indices[valid]]
-    return P_h, S1_h, R1_h
+    S2_h[valid] = S2_d[indices[valid]]
+    R2_h[valid] = R2_d[indices[valid]]
+    S3_h[valid] = S3_d[indices[valid]]
+    R3_h[valid] = R3_d[indices[valid]]
+    return P_h, S1_h, R1_h, S2_h, R2_h, S3_h, R3_h
 
 def build_daily_trend(daily, ticker):
     tdf = daily[daily["ticker"] == ticker].sort_values("date")
@@ -483,30 +555,114 @@ def align_daily_to_hourly(d_dates, d_above, h_dts):
 
 
 # ═══════════════════════════════════════════════════════════════════
+# Section 3b — Signal Strength Utilities
+# ═══════════════════════════════════════════════════════════════════
+
+def _expanding_pctile_rank(arr):
+    """Percentile rank on expanding window. O(n log n) via sorted insertion."""
+    from bisect import insort, bisect_left
+    n = len(arr)
+    result = np.full(n, np.nan)
+    sorted_vals = []
+    for i in range(n):
+        v = arr[i]
+        if np.isnan(v):
+            continue
+        insort(sorted_vals, v)
+        k = len(sorted_vals)
+        result[i] = bisect_left(sorted_vals, v) / max(k - 1, 1)
+    return result
+
+
+_pctile_cache = {}
+
+def _compute_composite_strength(raw_metrics, signal_mask, warmup_n, cache_keys=None):
+    """Compute composite signal strength [0,1] from raw metrics.
+    raw_metrics: list of arrays (each n,). Normalized via expanding pctile rank.
+    signal_mask: bool array — only compute at True bars.
+    cache_keys: optional list of hashable keys for caching pctile rank.
+    Returns composite array (n,) with values only at signal bars.
+    """
+    n = len(signal_mask)
+    n_m = len(raw_metrics)
+    normalized = np.zeros((n_m, n))
+    for j, raw in enumerate(raw_metrics):
+        ck = cache_keys[j] if cache_keys else None
+        if ck and ck in _pctile_cache:
+            pctile = _pctile_cache[ck]
+        else:
+            pctile = _expanding_pctile_rank(raw)
+            if ck:
+                _pctile_cache[ck] = pctile
+        normalized[j] = np.where(np.isnan(pctile), 0.5, pctile)
+    composite = np.mean(normalized, axis=0)
+    composite[:warmup_n] = 0.0
+    return composite
+
+
+# ═══════════════════════════════════════════════════════════════════
 # Section 4 — Signal Generators
 # ═══════════════════════════════════════════════════════════════════
 
-def gen_s1_signals(close, ind, sma_cache, *, ma_window, z_entry, z_exit):
+def gen_s1_signals(close, ind, sma_cache, *, ma_window, z_entry, z_exit,
+                   strength_threshold=0.0, is_hourly=False, relaxed_filters=False):
     sma, std = sma_cache[ma_window]
     z = (close - sma) / std
     n = len(close)
     valid = ~np.isnan(z)
-    vr = ind["vol_regime"]
-    f_vr = ~np.isnan(vr) & (vr < 1.2)
-    f_cc_l = ~np.isnan(ind["red_count5"]) & (ind["red_count5"] >= 3)
-    f_cc_s = ~np.isnan(ind["green_count5"]) & (ind["green_count5"] >= 3)
-    vs5 = ind["vol_sma5"]; vol = ind["_volume"]
-    vs5_safe = np.where(np.isnan(vs5) | (vs5 <= 0), np.inf, vs5)
-    f_ve = ~(~np.isnan(vs5) & (vs5 > 0) & (vol >= vs5_safe))
     vfp = ind["vf_pass"]
-    entry_l = valid & (z < -z_entry) & f_vr & f_cc_l & f_ve & vfp
-    entry_s = valid & (z > z_entry) & f_vr & f_cc_s & f_ve & vfp
+    if relaxed_filters:
+        # Only z-score + vf_pass (no candle_count, vol_exhaustion, vol_regime)
+        entry_l = valid & (z < -z_entry) & vfp
+        entry_s = valid & (z > z_entry) & vfp
+    else:
+        vr = ind["vol_regime"]
+        f_vr = ~np.isnan(vr) & (vr < 1.2)
+        f_cc_l = ~np.isnan(ind["red_count5"]) & (ind["red_count5"] >= 3)
+        f_cc_s = ~np.isnan(ind["green_count5"]) & (ind["green_count5"] >= 3)
+        vs5 = ind["vol_sma5"]; vol = ind["_volume"]
+        vs5_safe = np.where(np.isnan(vs5) | (vs5 <= 0), np.inf, vs5)
+        f_ve = ~(~np.isnan(vs5) & (vs5 > 0) & (vol >= vs5_safe))
+        entry_l = valid & (z < -z_entry) & f_vr & f_cc_l & f_ve & vfp
+        entry_s = valid & (z > z_entry) & f_vr & f_cc_s & f_ve & vfp
+
+    # Signal strength filter
+    if strength_threshold > 0:
+        warmup_n = WARMUP_HOURLY if is_hourly else WARMUP
+        signal_mask = entry_l | entry_s
+        atr = ind["atr14"]
+        atr_safe = np.where(np.isnan(atr) | (atr < 1e-12), 1e-12, atr)
+        _vol = ind["_volume"]
+        _vol_avg = ind["vol_sma20"]
+        _vol_avg_safe = np.where(np.isnan(_vol_avg) | (_vol_avg < 1), 1.0, _vol_avg)
+        m_zscore = np.abs(z)
+        m_dev_atr = np.abs(close - sma) / atr_safe
+        rsi = calc_rsi(close, 14)
+        m_rsi = np.abs(rsi - 50.0) / 50.0
+        m_rsi = np.where(np.isnan(m_rsi), 0.0, m_rsi)
+        m_vol = _vol / _vol_avg_safe
+        m_vol = np.where(np.isnan(m_vol), 1.0, m_vol)
+        atr_sma20 = calc_sma(atr, 20)
+        atr_sma20_safe = np.where(np.isnan(atr_sma20) | (atr_sma20 < 1e-12), 1e-12, atr_sma20)
+        m_atr_r = atr / atr_sma20_safe
+        m_atr_r = np.where(np.isnan(m_atr_r), 1.0, m_atr_r)
+
+        composite = _compute_composite_strength(
+            [m_zscore, m_dev_atr, m_rsi, m_vol, m_atr_r], signal_mask, warmup_n,
+            cache_keys=[f"s1_z_{ma_window}", f"s1_da_{ma_window}",
+                        "rsi14", "vol_ratio", "atr_ratio"])
+        weak = composite < strength_threshold
+        entry_l = entry_l & ~weak
+        entry_s = entry_s & ~weak
+
+    warmup_n = WARMUP_HOURLY if is_hourly else WARMUP
     sig = np.where(entry_l, 1, np.where(entry_s, -1, 0)).astype(np.int8)
-    sig[:WARMUP] = 0
+    sig[:warmup_n] = 0
     exit_arr = ~np.isnan(z) & (np.abs(z) < z_exit)
     return sig, exit_arr
 
-def gen_s2_signals(close, ind, sma_cache, *, bb_window, bb_std):
+def gen_s2_signals(close, ind, sma_cache, *, bb_window, bb_std,
+                   strength_threshold=0.0, is_hourly=False, relaxed_filters=False):
     sma, std = sma_cache[bb_window]
     bb_upper = sma + bb_std * std
     bb_lower = sma - bb_std * std
@@ -514,18 +670,58 @@ def gen_s2_signals(close, ind, sma_cache, *, bb_window, bb_std):
     valid = ~np.isnan(sma)
     entry_l = valid & (close <= bb_lower)
     entry_s = valid & (close >= bb_upper)
-    vr = ind["vol_regime"]
-    f_vr = ~np.isnan(vr) & (vr < 1.2)
-    f_cc_l = ~np.isnan(ind["red_count5"]) & (ind["red_count5"] >= 3)
-    f_cc_s = ~np.isnan(ind["green_count5"]) & (ind["green_count5"] >= 3)
-    vs5 = ind["vol_sma5"]; vol = ind["_volume"]
-    vs5_safe = np.where(np.isnan(vs5) | (vs5 <= 0), np.inf, vs5)
-    f_ve = ~(~np.isnan(vs5) & (vs5 > 0) & (vol >= vs5_safe))
     vfp = ind["vf_pass"]
-    entry_l = entry_l & f_vr & f_cc_l & f_ve & vfp
-    entry_s = entry_s & f_vr & f_cc_s & f_ve & vfp
+    if relaxed_filters:
+        entry_l = entry_l & vfp
+        entry_s = entry_s & vfp
+    else:
+        vr = ind["vol_regime"]
+        f_vr = ~np.isnan(vr) & (vr < 1.2)
+        f_cc_l = ~np.isnan(ind["red_count5"]) & (ind["red_count5"] >= 3)
+        f_cc_s = ~np.isnan(ind["green_count5"]) & (ind["green_count5"] >= 3)
+        vs5 = ind["vol_sma5"]; _vol = ind["_volume"]
+        vs5_safe = np.where(np.isnan(vs5) | (vs5 <= 0), np.inf, vs5)
+        f_ve = ~(~np.isnan(vs5) & (vs5 > 0) & (_vol >= vs5_safe))
+        entry_l = entry_l & f_vr & f_cc_l & f_ve & vfp
+        entry_s = entry_s & f_vr & f_cc_s & f_ve & vfp
+
+    # Signal strength filter
+    if strength_threshold > 0:
+        warmup_n = WARMUP_HOURLY if is_hourly else WARMUP
+        signal_mask = entry_l | entry_s
+        atr = ind["atr14"]
+        atr_safe = np.where(np.isnan(atr) | (atr < 1e-12), 1e-12, atr)
+        _vol2 = ind["_volume"]
+        _vol_avg2 = ind["vol_sma20"]
+        _vol_avg_safe2 = np.where(np.isnan(_vol_avg2) | (_vol_avg2 < 1), 1.0, _vol_avg2)
+        bw = bb_upper - bb_lower
+        bw_safe = np.where(np.isnan(bw) | (bw < 1e-12), 1e-12, bw)
+        sma_safe = np.where(np.abs(sma) < 1e-12, 1e-12, sma)
+        pct_b = (close - bb_lower) / bw_safe
+        m_pctb = np.abs(pct_b - 0.5)
+        m_bw = bw / sma_safe
+        m_bw = np.where(np.isnan(m_bw), 0.0, m_bw)
+        m_vol = _vol2 / _vol_avg_safe2
+        m_vol = np.where(np.isnan(m_vol), 1.0, m_vol)
+        atr_sma20 = calc_sma(atr, 20)
+        atr_sma20_safe = np.where(np.isnan(atr_sma20) | (atr_sma20 < 1e-12), 1e-12, atr_sma20)
+        m_atr_r = atr / atr_sma20_safe
+        m_atr_r = np.where(np.isnan(m_atr_r), 1.0, m_atr_r)
+        rsi = calc_rsi(close, 14)
+        m_rsi = np.abs(rsi - 50.0) / 50.0
+        m_rsi = np.where(np.isnan(m_rsi), 0.0, m_rsi)
+
+        composite = _compute_composite_strength(
+            [m_pctb, m_bw, m_vol, m_atr_r, m_rsi], signal_mask, warmup_n,
+            cache_keys=[f"s2_pctb_{bb_window}_{bb_std}", f"s2_bw_{bb_window}_{bb_std}",
+                        "vol_ratio", "atr_ratio", "rsi14"])
+        weak = composite < strength_threshold
+        entry_l = entry_l & ~weak
+        entry_s = entry_s & ~weak
+
+    warmup_n = WARMUP_HOURLY if is_hourly else WARMUP
     sig = np.where(entry_l, 1, np.where(entry_s, -1, 0)).astype(np.int8)
-    sig[:WARMUP] = 0
+    sig[:warmup_n] = 0
     exit_arr = np.zeros(n, dtype=bool)
     prev_c = np.empty_like(close); prev_c[0] = close[0]; prev_c[1:] = close[:-1]
     prev_m = np.empty_like(sma); prev_m[0] = sma[0]; prev_m[1:] = sma[:-1]
@@ -591,34 +787,96 @@ def _range_filter(entry_l, entry_s, ind):
     entry_l = entry_l & f_vr; entry_s = entry_s & f_vr
     return entry_l, entry_s
 
-def gen_s5_signals(close, ind, pivot_data):
-    P, S1p, R1p = pivot_data["classic"]
+def gen_s5_signals(close, ind, pivot_data, *, pivot_frac=1.0, adx_thresh=25,
+                   exit_at_pivot=True, pivot_type="classic",
+                   entry_level=1, min_atr_pctile=0, is_hourly=False):
+    """S5 Pivot Points. entry_level: 1=S1/R1, 2=S2/R2, 3=S3/R3. min_atr_pctile: skip low-ATR bars."""
+    P, S1p, R1p, S2p, R2p, S3p, R3p = pivot_data.get(pivot_type, pivot_data["classic"])
     n = len(close)
-    entry_l = ~np.isnan(S1p) & (close < S1p)
-    entry_s = ~np.isnan(R1p) & (close > R1p)
-    entry_l, entry_s = _range_filter(entry_l, entry_s, ind)
-    entry_l = entry_l & ind["vf_pass"]; entry_s = entry_s & ind["vf_pass"]
+
+    # Select entry level
+    if entry_level == 2:
+        S_entry, R_entry = S2p, R2p
+    elif entry_level == 3:
+        S_entry, R_entry = S3p, R3p
+    else:
+        S_entry, R_entry = S1p, R1p
+
+    # Fractional pivot levels: interpolate between P and selected S/R
+    if pivot_frac < 1.0:
+        S_adj = P + pivot_frac * (S_entry - P)
+        R_adj = P + pivot_frac * (R_entry - P)
+    else:
+        S_adj, R_adj = S_entry, R_entry
+
+    entry_l = ~np.isnan(S_adj) & (close < S_adj)
+    entry_s = ~np.isnan(R_adj) & (close > R_adj)
+
+    # ATR percentile filter: skip low-volatility periods
+    if min_atr_pctile > 0:
+        atr = ind["atr14"]
+        warmup_n = WARMUP_HOURLY if is_hourly else WARMUP
+        valid_atr = atr[:warmup_n]
+        valid_atr = valid_atr[~np.isnan(valid_atr)]
+        if len(valid_atr) > 50:
+            atr_threshold = np.percentile(valid_atr, min_atr_pctile)
+        else:
+            atr_threshold = 0.0
+        atr_pass = ~np.isnan(atr) & (atr > atr_threshold)
+        entry_l = entry_l & atr_pass
+        entry_s = entry_s & atr_pass
+
+    # Relaxed range filter for hourly
+    if is_hourly:
+        adx = ind["adx14"]
+        f_adx = ~np.isnan(adx) & (adx < adx_thresh)
+        entry_l = entry_l & f_adx & ind["vf_pass"]
+        entry_s = entry_s & f_adx & ind["vf_pass"]
+    else:
+        entry_l, entry_s = _range_filter(entry_l, entry_s, ind)
+        entry_l = entry_l & ind["vf_pass"]; entry_s = entry_s & ind["vf_pass"]
+
+    warmup_n = WARMUP_HOURLY if is_hourly else WARMUP
     sig = np.where(entry_l, 1, np.where(entry_s, -1, 0)).astype(np.int8)
-    sig[:WARMUP] = 0
+    sig[:warmup_n] = 0
+
     exit_arr = np.zeros(n, dtype=bool)
-    prev_c = np.empty_like(close); prev_c[0] = close[0]; prev_c[1:] = close[:-1]
-    prev_P = np.empty_like(P); prev_P[0] = P[0]; prev_P[1:] = P[:-1]
-    valid_P = ~np.isnan(P) & ~np.isnan(prev_P)
-    exit_arr[1:] = valid_P[1:] & (
-        ((prev_c[1:] < prev_P[1:]) & (close[1:] >= P[1:])) |
-        ((prev_c[1:] > prev_P[1:]) & (close[1:] <= P[1:])))
+    if exit_at_pivot:
+        prev_c = np.empty_like(close); prev_c[0] = close[0]; prev_c[1:] = close[:-1]
+        prev_P = np.empty_like(P); prev_P[0] = P[0]; prev_P[1:] = P[:-1]
+        valid_P = ~np.isnan(P) & ~np.isnan(prev_P)
+        exit_arr[1:] = valid_P[1:] & (
+            ((prev_c[1:] < prev_P[1:]) & (close[1:] >= P[1:])) |
+            ((prev_c[1:] > prev_P[1:]) & (close[1:] <= P[1:])))
     return sig, exit_arr
 
-def gen_s6_signals(close, high, low, volume, ind, vwap_cache, *, vwap_window, dev_mult):
-    vwap, dev = vwap_cache[vwap_window]
+def gen_s6_signals(close, high, low, volume, ind, vwap_cache, *, vwap_window=None, dev_mult,
+                   exit_mult=0.5, adx_thresh=25, is_hourly=False,
+                   session_vwap_data=None):
+    """S6 VWAP. exit_mult: exit when |close-vwap| < exit_mult * dev.
+    If vwap_window == 0 and session_vwap_data provided, uses session VWAP."""
+    if vwap_window == 0 and session_vwap_data is not None:
+        vwap, dev = session_vwap_data
+    else:
+        vwap, dev = vwap_cache[vwap_window]
     n = len(close)
     entry_l = ~np.isnan(vwap) & (close < vwap - dev_mult * dev)
     entry_s = ~np.isnan(vwap) & (close > vwap + dev_mult * dev)
-    entry_l, entry_s = _range_filter(entry_l, entry_s, ind)
-    entry_l = entry_l & ind["vf_pass"]; entry_s = entry_s & ind["vf_pass"]
+
+    # Relaxed range filter for hourly
+    if is_hourly:
+        adx = ind["adx14"]
+        f_adx = ~np.isnan(adx) & (adx < adx_thresh)
+        entry_l = entry_l & f_adx & ind["vf_pass"]
+        entry_s = entry_s & f_adx & ind["vf_pass"]
+    else:
+        entry_l, entry_s = _range_filter(entry_l, entry_s, ind)
+        entry_l = entry_l & ind["vf_pass"]; entry_s = entry_s & ind["vf_pass"]
+
+    warmup_n = WARMUP_HOURLY if is_hourly else WARMUP
     sig = np.where(entry_l, 1, np.where(entry_s, -1, 0)).astype(np.int8)
-    sig[:WARMUP] = 0
-    exit_arr = ~np.isnan(vwap) & (np.abs(close - vwap) < 0.5 * dev)
+    sig[:warmup_n] = 0
+    exit_arr = ~np.isnan(vwap) & (np.abs(close - vwap) < exit_mult * dev)
     return sig, exit_arr
 
 
@@ -1652,19 +1910,21 @@ def calc_metrics_comm(positions, log_ret, mask, ann_factor, bars_per_year):
 
 def dispatch_signals(sid, close, high, low, volume, ind,
                      sma_cache, dc_cache, st_cache, vwap_cache,
-                     pivot_data, daily_trend, sig_params):
+                     pivot_data, daily_trend, sig_params, is_hourly=False,
+                     session_vwap_data=None):
     if sid == "S1":
-        return gen_s1_signals(close, ind, sma_cache, **sig_params)
+        return gen_s1_signals(close, ind, sma_cache, is_hourly=is_hourly, **sig_params)
     elif sid == "S2":
-        return gen_s2_signals(close, ind, sma_cache, **sig_params)
+        return gen_s2_signals(close, ind, sma_cache, is_hourly=is_hourly, **sig_params)
     elif sid == "S3":
         return gen_s3_signals(close, high, low, ind, dc_cache, daily_trend=daily_trend, **sig_params)
     elif sid == "S4":
         return gen_s4_signals(close, high, low, ind, st_cache, daily_trend=daily_trend, **sig_params)
     elif sid == "S5":
-        return gen_s5_signals(close, ind, pivot_data)
+        return gen_s5_signals(close, ind, pivot_data, is_hourly=is_hourly, **sig_params)
     elif sid == "S6":
-        return gen_s6_signals(close, high, low, volume, ind, vwap_cache, **sig_params)
+        return gen_s6_signals(close, high, low, volume, ind, vwap_cache, is_hourly=is_hourly,
+                              session_vwap_data=session_vwap_data, **sig_params)
 
 
 def dispatch_bt_atr_v3(sid, sig, exit_info, close, high, low, ind, rm, warmup, end_idx, log_trades=0):
@@ -1760,17 +2020,24 @@ def _year_bounds(dates, year):
 
 def approach_a_one(sid, tf, close, high, low, volume, open_arr, ind,
                    sma_cache, dc_cache, st_cache, vwap_cache,
-                   pivot_data, daily_trend, dates, is_hourly, log_ret):
+                   pivot_data, daily_trend, dates, is_hourly, log_ret,
+                   session_vwap_data=None):
     ann = np.sqrt(252 * 9) if is_hourly else np.sqrt(252)
     n = len(close)
     train_mask = np.zeros(n, dtype=bool)
 
-    sig_grid = expand_grid(SIGNAL_GRIDS[sid])
+    # Use hourly-scaled signal grids when applicable
+    if is_hourly and sid in SIGNAL_GRIDS_HOURLY:
+        sig_grid = expand_grid(SIGNAL_GRIDS_HOURLY[sid])
+    else:
+        sig_grid = expand_grid(SIGNAL_GRIDS[sid])
     cat = CATEGORY[sid]
     if cat == "Trend":
         rm_grid = TREND_RM_GRID
     else:
         rm_grid = expand_grid(RM_GRIDS_V3[(cat, tf)])
+
+    warmup_bars = WARMUP_HOURLY if is_hourly else WARMUP
 
     results_by_year = {}
     params_by_year = {}
@@ -1782,18 +2049,19 @@ def approach_a_one(sid, tf, close, high, low, volume, open_arr, ind,
             test_end = n
         else:
             _, test_end = _year_bounds(dates, test_year + 1)
-        if train_end <= WARMUP or train_end >= n:
+        if train_end <= warmup_bars or train_end >= n:
             continue
 
         train_mask[:] = False
-        train_mask[WARMUP:train_end] = True
+        train_mask[warmup_bars:train_end] = True
 
         cached_sigs = {}
         for sp in sig_grid:
             key = tuple(sorted(sp.items()))
             sig, exit_info = dispatch_signals(sid, close, high, low, volume, ind,
                                               sma_cache, dc_cache, st_cache, vwap_cache,
-                                              pivot_data, daily_trend, sp)
+                                              pivot_data, daily_trend, sp, is_hourly=is_hourly,
+                                              session_vwap_data=session_vwap_data)
             cached_sigs[key] = (sig, exit_info)
 
         all_results = []
@@ -1802,7 +2070,7 @@ def approach_a_one(sid, tf, close, high, low, volume, open_arr, ind,
             sig, exit_info = cached_sigs[sp_key]
             for rm in rm_grid:
                 pos, _ = dispatch_bt_atr_v3(sid, sig, exit_info, close, high, low, ind,
-                                            rm, WARMUP, train_end, 0)
+                                            rm, warmup_bars, train_end, 0)
                 sh = calc_sharpe_comm(pos, log_ret, train_mask, ann)
                 dr = pos[train_mask] * log_ret[train_mask]
                 dpos = np.diff(pos[train_mask], prepend=0.0)
@@ -1826,11 +2094,11 @@ def approach_a_one(sid, tf, close, high, low, volume, open_arr, ind,
             sp_key = tuple(sorted(sp.items()))
             sig, exit_info = cached_sigs[sp_key]
             pos, tr = dispatch_bt_atr_v3(sid, sig, exit_info, close, high, low, ind,
-                                         rm, WARMUP, test_end, 1)
+                                         rm, warmup_bars, test_end, 1)
             test_positions.append(pos)
             test_trades.append(tr)
 
-        ensemble = np.mean(test_positions, axis=0)
+        ensemble = np.mean(test_positions, axis=0) if test_positions else np.zeros(n)
         results_by_year[test_year] = ensemble
         params_by_year[test_year] = [(sp, rm) for sp, rm, sh, mdd, exp in passing]
         trades_by_year[test_year] = test_trades
@@ -1845,7 +2113,7 @@ def approach_a_one(sid, tf, close, high, low, volume, open_arr, ind,
 def approach_b_one(sid, tf, close, high, low, volume, ind,
                    sma_cache, dc_cache, st_cache, vwap_cache,
                    pivot_data, daily_trend, dates, sigma_dict, is_hourly,
-                   log_ret, a_params_by_year):
+                   log_ret, a_params_by_year, session_vwap_data=None):
     ann = np.sqrt(252 * 9) if is_hourly else np.sqrt(252)
     n = len(close)
     cat = CATEGORY[sid]
@@ -1876,7 +2144,8 @@ def approach_b_one(sid, tf, close, high, low, volume, ind,
         for sp, rm in a_params:
             sig, exit_info = dispatch_signals(sid, close, high, low, volume, ind,
                                               sma_cache, dc_cache, st_cache, vwap_cache,
-                                              pivot_data, daily_trend, sp)
+                                              pivot_data, daily_trend, sp, is_hourly=is_hourly,
+                                              session_vwap_data=session_vwap_data)
             a_sigs.append((sig, exit_info))
 
         best_sh = -999.0
@@ -2436,29 +2705,41 @@ def process_ticker(ticker, daily_df, hourly_df, vpred_df):
 
         ind = compute_base(close, high, low, open_arr, volume, is_hourly)
 
-        sma_windows = sorted(set(SIGNAL_GRIDS["S1"].get("ma_window", []) +
+        # Use hourly-scaled grids for cache precomputation when applicable
+        _sg = SIGNAL_GRIDS_HOURLY if is_hourly else SIGNAL_GRIDS
+        sma_windows = sorted(set(_sg["S1"].get("ma_window", []) +
+                                 _sg["S2"].get("bb_window", []) +
+                                 SIGNAL_GRIDS["S1"].get("ma_window", []) +
                                  SIGNAL_GRIDS["S2"].get("bb_window", [])))
         sma_cache = precompute_sma_cache(close, sma_windows)
-        dc_windows = SIGNAL_GRIDS["S3"].get("dc_window", [])
+        dc_windows = sorted(set(_sg["S3"].get("dc_window", []) +
+                                SIGNAL_GRIDS["S3"].get("dc_window", [])))
         dc_cache = precompute_donchian_cache(high, low, dc_windows)
-        st_periods = SIGNAL_GRIDS["S4"].get("atr_period", [])
-        st_mults = SIGNAL_GRIDS["S4"].get("multiplier", [])
+        st_periods = sorted(set(_sg["S4"].get("atr_period", []) +
+                                SIGNAL_GRIDS["S4"].get("atr_period", [])))
+        st_mults = sorted(set(_sg["S4"].get("multiplier", []) +
+                              SIGNAL_GRIDS["S4"].get("multiplier", [])))
         st_cache = precompute_supertrend_cache(high, low, close, st_periods, st_mults)
-        vwap_windows = SIGNAL_GRIDS["S6"].get("vwap_window", [])
+        vwap_windows = sorted(set(_sg["S6"].get("vwap_window", []) +
+                                  SIGNAL_GRIDS["S6"].get("vwap_window", [])))
         vwap_cache = precompute_vwap_cache(close, high, low, volume, vwap_windows)
 
         pivot_data = {}
-        if is_hourly:
-            h_dts = tdf["datetime"].values
-            P, S1p, R1p = compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, "classic")
-        else:
-            P, S1p, R1p = calc_pivot_daily(high, low, close, "classic")
-        pivot_data["classic"] = (P, S1p, R1p)
+        for pv in ["classic", "camarilla", "fibonacci"]:
+            if is_hourly:
+                h_dts = tdf["datetime"].values
+                P, S1p, R1p, S2p, R2p, S3p, R3p = compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, pv)
+            else:
+                P, S1p, R1p, S2p, R2p, S3p, R3p = calc_pivot_daily(high, low, close, pv)
+            pivot_data[pv] = (P, S1p, R1p, S2p, R2p, S3p, R3p)
 
         daily_trend = None
+        session_vwap_data = None
         if is_hourly:
             d_dates, d_above = build_daily_trend(daily_df, ticker)
             daily_trend = align_daily_to_hourly(d_dates, d_above, tdf["datetime"].values)
+            # Session VWAP (daily reset) for S6 hourly
+            session_vwap_data = precompute_session_vwap(close, high, low, volume, tdf["datetime"].values)
 
         # Prepare sigma_dict (v2_sqrtN for hourly, raw for daily)
         sigma_dict = {}
@@ -2489,6 +2770,8 @@ def process_ticker(ticker, daily_df, hourly_df, vpred_df):
         ann = np.sqrt(252 * 9) if is_hourly else np.sqrt(252)
         bpy = 252 * 9 if is_hourly else 252
 
+        _pctile_cache.clear()  # reset signal strength cache per ticker/tf
+
         for sid in STRATEGY_IDS:
             sname = STRATEGY_NAMES[sid]
 
@@ -2496,7 +2779,8 @@ def process_ticker(ticker, daily_df, hourly_df, vpred_df):
             a_results, a_params, a_trades = approach_a_one(
                 sid, tf, close, high, low, volume, open_arr, ind,
                 sma_cache, dc_cache, st_cache, vwap_cache,
-                pivot_data, daily_trend, dates, is_hourly, log_ret)
+                pivot_data, daily_trend, dates, is_hourly, log_ret,
+                session_vwap_data=session_vwap_data)
 
             for year, pos_arr in a_results.items():
                 _store_metrics(results, sid, tf, "A", year, pos_arr,
@@ -2511,7 +2795,7 @@ def process_ticker(ticker, daily_df, hourly_df, vpred_df):
                 sid, tf, close, high, low, volume, ind,
                 sma_cache, dc_cache, st_cache, vwap_cache,
                 pivot_data, daily_trend, dates, sigma_dict, is_hourly,
-                log_ret, a_params)
+                log_ret, a_params, session_vwap_data=session_vwap_data)
 
             # Collect B trades
             for year, trades_list in b_trades.items():

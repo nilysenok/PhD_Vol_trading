@@ -146,10 +146,10 @@ def main():
             pivot_data = {}
             if is_hourly:
                 h_dts = tdf["datetime"].values
-                P, S1p, R1p = swf.compute_daily_pivots_for_hourly(daily, ticker, h_dts, "classic")
+                P, S1p, R1p, S2p, R2p, S3p, R3p = swf.compute_daily_pivots_for_hourly(daily, ticker, h_dts, "classic")
             else:
-                P, S1p, R1p = swf.calc_pivot_daily(high, low, close, "classic")
-            pivot_data["classic"] = (P, S1p, R1p)
+                P, S1p, R1p, S2p, R2p, S3p, R3p = swf.calc_pivot_daily(high, low, close, "classic")
+            pivot_data["classic"] = (P, S1p, R1p, S2p, R2p, S3p, R3p)
 
             daily_trend = None
             if is_hourly:

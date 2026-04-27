@@ -123,8 +123,8 @@ def process_ticker_s2_hourly(ticker, daily_df, hourly_df, vpred_df):
     # Pivots (needed by dispatch functions)
     pivot_data = {}
     h_dts = tdf["datetime"].values
-    P, S1p, R1p = compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, "classic")
-    pivot_data["classic"] = (P, S1p, R1p)
+    P, S1p, R1p, S2p, R2p, S3p, R3p = compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, "classic")
+    pivot_data["classic"] = (P, S1p, R1p, S2p, R2p, S3p, R3p)
 
     # Daily trend
     d_dates, d_above = build_daily_trend(daily_df, ticker)

@@ -1274,8 +1274,8 @@ def process_ticker_v41(ticker, daily_df, hourly_df, vpred_df, v4_pos_df):
 
             pivot_data_simple = {}
             h_dts = tdf["datetime"].values
-            P, S1p, R1p = compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, "classic")
-            pivot_data_simple["classic"] = (P, S1p, R1p)
+            P, S1p, R1p, S2p, R2p, S3p, R3p = compute_daily_pivots_for_hourly(daily_df, ticker, h_dts, "classic")
+            pivot_data_simple["classic"] = (P, S1p, R1p, S2p, R2p, S3p, R3p)
             d_dates, d_above = build_daily_trend(daily_df, ticker)
             daily_trend = align_daily_to_hourly(d_dates, d_above, h_dts)
 
