@@ -1,0 +1,264 @@
+
+======================================================================
+1. PER-TICKER СТРАТЕГИИ (Stage 3 WF: v4 run_daily_a_ps.py)
+======================================================================
+
+--- S1 (Contrarian) ---
+Сигнальная сетка:
+  ma_window: [10, 15, 20, 25, 30, 40, 50, 60, 80, 100] (10 значений)
+  z_entry: [0.8, 1.0, 1.5, 2.0, 2.5, 3.0] (6 значений)
+  z_exit: [0.0, 0.2, 0.3, 0.5] (4 значений)
+  relaxed_filters: [False, True] (2 значений)
+  strength_threshold: [0.0, 0.3, 0.5] (3 значений)
+  Итого signal combos: 1440
+RM (Contrarian, daily):
+  sl_mult: [1.0, 1.5, 2.0, 3.0] (4 значений)
+  tp_mult: [1.5, 2.0, 3.0, 5.0] (4 значений)
+  max_hold: [10, 15, 20, 30] (4 значений)
+  breakeven_trigger: [None, 1.0] (2 значений)
+  cooldown_bars: [0, 5] (2 значений)
+  partial_exit: [False, True] (2 значений)
+  Итого RM combos: 512
+  ИТОГО per ticker: 737,280 combos
+  2-pass search: coarse ~10240 → top-30 signals → fine
+
+--- S2 (Contrarian) ---
+Сигнальная сетка:
+  bb_window: [10, 15, 20, 25, 30, 40, 50, 60] (8 значений)
+  bb_std: [0.8, 1.0, 1.5, 2.0, 2.5, 3.0] (6 значений)
+  relaxed_filters: [False, True] (2 значений)
+  strength_threshold: [0.0, 0.3, 0.5] (3 значений)
+  Итого signal combos: 288
+RM (Contrarian, daily):
+  sl_mult: [1.0, 1.5, 2.0, 3.0] (4 значений)
+  tp_mult: [1.5, 2.0, 3.0, 5.0] (4 значений)
+  max_hold: [10, 15, 20, 30] (4 значений)
+  breakeven_trigger: [None, 1.0] (2 значений)
+  cooldown_bars: [0, 5] (2 значений)
+  partial_exit: [False, True] (2 значений)
+  Итого RM combos: 512
+  ИТОГО per ticker: 147,456 combos
+  2-pass search: coarse ~2048 → top-30 signals → fine
+
+--- S3 (Trend) ---
+Сигнальная сетка:
+  dc_window: [5, 10, 15, 20, 25, 30, 40, 50, 60] (9 значений)
+  Итого signal combos: 9
+RM (trend): 396 combos (предзаданный список)
+  Параметры: ['initial_sl_mult', 'trail_type', 'trail_n', 'trail_atr_mult', 'breakeven_thresh', 'cooldown_bars', 'parabolic_step', 'parabolic_max']
+  Пример: {'initial_sl_mult': 2.0, 'trail_type': 'fixed_atr', 'trail_n': 5, 'trail_atr_mult': 2.0, 'breakeven_thresh': None, 'cooldown_bars': 0, 'parabolic_step': 0.02, 'parabolic_max': 0.15}
+  ИТОГО per ticker: 3,564 combos
+  2-pass search: coarse ~49 → top-30 signals → fine
+
+--- S4 (Trend) ---
+Сигнальная сетка:
+  atr_period: [7, 10, 14, 20, 25, 30] (6 значений)
+  multiplier: [1.5, 2.0, 2.5, 3.0, 3.5, 4.0] (6 значений)
+  Итого signal combos: 36
+RM (trend): 396 combos (предзаданный список)
+  Параметры: ['initial_sl_mult', 'trail_type', 'trail_n', 'trail_atr_mult', 'breakeven_thresh', 'cooldown_bars', 'parabolic_step', 'parabolic_max']
+  Пример: {'initial_sl_mult': 2.0, 'trail_type': 'fixed_atr', 'trail_n': 5, 'trail_atr_mult': 2.0, 'breakeven_thresh': None, 'cooldown_bars': 0, 'parabolic_step': 0.02, 'parabolic_max': 0.15}
+  ИТОГО per ticker: 14,256 combos
+  2-pass search: coarse ~198 → top-30 signals → fine
+
+--- S5 (Range) ---
+Сигнальная сетка:
+  pivot_type: ['classic', 'camarilla', 'fibonacci', 'woodie'] (4 значений)
+  entry_level: [1, 2, 3] (3 значений)
+  pivot_frac: [0.5, 0.7, 1.0] (3 значений)
+  adx_thresh: [20, 25, 30, 35] (4 значений)
+  min_atr_pctile: [0, 25, 50] (3 значений)
+  Итого signal combos: 432
+RM (Range, daily):
+  sl_mult: [0.75, 1.0, 1.5, 2.0] (4 значений)
+  tp_mult: [0.75, 1.0, 1.5, 2.0, 3.0] (5 значений)
+  max_hold: [5, 8, 10, 15] (4 значений)
+  breakeven_trigger: [None, 1.0] (2 значений)
+  cooldown_bars: [0, 5] (2 значений)
+  time_decay: [False, True] (2 значений)
+  Итого RM combos: 640
+  ИТОГО per ticker: 276,480 combos
+  2-pass search: coarse ~3840 → top-30 signals → fine
+
+--- S6 (Range) ---
+Сигнальная сетка:
+  vwap_window: [5, 10, 15, 20, 25, 30] (6 значений)
+  dev_mult: [0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5] (7 значений)
+  exit_mult: [0.3, 0.5, 0.8] (3 значений)
+  Итого signal combos: 126
+RM (Range, daily):
+  sl_mult: [0.75, 1.0, 1.5, 2.0] (4 значений)
+  tp_mult: [0.75, 1.0, 1.5, 2.0, 3.0] (5 значений)
+  max_hold: [5, 8, 10, 15] (4 значений)
+  breakeven_trigger: [None, 1.0] (2 значений)
+  cooldown_bars: [0, 5] (2 значений)
+  time_decay: [False, True] (2 значений)
+  Итого RM combos: 640
+  ИТОГО per ticker: 80,640 combos
+  2-pass search: coarse ~1120 → top-30 signals → fine
+
+======================================================================
+2. PER-TICKER BCD OVERLAY
+======================================================================
+
+--- B (адаптивные стопы, v4 позиции) ---
+B_GRID:
+  k_sl: [0.5, 1.0, 2.0, 3.0] (4 значений)
+  ratio: [0.5, 1.5, 3.0] (3 значений)
+  base_hold: [5, 15, 50] (3 значений)
+  hold_gamma: [0.25, 1.0] (2 значений)
+  be_trigger: [0, 1.5] (2 значений)
+HORIZONS: ['h1', 'h5', 'h22']
+Итого B combos per horizon: 144
+Итого B combos × 3 horizons: 432
+
+--- C (режимная фильтрация, v4 позиции) ---
+C_GRID:
+  threshold: [0.25, 0.55, 0.85] (3 значений)
+  lookback: [63, 252] (2 значений)
+  direction: ['off', 'rise', 'fall'] (3 значений)
+  term_str: [False, True] (2 значений)
+  hysteresis: [0, 10] (2 значений)
+Итого C combos per horizon: 72
+Итого C combos × 3 horizons: 216
+
+--- D (таргетирование волатильности, v4 позиции) ---
+D_GRID:
+  sigma_target: [0.05, 0.1, 0.15, 0.2, 0.3] (5 значений)
+  gamma: [0.25, 0.5, 1.0, 2.0] (4 значений)
+  smooth: [0, 10] (2 значений)
+  vol_floor: [0.1, 0.3] (2 значений)
+  vol_cap: [1.5, 2.0, 3.0] (3 значений)
+Итого D combos per horizon: 240
+Итого D combos × 3 horizons: 720
+
+--- BCD из v4 (walkforward_v4) ---
+
+--- BCD из chapter4_master.py (Stage 2 тест) ---
+  HORIZONS = ["h1", "h5", "h22"]
+
+======================================================================
+3. PER-STRATEGY ПОРТФЕЛЬ (stage5b_perstrat_portfolio.py)
+======================================================================
+
+Схемы взвешивания:
+  EW (Equal Weight): w_i = 1/N
+  IV (Inverse Volatility): w_i = (1/σ_i) / Σ(1/σ_j)
+     σ рассчитывается на обучающей выборке
+  RP (Risk Parity): итерационный алгоритм (100 итераций)
+     RC_i = w_i × (Σw)_i / σ_p = σ_p / N
+     Bounds: w_i ∈ [0, 1], Σw = 1
+  MS (Max Sharpe): scipy.optimize.minimize
+     max (μ'w) / √(w'Σw)
+     Bounds: w_i ∈ [0, 1], Σw = 1, long only
+
+Ticker selection:
+  ALL: все 17 тикеров
+  POSITIVE: тикеры с trading Sharpe > 0 на обучающей выборке
+  TOP12: top-12 по trading Sharpe на обучающей выборке
+  Минимум: 5 тикеров (fallback на ALL)
+
+Walk-forward:
+  Веса пересчитываются ежегодно
+  Train: все данные до начала test_year
+  Test: test_year
+
+======================================================================
+4. МСП (stage5c_extended_portfolio.py)
+======================================================================
+
+Strategy sets:
+  ALL6: S1, S2, S3, S4, S5, S6 (все 6 стратегий)
+  TOP4: S1, S2, S4, S6 (top-4 по trading Sharpe per-strategy)
+  NO_S5: S1, S2, S3, S4, S6 (исключена S5 — низкая экспозиция)
+  DIVERSE3: S1, S3, S6 (по одной от каждого типа)
+
+Веса МСП:
+  EW: 1/N_strategies
+  IV: обратная волатильность стратегий
+  RP: паритет риска стратегий
+  MS: максимизация Sharpe стратегий
+  (MaxDiv убран по запросу)
+
+Walk-forward МСП:
+  Веса стратегий пересчитываются ежегодно на обучающей выборке
+
+======================================================================
+5. РАЗМЕРЫ СЕТОК (итого)
+======================================================================
+
+Per-ticker signal+RM: от 3,564 (S3) до 737,280 (S1) combos per ticker
+Per-ticker BCD: B ~432, C ~216, D ~720 combos × 3 horizons (из v4)
+Per-strategy: 4 веса × 3 selection = 12 вариантов per strategy per approach
+МСП: 4 strategy sets × 4 веса = 16 вариантов per approach
+Подходы: A, B, C, D = 4
+Комиссии: 0,05% и 0,06% = 2
+
+Итого комбинаций оценённых WF: ~700
+
+======================================================================
+6. H5 (ОБНОВЛЁННАЯ ФОРМУЛИРОВКА)
+======================================================================
+
+Старая H5: Таргетирование волатильности обеспечивает наибольшую
+           экономическую ценность среди подходов интеграции прогнозов.
+Статус: НЕ подтверждена (D не значимо лучше C после исправления FDR)
+
+Новая H5: Подходы интеграции прогнозов волатильности, основанные на
+          управлении размером позиции (режимная фильтрация и
+          таргетирование волатильности), обеспечивают статистически
+          значимую экономическую ценность.
+
+Обоснование:
+  CE C>A: +2,12%/yr при γ=10 (p = 0,007 ***)
+  CE D>A: +1,85%/yr при γ=10 (p = 0,013 **)
+  CE D−C: −0,30%/yr (p = 0,66) — разница незначима
+  → C и D оба значимо превосходят A
+  → Различие между C и D статистически незначимо
+  → Общий класс «управление размером позиции на основе vpred»
+    значимо улучшает экономические результаты
+
+30 ФАЗ BCD: ПАРАМЕТРЫ СЕТОК
+================================================================================
+
+Базовые сетки BCD (Таблицы 2.21–2.23): B=432, C=216, D=720 combos × 3 горизонта
+30 фаз тестируют ВАРИАНТЫ и РАСШИРЕНИЯ базовых сеток.
+Каждая фаза × 3 горизонта vpred (h1, h5, h22).
+
+| Фаза  | Тип      | Описание                    | Параметры (значения)                                                   | Кол-во |
+|-------|----------|-----------------------------|--------------------------------------------------------------------|--------|
+| B.01  | B_stops  | SL/TP контртренд            | k_sl=[1,2,3,5,7]; ratio=[0.5,1,2,3]; base_hold=[5,15,50]; hold_gamma=[0,0.5]; be=0 |    120 |
+| B.02  | B_stops  | SL/TP тренд                 | k_sl=[3,5,7,10]; ratio=[1.5,2,3,5]; base_hold=[10,30,60]; hold_gamma=[0,0.25]; be=0 |     96 |
+| B.03  | B_stops  | SL/TP + breakeven           | k_sl=[2,3,5]; ratio=[1,2,3]; base_hold=[10,30]; hold_gamma=[0,0.5]; be=[1,2,5] |    108 |
+| B.04  | B_stops  | Узкие стопы                 | k_sl=[0.5,0.75,1,1.5]; ratio=[0.5,1,1.5]; base_hold=[3,5,10]; hold_gamma=[0,0.5,1]; be=0 |    108 |
+| B.05  | B_stops  | Широкие стопы               | k_sl=[5,7,10,15]; ratio=[2,3,5]; base_hold=[30,60,100]; hold_gamma=[0,0.25]; be=0 |     72 |
+| B.06  | B_spike  | Vol spike exit              | spike_threshold=[1.3,1.5,2,2.5,3]; spike_lookback=[1,3,5]          |     15 |
+| B.07  | B_decay  | Затухание позиции           | decay_rate=[0.01,0.02,0.05,0.1,0.2]; decay_lookback=[3,5,10]       |     15 |
+| B.08  | B_trail  | Trailing stop               | trail_mult=[1,2,3,5,7]                                             |      5 |
+| B.09  | B_sizing | Адаптивный sizing           | sizing_gamma=[0.25,0.5,0.75,1,1.5,2]; smooth=[0,5,10,20]; floor=[0.2,0.3,0.5]; cap=[1,1.5,2,3] |    288 |
+| B.10  | B_sizing | Агрессивный sizing          | sizing_gamma=[1.5,2,3]; smooth=[0,5,20]; floor=[0.1,0.2]; cap=[2,3,5] |     54 |
+| C.01  | C_regime | Контртренд режим            | threshold=[0.2..0.8 ×7]; lookback=[63,126,252]; direction=off      |     21 |
+| C.02  | C_regime | Тренд режим                 | threshold=[0.2..0.8 ×7]; lookback=[63,126,252]; direction=off      |     21 |
+| C.03  | C_regime | Режим + направление         | threshold=[0.3,0.5,0.7]; lookback=[63,126,252]; direction=[rise,fall]; dir_lb=[3,5,10] |     54 |
+| C.04  | C_regime | Term structure              | threshold=[0.3,0.5,0.7]; lookback=[63,126]; ts_threshold=[0.8..1.2 ×5]; ts_dir=[above,below] |     60 |
+| C.05  | C_regime | Гистерезис                  | threshold=[0.3,0.5,0.7]; lookback=[63,126,252]; min_regime_days=[3,5,10] |     27 |
+| C.06  | C_regime | Диапазонный режим           | threshold=[0.3..0.8 ×6]; lookback=[63,126,252]; direction=off      |     18 |
+| C.07  | C_regime | Vol-of-vol фильтр           | threshold=[0.3,0.5,0.7]; lookback=[63,126]; vov_lb=[20,40]; vov_thr=[0.5,1,1.5]; vov_dir=[low,high] |     72 |
+| C.08  | C_regime | Направление + гистерезис    | threshold=[0.3,0.5,0.7]; lookback=[63,126]; dir=[rise,fall]; dir_lb=5; min_days=[3,5] |     24 |
+| C.09  | C_regime | Полная комбинация           | threshold×lookback×direction×ts×min_days×vov (8 параметров)        |    192 |
+| C.10  | C_regime | Агрессивный фильтр          | threshold=[0.15,0.2,0.25,0.3]; lookback=[40,63,126]; min_days=[0,5,10] |     36 |
+| D.01  | D_vol    | Базовое таргетирование      | sigma_target=[0.01,0.02,0.05,0.1,0.15,0.25]; gamma=[0.25,0.5,1,1.5,2]; floor=[0.1,0.3]; cap=[2,3] |    120 |
+| D.02  | D_vol    | Сглаженное таргетирование   | sigma_target=[0.02,0.05,0.1,0.15]; gamma=[0.5,1,1.5]; floor=[0.1,0.3]; cap=[2,3]; smooth=[5,10,20] |    144 |
+| D.03  | D_vol    | Асимметричная gamma         | sigma_target=[0.02,0.05,0.1]; gamma_up=[1,1.5,2,3]; gamma_down=[0.25,0.5,1]; dir_lb=[1,5]; floor×cap |    288 |
+| D.04  | D_vol    | Адаптивный target           | pctile=[25,50,75]; multiplier=[0.75,1,1.5]; adapt_lb=[63,126,252]; gamma=[0.5,1,1.5]; floor×cap |    324 |
+| D.05  | D_vol    | Консервативный              | sigma_target=[0.05..0.3 ×6]; gamma=[0.1,0.15,0.25]; floor=[0.3,0.5]; cap=[1.5,2]; smooth=[0,10] |     72 |
+| D.06  | D_vol    | Агрессивный                 | sigma_target=[0.01,0.02,0.05]; gamma=[2,3,5]; floor=[0.05,0.1]; cap=[3,5]; smooth=[0,5] |     36 |
+| D.07  | D_vol    | Сглаженный + адаптивный     | pctile=[25,50]; mult=[0.75,1]; adapt_lb=[63,126]; gamma=[0.5,1]; floor=0.1; cap=2 |     16 |
+| D.08  | D_vol    | Асимметричный + сглаженный  | sigma_target=[0.02,0.05,0.1]; gamma_up=[1.5,2]; gamma_down=[0.5,1]; dir_lb=[1,5]; floor×cap×smooth |    288 |
+| D.09  | D_vol    | Тонкая настройка            | sigma_target=[0.03,0.05,0.07,0.1,0.12]; gamma=[0.5,0.75,1,1.25]; floor=[0.15,0.25]; cap=[1.8,2.5]; smooth=[0,5] |    160 |
+| D.10  | D_vol    | Плоский cap                 | sigma_target=[0.1,0.15,0.2,0.3]; gamma=1; floor=[0.5,0.7]; cap=1; smooth=[0,5,10] |     24 |
+|       |          |                             | ИТОГО (без учёта ×3 горизонта)                                     |   2878 |
+|       |          |                             | ИТОГО × 3 горизонта                                                |   8634 |
+
+Примечание: каждая фаза тестируется WF на 3 горизонтах vpred (h1, h5, h22).
+Лучший горизонт выбирается на обучающей выборке per тикер per стратегию.

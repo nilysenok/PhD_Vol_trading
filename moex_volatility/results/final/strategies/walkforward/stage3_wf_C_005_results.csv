@@ -1,0 +1,409 @@
+strategy,ticker,year,sharpe,approach,train_sharpe,exposure,tpy,wr,n_trades,comm,params
+S1,AFLT,2022,-0.9494,C,0.8592,35.5,10.8,60.0,10,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S1,AFLT,2023,-2.3174,C,0.6584,20.4,15.9,18.8,16,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S1,AFLT,2024,0.584,C,0.0147,4.7,3.0,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,AFLT,2025,0.0366,C,0.5294,5.7,13.5,58.8,17,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,ALRS,2022,-0.9419,C,0.9385,9.8,4.3,25.0,4,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,ALRS,2023,-0.8708,C,1.2291,13.1,16.9,41.2,17,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,ALRS,2024,-0.986,C,1.1001,17.2,19.7,25.0,20,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,ALRS,2025,0.1945,C,0.9667,6.6,5.5,42.9,7,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S1,HYDR,2022,-1.4369,C,0.8928,30.7,21.5,30.0,20,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S1,HYDR,2023,0.8702,C,0.682,12.6,5.0,60.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S1,HYDR,2024,-0.8321,C,0.938,7.3,8.9,33.3,9,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S1,HYDR,2025,-0.0406,C,1.0284,23.9,11.1,50.0,14,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,IRAO,2022,0.757,C,1.1998,5.6,4.3,50.0,4,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,IRAO,2023,-1.5144,C,-999.0,7.2,4.0,25.0,4,0.0005,fallback_to_A
+S1,IRAO,2024,-1.0219,C,1.2358,2.9,4.9,40.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S1,IRAO,2025,-0.2951,C,1.0622,3.7,5.6,71.4,7,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S1,LKOH,2022,0.677,C,1.3003,20.4,28.0,46.2,26,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,LKOH,2023,-1.2778,C,1.0513,9.1,21.8,31.8,22,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,LKOH,2024,-1.0559,C,1.0103,14.1,25.6,57.7,26,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,LKOH,2025,-1.68,C,0.8874,3.9,12.7,31.2,16,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,LSRG,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S1,LSRG,2023,-0.856,C,1.1217,3.1,1.0,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,LSRG,2024,0.6303,C,0.9867,9.8,3.9,50.0,4,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,LSRG,2025,0.6658,C,0.9025,3.3,2.4,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,MGNT,2022,-2.1274,C,1.1376,9.6,15.1,28.6,14,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,MGNT,2023,0.1701,C,1.366,6.9,7.9,50.0,8,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,MGNT,2024,0.0609,C,1.1042,10.1,12.8,53.8,13,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,MGNT,2025,-0.1929,C,1.2549,22.2,8.7,45.5,11,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,MOEX,2022,-0.0219,C,1.3547,25.8,9.7,33.3,9,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S1,MOEX,2023,0.2009,C,0.9445,6.3,5.0,60.0,5,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,MOEX,2024,-1.3051,C,0.9038,7.0,3.0,33.3,3,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,MOEX,2025,0.7889,C,1.1587,25.5,6.3,75.0,8,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S1,MTLR,2022,0.0,C,1.462,0.0,0.0,0.0,0,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,MTLR,2023,-2.0573,C,1.3712,1.6,2.0,0.0,2,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,MTLR,2024,0.2337,C,0.9679,5.5,4.9,20.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,MTLR,2025,-1.1648,C,1.0436,10.0,32.5,48.8,41,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,MTSS,2022,0.2212,C,0.9893,14.1,25.8,62.5,24,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S1,MTSS,2023,-0.3332,C,0.3507,7.1,6.9,28.6,7,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S1,MTSS,2024,-1.5842,C,0.8402,4.7,25.6,42.3,26,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S1,MTSS,2025,0.0,C,0.6536,0.0,0.0,0.0,0,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,NVTK,2022,-0.0161,C,0.9362,23.0,22.6,71.4,21,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,NVTK,2023,-0.1914,C,1.4631,18.7,21.8,59.1,22,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,NVTK,2024,0.6278,C,0.9094,26.6,15.8,56.2,16,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,NVTK,2025,0.67,C,1.1837,25.6,15.2,63.2,19,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,OGKB,2022,-2.4192,C,1.1834,17.2,19.6,38.9,18,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h1'}"
+S1,OGKB,2023,-0.0269,C,1.0362,12.4,3.0,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,OGKB,2024,-2.0993,C,1.0329,6.2,3.0,0.0,3,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,OGKB,2025,-0.9447,C,0.7259,2.1,3.2,25.0,4,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,PHOR,2022,1.2283,C,1.1833,5.1,7.5,57.1,7,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S1,PHOR,2023,-0.4658,C,1.0896,14.6,5.0,60.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S1,PHOR,2024,-0.0282,C,1.0263,20.1,7.9,50.0,8,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,PHOR,2025,1.1192,C,1.0248,9.4,2.4,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,RTKM,2022,0.2279,C,0.8571,6.8,8.6,75.0,8,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S1,RTKM,2023,0.3292,C,0.7668,11.0,12.9,46.2,13,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S1,RTKM,2024,-2.3643,C,0.7706,28.7,25.6,38.5,26,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,RTKM,2025,-1.5428,C,0.8044,31.1,23.8,40.0,30,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,SBER,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S1,SBER,2023,-1.6257,C,1.0409,20.2,9.9,20.0,10,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S1,SBER,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S1,SBER,2025,-0.4823,C,1.044,6.7,14.3,44.4,18,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S1,TATN,2022,0.3182,C,0.9861,16.1,7.5,57.1,7,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S1,TATN,2023,-0.8523,C,0.9872,16.2,8.9,44.4,9,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S1,TATN,2024,-0.4239,C,0.8476,15.2,5.9,33.3,6,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S1,TATN,2025,-0.7602,C,0.8737,27.8,7.2,44.4,9,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S1,VTBR,2022,0.0176,C,1.4114,17.2,20.5,57.9,19,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S1,VTBR,2023,-0.1154,C,1.3932,4.6,9.9,70.0,10,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h1'}"
+S1,VTBR,2024,0.9251,C,1.129,17.8,22.0,63.6,22,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S1,VTBR,2025,0.8055,C,1.1732,9.7,12.7,56.2,16,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,AFLT,2022,-0.6735,C,0.5728,0.6,2.2,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S2,AFLT,2023,-0.7915,C,-0.2719,9.4,7.9,37.5,8,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S2,AFLT,2024,0.584,C,-0.0221,4.7,3.0,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,AFLT,2025,0.9615,C,0.1078,5.3,3.2,100.0,4,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,ALRS,2022,-0.5978,C,0.9108,12.2,9.7,44.4,9,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,ALRS,2023,-1.108,C,0.9649,5.9,10.9,54.5,11,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S2,ALRS,2024,-1.5499,C,0.8762,2.3,8.9,22.2,9,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S2,ALRS,2025,0.5026,C,-0.0586,5.7,4.8,83.3,6,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,HYDR,2022,-1.934,C,0.6527,2.6,3.2,33.3,3,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,HYDR,2023,-0.3434,C,1.1555,10.7,3.0,33.3,3,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,HYDR,2024,-0.3306,C,1.0897,4.5,6.9,42.9,7,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,HYDR,2025,-0.0836,C,1.0496,22.5,11.1,50.0,14,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,IRAO,2022,0.7052,C,1.1657,10.7,4.3,50.0,4,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,IRAO,2023,-0.7814,C,1.1097,3.9,2.0,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,IRAO,2024,0.0028,C,1.0011,0.8,2.0,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,IRAO,2025,-0.0988,C,0.9309,5.4,3.2,75.0,4,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,LKOH,2022,-0.1199,C,0.8081,11.7,8.6,62.5,8,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,LKOH,2023,0.6461,C,0.5967,2.8,2.0,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,LKOH,2024,0.0,C,0.5989,0.0,0.0,0.0,0,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,LKOH,2025,1.1543,C,0.5628,1.3,1.6,100.0,2,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,LSRG,2022,1.9053,C,0.8976,6.0,2.2,100.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,LSRG,2023,-0.856,C,1.0321,3.1,1.0,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,LSRG,2024,0.0026,C,1.0613,18.3,10.8,36.4,11,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,LSRG,2025,0.5311,C,0.8731,1.9,2.4,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,MGNT,2022,-0.3518,C,0.8965,13.7,5.4,40.0,5,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S2,MGNT,2023,0.7128,C,0.1322,0.3,2.0,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,MGNT,2024,-1.0944,C,0.1343,2.9,1.0,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,MGNT,2025,-0.2002,C,-999.0,3.1,0.8,0.0,1,0.0005,fallback_to_A
+S2,MOEX,2022,-1.4564,C,1.1557,2.6,1.1,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S2,MOEX,2023,0.2925,C,1.0383,7.9,4.0,50.0,4,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,MOEX,2024,-0.885,C,0.9623,6.2,3.9,25.0,4,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,MOEX,2025,0.3655,C,1.1888,19.9,5.5,71.4,7,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,MTLR,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S2,MTLR,2023,-2.0771,C,1.2752,4.3,5.0,20.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,MTLR,2024,-1.3816,C,-999.0,0.8,2.0,0.0,2,0.0005,fallback_to_A
+S2,MTLR,2025,-0.7686,C,0.7373,4.3,8.7,54.5,11,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S2,MTSS,2022,-1.1601,C,0.6371,10.4,5.4,40.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,MTSS,2023,-0.6369,C,0.8822,8.3,19.8,50.0,20,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S2,MTSS,2024,-0.7219,C,0.6995,9.9,15.8,43.8,16,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S2,MTSS,2025,-0.6038,C,0.616,6.9,19.1,45.8,24,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S2,NVTK,2022,-0.1151,C,1.2213,22.7,25.8,62.5,24,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,NVTK,2023,1.7541,C,0.8462,9.1,6.0,100.0,6,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S2,NVTK,2024,-0.9191,C,0.9365,8.6,9.8,30.0,10,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S2,NVTK,2025,0.559,C,0.9796,11.3,16.9,57.1,21,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,OGKB,2022,2.4032,C,0.8439,3.0,2.2,100.0,2,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,OGKB,2023,-0.2966,C,1.1048,10.9,3.0,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,OGKB,2024,-2.0709,C,1.0242,8.0,2.0,0.0,2,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,OGKB,2025,-1.1718,C,0.6539,2.0,3.2,25.0,4,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,PHOR,2022,1.4523,C,-999.0,1.7,1.1,100.0,1,0.0005,fallback_to_A
+S2,PHOR,2023,-0.7582,C,0.9948,13.0,5.0,40.0,5,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,PHOR,2024,1.9298,C,1.0102,1.4,2.0,100.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,PHOR,2025,1.0873,C,1.0413,8.5,2.4,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S2,RTKM,2022,-0.8571,C,0.9223,6.8,6.5,50.0,6,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S2,RTKM,2023,-0.8317,C,0.5918,10.0,13.9,50.0,14,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S2,RTKM,2024,-0.8589,C,0.5343,21.9,28.5,48.3,29,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S2,RTKM,2025,-0.6959,C,0.4857,10.1,18.2,52.2,23,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S2,SBER,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S2,SBER,2023,0.5944,C,-999.0,1.4,1.0,100.0,1,0.0005,fallback_to_A
+S2,SBER,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S2,SBER,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S2,TATN,2022,-1.3199,C,0.6454,31.1,16.2,53.3,15,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h1'}"
+S2,TATN,2023,-0.7081,C,0.7203,25.3,16.9,41.2,17,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,TATN,2024,-2.205,C,0.6665,22.1,16.7,35.3,17,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S2,TATN,2025,-0.9957,C,0.7417,7.8,11.2,57.1,14,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S2,VTBR,2022,1.175,C,1.2562,14.2,14.0,69.2,13,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,VTBR,2023,-0.0692,C,1.2918,7.8,8.9,44.4,9,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,VTBR,2024,0.583,C,1.2046,14.1,10.0,70.0,10,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S2,VTBR,2025,0.4041,C,0.9854,6.7,6.3,75.0,8,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,AFLT,2022,-0.8391,C,1.0846,10.5,6.5,66.7,6,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S3,AFLT,2023,0.0313,C,0.9094,17.3,9.9,60.0,10,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S3,AFLT,2024,0.0,C,0.9001,0.0,0.0,0.0,0,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,AFLT,2025,-1.2462,C,0.8718,8.3,18.2,39.1,23,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,ALRS,2022,-0.8242,C,0.9319,5.0,9.7,55.6,9,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,ALRS,2023,0.0485,C,0.6361,8.7,17.9,55.6,18,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,ALRS,2024,0.0,C,0.5904,0.0,0.0,0.0,0,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.85, 'horizon': 'h1'}"
+S3,ALRS,2025,-0.9493,C,0.5712,5.3,11.1,28.6,14,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,HYDR,2022,-1.1505,C,0.6867,2.6,2.2,0.0,2,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S3,HYDR,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,HYDR,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,HYDR,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,IRAO,2022,-0.0093,C,0.4562,0.2,1.1,100.0,1,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,IRAO,2023,0.1843,C,0.5405,7.3,11.9,33.3,12,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,IRAO,2024,-0.3388,C,0.5476,7.9,10.8,27.3,11,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,IRAO,2025,-0.195,C,0.4608,5.1,15.2,42.1,19,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,LKOH,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,LKOH,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,LKOH,2024,-2.404,C,0.5416,4.2,7.9,25.0,8,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,LKOH,2025,0.0687,C,0.553,7.7,11.1,50.0,14,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,LSRG,2022,0.3375,C,1.3389,10.2,9.8,44.4,9,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,LSRG,2023,-0.0053,C,1.1168,9.8,8.9,66.7,9,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,LSRG,2024,-0.5028,C,1.0575,19.5,16.7,52.9,17,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,LSRG,2025,-1.1684,C,1.0902,1.6,1.6,0.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MGNT,2022,-0.1357,C,1.2031,6.2,10.8,60.0,10,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,MGNT,2023,0.0718,C,1.1325,11.2,14.9,53.3,15,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MGNT,2024,-1.2775,C,1.0307,14.7,19.7,45.0,20,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MGNT,2025,-1.7911,C,0.8607,5.8,7.9,40.0,10,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MOEX,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,MOEX,2023,1.2436,C,0.9305,24.8,25.8,50.0,26,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MOEX,2024,-1.0894,C,1.0248,1.1,3.0,0.0,3,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MOEX,2025,-1.9575,C,0.9462,2.9,7.1,22.2,9,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MTLR,2022,-1.4484,C,0.5536,0.5,1.1,0.0,1,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,MTLR,2023,0.0116,C,0.445,4.6,8.9,44.4,9,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,MTLR,2024,1.1017,C,0.7665,2.2,6.9,85.7,7,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MTLR,2025,0.137,C,0.7805,2.5,8.7,54.5,11,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,MTSS,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,MTSS,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,MTSS,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,MTSS,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,NVTK,2022,-0.3129,C,0.8356,1.6,4.3,50.0,4,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S3,NVTK,2023,1.178,C,0.8954,13.3,16.9,64.7,17,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,NVTK,2024,0.2688,C,1.0429,2.1,3.0,66.7,3,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,NVTK,2025,-0.2746,C,0.961,0.6,1.6,50.0,2,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,OGKB,2022,0.1304,C,0.916,16.2,15.2,50.0,14,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S3,OGKB,2023,0.2333,C,0.8117,9.3,15.9,37.5,16,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,OGKB,2024,-0.4881,C,0.7851,18.4,7.9,50.0,8,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,OGKB,2025,-0.9679,C,0.7306,17.4,6.4,50.0,8,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,PHOR,2022,0.0,C,0.5733,0.0,0.0,0.0,0,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,PHOR,2023,-1.5553,C,0.7348,5.4,6.0,33.3,6,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,PHOR,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,PHOR,2025,-0.7757,C,0.4172,3.7,4.8,50.0,6,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h1'}"
+S3,RTKM,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,RTKM,2023,-0.7325,C,0.5706,3.1,4.0,0.0,4,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S3,RTKM,2024,0.1064,C,0.5113,8.8,3.9,50.0,4,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S3,RTKM,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,SBER,2022,-1.0028,C,1.2489,0.5,2.2,50.0,2,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.55, 'horizon': 'h5'}"
+S3,SBER,2023,0.5608,C,1.2471,17.1,21.8,36.4,22,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h5'}"
+S3,SBER,2024,-2.2864,C,1.2002,11.1,16.7,41.2,17,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h5'}"
+S3,SBER,2025,-0.1653,C,1.0112,4.5,8.7,72.7,11,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h5'}"
+S3,TATN,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,TATN,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,TATN,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,TATN,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S3,VTBR,2022,0.6459,C,0.5916,9.2,2.2,100.0,2,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S3,VTBR,2023,-2.0858,C,0.5824,10.2,11.9,16.7,12,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S3,VTBR,2024,-0.7135,C,0.4667,14.3,7.0,28.6,7,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S3,VTBR,2025,0.0054,C,0.4485,7.7,12.7,50.0,16,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,AFLT,2022,0.5172,C,1.2669,12.2,5.4,60.0,5,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,AFLT,2023,0.1846,C,0.9911,38.2,23.8,58.3,24,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,AFLT,2024,0.4577,C,1.0934,51.4,15.8,56.2,16,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,AFLT,2025,-0.2524,C,1.0722,11.1,13.5,29.4,17,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,ALRS,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S4,ALRS,2023,0.1796,C,0.7468,12.6,8.9,55.6,9,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,ALRS,2024,1.0802,C,0.7714,4.5,5.9,83.3,6,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,ALRS,2025,-0.2268,C,0.5898,6.3,0.8,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,HYDR,2022,-1.447,C,0.5837,13.2,8.6,25.0,8,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,HYDR,2023,-0.2536,C,0.7362,9.7,10.9,45.5,11,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,HYDR,2024,-0.6002,C,0.5808,0.6,2.0,50.0,2,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,HYDR,2025,0.765,C,0.3546,1.4,4.0,60.0,5,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,IRAO,2022,-0.3965,C,0.8487,1.2,5.4,40.0,5,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,IRAO,2023,-1.2154,C,0.7548,3.2,10.9,45.5,11,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,IRAO,2024,-0.842,C,0.5105,4.4,3.0,33.3,3,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,IRAO,2025,-0.8046,C,0.5892,6.6,14.4,61.1,18,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,LKOH,2022,-0.1069,C,0.6938,2.6,9.7,44.4,9,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,LKOH,2023,-1.0738,C,0.841,5.9,16.9,41.2,17,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S4,LKOH,2024,-1.016,C,0.7692,10.7,11.8,25.0,12,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,LKOH,2025,0.0614,C,0.7882,22.5,20.6,61.5,26,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,LSRG,2022,1.3242,C,1.1691,6.4,9.8,55.6,9,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,LSRG,2023,1.2445,C,1.2026,10.1,8.9,77.8,9,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,LSRG,2024,-1.3012,C,1.1997,15.7,21.7,36.4,22,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,LSRG,2025,0.1557,C,1.0283,5.0,12.2,46.7,15,0.0005,"{'direction': 'rise', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h1'}"
+S4,MGNT,2022,0.1448,C,1.1339,18.4,6.5,33.3,6,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,MGNT,2023,0.5818,C,1.1361,7.4,21.8,54.5,22,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,MGNT,2024,-1.3614,C,1.1177,11.3,13.8,42.9,14,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,MGNT,2025,-0.4187,C,0.9265,2.3,7.9,30.0,10,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h1'}"
+S4,MOEX,2022,0.6015,C,1.4997,2.6,7.5,42.9,7,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,MOEX,2023,-0.2698,C,1.4266,9.8,13.9,50.0,14,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,MOEX,2024,0.4224,C,1.2691,16.6,10.8,54.5,11,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,MOEX,2025,-1.3127,C,1.1937,20.1,12.7,31.2,16,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,MTLR,2022,1.3045,C,0.8608,8.4,9.8,77.8,9,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,MTLR,2023,1.6385,C,1.031,16.4,20.8,81.0,21,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,MTLR,2024,0.2663,C,0.9113,15.0,8.9,66.7,9,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,MTLR,2025,-0.1276,C,0.9177,9.2,13.5,52.9,17,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h1'}"
+S4,MTSS,2022,-1.0709,C,0.8879,21.1,23.7,45.5,22,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,MTSS,2023,-1.5015,C,0.9764,0.9,2.0,0.0,2,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,MTSS,2024,-0.0927,C,0.8962,11.3,4.9,20.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h1'}"
+S4,MTSS,2025,-0.5713,C,0.7825,1.1,3.2,50.0,4,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,NVTK,2022,-1.1991,C,0.8489,2.3,5.4,20.0,5,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,NVTK,2023,-0.3213,C,0.7441,4.0,5.0,40.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.55, 'horizon': 'h1'}"
+S4,NVTK,2024,0.5459,C,0.7041,2.0,3.0,100.0,3,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.55, 'horizon': 'h1'}"
+S4,NVTK,2025,0.0,C,0.6087,0.0,0.0,0.0,0,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,OGKB,2022,0.2397,C,0.8314,21.6,6.5,66.7,6,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S4,OGKB,2023,-1.5863,C,1.0345,21.9,12.9,15.4,13,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S4,OGKB,2024,0.0145,C,0.7677,7.2,2.0,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S4,OGKB,2025,-0.9982,C,0.7549,1.5,4.8,33.3,6,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S4,PHOR,2022,0.0,C,1.1871,0.0,0.0,0.0,0,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,PHOR,2023,1.1207,C,1.113,9.4,3.0,100.0,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,PHOR,2024,0.0,C,1.126,0.0,0.0,0.0,0,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,PHOR,2025,-0.2539,C,1.0654,0.3,0.8,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,RTKM,2022,-1.6964,C,0.8576,9.1,14.0,46.2,13,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,RTKM,2023,0.0678,C,0.6915,6.8,5.0,40.0,5,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S4,RTKM,2024,-0.4783,C,0.533,8.2,8.9,44.4,9,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S4,RTKM,2025,-0.6772,C,0.741,8.2,4.8,33.3,6,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,SBER,2022,0.6088,C,1.2647,0.5,1.1,100.0,1,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,SBER,2023,-1.0554,C,1.0628,7.6,6.9,28.6,7,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,SBER,2024,-0.8841,C,0.8906,1.6,3.9,25.0,4,0.0005,"{'direction': 'fall', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.55, 'horizon': 'h1'}"
+S4,SBER,2025,-1.0806,C,0.8413,4.6,11.9,33.3,15,0.0005,"{'direction': 'fall', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,TATN,2022,-1.8179,C,0.8488,20.6,15.1,14.3,14,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,TATN,2023,1.8624,C,0.6945,25.4,9.9,60.0,10,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,TATN,2024,-0.9201,C,0.9509,4.5,3.9,25.0,4,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h1'}"
+S4,TATN,2025,-0.6289,C,0.9205,4.4,7.2,55.6,9,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 252, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,VTBR,2022,-0.2739,C,1.1672,0.9,1.1,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,VTBR,2023,-0.9468,C,0.9907,16.5,18.9,42.1,19,0.0005,"{'direction': 'off', 'hysteresis': 10, 'lookback': 63, 'term_str': True, 'threshold': 0.25, 'horizon': 'h5'}"
+S4,VTBR,2024,1.0487,C,0.8846,7.3,9.0,44.4,9,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S4,VTBR,2025,0.9521,C,0.7791,10.2,18.2,60.9,23,0.0005,"{'direction': 'rise', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.25, 'horizon': 'h22'}"
+S5,AFLT,2022,-0.8767,C,-999.0,3.0,3.2,0.0,3,0.0005,fallback_to_A
+S5,AFLT,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,AFLT,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,AFLT,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,ALRS,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,ALRS,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,ALRS,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,ALRS,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,HYDR,2022,0.1163,C,0.3946,1.7,3.2,66.7,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.55, 'horizon': 'h22'}"
+S5,HYDR,2023,1.1429,C,0.1672,3.9,2.0,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S5,HYDR,2024,-0.1149,C,0.3666,2.3,1.0,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S5,HYDR,2025,0.6289,C,0.3148,2.5,2.4,100.0,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h5'}"
+S5,IRAO,2022,-0.1532,C,0.6082,3.4,1.1,0.0,1,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S5,IRAO,2023,-1.7476,C,0.5348,7.1,4.0,25.0,4,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S5,IRAO,2024,-0.4581,C,0.3656,7.7,6.9,57.1,7,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S5,IRAO,2025,-0.8565,C,0.3741,0.6,1.6,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S5,LKOH,2022,1.0901,C,-999.0,6.0,1.1,100.0,1,0.0005,fallback_to_A
+S5,LKOH,2023,0.9497,C,-999.0,4.3,2.0,100.0,2,0.0005,fallback_to_A
+S5,LKOH,2024,0.2213,C,-999.0,6.2,3.9,50.0,4,0.0005,fallback_to_A
+S5,LKOH,2025,-0.1084,C,-999.0,5.7,4.0,40.0,5,0.0005,fallback_to_A
+S5,LSRG,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,LSRG,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,LSRG,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,LSRG,2025,-1.2618,C,-999.0,2.6,2.4,33.3,3,0.0005,fallback_to_A
+S5,MGNT,2022,-0.4011,C,-999.0,4.7,2.2,50.0,2,0.0005,fallback_to_A
+S5,MGNT,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,MGNT,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,MGNT,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,MOEX,2022,-0.6373,C,-999.0,0.4,1.1,0.0,1,0.0005,fallback_to_A
+S5,MOEX,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,MOEX,2024,1.2576,C,-999.0,2.3,3.0,100.0,3,0.0005,fallback_to_A
+S5,MOEX,2025,-0.7907,C,-999.0,0.3,0.8,0.0,1,0.0005,fallback_to_A
+S5,MTLR,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,MTLR,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,MTLR,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,MTLR,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,MTSS,2022,-0.7501,C,-999.0,0.9,2.2,50.0,2,0.0005,fallback_to_A
+S5,MTSS,2023,-1.021,C,-999.0,3.1,5.0,40.0,5,0.0005,fallback_to_A
+S5,MTSS,2024,-1.652,C,-999.0,1.6,3.9,0.0,4,0.0005,fallback_to_A
+S5,MTSS,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,NVTK,2022,-0.047,C,-999.0,1.3,2.2,50.0,2,0.0005,fallback_to_A
+S5,NVTK,2023,-1.3313,C,-999.0,4.3,6.0,50.0,6,0.0005,fallback_to_A
+S5,NVTK,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,NVTK,2025,0.3489,C,-999.0,4.5,7.2,55.6,9,0.0005,fallback_to_A
+S5,OGKB,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,OGKB,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,OGKB,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,OGKB,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,PHOR,2022,0.0033,C,-999.0,0.4,1.1,100.0,1,0.0005,fallback_to_A
+S5,PHOR,2023,0.993,C,-999.0,5.1,7.9,75.0,8,0.0005,fallback_to_A
+S5,PHOR,2024,0.044,C,-999.0,0.4,1.0,100.0,1,0.0005,fallback_to_A
+S5,PHOR,2025,-1.4517,C,-999.0,1.9,2.4,33.3,3,0.0005,fallback_to_A
+S5,RTKM,2022,0.349,C,-999.0,1.5,2.2,50.0,2,0.0005,fallback_to_A
+S5,RTKM,2023,1.3346,C,-999.0,1.6,3.0,100.0,3,0.0005,fallback_to_A
+S5,RTKM,2024,-0.9899,C,-999.0,0.4,1.0,0.0,1,0.0005,fallback_to_A
+S5,RTKM,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,SBER,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,SBER,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,SBER,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,SBER,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,TATN,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,TATN,2023,-1.2348,C,-999.0,4.7,4.0,25.0,4,0.0005,fallback_to_A
+S5,TATN,2024,-1.5908,C,-999.0,5.1,3.0,0.0,3,0.0005,fallback_to_A
+S5,TATN,2025,0.3675,C,-999.0,4.4,4.8,50.0,6,0.0005,fallback_to_A
+S5,VTBR,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,VTBR,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,VTBR,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S5,VTBR,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,AFLT,2022,-1.15,C,-999.0,2.7,4.3,25.0,4,0.0005,fallback_to_A
+S6,AFLT,2023,-1.1113,C,-999.0,3.4,6.0,33.3,6,0.0005,fallback_to_A
+S6,AFLT,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,AFLT,2025,-0.7834,C,-999.0,2.8,2.4,33.3,3,0.0005,fallback_to_A
+S6,ALRS,2022,0.1567,C,-999.0,0.9,1.1,100.0,1,0.0005,fallback_to_A
+S6,ALRS,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,ALRS,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,ALRS,2025,-0.7219,C,-999.0,0.6,0.8,0.0,1,0.0005,fallback_to_A
+S6,HYDR,2022,0.0075,C,-999.0,2.4,1.1,100.0,1,0.0005,fallback_to_A
+S6,HYDR,2023,-0.9898,C,-999.0,0.8,2.0,50.0,2,0.0005,fallback_to_A
+S6,HYDR,2024,-0.7106,C,-999.0,0.3,1.0,0.0,1,0.0005,fallback_to_A
+S6,HYDR,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,IRAO,2022,0.6959,C,0.6643,1.0,1.1,100.0,1,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h1'}"
+S6,IRAO,2023,-0.7005,C,0.923,4.9,6.0,66.7,6,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S6,IRAO,2024,-1.6021,C,0.7167,2.6,2.0,50.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S6,IRAO,2025,-0.3983,C,0.3282,5.9,8.8,54.5,11,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S6,LKOH,2022,0.367,C,-999.0,1.0,2.2,100.0,2,0.0005,fallback_to_A
+S6,LKOH,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,LKOH,2024,0.0261,C,-999.0,0.3,3.9,50.0,4,0.0005,fallback_to_A
+S6,LKOH,2025,0.4758,C,-999.0,4.9,4.0,60.0,5,0.0005,fallback_to_A
+S6,LSRG,2022,-1.652,C,0.7783,2.8,4.3,25.0,4,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S6,LSRG,2023,-0.4861,C,0.6056,4.0,7.9,37.5,8,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h22'}"
+S6,LSRG,2024,-0.7974,C,0.5194,2.0,3.0,33.3,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h1'}"
+S6,LSRG,2025,-0.2953,C,-999.0,7.3,5.7,57.1,7,0.0005,fallback_to_A
+S6,MGNT,2022,-0.2861,C,-999.0,1.8,4.3,50.0,4,0.0005,fallback_to_A
+S6,MGNT,2023,-1.5421,C,-999.0,3.9,4.0,25.0,4,0.0005,fallback_to_A
+S6,MGNT,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,MGNT,2025,0.0376,C,-999.0,4.3,4.0,60.0,5,0.0005,fallback_to_A
+S6,MOEX,2022,0.2138,C,-999.0,1.3,1.1,100.0,1,0.0005,fallback_to_A
+S6,MOEX,2023,-0.2562,C,-999.0,1.7,2.0,50.0,2,0.0005,fallback_to_A
+S6,MOEX,2024,-0.6889,C,-999.0,2.7,2.0,50.0,2,0.0005,fallback_to_A
+S6,MOEX,2025,-0.9756,C,-999.0,0.9,0.8,0.0,1,0.0005,fallback_to_A
+S6,MTLR,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,MTLR,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,MTLR,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,MTLR,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,MTSS,2022,1.2448,C,1.1391,0.9,2.2,100.0,2,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.55, 'horizon': 'h1'}"
+S6,MTSS,2023,-0.3427,C,1.0877,5.9,5.0,40.0,5,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S6,MTSS,2024,-2.7325,C,0.9697,4.7,3.0,0.0,3,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S6,MTSS,2025,0.2586,C,0.5708,11.0,14.3,50.0,18,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 63, 'term_str': False, 'threshold': 0.85, 'horizon': 'h5'}"
+S6,NVTK,2022,0.27,C,-999.0,1.3,2.2,50.0,2,0.0005,fallback_to_A
+S6,NVTK,2023,-0.5202,C,-999.0,4.4,6.0,33.3,6,0.0005,fallback_to_A
+S6,NVTK,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,NVTK,2025,0.6134,C,-999.0,2.5,2.4,66.7,3,0.0005,fallback_to_A
+S6,OGKB,2022,-0.6859,C,-999.0,0.9,1.1,0.0,1,0.0005,fallback_to_A
+S6,OGKB,2023,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,OGKB,2024,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,OGKB,2025,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,PHOR,2022,-0.9439,C,-999.0,3.2,2.2,50.0,2,0.0005,fallback_to_A
+S6,PHOR,2023,0.3018,C,-999.0,7.2,6.0,66.7,6,0.0005,fallback_to_A
+S6,PHOR,2024,-0.2606,C,-999.0,1.2,2.0,50.0,2,0.0005,fallback_to_A
+S6,PHOR,2025,-1.1605,C,-999.0,0.9,0.8,0.0,1,0.0005,fallback_to_A
+S6,RTKM,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,RTKM,2023,0.0618,C,-999.0,2.5,3.0,33.3,3,0.0005,fallback_to_A
+S6,RTKM,2024,-0.9758,C,-999.0,0.5,2.0,50.0,2,0.0005,fallback_to_A
+S6,RTKM,2025,-1.5086,C,0.4421,1.6,3.2,0.0,4,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h1'}"
+S6,SBER,2022,0.0854,C,-999.0,3.7,3.2,66.7,3,0.0005,fallback_to_A
+S6,SBER,2023,-0.2532,C,-999.0,4.8,6.0,83.3,6,0.0005,fallback_to_A
+S6,SBER,2024,-1.2439,C,-999.0,1.0,1.0,0.0,1,0.0005,fallback_to_A
+S6,SBER,2025,-0.9546,C,-999.0,2.3,2.4,33.3,3,0.0005,fallback_to_A
+S6,TATN,2022,0.0,C,-999.0,0.0,0.0,0.0,0,0.0005,fallback_to_A
+S6,TATN,2023,-1.5104,C,-999.0,1.4,3.0,0.0,3,0.0005,fallback_to_A
+S6,TATN,2024,-1.6954,C,-999.0,3.8,3.9,25.0,4,0.0005,fallback_to_A
+S6,TATN,2025,0.3074,C,0.4416,5.3,4.8,66.7,6,0.0005,"{'direction': 'off', 'hysteresis': 0, 'lookback': 252, 'term_str': False, 'threshold': 0.85, 'horizon': 'h1'}"
+S6,VTBR,2022,-1.3089,C,-999.0,7.4,7.5,42.9,7,0.0005,fallback_to_A
+S6,VTBR,2023,-1.1818,C,-999.0,5.5,4.0,0.0,4,0.0005,fallback_to_A
+S6,VTBR,2024,0.4122,C,-999.0,4.6,6.0,83.3,6,0.0005,fallback_to_A
+S6,VTBR,2025,0.1472,C,-999.0,4.1,4.0,80.0,5,0.0005,fallback_to_A

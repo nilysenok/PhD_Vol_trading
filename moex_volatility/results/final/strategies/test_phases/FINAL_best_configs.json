@@ -1,0 +1,626 @@
+{
+  "S1": {
+    "AFLT": {
+      "sharpe": 2.928,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.7, \"w\": 10}",
+      "conf": "none",
+      "rm": "{\"mh\": 50, \"rr\": 2.0, \"sl_a\": 4.0}"
+    },
+    "ALRS": {
+      "sharpe": 3.126,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.3, \"w\": 7}",
+      "conf": "none",
+      "rm": "{\"be\": 2.0, \"mh\": 15, \"rr\": 2.0, \"sl_a\": 1.0}"
+    },
+    "HYDR": {
+      "sharpe": 3.002,
+      "signal": "{\"ma\": \"sma\", \"thresh\": 0.3, \"w\": 50}",
+      "conf": "none",
+      "rm": "{\"chand\": 4.0, \"mh\": 20, \"tp_a\": 5.0}"
+    },
+    "IRAO": {
+      "sharpe": 2.742,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 3.0, \"w\": 150}",
+      "conf": "none",
+      "rm": "{\"be\": 1.0, \"mh\": 7, \"sl_a\": 0.75, \"trail\": 3.0}"
+    },
+    "LKOH": {
+      "sharpe": 3.052,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 1.0, \"w\": 14}",
+      "conf": "none",
+      "rm": "{\"sl_a\": 2.5, \"tp_p\": 0.15}"
+    },
+    "LSRG": {
+      "sharpe": 2.729,
+      "signal": "{\"ma\": \"sma\", \"thresh\": 0.7, \"w\": 50}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"chand\": 2.0, \"mh\": 10, \"rr\": 3.0}"
+    },
+    "MGNT": {
+      "sharpe": 2.858,
+      "signal": "{\"ma\": \"ema\", \"thresh\": 1.0, \"w\": 7}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"sl_p\": 0.015, \"trail\": 5.0}"
+    },
+    "MOEX": {
+      "sharpe": 3.074,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 2.0, \"w\": 60}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"chand\": 4.0, \"mh\": 20, \"rr\": 1.0}"
+    },
+    "MTLR": {
+      "sharpe": 3.496,
+      "signal": "{\"ma\": \"sma\", \"thresh\": 0.5, \"w\": 30}",
+      "conf": "volume",
+      "rm": "{\"be\": 0.5, \"mh\": 30, \"sl_a\": 1.5, \"tp_a\": 3.0}"
+    },
+    "MTSS": {
+      "sharpe": 2.825,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.3, \"w\": 7}",
+      "conf": "none",
+      "rm": "{\"sl_a\": 0.6, \"tp_p\": 0.15}"
+    },
+    "NVTK": {
+      "sharpe": 3.204,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.7, \"w\": 30}",
+      "conf": "volume",
+      "rm": "{\"be\": 0.5, \"chand\": 5.0, \"mh\": 50, \"tp_a\": 10.0}"
+    },
+    "OGKB": {
+      "sharpe": 3.165,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.5, \"w\": 7}",
+      "conf": "volume",
+      "rm": "{\"be\": 1.5, \"mh\": 15, \"sl_a\": 0.5, \"tp_p\": 0.05}"
+    },
+    "PHOR": {
+      "sharpe": 3.017,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.7, \"w\": 100}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"mh\": 15, \"rr\": 4.0, \"sl_a\": 1.5}"
+    },
+    "RTKM": {
+      "sharpe": 2.96,
+      "signal": "{\"ma\": \"sma\", \"thresh\": 0.7, \"w\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 1.0, \"chand\": 2.0, \"tp_a\": 5.0}"
+    },
+    "SBER": {
+      "sharpe": 2.477,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.5, \"w\": 100}",
+      "conf": "volume",
+      "rm": "{\"be\": 0.5, \"chand\": 5.0, \"mh\": 30, \"rr\": 1.2}"
+    },
+    "TATN": {
+      "sharpe": 3.408,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.5, \"w\": 5}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"mh\": 36.0, \"rr\": 2.5, \"sl_a\": 5.0}"
+    },
+    "VTBR": {
+      "sharpe": 2.698,
+      "signal": "{\"ma\": \"hull\", \"thresh\": 0.7, \"w\": 100}",
+      "conf": "volume",
+      "rm": "{\"mh\": 30, \"sl_a\": 0.6, \"tp_p\": 0.15}"
+    }
+  },
+  "S2": {
+    "AFLT": {
+      "sharpe": 3.21,
+      "signal": "{\"bs\": 1.3, \"ma\": \"ema\", \"w\": 7}",
+      "conf": "none",
+      "rm": "{\"chand\": 3.0, \"mh\": 20, \"tp_a\": 1.5}"
+    },
+    "ALRS": {
+      "sharpe": 3.363,
+      "signal": "{\"bs\": 1.5, \"ma\": \"hull\", \"w\": 7}",
+      "conf": "none",
+      "rm": "{\"rr\": 2.0, \"sl_p\": 0.07}"
+    },
+    "HYDR": {
+      "sharpe": 2.986,
+      "signal": "{\"bs\": 1.5, \"ma\": \"dema\", \"w\": 14}",
+      "conf": "none",
+      "rm": "{\"mh\": 30, \"sl_a\": 2.0, \"tp_p\": 0.1}"
+    },
+    "IRAO": {
+      "sharpe": 2.888,
+      "signal": "{\"bs\": 1.5, \"ma\": \"sma\", \"w\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 1.8, \"mh\": 20, \"sl_p\": 0.1, \"tp_p\": 0.15}"
+    },
+    "LKOH": {
+      "sharpe": 2.98,
+      "signal": "{\"bs\": 0.7, \"ma\": \"ema\", \"w\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 1.2, \"chand\": 3.0, \"mh\": 15, \"rr\": 2.0}"
+    },
+    "LSRG": {
+      "sharpe": 2.994,
+      "signal": "{\"bs\": 1.5, \"ma\": \"sma\", \"w\": 7}",
+      "conf": "volume",
+      "rm": "{\"chand\": 5.0, \"mh\": 30, \"rr\": 1.2}"
+    },
+    "MGNT": {
+      "sharpe": 3.224,
+      "signal": "{\"bs\": 0.7, \"ma\": \"hull\", \"w\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 1.5, \"chand\": 3.0, \"mh\": 10, \"tp_a\": 2.4}"
+    },
+    "MOEX": {
+      "sharpe": 3.169,
+      "signal": "{\"bs\": 1.3, \"ma\": \"hull\", \"w\": 10}",
+      "conf": "none",
+      "rm": "{\"be\": 1.5, \"mh\": 15, \"sl_a\": 2.0, \"tp_a\": 4.0}"
+    },
+    "MTLR": {
+      "sharpe": 3.523,
+      "signal": "{\"bs\": 1.5, \"ma\": \"dema\", \"w\": 5}",
+      "conf": "none",
+      "rm": "{\"chand\": 4.0, \"mh\": 50, \"rr\": 4.0}"
+    },
+    "MTSS": {
+      "sharpe": 3.007,
+      "signal": "{\"bs\": 0.5, \"ma\": \"hull\", \"w\": 7}",
+      "conf": "volume",
+      "rm": "{\"be\": 1.5, \"sl_p\": 0.05, \"tp_a\": 4.0}"
+    },
+    "NVTK": {
+      "sharpe": 3.044,
+      "signal": "{\"bs\": 1.3, \"ma\": \"ema\", \"w\": 7}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"chand\": 5.0, \"mh\": 50, \"tp_a\": 10.0}"
+    },
+    "OGKB": {
+      "sharpe": 3.239,
+      "signal": "{\"bs\": 0.5, \"ma\": \"hull\", \"w\": 5}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"mh\": 7, \"sl_a\": 2.5, \"tp_a\": 4.0}"
+    },
+    "PHOR": {
+      "sharpe": 2.827,
+      "signal": "{\"bs\": 0.7, \"ma\": \"ema\", \"w\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"mh\": 10, \"sl_p\": 0.01, \"tp_p\": 0.05}"
+    },
+    "RTKM": {
+      "sharpe": 3.148,
+      "signal": "{\"bs\": 0.5, \"ma\": \"hull\", \"w\": 7}",
+      "conf": "volume",
+      "rm": "{\"be\": 1.5, \"chand\": 5.0, \"mh\": 50, \"tp_p\": 0.01}"
+    },
+    "SBER": {
+      "sharpe": 2.699,
+      "signal": "{\"bs\": 1.3, \"ma\": \"dema\", \"w\": 20}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"mh\": 30, \"sl_a\": 0.75, \"trail\": 4.0}"
+    },
+    "TATN": {
+      "sharpe": 3.335,
+      "signal": "{\"bs\": 1.0, \"ma\": \"dema\", \"w\": 10}",
+      "conf": "none",
+      "rm": "{\"be\": 1.5, \"mh\": 30, \"rr\": 4.0, \"sl_a\": 5.0}"
+    },
+    "VTBR": {
+      "sharpe": 2.759,
+      "signal": "{\"bs\": 0.5, \"ma\": \"dema\", \"w\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"mh\": 30, \"sl_a\": 1.6, \"tp_p\": 0.1}"
+    }
+  },
+  "S3": {
+    "AFLT": {
+      "sharpe": 1.918,
+      "signal": "{\"w\": 3}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 2.0, \"mh\": 5, \"sl_a\": 1.5, \"tp_a\": 1.0}"
+    },
+    "ALRS": {
+      "sharpe": 1.866,
+      "signal": "{\"w\": 3}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 1.5, \"chand\": 4.0, \"mh\": 5, \"tp_p\": 0.02}"
+    },
+    "HYDR": {
+      "sharpe": 1.362,
+      "signal": "{\"w\": 7}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 1.5, \"mh\": 3, \"sl_a\": 8.0, \"trail\": 1.0}"
+    },
+    "IRAO": {
+      "sharpe": 1.1,
+      "signal": "{\"w\": 18}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 0.5, \"chand\": 2.0, \"mh\": 30, \"rr\": 2.0}"
+    },
+    "LKOH": {
+      "sharpe": 1.892,
+      "signal": "{\"w\": 3}",
+      "conf": "rsi30",
+      "rm": "{\"mh\": 50, \"sl_a\": 3.0, \"tp_a\": 5.0}"
+    },
+    "LSRG": {
+      "sharpe": 1.884,
+      "signal": "{\"w\": 10}",
+      "conf": "volume",
+      "rm": "{\"be\": 0.5, \"chand\": 4.0, \"mh\": 20, \"tp_a\": 4.0}"
+    },
+    "MGNT": {
+      "sharpe": 1.709,
+      "signal": "{\"w\": 10}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 1.5, \"sl_a\": 1.5, \"trail\": 1.2}"
+    },
+    "MOEX": {
+      "sharpe": 2.04,
+      "signal": "{\"w\": 10}",
+      "conf": "none",
+      "rm": "{\"be\": 1.0, \"chand\": 5.0, \"mh\": 120.0, \"trail\": 4.0}"
+    },
+    "MTLR": {
+      "sharpe": 2.158,
+      "signal": "{\"w\": 25}",
+      "conf": "none",
+      "rm": "{\"be\": 2.0, \"chand\": 4.0, \"mh\": 7, \"rr\": 3.0}"
+    },
+    "MTSS": {
+      "sharpe": 2.701,
+      "signal": "{\"w\": 18}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 1.5, \"rr\": 2.0, \"sl_a\": 1.0}"
+    },
+    "NVTK": {
+      "sharpe": 1.578,
+      "signal": "{\"w\": 3}",
+      "conf": "rsi30",
+      "rm": "{\"mh\": 50, \"sl_a\": 1.8, \"trail\": 5.0}"
+    },
+    "OGKB": {
+      "sharpe": 2.108,
+      "signal": "{\"w\": 3}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 0.5, \"mh\": 10, \"rr\": 1.0, \"sl_a\": 3.0}"
+    },
+    "PHOR": {
+      "sharpe": 1.668,
+      "signal": "{\"w\": 5}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 1.5, \"mh\": 5, \"sl_a\": 2.5, \"tp_a\": 0.5}"
+    },
+    "RTKM": {
+      "sharpe": 1.74,
+      "signal": "{\"w\": 3}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 1.5, \"sl_p\": 0.015, \"tp_a\": 1.5}"
+    },
+    "SBER": {
+      "sharpe": 2.033,
+      "signal": "{\"w\": 7}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 0.5, \"sl_a\": 4.0, \"tp_p\": 0.02}"
+    },
+    "TATN": {
+      "sharpe": 2.019,
+      "signal": "{\"w\": 10}",
+      "conf": "none",
+      "rm": "{\"mh\": 50, \"sl_a\": 8.0, \"trail\": 5.0}"
+    },
+    "VTBR": {
+      "sharpe": 1.922,
+      "signal": "{\"w\": 7}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"chand\": 5.0, \"mh\": 50, \"tp_a\": 1.0}"
+    }
+  },
+  "S4": {
+    "AFLT": {
+      "sharpe": 2.674,
+      "signal": "{\"ap\": 10, \"mult\": 0.5}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 1.0, \"mh\": 50, \"sl_a\": 1.5, \"trail\": 2.0}"
+    },
+    "ALRS": {
+      "sharpe": 2.928,
+      "signal": "{\"ap\": 35, \"mult\": 2.0}",
+      "conf": "volume",
+      "rm": "{\"be\": 1.5, \"mh\": 30, \"sl_p\": 0.1, \"tp_a\": 1.5}"
+    },
+    "HYDR": {
+      "sharpe": 2.321,
+      "signal": "{\"ap\": 14, \"mult\": 1.5}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 1.5, \"mh\": 3, \"sl_a\": 5.0, \"tp_a\": 5.0}"
+    },
+    "IRAO": {
+      "sharpe": 2.39,
+      "signal": "{\"ap\": 5, \"mult\": 1.5}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"mh\": 50, \"sl_a\": 0.75, \"tp_a\": 3.0}"
+    },
+    "LKOH": {
+      "sharpe": 3.2,
+      "signal": "{\"ap\": 7, \"mult\": 1.5}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 2.0, \"chand\": 3.0, \"mh\": 50, \"tp_a\": 5.0}"
+    },
+    "LSRG": {
+      "sharpe": 2.776,
+      "signal": "{\"ap\": 7, \"mult\": 1.5}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 2.0, \"chand\": 5.0, \"mh\": 15, \"tp_p\": 0.15}"
+    },
+    "MGNT": {
+      "sharpe": 2.989,
+      "signal": "{\"ap\": 3, \"mult\": 0.75}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 2.0, \"mh\": 20, \"sl_p\": 0.01, \"tp_p\": 0.1}"
+    },
+    "MOEX": {
+      "sharpe": 2.837,
+      "signal": "{\"ap\": 3, \"mult\": 1.5}",
+      "conf": "volume",
+      "rm": "{\"mh\": 15, \"sl_p\": 0.05, \"tp_p\": 0.07}"
+    },
+    "MTLR": {
+      "sharpe": 3.477,
+      "signal": "{\"ap\": 14, \"mult\": 0.75}",
+      "conf": "rsi20",
+      "rm": "{\"chand\": 2.5, \"mh\": 10, \"rr\": 2.0}"
+    },
+    "MTSS": {
+      "sharpe": 2.898,
+      "signal": "{\"ap\": 14, \"mult\": 2.0}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 1.5, \"chand\": 3.0, \"mh\": 50, \"tp_p\": 0.07}"
+    },
+    "NVTK": {
+      "sharpe": 2.756,
+      "signal": "{\"ap\": 35, \"mult\": 1.75}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 1.0, \"mh\": 30, \"rr\": 1.0, \"sl_p\": 0.1}"
+    },
+    "OGKB": {
+      "sharpe": 2.723,
+      "signal": "{\"ap\": 10, \"mult\": 1.0}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 1.0, \"chand\": 3.0, \"mh\": 7, \"trail\": 3.0}"
+    },
+    "PHOR": {
+      "sharpe": 2.454,
+      "signal": "{\"ap\": 3, \"mult\": 1.0}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"chand\": 3.0, \"mh\": 30, \"tp_a\": 3.0}"
+    },
+    "RTKM": {
+      "sharpe": 3.021,
+      "signal": "{\"ap\": 7, \"mult\": 1.75}",
+      "conf": "volume",
+      "rm": "{\"be\": 0.5, \"sl_a\": 3.0, \"tp_p\": 0.15}"
+    },
+    "SBER": {
+      "sharpe": 2.571,
+      "signal": "{\"ap\": 18, \"mult\": 0.75}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 0.5, \"chand\": 2.5, \"tp_p\": 0.03}"
+    },
+    "TATN": {
+      "sharpe": 3.174,
+      "signal": "{\"ap\": 35, \"mult\": 1.75}",
+      "conf": "rsi30",
+      "rm": "{\"be\": 1.5, \"mh\": 50, \"rr\": 2.5, \"sl_a\": 4.0}"
+    },
+    "VTBR": {
+      "sharpe": 2.628,
+      "signal": "{\"ap\": 35, \"mult\": 2.0}",
+      "conf": "rsi20",
+      "rm": "{\"be\": 1.0, \"rr\": 1.5, \"sl_a\": 2.0}"
+    }
+  },
+  "S5": {
+    "AFLT": {
+      "sharpe": 2.946,
+      "signal": "{\"el\": 1, \"pt\": \"fibonacci\"}",
+      "conf": "none",
+      "rm": "{\"be\": 1.0, \"chand\": 4.0, \"mh\": 15, \"tp_a\": 4.0}"
+    },
+    "ALRS": {
+      "sharpe": 2.754,
+      "signal": "{\"el\": 1, \"pt\": \"classic\"}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"chand\": 4.0, \"mh\": 15, \"tp_a\": 3.0}"
+    },
+    "HYDR": {
+      "sharpe": 2.644,
+      "signal": "{\"el\": 1, \"pt\": \"woodie\"}",
+      "conf": "none",
+      "rm": "{\"be\": 2.0, \"mh\": 24.0, \"sl_a\": 1.5, \"tp_p\": 0.05}"
+    },
+    "IRAO": {
+      "sharpe": 2.474,
+      "signal": "{\"el\": 1, \"pt\": \"woodie\"}",
+      "conf": "none",
+      "rm": "{\"mh\": 10, \"rr\": 1.5, \"sl_a\": 5.0}"
+    },
+    "LKOH": {
+      "sharpe": 3.047,
+      "signal": "{\"el\": 2, \"pt\": \"fibonacci\"}",
+      "conf": "none",
+      "rm": "{\"mh\": 36.0, \"sl_a\": 1.5, \"tp_a\": 2.0}"
+    },
+    "LSRG": {
+      "sharpe": 2.876,
+      "signal": "{\"el\": 1, \"pt\": \"fibonacci\"}",
+      "conf": "none",
+      "rm": "{\"chand\": 5.0, \"mh\": 5, \"rr\": 1.0}"
+    },
+    "MGNT": {
+      "sharpe": 2.685,
+      "signal": "{\"el\": 2, \"pt\": \"classic\"}",
+      "conf": "none",
+      "rm": "{\"be\": 2.0, \"mh\": 15, \"sl_a\": 3.6, \"tp_a\": 4.0}"
+    },
+    "MOEX": {
+      "sharpe": 2.748,
+      "signal": "{\"el\": 1, \"pt\": \"classic\"}",
+      "conf": "volume",
+      "rm": "{\"be\": 2.0, \"mh\": 20, \"rr\": 3.0, \"sl_a\": 3.0}"
+    },
+    "MTLR": {
+      "sharpe": 3.492,
+      "signal": "{\"el\": 2, \"pt\": \"fibonacci\"}",
+      "conf": "volume",
+      "rm": "{\"be\": 1.5, \"sl_a\": 2.0, \"tp_p\": 0.15}"
+    },
+    "MTSS": {
+      "sharpe": 2.763,
+      "signal": "{\"el\": 1, \"pt\": \"fibonacci\"}",
+      "conf": "none",
+      "rm": "{\"mh\": 30, \"sl_a\": 1.5, \"tp_a\": 8.0}"
+    },
+    "NVTK": {
+      "sharpe": 2.821,
+      "signal": "{\"el\": 2, \"pt\": \"fibonacci\"}",
+      "conf": "none",
+      "rm": "{\"be\": 0.6, \"mh\": 15, \"sl_a\": 2.0, \"tp_a\": 3.0}"
+    },
+    "OGKB": {
+      "sharpe": 2.812,
+      "signal": "{\"el\": 2, \"pt\": \"woodie\"}",
+      "conf": "volume",
+      "rm": "{\"be\": 1.0, \"chand\": 4.0, \"mh\": 20, \"rr\": 4.0}"
+    },
+    "PHOR": {
+      "sharpe": 2.643,
+      "signal": "{\"el\": 2, \"pt\": \"woodie\"}",
+      "conf": "volume",
+      "rm": "{\"be\": 1.2, \"chand\": 2.5, \"mh\": 15, \"rr\": 1.5}"
+    },
+    "RTKM": {
+      "sharpe": 2.934,
+      "signal": "{\"el\": 1, \"pt\": \"camarilla\"}",
+      "conf": "volume",
+      "rm": "{\"be\": 1.0, \"mh\": 4.0, \"sl_p\": 0.1, \"tp_p\": 0.01}"
+    },
+    "SBER": {
+      "sharpe": 2.532,
+      "signal": "{\"el\": 2, \"pt\": \"classic\"}",
+      "conf": "none",
+      "rm": "{\"be\": 1.0, \"sl_a\": 1.2, \"tp_a\": 1.0}"
+    },
+    "TATN": {
+      "sharpe": 3.006,
+      "signal": "{\"el\": 1, \"pt\": \"fibonacci\"}",
+      "conf": "none",
+      "rm": "{\"be\": 1.5, \"chand\": 4.0, \"rr\": 1.0}"
+    },
+    "VTBR": {
+      "sharpe": 3.136,
+      "signal": "{\"el\": 2, \"pt\": \"fibonacci\"}",
+      "conf": "none",
+      "rm": "{\"be\": 1.0, \"mh\": 10, \"sl_a\": 2.5, \"tp_a\": 5.0}"
+    }
+  },
+  "S6": {
+    "AFLT": {
+      "sharpe": 3.016,
+      "signal": "{\"dm\": 0.25, \"vw\": 7}",
+      "conf": "none",
+      "rm": "{\"be\": 2.0, \"chand\": 4.0, \"mh\": 15, \"rr\": 2.0}"
+    },
+    "ALRS": {
+      "sharpe": 3.023,
+      "signal": "{\"dm\": 1.5, \"vw\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 1.0, \"mh\": 30, \"rr\": 4.0, \"sl_a\": 4.0}"
+    },
+    "HYDR": {
+      "sharpe": 3.073,
+      "signal": "{\"dm\": 1.0, \"vw\": 10}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"mh\": 30, \"sl_a\": 3.0, \"tp_a\": 3.6}"
+    },
+    "IRAO": {
+      "sharpe": 2.901,
+      "signal": "{\"dm\": 1.5, \"vw\": 3}",
+      "conf": "none",
+      "rm": "{\"mh\": 20, \"rr\": 2.5, \"sl_p\": 0.07}"
+    },
+    "LKOH": {
+      "sharpe": 2.68,
+      "signal": "{\"dm\": 0.25, \"vw\": 10}",
+      "conf": "none",
+      "rm": "{\"chand\": 2.5, \"mh\": 20, \"rr\": 2.0}"
+    },
+    "LSRG": {
+      "sharpe": 2.92,
+      "signal": "{\"dm\": 2.0, \"vw\": 3}",
+      "conf": "none",
+      "rm": "{\"mh\": 18.0, \"rr\": 1.5, \"sl_p\": 0.1}"
+    },
+    "MGNT": {
+      "sharpe": 2.889,
+      "signal": "{\"dm\": 1.75, \"vw\": 3}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"chand\": 4.0, \"mh\": 30, \"rr\": 1.5}"
+    },
+    "MOEX": {
+      "sharpe": 2.704,
+      "signal": "{\"dm\": 0.25, \"vw\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 1.2, \"chand\": 3.0, \"mh\": 15, \"tp_a\": 5.0}"
+    },
+    "MTLR": {
+      "sharpe": 3.419,
+      "signal": "{\"dm\": 0.75, \"vw\": 3}",
+      "conf": "none",
+      "rm": "{\"mh\": 15, \"sl_a\": 3.6, \"tp_a\": 4.0}"
+    },
+    "MTSS": {
+      "sharpe": 2.911,
+      "signal": "{\"dm\": 0.5, \"vw\": 5}",
+      "conf": "none",
+      "rm": "{\"be\": 0.5, \"chand\": 3.0, \"rr\": 0.8}"
+    },
+    "NVTK": {
+      "sharpe": 2.546,
+      "signal": "{\"dm\": 0.75, \"vw\": 3}",
+      "conf": "none",
+      "rm": "{\"mh\": 15, \"sl_a\": 2.0, \"tp_a\": 3.0}"
+    },
+    "OGKB": {
+      "sharpe": 2.649,
+      "signal": "{\"dm\": 2.0, \"vw\": 7}",
+      "conf": "none",
+      "rm": "{\"chand\": 5.0, \"mh\": 20, \"rr\": 2.0}"
+    },
+    "PHOR": {
+      "sharpe": 2.738,
+      "signal": "{\"dm\": 1.5, \"vw\": 7}",
+      "conf": "none",
+      "rm": "{\"mh\": 20, \"rr\": 2.0, \"sl_a\": 5.0}"
+    },
+    "RTKM": {
+      "sharpe": 3.229,
+      "signal": "{\"dm\": 1.5, \"vw\": 10}",
+      "conf": "none",
+      "rm": "{\"mh\": 15, \"sl_p\": 0.01, \"tp_a\": 6.0}"
+    },
+    "SBER": {
+      "sharpe": 2.595,
+      "signal": "{\"dm\": 0.75, \"vw\": 3}",
+      "conf": "none",
+      "rm": "{\"be\": 1.0, \"chand\": 1.6, \"mh\": 30, \"rr\": 2.0}"
+    },
+    "TATN": {
+      "sharpe": 3.312,
+      "signal": "{\"dm\": 1.0, \"vw\": 3}",
+      "conf": "none",
+      "rm": "{\"be\": 1.2, \"chand\": 4.0, \"mh\": 15, \"tp_a\": 5.0}"
+    },
+    "VTBR": {
+      "sharpe": 3.248,
+      "signal": "{\"dm\": 1.75, \"vw\": 10}",
+      "conf": "none",
+      "rm": "{\"be\": 1.5, \"chand\": 4.0, \"tp_a\": 1.5}"
+    }
+  }
+}

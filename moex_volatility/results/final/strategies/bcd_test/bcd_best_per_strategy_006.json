@@ -1,0 +1,32 @@
+{
+  "S1": {
+    "best_approach": "C_h1",
+    "mean_delta": 1.679,
+    "pct_improved": 89.7
+  },
+  "S2": {
+    "best_approach": "C_h22",
+    "mean_delta": 1.512,
+    "pct_improved": 85.3
+  },
+  "S3": {
+    "best_approach": "C_h1",
+    "mean_delta": 1.734,
+    "pct_improved": 97.1
+  },
+  "S4": {
+    "best_approach": "C_h22",
+    "mean_delta": 1.312,
+    "pct_improved": 79.4
+  },
+  "S5": {
+    "best_approach": "C_h1",
+    "mean_delta": 1.655,
+    "pct_improved": 95.6
+  },
+  "S6": {
+    "best_approach": "C_h22",
+    "mean_delta": 1.55,
+    "pct_improved": 89.7
+  }
+}
