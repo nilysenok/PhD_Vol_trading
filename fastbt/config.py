@@ -1,0 +1,62 @@
+"""Режимы fastbt. Ворота: Config.gate() = --leak-mask-old без исправлений (код c22a4b3).
+
+Исправления (решение владельца С1, 25.10: включаются постоянно после ворот):
+  fix_c_s12_val — валидация C у S1/S2 по полным позициям A (как у остальных);
+  fix_b_median  — медиана σ в B только по прошлому (бары до начала тестового года);
+  fix_d_units   — σ D переводится в годовые единицы (·√252), как target/floor/cap;
+  fix_c_fill    — нет допустимой конфигурации C → C = A (а не пропуск строк);
+  fix_rate / fix_sharpe — ставка ЦБ по решениям и Шарп mean(excess)/std(excess) в МСП.
+comm — комиссия отбора на сторону (печати: 0,40%; честный пересчёт: 0,05%).
+"""
+from __future__ import annotations
+
+import argparse
+from dataclasses import asdict, dataclass
+
+FIXES = ("c_s12_val", "b_median", "d_units", "c_fill", "rate", "sharpe")
+
+
+@dataclass(frozen=True)
+class Config:
+    mask_old: bool = False
+    fix_c_s12_val: bool = True
+    fix_b_median: bool = True
+    fix_d_units: bool = True
+    fix_c_fill: bool = True
+    fix_rate: bool = True
+    fix_sharpe: bool = True
+    comm: float = 0.0005
+    msp_comm: float = 0.0005
+
+    @staticmethod
+    def gate() -> "Config":
+        return Config(mask_old=True, comm=0.004,
+                      **{f"fix_{f}": False for f in FIXES})
+
+    def bound(self) -> int:
+        """Индекс в _year_bounds для концов окон: [1] — старая утечка, [0] — без неё."""
+        return 1 if self.mask_old else 0
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def add_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--leak-mask-old", action="store_true",
+                   help="режим ворот: маска [1] и поведение c22a4b3 без исправлений")
+    for f in FIXES:
+        p.add_argument(f"--fix-{f.replace('_', '-')}", dest=f"fix_{f}", default=None,
+                       action=argparse.BooleanOptionalAction)
+    p.add_argument("--comm", type=float, default=None, help="комиссия отбора на сторону")
+
+
+def from_args(a) -> Config:
+    base = Config.gate() if a.leak_mask_old else Config()
+    kw = base.to_dict()
+    for f in FIXES:
+        v = getattr(a, f"fix_{f}")
+        if v is not None:
+            kw[f"fix_{f}"] = v
+    if a.comm is not None:
+        kw["comm"] = a.comm
+    return Config(**kw)

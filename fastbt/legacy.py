@@ -38,7 +38,7 @@ def load_legacy():
     global _L
     if _L is not None:
         return _L
-    os.environ.setdefault("NUMBA_NUM_THREADS", "1")
+    keep = os.environ.get("NUMBA_NUM_THREADS")     # V4 перезаписывает его при импорте
     d = str(legacy_dir())
     if d not in sys.path:
         sys.path.insert(0, d)
@@ -50,5 +50,9 @@ def load_legacy():
         if m is not None and not str(getattr(m, "__file__", "")).startswith(d):
             raise RuntimeError(f"модуль {name} уже импортирован не из {d}")
         mods[key] = importlib.import_module(name)
+    if keep is None:
+        os.environ.pop("NUMBA_NUM_THREADS", None)
+    else:
+        os.environ["NUMBA_NUM_THREADS"] = keep
     _L = SimpleNamespace(**mods)
     return _L
