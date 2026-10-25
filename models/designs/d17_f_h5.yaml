@@ -1,0 +1,36 @@
+# Д17 агент F, h=5: рычаги Д17.2 (RRV), Д17.5 (винзоризация цели), Д17.4 (итерированный HAR) на финалистах D12_h5 и F2m_h5.
+# Модуль scripts/analysis/d17_f.py, оценка scripts/analysis/d17_f_eval.py. Без переподбора: точки финалистов по шагам.
+name: d17_f_h5
+horizon: 5
+data:
+  features: data/regen/features_pit_v3_d7_h5.parquet (+ колонки rrv_* из features_pit_v3_rrv.parquet)
+  target: rv_target_mean_h5
+train:
+  protocol: l2_lib.fit (ES на val-годе шага, patience 30, max_bin 255, бины окна шага 1 для шагов >= 2)
+  steps: [1, 2, 3, 4, 5, 6]
+  seeds: [42, 43, 44]
+  exclude_features: data/regen/Bv2b_excluded_features.csv
+selection:
+  oos: шаги 2-5 (val 2017-2020), Б0.1 вне выборки
+  check: шаг 6 (2021)
+  criteria: c1-c3 на 2016-2021
+  threshold: ">= 1% к base по среднему 3 seed, знак во всех 3 seed, 2021 не хуже > 2%"
+  confirm_and_test: не открываются (тестовые части шага не считаются)
+variants: [base, rrv_pk, rrv_gk, tgt_pk, wins, iterhar]
+designs:
+  D12_h5:
+    cfg: '{"v9": true, "harf": true, "huber": true}'
+    blocks: d7
+    points: data/regen/D12_h5_selected_h5.csv
+    models: [xgb, lgbm]
+    leg: wrap2
+    b01: sm
+  F2m_h5:
+    cfg: '{"v9": true, "harf": true, "mono": true, "mono_sign": -1}'
+    blocks: d7
+    points: data/regen/F2m_h5_selected_h5.csv
+    models: [xgb, lgbm]
+    leg: wrap2
+    b01: smrob
+output: data/regen/D17F_h5_{design}_{variant}_{model}_val.parquet
+iterhar: data/regen/iterhar_h5.parquet  # date, ticker, step 1-10, iterhar_ln — для агента B (слагаемое HAR-X)
