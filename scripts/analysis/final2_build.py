@@ -30,13 +30,13 @@ def har_step10(A, harj, h):
     return f(vi, 2025), f(td, 2026)
 
 
-def leg10(boost, h, leg):
-    """-> {'xgb': (val, test), 'lgb': (val, test)} ноги на шаге 10."""
-    sd, lk = R / 'final2' / 'step10', R / 'test_locked' / 'final2' / 'step10'
+def leg10(boost, h, leg, sd=None, lk=None, wdir=None):
+    """-> {'xgb': (val, test), 'lgb': (val, test)} ноги на шаге 10. sd/lk/wdir — каталоги шага 10 и wrap2 (по умолчанию второго круга)."""
+    sd, lk = Path(sd or R / 'final2' / 'step10'), Path(lk or R / 'test_locked' / 'final2' / 'step10')
     raw = {m: (pd.read_parquet(sd / f'{boost}_{m}_h{h}_s10_val.parquet'), pd.read_parquet(lk / f'{boost}_{m}_h{h}_s10_test.parquet')) for m in ('xgb', 'lgbm')}
     comps, prim = (), None
     if leg == 'wrap2':
-        w = pd.read_csv(R / 'final2' / f'wrap2_{boost}_h{h}.csv')
+        w = pd.read_csv(Path(wdir or R / 'final2') / f'wrap2_{boost}_h{h}.csv')
         comps = tuple(x for x in str(w.final.iloc[0]).split('+') if x != 'none')
         prim = w.model.iloc[0]
     seeds = leg == 'seeds3' or '1b' in comps
@@ -70,22 +70,36 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--boost', required=True); ap.add_argument('--h', type=int, required=True); ap.add_argument('--design', required=True)
     ap.add_argument('--out', default=str(R / 'test_locked' / 'final2'))
+    ap.add_argument('--regen', default=str(R), help='каталог val-файлов ноги (третий круг: кандидат может лежать в подкаталоге)')
+    ap.add_argument('--step10-dir', default=None, help='val 2025 шага 10 (по умолчанию data/regen/final2/step10)')
+    ap.add_argument('--step10-lock', default=None, help='тест шага 10 (по умолчанию test_locked/final2/step10)')
+    ap.add_argument('--wrap-dir', default=None, help='каталог wrap2_<boost>_h<h>.csv (по умолчанию data/regen/final2)')
+    ap.add_argument('--no-step10', action='store_true', help='только шаги 1-9 (шаг 10 кандидата не посчитан; ↺ в отчёт)')
+    ap.add_argument('--features', default=str(R / 'features_pit_v3.parquet'))
     a = ap.parse_args()
     h, out = a.h, Path(a.out)
     leg, sel, lab, lam = a.design.split('|')[:4]
-    assert sel.startswith('V0_') and lam == 'L0', 'шаг 10 реализован только для V0/L0'
+    assert a.no_step10 or (sel.startswith('V0_') and lam == 'L0'), 'шаг 10 реализован только для V0/L0'
     comp, code = sel[3:].lower(), lab[2:]
-    if comp == 'hcj':
+    if comp == 'hcj' and not a.no_step10:
         raise SystemExit('V0_HCJ: шаг 10 не реализован')
-    feat = R / 'features_pit_v3.parquet'
+    feat = Path(a.features)
     tmp = out / f'_tmp_h{h}'
     subprocess.run([sys.executable, '-W', 'ignore', str(Path(__file__).resolve().parent / 'gibrid_v17.py'), '--boost', a.boost, '--h', str(h),
-                    '--features', str(feat), '--build-test', a.design, '--test-out', str(tmp)], check=True)
+                    '--features', str(feat), '--regen', a.regen, '--build-test', a.design, '--test-out', str(tmp)], check=True)
     T9 = pd.read_parquet(tmp / f'final_h{h}_test.parquet')
+    if a.no_step10:
+        out.mkdir(parents=True, exist_ok=True)
+        T9.to_parquet(out / f'final_h{h}_test.parquet', index=False)
+        for f in tmp.glob('*'):
+            f.unlink()
+        tmp.rmdir()
+        print(f'h={h}: {a.design} ({a.boost}) -> {out / f"final_h{h}_test.parquet"}: только шаги 1-9, строк {len(T9)}; метрики не считались', flush=True)
+        return
     A, harj = GH.load_pit(feat)
     hv, ht, _ = GH.har_forecasts(h, A, harj)
-    bx, bl = load_boost(a.boost, h, R, leg)  # val шагов 1-9 (остатки для s2; метрики не считаются)
-    bxt, blt = load_boost(a.boost, h, R, leg, test=True)
+    bx, bl = load_boost(a.boost, h, Path(a.regen), leg)  # val шагов 1-9 (остатки для s2; метрики не считаются)
+    bxt, blt = load_boost(a.boost, h, Path(a.regen), leg, test=True)
     V = wide(hv, bx['val'], bl['val'])
     V = V[V.rv_actual > 1e-12]
     E = {c: {st: np.log(g.rv_actual.values + 1e-10) - np.log(g[c].values) for st, g in V.groupby('step')} for c in ('har', 'xgb', 'lgb')}
@@ -96,7 +110,7 @@ def main():
     print(f'контроль шага 9: макс. отн. расхождение с --build-test {float(np.max(np.abs(chk.p / chk.rv_pred - 1))):.2e} ({len(chk)} строк)', flush=True)
     # шаг 10
     hv10, ht10 = har_step10(A, harj, h)
-    L10 = leg10(a.boost, h, leg)
+    L10 = leg10(a.boost, h, leg, a.step10_dir, a.step10_lock, a.wrap_dir)
     V10 = wide(hv10, L10['xgb'][0], L10['lgb'][0])
     V10 = V10[V10.rv_actual > 1e-12]
     for c in ('har', 'xgb', 'lgb'):
