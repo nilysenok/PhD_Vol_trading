@@ -44,17 +44,20 @@ def run_unit(ticker, sid, cfg, td=None):
     from fastbt.approach_a import ApproachA
     from fastbt.approach_b import run_b
     from fastbt.approach_cd import run_c, run_d
+    from fastbt.data import load_ticker
     from fastbt.unit import make_unit
-    u = make_unit(ticker, sid, td)
+    u = make_unit(ticker, sid, load_ticker(ticker, cfg.corp_actions) if td is None else td)
     A = ApproachA(u, cfg)
     a = A.run()
-    b = run_b(u, cfg, a)
-    c = run_c(u, cfg, a)
-    d = run_d(u, cfg, a)
+    ap = cfg.approaches
+    b = run_b(u, cfg, a) if "B" in ap else {}
+    c = run_c(u, cfg, a) if "C" in ap else {}
+    d = run_d(u, cfg, a) if "D" in ap else {}
     sname = grids.STRATEGY_NAMES[sid]
     parts = (_rows(u, sname, "A", a, cfg.years_a) + _rows(u, sname, "B", b, cfg.years_bcd)
              + _rows(u, sname, "C", c, cfg.years_bcd) + _rows(u, sname, "D", d, cfg.years_bcd))
     meta = {"A": {Y: [[int(x) for x in t] for t in v[0]] for Y, v in a.items()},
+            "A_info": A.info,
             "B": {Y: v[0] for Y, v in b.items()},
             "C": {Y: v[0] for Y, v in c.items()},
             "D": {Y: v[0] for Y, v in d.items()}}

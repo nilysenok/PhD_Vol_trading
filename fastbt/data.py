@@ -58,12 +58,29 @@ def align_sigma(dates: np.ndarray, ticker: str) -> dict:
     return out
 
 
-@lru_cache(maxsize=32)
-def load_ticker(ticker: str) -> TickerData:
+CORP = Path(__file__).resolve().parent.parent / "data" / "corporate_actions.csv"
+
+
+def corp_actions(ticker: str) -> pd.DataFrame:
+    """Применяемые корпоративные события тикера (status == applied)."""
+    ca = pd.read_csv(CORP, parse_dates=["date"])
+    return ca[(ca["ticker"] == ticker) & (ca["status"] == "applied")]
+
+
+@lru_cache(maxsize=64)
+def load_ticker(ticker: str, corp: bool = False) -> TickerData:
+    """corp=True — цены до даты события × factor, объём ÷ factor (data/corporate_actions.csv)."""
     d = daily_df()
     x = d[d["ticker"] == ticker].sort_values("date").reset_index(drop=True)
     c, h, l, o, v = [x[k].values.astype(np.float64) for k in
                      ("close", "high", "low", "open", "volume")]
+    if corp:
+        for _, ev in corp_actions(ticker).iterrows():
+            m = (x["date"] < ev["date"]).values
+            f = float(ev["factor"])
+            for a in (c, h, l, o):
+                a[m] *= f
+            v[m] /= f
     n = len(c)
     lr = np.zeros(n)
     lr[:-1] = np.log(c[1:] / np.maximum(c[:-1], 1e-12))

@@ -29,11 +29,13 @@ class Config:
     msp_comm: float = 0.0005
     years_a: tuple = tuple(range(2020, 2027))
     years_bcd: tuple = tuple(range(2022, 2027))
-    val_start: int = 2020          # начало валидации B/C/D (год; в маске [1] — со следующего)
+    corp_actions: bool = True      # data/corporate_actions.csv (в воротах — нет)
+    val_start: int = 2020
+    approaches: str = "ABCD"          # начало валидации B/C/D (год; в маске [1] — со следующего)
 
     @staticmethod
     def gate() -> "Config":
-        return Config(mask_old=True, comm=0.004,
+        return Config(mask_old=True, comm=0.004, corp_actions=False,
                       **{f"fix_{f}": False for f in FIXES})
 
     def bound(self) -> int:

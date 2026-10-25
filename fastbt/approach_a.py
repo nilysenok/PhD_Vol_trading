@@ -29,6 +29,7 @@ class ApproachA:
         rm = np.tile(np.arange(R), K)
         self.full = run_grid(u, sp, rm, u.rmP, u.trend, cfg.comm).reshape(K, R, len(u.nbars), NF)
         self._raw = {}
+        self.info = {}
         self._ex = {}
 
     def raw_pos(self, i, r):
@@ -67,6 +68,10 @@ class ApproachA:
         if self.v41:
             ok &= tpy >= 1.0
         passing = [c for c in res if ok[c]]
+        self.info[Y] = {"n_coarse": len(res), "n_pass": len(passing),
+                        "n_sh_pos": int((sh[:, coarse] > 0).sum()),
+                        "n_mdd_ok": int((mdd[:, coarse] > -0.30).sum()),
+                        "n_exp_ok": int((ex[:, coarse] > 5).sum())}
         if not passing:
             passing = _desc(res, lambda c: sh[c])[:10]
         top50 = _desc(passing, lambda c: sh[c])[:50]
