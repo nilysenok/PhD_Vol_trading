@@ -1,9 +1,11 @@
 """Загрузка прогнозов бустинга (single / top5 / seeds3) и слияние с HAR-J."""
+import os
 from pathlib import Path
 import pandas as pd
 import gibrid_har as GH
 
 MAIN_REGEN = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen')
+# третий круг (final3.py): GIBRID_TEST_DIR — каталог тестовых прогнозов кандидата, если не test_locked/<boost>/
 
 
 def find(regen, name):
@@ -37,7 +39,7 @@ def load_boost(boost, h, regen, variant, test=False):
     names = {'P1': ('xgb', 'P1'), 'B': ('B_xgb', 'B_lgbm')}.get(boost, (f'{boost}_xgb', f'{boost}_lgbm'))
     if boost.startswith('GRU_sv'):  # одиночная модель (GRU_sv, GRU_svoos: {boost}_h{h}_{val,test}.parquet) в обоих слотах; V0_XGB = V0_LGB = модель
         names = (boost, boost)
-    tdir = MAIN_REGEN / 'test_locked' / boost
+    tdir = Path(os.environ['GIBRID_TEST_DIR']) if os.environ.get('GIBRID_TEST_DIR') else MAIN_REGEN / 'test_locked' / boost
     empty = lambda: pd.DataFrame(columns=['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']).astype(
         {'date': 'datetime64[ns]', 'ticker': object, 'year': int, 'step': int, 'rv_actual': float, 'rv_pred': float})
     res = []
