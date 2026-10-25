@@ -148,7 +148,9 @@ def main(argv=None):
             f"- `tabl_4_9_h3.csv` — H3, бенчмарки MCFTR/RGBITR: `{cmd}`\n"
             f"- `tabl_4_otsev_a.csv` — отсев фазы 1: `{cmd}`\n"
             f"- `tabl_4_msp_a_po_godam_mask1.csv`, `tabl_4_msp_a_mask1.csv`, `tabl_4_a_utechka.csv`"
-            f" — до/после утечки: сначала `{cmd}`, затем `{cmd} --leak-mask-old`\n\n"
+            f" — до/после утечки: сначала `{cmd}`, затем `{cmd} --leak-mask-old`\n"
+            "- `tabl_4_a_razlozhenie.csv`, `tabl_4_a_vklad_strategiy.csv` — разложение МСП-A по годам"
+            " и вклад S1–S6 (маски [0] и [1]): после двух команд выше `python3 -m fastbt.decomp`\n\n"
             f"Конфигурация: `{json.dumps(cfg.to_dict(), default=str)}`\n\n"
             f"Время счёта позиций: {t_run:.0f} с.\n")
         out = MAIN / "data" / "fastbt" / "a_honest.parquet"
