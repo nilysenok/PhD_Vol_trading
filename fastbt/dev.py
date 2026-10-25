@@ -111,12 +111,39 @@ def period_sharpe(pos, cfg) -> dict:
     return {ap: msp.sharpe(p["excess"]) for ap, p in ports.items()}
 
 
-def save_run(it_hash, design_path, note, tab, deltas, ev):
+def choices(metas, years) -> str:
+    """Что выбрано по валидации в годы B/C/D: γ непрерывного D, (удержание, N) фильтра оборота."""
+    from collections import Counter
+    g, tf = Counter(), {k: Counter() for k in "ABCD"}
+    for by_sid in metas.values():
+        for m in by_sid.values():
+            for k in "BCD":
+                for Y, p in m.get(k, {}).items():
+                    if int(Y) not in years or not isinstance(p, dict):
+                        continue
+                    if k == "D" and p.get("continuous"):
+                        g[p["gamma"]] += 1
+                    if "tf" in p:
+                        tf[k][(p["tf"]["min_hold"], p["tf"]["reentry_ban"])] += 1
+            for Y, t in m.get("A_tf", {}).items():
+                if int(Y) in years:
+                    tf["A"][(t["min_hold"], t["reentry_ban"])] += 1
+    parts = []
+    if g:
+        parts.append("D γ: " + ", ".join(f"{k:g}×{v}" for k, v in sorted(g.items())))
+    for k, c in tf.items():
+        if c:
+            parts.append(f"фильтр {k} (удерж., N): " + ", ".join(
+                f"{h},{n}×{v}" for (h, n), v in c.most_common(4)))
+    return "; ".join(parts)
+
+
+def save_run(it_hash, design_path, note, tab, deltas, ev, chosen=""):
     """JSON прогона в <основная копия>/data/fastbt/dev_runs/ — для ранжирования (fastbt.dev_rank)."""
     from fastbt.cache import MAIN
     d = MAIN / "data" / "fastbt" / "dev_runs"
     d.mkdir(parents=True, exist_ok=True)
-    rec = dict(hash=it_hash, design=str(design_path), note=note,
+    rec = dict(hash=it_hash, design=str(design_path), note=note, chosen=chosen,
                time=dt.datetime.now().strftime("%Y-%m-%d %H:%M"), eval=ev,
                tab=tab.to_dict(orient="records"), deltas=deltas.to_dict(orient="records"))
     (d / f"{it_hash}.json").write_text(json.dumps(rec, ensure_ascii=False, default=float))
@@ -172,7 +199,8 @@ def main(argv=None):
     sids = ["S3"] if a.smoke else design.get("sids", ["S1", "S2", "S3", "S4", "S5", "S6"])
     h = hashlib.sha1((text + json.dumps(cfg.to_dict(), sort_keys=True) + code_hash()).encode())
     t0 = time.time()
-    pos, _ = run_all(cfg, tickers, sids, a.workers, log=lambda m: None)
+    pos, metas = run_all(cfg, tickers, sids, a.workers, log=lambda m: None)
+    chosen = choices(metas, set(cfg.years_bcd))
     years = list(cfg.years_a)
     tab, deltas = summary(pos, cfg, years, a.boot_reps)
     secs = time.time() - t0
@@ -182,9 +210,12 @@ def main(argv=None):
     print(tab.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
     print(deltas.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
     if not a.smoke:
-        save_run(h.hexdigest()[:10], a.design, a.note, tab, deltas, ev)
+        save_run(h.hexdigest()[:10], a.design, a.note, tab, deltas, ev, chosen)
     if not (a.no_log or a.smoke):
-        append_log(h.hexdigest()[:10], a.scope, tab, deltas, secs, crit, a.note)
+        append_log(h.hexdigest()[:10], a.scope, tab, deltas, secs, crit,
+                   a.note + (f"; выбор: {chosen}" if chosen else ""))
+    if chosen:
+        print("выбор по валидации:", chosen)
     print("критерии:", crit)
     print(f"дизайн {h.hexdigest()[:10]}, {secs:.0f} с")
     return 0

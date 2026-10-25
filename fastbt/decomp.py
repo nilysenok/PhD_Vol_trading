@@ -31,20 +31,48 @@ SRC = {"маска [0]": MAIN / "data" / "fastbt" / "a_honest.parquet",
 COMM = 0.0005
 
 
+REENTRY_N = (1, 3, 5)
+
+
+def annotate(g: pd.DataFrame) -> pd.DataFrame:
+    """Строки одной пары (по дате): номер сделки, направление, перезаход.
+    Сделка — участок постоянной ненулевой позиции; разворот = выход + вход на том же баре.
+    Комиссия бара делится точно: |p[t−1]|·c — выход прежней сделки, |p[t]|·c — вход новой.
+    gap — баров от бара выхода прежней сделки (первый бар не в ней) до входа (разворот: 0)."""
+    p = g["position"].values
+    n = len(p)
+    prev = np.r_[0.0, p[:-1]]
+    chg = p != prev
+    entry = (p != 0) & chg
+    tid = np.where(p != 0, np.cumsum(entry), 0)
+    # бар выхода сделки k — первый бар после её последнего бара
+    gap = np.full(n, np.nan)
+    last_exit = -1
+    for t in range(n):
+        if chg[t] and prev[t] != 0:
+            last_exit = t
+        if entry[t]:
+            if last_exit >= 0:
+                gap[t] = t - last_exit
+    g = g.assign(tid=tid, entry=entry, gap=gap, side=np.sign(p),
+                 c_exit=np.where(chg, np.abs(prev), 0.0), c_entry=np.where(chg, np.abs(p), 0.0),
+                 exit_tid=np.where(chg & (prev != 0), np.r_[0, tid[:-1]], 0),
+                 exit_side=np.where(chg, np.sign(prev), 0.0))
+    return g
+
+
 def trades(pos: pd.DataFrame) -> pd.DataFrame:
-    """Сделки всех пар: strategy, ticker, year (входа), ret (Σ pos·lr)."""
+    """Сделки всех пар: strategy, ticker, year (входа), side, ret (Σ pos·lr), gap до входа."""
     out = []
     for (s, t), g in pos.sort_values("date").groupby(["strategy", "ticker"], sort=False):
-        p = g["position"].values
-        r = g["daily_gross_return"].values
-        y = g["date"].dt.year.values
-        new = (p != 0) & (np.r_[0.0, p[:-1]] != p)          # вход или разворот
-        tid = np.cumsum(new)
-        m = p != 0
+        g = annotate(g)
+        m = g["tid"] > 0
         if not m.any():
             continue
-        df = pd.DataFrame({"tid": tid[m], "r": r[m], "y": y[m]})
-        a = df.groupby("tid").agg(ret=("r", "sum"), year=("y", "first"), days=("r", "size"))
+        a = g[m].groupby("tid").agg(ret=("daily_gross_return", "sum"),
+                                    year=("date", lambda d: d.iloc[0].year),
+                                    days=("position", "size"), side=("side", "first"),
+                                    gap=("gap", "first"))
         out.append(a.assign(strategy=s, ticker=t))
     return pd.concat(out, ignore_index=True)
 
@@ -53,8 +81,15 @@ def decompose(pos: pd.DataFrame, rate: pd.Series):
     port = msp.portfolio(pos, rate, COMM)
     rfcal = port["total"] - port["excess"]
     g = pos.sort_values(["ticker", "strategy", "date"]).copy()
+    g = pd.concat([annotate(x) for _, x in g.groupby(["ticker", "strategy"], sort=False)])
     dp = g.groupby(["ticker", "strategy"])["position"].diff().fillna(g["position"])
     g["comm"] = dp.abs() * COMM
+    # перезаходы: сделка с gap ≤ N; её строки (доход) и её комиссии (вход + выход)
+    gap_of = g[g["entry"]].set_index(["ticker", "strategy", "tid"])["gap"]
+    key = pd.MultiIndex.from_arrays([g["ticker"], g["strategy"], g["tid"]])
+    g["trade_gap"] = gap_of.reindex(key).values
+    ekey = pd.MultiIndex.from_arrays([g["ticker"], g["strategy"], g["exit_tid"]])
+    g["exit_gap"] = gap_of.reindex(ekey).values
     g["net"] = g["daily_gross_return"] - g["comm"]
     n_pairs = g.groupby("date")["position"].size()
     g["w"] = 1.0 / g["date"].map(n_pairs)
@@ -83,7 +118,8 @@ def decompose(pos: pd.DataFrame, rate: pd.Series):
             win_rate_pct=(ty["ret"] > 0).mean() * 100 if len(ty) else np.nan,
             avg_trade_ret_pct=ty["ret"].mean() * 100 if len(ty) else np.nan,
             avg_trade_days=ty["days"].mean() if len(ty) else np.nan,
-            trade_net_on_exposure_pct=p["r"].sum() / max(p["exposure"].mean(), 1e-12) * 100))
+            trade_net_on_exposure_pct=p["r"].sum() / max(p["exposure"].mean(), 1e-12) * 100,
+            **longshort(gy, ty), **reentry(gy, ty)))
         for s, gs in gy.groupby("strategy"):
             ts = ty[ty["strategy"] == s]
             contrib.append(dict(year=y, strategy=s, trade_net_pct=gs["netw"].sum() * 100,
@@ -94,6 +130,39 @@ def decompose(pos: pd.DataFrame, rate: pd.Series):
                                 exposure_pct=(gs["position"].abs() * gs["w"]).groupby(gs["date"])
                                 .sum().mean() * 100))
     return pd.DataFrame(rows), pd.DataFrame(contrib)
+
+
+def longshort(gy, ty) -> dict:
+    """Лонг/шорт: торговля нетто (комиссия — по направлению сделки входа/выхода), сделки."""
+    out = {}
+    for name, sd in (("long", 1), ("short", -1)):
+        m = gy["side"] == sd
+        gross = (gy.loc[m, "daily_gross_return"] * gy.loc[m, "w"]).sum()
+        # комиссия входа — сторона текущей позиции; выхода — сторона прежней (знак prev)
+        ce = (gy["c_entry"] * COMM * gy["w"])[m].sum()
+        cx = (gy["c_exit"] * COMM * gy["w"])[gy["exit_side"] == sd].sum()
+        t = ty[ty["side"] == sd]
+        out.update({f"trade_net_{name}_pct": (gross - ce - cx) * 100,
+                    f"n_trades_{name}": len(t),
+                    f"win_{name}_pct": (t["ret"] > 0).mean() * 100 if len(t) else np.nan})
+    return out
+
+
+def reentry(gy, ty) -> dict:
+    """Перезаходы в ту же пару в пределах N баров после выхода: доля сделок, вклад в
+    торговлю нетто (доход строк сделки − её комиссии входа и выхода), их комиссии."""
+    out = {}
+    for N in REENTRY_N:
+        t = ty[ty["gap"] <= N]
+        m = gy["trade_gap"] <= N
+        ce = (gy["c_entry"] * COMM * gy["w"])[m].sum()
+        cx = (gy["c_exit"] * COMM * gy["w"])[gy["exit_gap"] <= N].sum()
+        gross = (gy.loc[m, "daily_gross_return"] * gy.loc[m, "w"]).sum()
+        out.update({f"reentry{N}_share_pct": len(t) / max(len(ty), 1) * 100,
+                    f"reentry{N}_net_pct": (gross - ce - cx) * 100,
+                    f"reentry{N}_comm_pct": (ce + cx) * 100,
+                    f"reentry{N}_win_pct": (t["ret"] > 0).mean() * 100 if len(t) else np.nan})
+    return out
 
 
 def main(argv=None):

@@ -10,7 +10,9 @@
   c_trend_hysteresis  — гистерезис трендовых в C;
   d_gate_thresholds, d_target_vols, d_smooth — сетка затвора D;
   d_mode              — all | standard | inverse;
-  ens_k, vote_frac    — размер ансамбля A (топ-k) и порог голосования (доля ненулевых).
+  ens_k, vote_frac    — размер ансамбля A (топ-k) и порог голосования (доля ненулевых);
+  d_continuous, d_cont_gamma — непрерывный D: размер = min(cap, (σ_target/σ_pred)^γ);
+  turnover_filter, tf_min_hold, tf_reentry — фильтр оборота A/B/C/D (fastbt.turnover).
 """
 from __future__ import annotations
 
@@ -24,12 +26,13 @@ from fastbt import grids
 _NAMES = ["C_HORIZONS", "D_HORIZONS", "B_GRIDS", "C_TERM_FILTER", "C_THRESHOLDS",
           "C_THRESHOLDS_V41", "C_LOOKBACKS", "C_DIRECTION_TREND", "C_HYSTERESIS_TREND",
           "D_GATE_THRESHOLDS", "D_TARGET_VOLS", "D_SMOOTH", "D_STANDARD", "D_INVERSE",
-          "ENS_K", "VOTE_FRAC"]
+          "ENS_K", "VOTE_FRAC", "D_CONT", "D_CONT_GAMMA", "TF", "TF_HOLD", "TF_REENTRY"]
 _DEFAULT = {k: copy.deepcopy(getattr(grids, k)) for k in _NAMES}
 _APPLIED = None
 KEYS = {"horizons", "sigma_smooth", "c_thresholds", "c_lookbacks", "c_trend_direction",
         "c_trend_hysteresis", "d_gate_thresholds", "d_target_vols", "d_smooth", "d_mode",
-        "ens_k", "vote_frac"}
+        "ens_k", "vote_frac", "d_continuous", "d_cont_gamma", "turnover_filter", "tf_min_hold",
+        "tf_reentry"}
 
 
 def freeze(d: dict) -> tuple:
@@ -70,6 +73,14 @@ def apply(design: tuple) -> None:
         grids.ENS_K = int(d["ens_k"])
     if "vote_frac" in d:
         grids.VOTE_FRAC = float(d["vote_frac"])
+    grids.D_CONT = bool(d.get("d_continuous", False))
+    if "d_cont_gamma" in d:
+        grids.D_CONT_GAMMA = [float(x) for x in d["d_cont_gamma"]]
+    grids.TF = bool(d.get("turnover_filter", False))
+    if "tf_min_hold" in d:
+        grids.TF_HOLD = [int(x) for x in d["tf_min_hold"]]
+    if "tf_reentry" in d:
+        grids.TF_REENTRY = [int(x) for x in d["tf_reentry"]]
     from fastbt import masks
     masks._CACHE.clear()
     _APPLIED = design
