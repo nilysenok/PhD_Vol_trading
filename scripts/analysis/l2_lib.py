@@ -624,7 +624,12 @@ def fit(model, p, D, cfg, seed=42, nmax=NMAX, ref=None, max_bin=MAX_BIN, prune=N
         cbs = []
         if prune:
             cbs.append(_XPrune(prune, D, bm))
-        b = xgb.train(prm, dtr, nmax, evals=[(dva, 'val')], early_stopping_rounds=PAT, verbose_eval=False, callbacks=cbs)
+        xkw = {}
+        if cfg.get('es_qlike') and not gam:  # Д16.8: ES по QLIKE итогового прогноза exp(смещение + f) на уровне RV, вместо нативной метрики
+            prm.pop('eval_metric', None); prm['disable_default_eval_metric'] = 1
+            qf = _es_qlike_fn(D)
+            xkw['custom_metric'] = lambda pr, dm: ('qlike_hyb', qf(pr))
+        b = xgb.train(prm, dtr, nmax, evals=[(dva, 'val')], early_stopping_rounds=PAT, verbose_eval=False, callbacks=cbs, **xkw)
         pruned = bool(cbs and cbs[0].pruned)
         bi = prune[0] - 1 if pruned else int(b.best_iteration)
         ir = (0, bi + 1)
@@ -654,6 +659,11 @@ def fit(model, p, D, cfg, seed=42, nmax=NMAX, ref=None, max_bin=MAX_BIN, prune=N
         prm['extra_trees'] = True
     if cfg.get('linear_lambda') is not None:
         prm.update(linear_tree=True, linear_lambda=float(cfg['linear_lambda']))
+    lkw = {}
+    if cfg.get('es_qlike') and not gam:  # Д16.8: ES по QLIKE гибрида (feval), нативная метрика отключена
+        prm['metric'] = 'None'
+        qf = _es_qlike_fn(D)
+        lkw['feval'] = lambda pr_, ds: ('qlike_hyb', qf(pr_), False)
     pr = []
     cbs = [lgb.early_stopping(PAT, verbose=False)]
     if prune:
@@ -663,10 +673,19 @@ def fit(model, p, D, cfg, seed=42, nmax=NMAX, ref=None, max_bin=MAX_BIN, prune=N
             if env.iteration == it - 1 and _q_ln(D, env.model.predict(Xv, raw_score=True), gam) > thr:
                 pr.append(1); raise lgb.callback.EarlyStopException(env.iteration, env.evaluation_result_list)
         cbs.insert(0, _pr)
-    b = lgb.train(prm, dtr, nmax, valid_sets=[dva], callbacks=cbs)
+    b = lgb.train(prm, dtr, nmax, valid_sets=[dva], callbacks=cbs, **lkw)
     pv, pt = b.predict(Xv, raw_score=True), b.predict(Xt, raw_score=True)
     pv, pt = pv + D['off']['va'], pt + D['off']['te']  # mse: метка = ln y - смещение; gamma+v9: init_score не входит в raw_score
     return pv, pt, int(b.best_iteration), b.feature_importance('gain'), bool(pr)
+
+
+def _es_qlike_fn(D):
+    """Д16.8: метрика ранней остановки остаточного ученика — QLIKE прогноза exp(ln HAR-J + f(x)) на уровне RV val-года (без поправки Б0.1;
+    строки с RV = 0 исключены, как в evaluate). f — сырой выход бустинга на val (метка обучения не меняется: ln RV − ln HAR-J)."""
+    y, off = D['y']['va'], D['off']['va']
+    m = y > 1e-12
+    ym, om = y[m], off[m]
+    return lambda raw: qlike(ym, np.exp(np.asarray(raw, dtype=np.float64)[m] + om))
 
 
 def _q_ln(D, raw, gam):
