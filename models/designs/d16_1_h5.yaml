@@ -7,4 +7,4 @@ features: data/regen/features_pit_v3.parquet (h=5: features_pit_v3_d7_h5.parquet
 train: l2_lib.fit (ES на val-годе шага, patience 30, max 1000, max_bin 255, бины окна шага 1, исключения Bv2b)
 control: без подмены совпадает с сохранёнными D12_h22/D12_h5 (шаг 2, макс. |Δln| 0 / 2e-15)
 d14: нет (прогнозов D14_* к 01:05 нет)
-status: условно (среднее 3 seed −1,6% D12x / −2,4% F2mx; seed 42 хуже); тест - test_locked/D16_h5_*/*_seeds3wrap2_test.parquet
+status: не выжил по правилу владельца («≥ 1% и лучше при каждом из 3 seed»: лучше только при 2 из 3; основа F2m_h5 исключена правилом пула). Справочно: среднее 3 seed −1,6% D12x / −2,4% F2mx
