@@ -37,11 +37,14 @@ def rate_cbr() -> pd.Series:
     return k.set_index(pd.to_datetime(k["date"]))["value"].sort_index() / 100.0
 
 
-def portfolio(pos: pd.DataFrame, rate: pd.Series, comm: float, agg: str = "pairs") -> pd.DataFrame:
+def portfolio(pos: pd.DataFrame, rate: pd.Series, comm: float, agg: str = "pairs",
+              cap_share: float = 1.0) -> pd.DataFrame:
     """pos: date, ticker, strategy, position, daily_gross_return (одного подхода).
     agg="pairs" — EW по имеющимся парам (стратегия, тикер): так собраны печатные ряды
     MSP_{A,C,D}_inst.csv (trading_ret и exposure совпадают до 1e-16);
-    agg="ticker" — как stage5_msp.py: среднее по стратегиям внутри тикера, затем EW."""
+    agg="ticker" — как stage5_msp.py: среднее по стратегиям внутри тикера, затем EW.
+    cap_share — доля номинала, занятая капиталом (1 — спот; 0,2 — сценарий с маржой 20%):
+    под ставку идёт 1 − cap_share·экспозиция."""
     if agg == "pairs":
         g = pos.rename(columns={"daily_gross_return": "gross"})[
             ["date", "ticker", "strategy", "position", "gross"]]
@@ -63,8 +66,9 @@ def portfolio(pos: pd.DataFrame, rate: pd.Series, comm: float, agg: str = "pairs
     cal = np.ones(len(port))
     cal[1:] = np.diff(port.index.values).astype("timedelta64[D]").astype(float)
     exp_ = port["exposure"].values
-    port["fdr"] = np.maximum(0.0, 1.0 - exp_) * rf * cal
-    port["margin"] = np.maximum(0.0, exp_ - 1.0) * (kr.values + 0.02) / 365.0
+    used = cap_share * exp_
+    port["fdr"] = np.maximum(0.0, 1.0 - used) * rf * cal
+    port["margin"] = np.maximum(0.0, used - 1.0) * (kr.values + 0.02) / 365.0
     port["total"] = port["r"] + port["fdr"] - port["margin"]
     port["excess"] = port["total"] - rf * cal
     port["cal_days"] = cal

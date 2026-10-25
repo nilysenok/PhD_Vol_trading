@@ -9,7 +9,8 @@ python3 -m fastbt.final_test ... --scope dev        (проверка кода �
 Считает: позиции A/B/C/D основного дизайна и дополнительных; МСП по окнам и годам; ΔШарп
 B/C/D − A (парный бутстрап, seed 42); ΔCE (γ = 3, 5, 10) с бутстрапом и K_min = ΔCost / ΔCE;
 C на гибридном σ_pred против C на σ_pred HAR-J (тот же дизайн, другой σ); H3 (бенчмарки
-fastbt.bench) для каждого подхода; ряды для рисунков (fastbt.export).
+fastbt.bench) для каждого подхода; ряды для рисунков (fastbt.export); сценарий с маржой 20% и
+избыточный Шарп A и C по годам против средней ставки (fastbt.margin; отдельные таблицы).
 Выход (только --scope test): docs/tables/tabl_4_final_*.csv; позиции и ряды —
 <основная копия>/data/fastbt/final_<scope>_*.
 """
@@ -172,10 +173,19 @@ def main(argv=None):
     pd.set_option("display.width", 250)
     for k, v in out.items():
         print(f"== {k}\n{v.round(3).head(40).to_string(index=False)}")
+    from fastbt import margin
+    w = ("2022-01-01", "2026-12-31") if a.scope == "test" else ("2018-01-01", "2021-12-31")
+    yrs_m = list(cfg_main.years_bcd)
+    mt = margin.margin_table(pos_main, cfg_main, yrs_m, w, a.boot_reps)
+    sr = margin.sharpe_vs_rate(pos_main, cfg_main, yrs_m)
+    print(f"== маржа 20%\n{mt.round(3).to_string(index=False)}\n== Шарп против ставки\n"
+          f"{sr.round(3).to_string(index=False)}")
     if a.scope == "test":
         TABLES.mkdir(parents=True, exist_ok=True)
         for k, v in out.items():
             v.to_csv(TABLES / k, index=False)
+        margin.to_csv(mt, TABLES / "tabl_4_final_marzha_2022_2026.csv")
+        margin.to_csv(sr, TABLES / "tabl_4_final_sharpe_vs_stavka_2022_2026.csv")
         from fastbt import export, msp
         series = MAIN / "data" / "fastbt" / "final_series" / "perstrat_daily_returns"
         export.export(pos_main, series, msp.rate_cbr())
