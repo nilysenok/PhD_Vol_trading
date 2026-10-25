@@ -1,12 +1,12 @@
 #!/bin/zsh
 # Единственный тестовый прогон главы 4 (2022–2026). НЕ ЗАПУСКАТЬ до «да» владельца и
 # docs/otchety/FINAL_DESIGN_strategies.md (замок fastbt.dev.check_scope).
-# Зависимости: σ_pred гибрида с 2026 (шаг 10) в FASTBT-дизайне main.yaml; σ_pred HAR-J (h=1, v2)
-# в формате date, ticker, sigma_pred_h1; скрипт рисунков из ветки figures-final.
+# σ_pred: гибрид Д8.12 final2 (2017–2026, ключ vpred в fastbt/designs/final/*.yaml); HAR-J (h=1)
+# final2 — data/regen/sigma_pred_h1_harj_final2.parquet; скрипт рисунков из ветки figures-final.
 set -e
 R=$(cd "$(dirname "$0")/.." && pwd)
 M=/Users/nilysenok/Desktop/Старое/PhD_Vol_trading
-HARJ=${HARJ:-$M/data/regen/sigma_pred_h1_harj_v2.parquet}
+HARJ=${HARJ:-$M/data/regen/sigma_pred_h1_harj_final2.parquet}
 cd $R
 [[ -f docs/otchety/FINAL_DESIGN_strategies.md ]] || { echo "замок: нет FINAL_DESIGN_strategies.md"; exit 1; }
 [[ -f $HARJ ]] || { echo "нет σ_pred HAR-J: $HARJ"; exit 1; }

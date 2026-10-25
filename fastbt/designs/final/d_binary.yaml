@@ -1,5 +1,5 @@
 # D бинарный, лучший непрошедший С8 (s04_t14_smooth20)
-vpred: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/sigma_pred_h1_v2.parquet
+vpred: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/sigma_pred_h1_final2.parquet
 fix_c_s12_val: true
 fix_b_median: true
 fix_d_units: true
