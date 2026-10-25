@@ -34,7 +34,8 @@ warnings.filterwarnings('ignore')
 DATA = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data')
 REGEN = DATA / 'regen'
 L2DIR = REGEN / 'L2'
-FEAT = REGEN / 'features_pit_v2.parquet'
+FEAT = Path(os.environ.get('L2_FEAT', str(REGEN / 'features_pit_v2.parquet')))  # Д12: L2_FEAT=<...>/features_pit_v3.parquet (as-of)
+FEAT_CFG = FEAT.with_suffix('.config.json') if FEAT.with_suffix('.config.json').exists() else REGEN / 'features_pit_v2.config.json'
 CAL = DATA / 'calendar'
 RVI10 = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/moex_discovery/data/external/moex_iss/indices_10m/RVI.parquet')
 TEST_YEARS = list(range(2017, 2026))  # шаг k -> тестовый год 2016+k; val = год перед тестовым
@@ -71,9 +72,9 @@ def load_base(matrix=None, blocks=(), h=None):
     """blocks: 'd7' — матрица features_pit_v2_d7_h{h}.parquet (те же строки; дневные уровни внешних рядов убраны, добавлены d7_*; PR #27);
     'd10' — столбцы d10_* из features_pit_v2_d10.parquet (PR #28) без D10_EXCLUDE. Признаки = признаки features_pit_v2, оставшиеся в матрице,
     + d7_* + d10_*. matrix — явный путь к альтернативной матрице (как d7)."""
-    cfg = json.load(open(FEAT.with_suffix('.config.json')))
+    cfg = json.load(open(FEAT_CFG))
     if 'd7' in blocks:
-        matrix = REGEN / f'features_pit_v2_d7_h{h}.parquet'
+        matrix = REGEN / f'{FEAT.stem}_d7_h{h}.parquet'  # v2: features_pit_v2_d7_h{h}; v3: features_pit_v3_d7_h{h}
     A = pd.read_parquet(matrix or FEAT).sort_values('date').reset_index(drop=True)  # порядок строк как в tune_Bv2.py
     if 'd10' in blocks:
         D10 = pd.read_parquet(REGEN / 'features_pit_v2_d10.parquet')
@@ -464,11 +465,16 @@ def har_oof(tp, h, hc, k=5, w=None, huber=False):
 
 
 RQ_CACHE = L2DIR / 'rq1850.parquet'
+_RQ = {}
 
 
 def rq_1850():
     """Д11.5: реализованная квартичность дня t по 10-минутным барам окна [09:50; 18:50): RQ = (M/3)·Σ r⁴ (r — доходности закрытие-закрытие
     соседних баров окна, M — их число). Бары — candles_10m/stocks (карантинные бары не исключались — данных о карантине в этих файлах нет)."""
+    if os.environ.get('L2_RQ') == 'v3_28':  # Д12.4: RQ дня t из features_pit_v3_28 (без баров карантина, PR #36)
+        if '_rq28' not in _RQ:
+            _RQ['_rq28'] = pd.read_parquet(REGEN / 'features_pit_v3_28.parquet', columns=['date', 'ticker', 'rq'])
+        return _RQ['_rq28']
     if RQ_CACHE.exists():
         return pd.read_parquet(RQ_CACHE)
     out = []
@@ -513,6 +519,11 @@ def step_data(A, cols, h, step, model, cfg, base_tag, h1=None, half=False, ex_st
     """Массивы шага: обучение (все строки окна; half=True — 50% страт. тикер x год, seed 42), val, test; смещения и веса.
     ex_step — шаг, по которому применяется исключение признаков B (для бинов окна шага 1, передаваемых на шаги >= 2)."""
     tp, vi, td, vy, ty = split(A, h, step)
+    m17 = lambda d: d[d['ticker'].isin(set(SECTOR))]  # Д12.1: 17 основных тикеров
+    if cfg.get('train28'):  # Д12.1: бустинг обучается на 28 тикерах (матрица features_pit_v3_28), val/test — только 17
+        vi, td = m17(vi), m17(td)
+        if cfg.get('drop_tk'):  # справочно: 26 тикеров без слабых (UTAR, RGSS)
+            tp = tp[~tp['ticker'].isin(set(cfg['drop_tk']))]
     ex = excluded(model, h, base_tag) if (ex_step or step) > 1 else set()
     ex |= set(cfg.get('drop', {}).get(model, []))
     keep = [c for c in cols if c not in ex]
@@ -524,6 +535,8 @@ def step_data(A, cols, h, step, model, cfg, base_tag, h1=None, half=False, ex_st
     if cfg.get('harf') or cfg.get('v9'):
         hc = harj_cols(A)
         tp_full = split(A, h, step)[0]
+        if cfg.get('train28') and not cfg.get('har28'):  # Д12.1: HAR-J — на 17 (har28 — справочно на 28)
+            tp_full = m17(tp_full)
         wh = rq_weights(tp_full) if cfg.get('rqw') else None
         hl = dict(zip(parts, har_ln(tp_full, list(parts.values()), h, hc, wh, bool(cfg.get('huber')))))
         if cfg.get('har_oof') and not half:  # Д11.1

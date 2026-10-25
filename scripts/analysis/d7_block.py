@@ -111,8 +111,11 @@ def assemble(features_df, h, drop_daily=True, cal_dir=None):
 
 
 if __name__ == '__main__':
-    df = pd.read_parquet(os.path.join(DATA, 'regen', 'features_pit_v2.parquet'))
-    for h in (5, 22):
+    # python3 d7_block.py [features_pit_v3] [5,22] -> data/regen/<база>_d7_h{h}.parquet (Д12: блок Д7 на v3, as-of)
+    base = sys.argv[1] if len(sys.argv) > 1 else 'features_pit_v2'
+    hs = [int(x) for x in sys.argv[2].split(',')] if len(sys.argv) > 2 else [5, 22]
+    df = pd.read_parquet(os.path.join(DATA, 'regen', base + '.parquet'))
+    for h in hs:
         m = assemble(df, h)
-        m.to_parquet(os.path.join(DATA, 'regen', 'features_pit_v2_d7_h%d.parquet' % h), index=False)
+        m.to_parquet(os.path.join(DATA, 'regen', '%s_d7_h%d.parquet' % (base, h)), index=False)
         print('h=%d: %s, d7-колонок %d' % (h, m.shape, sum(c.startswith('d7_') for c in m)), flush=True)
