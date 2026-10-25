@@ -1,0 +1,21 @@
+признак,gain_%,группа
+rv,28.06,лаги RV
+bv,14.64,лаги RV
+rv_annualized,8.7,лаги RV
+rv_w,6.05,лаги RV
+bv_annualized,3.09,лаги RV
+rv_2w,2.32,лаги RV
+rv_m,1.91,лаги RV
+rv_evening,1.64,лаги RV
+rv_d,1.22,лаги RV
+rv_q,1.19,лаги RV
+rv_midday,0.81,лаги RV
+rkurt,0.63,собств. прочие
+rsv_pos,0.54,лаги RV
+rv_MOEXFN,0.51,индексы MOEX
+rsv_neg,0.48,лаги RV
+yahoo_sp500_ret1,0.46,Yahoo (глоб.)
+si_fut_diff1,0.45,макро
+idx_CNYRUB_TOM_rv_annualized_ret1,0.42,индексы MOEX
+idx_MOEXMM_rv_annualized_ret5,0.41,индексы MOEX
+yahoo_vix_ret1,0.39,Yahoo (глоб.)

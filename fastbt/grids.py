@@ -63,6 +63,18 @@ D_SMOOTH = [None, 5, 20]
 D_HORIZONS = ["h1", "h5", "h22"]
 D_INV_LOOKBACKS = [63, 126, 252]
 D_GATE_THRESHOLDS = [0.3, 0.5, 0.7, 1.0]
+# Ручки дизайна (fastbt.design; по умолчанию — как в коде c22a4b3)
+C_DIRECTION_TREND = list(C_DIRECTION)
+C_HYSTERESIS_TREND = list(C_HYSTERESIS)
+D_STANDARD = True
+D_INVERSE = True
+ENS_K = 10
+VOTE_FRAC = 0.5
+D_CONT = False                 # непрерывный D (Moreira–Muir) вместо бинарного затвора
+D_CONT_GAMMA = [1.0, 2.0]
+TF = False                     # фильтр оборота (fastbt.turnover)
+TF_HOLD = [3, 5]
+TF_REENTRY = [0, 1, 3, 5, 10]
 
 
 def trend_rm_grid():

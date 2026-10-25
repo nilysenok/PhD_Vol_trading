@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Этап 5, вариант B: перебор 100 точек ЛГК (seed 42) на каждом (модель, h, шаг СВ); выбор по QLIKE валидационного года (пул).
 Запуск из корня репо: python3 moex_volatility/scripts/tune_B.py [--bench | --workers 9]
+Другая матрица признаков (М0/М7): --features data/regen/features_pit_v2.parquet --tag Bpit2 [--hs 1] — файлы {tag}_trials.csv,
+{tag}_{m}_h{h}_*.parquet, {tag}_selected.csv; список признаков — <features>.config.json, если есть. Без ключей поведение прежнее.
 Данные/шаги/qlike/clean_features — как в regen_boosting.py (walk_forward_full.py). ES: patience 50, метрика l2 на ln(rv) (rmse у xgboost)."""
 import argparse, ast, json, os, time, warnings
 from multiprocessing import Pool
@@ -14,7 +16,12 @@ for n in ast.parse((MV / 'scripts/walk_forward_full.py').read_text()).body:
     if isinstance(n, ast.FunctionDef) and n.name in ('qlike', 'clean_features'):
         exec(compile(ast.Module([n], []), 'wff', 'exec'), ns)
 qlike, clean_features = ns['qlike'], ns['clean_features']
-N_PTS, HS, MODELS = 100, (1, 5, 22), ('xgb', 'lgbm')
+_pre = argparse.ArgumentParser(add_help=False)  # читаются до загрузки данных (spawn-процессы получают тот же sys.argv)
+_pre.add_argument('--features'); _pre.add_argument('--tag', default='B'); _pre.add_argument('--hs', default='1,5,22')
+PRE, _ = _pre.parse_known_args()
+FEATURES = str(Path(PRE.features).resolve()) if PRE.features else None
+TAG = PRE.tag
+N_PTS, HS, MODELS = 100, tuple(int(x) for x in PRE.hs.split(',')), ('xgb', 'lgbm')
 # (имя, lo, hi, шкала) по протоколу B
 SPACE = {'xgb': [('max_depth', 3, 12, 'int'), ('learning_rate', .01, .2, 'log'), ('subsample', .5, 1, 'lin'), ('colsample_bytree', .4, 1, 'lin'),
                  ('min_child_weight', 1, 100, 'logint'), ('reg_alpha', 1e-3, 10, 'log'), ('reg_lambda', 1e-3, 10, 'log')],
@@ -46,8 +53,14 @@ def make_grid():  # один куб (7 измерений) для обеих м�
 
 def load():
     os.chdir(MV)
-    parts = [pd.read_parquet(f'data/prepared/{n}.parquet') for n in ('train', 'val', 'test')]
     fc = json.load(open('data/prepared/config.json'))['feature_cols']
+    if FEATURES:  # одна склеенная матрица того же формата (scripts/analysis/m0_features_pit*.py)
+        cfg = Path(FEATURES.replace('.parquet', '.config.json'))
+        if cfg.exists(): fc = json.load(open(cfg))['feature_cols']
+        ad = pd.read_parquet(FEATURES).sort_values('date').reset_index(drop=True)
+        ad['year'] = pd.to_datetime(ad['date']).dt.year
+        return ad, fc, [y for y in range(2017, 2026) if y in ad.year.values]
+    parts = [pd.read_parquet(f'data/prepared/{n}.parquet') for n in ('train', 'val', 'test')]
     for y in range(2020, 2027):
         fp = f'data/prepared/walkforward_{y}.parquet'
         if os.path.exists(fp):
@@ -118,8 +131,8 @@ def extra(workers, tf):  # этап 2: топ-5 точек по val QLIKE и 3 s
             for nm, df in out: res.setdefault((*key, nm), []).append(df)
     for (m, h, kind, nm), L in res.items():
         d = pd.concat(L)
-        if kind == 'rank': d.drop(columns='seed_k', errors='ignore').to_parquet(OUT / f'B_{m}_h{h}_top5_{nm}.parquet', index=False)
-        else: d.to_parquet(OUT / f'B_{m}_h{h}_seeds4344_{nm}.parquet', index=False)  # seed 42 лучшей точки = B_{m}_h{h}_{nm}.parquet
+        if kind == 'rank': d.drop(columns='seed_k', errors='ignore').to_parquet(OUT / f'{TAG}_{m}_h{h}_top5_{nm}.parquet', index=False)
+        else: d.to_parquet(OUT / f'{TAG}_{m}_h{h}_seeds4344_{nm}.parquet', index=False)  # seed 42 лучшей точки = B_{m}_h{h}_{nm}.parquet
     print('extra saved', flush=True)
 
 
@@ -137,36 +150,37 @@ def complete(tr, h):  # все 100 точек x шаги x модели для �
 
 
 def finalize(h, workers=2):  # выбор лучших точек по val QLIKE, запись B_{m}_h{h}_{val,test}.parquet и строк B_selected.csv для h
-    tr = pd.read_csv(OUT / 'B_trials.csv').drop_duplicates(['model', 'h', 'step', 'point'])
+    tr = pd.read_csv(OUT / f'{TAG}_trials.csv').drop_duplicates(['model', 'h', 'step', 'point'])
     if not complete(tr, h): return False
     tasks = [(m, h, int(s), int(g.loc[g.qlike_val.idxmin(), 'point']), g.qlike_val.min()) for (m, s), g in tr[tr.h == h].groupby(['model', 'step'])]
     with Pool(workers) as P: res = P.map(fin_task, tasks, chunksize=1)
     for m in MODELS:
-        for k in ('val', 'test'): pd.concat([pr[k] for r, pr in res if r['model'] == m]).sort_values('step', kind='stable').to_parquet(OUT / f'B_{m}_h{h}_{k}.parquet', index=False)
-    f = OUT / 'B_selected.csv'; old = pd.read_csv(f) if f.exists() else pd.DataFrame()
+        for k in ('val', 'test'): pd.concat([pr[k] for r, pr in res if r['model'] == m]).sort_values('step', kind='stable').to_parquet(OUT / f'{TAG}_{m}_h{h}_{k}.parquet', index=False)
+    f = OUT / f'{TAG}_selected.csv'; old = pd.read_csv(f) if f.exists() else pd.DataFrame()
     new = pd.concat([old[old.h != h] if len(old) else old, pd.DataFrame([r for r, _ in res])]).sort_values(['model', 'h', 'step'])
     new.to_csv(str(f) + '.tmp', index=False); os.replace(str(f) + '.tmp', f); return True
 
 
 def watch(workers=2, every=120):  # наблюдатель: раз в 2 мин финализирует готовые h (по одному разу)
-    sel = OUT / 'B_selected.csv'; done = set(pd.read_csv(sel).h.unique()) if sel.exists() else set()
+    sel = OUT / f'{TAG}_selected.csv'; done = set(pd.read_csv(sel).h.unique()) if sel.exists() else set()
     while len(done) < len(HS):
         for h in HS:
-            if h not in done and (OUT / 'B_trials.csv').exists() and finalize(h, workers):
+            if h not in done and (OUT / f'{TAG}_trials.csv').exists() and finalize(h, workers):
                 done.add(h); print(f'h={h} готов {time.strftime("%F %T")}', flush=True)
         time.sleep(every)
 
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--bench', action='store_true'); ap.add_argument('--extra', action='store_true'); ap.add_argument('--finalize-h', type=int); ap.add_argument('--watch', action='store_true'); ap.add_argument('--workers', type=int, default=9)
+    ap.add_argument('--features'); ap.add_argument('--tag', default='B'); ap.add_argument('--hs', default='1,5,22')
     a = ap.parse_args(); OUT.mkdir(parents=True, exist_ok=True)
     GRID.reset_index().to_csv(OUT / 'B_grid_100.csv', index=False)
-    tf = OUT / 'B_trials.csv'
+    tf = OUT / f'{TAG}_trials.csv'
     if a.extra: return extra(a.workers, tf)
     if a.watch: return watch()
     if a.finalize_h: return print('готов' if finalize(a.finalize_h) else 'не все точки посчитаны')
     if a.bench:  # 10 задач на шаге 2025 + оценка полного времени
-        rng = np.random.default_rng(0); tasks = [(MODELS[i % 2], HS[i % 3], 9, int(rng.integers(N_PTS))) for i in range(10)]
+        rng = np.random.default_rng(0); tasks = [(MODELS[i % 2], HS[i % len(HS)], 9, int(rng.integers(N_PTS))) for i in range(10)]
         t0 = time.time()
         with Pool(a.workers) as P: res = P.map(task, tasks, chunksize=1)
         wall = time.time() - t0; mean = np.mean([r['sec'] for r in res]); tot = 5400 * mean / a.workers

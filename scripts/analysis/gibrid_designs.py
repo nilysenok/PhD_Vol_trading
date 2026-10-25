@@ -7,7 +7,9 @@ from pathlib import Path
 import numpy as np, pandas as pd
 import gibrid_schemes as S
 
-CAND = ('V3_Regime', 'V7_HalfLife', 'V10_MinQ', 'V10_Pool', 'V10_Fix', 'V11_Gap', 'Med3', 'Gate_L2', 'EQ_Equal', 'ML2_Pair')  # Д8.8-Д8.11: состав - gibrid_compute
+# Д8.8-Д8.11: состав - gibrid_compute. V10_Fix (Д8.10) исключён из кандидатов (решение дирижёра 25.10: веса по val 2017-2021
+# применяются к тесту 2017-2020, val шага t = тест шага t-1 - заглядывание); остаётся справкой (столбцы q_V10_Fix)
+CAND = ('V3_Regime', 'V7_HalfLife', 'V10_MinQ', 'V10_Pool', 'V11_Gap', 'Med3', 'Gate_L2', 'EQ_Equal', 'ML2_Pair')
 
 
 def devlog(path, text):
