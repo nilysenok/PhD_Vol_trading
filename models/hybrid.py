@@ -1,17 +1,18 @@
 """HAR-J-семейство и гибрид (воркеры). Логика не переписана: HAR-J — gibrid_har.har_forecasts (walk_forward_full.py:164-205),
-строка (в) — gibrid_har_spec.run (окна этапа 2б, etap2_okno.py), гибрид V1-V7 + V0, дизайны single x (step|minimax) x (Б0.1oos|без),
-критерии c1-c4 и правило выбора 25.10 — функции gibrid_v17 / gibrid_designs (цикл main() gibrid_v17.py для варианта single, по одному h).
+строка (в) — gibrid_har_spec.run (окна этапа 2б, etap2_okno.py), гибрид — gibrid_v17.run_h по одному h (пространство дизайнов Д8: схемы,
+поправки, усадка, смешивание rv/log, V0, критерии c1-c4 и правило выбора — без изменений; метрика разработочного набора — oos, шаги 2-6).
 Шаги ограничиваются фильтром данных (год <= тестового года последнего шага): расширяющиеся окна не зависят от будущих лет."""
-import functools, time
+import functools, os, time
 import warnings
 import numpy as np, pandas as pd
 from . import cache as K, config as C, data as D
 
 warnings.filterwarnings('ignore')  # как tune_B.py / walk_forward_full.py; логи — в data/run/
 
-HYB_CODE = [C.ANALYSIS / f for f in ('gibrid_v17.py', 'gibrid_schemes.py', 'gibrid_designs.py', 'gibrid_io.py')]
+HYB_CODE = [C.ANALYSIS / f for f in ('gibrid_v17.py', 'gibrid_schemes.py', 'gibrid_designs.py', 'gibrid_io.py', 'gibrid_compute.py', 'gibrid_bias.py',
+                                      'gibrid_d8.py', 'gibrid_harcj.py', 'gibrid_har.py', 'gibrid_har_spec.py', 'gibrid_report.py', 'gibrid_v2sum.py')]
 CR = ('c1', 'c2', 'c3', 'c4')
-CODE_DESIGN = 'single|step|bez'  # «как в коде» (hyb_*_h{h}_*.parquet gibrid_v17.py)
+CODE_DESIGN = 'single|step|bez|L0'  # «как в коде» (hyb_*_h{h}_*.parquet gibrid_v17.py)
 
 
 def _timed(f):
@@ -62,8 +63,8 @@ def run_spec(t):
     return dict(kind='har_spec', key=k, hit=False)
 
 
-def hyb_key(h, hk, bkeys, cfg):
-    return K.key('hybrid', h=h, har=hk, boost=bkeys, cfg=cfg, code=C.code_hash('hybrid.py', *HYB_CODE))
+def hyb_key(h, hk, bkeys, cfg, dk=None, nsteps=None):
+    return K.key('hybrid', h=h, har=hk, boost=bkeys, cfg=cfg, dk=dk, nsteps=nsteps, code=C.code_hash('hybrid.py', *HYB_CODE))
 
 
 def _boost(keys):
@@ -76,63 +77,40 @@ def fname(design):
 
 @_timed
 def run_hybrid(t):
-    """t: dict(h, har, boost={'xgb': [ключи по шагам], 'lgbm': [...]}, cfg={'v7_lag': 'h'|1, 'ref': bool})."""
+    """t: dict(h, dk, nsteps, har, boost={'xgb': [ключи по шагам], 'lgbm': [...]}, cfg). Вызов gibrid_v17.run_h как есть: прогнозы конвейера
+    кладутся во временный regen под именами П1 (xgb_h*, P1_h* — у П1 только вариант single), выходы run_h — в каталог стадии;
+    test-прогнозы гибрида переносятся в test_locked/hyb."""
+    import shutil
+    from types import SimpleNamespace
     import gibrid_v17 as G
-    import gibrid_designs as DS
+    import gibrid_harcj as HC
     import gibrid_schemes as S
     from gibrid_io import merged
     h, cfg = t['h'], t['cfg']
-    k = hyb_key(h, t['har'], t['boost'], cfg)
+    k = hyb_key(h, t['har'], t['boost'], cfg, t['dk'], t['nsteps'])
     if K.done('hybrid', k):
         return dict(kind='hybrid', h=h, key=k, hit=True)
-    hv, ht = (pd.read_parquet(K.pred_path(s, 'har', t['har'])) for s in ('val', 'test'))
-    bx, bl = _boost(t['boost']['xgb']), _boost(t['boost']['lgbm'])
-    lag = h if str(cfg.get('v7_lag', 'h')) == 'h' else int(cfg['v7_lag'])
-    rows, outs, blog, ref = [], {}, [], []
-
-    def add(ch, ov, ot, name):  # = add() в gibrid_v17.main
-        ch.insert(0, 'design', name)
-        fl = DS.flags(ch[ch.step <= C.DEV])
-        ch['ratio_har'] = ch.q_hyb / ch.q_har
-        for c in CR + ('worst_ratio', 'worst_ratio_single', 'max_w_jump', 'ml_switches'):
-            ch[c + '_h'] = fl[c]
-        rows.append(ch); outs[name] = (ov, ot)
-
-    etalon = None
-    for bias in (2, 0):
-        lg = []
-        res = G.compute(hv, ht, h, bx, bl, bias, lag, lg)
-        if bias == 2:
-            etalon = [{c: r['base'][c] for c in ('q_har', 'q_xgb_single', 'q_lgb_single')} for r in res]
-            blog += lg
-        else:
-            for r, e in zip(res, etalon):
-                r['base'].update(e)
-        for sel in ('step', 'minimax'):
-            add(*DS.select(res, sel, h), f'single|{sel}|{"B0.1oos" if bias else "bez"}')
-        if bias == 2:
-            for comp in ('har', 'xgb', 'lgb'):
-                add(*DS.v0(res, comp, h), f'single|V0_{comp.upper()}|B0.1oos')
-    if cfg.get('ref', True):  # справка gibrid_v17: Б0.1 in-sample и V7 lag=1
-        c1, c0, cl = (DS.select(G.compute(hv, ht, h, bx, bl, b, l, []), 'step', h)[0] for b, l in ((1, lag), (0, lag), (0, 1)))
-        m = lambda c, col: c.loc[c.step <= C.DEV, col].mean()
-        ref.append(dict(h=h, hyb_B01_insample=m(c1, 'q_hyb'), har_B01_insample=m(c1, 'q_har'), hyb_bez_lag_h=m(c0, 'q_hyb'),
-                        V7_lag_h=m(c0, 'q_V7_Rolling_W20'), V7_lag1_orig=m(cl, 'q_V7_Rolling_W20'), hyb_bez_lag1=m(cl, 'q_hyb')))
-    R = pd.concat(rows, ignore_index=True)
-    Rd = R[R.step <= C.DEV]
-    F = Rd.groupby(['h', 'design'], sort=False).agg(**{c: (c + '_h', 'first') for c in CR}, mean_q=('q_hyb', 'mean')).reset_index()
-    F['failed'] = F.apply(lambda r: ','.join(c for c in CR if not r[c]), axis=1)
-    F['n_failed'] = F.apply(lambda r: sum(not r[c] for c in CR), axis=1)
-    win = F.sort_values(['h', 'n_failed', 'mean_q']).head(1)
-    vm = merged(hv, bx['val'], bl['val'])  # одиночные без поправки на тех же строках, что гибрид
-    single = pd.DataFrame([dict(h=h, step=s, val_year=int(g.year.iloc[0]), q_har_raw=S.qlike(g.rv_actual.values, g.har.values),
-                                q_xgb_raw=S.qlike(g.rv_actual.values, g.xgb.values), q_lgb_raw=S.qlike(g.rv_actual.values, g.lgb.values))
-                           for s, g in vm.groupby('step')])
-    for name, (ov, ot) in outs.items():
-        K.write_atomic(ov, K.pred_path('val', 'hyb', f'{k}_{fname(name)}'))
-        K.write_atomic(ot, K.pred_path('test', 'hyb', f'{k}_{fname(name)}'))
-    d = K.stage_dir('hybrid', k); d.mkdir(parents=True, exist_ok=True)
-    R.to_csv(d / 'designs.csv', index=False); win.to_csv(d / 'final.csv', index=False); single.to_csv(d / 'single.csv', index=False)
-    pd.DataFrame(blog).to_csv(d / 'bias_factors.csv', index=False); pd.DataFrame(ref).to_csv(d / 'ref.csv', index=False)
-    K.mark('hybrid', k, h=h, final=win.design.iloc[0], code=CODE_DESIGN)
+    d = K.stage_dir('hybrid', k); reg = d / 'regen'
+    reg.mkdir(parents=True, exist_ok=True)
+    B = {m: _boost(t['boost'][m]) for m in C.MODELS}
+    for m, nm in (('xgb', 'xgb'), ('lgbm', 'P1')):
+        for s in ('val', 'test'):
+            B[m][s].to_parquet(reg / f'{nm}_h{h}_{s}.parquet', index=False)
+    a, harj = D.read_all(t['dk'])
+    A = HC.add_cj(_cut(a, t['nsteps']))
+    args = SimpleNamespace(boost='P1', v7_lag=str(cfg.get('v7_lag', 'h')), blend=list(cfg.get('blend', ['rv', 'log'])),
+                           dev_eval=cfg.get('dev_eval', 'oos'), etalon=cfg.get('etalon', 'same'), confirm=False)
+    G.LO = 2 if args.dev_eval == 'oos' else 1
+    p = G.run_h(h, A, harj, args, d, reg)
+    shutil.rmtree(reg)
+    fin = p['win'].design.iloc[0]
+    for des, base in ((CODE_DESIGN, f'hyb_P1_h{h}'), (fin, f'hyb_P1_final_h{h}')):
+        K.write_atomic(pd.read_parquet(d / f'{base}_val.parquet'), K.pred_path('val', 'hyb', f'{k}_{fname(des)}'))
+        os.replace(d / f'{base}_test.parquet', K.pred_path('test', 'hyb', f'{k}_{fname(des)}'))
+    hv, _, _ = __import__('gibrid_har').har_forecasts(h, _cut(a, t['nsteps']), harj)
+    vm = merged(hv, B['xgb']['val'], B['lgbm']['val'])  # одиночные без поправки на тех же строках, что гибрид
+    pd.DataFrame([dict(h=h, step=s, val_year=int(g.year.iloc[0]), q_har_raw=S.qlike(g.rv_actual.values, g.har.values),
+                       q_xgb_raw=S.qlike(g.rv_actual.values, g.xgb.values), q_lgb_raw=S.qlike(g.rv_actual.values, g.lgb.values))
+                  for s, g in vm.groupby('step')]).to_csv(d / 'single.csv', index=False)
+    K.mark('hybrid', k, h=h, final=fin, code=CODE_DESIGN, lo=G.LO)
     return dict(kind='hybrid', h=h, key=k, hit=False)

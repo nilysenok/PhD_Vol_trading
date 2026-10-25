@@ -124,8 +124,8 @@ def run(design, root, workers, confirm=False, smoke=False):
                         if avg and not ext:
                             for m in C.MODELS:
                                 boost[(m, h)] = LV.avg_prev(boost[(m, h)], st)
-                        t = dict(h=h, har=hk[h], boost={m: boost[(m, h)] for m in C.MODELS}, cfg=hcfg)
-                        nf = P.go(HY.run_hybrid, t, K.done('hybrid', HY.hyb_key(h, t['har'], t['boost'], hcfg)))
+                        t = dict(h=h, dk=dk, nsteps=ns, har=hk[h], boost={m: boost[(m, h)] for m in C.MODELS}, cfg=hcfg)
+                        nf = P.go(HY.run_hybrid, t, K.done('hybrid', HY.hyb_key(h, t['har'], t['boost'], hcfg, dk, ns)))
                         fut[nf] = ('hybrid', h); pending.add(nf)
     finally:
         P.close()

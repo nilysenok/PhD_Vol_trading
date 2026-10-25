@@ -39,6 +39,11 @@ moex_volatility/results/final/strategies/DASHBOARD.html
 # Фоновые запуски scripts/bg.sh
 data/run/
 
-# Конвейер моделей: кэши и логи (не коммитить)
+# Замер стратегий: песочница и логи
+data/strat_zamer/
+
+# fastbt: кэши и извлечённый старый код
+data/fastbt/
+
+# Конвейер моделей: кэши (не коммитить)
 data/models_cache/
-data/run/

@@ -123,12 +123,48 @@ def extra(workers, tf):  # этап 2: топ-5 точек по val QLIKE и 3 s
     print('extra saved', flush=True)
 
 
+def fin_task(a):  # детерминированный рефит выбранной точки (seed 42) + прогнозы val/test
+    m, h, s, pt, q = a; mod, sd, bi = fit(m, pt, h, s)
+    row = dict(model=m, h=h, step=s, point=pt, **GRID.loc[(m, pt)].to_dict(), best_iteration=bi, qlike_val=q); pr = {}
+    for k, df, X, yr in (('val', sd['vi'], sd['X'][1], sd['vy']), ('test', sd['td'], sd['X'][2], sd['ty'])):
+        pr[k] = pd.DataFrame({'date': df['date'].values, 'ticker': df['ticker'].values, 'year': yr, 'step': s,
+                              'rv_actual': df[sd['t']].values, 'rv_pred': np.clip(np.exp(mod.predict(X)), 1e-10, None)})
+    return row, pr
+
+
+def complete(tr, h):  # все 100 точек x шаги x модели для этого h посчитаны
+    return len(tr[tr.h == h].drop_duplicates(['model', 'h', 'step', 'point'])) == len(MODELS) * len(TEST_YEARS) * N_PTS
+
+
+def finalize(h, workers=2):  # выбор лучших точек по val QLIKE, запись B_{m}_h{h}_{val,test}.parquet и строк B_selected.csv для h
+    tr = pd.read_csv(OUT / 'B_trials.csv').drop_duplicates(['model', 'h', 'step', 'point'])
+    if not complete(tr, h): return False
+    tasks = [(m, h, int(s), int(g.loc[g.qlike_val.idxmin(), 'point']), g.qlike_val.min()) for (m, s), g in tr[tr.h == h].groupby(['model', 'step'])]
+    with Pool(workers) as P: res = P.map(fin_task, tasks, chunksize=1)
+    for m in MODELS:
+        for k in ('val', 'test'): pd.concat([pr[k] for r, pr in res if r['model'] == m]).sort_values('step', kind='stable').to_parquet(OUT / f'B_{m}_h{h}_{k}.parquet', index=False)
+    f = OUT / 'B_selected.csv'; old = pd.read_csv(f) if f.exists() else pd.DataFrame()
+    new = pd.concat([old[old.h != h] if len(old) else old, pd.DataFrame([r for r, _ in res])]).sort_values(['model', 'h', 'step'])
+    new.to_csv(str(f) + '.tmp', index=False); os.replace(str(f) + '.tmp', f); return True
+
+
+def watch(workers=2, every=120):  # наблюдатель: раз в 2 мин финализирует готовые h (по одному разу)
+    sel = OUT / 'B_selected.csv'; done = set(pd.read_csv(sel).h.unique()) if sel.exists() else set()
+    while len(done) < len(HS):
+        for h in HS:
+            if h not in done and (OUT / 'B_trials.csv').exists() and finalize(h, workers):
+                done.add(h); print(f'h={h} готов {time.strftime("%F %T")}', flush=True)
+        time.sleep(every)
+
+
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--bench', action='store_true'); ap.add_argument('--extra', action='store_true'); ap.add_argument('--workers', type=int, default=9)
+    ap = argparse.ArgumentParser(); ap.add_argument('--bench', action='store_true'); ap.add_argument('--extra', action='store_true'); ap.add_argument('--finalize-h', type=int); ap.add_argument('--watch', action='store_true'); ap.add_argument('--workers', type=int, default=9)
     a = ap.parse_args(); OUT.mkdir(parents=True, exist_ok=True)
     GRID.reset_index().to_csv(OUT / 'B_grid_100.csv', index=False)
     tf = OUT / 'B_trials.csv'
     if a.extra: return extra(a.workers, tf)
+    if a.watch: return watch()
+    if a.finalize_h: return print('готов' if finalize(a.finalize_h) else 'не все точки посчитаны')
     if a.bench:  # 10 задач на шаге 2025 + оценка полного времени
         rng = np.random.default_rng(0); tasks = [(MODELS[i % 2], HS[i % 3], 9, int(rng.integers(N_PTS))) for i in range(10)]
         t0 = time.time()
@@ -142,15 +178,8 @@ def main():
         for i, r in enumerate(P.imap_unordered(task, tasks, chunksize=1), 1):
             pd.DataFrame([r]).to_csv(tf, mode='a', header=not tf.exists(), index=False)
             if i % 50 == 0: print(f'{i}/{len(tasks)} {time.time()-t0:.0f}s', flush=True)
-    tr = pd.read_csv(tf).drop_duplicates(['model', 'h', 'step', 'point']); sel = []; pred = {}
-    for (m, h, s), g in tr.groupby(['model', 'h', 'step']):
-        b = g.loc[g.qlike_val.idxmin()]; pt = int(b.point); mod, sd, bi = fit(m, pt, h, s)  # детерминированный рефит выбранной точки
-        sel.append(dict(model=m, h=h, step=s, point=pt, **GRID.loc[(m, pt)].to_dict(), best_iteration=bi, qlike_val=b.qlike_val))
-        for k, df, X, yr in (('val', sd['vi'], sd['X'][1], sd['vy']), ('test', sd['td'], sd['X'][2], sd['ty'])):
-            pred.setdefault((m, h, k), []).append(pd.DataFrame({'date': df['date'].values, 'ticker': df['ticker'].values, 'year': yr, 'step': s,
-                'rv_actual': df[sd['t']].values, 'rv_pred': np.clip(np.exp(mod.predict(X)), 1e-10, None)}))
-    for (m, h, k), L in pred.items(): pd.concat(L).to_parquet(OUT / f'B_{m}_h{h}_{k}.parquet', index=False)
-    pd.DataFrame(sel).to_csv(OUT / 'B_selected.csv', index=False); print('saved', flush=True)
+    for h in HS: finalize(h, a.workers)
+    print('saved', flush=True)
 
 
 if __name__ == '__main__':

@@ -45,6 +45,8 @@ def run(design, scope, confirm, root):
     M, dm = {}, []
     for h in C.HS:
         P = preds(man, scope, h)
+        if scope == 'val':  # разработочный набор вне выборки: шаги lo..6 (как метрика гибрида)
+            P = {m: d[d.step >= SM.lo(man)] for m, d in P.items()}
         for m, d in P.items():
             M[(m, h)] = by_year(d)
         a = P['HAR-J'].merge(P['Гибридная'][['date', 'ticker', 'rv_pred']], on=['date', 'ticker'], suffixes=('_har', '_hyb')).sort_values(['date', 'ticker'])

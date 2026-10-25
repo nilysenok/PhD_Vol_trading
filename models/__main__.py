@@ -25,12 +25,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog='python3 -m models')
     sub = ap.add_subparsers(dest='cmd', required=True)
     r = sub.add_parser('run'); r.add_argument('--design', required=True); r.add_argument('--smoke', action='store_true')
+    r.add_argument('--all-steps', action='store_true', help='посчитать шаги 7-9 (для ворот), метрики подтверждающего набора не показывать')
     t = sub.add_parser('tune'); t.add_argument('--h', type=int, required=True, choices=C.HS); t.add_argument('--model', required=True)
     t.add_argument('--trials', type=int, default=30); t.add_argument('--design', default=None); t.add_argument('--smoke', action='store_true')
     t.add_argument('--protocol', default='optuna', choices=['optuna', 'b_v2']); t.add_argument('--no-prune', action='store_true')
     tb = sub.add_parser('tables'); tb.add_argument('--design', default=str(C.ROOT / 'models/designs/bv2_base.yaml'))
     g = sub.add_parser('gate'); g.add_argument('--design', required=True); g.add_argument('--ref-dir', required=True)
-    g.add_argument('--smoke', action='store_true'); g.add_argument('--prefix', default='B_'); g.add_argument('--boost-name', default='B', help='B | P1 — имена hyb_<имя>_*.parquet; прогнозы бустинга B_<m>_h<h>_*')
+    g.add_argument('--smoke', action='store_true'); g.add_argument('--all-steps', action='store_true'); g.add_argument('--prefix', default='B_'); g.add_argument('--boost-name', default='B', help='B | P1 — имена hyb_<имя>_*.parquet; прогнозы бустинга B_<m>_h<h>_*')
     for p in (r, t, tb, g):
         p.add_argument('--confirm', action='store_true', help='шаги 7-9 (подтверждающий набор val 2022-2024)')
         p.add_argument('--finalists', default='', help='имена финалистов; включает шаги 7-9')
@@ -65,7 +66,7 @@ def main(argv=None):
         if a.cmd == 'run':
             from . import pipeline, summary
             d = C.load_design(a.design)
-            man = pipeline.run(d, a.data_root, a.workers, confirm, a.smoke)
+            man = pipeline.run(d, a.data_root, a.workers, confirm or a.all_steps, a.smoke)
             tab = summary.table(man, a.scope, confirm and not a.smoke)
             tab.to_csv(C.RUN / f'summary_{d["name"]}_{a.scope}.csv', index=False)
             logging.info('stage timer\n%s', pd.DataFrame(man['timer']).to_string())
@@ -76,7 +77,7 @@ def main(argv=None):
             import json
             from . import gate, pipeline
             d = C.load_design(a.design)
-            man = json.loads(pipeline.manifest_path(d['name'], confirm, a.smoke, a.data_root).read_text())
+            man = json.loads(pipeline.manifest_path(d['name'], confirm or a.all_steps, a.smoke, a.data_root).read_text())
             rows = ([] if d.get('boost_external') else gate.boost(man, a.ref_dir, a.prefix)) + gate.hybrid(man, a.ref_dir, a.boost_name)
             tab = pd.DataFrame(rows)
         else:

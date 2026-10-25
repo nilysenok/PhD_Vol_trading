@@ -35,11 +35,10 @@ def boost(man, ref_dir, prefix='B_'):
 
 def hybrid(man, ref_dir, boost_name):
     rows, ref_dir = [], Path(ref_dir)
-    fc = ref_dir / f'final_choice_{boost_name}.csv'
-    fin_ref = pd.read_csv(fc).set_index('h').design.to_dict() if fc.exists() else {}
-    dv = ref_dir / 'designs_val.csv'
     for h, hk in man['hybrid'].items():
         h = int(h)
+        fc, dv = ref_dir / f'final_choice_{boost_name}_h{h}.csv', ref_dir / f'designs_val_{boost_name}_h{h}.csv'
+        fin_ref = pd.read_csv(fc).set_index('h').design.to_dict() if fc.exists() else {}
         fin = K.meta('hybrid', hk)['final']
         pairs = [(HY.CODE_DESIGN, f'hyb_{boost_name}_h{h}')]
         if fin_ref.get(h) == fin:
@@ -53,7 +52,7 @@ def hybrid(man, ref_dir, boost_name):
                 if f.exists():
                     rows.append(_cmp(f.name, pd.read_parquet(K.pred_path(s, 'hyb', f'{hk}_{HY.fname(des)}')), pd.read_parquet(f), man['steps']))
         if dv.exists():  # q_hyb по всем дизайнам single на разработочном наборе
-            R = pd.read_csv(K.stage_dir('hybrid', hk) / 'designs.csv')
+            R = pd.read_csv(K.stage_dir('hybrid', hk) / f'designs_val_P1_h{h}.csv')
             ref = pd.read_csv(dv)
             ref = ref[(ref.h == h) & ref.design.str.startswith('single|') & ref.step.isin(man['steps']) & ref.q_hyb.notna()]
             m = R.merge(ref[['design', 'step', 'q_hyb', 'scheme']], on=['design', 'step'], suffixes=('', '_ref'))

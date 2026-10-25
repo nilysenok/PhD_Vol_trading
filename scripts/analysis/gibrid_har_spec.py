@@ -23,9 +23,9 @@ def qlike(y, p):
     return float(np.mean(y / p - np.log(y / p) - 1))
 
 
-def run(A, harj):
+def run(A, harj, hs=(1, 5, 22)):
     rows = []
-    for h in (1, 5, 22):
+    for h in hs:
         tg = f'rv_target_h{h}'
         for step, ty in enumerate([y for y in range(2017, 2026) if y in A.year.values], 1):
             full = A[A.year < ty]; vy = sorted(full.year.unique())[-1]

@@ -21,9 +21,13 @@ def _avg(df):  # ансамбль: среднее прогнозов по (date,
 def load_boost(boost, h, regen, variant):
     """single — одна точка; top5 — среднее топ-5 (B_*_h{h}_top5_*); seeds3 — seed 42 + B_*_h{h}_seeds4344_* (формат tune_B.py)."""
     res = []
-    for n in {'P1': ('xgb', 'P1'), 'B': ('B_xgb', 'B_lgbm')}[boost]:
+    for n in {'P1': ('xgb', 'P1'), 'B': ('B_xgb', 'B_lgbm'), 'Bv2': ('Bv2_xgb', 'Bv2_lgbm')}[boost]:
         d = {}
         for k in ('val', 'test'):
+            if k == 'test' and boost == 'Bv2':  # тест B v2 закрыт (data/regen/test_locked, не открывать): только валидация
+                d[k] = pd.DataFrame(columns=['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']).astype(
+                    {'date': 'datetime64[ns]', 'ticker': object, 'year': int, 'step': int, 'rv_actual': float, 'rv_pred': float})
+                continue
             if variant == 'single':
                 d[k] = pd.read_parquet(find(regen, f'{n}_h{h}_{k}.parquet'))
             elif variant == 'top5':
