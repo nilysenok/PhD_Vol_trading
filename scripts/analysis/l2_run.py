@@ -69,11 +69,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--h', type=int, required=True); ap.add_argument('--tag', default='Bv2b'); ap.add_argument('--lever', default='')
     ap.add_argument('--configs', required=True); ap.add_argument('--workers', type=int, default=10); ap.add_argument('--h1tag', default=None)
+    ap.add_argument('--matrix', default=None, help='альтернативная матрица признаков')
+    ap.add_argument('--blocks', default='', help='d7,d10 — блоки признаков (PR #27, #28)')
     ap.add_argument('--params', default=None, help='CSV выбранных точек вместо {tag}_selected_h{h}.csv (точка Д9.3)')
     a = ap.parse_args()
     cf = json.loads(Path(a.configs).read_text()) if a.configs.endswith('.json') else json.loads(a.configs)
     t0 = time.time()
-    A, FC = L.load_base()
+    A, FC = L.load_base(a.matrix, tuple(x for x in a.blocks.split(',') if x), a.h)
     G.update(h=a.h, tag=a.tag, P=L.selected_params(a.params or a.tag, a.h), A0=A, FC=FC, h1tag=a.h1tag or a.tag, built={})
     for c in cf:
         A2, cols, cats, mono = L.build_features(A, FC, a.h, c['cfg'])
@@ -101,7 +103,7 @@ def main():
         pd.DataFrame([dict(model=r[1], step=r[2], feature=k, gain=v) for r in R for k, v in r[4].items()]).to_csv(od / f'{n}_gain.csv', index=False)
         S = L.summarize({m: V[V.model == m] for m in ('xgb', 'lgbm')}, gam=cfg.get('obj') == 'gamma')
         bi = {f'bi_{r[1]}_s{r[2]}': r[5] for r in R}
-        row = dict(time=time.strftime('%F %T'), h=a.h, tag=a.tag if not a.params else f'{a.tag}+{Path(a.params).name}', lever=a.lever, name=n, cfg=json.dumps(cfg, ensure_ascii=False),
+        row = dict(time=time.strftime('%F %T'), matrix=(Path(a.matrix).name if a.matrix else '') + a.blocks, h=a.h, tag=a.tag if not a.params else f'{a.tag}+{Path(a.params).name}', lever=a.lever, name=n, cfg=json.dumps(cfg, ensure_ascii=False),
                    n_features=len(G['built'][n][1]), **{k: v for k, v in S.items() if k != 'per_step'},
                    per_step=json.dumps({m: [round(x, 5) for x in q] for m, q in S['per_step'].items()}), **bi)
         rows.append(row)
