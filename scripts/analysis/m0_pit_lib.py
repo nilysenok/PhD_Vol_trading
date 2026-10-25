@@ -131,3 +131,59 @@ def add_targets(df):
         df[f"rv_target_mean_h{h}"] = df.groupby("ticker")["rv"].transform(
             lambda x: x[::-1].rolling(h).mean()[::-1].shift(-1))
     return df
+
+
+def asof_ext(ext, ext_cols, day_cols, dates):
+    """v3: внешние признаки на даты строк акций as-of (только прошлое) вместо медианы train.
+    ext — по дням общего календаря (индекс date). Значения: протягивание последнего наблюдения по календарю (ffill),
+    затем для каждой даты строки d — строка календаря с датой <= d. До первого наблюдения ряда — NaN.
+    day_cols («дни с обновления»): по календарю — как есть (от фактической даты обновления, отражённого в значении);
+    для дат вне календаря — значение дня t_prev + (d - t_prev).days (то же обновление, что в протянутом значении)."""
+    e = ext.sort_index()
+    ff = e[list(ext_cols)].ffill()
+    for c in day_cols:
+        ff[c] = e[c]
+    ff.index.name = "date"
+    ff = ff.reset_index()
+    ff["_cal"] = ff["date"]
+    d = pd.DataFrame({"date": pd.DatetimeIndex(np.sort(pd.unique(pd.to_datetime(dates))))})
+    m = pd.merge_asof(d, ff, on="date", direction="backward").set_index("date")
+    gap = (m.index - pd.DatetimeIndex(m["_cal"])).days.astype(float)
+    for c in day_cols:
+        m[c] = m[c] + gap
+    return m.drop(columns="_cal")
+
+
+def assemble(cal, prep, r18, fill="median", log=print):
+    """Сборка матрицы (m0_features_pit_v2.py): fill='median' — v2 (NaN = медианы train <= 2017, как 00_prepare_data.py),
+    fill='asof' — v3 (asof_ext для внешних, протягивание по строкам тикера для собственных, до первого наблюдения — NaN).
+    Возвращает (out, v2, NEWF, DAYS, lost, pre_nan)."""
+    rvp, yh, mc, days, lost = external_inputs(cal)
+    ext = build_ext(rvp, yh, mc)[EXT].join(days)
+    DAYS = list(days.columns)
+    own, info = own_features(sorted(prep.ticker.unique()), r18)
+    log(f"собственные: {info}")
+    keys = prep[["date", "ticker"]].copy()
+    keys["_i"] = np.arange(len(keys))
+    v2 = keys.merge(own[["date", "ticker", "n_bars"] + OWN], on=["date", "ticker"], how="left")
+    NEWF = FC + DAYS
+    v2 = v2.join(ext if fill == "median" else asof_ext(ext, EXT, DAYS, v2.date), on="date")
+    v2 = add_targets(v2).sort_values("_i").reset_index(drop=True)
+    pre_nan = v2[NEWF].isna().mean()
+    if fill == "median":
+        train = v2.date <= "2017-12-31"
+        med = {c: (float(v2.loc[train, c].median()) if pd.notna(v2.loc[train, c].median()) else 0.0) for c in NEWF}
+        v2[NEWF] = v2[NEWF].fillna(med)
+    else:  # собственные: протягивание по строкам тикера в порядке дат (только прошлое), до первого наблюдения — NaN
+        o = v2.sort_values(["ticker", "date"])
+        v2.loc[o.index, OWN] = o.groupby("ticker")[OWN].ffill().values
+        log(f"v3: доля NaN после as-of: OWN {v2[OWN].isna().mean().mean():.5f} EXT {v2[EXT].isna().mean().mean():.5f} "
+            f"DAYS {v2[DAYS].isna().mean().mean():.5f}")
+    out = prep.copy()
+    for c in FC + ["n_bars", "rv_target_h1", "rv_target_h5", "rv_target_h22"]:
+        out[c] = v2[c].values
+    for c in DAYS + ["rv_target_mean_h1", "rv_target_mean_h5", "rv_target_mean_h22"]:
+        out[c] = v2[c].values
+    im = rvp[rvp.ticker == "IMOEX"].set_index("date")["n_bars"]
+    out["imoex_low_bars"] = (out.date.map(im).fillna(0) < 30).astype("int8")
+    return out, v2, NEWF, DAYS, lost, pre_nan

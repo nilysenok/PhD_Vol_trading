@@ -633,6 +633,8 @@ def fit(model, p, D, cfg, seed=42, nmax=NMAX, ref=None, max_bin=MAX_BIN, prune=N
                num_leaves=int(p['num_leaves']), learning_rate=p['learning_rate'], bagging_fraction=p['bagging_fraction'], bagging_freq=1,
                feature_fraction=p['feature_fraction'], min_data_in_leaf=int(p['min_data_in_leaf']), reg_alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'],
                max_bin=max_bin, verbosity=-1, seed=seed, num_threads=1, force_col_wise=True)
+    if cfg.get('quantile') is not None:  # Д12.6: квантильный остаточный ученик (LightGBM; цель — ln RV − ln HAR-J, V9), ES по pinball-потере val-года
+        prm.update(objective='quantile', alpha=float(cfg['quantile']), metric='quantile')
     if any(D['mono']):
         prm['monotone_constraints'] = D['mono']
     if p.get('extra_trees') in (True, 1, 'True', 1.0):  # Д9.4
