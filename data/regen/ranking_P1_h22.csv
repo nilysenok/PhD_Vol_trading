@@ -33,11 +33,8 @@ single|g3|B-smrob|L0,False,False,True,True,0.4797057005826271,22,"c1,c2",2,g3
 single|g3|B-smrob|L0.25,False,False,True,True,0.4800792817437134,22,"c1,c2",2,g3
 single|g3|B-smrob|L0.5,False,False,True,True,0.48045808554164493,22,"c1,c2",2,g3
 single|V0_LGB|B-sm|L0,False,False,True,True,0.5011900903227064,22,"c1,c2",2,V0_LGB
-single|V0_LGB|B-rob|L0,False,False,True,True,0.501992776228705,22,"c1,c2",2,V0_LGB
-single|V0_LGB|B-smrob|L0,False,False,True,True,0.5058753454489419,22,"c1,c2",2,V0_LGB
 single|V0_XGB|B-rob|L0,False,False,True,True,0.5128692713088745,22,"c1,c2",2,V0_XGB
 single|V0_XGB|B-smrob|L0,False,False,True,True,0.5131928434921579,22,"c1,c2",2,V0_XGB
-single|V0_XGB|B-sm|L0,False,False,True,True,0.5142088731546671,22,"c1,c2",2,V0_XGB
 single|V0_XGB|B-ord|L0,False,False,True,True,0.5153003405310402,22,"c1,c2",2,V0_XGB
 single|step|bez|L0.5,False,False,True,True,0.5238754123873851,22,"c1,c2",2,step
 single|minimax|bez|L0,False,False,True,True,0.5248073083789007,22,"c1,c2",2,minimax
@@ -55,6 +52,9 @@ single|minimax|B-rob|L0.25,False,False,True,False,0.4715706089520293,22,"c1,c2,c
 single|step|B-smrob|L0.25,False,False,True,False,0.47220101169717466,22,"c1,c2,c4",3,step
 single|minimax|B-smrob|L0.25,False,False,True,False,0.47220101169717466,22,"c1,c2,c4",3,minimax
 single|V0_LGB|B-ord|L0,False,False,False,True,0.49955891322172263,22,"c1,c2,c3",3,V0_LGB
+single|V0_LGB|B-rob|L0,False,False,False,True,0.501992776228705,22,"c1,c2,c3",3,V0_LGB
+single|V0_LGB|B-smrob|L0,False,False,False,True,0.5058753454489419,22,"c1,c2,c3",3,V0_LGB
+single|V0_XGB|B-sm|L0,False,False,False,True,0.5142088731546671,22,"c1,c2,c3",3,V0_XGB
 single|step|bez|L0,False,False,True,False,0.5217575229650427,22,"c1,c2,c4",3,step
 single|step|bez|L0.25,False,False,True,False,0.5226056453175496,22,"c1,c2,c4",3,step
 single|V0_XGB|bez|L0,False,False,False,True,0.5540022306803398,22,"c1,c2,c3",3,V0_XGB

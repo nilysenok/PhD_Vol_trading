@@ -1,6 +1,6 @@
 """Гибрид V1-V7 на прогнозах бустинга + пространство дизайнов (слепой тест: метрики только на разработочном наборе val 2016-2021).
 python3 -W ignore scripts/analysis/gibrid_v17.py --boost P1|B --out data/regen [--regen <каталог файлов бустинга>] [--h 22] [--v7-lag h|1]
-    [--devlog docs/otchety/dev_log.md] [--etalon ord|same] [--confirm --finalists auto|"дизайн1,дизайн2"]
+    [--devlog docs/otchety/dev_log.md] [--etalon same|ord] [--confirm --finalists auto|"дизайн1,дизайн2"]
 Дизайн = бустинг-нога (single | top5 | seeds3) | выбор схемы (step | minimax | g3) | поправка (bez | B-ord | B-rob | B-sm | B-smrob) | усадка L0/L0.25/L0.5;
 V0 = HAR-J / XGB / LGB по отдельности (с каждой поправкой). g3 = веса ~ 1/val-QLIKE трёх компонент (рычаг Г3). Схемы V1-V7: gibrid_schemes.py.
 Вход: {regen}/{xgb|B_xgb}_h{h}_{val,test}.parquet, {P1|B_lgbm}_... (+ _top5_, _seeds4344_); HAR-J пересчитывается (gibrid_har.py).
@@ -134,7 +134,7 @@ def run_h(h, A, harj, a, out, regen):
     ov, ot = outs[win.design.iloc[0]]
     ov.to_parquet(out / f'hyb_{a.boost}_final_h{h}_val.parquet', index=False); ot.to_parquet(out / f'hyb_{a.boost}_final_h{h}_test.parquet', index=False)
     auto = F.groupby('family').head(1).head(5).design.tolist()  # финалисты auto: лучшие по правилу в разных семействах (step/minimax/g3/V0_*), до 5
-    return dict(h=h, Rd=Rd, F=F, win=win, ref=ref, sp=sp[sp.step <= DEV], chs=chs, auto=auto)
+    return dict(h=h, Rd=Rd, F=F, win=win, ref=ref, sp=sp[sp.step <= DEV], chs=chs, outs=outs, auto=auto)
 
 
 def main():
@@ -144,7 +144,7 @@ def main():
     ap.add_argument('--regen', default='data/regen')
     ap.add_argument('--h', type=int, nargs='*', default=[1, 5, 22], help='горизонты (по одному: --h 22)')
     ap.add_argument('--v7-lag', default='h', help="'h' (по умолчанию) = без заглядывания в цель; 1 = как в коде")
-    ap.add_argument('--etalon', default='ord', choices=['ord', 'same'], help='эталон c1-c3: Б0.1 ord для всех дизайнов / та же оценка, что у дизайна')
+    ap.add_argument('--etalon', default='same', choices=['ord', 'same'], help='эталон c1-c3: Б0.1 ord для всех дизайнов / та же оценка, что у дизайна')
     ap.add_argument('--devlog', default='docs/otchety/dev_log.md')
     ap.add_argument('--confirm', action='store_true', help='подтверждающий набор 2022-2024: только для --finalists, один раз')
     ap.add_argument('--finalists', default='', help='auto или имена дизайнов через запятую, напр. "single|step|B-ord|L0,single|V0_HAR|B-ord|L0"')
@@ -157,13 +157,22 @@ def main():
         return
     cnt = RP.counter(a.devlog, sum(len(p['F']) for p in P), max(len(p['F']) for p in P))
     L = RP.lines(P, a.boost, a.v7_lag, cnt, a.etalon)
-    if a.confirm:  # один раз, для финалистов: критерии 1-4 на шагах 7-9 (c4 внутри 7-9)
-        L += ['', 'ПОДТВЕРЖДАЮЩИЙ НАБОР (val 2022-2024)', '| дизайн | h | c1 | c2 | c3 | c4 | средн. q |', '|---|---|---|---|---|---|---|']
+    if a.confirm:  # один раз; критерии 1-4 на шагах 7-9 (c4 внутри 7-9). Финалист не прошёл -> следующий по правилу (М4), без перебора заново
+        L += ['', 'ПОДТВЕРЖДАЮЩИЙ НАБОР (val 2022-2024): финалисты в порядке правила, затем следующие по рейтингу до первого прошедшего',
+              '| h | дизайн | c1 | c2 | c3 | c4 | средн. q | итог |', '|---|---|---|---|---|---|---|---|']
         for p in P:
-            names = p['auto'] if a.finalists == 'auto' else [x for x in a.finalists.split(',') if x]
-            for nm in names:
-                g = p['chs'][nm]; g = g[g.step > DEV]; fl = D.flags(g)
-                L.append(f'| {nm.replace("|", "/")} | {p["h"]} | ' + ' | '.join('+' if fl[k] else '-' for k in CR) + f' | {fl["mean_q"]:.3f} |')
+            rank = p['F'].design.tolist()
+            fin = sorted(p['auto'] if a.finalists == 'auto' else [x for x in a.finalists.split(',') if x], key=rank.index)
+            for nm in fin + [d for d in rank if d not in fin][:25]:
+                g = p['chs'][nm]; fl = D.flags(g[g.step > DEV]); ok = all(fl[k] for k in CR)
+                L.append(f'| {p["h"]} | {nm.replace("|", "/")} | ' + ' | '.join('+' if fl[k] else '-' for k in CR) + f' | {fl["mean_q"]:.3f} | {"ПРОШЁЛ - принят" if ok else "не прошёл"} |')
+                if ok:
+                    pd.DataFrame([dict(h=p['h'], design=nm, mean_q_confirm=fl['mean_q'])]).to_csv(out / f'final_confirmed_{a.boost}_h{p["h"]}.csv', index=False)
+                    for part, df in zip(('val', 'test'), p['outs'][nm]):
+                        df.to_parquet(out / f'hyb_{a.boost}_confirmed_h{p["h"]}_{part}.parquet', index=False)
+                    break
+            else:
+                L.append(f'| {p["h"]} | - | | | | | | никто из проверенных не прошёл |')
     D.devlog(a.devlog, '\n'.join(L))
     print(pd.concat([p['win'] for p in P])[['h', 'design', 'failed', 'mean_q']].to_string())
 

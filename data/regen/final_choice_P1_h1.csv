@@ -1,2 +1,2 @@
 design,c1,c2,c3,c4,mean_q,h,failed,n_failed,family
-single|V0_XGB|B-rob|L0,True,True,True,True,0.2731886695694151,1,,0,V0_XGB
+single|step|B-smrob|L0.5,True,True,True,True,0.2719176203178519,1,,0,step
