@@ -38,3 +38,7 @@ moex_volatility/results/final/strategies/DASHBOARD.html
 
 # Фоновые запуски scripts/bg.sh
 data/run/
+
+# Конвейер моделей: кэши и логи (не коммитить)
+data/models_cache/
+data/run/
