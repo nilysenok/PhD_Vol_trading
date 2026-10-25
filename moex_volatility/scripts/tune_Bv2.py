@@ -12,11 +12,11 @@ from pathlib import Path
 import numpy as np, pandas as pd
 import lightgbm as lgb, xgboost as xgb
 warnings.filterwarnings('ignore')
-_pre = argparse.ArgumentParser(add_help=False); _pre.add_argument('--tag', default='Bv2'); _pre.add_argument('--max-bin', type=int, default=63)
+_pre = argparse.ArgumentParser(add_help=False); _pre.add_argument('--tag', default='Bv2'); _pre.add_argument('--max-bin', type=int, default=63); _pre.add_argument('--features', default=None)
 PRE, _ = _pre.parse_known_args()  # читается и в дочерних процессах (spawn); --max-bin 255 -> LightGBM и XGBoost 255, иначе 63/64
 MBL = PRE.max_bin; MBX = PRE.max_bin + 1 if PRE.max_bin == 63 else PRE.max_bin
 ROOT = Path(__file__).resolve().parents[2]; MV = ROOT / 'moex_volatility'; OUT = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen'); TAG = PRE.tag; LOCK = OUT / 'test_locked' / (TAG if TAG != 'Bv2' else '')
-FEAT = OUT / 'features_pit_v2.parquet'; EXC = OUT / f'{TAG}_excluded_features.csv'
+FEAT = Path(PRE.features) if PRE.features else OUT / 'features_pit_v2.parquet'; EXC = OUT / f'{TAG}_excluded_features.csv'  # --features: v3 (rerun_h1_v3.py)
 ns = {'np': np}
 for n in ast.parse((MV / 'scripts/walk_forward_full.py').read_text()).body:
     if isinstance(n, ast.FunctionDef) and n.name in ('qlike', 'clean_features'): exec(compile(ast.Module([n], []), 'wff', 'exec'), ns)
@@ -190,7 +190,7 @@ def run_h(h, P, cnt, t0):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--workers', type=int, default=10); ap.add_argument('--hs', default='22,5,1'); ap.add_argument('--bench', action='store_true'); ap.add_argument('--tag'); ap.add_argument('--max-bin')
+    ap = argparse.ArgumentParser(); ap.add_argument('--workers', type=int, default=10); ap.add_argument('--hs', default='22,5,1'); ap.add_argument('--bench', action='store_true'); ap.add_argument('--tag'); ap.add_argument('--max-bin'); ap.add_argument('--features')
     a = ap.parse_args(); OUT.mkdir(parents=True, exist_ok=True); G = GRID.reset_index(); G[G.model == 'lgbm'].to_csv(OUT / f'{TAG}_grid_lgbm100.csv', index=False); G[(G.model == 'xgb') & (G.point < 100)].to_csv(OUT / f'{TAG}_grid_xgb40.csv', index=False); G[(G.model == 'xgb') & (G.point >= 100)].to_csv(OUT / f'{TAG}_grid_xgb100.csv', index=False); t0 = time.time(); cnt = [0]
     if a.bench:  # 10 задач шага 9 (полные строки) — только проверка работоспособности и времени
         with Pool(a.workers) as P: P.map(trials, [(m, 22, 9, [0], NMAX) for m in MODELS for _ in range(a.workers)], chunksize=1); t0 = time.time(); P.map(trials, batches({m: list(range(48)) for m in MODELS}, 22, 9, a.workers), chunksize=1); print(f'workers={a.workers}: 96 задач шага 9 за {time.time()-t0:.0f}s', flush=True); return
