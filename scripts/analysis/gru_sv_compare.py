@@ -2,20 +2,17 @@
 """Цель (4): GRU на СВ против бустинга и гибрида второго круга — OOS QLIKE разработочного набора (шаги 2-6, val 2017-2021).
 Вход: gibrid_v17.py --boost GRU_sv --legs single (каталог data/regen/GRU_sv_gibrid): V0_XGB = GRU с поправкой Б0.1 (ord/rob/sm/smrob, s² шага t-1)
 и без неё; выбор поправки по правилу (n_failed, затем средний QLIKE) среди V0-дизайнов GRU.
-Сравнение: финальные дизайны второго круга (gibrid_v17 по той же процедуре) — hyb_*_final_h{h}_val.parquet + ranking.
+Сравнение: финалисты финальной сборки второго круга (data/regen/final2/finalists_preliminary.csv, gibrid_v17 по той же процедуре).
 DM: основной способ (дневной ряд средней по тикерам разности потерь, NW с лагом h-1), d = L_сравн. - L_GRU (t < 0 — GRU хуже).
 Подтверждающий набор (шаги 7-9) не читается: всё фильтруется по step 2-6.
-python3 scripts/analysis/gru_sv_compare.py [--h 1 5 22] [--extra 'h:метка:каталог:boost' ...]"""
+python3 scripts/analysis/gru_sv_compare.py [--h 1 5 22] [--fin <csv финалистов>]"""
 import argparse
 from pathlib import Path
 import numpy as np, pandas as pd
 
 R = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen')
 G = R / 'GRU_sv_gibrid'
-# сравнения второго круга (каталог, имя boost в файлах); первая строка по h — бустинг, вторая — гибрид
-CMP = {1: [('бустинг V0 (top5 XGB, v3)', 'D12_h1_gibrid/V0', 'D12_h1_V0'), ('гибрид Д8.12 (выбран, v3)', 'D12_h1_gibrid/A_d812', 'D12_h1_A_d812')],
-       5: [('бустинг/гибрид D12_h5 (V9+Д8.12+Д7+Huber)', 'D12/gibrid_D12_h5_opt', 'D12_h5')],
-       22: [('бустинг/гибрид D12_h22 (V9+LGBM linear)', 'D12/gibrid_D12_h22_opt', 'D12_h22')]}
+FIN = R / 'final2/finalists_preliminary.csv'  # финальная сборка второго круга; --fin для окончательного списка
 qv = lambda y, p: y / np.clip(p, 1e-10, None) - np.log(y / np.clip(p, 1e-10, None)) - 1
 
 
@@ -44,9 +41,9 @@ def gru_pred(h, design):  # прогноз GRU выбранного вариан
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--h', type=int, nargs='*', default=[1, 5, 22])
-    ap.add_argument('--extra', nargs='*', default=[]); a = ap.parse_args()
-    for e in a.extra:
-        h, lab, d, b = e.split(':'); CMP[int(h)].append((lab, d, b))
+    ap.add_argument('--fin', default=None); a = ap.parse_args()
+    global FIN
+    FIN = Path(a.fin) if a.fin else FIN
     rows = []
     for h in a.h:
         D, F, V = gru_designs(h)
@@ -59,14 +56,15 @@ def main():
         lines.append(('GRU без поправки', yrs(D, 'single|V0_XGB|bez|L0'), None))
         cd = D[(D.design == win) & D.step.between(2, 6)].set_index('val_year')
         lines.append((f'HAR-J с той же s² ({win.split("|")[2]})', cd.q_har, None))
-        for lab, d, b in CMP[h]:
-            Fc = pd.read_csv(R / d / f'ranking_{b}_h{h}.csv'); Dc = pd.read_csv(R / d / f'designs_val_{b}_h{h}.csv')
-            fin = Fc.iloc[0].design
-            pc = pd.read_parquet(R / d / f'hyb_{b}_final_h{h}_val.parquet'); pc = pc[pc.step.between(2, 6) & (pc.rv_actual > 1e-12)]
-            t, n = dm(pc, g, h)
-            lines.append((f'{lab}: {fin}', yrs(Dc, fin), (t, n)))
-            nv = Fc[~Fc.family.str.startswith('V0')].iloc[0].design  # лучший по правилу дизайн со смешиванием (схема V1-V11, g3, ...)
-            lines.append((f'{lab}, лучшая схема смешивания: {nv}', yrs(Dc, nv), None))
+        fz = pd.read_csv(FIN); fz = fz[fz.h == h].sort_values('order')
+        for _, r in fz.iterrows():  # финалисты второго круга (final2): бустинг (V0_*) и гибриды (схемы смешивания), фолбэк HAR-J — справочно
+            d = R / 'final2/gibrid' / r.cand; Dc = pd.read_csv(d / f'designs_val_{r.cand}_h{h}.csv')
+            fc = pd.read_csv(d / f'final_choice_{r.cand}_h{h}.csv').design.iloc[0]; t = None
+            if r.design == fc:  # прогнозы сохранены только для выбранного дизайна кандидата -> DM
+                pc = pd.read_parquet(d / f'hyb_{r.cand}_final_h{h}_val.parquet'); pc = pc[pc.step.between(2, 6) & (pc.rv_actual > 1e-12)]
+                t = dm(pc, g, h)
+            role = 'фолбэк HAR-J' if isinstance(r.role, str) and r.role else ('одна компонента V0' if '|V0_' in r.design else 'смешивание с HAR-J')
+            lines.append((f'финалист {int(r.order)} ({role}) {r.cand}: {r.design}', yrs(Dc, r.design), t))
         base = lines[0][1].mean()
         for lab, s, t in lines:
             rows.append(dict(h=h, line=lab, **{str(int(y)): round(q, 4) for y, q in s.items()}, mean=round(s.mean(), 4),
