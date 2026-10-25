@@ -150,7 +150,9 @@ def main():
     tks = a.tickers or sorted(data())
     if a.assemble:
         assemble(tks, a.steps); return
-    tasks = [(tk, s, h) for s in sorted(a.steps, reverse=True) for h in a.h for tk in tks]  # длинные шаги первыми
+    # порядок: разработочные шаги 1-6 по h (h=1, 5, 22; внутри — длинные шаги первыми), затем шаги 7-9
+    dev_ = [(tk, s, h) for h in a.h for s in sorted([s for s in a.steps if s <= 6], reverse=True) for tk in tks]
+    tasks = dev_ + [(tk, s, h) for s in sorted([s for s in a.steps if s > 6], reverse=True) for h in a.h for tk in tks]
     print(time.strftime('%F %T'), 'старт', len(tasks), 'задач x', NTR, 'испытаний', flush=True)
     t0 = time.time()
     with Pool(a.workers) as P:
