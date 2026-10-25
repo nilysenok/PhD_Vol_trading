@@ -35,3 +35,6 @@ moex_volatility/results/final/strategies/test_phases/DECISION_LOG.txt
 moex_volatility/results/final/strategies/FINAL_RESULTS.md
 moex_volatility/results/final/strategies/FINAL_RESULTS_CORRECTED.md
 moex_volatility/results/final/strategies/DASHBOARD.html
+
+# Фоновые запуски scripts/bg.sh
+data/run/
