@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Этап 5, вариант B: перебор 100 точек ЛГК (seed 42) на каждом (модель, h, шаг СВ); выбор по QLIKE валидационного года (пул).
 Запуск из корня репо: python3 moex_volatility/scripts/tune_B.py [--bench | --workers 9]
-Другая матрица признаков (М7): --features data/regen/features_pit.parquet --tag Bpit [--hs 1] — файлы {tag}_trials.csv, {tag}_{m}_h{h}_*.parquet, {tag}_selected.csv;
-без этих ключей поведение прежнее (data/prepared, префикс B, h = 1, 5, 22).
+Другая матрица признаков (М0/М7): --features data/regen/features_pit_v2.parquet --tag Bpit2 [--hs 1] — файлы {tag}_trials.csv,
+{tag}_{m}_h{h}_*.parquet, {tag}_selected.csv; список признаков — <features>.config.json, если есть. Без ключей поведение прежнее.
 Данные/шаги/qlike/clean_features — как в regen_boosting.py (walk_forward_full.py). ES: patience 50, метрика l2 на ln(rv) (rmse у xgboost)."""
 import argparse, ast, json, os, time, warnings
 from multiprocessing import Pool
@@ -16,7 +16,7 @@ for n in ast.parse((MV / 'scripts/walk_forward_full.py').read_text()).body:
     if isinstance(n, ast.FunctionDef) and n.name in ('qlike', 'clean_features'):
         exec(compile(ast.Module([n], []), 'wff', 'exec'), ns)
 qlike, clean_features = ns['qlike'], ns['clean_features']
-_pre = argparse.ArgumentParser(add_help=False)  # читаются до загрузки данных (и в дочерних процессах spawn — sys.argv тот же)
+_pre = argparse.ArgumentParser(add_help=False)  # читаются до загрузки данных (spawn-процессы получают тот же sys.argv)
 _pre.add_argument('--features'); _pre.add_argument('--tag', default='B'); _pre.add_argument('--hs', default='1,5,22')
 PRE, _ = _pre.parse_known_args()
 FEATURES = str(Path(PRE.features).resolve()) if PRE.features else None
@@ -55,7 +55,7 @@ def load():
     os.chdir(MV)
     fc = json.load(open('data/prepared/config.json'))['feature_cols']
     if FEATURES:  # одна склеенная матрица того же формата (scripts/analysis/m0_features_pit*.py)
-        cfg = Path(FEATURES.replace('.parquet', '.config.json'))  # v2: свой список признаков (+ *_days_since_upd)
+        cfg = Path(FEATURES.replace('.parquet', '.config.json'))
         if cfg.exists(): fc = json.load(open(cfg))['feature_cols']
         ad = pd.read_parquet(FEATURES).sort_values('date').reset_index(drop=True)
         ad['year'] = pd.to_datetime(ad['date']).dt.year
