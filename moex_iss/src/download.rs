@@ -21,10 +21,27 @@ struct Progress {
     done: bool,
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
 fn url(ticker: &str, from: &str, till: &str, start: u64) -> String {
-    format!(
-        "/iss/engines/stock/markets/shares/boards/TQBR/securities/{ticker}/candles.json?interval=10&from={from}&till={till}&start={start}"
-    )
+    candles_url(&tqbr_base(ticker), from, till, start)
+}
+
+/// Путь инструмента ISS без хвоста (Д24): /iss/engines/{engine}/markets/{market}[/boards/{board}]/securities/{secid}.
+pub fn tqbr_base(ticker: &str) -> String {
+    format!("/iss/engines/stock/markets/shares/boards/TQBR/securities/{ticker}")
+}
+
+pub fn candles_url(base: &str, from: &str, till: &str, start: u64) -> String {
+    format!("{base}/candles.json?interval=10&from={from}&till={till}&start={start}")
+}
+
+/// Задание выгрузки (Д24): имя файла, путь инструмента, период.
+#[derive(Clone, Debug)]
+pub struct Spec {
+    pub name: String,
+    pub base: String,
+    pub from: String,
+    pub till: String,
 }
 
 fn line(b: &Bar) -> String {
@@ -54,6 +71,12 @@ pub fn load_raw(path: &Path) -> Result<Vec<Bar>> {
 }
 
 async fn one(http: Http, out: PathBuf, ticker: String, from: String, till: String) -> Result<usize> {
+    let sp = Spec { base: tqbr_base(&ticker), name: ticker, from, till };
+    one_spec(http, out, sp).await
+}
+
+async fn one_spec(http: Http, out: PathBuf, sp: Spec) -> Result<usize> {
+    let (ticker, from, till) = (sp.name.clone(), sp.from.clone(), sp.till.clone());
     let raw = out.join("raw").join(format!("{ticker}.csv"));
     let prog = out.join("progress").join(format!("{ticker}.json"));
     std::fs::create_dir_all(raw.parent().context("raw")?)?;
@@ -63,7 +86,7 @@ async fn one(http: Http, out: PathBuf, ticker: String, from: String, till: Strin
         eprintln!("{ticker}: докачка с start={}", p.next_start);
     }
     while !p.done {
-        let page = parse_candles(&http.get_text(&url(&ticker, &from, &till, p.next_start)).await?)
+        let page = parse_candles(&http.get_text(&candles_url(&sp.base, &from, &till, p.next_start)).await?)
             .with_context(|| format!("{ticker} start={}", p.next_start))?;
         if page.is_empty() {
             p.done = true;
@@ -83,6 +106,33 @@ async fn one(http: Http, out: PathBuf, ticker: String, from: String, till: Strin
     store::write_bars(&out.join("bars_10m").join(format!("{ticker}.parquet")), &main)?;
     eprintln!("{ticker}: готово, баров {} (основная сессия {})", all.len(), main.len());
     Ok(all.len())
+}
+
+/// Грузит произвольные инструменты (Д24), не более PARALLEL одновременно, с той же докачкой.
+pub async fn run_specs(specs: &[Spec], out: &Path) -> Result<usize> {
+    let http = Http::new()?;
+    let sem = Arc::new(Semaphore::new(PARALLEL));
+    let mut tasks = Vec::new();
+    for sp in specs {
+        let (h, o, s2, s) = (http.clone(), out.to_path_buf(), sp.clone(), sem.clone());
+        tasks.push(tokio::spawn(async move {
+            let _permit = s.acquire_owned().await?;
+            one_spec(h, o, s2).await
+        }));
+    }
+    let (mut total, mut errs) = (0, 0);
+    for (sp, task) in specs.iter().zip(tasks) {
+        match task.await? {
+            Ok(n) => total += n,
+            Err(e) => {
+                errs += 1;
+                eprintln!("{}: ОШИБКА {e:#} (прогресс сохранён, перезапуск продолжит)", sp.name)
+            }
+        }
+    }
+    eprintln!("всего баров: {total}, ошибок: {errs}");
+    anyhow::ensure!(errs == 0, "ошибок выгрузки: {errs}");
+    Ok(total)
 }
 
 /// Грузит тикеры, не более PARALLEL одновременно.

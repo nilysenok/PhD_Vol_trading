@@ -34,8 +34,9 @@ pub fn parse_candles(text: &str) -> Result<Vec<Bar>> {
             high: f(ih)?,
             low: f(il)?,
             close: f(ic)?,
-            volume: f(iv)?.round() as i64,
-            value: f(ivl)?,
+            // Д24: у валютного рынка (CETS) volume/value в свечах бывают null — тогда 0 (цены обязательны, как раньше)
+            volume: num(row, iv).unwrap_or(0.0).round() as i64,
+            value: num(row, ivl).unwrap_or(0.0),
         });
     }
     Ok(out)
