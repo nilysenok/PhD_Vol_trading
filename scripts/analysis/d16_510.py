@@ -308,7 +308,7 @@ def wrap10(a):
     code = a.code
     H = year_q(harj_val(h), code)
     rows = []
-    out_files = {}
+    out_files, adopted = {}, {}
     for T in (a.cands or list(C10[h])):
         MM = {m: (members_lag if a.lag else members)(T, h, m, 'val') for m in M}
         single = {m: wrap_pred(MM[m], 1, 1) for m in M}
@@ -358,6 +358,7 @@ def wrap10(a):
             rows[i]['chosen'] = i == bi
             rows[i]['adopt_grid'] = adopt if i == gi else None
         out_files[T] = (best.variant, int(best.P), int(best.S), bool(best.lgb_xgb), prim, ok21)
+        adopted[T] = (int(best.P), int(best.S), bool(best.lgb_xgb)) != (int(ref.P), int(ref.S), bool(ref.lgb_xgb))  # тот же состав = не новый дизайн
     df = pd.DataFrame(rows)
     df['vs_single'] = df.oos1720 / df.groupby('cand').oos1720.transform(lambda s: s.iloc[0]) - 1
     sfx = '_lag' if a.lag else ''
@@ -374,6 +375,12 @@ def wrap10(a):
             dd = R if k == 'val' else lock
             for m in M:
                 slots[m].assign(wrap=nm + ('+2' if two and m == prim else '')).sort_values(K).to_parquet(dd / f'D16_10_h{h}_{T}_{m}_h{h}_wrap10{sfx}_{k}.parquet', index=False)
+            if a.lag and adopted[T]:  # принятый размер — отдельный кандидат сборки: boost D16_10_{T}, основная нога = обёртка (формат gibrid_io)
+                B = f'D16_10_{T}'
+                bd = R if k == 'val' else R / 'test_locked' / B
+                bd.mkdir(parents=True, exist_ok=True)
+                for m in M:
+                    slots[m].assign(wrap=nm + ('+2' if two and m == prim else '')).sort_values(K).to_parquet(bd / f'{B}_{m}_h{h}_{k}.parquet', index=False)
         print(f'{T} h={h}: итог {nm} ({"lgbm+xgb" if two else prim}); лучший по сетке на 2021 не хуже текущей: {ok21}', flush=True)
     pd.set_option('display.width', 250)
     print(df[df.grid_best | df.reference | df.chosen | df.variant.str.startswith('single')][['cand', 'variant', 'model', 'oos1720', 'y2021', 'dev1721', 'c1', 'c2', 'c3', 'grid_best', 'reference', 'chosen']].to_string(), flush=True)
@@ -471,6 +478,22 @@ def designs(a):
                                               val=f'data/regen/D16_10_h{h}_{r.cand}_{{lgbm,xgb}}_h{h}_wrap10_val.parquet',
                                               test=f'data/regen/test_locked/D16_10_h{h}/D16_10_h{h}_{r.cand}_{{lgbm,xgb}}_h{h}_wrap10_test.parquet')
                                  for r in c.itertuples()})
+            gl = R / f'D16_10_h{h}_wrap_grid_lag.csv'
+            if gl.exists():  # основной результат — честная оценка (точки шага t−1); выше — оценка на годе подбора точки (смещена), справка
+                y['candidates_same_year_biased'] = y.pop('candidates')
+                d = pd.read_csv(gl, dtype={'final2_wrap': str})
+                y['select_lag'] = ('честная оценка: на val-году шага s члены — точки и seed шага s−1 (обучены на окне шага s); размер = мин. OOS 2017–2020 '
+                                   'по сетке и «без обёртки»; принимается вместо текущей обёртки final2 (D15 — без обёртки), если не хуже её на 2017–2020 и на 2021')
+                y['candidates'] = {}
+                for cand, gg in d.groupby('cand', sort=False):
+                    b, rf = gg[gg.chosen == True].iloc[0], gg[gg.reference == True].iloc[0]
+                    new = (int(b.P), int(b.S), bool(b.lgb_xgb)) != (int(rf.P), int(rf.S), bool(rf.lgb_xgb))
+                    y['candidates'][cand] = dict(v0=bool(b.v0), chosen=b.variant, model=b.model, points=int(b.P), seeds=int(b.S), lgbm_xgb=bool(b.lgb_xgb),
+                                                 cfg=C10[h][cand][1], blocks=C10[h][cand][2], reference=rf.variant, oos1720=round(float(b.oos1720), 6),
+                                                 y2021=round(float(b.y2021), 6), ref_oos1720=round(float(rf.oos1720), 6), ref_y2021=round(float(rf.y2021), 6),
+                                                 c1=bool(b.c1), c2=bool(b.c2), c3=bool(b.c3), adopted=new,
+                                                 boost=(f'D16_10_{cand}' if new else None),
+                                                 kandidat_yaml=(f'data/regen/final3/kandidaty/D16_10_{cand}.yaml' if new else None))
             yaml.safe_dump(y, open(od / f'd16_10_h{h}.yaml', 'w'), allow_unicode=True, sort_keys=False)
         g = R / f'D16_5_h{h}_gate.csv'
         if g.exists():
@@ -490,7 +513,7 @@ def kandidat(a):
     import yaml
     od = R / 'final3' / 'kandidaty'
     od.mkdir(parents=True, exist_ok=True)
-    y = dict(boost=a.boost, h=a.h, semeystvo=a.semeystvo, rychag=a.rychag, opisanie=a.opisanie, regen='data/regen', legs=['single', 'top5', 'seeds3'],
+    y = dict(boost=a.boost, h=a.h, semeystvo=a.semeystvo, rychag=a.rychag, opisanie=a.opisanie, regen='data/regen', legs=a.legs,
              odinochnaya=False, chistyy=bool(a.chistyy), test_dir=f'data/regen/test_locked/{a.boost}', osnova=a.osnova, n_variantov=a.n)
     if a.step10:  # шаг 10 — final2_step10.py (формат {boost}_{m}_h{h}_s10_val.parquet)
         assert all((R / 'final2' / 'step10' / f'{a.boost}_{m}_h{a.h}_s10_val.parquet').exists() for m in M)
@@ -517,7 +540,7 @@ def main():
     p = sp.add_parser('kandidat'); p.add_argument('--boost', required=True); p.add_argument('--h', type=int, required=True)
     p.add_argument('--semeystvo', required=True); p.add_argument('--rychag', default='Д16.5'); p.add_argument('--opisanie', required=True)
     p.add_argument('--osnova', required=True); p.add_argument('--chistyy', type=int, default=1); p.add_argument('--n', type=int, default=1)
-    p.add_argument('--step10', type=int, default=0)
+    p.add_argument('--step10', type=int, default=0); p.add_argument('--legs', nargs='+', default=['single', 'top5', 'seeds3'])
     p = sp.add_parser('designs'); p.add_argument('--hs', type=int, nargs='+', default=[1, 5, 22])
     a = ap.parse_args()
     {'refitlag': refitlag, 'kandidat': kandidat, 'designs': designs, 'refit10': refit10, 'wrap10': wrap10, 'harx_matrix': harx_matrix, 'gate165': gate165}[a.cmd](a)

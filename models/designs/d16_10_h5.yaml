@@ -15,7 +15,7 @@ grid:
 select: размер = мин. OOS QLIKE 2017–2020 (шаги 2–5, Б0.1 ord вне выборки) по сетке;
   принимается вместо текущей обёртки final2 (D15 — без обёртки), если не хуже её на
   2017–2020 и на 2021; c1–c4 на 2016–2021
-candidates:
+candidates_same_year_biased:
   D12_h5:
     v0: false
     chosen: final2:2
@@ -23,7 +23,7 @@ candidates:
     points: 1
     seeds: 1
     lgbm_xgb: true
-    cfg:
+    cfg: &id001
       v9: true
       harf: true
       huber: true
@@ -74,7 +74,7 @@ candidates:
     points: 1
     seeds: 1
     lgbm_xgb: false
-    cfg:
+    cfg: &id003
       rel: true
       mono: true
       mono_sign: -1
@@ -99,7 +99,7 @@ candidates:
     points: 1
     seeds: 1
     lgbm_xgb: false
-    cfg:
+    cfg: &id002
       v9: true
       harf: true
     blocks: d7
@@ -116,3 +116,68 @@ candidates:
     c3: true
     val: data/regen/D16_10_h5_L2v3_h5_{lgbm,xgb}_h5_wrap10_val.parquet
     test: data/regen/test_locked/D16_10_h5/D16_10_h5_L2v3_h5_{lgbm,xgb}_h5_wrap10_test.parquet
+select_lag: 'честная оценка: на val-году шага s члены — точки и seed шага s−1 (обучены
+  на окне шага s); размер = мин. OOS 2017–2020 по сетке и «без обёртки»; принимается
+  вместо текущей обёртки final2 (D15 — без обёртки), если не хуже её на 2017–2020
+  и на 2021'
+candidates:
+  D12_h5:
+    v0: false
+    chosen: P5S5
+    model: lgbm
+    points: 5
+    seeds: 5
+    lgbm_xgb: false
+    cfg: *id001
+    blocks: d7
+    reference: final2:2
+    oos1720: 0.227344
+    y2021: 0.15818
+    ref_oos1720: 0.230334
+    ref_y2021: 0.159673
+    c1: true
+    c2: true
+    c3: true
+    adopted: true
+    boost: D16_10_D12_h5
+    kandidat_yaml: data/regen/final3/kandidaty/D16_10_D12_h5.yaml
+  L2v3_h5:
+    v0: false
+    chosen: single
+    model: lgbm
+    points: 1
+    seeds: 1
+    lgbm_xgb: false
+    cfg: *id002
+    blocks: d7
+    reference: final2:none
+    oos1720: 0.225227
+    y2021: 0.162465
+    ref_oos1720: 0.225227
+    ref_y2021: 0.162465
+    c1: true
+    c2: true
+    c3: true
+    adopted: false
+    boost: null
+    kandidat_yaml: null
+  D15_h5:
+    v0: true
+    chosen: P10S5
+    model: lgbm
+    points: 10
+    seeds: 5
+    lgbm_xgb: false
+    cfg: *id003
+    blocks: ''
+    reference: single
+    oos1720: 0.229289
+    y2021: 0.17286
+    ref_oos1720: 0.231554
+    ref_y2021: 0.175198
+    c1: true
+    c2: true
+    c3: true
+    adopted: true
+    boost: D16_10_D15_h5
+    kandidat_yaml: data/regen/final3/kandidaty/D16_10_D15_h5.yaml
