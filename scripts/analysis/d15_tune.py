@@ -27,7 +27,7 @@ def resume(h, cfg, tag, workers, btag='Bv2b'):
     import numpy as np, pandas as pd
     OUT, LOCK = L.REGEN, L.REGEN / 'test_locked' / tag
     LOCK.mkdir(parents=True, exist_ok=True)
-    A, FC = L.load_base(None, (), h)
+    A, FC = L.load_base(None, tuple(x for x in cfg.get('blocks', '').split(',') if x), h)
     A2, cols, _, _ = L.build_features(A, FC, h, cfg)
     T.G.update(A=A2, cols=cols, cfg=cfg, h=h, btag=btag, n=30)
     TR = pd.read_csv(OUT / f'{tag}_trials.csv')

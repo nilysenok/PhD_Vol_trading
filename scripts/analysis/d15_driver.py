@@ -17,7 +17,8 @@ import l2_lib as L
 LEVERS = [('a', [('lin0.1', {'linear_lambda': 0.1}, None), ('lin1', {'linear_lambda': 1}, None)]),
           ('b', [('rel', {'rel': True}, None)]),
           ('c', [('d93', {}, 'd93')]),
-          ('d', [('mono+1', {'mono': True}, None), ('mono-1', {'mono': True, 'mono_sign': -1}, None)])]
+          ('d', [('mono+1', {'mono': True}, None), ('mono-1', {'mono': True, 'mono_sign': -1}, None)]),
+          ('e', [('d7', {'blocks': 'd7'}, None)])]  # (д) только h=5: блок Д7 (внешние 5-дневные агрегаты, PC1, RVI, календарь; без HAR-J) — допущен постановкой
 
 
 def run(h, tag, cfg, space, workers):
@@ -25,6 +26,8 @@ def run(h, tag, cfg, space, workers):
     if log.exists() and 'готов' in log.read_text() and (L.REGEN / f'{tag}_xgb_h{h}_seeds4344_val.parquet').exists():
         return log.read_text().strip().splitlines()[-1] + ' [уже посчитан]'
     cmd = [sys.executable, str(HERE / 'd15_tune.py'), '--h', str(h), '--space', space, '--cfg', json.dumps(cfg), '--tag', tag, '--workers', str(workers)]
+    if cfg.get('blocks'):
+        cmd += ['--blocks', cfg['blocks']]
     if (L.REGEN / f'{tag}_trials.csv').exists():  # обрыв на дообучении — досчёт по trials.csv
         cmd.append('--resume')
     with open(log, 'a') as f:
