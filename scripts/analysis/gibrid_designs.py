@@ -39,3 +39,16 @@ def flags(ch):
     return dict(c1=bool((hy < har).all()), c2=bool((hy <= 1.02 * single_min).all()), c3=bool(worst < worst_single),
                 c4=bool(jump <= 0.3 and sw <= 3), ml_switches=sw, worst_ratio=worst, worst_ratio_single=worst_single, max_w_jump=jump,
                 mean_q=float(hy.mean()))
+
+
+def v0(res, comp, h):
+    """V0 = одна компонента (с поправкой, если res посчитан с ней): веса one-hot, переключений нет -> c4 выполнен тривиально."""
+    rows, ov, ot = [], [], []
+    w = {'har': (1, 0, 0), 'xgb': (0, 1, 0), 'lgb': (0, 0, 1)}[comp]
+    for r in res:
+        y, p = r['vs']['rv_actual'].values, np.clip(r['vs'][comp].values, 1e-10, None)
+        rows.append(dict(r['base'], h=h, scheme='V0_' + comp.upper(), w_har=w[0], w_xgb=w[1], w_lgb=w[2],
+                         q_hyb=float(np.mean(y / p - np.log(y / p) - 1))))
+        for df, lst in ((r['vs'], ov), (r['ts'], ot)):
+            lst.append(df[['date', 'ticker', 'year', 'step', 'rv_actual']].assign(rv_pred=df[comp].values))
+    return pd.DataFrame(rows), pd.concat(ov), pd.concat(ot)
