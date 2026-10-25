@@ -5,51 +5,15 @@ python3 scripts/analysis/gibrid_v17.py --boost P1|B --out data/regen [--regen da
 Выход: hyb_{boost}_h{h}_{val,test}.parquet и hyb_{boost}_choice.csv (дизайн «как в коде»: single/step/без), designs_val.csv,
 hyb_{boost}_har_check.csv, hyb_{boost}_final_h{h}_{val,test}.parquet + final_choice_{boost}.csv (правило 25.10: мин. нарушенных
 критериев, затем мин. средний val-QLIKE; в набор входят V0 = HAR-J / XGB / LGB с поправкой), ref_{boost}.csv, bias_factors_{boost}.csv."""
-import argparse, subprocess
+import argparse
 from pathlib import Path
 import numpy as np, pandas as pd
 import gibrid_har as GH
+import gibrid_har_spec as HS
 import gibrid_schemes as S
 import gibrid_designs as D
-
-SCHEMES = ['V1_Adaptive', 'V2_MultiVal', 'V3_Regime', 'V4_Shrinkage', 'V5_Combined', 'V6_TrimmedW', 'V7_Rolling_W20']
-MAIN_REGEN = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen')
-
-
-def find(regen, name):
-    for d in (regen, GH.ROOT / 'data/regen', MAIN_REGEN):
-        if (d / name).exists():
-            return d / name
-    raise FileNotFoundError(name)
-
-
-def _avg(df):  # ансамбль: среднее прогнозов по (date, ticker, step)
-    return df.groupby(['date', 'ticker', 'step'], as_index=False).agg(
-        year=('year', 'first'), rv_actual=('rv_actual', 'first'), rv_pred=('rv_pred', 'mean'))
-
-
-def load_boost(boost, h, regen, variant):
-    """single — одна точка; top5 — среднее топ-5 (B_*_h{h}_top5_*); seeds3 — seed 42 + B_*_h{h}_seeds4344_* (формат tune_B.py)."""
-    res = []
-    for n in {'P1': ('xgb', 'P1'), 'B': ('B_xgb', 'B_lgbm')}[boost]:
-        d = {}
-        for k in ('val', 'test'):
-            if variant == 'single':
-                d[k] = pd.read_parquet(find(regen, f'{n}_h{h}_{k}.parquet'))
-            elif variant == 'top5':
-                d[k] = _avg(pd.read_parquet(find(regen, f'{n}_h{h}_top5_{k}.parquet')))
-            else:
-                d[k] = _avg(pd.concat([pd.read_parquet(find(regen, f'{n}_h{h}_{k}.parquet')),
-                                       pd.read_parquet(find(regen, f'{n}_h{h}_seeds4344_{k}.parquet'))]))
-        res.append(d)
-    return res
-
-
-def merged(har, xgb, lgb):
-    m = har.rename(columns={'rv_pred': 'har'})
-    for n, d in (('xgb', xgb), ('lgb', lgb)):
-        m = m.merge(d[['date', 'ticker', 'rv_pred']].rename(columns={'rv_pred': n}), on=['date', 'ticker'])
-    return m[m['rv_actual'] > 1e-12].sort_values(['step', 'date', 'ticker']).reset_index(drop=True)  # фильтр: v3.py:65
+import gibrid_report as RP
+from gibrid_io import load_boost, merged
 
 
 def s2_val(val):
@@ -101,13 +65,17 @@ def compute(hv, ht, h, bx, bl, bias, lag, log):
     return res
 
 
-def devlog(path, text):
-    p = Path(path)
-    n = 1 + sum(1 for l in p.read_text().splitlines() if l.startswith('| ') and l[2:3].isdigit()) if p.exists() else 1
-    when = subprocess.run(['date', '+%Y-%m-%d %H:%M'], capture_output=True, text=True).stdout.strip()
-    head = '' if p.exists() else '# Журнал разработки (dev_log)\n\n| № | Дата-время | Что меняли |\n|---|---|---|\n'
-    with open(p, 'a') as f:
-        f.write(head + f'| {n} | {when} | {text.splitlines()[0]} |\n\n' + '\n'.join(text.splitlines()[1:]) + '\n\n')
+DEV = 6  # разработочный набор: шаги 1-6 (val 2016-2021); подтверждающий: шаги 7-9 (val 2022-2024), скрыт без --confirm
+CR = ('c1', 'c2', 'c3', 'c4')
+
+
+def hide(df, confirm):
+    """Метрики подтверждающего набора (q_*, ratio_har) обнуляются, если не --confirm. Схемы/веса по шагам остаются (нужны для теста)."""
+    if confirm:
+        return df
+    df = df.copy()
+    df.loc[df.step > DEV, [c for c in df.columns if c.startswith('q_') or c == 'ratio_har']] = np.nan
+    return df
 
 
 def main():
@@ -117,21 +85,22 @@ def main():
     ap.add_argument('--regen', default='data/regen')
     ap.add_argument('--v7-lag', default='h', help="'h' (по умолчанию) = без заглядывания в цель; 1 = как в коде")
     ap.add_argument('--devlog', default='docs/otchety/dev_log.md')
+    ap.add_argument('--confirm', action='store_true', help='подтверждающий набор 2022-2024: только для --finalists, один раз')
+    ap.add_argument('--finalists', default='', help='имена дизайнов через запятую, напр. "single|step|B0.1oos,top5|step|B0.1oos"')
     a = ap.parse_args()
     out, regen = Path(a.out), Path(a.regen)
     out.mkdir(parents=True, exist_ok=True)
     A, harj = GH.load_all()
     variants = ['single'] + (['top5', 'seeds3'] if a.boost == 'B' else [])
-    chk, rows, outs, blog, ref = [], [], {}, [], []
-    CR = ('c1', 'c2', 'c3', 'c4')
+    chk, rows, outs, blog, ref, chs = [], [], {}, [], [], {}
 
     def add(ch, ov, ot, name, h):
         ch.insert(0, 'design', name)
-        fl = D.flags(ch)
+        fl = D.flags(ch[ch.step <= DEV])  # критерии - только на разработочном наборе
         ch['ratio_har'] = ch.q_hyb / ch.q_har
         for k in CR + ('worst_ratio', 'worst_ratio_single', 'max_w_jump', 'ml_switches'):
             ch[k + '_h'] = fl[k]
-        rows.append(ch); outs[(name, h)] = (ov, ot)
+        rows.append(ch); outs[(name, h)] = (ov, ot); chs[(name, h)] = ch
 
     for h in (1, 5, 22):
         hv, ht, _ = GH.har_forecasts(h, A, harj)
@@ -142,7 +111,7 @@ def main():
                 bx, bl = load_boost(a.boost, h, regen, var)
             except FileNotFoundError as e:
                 print('нет файла, вариант', var, 'пропущен:', e, flush=True); continue
-            etalon = None  # решение 25.10: c1-c3 для ВСЕХ дизайнов - относительно одиночных моделей с Б0.1oos (HAR-J, XGB, LGB)
+            etalon = None  # c1-c3 для ВСЕХ дизайнов - относительно одиночных моделей с Б0.1oos (HAR-J, XGB, LGB)
             for bias in (2, 0):  # 2 Б0.1 с s2 val-года предыдущего шага (вне выборки; на шаге 1 F=1); 0 без поправки
                 lg = []
                 res = compute(hv, ht, h, bx, bl, bias, lag, lg)
@@ -158,27 +127,29 @@ def main():
                 if bias == 2:
                     for comp in ('har', 'xgb', 'lgb'):
                         add(*D.v0(res, comp, h), f'{var}|V0_{comp.upper()}|B0.1oos', h)
-            if var == 'single':  # справка: in-sample Б0.1 и V7 с lag=1 (исходная реализация)
-                c1 = D.select(compute(hv, ht, h, bx, bl, 1, lag, []), 'step', h)[0]
-                c0 = D.select(compute(hv, ht, h, bx, bl, 0, lag, []), 'step', h)[0]
-                cl = D.select(compute(hv, ht, h, bx, bl, 0, 1, []), 'step', h)[0]
-                ref.append(dict(h=h, hyb_B01_insample=c1.q_hyb.mean(), har_B01_insample=c1.q_har.mean(), hyb_bez_lag_h=c0.q_hyb.mean(),
-                                V7_lag_h=c0.q_V7_Rolling_W20.mean(), V7_lag1_orig=cl.q_V7_Rolling_W20.mean(), hyb_bez_lag1=cl.q_hyb.mean(),
-                                V7_steps_lag_h=str(c0.step[c0.scheme == 'V7_Rolling_W20'].tolist()),
-                                V7_steps_lag1=str(cl.step[cl.scheme == 'V7_Rolling_W20'].tolist())))
+            if var == 'single':  # справка (разработочный набор): in-sample Б0.1 и V7 с lag=1 (исходная реализация)
+                c1, c0, cl = (D.select(compute(hv, ht, h, bx, bl, b, l, []), 'step', h)[0] for b, l in ((1, lag), (0, lag), (0, 1)))
+                m = lambda c, col: c.loc[c.step <= DEV, col].mean()
+                ref.append(dict(h=h, hyb_B01_insample=m(c1, 'q_hyb'), har_B01_insample=m(c1, 'q_har'), hyb_bez_lag_h=m(c0, 'q_hyb'),
+                                V7_lag_h=m(c0, 'q_V7_Rolling_W20'), V7_lag1_orig=m(cl, 'q_V7_Rolling_W20'), hyb_bez_lag1=m(cl, 'q_hyb'),
+                                V7_steps_lag_h=str([s for s in c0.step[c0.scheme == 'V7_Rolling_W20'] if s <= DEV]),
+                                V7_steps_lag1=str([s for s in cl.step[cl.scheme == 'V7_Rolling_W20'] if s <= DEV])))
         print('h', h, 'готово', flush=True)
     R = pd.concat(rows, ignore_index=True)
-    R.to_csv(out / 'designs_val.csv', index=False)
+    hide(R, a.confirm).to_csv(out / 'designs_val.csv', index=False)
     pd.DataFrame(chk).to_csv(out / f'hyb_{a.boost}_har_check.csv', index=False)
     pd.DataFrame(blog).to_csv(out / f'bias_factors_{a.boost}.csv', index=False)
     pd.DataFrame(ref).to_csv(out / f'ref_{a.boost}.csv', index=False)
+    sp = HS.run(A, harj)
+    hide(sp, a.confirm).to_csv(out / f'har_specs_val_{a.boost}.csv', index=False)  # строка (в) эталона HAR-J
     code = 'single|step|bez'
-    R[R.design == code].drop(columns=['design']).to_csv(out / f'hyb_{a.boost}_choice.csv', index=False)
+    hide(R[R.design == code], a.confirm).drop(columns=['design']).to_csv(out / f'hyb_{a.boost}_choice.csv', index=False)
     for h in (1, 5, 22):
         ov, ot = outs[(code, h)]
         ov.to_parquet(out / f'hyb_{a.boost}_h{h}_val.parquet', index=False); ot.to_parquet(out / f'hyb_{a.boost}_h{h}_test.parquet', index=False)
-    # правило выбора (решение 25.10): на каждом h наименьшее число нарушенных критериев, при равенстве — мин. средний val-QLIKE
-    F = R.groupby(['h', 'design'], sort=False).agg(**{k: (k + '_h', 'first') for k in CR}, mean_q=('q_hyb', 'mean')).reset_index()
+    # правило выбора (решение 25.10): сначала прошедшие все критерии -> мин. средний val-QLIKE; иначе мин. нарушенных, затем мин. QLIKE; всё на 2016-2021
+    Rd = R[R.step <= DEV]
+    F = Rd.groupby(['h', 'design'], sort=False).agg(**{k: (k + '_h', 'first') for k in CR}, mean_q=('q_hyb', 'mean')).reset_index()
     F['failed'] = F.apply(lambda r: ','.join(k for k in CR if not r[k]), axis=1)
     F['n_failed'] = F.apply(lambda r: sum(not r[k] for k in CR), axis=1)
     win = F.sort_values(['h', 'n_failed', 'mean_q']).groupby('h').head(1)
@@ -186,18 +157,14 @@ def main():
     for r in win.itertuples():
         ov, ot = outs[(r.design, r.h)]
         ov.to_parquet(out / f'hyb_{a.boost}_final_h{r.h}_val.parquet', index=False); ot.to_parquet(out / f'hyb_{a.boost}_final_h{r.h}_test.parquet', index=False)
-    ys = sorted(R.val_year.unique())
-    L = [f'Гибрид V1-V7 + V0, дизайны на {a.boost} (gibrid_v17.py, только валидация; V7 lag={a.v7_lag}; Б0.1 только oos; c1-c3 для всех дизайнов относительно одиночных моделей с Б0.1oos; single = одна точка бустинга, не V0)',
-         '| дизайн | h | ' + ' | '.join(str(y) for y in ys) + ' | средн. q | худш. отн. к HAR | c1 | c2 | c3 | c4 |', '|' + '---|' * (9 + len(ys))]
-    for (d, h), g in R.groupby(['design', 'h'], sort=False):
-        f = g.iloc[0]
-        L.append(f'| {d.replace("|", "/")} | {h} | ' + ' | '.join(f'{r.q_hyb:.3f} ({r.ratio_har:.2f})' for r in g.itertuples())
-                 + f' | {g.q_hyb.mean():.3f} | {f.worst_ratio_h:.2f} | ' + ' | '.join('+' if f[k + '_h'] else '-' for k in CR) + ' |')
-    L += ['', 'Выбор по правилу (мин. нарушенных критериев, затем мин. средний val-QLIKE):', '| h | дизайн | не выполнены | средн. q |', '|---|---|---|---|']
-    L += [f'| {r.h} | {r.design.replace("|", "/")} | {r.failed or "-"} | {r.mean_q:.3f} |' for r in win.itertuples()]
-    L += ['', 'Справка (single/step, средний val-QLIKE по шагам):', '| h | гибрид Б0.1 in-sample | HAR Б0.1 in-sample | V7 lag=h | V7 lag=1 (исходная, с заглядыванием на h-1 дней) | шаги V7 lag=h | шаги V7 lag=1 |', '|---|---|---|---|---|---|---|']
-    L += [f'| {r["h"]} | {r["hyb_B01_insample"]:.3f} | {r["har_B01_insample"]:.3f} | {r["V7_lag_h"]:.3f} | {r["V7_lag1_orig"]:.3f} | {r["V7_steps_lag_h"]} | {r["V7_steps_lag1"]} |' for r in ref]
-    devlog(a.devlog, '\n'.join(L))
+    L = RP.lines(Rd, win, ref, sp[sp.step <= DEV], a.boost, a.v7_lag, RP.counter(a.devlog, len(F), F.design.nunique()), sorted(Rd.val_year.unique()))
+    if a.confirm:  # один раз, для финалистов: критерии 1-4 на шагах 7-9 (c4 внутри 7-9)
+        L += ['', f'ПОДТВЕРЖДАЮЩИЙ НАБОР (val 2022-2024), финалисты: {a.finalists}', '| дизайн | h | c1 | c2 | c3 | c4 | средн. q |', '|---|---|---|---|---|---|---|']
+        for nm in [x for x in a.finalists.split(',') if x]:
+            for h in (1, 5, 22):
+                g = chs[(nm, h)]; g = g[g.step > DEV]; fl = D.flags(g)
+                L.append(f'| {nm.replace("|", "/")} | {h} | ' + ' | '.join('+' if fl[k] else '-' for k in CR) + f' | {fl["mean_q"]:.3f} |')
+    D.devlog(a.devlog, '\n'.join(L))
     print(win[['h', 'design', 'failed', 'mean_q']].to_string())
 
 

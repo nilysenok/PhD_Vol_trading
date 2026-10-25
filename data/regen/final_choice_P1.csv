@@ -1,4 +1,4 @@
 h,design,c1,c2,c3,c4,mean_q,failed,n_failed
-1,single|step|B0.1oos,True,True,True,False,0.32869976668705503,c4,1
-5,single|V0_HAR|B0.1oos,True,False,True,True,0.638295340192616,c2,1
-22,single|V0_HAR|B0.1oos,True,False,True,True,0.7507149816050513,c2,1
+1,single|step|B0.1oos,True,True,True,False,0.27015036056151825,c4,1
+5,single|V0_HAR|B0.1oos,True,False,True,True,0.3716730147086951,c2,1
+22,single|V0_HAR|B0.1oos,True,False,True,True,0.47656754038635424,c2,1
