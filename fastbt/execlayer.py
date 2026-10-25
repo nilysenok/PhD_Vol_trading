@@ -72,8 +72,9 @@ def exec_layer(raw, strength, consec, min_hold, cool, min_str, end):
 
 
 @njit(cache=True)
-def vote(stack, k, s, e, out):
-    """stack[k, n]; ансамбль на [s, e) пишется в out (вне окна не трогается)."""
+def vote(stack, k, s, e, out, frac=0.5):
+    """stack[k, n]; ансамбль на [s, e) пишется в out (вне окна не трогается).
+    Голос есть, если ненулевых больше frac·k (код: frac = 0,5)."""
     for t in range(s, e):
         cnt = 0
         tot = 0.0
@@ -82,7 +83,7 @@ def vote(stack, k, s, e, out):
             if v != 0.0:
                 cnt += 1
             tot += v
-        if 2 * cnt > k:
+        if cnt > frac * k:
             out[t] = 1.0 if tot > 0 else (-1.0 if tot < 0 else 0.0)
         else:
             out[t] = 0.0

@@ -56,7 +56,7 @@ def _ens_member(trend, i_sp, r, sigs, exl, exs, nxt, close, high, low, adx, atr,
 
 @njit(cache=True, parallel=True)
 def b_eval(trend, members, P, sigs, exl, exs, nxt, close, high, low, adx, atr, atr0, sig3,
-           med3, sdl, sds, tdl, tds, rh, rl, strength, ep, lr, start, vs, ve, comm, out):
+           med3, sdl, sds, tdl, tds, rh, rl, strength, ep, lr, start, vs, ve, comm, out, frac):
     n = len(close)
     k = len(members)
     for q in prange(len(P)):
@@ -77,7 +77,7 @@ def b_eval(trend, members, P, sigs, exl, exs, nxt, close, high, low, adx, atr, a
                                       low, adx, atr, atr0, sig3, med3, sdl, sds, tdl, tds, rh,
                                       rl, strength, ep, start, ve, te, tx, td)
         ens = np.zeros(n)
-        vote(stack, k, vs, ve, ens)
+        vote(stack, k, vs, ve, ens, frac)
         out[q] = sharpe_window(ens, lr, vs, ve, comm)
 
 
@@ -108,7 +108,7 @@ def run_b(u, cfg, a_res):
         members = np.array([i for i, _, _ in top], np.int64)
         sh = np.full(len(P), -999.0)
         b_eval(u.trend, members, P, *_args(u), sig3, med3, u.sdl, u.sds, u.tdl, u.tds, rh, rl,
-               u.strength, ep, u.lr, u.start, vs, ve, cfg.comm, sh)
+               u.strength, ep, u.lr, u.start, vs, ve, cfg.comm, sh, grids.VOTE_FRAC)
         q = int(np.argmax(sh)) if sh.max() > -999.0 else 0
         ens = _test_ensemble(u, P[q:q + 1], members, sig3, med3, rh, rl, ep)
         out[Y] = (grid[q], ens, float(sh[q]))
@@ -122,7 +122,7 @@ def _test_ensemble(u, P1, members, sig3, med3, rh, rl, ep):
                                   u.tdl, u.tds, rh, rl, u.strength, ep, u.start, n, te, tx, td)
                       for m in members])
     ens = np.zeros(n)
-    vote(stack, len(members), 0, n, ens)
+    vote(stack, len(members), 0, n, ens, grids.VOTE_FRAC)
     return ens
 
 

@@ -87,14 +87,14 @@ class ApproachA:
             for e in range(len(self.exec_grid)):
                 s, _, _, _ = window(self.exec_stats(i, r, e), u.nbars, j)
                 combos.append(((i, r, e), float(s)))
-        top10 = _desc(combos, lambda c: c[1])[:10]
+        top10 = _desc(combos, lambda c: c[1])[:grids.ENS_K]
         return [c[0] for c in top10] if top10 else None
 
     def ensemble(self, top10):
         u = self.u
         stack = np.stack([self.exec_pos(i, r, e) for i, r, e in top10])
         out = np.zeros(u.n)
-        vote(stack, len(top10), 0, u.n, out)
+        vote(stack, len(top10), 0, u.n, out, grids.VOTE_FRAC)
         return out
 
     def run(self, years=None):

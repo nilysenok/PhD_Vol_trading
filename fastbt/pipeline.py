@@ -46,8 +46,11 @@ def run_unit(ticker, sid, cfg, td=None):
     from fastbt.approach_b import run_b
     from fastbt.approach_cd import run_c, run_d
     from fastbt.data import load_ticker
+    from fastbt.design import apply, prepare_td
     from fastbt.unit import make_unit
-    u = make_unit(ticker, sid, load_ticker(ticker, cfg.corp_actions) if td is None else td)
+    apply(cfg.design)
+    td = load_ticker(ticker, cfg.corp_actions) if td is None else td
+    u = make_unit(ticker, sid, prepare_td(td, cfg.design))
     A = ApproachA(u, cfg)
     a = A.run()
     ap = cfg.approaches

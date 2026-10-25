@@ -32,6 +32,7 @@ class Config:
     corp_actions: bool = True      # data/corporate_actions.csv (в воротах — нет)
     val_start: int = 2020
     approaches: str = "ABCD"          # начало валидации B/C/D (год; в маске [1] — со следующего)
+    design: tuple = ()                # варианты дизайна B/C/D (fastbt.design); () — как в коде
 
     @staticmethod
     def gate() -> "Config":
