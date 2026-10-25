@@ -29,7 +29,7 @@ def main(argv=None):
     t = sub.add_parser('tune'); t.add_argument('--h', type=int, required=True, choices=C.HS); t.add_argument('--model', required=True)
     t.add_argument('--trials', type=int, default=30); t.add_argument('--design', default=None); t.add_argument('--smoke', action='store_true')
     t.add_argument('--protocol', default='optuna', choices=['optuna', 'b_v2']); t.add_argument('--no-prune', action='store_true')
-    tb = sub.add_parser('tables'); tb.add_argument('--design', default=str(C.ROOT / 'models/designs/bv2_base.yaml'))
+    tb = sub.add_parser('tables'); tb.add_argument('--design', default=str(C.ROOT / 'models/designs/bv2b_base.yaml'))
     g = sub.add_parser('gate'); g.add_argument('--design', required=True); g.add_argument('--ref-dir', required=True)
     g.add_argument('--smoke', action='store_true'); g.add_argument('--all-steps', action='store_true'); g.add_argument('--prefix', default='B_'); g.add_argument('--boost-name', default='B', help='B | P1 — имена hyb_<имя>_*.parquet; прогнозы бустинга B_<m>_h<h>_*')
     for p in (r, t, tb, g):
@@ -42,7 +42,7 @@ def main(argv=None):
     cp = sub.add_parser('compare'); cp.add_argument('--base', required=True); cp.add_argument('--designs', required=True)
     mk = sub.add_parser('mkdesign'); mk.add_argument('--selected', required=True); mk.add_argument('--name', required=True)
     mk.add_argument('--train', default='B', choices=['B', 'default', 'b_v2']); mk.add_argument('--grid-script', default=None)
-    mk.add_argument('--levers', default=None, help='harj_residual,harj_feature,avg_prev_step,h1_feature'); mk.add_argument('--horizons', default=None); mk.add_argument('--note', default=None); mk.add_argument('--max-bin', default=None)
+    mk.add_argument('--levers', default=None, help='harj_residual,harj_feature,avg_prev_step,h1_feature'); mk.add_argument('--horizons', default=None); mk.add_argument('--note', default=None); mk.add_argument('--exclude', default=None); mk.add_argument('--max-bin', default=None)
     mk.add_argument('--features', default=None, help='матрица признаков (каталог prepared/ или .parquet)')
     mk.add_argument('--target', default=None, help='колонки цели: 1=rv_target_h1,5=rv_target_mean_h5,22=rv_target_mean_h22')
     a = ap.parse_args(argv)
@@ -53,7 +53,7 @@ def main(argv=None):
         print(summary.compare(ld(a.base), [ld(y) for y in a.designs.split(',')]).to_string(index=False)); return 0
     if a.cmd == 'mkdesign':
         from .design import from_selected
-        print(from_selected(a.selected, a.name, a.train, a.max_bin, a.features, a.target, a.grid_script, a.levers, a.horizons, a.note)); return 0
+        print(from_selected(a.selected, a.name, a.train, a.max_bin, a.features, a.target, a.grid_script, a.levers, a.horizons, a.note, a.exclude)); return 0
     confirm = a.confirm or bool(a.finalists)
     if getattr(a, 'scope', 'val') == 'test':
         from .summary import require_final

@@ -85,7 +85,9 @@ def run(design, root, workers, confirm=False, smoke=False):
                                        seed=int(design['seed']), keep=V2.keep_cols(tr.get('exclude_features'), fc, m, 1, s), fk1=fk[(1, 1)])
                 tasks.append(t)
     tasks.sort(key=lambda t: (t['model'] != 'lgbm', -t['step'], -t['h']))  # длинные первыми: LightGBM раньше XGBoost, поздние шаги раньше (25.10)
-    ns, hcfg = len(st), design['hybrid']
+    ns, hcfg = len(st), dict(design['hybrid'])
+    if smoke:
+        hcfg['dev_eval'] = 'in'  # один шаг: метрика вне выборки (шаги 2-6) пуста -> внутривыборочная (шаг 1)
     sk = HY.spec_key(dk, ns)
     res, fut, wall = [], {}, {}
     P = LazyPool(workers)

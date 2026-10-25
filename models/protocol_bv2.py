@@ -12,6 +12,7 @@ from . import cache as K, config as C
 CANDIDATES = [C.MV / 'scripts/tune_Bv2.py',
               Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/.claude/worktrees/agent-afcfa1385cb335411/moex_volatility/scripts/tune_Bv2.py')]
 OUT, LOCK, TAG = C.CACHE / 'bv2', C.CACHE / 'test_locked/bv2', 'Bv2pipe'
+MAX_BIN = 255  # B v2b (решение 25.10 по проверке max_bin); tune_Bv2.py --max-bin
 
 
 def script():
@@ -25,6 +26,7 @@ def _module():
     p = script()
     if str(p.parent) not in sys.path:
         sys.path.insert(0, str(p.parent))
+    sys.argv = [str(p), '--tag', TAG, '--max-bin', str(MAX_BIN)]  # tune_Bv2 читает ключи из sys.argv при импорте (и в дочерних spawn)
     if 'tune_Bv2' not in sys.modules:
         spec = importlib.util.spec_from_file_location('tune_Bv2', p)
         m = importlib.util.module_from_spec(spec)

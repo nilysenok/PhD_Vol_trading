@@ -14,7 +14,8 @@ HEAD = {'B': '# протокол B (tune_B.py): ES по l2 на ln(rv), patience
 
 def grid_B(script=None):
     """= GRID скрипта B (tune_B.py / tune_Bv2.py: ЛГК, seed 42) без импорта (импорт грузит данные)."""
-    ns = {'np': np, 'pd': pd}
+    from types import SimpleNamespace
+    ns = {'np': np, 'pd': pd, 'PRE': SimpleNamespace(hs='1,5,22', max_bin=63, tag='B', features=None, target='point')}  # ключи скриптов B
     for n in ast.parse(Path(script or C.TUNE_B).read_text()).body:
         names = {x.id for t in getattr(n, 'targets', []) for x in ast.walk(t) if isinstance(x, ast.Name)}
         if names & {'N_PTS', 'SPACE'} or (isinstance(n, ast.FunctionDef) and n.name in ('lhs', 'grid', 'make_grid')):
@@ -36,7 +37,7 @@ def parse_target(s):
     return {int(a): b for a, b in (x.split('=') for x in s.split(','))} if s else None
 
 
-def from_selected(csv, name, train='B', max_bin=None, features=None, target=None, grid_script=None, levers=None, horizons=None, note=None):
+def from_selected(csv, name, train='B', max_bin=None, features=None, target=None, grid_script=None, levers=None, horizons=None, note=None, exclude=None):
     files = sorted(glob.glob(str(C.data_path(csv))))
     sel = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
     if 'seed' in sel.columns:  # Bv2_selected_h*: основная строка — seed 42, rank 1
@@ -48,6 +49,8 @@ def from_selected(csv, name, train='B', max_bin=None, features=None, target=None
     tr = dict({'B': C.B_TRAIN, 'b_v2': C.B_V2_TRAIN}.get(train, C.DEFAULT_TRAIN))
     if max_bin is not None:
         tr['max_bin'] = None if str(max_bin) == 'none' else int(max_bin)
+    if exclude:
+        tr['exclude_features'] = exclude
     d = {'name': name, 'seed': 42, 'horizons': [int(x) for x in horizons.split(',')] if horizons else list(C.HS), 'source': str(csv).replace(str(C.MAIN) + '/', ''), 'train': tr}
     if features or target:
         d['data'] = {k: v for k, v in (('features', features), ('target', parse_target(target))) if v}
