@@ -16,8 +16,9 @@ from fastbt.signals.interface import TickerData
 MAIN = Path(os.environ.get("FASTBT_MAIN",
                            "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading"))
 STRAT = MAIN / "moex_volatility" / "results" / "final" / "strategies"
-OHLCV = STRAT / "data" / "ohlcv_daily_full.parquet"
-VPRED = STRAT / "data" / "vpred_aligned.parquet"
+DATA_ROOT = Path(os.environ.get("FASTBT_DATA_ROOT", STRAT / "data"))   # --data-root
+OHLCV = DATA_ROOT / "ohlcv_daily_full.parquet"
+VPRED = Path(os.environ.get("FASTBT_VPRED", DATA_ROOT / "vpred_aligned.parquet"))
 POS_PRE2026 = STRAT / "walkforward_v4" / "daily_positions_pre2026.parquet"
 
 TICKERS = sorted(["AFLT", "ALRS", "HYDR", "IRAO", "LKOH", "LSRG", "MGNT", "MOEX",

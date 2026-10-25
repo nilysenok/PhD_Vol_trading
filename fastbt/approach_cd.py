@@ -75,7 +75,7 @@ def run_c(u, cfg, a_res):
     limits = grids.C_LIMITS_V41 if v41 else grids.C_LIMITS_V4
     b = cfg.bound()
     out = {}
-    for Y in grids.BCD_TEST_YEARS:
+    for Y in cfg.years_bcd:
         if Y not in a_res:
             continue
         ens = a_res[Y][1]
@@ -84,7 +84,7 @@ def run_c(u, cfg, a_res):
             ys, ye = year_bounds(u.dates, Y)[0], year_bounds(u.dates, Y + 1)[0]
             apos = np.zeros(u.n)
             apos[ys:ye] = ens[ys:ye]               # V41:1446-1478: A только тестового года
-        vs, ve = year_bounds(u.dates, 2020)[b], year_bounds(u.dates, Y)[b]
+        vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
         sh, ex, tp = _eval(apos, rows, u.lr, vs, ve, cfg.comm)
         sh, ex, tp = sh[idx], ex[idx], tp[idx]
         bi = -1
@@ -104,11 +104,11 @@ def run_d(u, cfg, a_res):
     rows, idx, params = d_gates(u.td, cfg.fix_d_units)
     b = cfg.bound()
     out = {}
-    for Y in grids.BCD_TEST_YEARS:
+    for Y in cfg.years_bcd:
         if Y not in a_res:
             continue
         apos = a_res[Y][1]
-        vs, ve = year_bounds(u.dates, 2020)[b], year_bounds(u.dates, Y)[b]
+        vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
         sh, _, _ = _eval(apos, rows, u.lr, vs, ve, cfg.comm)
         sh = sh[idx]
         bi = _first_best(sh)

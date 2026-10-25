@@ -52,10 +52,8 @@ def run_unit(ticker, sid, cfg, td=None):
     c = run_c(u, cfg, a)
     d = run_d(u, cfg, a)
     sname = grids.STRATEGY_NAMES[sid]
-    parts = (_rows(u, sname, "A", a, grids.A_TEST_YEARS)
-             + _rows(u, sname, "B", b, grids.BCD_TEST_YEARS)
-             + _rows(u, sname, "C", c, grids.BCD_TEST_YEARS)
-             + _rows(u, sname, "D", d, grids.BCD_TEST_YEARS))
+    parts = (_rows(u, sname, "A", a, cfg.years_a) + _rows(u, sname, "B", b, cfg.years_bcd)
+             + _rows(u, sname, "C", c, cfg.years_bcd) + _rows(u, sname, "D", d, cfg.years_bcd))
     meta = {"A": {Y: [[int(x) for x in t] for t in v[0]] for Y, v in a.items()},
             "B": {Y: v[0] for Y, v in b.items()},
             "C": {Y: v[0] for Y, v in c.items()},

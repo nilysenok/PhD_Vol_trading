@@ -27,6 +27,9 @@ class Config:
     fix_sharpe: bool = True
     comm: float = 0.0005
     msp_comm: float = 0.0005
+    years_a: tuple = tuple(range(2020, 2027))
+    years_bcd: tuple = tuple(range(2022, 2027))
+    val_start: int = 2020          # начало валидации B/C/D (год; в маске [1] — со следующего)
 
     @staticmethod
     def gate() -> "Config":

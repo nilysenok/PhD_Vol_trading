@@ -59,5 +59,5 @@ def save(k: str, arrays: dict) -> None:
         return
     CACHE.mkdir(parents=True, exist_ok=True)
     tmp = CACHE / f"{k}.tmp.npz"
-    np.savez(tmp, **arrays)
+    np.savez_compressed(tmp, **arrays)
     os.replace(tmp, CACHE / f"{k}.npz")

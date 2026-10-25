@@ -93,11 +93,11 @@ def run_b(u, cfg, a_res):
     eg = grids.exec_grid()
     out = {}
     b = cfg.bound()
-    for Y in grids.BCD_TEST_YEARS:
+    for Y in cfg.years_bcd:
         if Y not in a_res:
             continue
         top, _ = a_res[Y]
-        vs, ve = year_bounds(u.dates, 2020)[b], year_bounds(u.dates, Y)[b]
+        vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
         if ve <= vs:
             continue
         lim = year_bounds(u.dates, Y)[0] if cfg.fix_b_median else u.n

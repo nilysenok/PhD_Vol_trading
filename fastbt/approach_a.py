@@ -92,10 +92,10 @@ class ApproachA:
         vote(stack, len(top10), 0, u.n, out)
         return out
 
-    def run(self, years=grids.A_TEST_YEARS):
+    def run(self, years=None):
         """{Y: (top10, ансамбль)}."""
         out = {}
-        for Y in years:
+        for Y in (self.cfg.years_a if years is None else years):
             top = self.year(Y)
             if top is not None:
                 out[Y] = (top, self.ensemble(top))
