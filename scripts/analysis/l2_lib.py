@@ -292,7 +292,6 @@ def markov_filtered(A, min_obs=250):
                 continue
             with _w.catch_warnings():
                 _w.simplefilter('ignore')
-                np.random.seed(42)  # search_reps берёт случайные старты из глобального генератора — фиксируем (детерминизм)
                 m0 = MarkovRegression(y[fitm], k_regimes=2, trend='c', switching_variance=True)
                 r0 = None
                 for sd in (None, 42, 43, 44, 45):  # детерминизм: сначала без случайных стартов, затем фиксированные seed для search_reps
