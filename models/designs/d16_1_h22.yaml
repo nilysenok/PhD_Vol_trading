@@ -1,0 +1,10 @@
+# Д16.1: гибрид на основе HAR-X (без нового подбора точек, та же обёртка). Код: scripts/analysis/d16_v9.py (подмена l2_lib.har_ln на ln HAR-X шага).
+name: d16_1_h22
+h: 22
+base: models/designs/harx_h22.yaml   # HAR-X (слагаемые владельца + Д17.3, эластичная сеть)
+candidates: "h22_D12x: D12_h22 (V9 на ln HAR-X, linear_tree у LGBM), точки D12_h22_selected_h22, нога seeds3 XGB, B-smrob"
+features: data/regen/features_pit_v3.parquet (h=5: features_pit_v3_d7_h5.parquet)
+train: l2_lib.fit (ES на val-годе шага, patience 30, max 1000, max_bin 255, бины окна шага 1, исключения Bv2b)
+control: без подмены совпадает с сохранёнными D12_h22/D12_h5 (шаг 2, макс. |Δln| 0 / 2e-15)
+d14: нет (прогнозов D14_* к 01:05 нет)
+status: не выжил

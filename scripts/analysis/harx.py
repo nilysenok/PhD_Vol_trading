@@ -22,7 +22,7 @@ import d7_block as D7
 DATA = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data')
 REGEN = DATA / 'regen'
 FEAT = REGEN / 'features_pit_v3.parquet'
-ALPHAS = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2)
+ALPHAS = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2, 0.1, 0.3, 1.0)
 L1S = (0.1, 0.5, 0.9, 1.0)
 CODES = ('ord', 'rob', 'sm', 'smrob')
 
@@ -210,33 +210,39 @@ def fit_en(H, Z, y, alpha, l1):
     return pred, coef
 
 
-def forecast_step(A, h, step, harj, terms, Xt=None, log=None, grid=True):
+INNER = 1  # число внутренних валидационных лет (1 - год vy-1; n - средняя MSE по годам vy-1..vy-n, обучение каждого - на годах до него)
+
+
+def forecast_step(A, h, step, harj, terms, Xt=None, log=None, grid=True, all_rows=False, inner=None):
     """ОДИН шаг: матрица A (load()), горизонт h, шаг k (1-10) -> (val_df, test_df) OOS. Val-год vy = 2015+k, тест ty = 2016+k,
     обучение - годы < vy; гиперпараметры сети - по году vy-1 (обучение < vy-1). Столбцы: date, ticker, year, step, rv_actual, rv_pred (без Б0.1)."""
     target = f'rv_target_h{h}'
     if Xt is None:
         Xt = build_terms(A, terms)
-    Xt = Xt[terms].fillna(0.0)
+    Xt = Xt[terms]  # пропуски - средним слагаемого по обучающим строкам этой подгонки (не нулём: у ln-слагаемых 0 - выброс)
     Hf = lambda idx: GH.clean(np.log(A.loc[idx, harj].values.clip(1e-10)))
-    Zf = lambda idx: Xt.loc[idx].values.astype('float64')
+    Zf = lambda idx, ref: Xt.loc[idx].fillna(Xt.loc[ref].mean()).fillna(0.0).values.astype('float64')
     ok = A[target].notna()
     k, ty, vy = step, 2016 + step, 2015 + step
     tp = A.index[(A.year < vy) & ok]; vi = A.index[(A.year == vy) & ok]; td = A.index[A.year == ty]
     best = (0.0, 1.0, np.nan)
     if grid and terms:
-        i_tr = A.index[(A.year < vy - 1) & ok]; i_va = A.index[(A.year == vy - 1) & ok]
-        yt, yv = np.log(A.loc[i_tr, target].values + 1e-10), np.log(A.loc[i_va, target].values + 1e-10)
-        res = []
-        for l1 in L1S:
-            for al in ALPHAS:
-                p, _ = fit_en(Hf(i_tr), Zf(i_tr), yt, al, l1)
-                res.append((al, l1, float(np.mean((yv - p(Hf(i_va), Zf(i_va))) ** 2))))
-        p, _ = fit_en(Hf(i_tr), Zf(i_tr), yt, 0.0, 1.0)
-        res.append((0.0, 0.0, float(np.mean((yv - p(Hf(i_va), Zf(i_va))) ** 2))))
+        n_in = INNER if inner is None else inner
+        acc = {}
+        for j in range(1, n_in + 1):
+            i_tr = A.index[(A.year < vy - j) & ok]; i_va = A.index[(A.year == vy - j) & ok]
+            if len(i_va) == 0 or len(i_tr) == 0:
+                continue
+            yt, yv = np.log(A.loc[i_tr, target].values + 1e-10), np.log(A.loc[i_va, target].values + 1e-10)
+            Htr, Ztr, Hva, Zva = Hf(i_tr), Zf(i_tr, i_tr), Hf(i_va), Zf(i_va, i_tr)
+            for l1, al in [(l1, al) for l1 in L1S for al in ALPHAS] + [(0.0, 0.0)]:
+                p, _ = fit_en(Htr, Ztr, yt, al, l1 if al > 0 else 1.0)
+                acc.setdefault((al, l1), []).append(float(np.mean((yv - p(Hva, Zva)) ** 2)))
+        res = [(al, l1, float(np.mean(v))) for (al, l1), v in acc.items()]
         best = min(res, key=lambda r: r[2])
     y = np.log(A.loc[tp, target].values + 1e-10)
-    pred, coef = fit_en(Hf(tp), Zf(tp), y, best[0], best[1])
-    s2tr = float(np.var(y - pred(Hf(tp), Zf(tp))))
+    pred, coef = fit_en(Hf(tp), Zf(tp, tp), y, best[0], best[1])
+    s2tr = float(np.var(y - pred(Hf(tp), Zf(tp, tp))))
     if log is not None:
         log.append(dict(h=h, step=k, val_year=vy, alpha=best[0], l1_ratio=best[1], inner_mse=best[2], s2_train=s2tr,
                         n_nonzero=int((np.abs(coef['g_std']) > 1e-10).sum()),
@@ -246,8 +252,22 @@ def forecast_step(A, h, step, harj, terms, Xt=None, log=None, grid=True):
     for idx, yr in ((vi, vy), (td, ty)):
         out.append(pd.DataFrame({'date': A.loc[idx, 'date'].values, 'ticker': A.loc[idx, 'ticker'].values, 'year': yr, 'step': k,
                                  'rv_actual': A.loc[idx, target].values,
-                                 'rv_pred': np.clip(np.exp(pred(Hf(idx), Zf(idx))), 1e-10, None)}))
+                                 'rv_pred': np.clip(np.exp(pred(Hf(idx), Zf(idx, tp))), 1e-10, None)}))
+    if all_rows:  # ln-прогноз модели шага на всех строках A (обучение - внутри выборки), для смещения V9 / признака Д8.12
+        return out[0], out[1], pd.Series(pred(Hf(A.index), Zf(A.index, tp)), index=A.index)
     return out[0], out[1]
+
+
+def ln_all_steps(h, terms=None, steps_=range(1, 11), A=None, harj=None, Xt=None):
+    """(date, ticker, hx1..hx10): ln HAR-X модели шага k на всех строках матрицы - для V9 (смещение) и Д8.12 (признак) на HAR-X."""
+    if A is None:
+        A, harj = load()
+    terms = default_terms(h) if terms is None else terms
+    Xt = build_terms(A, terms) if Xt is None else Xt
+    out = A[['date', 'ticker']].copy()
+    for k in steps_:
+        out[f'hx{k}'] = forecast_step(A, h, k, harj, terms, Xt, all_rows=True)[2].values
+    return out
 
 
 def harx_forecasts(h, A, harj, terms, Xt=None, log=None, grid=True):
@@ -255,9 +275,9 @@ def harx_forecasts(h, A, harj, terms, Xt=None, log=None, grid=True):
     target = f'rv_target_h{h}'
     if Xt is None:
         Xt = build_terms(A, terms)
-    Xt = Xt[terms].fillna(0.0)
+    Xt = Xt[terms]  # пропуски - средним слагаемого по обучающим строкам этой подгонки (не нулём: у ln-слагаемых 0 - выброс)
     Hf = lambda idx: GH.clean(np.log(A.loc[idx, harj].values.clip(1e-10)))
-    Zf = lambda idx: Xt.loc[idx].values.astype('float64')
+    Zf = lambda idx, ref: Xt.loc[idx].fillna(Xt.loc[ref].mean()).fillna(0.0).values.astype('float64')
     vals, tests = [], []
     for k, ty, vy in steps(A):
         v, t = forecast_step(A, h, k, harj, terms, Xt, log, grid)
@@ -343,9 +363,12 @@ def main():
     ap.add_argument('--leak-test', action='store_true')
     ap.add_argument('--no-grid', action='store_true', help='OLS без штрафа (alpha=0)')
     ap.add_argument('--no-d17', action='store_true', help='без кандидатов Д17.3 (HARX0)')
+    ap.add_argument('--inner', type=int, default=1, help='внутренних валидационных лет для alpha/l1 (рычаг; по умолчанию 1)')
     a = ap.parse_args()
     t0 = time.time()
     A, harj = load()
+    global INNER
+    INNER = a.inner
     (REGEN / 'D16').mkdir(exist_ok=True)
     if a.leak_test:
         names = list(TERMS)
