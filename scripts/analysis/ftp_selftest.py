@@ -18,6 +18,7 @@ def make(rng, nf=0.2, nh=0.6, start='2017-01-03', end='2025-12-26', nt=17):
     g['rv_pred'] = s * np.exp(rng.normal(0, nf, len(g)))
     for c in ('har_raw', 'har_corr') + COLS:
         g[c] = s * np.exp(rng.normal(0, nh, len(g)))
+    g['harx_corr'] = s * np.exp(np.random.default_rng(len(g)).normal(0, nh, len(g)))  # отдельный поток: основной rng не сдвигается
     return g
 
 
@@ -82,6 +83,9 @@ def main(run):
         assert d.shape[1] > 3 and not d.columns.str.contains(';').any() and d.select_dtypes('number').shape[1] >= 2, n
     assert mz[['α', 'β', 'R²']].dtypes.eq(float).all() and sp.filter(like='QLIKE').dtypes.eq(float).all() and mc['p_MCS T_R'].dtype == float
     assert len(sp) == 12 and len(tc) == 9 and len(mc) == 12 and len(en) == 12 and len(mz) == 24 and len(tk) == 3 * 18
+    rk = pd.read_csv(tmp / 'tables' / 'table_3_raskladka_selftest.csv')
+    assert len(rk) == 3 * 4 * (9 + 1) and list(rk['Строка'][:4]) == ['HAR-J', 'HAR-J с поправкой', 'HAR-X с поправкой', 'Гибридная (финал)']
+    assert 'HAR-X с поправкой' not in set(mc['Модель'])  # решение 01:12: HAR-X в MCS не входит
     assert (tk[tk['Тикер'].str.startswith('ДОЛЯ')]['финальная лучше'] == 1).all()  # финальная точнее HAR-J на синтетике у всех тикеров
     assert (sp['DM t vs HAR-J (б)'] > 0).all() and (tc['DM t vs HAR-J (б)'] > 0).all()
     assert (mc[mc['Модель'] == 'Финальная'].filter(like='в MCS').values == 1).all()  # лучшая модель всегда в наборе

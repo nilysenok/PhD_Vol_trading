@@ -2,9 +2,11 @@
 python3 scripts/analysis/final_test.py --scope test            # падает, если нет docs/otchety/FINAL_DESIGN.md
 python3 scripts/analysis/final_test.py --selftest              # проверка кода на синтетике (тест не читается)
 
-Вход: <общий data/regen>/test_locked/final/final_h{h}_test.parquet (h = 1, 5, 22; собирает gibrid_v17.py --build-test):
+Вход: <общий data/regen>/test_locked/final3/final_h{h}_test.parquet (h = 1, 5, 22; третий круг — собирает final3.py build):
 date, ticker, year, step, rv_actual, rv_pred (финальный дизайн), har_raw (HAR-J как в диссертации), har_corr (HAR-J с Б0.1 той же оценки s²),
-har_ord, xgb_raw/lgb_raw (компоненты ноги без поправки), xgb_corr/lgb_corr, design.
+har_ord, xgb_raw/lgb_raw (компоненты ноги без поправки), xgb_corr/lgb_corr, design; harx_corr (HAR-X с поправкой той же s²) — ТОЛЬКО для таблицы
+раскладки приложения (решение владельца 26.10, 01:12: эталон DM, MCS и H1 на всех h — HAR-J с поправкой; HAR-X в MCS и основные таблицы не входит).
+Раскладка (table_3_raskladka): QLIKE HAR-J -> HAR-J с поправкой -> HAR-X с поправкой -> финал по h и годам, изменение к предыдущей строке.
 Фильтр строк: rv_actual > 1e-12 (как gibrid_io.merged).
 Метрики: QLIKE = mean(y/p - ln(y/p) - 1), RMSE и MAE на уровне RV; по h и годам.
 DM (потери QLIKE, d = L_эталон - L_финал, t > 0 - финальный лучше; эталоны: HAR-J как в диссертации и HAR-J с поправкой), три способа:
@@ -30,6 +32,7 @@ YEAR_ONE = 2019
 MODELS = {'Гибридная': 'rv_pred', 'HAR-J': 'har_raw', 'HAR-J с поправкой': 'har_corr', 'XGBoost': 'xgb_raw', 'LightGBM': 'lgb_raw',
           'XGBoost с поправкой': 'xgb_corr', 'LightGBM с поправкой': 'lgb_corr'}
 REFS = {'HAR-J как в диссертации': 'har_raw', 'HAR-J с поправкой': 'har_corr'}
+CHAIN = (('HAR-J', 'har_raw'), ('HAR-J с поправкой', 'har_corr'), ('HAR-X с поправкой', 'harx_corr'), ('Гибридная (финал)', 'rv_pred'))  # приложение
 
 
 def metrics(y, p):
@@ -60,13 +63,21 @@ def pfmt(p):
 
 
 def run(src, tables, tag='test', feat=None, B=10000):
-    M, DM, rows, frames = {}, [], [], {}
+    M, DM, rows, frames, chain = {}, [], [], {}, []
     for h in HS:
         f = src / f'final_h{h}_test.parquet'
         df = pd.read_parquet(f)
         df = df[df.rv_actual > 1e-12].sort_values(['date', 'ticker']).reset_index(drop=True)
         miss = [c for c in MODELS.values() if c not in df]
         assert not miss, f'{f.name}: нет столбцов {miss}'
+        assert 'harx_corr' in df and df.harx_corr.notna().all(), f'{f.name}: нет harx_corr (раскладка)'
+        for y, g in list(df.groupby('year')) + [('все годы (пул)', df)]:
+            prev = None
+            for nm, c in CHAIN:
+                q = float(qloss(g.rv_actual.values, g[c].values).mean())
+                chain.append({'h': h, 'Год': y if isinstance(y, str) else int(y), 'Строка': nm, 'QLIKE': round(q, 4),
+                              'к предыдущей, %': round(100 * (q / prev - 1), 1) if prev else np.nan})
+                prev = q
         frames[h] = df.assign(terc=vol_terciles(feat, df) if feat is not None else np.nan)
         for m, c in MODELS.items():
             for y, g in df.groupby('year'):
@@ -96,6 +107,7 @@ def run(src, tables, tag='test', feat=None, B=10000):
     T['3_9'] = D.assign(t=D.t.round(2), p_two=D.p_two.map(pfmt), p_one_H1=D.p_one_H1.map(pfmt),
                         H1_принята_5pct=[(e == 'HAR-J с поправкой' and s.startswith('основной') and p < 0.05) for e, s, p in zip(D.эталон, D.способ, D.p_one_H1)])
     T['3_final_po_godam'] = pd.DataFrame(rows)
+    T['3_raskladka'] = pd.DataFrame(chain)
     tables.mkdir(parents=True, exist_ok=True)
     for n, df in T.items():
         df.to_csv(tables / f'table_{n}_{tag}.csv', index=False)
@@ -114,7 +126,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--scope', choices=['test'], help='test - один раз, после «да» на FINAL_DESIGN.md')
     ap.add_argument('--selftest', action='store_true')
-    ap.add_argument('--src', default=str(MAIN / 'data/regen/test_locked/final'))
+    ap.add_argument('--src', default=str(MAIN / 'data/regen/test_locked/final3'))
     ap.add_argument('--features', default=str(MAIN / 'data/regen/features_pit_v2.parquet'), help='матрица признаков: RV_m для терцилей')
     ap.add_argument('--mcs-b', type=int, default=10000, help='число бутстрап-повторов MCS')
     ap.add_argument('--tables', default=str(ROOT / 'docs/tables'))
