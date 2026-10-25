@@ -116,3 +116,63 @@ def run_d(u, cfg, a_res):
             continue
         out[Y] = (params[bi], apos * rows[idx[bi]].astype(np.float64), float(sh[bi]))
     return out
+
+
+@njit(cache=True, parallel=True)
+def scaled_eval(apos, scales, lr, vs, ve, comm, sh):
+    """Как masked_eval, но позиция = apos·scale (непрерывный D)."""
+    n_win = ve - vs
+    act = np.empty(n_win, np.int64)
+    na = 0
+    for t in range(vs, ve):
+        if apos[t] != 0.0 or (t > vs and apos[t - 1] != 0.0):
+            act[na] = t
+            na += 1
+    for m in prange(scales.shape[0]):
+        sc = scales[m]
+        S = 0.0
+        Q = 0.0
+        for j in range(na):
+            t = act[j]
+            q = apos[t] * sc[t]
+            p = apos[t - 1] * sc[t - 1] if t > vs else 0.0
+            net = q * lr[t] - abs(q - p) * comm
+            S += net
+            Q += net * net
+        var = max(Q - S * S / n_win, 0.0) / (n_win - 1)
+        sd = math.sqrt(var)
+        sh[m] = 0.0 if sd < 1e-12 else (S / n_win) / sd * math.sqrt(252.0)
+
+
+def d_cont_scales(td, annualize):
+    """Непрерывный D (Moreira–Muir): размер = min(cap, (σ_target/σ_pred)^γ);
+    σ_target — D_TARGET_VOLS, cap — D_MAX_LEVS, γ — D_CONT_GAMMA, σ без floor/cap/сглаживания."""
+    from fastbt.masks import _d_sigma
+    rows, params = [], []
+    for h in grids.D_HORIZONS:
+        s = _d_sigma(td.sigma[h] * (np.sqrt(252.0) if annualize else 1.0), None, None, None)
+        for tv in grids.D_TARGET_VOLS:
+            for cap in grids.D_MAX_LEVS:
+                for g in grids.D_CONT_GAMMA:
+                    rows.append(np.minimum((tv / s) ** g, cap))
+                    params.append(dict(target_vol=tv, cap=cap, gamma=g, horizon=h,
+                                       continuous=True))
+    return np.ascontiguousarray(np.stack(rows)), params
+
+
+def run_d_cont(u, cfg, a_res):
+    rows, params = d_cont_scales(u.td, cfg.fix_d_units)
+    b = cfg.bound()
+    out = {}
+    for Y in cfg.years_bcd:
+        if Y not in a_res:
+            continue
+        apos = a_res[Y][1]
+        vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
+        sh = np.zeros(len(rows))
+        scaled_eval(apos, rows, u.lr, vs, ve, cfg.comm, sh)
+        bi = _first_best(sh)
+        if bi < 0:
+            continue
+        out[Y] = (params[bi], apos * rows[bi], float(sh[bi]))
+    return out

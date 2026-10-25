@@ -70,6 +70,11 @@ D_STANDARD = True
 D_INVERSE = True
 ENS_K = 10
 VOTE_FRAC = 0.5
+D_CONT = False                 # непрерывный D (Moreira–Muir) вместо бинарного затвора
+D_CONT_GAMMA = [1.0, 2.0]
+TF = False                     # фильтр оборота (fastbt.turnover)
+TF_HOLD = [3, 5]
+TF_REENTRY = [0, 1, 3, 5, 10]
 
 
 def trend_rm_grid():
