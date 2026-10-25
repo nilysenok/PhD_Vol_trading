@@ -6,6 +6,7 @@ mod idxcmp;
 mod indices;
 mod model;
 mod parse;
+mod range;
 mod report;
 mod rv;
 mod rv1850;
@@ -59,6 +60,12 @@ enum Cmd {
     IndexCheck,
     /// Пересчёт RV со срезом 18:50 -> rv_1850.parquet, сверка со старыми признаками, число баров
     Rv1850,
+    /// Д17.2: реализованный размах (Parkinson, Garman–Klass) 28 тикеров -> rrv_1850.parquet
+    Range {
+        /// Метки баров карантина (ticker, ts) — функция пайплайна, scripts/analysis/d172_quarantine28.py
+        #[arg(long, default_value = "data/iss_check/quarantine_28.parquet")]
+        quarantine: PathBuf,
+    },
     /// Дописать в отчёт раздел «RV со срезом 18:50»
     Report1850 {
         #[arg(long, default_value = "docs/otchety/2026-10-25_proverka_dannyh_iss.md")]
@@ -87,6 +94,7 @@ async fn main() -> Result<()> {
         Cmd::Rv => rvcmp::run(&cli.out, &stored::Stored::new(&cli.stored_root), &tickers()),
         Cmd::IndexCheck => idxcmp::run(&cli.out, &stored::Stored::new(&cli.stored_root), std::path::Path::new(".")),
         Cmd::Rv1850 => rv1850::run(&cli.out, &stored::Stored::new(&cli.stored_root), &tickers()),
+        Cmd::Range { quarantine } => range::run(&cli.out, &quarantine),
         Cmd::Report1850 { dest } => cutreport::run(&cli.out, &dest),
         Cmd::Report { dest } => report::run(&cli.out, &dest),
         Cmd::Indices { from, till } => {
