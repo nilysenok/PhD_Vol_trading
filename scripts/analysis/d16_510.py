@@ -114,6 +114,63 @@ def tasks10(T, h, steps_max):
     return out
 
 
+def tasks_lag(T, h):
+    """Честная оценка размера (↺, после смещения seed 42): на val-году шага s (2-6) члены обёртки — точки и seed шага s−1
+    (топ-10 точек поиска шага s−1, seed 42; лучшая точка шага s−1, seed 43-46), обученные на окне шага s."""
+    kind = C10[h][T][0]
+    out = []
+    if kind == 'h1':
+        import d12_h1 as H1
+        grid = H1.grid()
+        for m in M:
+            ap = pd.read_parquet(R / f'Bv2b_allpts_{m}_h1_val.parquet')
+            ap = ap[ap.step <= 5]
+            q = ap.groupby(['step', 'point']).apply(lambda g: L.qlike(g.rv_actual.values, g.rv_pred.values), include_groups=False).rename('q').reset_index()
+            for s in range(2, 7):
+                rk = [int(x) for x in q[q.step == s - 1].sort_values('q').point.tolist()[:10]]
+                out += [(m, s, grid[(m, pt)], 42, r + 1, pt) for r, pt in enumerate(rk)]
+                out += [(m, s, grid[(m, rk[0])], sd, 1, rk[0]) for sd in (43, 44, 45, 46)]
+    else:
+        tr = pd.read_csv(R / f'{T}_trials.csv')
+        for m in M:
+            t = tr[(tr.model == m) & (~tr.pruned)].sort_values(['step', 'qlike_val'])
+            for s in range(2, 7):
+                rk = t[t.step == s - 1].head(10).to_dict('records')
+                out += [(m, s, prm_cast(r, m), 42, i + 1, int(r['trial'])) for i, r in enumerate(rk)]
+                out += [(m, s, prm_cast(rk[0], m), sd, 1, int(rk[0]['trial'])) for sd in (43, 44, 45, 46)]
+    return out
+
+
+def refitlag(a):
+    h = a.h
+    for T in (a.cands or list(C10[h])):
+        t0 = time.time()
+        load_cand(T, h)
+        tk = tasks_lag(T, h)
+        _REF.clear()
+        units = {}
+        for m, st, p, sd, rk, pnt in tk:
+            units.setdefault((m, st), []).append((p, sd, rk, pnt))
+        print(f'{time.strftime("%T")} {T} h={h}: точки шага t−1, задач {len(tk)}, единиц {len(units)}, воркеров {a.workers}', flush=True)
+        with mp.get_context('fork').Pool(a.workers) as P:
+            res = [x for r in P.map(job, [(m, st, it) for (m, st), it in units.items()], chunksize=1) for x in r]
+        for m in M:
+            pd.concat([x[5] for x in res if x[0] == m]).to_parquet(R / f'D16_10_h{h}_{T}_{m}_lag_val.parquet', index=False)  # только val шагов 2-6
+        pd.DataFrame([dict(cand=T, model=x[0], step=x[1], seed=x[2], rank=x[3], best_iteration=x[4]) for x in res]).to_csv(
+            R / f'D16_10_h{h}_{T}_lag_trees.csv', index=False)
+        print(f'{time.strftime("%T")} {T} h={h}: готово за {time.time() - t0:.0f} с', flush=True)
+
+
+def members_lag(T, h, m, k='val'):
+    """Члены для честной оценки: шаги 2-6 — точки/seed шага t−1 (refitlag), шаг 1 — свои (s² для шага 2)."""
+    Mm = members(T, h, m, 'val')
+    lg = pd.read_parquet(R / f'D16_10_h{h}_{T}_{m}_lag_val.parquet')
+    st1 = lambda d: d[d.step == 1]
+    pts = pd.concat([st1(Mm['pts']), lg[lg.seed == 42][K + ['rank', 'rv_pred']]], ignore_index=True)
+    seeds = pd.concat([st1(Mm['seeds']), lg[lg['rank'] == 1][K + ['seed', 'rv_pred']]], ignore_index=True)
+    return dict(base=Mm['base'][Mm['base'].step <= 6], pts=pts, seeds=seeds)
+
+
 def refit10(a):
     h = a.h
     lock = R / 'test_locked' / f'D16_10_h{h}'
@@ -253,7 +310,7 @@ def wrap10(a):
     rows = []
     out_files = {}
     for T in (a.cands or list(C10[h])):
-        MM = {m: members(T, h, m, 'val') for m in M}
+        MM = {m: (members_lag if a.lag else members)(T, h, m, 'val') for m in M}
         single = {m: wrap_pred(MM[m], 1, 1) for m in M}
         qs = {m: year_q(single[m], code) for m in M}
         prim = min(M, key=lambda m: summ(qs[m])['oos1720'])
@@ -286,7 +343,7 @@ def wrap10(a):
         # выбор (↺ к первому прогону): размер — argmin OOS 2017-2020 по сетке {3,5,10}x{3,5} (± среднее LGBM и XGB);
         # принимается вместо текущей обёртки final2 (у D15 — без обёртки), если не хуже её и на OOS 2017-2020, и на 2021 (проверка);
         # одиночная seed 42 в отбор как «размер 1» не входит отдельно: она смещена (точка подобрана на том же val-году) — см. single_s43-46.
-        pool = sub[sub.variant.str.match(r'^P\d+S\d+$')]
+        pool = sub[sub.variant.str.match(r'^(P\d+S\d+|single)$' if a.lag else r'^P\d+S\d+$')]  # lag: смещения нет — «без обёртки» в выборе
         gi = pool.oos1720.idxmin()
         g = sub.loc[gi]
         ri = sub[sub.variant.str.startswith('final2')].index[0] if cp else sub[sub.variant == 'single'].index[0]
@@ -303,7 +360,8 @@ def wrap10(a):
         out_files[T] = (best.variant, int(best.P), int(best.S), bool(best.lgb_xgb), prim, ok21)
     df = pd.DataFrame(rows)
     df['vs_single'] = df.oos1720 / df.groupby('cand').oos1720.transform(lambda s: s.iloc[0]) - 1
-    df.to_csv(R / f'D16_10_h{h}_wrap_grid.csv', index=False, float_format='%.6g')
+    sfx = '_lag' if a.lag else ''
+    df.to_csv(R / f'D16_10_h{h}_wrap_grid{sfx}.csv', index=False, float_format='%.6g')
     # ноги wrap10 (val шагов 1-9; тест — test_locked/D16_10_h{h}/): слот основной модели = выбранная обёртка, другой слот — та же внутримодельная
     lock = R / 'test_locked' / f'D16_10_h{h}'
     for T, (nm, P, S, two, prim, ok21) in out_files.items():
@@ -315,7 +373,7 @@ def wrap10(a):
                 slots[prim] = avg2(W['lgbm'], W['xgb'])
             dd = R if k == 'val' else lock
             for m in M:
-                slots[m].assign(wrap=nm + ('+2' if two and m == prim else '')).sort_values(K).to_parquet(dd / f'D16_10_h{h}_{T}_{m}_h{h}_wrap10_{k}.parquet', index=False)
+                slots[m].assign(wrap=nm + ('+2' if two and m == prim else '')).sort_values(K).to_parquet(dd / f'D16_10_h{h}_{T}_{m}_h{h}_wrap10{sfx}_{k}.parquet', index=False)
         print(f'{T} h={h}: итог {nm} ({"lgbm+xgb" if two else prim}); лучший по сетке на 2021 не хуже текущей: {ok21}', flush=True)
     pd.set_option('display.width', 250)
     print(df[df.grid_best | df.reference | df.chosen | df.variant.str.startswith('single')][['cand', 'variant', 'model', 'oos1720', 'y2021', 'dev1721', 'c1', 'c2', 'c3', 'grid_best', 'reference', 'chosen']].to_string(), flush=True)
@@ -451,6 +509,8 @@ def main():
     p = sp.add_parser('refit10'); p.add_argument('--h', type=int, required=True); p.add_argument('--cands', nargs='*'); p.add_argument('--workers', type=int, default=4)
     p.add_argument('--steps-max', type=int, default=9)
     p = sp.add_parser('wrap10'); p.add_argument('--h', type=int, required=True); p.add_argument('--cands', nargs='*'); p.add_argument('--code', default='ord')
+    p.add_argument('--lag', action='store_true')
+    p = sp.add_parser('refitlag'); p.add_argument('--h', type=int, required=True); p.add_argument('--cands', nargs='*'); p.add_argument('--workers', type=int, default=2)
     p = sp.add_parser('harx_matrix'); p.add_argument('--harx-py', required=True)
     p.add_argument('--cols', nargs='+', default=['ln_rvi2', 'ln_rvm_imoex', 'ln_rvm_mkt', 'lhar_1', 'lhar_5', 'lhar_22', 'pc1'])
     p = sp.add_parser('gate165'); p.add_argument('--h', type=int, required=True); p.add_argument('--tag', required=True); p.add_argument('--cur', required=True)
@@ -460,7 +520,7 @@ def main():
     p.add_argument('--step10', type=int, default=0)
     p = sp.add_parser('designs'); p.add_argument('--hs', type=int, nargs='+', default=[1, 5, 22])
     a = ap.parse_args()
-    {'kandidat': kandidat, 'designs': designs, 'refit10': refit10, 'wrap10': wrap10, 'harx_matrix': harx_matrix, 'gate165': gate165}[a.cmd](a)
+    {'refitlag': refitlag, 'kandidat': kandidat, 'designs': designs, 'refit10': refit10, 'wrap10': wrap10, 'harx_matrix': harx_matrix, 'gate165': gate165}[a.cmd](a)
 
 
 if __name__ == '__main__':
