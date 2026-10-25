@@ -1,5 +1,5 @@
 """Выбор схемы на шаге (по val-QLIKE шага / минимакс по доступным val-годам) и четыре критерия владельца (25.10), только валидация.
-c1: q_гибрид < q_HAR в каждом val-году; c2: q_гибрид <= 1,02*min(q_HAR,q_xgb,q_lgb) в каждом году;
+c1: q_дизайн <= 1,02*q_HAR(с Б0.1oos) в каждом val-году (V0=HAR-J не сравнивается сама с собой); c2: q_гибрид <= 1,02*min(q_HAR,q_xgb,q_lgb) в каждом году;
 c3: max_год q_гибрид/q_HAR < min(max_год q_xgb/q_HAR, max_год q_lgb/q_HAR) (у HAR отношение 1 по определению — не берётся);
 c4: |Δ w_comp| <= 0,3 между соседними шагами (обе схемы не V1) и не более 3 смен ML у V1. Критерии считаются по каждому h; дизайн проходит, если все h."""
 import numpy as np, pandas as pd
@@ -26,9 +26,16 @@ def select(res, mode, h):
 def flags(ch):
     """ch — таблица выбора одного h (строка = val-год). Возвращает dict флагов и показателей."""
     hy, har, xg, lg = ch.q_hyb.values, ch.q_har.values, ch.q_xgb_single.values, ch.q_lgb_single.values
-    single_min = np.minimum.reduce([har, xg, lg])
+    # эталон — одиночные модели с Б0.1oos (q_har, q_xgb_single, q_lgb_single). V0 с самой собой не сравнивается (решение 25.10).
+    v0c = ch.scheme.iloc[0][3:].lower() if ch.scheme.iloc[0].startswith('V0_') else None
+    others = {'har': har, 'xgb': xg, 'lgb': lg}
+    if v0c:
+        others.pop(v0c)
+    single_min = np.minimum.reduce(list(others.values()))
     worst = (hy / har).max()
-    worst_single = min((xg / har).max(), (lg / har).max())
+    ml_only = [(v / har).max() for k, v in others.items() if k != 'har']  # у HAR отношение к самому себе = 1 — не берётся
+    worst_single = min(ml_only)
+    c1 = True if v0c == 'har' else bool((hy <= 1.02 * har).all())  # c1: не хуже HAR-J более чем на 2% (симметрично c2)
     sc, ml = ch.scheme.values, ch.v1_ml.values
     W = ch[['w_har', 'w_xgb', 'w_lgb']].values
     # c4 (решение 25.10): скачок весов <= 0,3 только между соседними шагами, где обе схемы непрерывные (не V1);
@@ -36,7 +43,7 @@ def flags(ch):
     jump = max([0.0] + [np.abs(W[i] - W[i - 1]).max() for i in range(1, len(ch)) if sc[i] != 'V1_Adaptive' and sc[i - 1] != 'V1_Adaptive'])
     v1m = ml[sc == 'V1_Adaptive']
     sw = int((v1m[1:] != v1m[:-1]).sum()) if len(v1m) > 1 else 0
-    return dict(c1=bool((hy < har).all()), c2=bool((hy <= 1.02 * single_min).all()), c3=bool(worst < worst_single),
+    return dict(c1=c1, c2=bool((hy <= 1.02 * single_min).all()), c3=bool(worst < worst_single),
                 c4=bool(jump <= 0.3 and sw <= 3), ml_switches=sw, worst_ratio=worst, worst_ratio_single=worst_single, max_w_jump=jump,
                 mean_q=float(hy.mean()))
 

@@ -142,9 +142,15 @@ def main():
                 bx, bl = load_boost(a.boost, h, regen, var)
             except FileNotFoundError as e:
                 print('нет файла, вариант', var, 'пропущен:', e, flush=True); continue
-            for bias in (0, 2):  # 0 без поправки; 2 Б0.1 с s2 val-года предыдущего шага (вне выборки; на шаге 1 F=1)
+            etalon = None  # решение 25.10: c1-c3 для ВСЕХ дизайнов - относительно одиночных моделей с Б0.1oos (HAR-J, XGB, LGB)
+            for bias in (2, 0):  # 2 Б0.1 с s2 val-года предыдущего шага (вне выборки; на шаге 1 F=1); 0 без поправки
                 lg = []
                 res = compute(hv, ht, h, bx, bl, bias, lag, lg)
+                if bias == 2:
+                    etalon = [{k: r['base'][k] for k in ('q_har', 'q_xgb_single', 'q_lgb_single')} for r in res]
+                else:
+                    for r, e in zip(res, etalon):
+                        r['base'].update(e)  # q_har_raw остаётся без поправки
                 if bias == 2 and var == 'single':
                     blog += lg
                 for sel in ('step', 'minimax'):
@@ -181,7 +187,7 @@ def main():
         ov, ot = outs[(r.design, r.h)]
         ov.to_parquet(out / f'hyb_{a.boost}_final_h{r.h}_val.parquet', index=False); ot.to_parquet(out / f'hyb_{a.boost}_final_h{r.h}_test.parquet', index=False)
     ys = sorted(R.val_year.unique())
-    L = [f'Гибрид V1-V7 + V0, дизайны на {a.boost} (gibrid_v17.py, только валидация; V7 lag={a.v7_lag}; Б0.1 только oos; c1-c2 относительно моделей с той же поправкой)',
+    L = [f'Гибрид V1-V7 + V0, дизайны на {a.boost} (gibrid_v17.py, только валидация; V7 lag={a.v7_lag}; Б0.1 только oos; c1-c3 для всех дизайнов относительно одиночных моделей с Б0.1oos; single = одна точка бустинга, не V0)',
          '| дизайн | h | ' + ' | '.join(str(y) for y in ys) + ' | средн. q | худш. отн. к HAR | c1 | c2 | c3 | c4 |', '|' + '---|' * (9 + len(ys))]
     for (d, h), g in R.groupby(['design', 'h'], sort=False):
         f = g.iloc[0]
