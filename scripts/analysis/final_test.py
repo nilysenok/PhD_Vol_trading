@@ -13,11 +13,15 @@ DM (потери QLIKE, d = L_эталон - L_финал, t > 0 - финаль�
 Выход (docs/tables/, суффикс _test): table_3_2 (HAR-J по годам), 3_3, 3_4 (2019: XGBoost, LightGBM, HAR-J) + _rmse/_mae, 3_6 (2019: Гибридная, ...)
 + _rmse/_mae, 3_7 (среднее по годам) + _rmse/_mae, 3_8 (DM основной против HAR-J с поправкой), 3_9 (DM три способа × два эталона, H1),
 table_3_final_po_godam_test.csv (финальный и эталоны по h и годам, QLIKE/RMSE/MAE). Табл. 3.1 (GJR-GARCH) и 3.5 (LSTM/GRU) здесь не строятся.
+Протокол владельца 25.10 20:40 (ftp_stats.py - тесты, ftp_tables.py - таблицы; выход table_3_{mz,tickers,subperiods,terciles,encompassing,mcs}_test.csv):
+MZ, доля тикеров, подпериоды, терцили RV_m (--features: матрица признаков), охват HLN, MCS (--mcs-b). Десятичная запятая.
 Колонки 3.2-3.8 - как models/tables.py (текст диссертации); бустинг в 3.4/3.6/3.7 - без поправки, как там; «Гибридная» - финальный дизайн."""
 import argparse, sys
 from pathlib import Path
 import numpy as np, pandas as pd
 from scipy import stats
+from ftp_stats import qloss, nw_var, vol_terciles
+import ftp_tables as FT
 
 ROOT = Path(__file__).resolve().parents[2]
 MAIN = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')
@@ -28,24 +32,9 @@ MODELS = {'Гибридная': 'rv_pred', 'HAR-J': 'har_raw', 'HAR-J с поп�
 REFS = {'HAR-J как в диссертации': 'har_raw', 'HAR-J с поправкой': 'har_corr'}
 
 
-def qloss(y, p):
-    r = y / p
-    return r - np.log(r) - 1
-
-
 def metrics(y, p):
     e = y - p
     return dict(QLIKE=float(qloss(y, p).mean()), RMSE=float(np.sqrt(np.mean(e ** 2))), MAE=float(np.mean(np.abs(e))))
-
-
-def nw_var(d, lag):
-    """Долгосрочная дисперсия среднего (Ньюи-Уэст, Бартлетт): (g0 + 2 sum (1 - k/(L+1)) g_k) / n."""
-    d = np.asarray(d, float) - np.mean(d)
-    n = len(d)
-    g = d @ d / n
-    for k in range(1, lag + 1):
-        g += 2 * (1 - k / (lag + 1)) * (d[k:] @ d[:-k]) / n
-    return g / n
 
 
 def dm(df, ref, h):
@@ -70,14 +59,15 @@ def pfmt(p):
     return '<0,001' if p < 1e-3 else round(p, 3)
 
 
-def run(src, tables, tag='test'):
-    M, DM, rows = {}, [], []
+def run(src, tables, tag='test', feat=None, B=10000):
+    M, DM, rows, frames = {}, [], [], {}
     for h in HS:
         f = src / f'final_h{h}_test.parquet'
         df = pd.read_parquet(f)
         df = df[df.rv_actual > 1e-12].sort_values(['date', 'ticker']).reset_index(drop=True)
         miss = [c for c in MODELS.values() if c not in df]
         assert not miss, f'{f.name}: нет столбцов {miss}'
+        frames[h] = df.assign(terc=vol_terciles(feat, df) if feat is not None else np.nan)
         for m, c in MODELS.items():
             for y, g in df.groupby('year'):
                 M[(m, h, int(y))] = metrics(g.rv_actual.values, g[c].values)
@@ -110,30 +100,14 @@ def run(src, tables, tag='test'):
     for n, df in T.items():
         df.to_csv(tables / f'table_{n}_{tag}.csv', index=False)
         print('записано', tables / f'table_{n}_{tag}.csv', len(df), 'строк')
+    FT.write(FT.protocol(frames, B), tables, tag)  # протокол владельца 25.10 20:40 (ftp_tables.py)
     return T
 
 
 def selftest():
-    """Синтетика: финальный лучше HAR-J -> DM t > 0 всеми способами; nw_var при лаге 0 = простая дисперсия среднего."""
-    import tempfile
-    rng = np.random.default_rng(0)
-    tmp = Path(tempfile.mkdtemp())
-    dates = pd.bdate_range('2017-01-03', '2018-12-28')
-    for h in HS:
-        g = pd.DataFrame([(d, t) for d in dates for t in range(17)], columns=['date', 'ticker'])
-        g['year'] = g.date.dt.year
-        g['step'] = g.year - 2016
-        s = np.exp(rng.normal(-8, 0.5, len(g)))
-        g['rv_actual'] = s * np.exp(rng.normal(0, 0.5, len(g)))
-        g['rv_pred'] = s * np.exp(rng.normal(0, 0.2, len(g)))
-        for c in ('har_raw', 'har_corr', 'har_ord', 'xgb_raw', 'lgb_raw', 'xgb_corr', 'lgb_corr'):
-            g[c] = s * np.exp(rng.normal(0, 0.6, len(g)))
-        g.to_parquet(tmp / f'final_h{h}_test.parquet')
-    x = rng.normal(size=500)
-    assert abs(nw_var(x, 0) - x.var() / len(x)) < 1e-12
-    T = run(tmp, tmp / 'tables', 'selftest')
-    assert (T['3_8']['t-стат.'] > 0).all() and (T['3_9'].t > 0).all()
-    print('selftest OK:', tmp)
+    """Синтетика (ftp_selftest.py): DM, таблицы 3.x и протокол (MCS, охват, MZ, тикеры, подпериоды, терцили) - тестовые данные не читаются."""
+    import ftp_selftest
+    ftp_selftest.main(run)
 
 
 def main():
@@ -141,6 +115,8 @@ def main():
     ap.add_argument('--scope', choices=['test'], help='test - один раз, после «да» на FINAL_DESIGN.md')
     ap.add_argument('--selftest', action='store_true')
     ap.add_argument('--src', default=str(MAIN / 'data/regen/test_locked/final'))
+    ap.add_argument('--features', default=str(MAIN / 'data/regen/features_pit_v2.parquet'), help='матрица признаков: RV_m для терцилей')
+    ap.add_argument('--mcs-b', type=int, default=10000, help='число бутстрап-повторов MCS')
     ap.add_argument('--tables', default=str(ROOT / 'docs/tables'))
     a = ap.parse_args()
     if a.selftest:
@@ -150,7 +126,9 @@ def main():
     fd = ROOT / 'docs/otchety/FINAL_DESIGN.md'
     if not fd.exists():
         sys.exit(f'СТОП: нет {fd} - тест только после FINAL_DESIGN.md и «да» владельца')
-    run(Path(a.src), Path(a.tables))
+    feat = pd.read_parquet(a.features, columns=['date', 'ticker', 'rv_m'])
+    feat['date'] = pd.to_datetime(feat['date'])
+    run(Path(a.src), Path(a.tables), feat=feat, B=a.mcs_b)
 
 
 if __name__ == '__main__':
