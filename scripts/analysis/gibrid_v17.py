@@ -186,6 +186,7 @@ def main():
     ap.add_argument('--legs', nargs='*', default=None, help='ноги бустинга: single top5 seeds3 wrap (wrap - обёртка уровня 2, h=5)')
     ap.add_argument('--build-test', default='', help='"h1:дизайн,h5:дизайн" или имя: собрать тестовые прогнозы (test_locked, без метрик)')
     ap.add_argument('--test-out', default=None, help='каталог (по умолчанию <общий data/regen>/test_locked/final/)')
+    ap.add_argument('--confirm-next', type=int, default=25, help='сколько следующих по рейтингу проверять, если не прошёл ни один финалист (второй круг: 0)')
     ap.add_argument('--finalists', default='', help='auto или имена дизайнов через запятую, напр. "single|step|B-ord|L0,single|V0_HAR|B-ord|L0"')
     a = ap.parse_args()
     global LO
@@ -228,7 +229,7 @@ def main():
             if oks:
                 chosen = oks[0]
             else:
-                for nm in [d for d in rank if d not in fin][:25]:
+                for nm in [d for d in rank if d not in fin][:a.confirm_next]:
                     if chk(nm, 'следующий по рейтингу'):
                         chosen = nm; break
             if chosen is None:
