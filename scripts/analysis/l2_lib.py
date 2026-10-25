@@ -64,11 +64,24 @@ def qlike(y, f):
 
 
 # ---------------------------------------------------------------- признаки рычагов (все — из данных <= t)
-def load_base():
+D10_EXCLUDE = ('d10_days_after_20220224', 'd10_days_after_20200622', 'd10_ms_p_high')  # по gain, d10_block.py (PR #28)
+
+
+def load_base(matrix=None, blocks=(), h=None):
+    """blocks: 'd7' — матрица features_pit_v2_d7_h{h}.parquet (те же строки; дневные уровни внешних рядов убраны, добавлены d7_*; PR #27);
+    'd10' — столбцы d10_* из features_pit_v2_d10.parquet (PR #28) без D10_EXCLUDE. Признаки = признаки features_pit_v2, оставшиеся в матрице,
+    + d7_* + d10_*. matrix — явный путь к альтернативной матрице (как d7)."""
     cfg = json.load(open(FEAT.with_suffix('.config.json')))
-    A = pd.read_parquet(FEAT).sort_values('date').reset_index(drop=True)  # порядок строк как в tune_Bv2.py
+    if 'd7' in blocks:
+        matrix = REGEN / f'features_pit_v2_d7_h{h}.parquet'
+    A = pd.read_parquet(matrix or FEAT).sort_values('date').reset_index(drop=True)  # порядок строк как в tune_Bv2.py
+    if 'd10' in blocks:
+        D10 = pd.read_parquet(REGEN / 'features_pit_v2_d10.parquet')
+        c10 = [c for c in D10.columns if c.startswith('d10_') and c not in D10_EXCLUDE]
+        A = A.merge(D10[['date', 'ticker'] + c10], on=['date', 'ticker'], how='left', validate='one_to_one')
     A['year'] = pd.to_datetime(A['date']).dt.year
-    return A, list(cfg['feature_cols'])
+    fc = [c for c in cfg['feature_cols'] if c in A.columns] + [c for c in A.columns if c.startswith(('d7_', 'd10_'))]
+    return A, fc
 
 
 def by_date(A, cols):
@@ -280,9 +293,18 @@ def markov_filtered(A, min_obs=250):
             with _w.catch_warnings():
                 _w.simplefilter('ignore')
                 m0 = MarkovRegression(y[fitm], k_regimes=2, trend='c', switching_variance=True)
-                try:
-                    r0 = m0.fit(disp=False, search_reps=5)
-                except Exception:
+                r0 = None
+                for sd in (None, 42, 43, 44, 45):  # детерминизм: сначала без случайных стартов, затем фиксированные seed для search_reps
+                    try:
+                        if sd is None:
+                            r0 = m0.fit(disp=False)
+                        else:
+                            np.random.seed(sd); r0 = m0.fit(disp=False, search_reps=5)
+                        if np.all(np.isfinite(r0.params)):
+                            break
+                    except Exception:
+                        r0 = None
+                if r0 is None:
                     continue
                 hi = int(np.argmax(r0.params[[i for i, n in enumerate(m0.param_names) if n.startswith('const')]]))
                 upto = yrs <= Y
@@ -415,7 +437,7 @@ def build_features(A, FC, h, cfg):
 
 # ---------------------------------------------------------------- HAR-J и h=1 по шагам (для Д7.5, Д8.12, Д8.6)
 def harj_cols(A):
-    jump = [c for c in A.columns if 'jump' in c.lower() and 'target' not in c.lower() and 'idx_' not in c.lower()]
+    jump = [c for c in A.columns if 'jump' in c.lower() and 'target' not in c.lower() and 'idx_' not in c.lower() and not c.startswith(('d7_', 'd10_'))]
     return [f for f in ['rv_d', 'rv_w', 'rv_m'] + [c for c in jump if c not in ('rv_d', 'rv_w', 'rv_m')] if f in A.columns]
 
 
