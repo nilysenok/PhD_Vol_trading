@@ -73,8 +73,14 @@ def main(run):
     feat = pd.concat([make(rng, start='2014-01-02', end='2016-12-30'), g])[['date', 'ticker', 'rv_m']]
     T = run(tmp, tmp / 'tables', 'selftest', feat=feat, B=1000)
     assert (T['3_8']['t-стат.'] > 0).all() and (T['3_9'].t > 0).all()
-    rd = lambda n: pd.read_csv(tmp / 'tables' / f'table_3_{n}_selftest.csv', decimal=',')
+    rd = lambda n: pd.read_csv(tmp / 'tables' / f'table_3_{n}_selftest.csv', sep=';', decimal=',')
     mz, tk, sp, tc, mc, en = (rd(n) for n in ('mz', 'tickers', 'subperiods', 'terciles', 'mcs', 'encompassing'))
+    for n in ('mz', 'tickers', 'subperiods', 'terciles', 'mcs', 'encompassing'):  # BOM и чтение без потерь
+        f = tmp / 'tables' / f'table_3_{n}_selftest.csv'
+        assert f.read_bytes()[:3] == b'\xef\xbb\xbf'
+        d = rd(n)
+        assert d.shape[1] > 3 and not d.columns.str.contains(';').any() and d.select_dtypes('number').shape[1] >= 2, n
+    assert mz[['α', 'β', 'R²']].dtypes.eq(float).all() and sp.filter(like='QLIKE').dtypes.eq(float).all() and mc['p_MCS T_R'].dtype == float
     assert len(sp) == 12 and len(tc) == 9 and len(mc) == 12 and len(en) == 12 and len(mz) == 24 and len(tk) == 3 * 18
     assert (tk[tk['Тикер'].str.startswith('ДОЛЯ')]['финальная лучше'] == 1).all()  # финальная точнее HAR-J на синтетике у всех тикеров
     assert (sp['DM t vs HAR-J (б)'] > 0).all() and (tc['DM t vs HAR-J (б)'] > 0).all()

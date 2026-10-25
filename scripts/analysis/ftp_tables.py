@@ -1,6 +1,6 @@
 """Таблицы протокола теста главы 3 (MZ, доля тикеров, подпериоды, терцили, MCS, охват). Вход - словарь {h: DataFrame} (как в final_test.run):
 date, ticker, year, rv_actual, rv_pred, har_raw, har_corr, <лучшая одиночная>; терцили - ещё столбец terc (0/1/2/NaN).
-Десятичная запятая и разделитель-запятая, как в существующих таблицах (значения с запятой квотируются, 'p<0,001' - строкой)."""
+Новые таблицы: разделитель ';', десятичная запятая, UTF-8 с BOM (Excel); 'p<0,001' - строкой. Прежние таблицы 3.x не менялись."""
 import numpy as np, pandas as pd
 import ftp_stats as S
 
@@ -22,7 +22,7 @@ def sg(v):
 def write(T, tables, tag='test'):
     tables.mkdir(parents=True, exist_ok=True)
     for n, df in T.items():
-        df.to_csv(tables / f'table_3_{n}_{tag}.csv', index=False, decimal=',')
+        df.to_csv(tables / f'table_3_{n}_{tag}.csv', index=False, sep=';', decimal=',', encoding='utf-8-sig')
         print('записано', tables / f'table_3_{n}_{tag}.csv', len(df), 'строк')
 
 
