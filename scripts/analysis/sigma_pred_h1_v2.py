@@ -7,7 +7,7 @@
 val-лет шагов max(1, k-2)..k по прогнозам той же ноги, что на шаге k (val-строки с RV > 1e-12, как в gibrid_io.merged).
 Единицы: sigma_pred_h1 = sqrt(RV-прогноза), дневная, без годовой нормировки - как sigma_h1 в vpred_aligned.parquet
 (там sigma_h1 = sqrt(rv_pred) гибрида hybrid_adaptive_h1_annual, проверено: отношение 1,0000).
-python3 scripts/analysis/sigma_pred_h1_v2.py [--regen <общий data/regen>]"""
+python3 scripts/analysis/sigma_pred_h1_v2.py [--regen <общий data/regen>] [--tag Bv3 --name sigma_pred_h1_v3]"""
 import argparse
 from pathlib import Path
 import numpy as np, pandas as pd
@@ -30,11 +30,13 @@ def single(path, cols):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--regen', default='/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen')
+    ap.add_argument('--tag', default='Bv2b', help='Bv3 — тот же дизайн на features_pit_v3 (rerun_h1_v3.py)')
+    ap.add_argument('--name', default='sigma_pred_h1_v2', help='имя выхода: sigma_pred_h1_v3 для --tag Bv3')
     a = ap.parse_args()
-    R = Path(a.regen); T = R / 'test_locked/Bv2b'
+    R = Path(a.regen); T = R / f'test_locked/{a.tag}'; B = a.tag
     vc, tc = KEY + ['rv_actual', 'rv_pred'], KEY + ['rv_pred']  # тест - без rv_actual
-    val = {'top5': top5(R / 'Bv2b_xgb_h1_top5_val.parquet', vc), 'single': single(R / 'Bv2b_xgb_h1_val.parquet', vc)}
-    test = {'top5': top5(T / 'Bv2b_xgb_h1_top5_test.parquet', tc), 'single': single(T / 'Bv2b_xgb_h1_test.parquet', tc)}
+    val = {'top5': top5(R / f'{B}_xgb_h1_top5_val.parquet', vc), 'single': single(R / f'{B}_xgb_h1_val.parquet', vc)}
+    test = {'top5': top5(T / f'{B}_xgb_h1_top5_test.parquet', tc), 'single': single(T / f'{B}_xgb_h1_test.parquet', tc)}
     out, log = [], []
     for k in range(1, 10):
         leg = 'top5' if k <= 6 else 'single'
@@ -47,9 +49,9 @@ def main():
         log.append(dict(step=k, test_year=int(pd.to_datetime(t.date).dt.year.iloc[0]), leg=leg, val_steps=f'{max(1, k - 2)}-{k}', n_val=len(e), s2_sm=s2, F=F, n_test=len(t)))
     S = pd.concat(out).sort_values(['date', 'ticker']).reset_index(drop=True)
     assert not S.duplicated(['date', 'ticker']).any()
-    S.to_parquet(R / 'sigma_pred_h1_v2.parquet', index=False)
+    S.to_parquet(R / f'{a.name}.parquet', index=False)
     L = pd.DataFrame(log)
-    L.to_csv(R / 'sigma_pred_h1_v2_steps.csv', index=False)
+    L.to_csv(R / f'{a.name}_steps.csv', index=False)
     print(L.to_string(index=False)); print(len(S), S.date.min(), S.date.max())
 
 
