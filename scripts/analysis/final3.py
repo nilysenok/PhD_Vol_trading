@@ -30,6 +30,9 @@
   step10_dir / step10_lock: # val 2025 / тест 2026 шага 10 в формате final2_step10.py ({boost}_{m}_h{h}_s10_{val,test}.parquet)
   features_har: ...         # матрица для HAR-J/HAR-CJ гибрида (по умолчанию features_pit_v3.parquet)
   n_variantov: 0            # число вариантов бустинга, перебранных агентом (счётчик FINAL)
+  harx: false               # нога гибрида на HAR-X (по умолчанию — по имени: harx / окончание X)
+  trees: ...                # CSV деревьев (model, step, best_iteration) для h=22, если не {boost}_selected_h22.csv
+  god2021: ...              # как агент использовал 2021 (например: «только отложенный, одна проверка»)
 Где ищутся yaml: data/regen/final3/kandidaty/, data/regen/ (верхний уровень), data/regen/{D14,D16,D17,D18-D22,HARX}*/ (до трёх уровней).
 python3 scripts/analysis/final3.py pool|gibrid|select|confirm|build|report [--dry] [--only-krug2] [--zapis] [--confirm] [--workers 6]"""
 import argparse, hashlib, json, os, re, subprocess, sys, time
@@ -214,7 +217,8 @@ def pool(a):
                      test_dir=rpath(y.get('test_dir'), R / 'test_locked' / b), step10_dir=rpath(y.get('step10_dir'), R / 'final3' / 'step10'),
                      step10_lock=rpath(y.get('step10_lock'), R / 'test_locked' / 'final3' / 'step10'), wrap_dir=rpath(y.get('wrap_dir'), R / 'final3'),
                      gib_dir=O / 'gibrid' / b, features=rpath(y.get('features_har'), FEAT), yaml=str(y['_file']), osnova=osn, seen={},
-                     n_variantov=int(y.get('n_variantov', 0) or 0))
+                     n_variantov=int(y.get('n_variantov', 0) or 0), trees=y.get('trees'), harx_flag=y.get('harx'),
+                     god2021=y.get('god2021'))
             C.append(c)
             used.add((b, h))
     for (b, h), fv in sorted(found.items()):  # OOS есть, yaml нет — в пул не входят (видно в таблице)
@@ -329,9 +333,13 @@ def summarize(c, D):
 
 def order(E, h):
     E = E.sort_values(['n_failed', 'mean_1720'], kind='stable').reset_index(drop=True)
-    if h == 1 and E.chistyy.any():  # tie-break владельца: гибрид при отставании от V0 <= 1% ставится перед V0
-        v0 = E[E.chistyy].iloc[0]
-        hy = E[~E.chistyy]
+    # tie-break: гибрид ставится перед лучшей одиночной моделью, если отстаёт от неё <= 1% по 2017-2020 и нарушает не больше критериев.
+    # h=1 — решение владельца 25.10 20:45 (одиночная = чистый бустинг); h=22 — ночное умолчание владельца 26.10 01:45 (одиночная = чистый бустинг
+    # или HAR-J с поправкой)
+    single = E.chistyy.astype(bool) | ((E.cand == 'HARJ_corr') & (h == 22))
+    if h in (1, 22) and single.any():
+        v0 = E[single].iloc[0]
+        hy = E[~single]
         ok = hy[(hy.n_failed <= v0.n_failed) & (hy.mean_1720 <= v0.mean_1720 * 1.01)]
         idx = list(ok.index) + [v0.name] + [i for i in E.index if i not in set(ok.index) and i != v0.name]
         E = E.loc[idx].reset_index(drop=True)
@@ -627,6 +635,82 @@ def md_table(df):
            ['| ' + ' | '.join(F(v) if isinstance(v, float) else str(v) for v in r) + ' |' for r in df.itertuples(index=False)]
 
 
+def trees_h22(c):
+    """Число деревьев (best_iteration) финалиста h=22 по шагам 1-9 и шагу 10: {regen}/{boost}_selected_h22.csv (только столбцы model, step, seed,
+    best_iteration — qlike_val не читается), шаг 10 — {step10_dir}/{boost}_h22_s10_trees.csv; yaml-ключ trees — свой CSV (model, step, best_iteration)."""
+    out = []
+    if c.get('regen') is None:
+        return 'нет данных'
+    p = Path(c['trees']) if c.get('trees') else Path(c['regen']) / f"{c['gboost']}_selected_h22.csv"
+    if p.exists():
+        cols = [x for x in ('model', 'step', 'seed', 'best_iteration') if x in pd.read_csv(p, nrows=0).columns]
+        t = pd.read_csv(p, usecols=cols)
+        if 'seed' in t:
+            t = t[t.seed == 42]
+        for m, g in t.groupby('model'):
+            out.append(f'{m}: ' + ' '.join(str(int(x)) for x in g.sort_values('step').best_iteration))
+    q = Path(c['step10_dir']) / f"{c['gboost']}_h22_s10_trees.csv" if c.get('step10_dir') else None
+    if q is not None and q.exists():
+        t = pd.read_csv(q, usecols=['model', 'seed', 'best_iteration'])
+        out.append('шаг 10 (s42/s43/s44): ' + '; '.join(f'{m} ' + '/'.join(str(int(x)) for x in g.sort_values('seed').best_iteration)
+                                                     for m, g in t.groupby('model')))
+    return '; '.join(out) if out else 'нет данных (V0_HAR — деревьев нет, или файл деревьев кандидата не выложен)'
+
+
+def uses_harx(c):
+    v = c.get('harx_flag')
+    if v is not None:
+        return bool(v)
+    b = str(c.get('boost', ''))
+    return 'harx' in b.lower() or b.endswith('X') or 'HAR-X' in str(c.get('opisanie', '')) + str(c.get('fam', ''))
+
+
+def extra_fields(a, O, Lk, A, FN, FC, CF, byc):
+    """Обязательные поля ночного режима владельца (01:45/01:50)."""
+    L = ['', '## 6а. Обязательные поля (ночной режим владельца 01:45/01:50)', '',
+         '- **s² с шага t−1:** на валидации поправка шага t берёт оценку s² шага t−1 (OOS; шаг 1 — F = 1, в метрику не входит); на тесте шага k — оценка шага k.',
+         '- **Шаг 10:** обучение ≤ 2024, ранняя остановка и s² по val 2025, прогноз 01–02.2026 (наличие по h — раздел 6).',
+         '- **Три seed:** 42 / 43 / 44 (нога seeds3 — среднее трёх; single/top5 — seed 42; приём рычагов третьего круга — по 3 seed).']
+    code = [HERE / f for f in ('final3.py', 'final3.sh', 'gibrid_v17.py', 'gibrid_io.py', 'gibrid_designs.py', 'gibrid_compute.py', 'gibrid_bias.py',
+                               'gibrid_har.py', 'final2_build.py', 'final2_step10.py', 'final_test.py', 'ftp_tables.py', 'ftp_stats.py', 'harx.py')]
+    L += ['- **SHA-256 кода:**'] + [f'  - `scripts/analysis/{f.name}` — `{sha(f)}`' if f.exists() else f'  - `scripts/analysis/{f.name}` — нет файла' for f in code]
+    dat = [R / f'HARX_h{h}_val.parquet' for h in (1, 5, 22)] + [R / 'test_locked' / 'HARX' / f'HARX_h{h}_test.parquet' for h in (1, 5, 22)]
+    L += ['- **SHA-256 данных HAR-X** (матрицы признаков — раздел 6; время файла по часам Мака):'] + \
+         [f'  - `{f.relative_to(R)}` ({time.strftime("%d.%m %H:%M", time.localtime(f.stat().st_mtime))}) — `{sha(f)}`' for f in dat if f.exists()]
+    L += ['', '- **Версия HAR-X у каждого финалиста:**', '', '| h | финалист | HAR-X в дизайне | файл HAR-X (время) | SHA-256 |', '|---|---|---|---|---|']
+    for r in FN.sort_values(['h', 'finalist']).itertuples():
+        c = byc[(r.cand, r.h)]
+        f = R / f'HARX_h{r.h}_val.parquet'
+        if uses_harx(c) and f.exists():
+            L.append(f'| {r.h} | {r.cand} | да (нога гибрида) | `{f.name}` ({time.strftime("%d.%m %H:%M", time.localtime(f.stat().st_mtime))}) | `{sha(f)}` |')
+        else:
+            L.append(f'| {r.h} | {r.cand} | нет (нога — HAR-J) | — | — |')
+    L += ['', '- **V9 против V0 на h=1** (OOS QLIKE, разработочный набор; подтверждающий второго круга — `2026-10-25_final2.md`):', '',
+          '| кандидат | лучший дизайн | 2017–2020 | 2021 | 2017–2021 | подтв. круг 2 (среднее) | к V0 (2017–2021) |', '|---|---|---|---|---|---|---|']
+    E1 = A[A.h == 1].set_index('cand')
+    conf2 = {'D12_h1_A_d812': 0.4711, 'D12_h1_B_b0.25': 0.4718, 'D12_h1_V0': 0.4600}
+    v0q = E1.loc['D12_h1_V0', 'mean_1721'] if 'D12_h1_V0' in E1.index else np.nan
+    for cand, nm in (('D12_h1_B_b0.25', 'V9, β = 0,25'), ('D12_h1_A_d812', 'Д8.12'), ('D12_h1_V0', 'V0, чистый бустинг')):
+        if cand in E1.index:
+            e = E1.loc[cand]
+            L.append(f'| {cand} ({nm}) | {e.design.replace("|", "/")} | {F(e.mean_1720)} | {F(e.q2021)} | {F(e.mean_1721)} | {F(conf2[cand])} | {P(e.mean_1721 / v0q - 1)} |')
+    L += ['', '  V9 с β = 0,5 / 0,75 / 1 — +1,0 / +2,2 / +4,3% к V0 (второй круг, отброшено). На подтверждающем втором круге V9 β = 0,25 не прошёл (c2), V0 прошёл.']
+    L += ['', '- **Число деревьев на h=22 у финалистов** (best_iteration по шагам 1–9, seed 42; у XGBoost отсчёт от 0):']
+    fin22 = set(FN[FN.h == 22].cand)
+    rows22 = list(FN[FN.h == 22].itertuples()) + [r for r in FC[FC.h == 22].itertuples() if r.cand not in fin22]
+    if not rows22:
+        L.append('  - финалистов на h=22 нет')
+    for r in rows22:
+        tr = 'HAR-J с поправкой — деревьев нет' if '|V0_HAR|' in r.design else trees_h22(byc[(r.cand, 22)])
+        L.append(f'  - {r.cand} ({r.design.replace("|", "/")}): {tr}')
+    L += ['', '- **2021 использован один раз** — как отложенный год третьего круга: в сборке рейтинг считается только по шагам 2–5 (2017–2020); 2021 (шаг 6) '
+          'входит лишь в проверку шага 6 для кандидатов третьего круга и в критерии c1–c4 на 2017–2021 (как в кругах 1–2). Для кандидатов кругов 1–2 2021 '
+          'отложенным не был (входил в их разработочный набор). Отметки агентов третьего круга о 2021 (yaml-ключ `god2021`):']
+    k3 = [c for c in byc.values() if c.get('krug') == 3 and c.get('dopusk')]
+    L += [f'  - {c["boost"]} h={c["h"]}: {c.get("god2021") or "не указано"}' for c in k3] or ['  - кандидатов третьего круга в пуле нет']
+    return L
+
+
 def report(a, C):
     O, Lk = out_dir(a), lock_dir(a)
     A = pd.concat([pd.read_csv(O / f'ranking_h{h}.csv') for h in (1, 5, 22) if (O / f'ranking_h{h}.csv').exists()], ignore_index=True)
@@ -675,7 +759,8 @@ def report(a, C):
           'Кандидат представлен своим лучшим дизайном по правилу.',
           '2. Рейтинг: число нарушенных критериев c1–c4 (val 2017–2021, OOS: параметры и s² шага t−1 -> val шага t; val 2016 = шаг 1 даёт s² для шага 2; '
           'эталон — модели с той же s²; V0 наравне, сам с собой не сравнивается), затем средний OOS QLIKE val 2017–2020 (шаги 2–5). '
-          'h=1 — tie-break владельца: гибрид, отстающий от лучшего чистого бустинга не больше чем на 1% (и с не большим числом нарушений), ставится перед ним.',
+          'Tie-break: гибрид ставится перед лучшей одиночной моделью, если отстаёт от неё не больше чем на 1% по 2017–2020 и нарушает не больше критериев; '
+          'h=1 — решение владельца 25.10 (одиночная — чистый бустинг), h=22 — ночное умолчание владельца 26.10 01:45 (одиночная — чистый бустинг или HAR-J с поправкой).',
           '3. Отложенный 2021 (шаг 6) — только для кандидатов третьего круга: «текущий лучший по правилу» = первый в рейтинге п. 2 среди кандидатов кругов 1–2 '
           '(финалисты второго круга и HAR-J с поправкой). Кандидат третьего круга проходит шаг 6, если его OOS QLIKE val 2021 ≤ OOS QLIKE val 2021 текущего лучшего '
           '(без допуска). Не прошедший в финалисты не берётся.',
@@ -770,6 +855,7 @@ def report(a, C):
                                              'финал h=1 не изменился (D12_h1_A_d812 top5/V0_XGB/B-sm/L0) — остаётся `data/regen/sigma_pred_h1_final2.parquet`.'))
     L += ['- **SHA-256 матриц:**'] + [f'  - `{m.name}` — `{sha(m)}`' for m in mats if Path(m).exists()]
     L += [f'- **Код:** ветка `{branch}`, коммит `{commit}` (база `kanon-v22-pereschet`). **Версии пакетов:** {versions()}.']
+    L += extra_fields(a, O, Lk, A, FN, FC, CF, byc)
     # 7. честность выбора
     per = count_designs(O)
     n3 = sum(per.values())
@@ -780,8 +866,10 @@ def report(a, C):
           f'**итого {R2_TOTAL[0] + n3} дизайн×h и {R2_TOTAL[1] + nv} вариантов бустинга.**']
     L += [f'  - `{k}`: {v}' for k, v in sorted(per.items())]
     L += ['- **Подтверждающий набор использовался трижды, не более трёх кандидатов на горизонт за раз.** Все случаи просмотра:',
-          '  1. Первый круг (25.10, 19:55): 30 проверенных дизайнов (финалисты и следующие по рейтингу на h=22) и 5 случаев частичного просмотра до открытия '
-          '(таблица — `2026-10-25_final_assembly.md`).',
+          f'  - **Итого: {3 if lk else 2} открытия подтверждающего набора и 5 случайных (частичных) просмотров** — круг 1: 1 открытие + 5 частичных просмотров; '
+          f'круг 2: 1 открытие; круг 3: {"1 открытие" if lk else "не открывался"}.',
+          '  1. Первый круг (25.10, 19:55): одно открытие — 30 проверенных дизайнов (финалисты и следующие по рейтингу на h=22); до него 5 случаев частичного '
+          'просмотра (таблица — `2026-10-25_final_assembly.md`).',
           '  2. Второй круг (26.10, 00:27): одно открытие, 3 финалиста на h (9 дизайнов), список зафиксирован до открытия (`dev_log.md` № 48).',
           f'  3. Третий круг ({lk.get("time", "не открывался")}): одно открытие, {len(FN)} финалистов (≤ 3 на h), список в `dev_log.md` ({lg.get("time", "—")}) до открытия.',
           '  - Проверка сборки: во всех designs_val кандидатов пула метрики шагов 7–9 пусты (assert в final3.py); правило читает только шаги 2–6.',
