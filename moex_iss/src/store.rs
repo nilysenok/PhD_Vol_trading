@@ -1,7 +1,7 @@
 //! Чтение и запись parquet (arrow). Время баров — Timestamp(мс) без пояса, МСК.
 use crate::model::Bar;
 use anyhow::{anyhow, Result};
-use arrow::array::{Array, ArrayRef, Date32Array, Float64Array, Int64Array, RecordBatch, TimestampMillisecondArray};
+use arrow::array::{Array, ArrayRef, Date32Array, Float64Array, Int64Array, RecordBatch, StringArray, TimestampMillisecondArray};
 use arrow::compute::cast;
 use arrow::datatypes::{DataType, Field, Schema, TimeUnit};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
@@ -114,6 +114,29 @@ pub fn write_daily(path: &Path, days: &[i64], cols: &[(&str, Vec<Option<f64>>)])
         arrays.push(Arc::new(Float64Array::from(v.clone())));
     }
     write(path, Schema::new(fields), arrays)
+}
+
+/// Дневные RV: date, ticker, rv, bv, j, rsv_pos, rsv_neg, n_bars, n_quar.
+pub fn write_rv(path: &Path, rows: &[(String, i64, crate::rv::DayRv, i64)]) -> Result<()> {
+    let f = |g: fn(&crate::rv::DayRv) -> f64| -> ArrayRef { Arc::new(Float64Array::from_iter_values(rows.iter().map(|r| g(&r.2)))) };
+    let mut fields = vec![Field::new("date", DataType::Date32, false), Field::new("ticker", DataType::Utf8, false)];
+    for n in ["rv", "bv", "j", "rsv_pos", "rsv_neg"] {
+        fields.push(Field::new(n, DataType::Float64, false));
+    }
+    fields.push(Field::new("n_bars", DataType::Int64, false));
+    fields.push(Field::new("n_quar", DataType::Int64, false));
+    let cols: Vec<ArrayRef> = vec![
+        Arc::new(Date32Array::from_iter_values(rows.iter().map(|r| r.1 as i32))),
+        Arc::new(StringArray::from_iter_values(rows.iter().map(|r| r.0.as_str()))),
+        f(|d| d.rv),
+        f(|d| d.bv),
+        f(|d| d.jump),
+        f(|d| d.rsv_pos),
+        f(|d| d.rsv_neg),
+        Arc::new(Int64Array::from_iter_values(rows.iter().map(|r| r.2.n as i64))),
+        Arc::new(Int64Array::from_iter_values(rows.iter().map(|r| r.3))),
+    ];
+    write(path, Schema::new(fields), cols)
 }
 
 #[cfg(test)]

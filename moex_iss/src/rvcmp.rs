@@ -48,7 +48,7 @@ pub struct RvTicker {
     pub c: CmpStat,
 }
 
-fn rel(a: f64, b: f64) -> f64 {
+pub fn rel(a: f64, b: f64) -> f64 {
     let d = (a - b).abs();
     if d == 0.0 {
         0.0
