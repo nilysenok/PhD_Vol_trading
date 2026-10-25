@@ -179,6 +179,7 @@ def main(argv=None):
     p.add_argument("--boot-reps", type=int, default=1000)
     p.add_argument("--workers", type=int, default=1)
     p.add_argument("--no-log", action="store_true")
+    p.add_argument("--vpred", help="σ_pred вместо ключа vpred дизайна (тот же дизайн, другой σ)")
     p.add_argument("--note", default="", help="пометка в журнал (например «отладка, старый σ_pred»)")
     a = p.parse_args(argv)
     if a.data_root:
@@ -187,6 +188,9 @@ def main(argv=None):
     if not a.smoke and not a.design:
         p.error("нужен --design <yaml> или --smoke")
     design, text = load_design(a.design)
+    if a.vpred:
+        design["vpred"] = a.vpred
+        text += f"\n# --vpred {a.vpred}\n"
     if design.get("vpred"):
         os.environ["FASTBT_VPRED"] = str(design["vpred"])
     import time
