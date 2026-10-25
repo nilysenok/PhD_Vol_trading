@@ -82,11 +82,14 @@ def fit(model, pt, h, step, seed=42):
                              verbosity=0, random_state=seed, n_jobs=1, early_stopping_rounds=50).fit(Xtp, s['ytp'], eval_set=[(Xvi, s['yvi'])], verbose=False)
         bi = int(m.best_iteration)
     else:
-        m = lgb.LGBMRegressor(n_estimators=2000, boosting_type='gbdt', max_depth=-1, num_leaves=int(p['num_leaves']), learning_rate=p['learning_rate'],
-                              bagging_fraction=p['bagging_fraction'], bagging_freq=1, feature_fraction=p['feature_fraction'], min_data_in_leaf=int(p['min_data_in_leaf']),
-                              reg_alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'], verbosity=-1, random_state=seed, n_jobs=1)
-        m.fit(Xtp, s['ytp'], eval_set=[(Xvi, s['yvi'])], eval_metric='l2', callbacks=[lgb.early_stopping(50, verbose=False)])
-        bi = int(m.best_iteration_)
+        if 'dtr' not in s:  # один lgb.Dataset на шаг; feature_pre_filter=False — чтобы датасет подходил любому min_data_in_leaf
+            s['dtr'] = lgb.Dataset(Xtp, s['ytp'], free_raw_data=False, params={'feature_pre_filter': False, 'verbosity': -1})
+            s['dva'] = lgb.Dataset(Xvi, s['yvi'], reference=s['dtr'], free_raw_data=False)
+        prm = dict(objective='regression', boosting_type='gbdt', max_depth=-1, num_leaves=int(p['num_leaves']), learning_rate=p['learning_rate'],
+                   bagging_fraction=p['bagging_fraction'], bagging_freq=1, feature_fraction=p['feature_fraction'], min_data_in_leaf=int(p['min_data_in_leaf']),
+                   reg_alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'], verbosity=-1, seed=seed, num_threads=1, metric='l2')
+        m = lgb.train(prm, s['dtr'], 2000, valid_sets=[s['dva']], callbacks=[lgb.early_stopping(50, verbose=False)])  # = LGBMRegressor, проверено (maxdiff 0.0)
+        bi = int(m.best_iteration)
     return m, s, bi
 
 
