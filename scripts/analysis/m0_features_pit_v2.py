@@ -3,52 +3,42 @@
 лаги/цели — те же функции сборки (m0_pit_lib). Внешние — как v1; макро as-of + {ряд}_days_since_upd.
 Формат: строки и колонки как у склейки data/prepared (+ новые), NaN признаков = медианы train <= 2017.
 Выход: data/regen/features_pit_v2.parquet, data/regen/features_pit_v2.config.json,
-docs/tables/prilozhenie_priznaki_lagi.csv, docs/otchety/m0/pit_v2_svodka.csv. Запуск: --rv1850 <путь> (по умолчанию ISS)."""
+docs/tables/prilozhenie_priznaki_lagi.csv, docs/otchety/m0/pit_v2_svodka.csv. Запуск: --rv1850 <путь> (по умолчанию ISS).
+v3 (владелец 25.10, 20:40): --fill asof -> data/regen/features_pit_v3.parquet. Вместо медианы train <= 2017:
+внешние признаки (EXT, по дате) протягиваются последним известным значением общего календаря на дату <= t (только прошлое),
+строки акций вне календаря (до 26.08.2014 — NaN; выходные сессии 2025-2026) получают значение последнего дня календаря <= t;
+*_days_since_upd — дни от фактического обновления, отражённого в значении (вне календаря: дни дня t_prev + (t - t_prev));
+собственные признаки (OWN) — протягивание по строкам тикера (только прошлое). До первого наблюдения ряда — NaN
+(строки не исключаются; в обучении clean_features переводит NaN в 0, как inf). Сайд-таблицы v2 в режиме asof не пишутся."""
 import argparse
 import json
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from m0_common import ROOT, OUT, REGEN, YAHOO, calendar, load_prepared, load_features_all, md_table
-from m0_pit_lib import FC, OWN, EXT, MONTHLY, RV1850, MACRO_RAW, build_ext, external_inputs, own_features, add_targets
+from m0_pit_lib import FC, OWN, EXT, MONTHLY, RV1850, MACRO_RAW, build_ext, external_inputs, own_features, assemble
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--rv1850", default=str(RV1850))
-ap.add_argument("--out", default=str(REGEN / "features_pit_v2.parquet"))
+ap.add_argument("--out", default=None)
+ap.add_argument("--fill", choices=("median", "asof"), default="median")
+ap.add_argument("--regen", default="/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen")
 a = ap.parse_args()
+a.out = a.out or str(Path(a.regen) / ("features_pit_v2.parquet" if a.fill == "median" else "features_pit_v3.parquet"))
 cal = calendar()
 prep = load_prepared()
 fa = load_features_all()
 
-rvp, yh, mc, days, lost = external_inputs(cal)
-ext = build_ext(rvp, yh, mc)[EXT].join(days)
-DAYS = list(days.columns)
 r18 = pd.read_parquet(a.rv1850)
 r18["date"] = pd.to_datetime(r18["date"])
-own, info = own_features(sorted(prep.ticker.unique()), r18)
-print("собственные:", info)
-
-keys = prep[["date", "ticker"]].copy()
-keys["_i"] = np.arange(len(keys))
-v2 = keys.merge(own[["date", "ticker", "n_bars"] + OWN], on=["date", "ticker"], how="left")
-v2 = v2.join(ext, on="date")
-v2 = add_targets(v2).sort_values("_i").reset_index(drop=True)
-NEWF = FC + DAYS
-pre_nan = v2[NEWF].isna().mean()
-train = v2.date <= "2017-12-31"
-med = {c: (float(v2.loc[train, c].median()) if pd.notna(v2.loc[train, c].median()) else 0.0) for c in NEWF}
-v2[NEWF] = v2[NEWF].fillna(med)
-
-out = prep.copy()
-for c in FC + ["n_bars", "rv_target_h1", "rv_target_h5", "rv_target_h22"]:
-    out[c] = v2[c].values
-for c in DAYS + ["rv_target_mean_h1", "rv_target_mean_h5", "rv_target_mean_h22"]:
-    out[c] = v2[c].values
-im = rvp[rvp.ticker == "IMOEX"].set_index("date")["n_bars"]
-out["imoex_low_bars"] = (out.date.map(im).fillna(0) < 30).astype("int8")
+out, v2, NEWF, DAYS, lost, pre_nan = assemble(cal, prep, r18, a.fill)
 out.to_parquet(a.out, index=False)
 json.dump({"feature_cols": NEWF, "targets": ["rv_target_h1", "rv_target_h5", "rv_target_h22", "rv_target_mean_h1",
                                               "rv_target_mean_h5", "rv_target_mean_h22"]},
           open(a.out.replace(".parquet", ".config.json"), "w"), ensure_ascii=False, indent=1)
+print("записан", a.out, "строк", len(out), flush=True)
+if a.fill == "asof":
+    raise SystemExit(0)
 
 
 # --- таблица лагов: признак -> лаг в старом коде -> лаг в features_pit_v2 ---
