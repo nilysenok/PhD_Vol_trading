@@ -20,6 +20,7 @@ import numpy as np, pandas as pd
 MAIN = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data')
 FEAT, REG = MAIN / 'regen/features_pit_v3.parquet', MAIN / 'regen'
 PARTS, TL = REG / 'GRU_sv_parts', REG / 'test_locked/GRU_sv'
+PARTS_OOS = REG / 'GRU_svoos_parts'
 FC = ['rv', 'rv_d', 'rv_w', 'rv_m', 'bv', 'jump', 'rsv_pos', 'rsv_neg', 'rskew', 'rkurt', 'rv_morning', 'rv_midday', 'rv_evening',
       'rv_IMOEX', 'rv_RVI', 'vix', 'sp500', 'brent', 'gold', 'key_rate_cbr', 'fed_rate']
 HS, NTR, BATCH, EPOCHS, PAT = (1, 5, 22), 30, 32, 100, 10
@@ -42,8 +43,9 @@ def data():
 
 
 def task(arg):
-    tk, step, h = arg
-    fp = PARTS / f'{tk}_s{step}_h{h}.parquet'
+    tk, step, h = arg[:3]
+    fixed = arg[3] if len(arg) > 3 else None  # справка --oos-params: параметры лучшего испытания шага t-1, без подбора
+    fp = (PARTS_OOS if fixed else PARTS) / f'{tk}_s{step}_h{h}.parquet'
     if fp.exists():
         return str(fp), 0.0, None
     import torch, torch.nn as nn, optuna
@@ -109,6 +111,11 @@ def task(arg):
         trial.set_user_attr('epochs', ep + 1); trial.set_user_attr('val_mse_std', best); trial.set_user_attr('n_train', ntr)
         return q
 
+    if fixed:
+        q = objective(optuna.trial.FixedTrial(fixed)); pv, pt = preds[0]
+        meta = dict(step=step, point=-1, qlike_val_ticker=q, params=json.dumps(fixed), epochs=-1)
+        pd.DataFrame({'date': g.date.values[va], 'ticker': tk, 'year': yr[va], **meta, 'part': 'val', 'rv_actual': y[va], 'rv_pred': pv}).to_parquet(fp, index=False)
+        return str(fp), time.time() - t0, fixed
     st = optuna.create_study(direction='minimize', sampler=optuna.samplers.TPESampler(seed=42),
                              pruner=optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10))
     st.optimize(objective, n_trials=NTR)
@@ -140,16 +147,36 @@ def assemble(tks, steps):
         pd.concat(trials, ignore_index=True).to_csv(REG / 'GRU_sv_trials.csv', index=False)
 
 
+def oos_params(tks, hs, workers):
+    """Справка к смещению выбора: на шаге t (2-6) GRU обучается один раз с параметрами лучшего испытания (тикер, t-1, h);
+    ранняя остановка — по val шага t, как в основном прогоне. Шаг 1 (нужен только для s² шага 2) берётся из основного прогона."""
+    PARTS_OOS.mkdir(parents=True, exist_ok=True)
+    prm = lambda tk, s, h: json.loads(pd.read_parquet(PARTS / f'{tk}_s{s}_h{h}.parquet', columns=['params']).params.iloc[0])
+    tasks = [(tk, s, h, prm(tk, s - 1, h)) for h in hs for s in range(6, 1, -1) for tk in tks]
+    with Pool(workers) as P:
+        for i, (fp, sec, info) in enumerate(P.imap_unordered(task, tasks), 1):
+            print(f'{time.strftime("%T")} {i}/{len(tasks)} {Path(fp).stem} {sec:.0f} с {info}', flush=True)
+    for h in hs:
+        cols = ['date', 'ticker', 'year', 'step', 'point', 'rv_actual', 'rv_pred', 'qlike_val_ticker', 'params', 'epochs']
+        s1 = pd.read_parquet(REG / f'GRU_sv_h{h}_val.parquet'); s1 = s1[s1.step == 1]
+        d = pd.concat([s1] + [pd.read_parquet(PARTS_OOS / f'{tk}_s{s}_h{h}.parquet')[cols] for s in range(2, 7) for tk in tks], ignore_index=True)
+        d.sort_values(['step', 'date', 'ticker']).to_parquet(REG / f'GRU_svoos_h{h}_val.parquet', index=False)
+        print('h', h, 'GRU_svoos собран:', len(d))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--workers', type=int, default=6); ap.add_argument('--h', type=int, nargs='*', default=list(HS))
     ap.add_argument('--steps', type=int, nargs='*', default=list(range(1, 10))); ap.add_argument('--tickers', nargs='*', default=None)
     ap.add_argument('--assemble', action='store_true')
+    ap.add_argument('--oos-params', action='store_true', help='справка: шаги 2-6, параметры лучшего испытания (тикер, шаг t-1, h), без подбора -> GRU_svoos_h{h}_val.parquet')
     a = ap.parse_args()
     PARTS.mkdir(parents=True, exist_ok=True)
     tks = a.tickers or sorted(data())
     if a.assemble:
         assemble(tks, a.steps); return
+    if a.oos_params:
+        oos_params(tks, a.h, a.workers); return
     # порядок: разработочные шаги 1-6 по h (h=1, 5, 22; внутри — длинные шаги первыми), затем шаги 7-9
     dev_ = [(tk, s, h) for h in a.h for s in sorted([s for s in a.steps if s <= 6], reverse=True) for tk in tks]
     tasks = dev_ + [(tk, s, h) for s in sorted([s for s in a.steps if s > 6], reverse=True) for h in a.h for tk in tks]
