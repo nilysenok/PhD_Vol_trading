@@ -37,9 +37,11 @@ def load_boost(boost, h, regen, variant, test=False):
     test=True — тест закрытых вариантов читается из test_locked (только для сборки тестовых прогнозов выбранного дизайна)."""
     closed = boost not in ('P1', 'B')  # Bv2, Bv2b, L2_h* (уровень 2): тест закрыт
     names = {'P1': ('xgb', 'P1'), 'B': ('B_xgb', 'B_lgbm')}.get(boost, (f'{boost}_xgb', f'{boost}_lgbm'))
-    if boost.startswith('GRU_sv'):  # одиночная модель (GRU_sv, GRU_svoos: {boost}_h{h}_{val,test}.parquet) в обоих слотах; V0_XGB = V0_LGB = модель
+    if boost.startswith(('GRU_sv', 'GARCH_sv')):  # одиночная модель (GRU_sv, GRU_svoos: {boost}_h{h}_{val,test}.parquet) в обоих слотах; V0_XGB = V0_LGB = модель
         names = (boost, boost)
-    tdir = Path(os.environ['GIBRID_TEST_DIR']) if os.environ.get('GIBRID_TEST_DIR') else MAIN_REGEN / 'test_locked' / boost
+    tdir = MAIN_REGEN / 'test_locked' / ('GARCH_sv' if boost.startswith('GARCH_sv') else boost)
+    if os.environ.get('GIBRID_TEST_DIR'):  # третий круг (final3.py): каталог тестовых прогнозов кандидата из yaml
+        tdir = Path(os.environ['GIBRID_TEST_DIR'])
     empty = lambda: pd.DataFrame(columns=['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']).astype(
         {'date': 'datetime64[ns]', 'ticker': object, 'year': int, 'step': int, 'rv_actual': float, 'rv_pred': float})
     res = []
