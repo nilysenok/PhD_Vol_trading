@@ -51,7 +51,20 @@ def task(a):
     h1 = G.get('h1')
     ref = L.make_ref(model, A, cols, h, cfg, tag, h1=h1) if step > 1 else None
     D = L.step_data(A, cols, h, step, model, cfg, tag, h1=h1)
-    pv, _, bi, gain, _ = L.fit(model, p, D, cfg, ref=ref)
+    pv, pt, bi, gain, _ = L.fit(model, p, D, cfg, ref=ref)
+    if cfg.get('backfit') and cfg.get('v9'):  # Д11.2: одна итерация обратной подгонки — HAR-J на ln y − f(x), бустинг на новых остатках
+        _, ptr, _, _, _ = L.fit(model, p, {**D, 'X': {**D['X'], 'te': D['X']['tr']}, 'off': {**D['off'], 'te': D['off']['tr']}}, cfg, ref=ref)
+        f_tr = ptr - D['off']['tr']
+        tpf = D['parts']['tr']; hc = L.harj_cols(A)
+        wh = L.rq_weights(tpf) if cfg.get('rqw') else None
+        hl2 = L.har_ln(tpf, [D['parts'][k] for k in ('tr', 'va', 'te')], h, hc, wh, bool(cfg.get('huber')), y=np.log(D['y']['tr'] + 1e-10) - f_tr)
+        D = {**D, 'off': dict(zip(('tr', 'va', 'te'), hl2))}
+        pv, pt, bi, gain, _ = L.fit(model, p, D, cfg, ref=ref)
+    alpha = 1.0
+    if cfg.get('alpha') and cfg.get('v9'):  # Д11.3: ŷ = HAR + α·f(x), α по val-году шага
+        fv = pv - D['off']['va']
+        alpha = min((0.5, 0.75, 1.0), key=lambda a_: L.qlike(D['y']['va'], np.exp(D['off']['va'] + a_ * fv)))
+        pv = D['off']['va'] + alpha * fv
     vi = D['parts']['va']
     fr = pd.DataFrame({'date': vi.date.values, 'ticker': vi.ticker.values, 'year': D['vy'], 'step': step, 'model': model,
                        'rv_actual': D['y']['va'], 'rv_pred': np.clip(np.exp(pv), 1e-10, None)})
@@ -62,7 +75,7 @@ def task(a):
         _, pn, _, _, _ = L.fit(model, p, {**D, 'X': {**D['X'], 'te': D2['X']['va']}, 'off': {**D['off'], 'te': D2['off']['va']}}, cfg, ref=ref)
         v2 = D2['parts']['va']
         nxt = pd.DataFrame({'date': v2.date.values, 'ticker': v2.ticker.values, 'step': step + 1, 'model': model, 'rv_prev': np.clip(np.exp(pn), 1e-10, None)})
-    return name, model, step, fr, dict(zip(D['names'], gain)), bi, nxt
+    return name, model, step, fr, dict(zip(D['names'], gain)), (bi, alpha), nxt
 
 
 def main():
@@ -102,7 +115,8 @@ def main():
         V.to_parquet(od / f'{n}_val.parquet', index=False)
         pd.DataFrame([dict(model=r[1], step=r[2], feature=k, gain=v) for r in R for k, v in r[4].items()]).to_csv(od / f'{n}_gain.csv', index=False)
         S = L.summarize({m: V[V.model == m] for m in ('xgb', 'lgbm')}, gam=cfg.get('obj') == 'gamma')
-        bi = {f'bi_{r[1]}_s{r[2]}': r[5] for r in R}
+        bi = {f'bi_{r[1]}_s{r[2]}': r[5][0] for r in R}
+        bi.update({f'alpha_{r[1]}_s{r[2]}': r[5][1] for r in R})
         row = dict(time=time.strftime('%F %T'), matrix=(Path(a.matrix).name if a.matrix else '') + a.blocks, h=a.h, tag=a.tag if not a.params else f'{a.tag}+{Path(a.params).name}', lever=a.lever, name=n, cfg=json.dumps(cfg, ensure_ascii=False),
                    n_features=len(G['built'][n][1]), **{k: v for k, v in S.items() if k != 'per_step'},
                    per_step=json.dumps({m: [round(x, 5) for x in q] for m, q in S['per_step'].items()}), **bi)

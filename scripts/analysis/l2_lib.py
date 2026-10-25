@@ -441,11 +441,59 @@ def harj_cols(A):
     return [f for f in ['rv_d', 'rv_w', 'rv_m'] + [c for c in jump if c not in ('rv_d', 'rv_w', 'rv_m')] if f in A.columns]
 
 
-def har_ln(tp, parts, h, hc):
-    """HAR-J (как gibrid_har.har_forecasts): МНК на ln, обучение на tp; ln-прогнозы для каждой части (tp — внутри выборки)."""
+def har_ln(tp, parts, h, hc, w=None, huber=False, y=None):
+    """HAR-J (как gibrid_har.har_forecasts): МНК на ln, обучение на tp; ln-прогнозы для каждой части (tp — внутри выборки).
+    w — веса наблюдений (Д11.5); huber — sklearn HuberRegressor по умолчанию (Д11.4); y — своя цель (ln; Д11.2 обратная подгонка)."""
+    from sklearn.linear_model import HuberRegressor
     X = lambda d: clean(np.log(d[hc].values.clip(1e-10)))
-    m = LinearRegression().fit(X(tp), np.log(tp[tcol(h)].values + 1e-10))
+    yy = np.log(tp[tcol(h)].values + 1e-10) if y is None else y
+    m = (HuberRegressor() if huber else LinearRegression()).fit(X(tp), yy, sample_weight=w)
     return [m.predict(X(d)) for d in parts]
+
+
+def har_oof(tp, h, hc, k=5, w=None, huber=False):
+    """Д11.1: ln HAR-J вне свёртки на обучающем окне — k фолдов по времени (по датам подряд), точка фолда — от HAR-J без её фолда."""
+    d = pd.to_datetime(tp['date']).values
+    ud = np.array(sorted(set(d)))
+    edges = np.array_split(ud, k)
+    out = np.zeros(len(tp))
+    for e in edges:
+        m = np.isin(d, e)
+        out[m] = har_ln(tp[~m], [tp[m]], h, hc, None if w is None else w[~m], huber)[0]
+    return out
+
+
+RQ_CACHE = L2DIR / 'rq1850.parquet'
+
+
+def rq_1850():
+    """Д11.5: реализованная квартичность дня t по 10-минутным барам окна [09:50; 18:50): RQ = (M/3)·Σ r⁴ (r — доходности закрытие-закрытие
+    соседних баров окна, M — их число). Бары — candles_10m/stocks (карантинные бары не исключались — данных о карантине в этих файлах нет)."""
+    if RQ_CACHE.exists():
+        return pd.read_parquet(RQ_CACHE)
+    out = []
+    for f in sorted((CANDLES / 'stocks').glob('*.parquet')):
+        c = pd.read_parquet(f)
+        ts = pd.to_datetime(c['timestamp'])
+        mins = ts.dt.hour * 60 + ts.dt.minute
+        c = c.assign(ts=ts, d=ts.dt.normalize())[(mins >= 9 * 60 + 50) & (mins < 18 * 60 + 50)].sort_values('ts')
+        c['r'] = np.log(c['close']).groupby(c['d']).diff()
+        g = c.dropna(subset=['r']).groupby('d')['r']
+        rq = (g.count() / 3) * g.apply(lambda r: float((r ** 4).sum()))
+        out.append(pd.DataFrame({'date': rq.index, 'ticker': f.stem, 'rq': rq.values}))
+    r = pd.concat(out, ignore_index=True)
+    r.to_parquet(RQ_CACHE, index=False)
+    return r
+
+
+def rq_weights(tp):
+    """1/RQ_t, обрезка по 1/99 перцентилям окна, нормировка к среднему 1 (строго по дню t строки)."""
+    rq = tp[['date', 'ticker']].merge(rq_1850(), on=['date', 'ticker'], how='left')['rq'].values
+    w = 1.0 / np.where(rq > 0, rq, np.nan)
+    w = np.where(np.isnan(w), np.nanmedian(w), w)
+    lo, hi = np.percentile(w, [1, 99])
+    w = np.clip(w, lo, hi)
+    return w / w.mean()
 
 
 def split(A, h, step):
@@ -476,7 +524,10 @@ def step_data(A, cols, h, step, model, cfg, base_tag, h1=None, half=False, ex_st
     if cfg.get('harf') or cfg.get('v9'):
         hc = harj_cols(A)
         tp_full = split(A, h, step)[0]
-        hl = dict(zip(parts, har_ln(tp_full, list(parts.values()), h, hc)))
+        wh = rq_weights(tp_full) if cfg.get('rqw') else None
+        hl = dict(zip(parts, har_ln(tp_full, list(parts.values()), h, hc, wh, bool(cfg.get('huber')))))
+        if cfg.get('har_oof') and not half:  # Д11.1
+            hl['tr'] = har_oof(tp_full, h, hc, 5, wh, bool(cfg.get('huber')))
     else:
         hl = None
     if cfg.get('harf'):
@@ -494,7 +545,7 @@ def step_data(A, cols, h, step, model, cfg, base_tag, h1=None, half=False, ex_st
     off = {k: (hl[k] if cfg.get('v9') else np.zeros(len(parts[k]))) for k in parts}
     if cfg.get('rel'):  # Д9.1: цель ln(RV_avg(t+1..t+h) / RV_m(t)); прогноз восстанавливается умножением на RV_m(t)
         off = {k: off[k] + np.log(np.clip(parts[k]['rv_m'].values, 1e-10, None)) for k in parts}
-    w = None
+    w = rq_weights(tp) if cfg.get('rqw') else None  # Д11.5
     if cfg.get('hl'):
         age = (tp['date'].max() - pd.to_datetime(tp['date'])).dt.days.values / 365.25
         w = 0.5 ** (age / float(cfg['hl']))
@@ -551,6 +602,8 @@ def fit(model, p, D, cfg, seed=42, nmax=NMAX, ref=None, max_bin=MAX_BIN, prune=N
             prm.update(objective='reg:gamma', eval_metric='gamma-nloglik')
             if not cfg.get('v9'):
                 prm['base_score'] = float(np.mean(ytr))
+        elif cfg.get('huber'):  # Д11.4
+            prm.update(objective='reg:pseudohubererror', eval_metric='mphe')
         else:
             prm.update(objective='reg:squarederror', eval_metric='rmse')
         if any(D['mono']):
@@ -575,7 +628,8 @@ def fit(model, p, D, cfg, seed=42, nmax=NMAX, ref=None, max_bin=MAX_BIN, prune=N
     dtr = lgb.Dataset(Xtr, ytr, weight=D['w'], init_score=D['off']['tr'] if gam and cfg.get('v9') else None, reference=ref, params=dprm,
                       categorical_feature=D['cats'] or 'auto', free_raw_data=False)
     dva = lgb.Dataset(Xv, yv, init_score=D['off']['va'] if gam and cfg.get('v9') else None, reference=dtr, categorical_feature=D['cats'] or 'auto', free_raw_data=False)
-    prm = dict(objective='gamma' if gam else 'regression', metric='gamma' if gam else 'l2', boosting_type='gbdt', max_depth=-1,
+    prm = dict(objective='gamma' if gam else ('huber' if cfg.get('huber') else 'regression'), metric='gamma' if gam else ('huber' if cfg.get('huber') else 'l2'),
+               boosting_type='gbdt', max_depth=-1,
                num_leaves=int(p['num_leaves']), learning_rate=p['learning_rate'], bagging_fraction=p['bagging_fraction'], bagging_freq=1,
                feature_fraction=p['feature_fraction'], min_data_in_leaf=int(p['min_data_in_leaf']), reg_alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'],
                max_bin=max_bin, verbosity=-1, seed=seed, num_threads=1, force_col_wise=True)
