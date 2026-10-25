@@ -40,7 +40,7 @@ def gap(d):
     return np.abs(_lg(ml) - _lg(d['har'].values))
 
 
-def _simplex(P, y, lam):
+def simplex(P, y, lam):
     f = lambda w: S.qlike(y, S.comb(P, w)) + lam * float(np.sum((w - 1 / 3) ** 2))
     r = minimize(f, np.full(3, 1 / 3), method='SLSQP', bounds=[(0, 1)] * 3,
                  constraints=({'type': 'eq', 'fun': lambda w: w.sum() - 1},), options=dict(ftol=1e-10, maxiter=300))
@@ -52,9 +52,9 @@ def v10(d):
     P, y, dt = P3(d), d['rv_actual'].values, d['date'].values
     u = np.sort(np.unique(dt))
     first = dt <= u[len(u) // 2 - 1]
-    cv = {lam: sum(S.qlike(y[~m], S.comb(P[~m], _simplex(P[m], y[m], lam))) for m in (first, ~first)) for lam in V10_LAMS}
+    cv = {lam: sum(S.qlike(y[~m], S.comb(P[~m], simplex(P[m], y[m], lam))) for m in (first, ~first)) for lam in V10_LAMS}
     lam = min(cv, key=cv.get)
-    return _simplex(P, y, lam), lam
+    return simplex(P, y, lam), lam
 
 
 def v11_apply(d, th, tau):

@@ -27,6 +27,18 @@ def load_all():
     return a, harj
 
 
+def load_pit(path):
+    """Матрица features_pit_v2 (B v2): RV со срезом 18:50. Цель h=1 - rv_target_h1; h=5/22 - rv_target_mean_h{h} (среднее RV за [t+1, t+h],
+    уровень; модель в логах) - кладётся в столбец rv_target_h{h}, чтобы процедура шагов HAR-J/HAR-CJ не менялась. Признаки HAR-J - как load_all."""
+    a = pd.read_parquet(path).sort_values('date').reset_index(drop=True)
+    a['year'] = pd.to_datetime(a['date']).dt.year
+    for h in (5, 22):
+        a[f'rv_target_h{h}'] = a[f'rv_target_mean_h{h}']
+    jump = [c for c in a.columns if 'jump' in c.lower() and 'target' not in c.lower() and 'idx_' not in c.lower()]
+    harj = [f for f in ['rv_d', 'rv_w', 'rv_m'] + [c for c in jump if c not in ('rv_d', 'rv_w', 'rv_m')] if f in a.columns]
+    return a, harj
+
+
 def clean(X):  # walk_forward_full.py:51
     return np.nan_to_num(X, nan=0, posinf=0, neginf=0)
 

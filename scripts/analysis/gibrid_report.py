@@ -13,7 +13,7 @@ def counter(devlog, n_pairs, n_designs):
     return f'Перебрано дизайн×h на разработочном наборе: {n_pairs} (до {n_designs} дизайнов на h); накопленно с прошлых итераций: {prev + n_pairs}'
 
 
-SCH = ('V1_Adaptive', 'V2_MultiVal', 'V3_Regime', 'V4_Shrinkage', 'V6_TrimmedW', 'V7_HalfLife', 'V10_MinQ', 'V11_Gap', 'Med3', 'Gate_L2', 'G3_InvQ')
+SCH = ('V3_Regime', 'V7_HalfLife', 'V10_MinQ', 'V10_Pool', 'V10_Fix', 'V11_Gap', 'Med3', 'Gate_L2', 'EQ_Equal', 'ML2_Pair', 'G3_InvQ')
 
 
 def blend_effect(P, blends):
@@ -21,25 +21,25 @@ def blend_effect(P, blends):
     if len(blends) < 2:
         return []
     L = ['', 'Д8.1 смешивание rv (по RV после индивидуальных поправок) против log (в логах): средний val-QLIKE разработочного набора, поправка ord, L0',
-         '| h | смешивание | ' + ' | '.join(s.split('_')[0] for s in SCH) + ' | выбор step | лучший по правилу |', '|' + '---|' * (4 + len(SCH))]
+         '| h | смешивание | ' + ' | '.join(SCH) + ' | выбор step | лучший по правилу |', '|' + '---|' * (4 + len(SCH))]
     for p in P:
         for bm in ('rv', 'log'):
             sfx = '' if bm == 'rv' else '|log'
             g = p['Rd'][p['Rd'].design == 'single|step|B-ord|L0' + sfx]
             F = p['F'][(p['F'].design.str.endswith('|log') == (bm == 'log')) & ~p['F'].family.str.startswith('V0')]
             b = F.iloc[0]
-            L.append(f'| {p["h"]} | {bm} | ' + ' | '.join(f'{g["q_" + s].mean():.4f}' for s in SCH) +
+            L.append(f'| {p["h"]} | {bm} | ' + ' | '.join(f'{g["q_" + s].mean():.4f}' if 'q_' + s in g else '-' for s in SCH) +
                      f' | {g.q_hyb.mean():.4f} | {b.design.replace("|", "/")} ({b.failed or "-"}; {b.mean_q:.4f}) |')
     return L
 
 
 def ranks(P):
     """Ранг 15 схем по среднему val-QLIKE (поправка ord, rv, L0) на шагах 2-6: в выборке (qi_) и вне выборки (q_); V0 - без параметров."""
-    L = ['', 'Ранги схем: средний val-QLIKE на шагах 2-6 (поправка ord, rv, L0), в выборке -> вне выборки (параметры шага t-1 -> val шага t)',
+    L = ['', 'Ранги схем набора: средний val-QLIKE на шагах 2-6 (поправка ord, rv, L0), в выборке -> вне выборки (параметры шага t-1 -> val шага t)',
          '| h | схема | q в выборке | ранг | q вне выборки | ранг |', '|---|---|---|---|---|---|']
     for p in P:
         Rd = p['Rd']; g = Rd[Rd.design == 'single|step|B-ord|L0']
-        qi = {k: g['qi_' + k].mean() for k in SCH}; qo = {k: g['q_' + k].mean() for k in SCH}
+        qi = {k: g['qi_' + k].mean() for k in SCH if 'q_' + k in g}; qo = {k: g['q_' + k].mean() for k in qi}
         for c in ('HAR', 'XGB', 'LGB', 'HCJ'):
             qi['V0_' + c] = qo['V0_' + c] = Rd[Rd.design == f'single|V0_{c}|B-ord|L0'].q_hyb.mean()
         ri = {k: i for i, k in enumerate(sorted(qi, key=qi.get), 1)}; ro = {k: i for i, k in enumerate(sorted(qo, key=qo.get), 1)}

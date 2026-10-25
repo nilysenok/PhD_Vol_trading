@@ -16,6 +16,7 @@ import gibrid_har_spec as HS
 import gibrid_schemes as S
 import gibrid_designs as D
 import gibrid_report as RP
+import gibrid_v2sum as V2
 import gibrid_harcj as HC
 from gibrid_compute import compute
 from gibrid_io import load_boost, MAIN_REGEN
@@ -41,6 +42,8 @@ def hide(df, confirm):
 
 def run_h(h, A, harj, a, out, regen):
     hv, ht, _ = GH.har_forecasts(h, A, harj)
+    if a.boost == 'Bv2':
+        ht = ht.iloc[:0]  # тест B v2 закрыт: тестовые прогнозы не строятся
     ext = dict(hcj=HC.forecasts(h, A), state=HC.state(A))  # Д8.6 HAR-CJ и признаки состояния для гейта Д8.7
     lag = h if a.v7_lag == 'h' else int(a.v7_lag)
     rows, outs, chs, blog, ref = [], {}, {}, [], []
@@ -53,7 +56,7 @@ def run_h(h, A, harj, a, out, regen):
             ch[k + '_h'] = fl[k]
         rows.append(ch); outs[name] = (ov, ot); chs[name] = ch
 
-    for var in ['single'] + (['top5', 'seeds3'] if a.boost == 'B' else []):
+    for var in ['single'] + (['top5', 'seeds3'] if a.boost in ('B', 'Bv2') else []):
         try:
             bx, bl = load_boost(a.boost, h, regen, var)
         except FileNotFoundError as e:
@@ -92,7 +95,8 @@ def run_h(h, A, harj, a, out, regen):
         print('h', h, 'нет данных бустинга, пропуск'); return None
     R = pd.concat(rows, ignore_index=True)
     sp = HS.run(A, harj, (h,))
-    pd.DataFrame([GH.check_saved(h, ht)]).to_csv(out / f'hyb_{a.boost}_har_check_h{h}.csv', index=False)
+    if a.boost != 'Bv2':
+        pd.DataFrame([GH.check_saved(h, ht)]).to_csv(out / f'hyb_{a.boost}_har_check_h{h}.csv', index=False)
     hide(R, a.confirm).to_csv(out / f'designs_val_{a.boost}_h{h}.csv', index=False)
     pd.DataFrame(blog).to_csv(out / f'bias_factors_{a.boost}_h{h}.csv', index=False)
     pd.DataFrame(ref).to_csv(out / f'ref_{a.boost}_h{h}.csv', index=False)
@@ -115,13 +119,14 @@ def run_h(h, A, harj, a, out, regen):
     ov, ot = outs[win.design.iloc[0]]
     ov.to_parquet(out / f'hyb_{a.boost}_final_h{h}_val.parquet', index=False); ot.to_parquet(out / f'hyb_{a.boost}_final_h{h}_test.parquet', index=False)
     auto = F.groupby('family').head(1).head(5).design.tolist()  # финалисты auto: лучшие по правилу в разных семействах (step/minimax/g3/V0_*), до 5
-    return dict(h=h, Rd=Rd, F=F, win=win, ref=ref, sp=dev(sp), chs=chs, outs=outs, auto=auto)
+    return dict(h=h, Rd=Rd, F=F, win=win, ref=ref, sp=dev(sp), chs=chs, outs=outs, auto=auto, blog=blog)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--boost', required=True, choices=['P1', 'B'])
-    ap.add_argument('--out', default=str(MAIN_REGEN / 'gibrid_d8'), help='правило владельца 25.10: данные - только в общем data/ основного репо')
+    ap.add_argument('--boost', required=True, choices=['P1', 'B', 'Bv2'])
+    ap.add_argument('--features', default=None, help='Bv2: матрица признаков для HAR-J/HAR-CJ (по умолчанию <общий data/regen>/features_pit_v2.parquet)')
+    ap.add_argument('--out', default=None, help='по умолчанию <общий data/regen>/gibrid_d8/<boost> (правило владельца 25.10: данные - только в общем data/)')
     ap.add_argument('--regen', default=str(MAIN_REGEN))
     ap.add_argument('--h', type=int, nargs='*', default=[1, 5, 22], help='горизонты (по одному: --h 22)')
     ap.add_argument('--v7-lag', default='h', help="'h' (по умолчанию) = без заглядывания в цель; 1 = как в коде")
@@ -136,15 +141,17 @@ def main():
     a = ap.parse_args()
     global LO
     LO = 2 if a.dev_eval == 'oos' else 1
-    out, regen = Path(a.out), Path(a.regen)
+    out, regen = Path(a.out or MAIN_REGEN / 'gibrid_d8' / a.boost), Path(a.regen)
     out.mkdir(parents=True, exist_ok=True)
-    A, harj = GH.load_all()
+    A, harj = GH.load_pit(a.features or MAIN_REGEN / 'features_pit_v2.parquet') if a.boost == 'Bv2' else GH.load_all()
     A = HC.add_cj(A)  # Д8.6: компоненты HAR-CJ и признаки состояния (Д8.7)
     P = [p for p in (run_h(h, A, harj, a, out, regen) for h in a.h) if p]
     if not P:
         return
     cnt = RP.counter(a.devlog, sum(len(p['F']) for p in P), max(len(p['F']) for p in P))
     L = RP.lines(P, a.boost, a.v7_lag, cnt, a.etalon, a.blend, a.dev_eval)
+    if a.boost == 'Bv2':
+        L += V2.v2_summary(P)
     if a.confirm:  # один раз; критерии 1-4 на шагах 7-9 (c4 внутри 7-9). Финалист не прошёл -> следующий по правилу (М4), без перебора заново
         L += ['', 'ПОДТВЕРЖДАЮЩИЙ НАБОР (val 2022-2024): финалисты в порядке правила, затем следующие по рейтингу до первого прошедшего',
               '| h | дизайн | c1 | c2 | c3 | c4 | средн. q | итог |', '|---|---|---|---|---|---|---|---|']
