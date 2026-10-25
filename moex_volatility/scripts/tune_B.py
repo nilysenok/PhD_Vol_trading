@@ -54,7 +54,9 @@ def make_grid():  # один куб (7 измерений) для обеих м�
 def load():
     os.chdir(MV)
     fc = json.load(open('data/prepared/config.json'))['feature_cols']
-    if FEATURES:  # одна склеенная матрица того же формата (scripts/analysis/m0_features_pit.py)
+    if FEATURES:  # одна склеенная матрица того же формата (scripts/analysis/m0_features_pit*.py)
+        cfg = Path(FEATURES.replace('.parquet', '.config.json'))  # v2: свой список признаков (+ *_days_since_upd)
+        if cfg.exists(): fc = json.load(open(cfg))['feature_cols']
         ad = pd.read_parquet(FEATURES).sort_values('date').reset_index(drop=True)
         ad['year'] = pd.to_datetime(ad['date']).dt.year
         return ad, fc, [y for y in range(2017, 2026) if y in ad.year.values]

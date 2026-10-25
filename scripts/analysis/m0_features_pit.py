@@ -56,7 +56,7 @@ fa = load_features_all()
 orig = build(read("rv_moex"), read("yahoo"), read("macro"))
 sb = fa[fa.ticker == "SBER"].set_index("date")
 chk = orig.reindex(sb.index)[EXT]
-err = ((chk - sb[EXT]).abs() > 1e-7 + 1e-9 * sb[EXT].abs())  # 1e-7: шум rolling std polars/pandas & ~(chk.isna() & sb[EXT].isna())
+err = ((chk - sb[EXT]).abs() > 1e-7 + 1e-9 * sb[EXT].abs()) | (chk.isna() != sb[EXT].isna())  # 1e-7: шум rolling std
 print(f"самопроверка сборки: ячеек с расхождением {int(err.values.sum())} из {err.size}")
 assert err.values.sum() == 0
 
