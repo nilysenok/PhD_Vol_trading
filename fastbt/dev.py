@@ -46,7 +46,9 @@ def load_design(path):
 
 def make_config(design: dict, scope: str):
     from fastbt.config import Config
+    from fastbt.design import KEYS, freeze
     kw = {k: v for k, v in design.items() if k in Config.__dataclass_fields__}
+    kw["design"] = freeze({k: v for k, v in design.items() if k in KEYS})
     kw.update(SCOPES[scope])
     kw["mask_old"] = False
     return Config(**kw)

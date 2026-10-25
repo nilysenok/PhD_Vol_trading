@@ -109,11 +109,12 @@ def _c_masks(td, cat, v41):
     for thr in outer:
         for lb in grids.C_LOOKBACKS:
             for h in grids.C_HORIZONS:
-                for dr in grids.C_DIRECTION:
+                for dr in (grids.C_DIRECTION_TREND if cat == "Trend" else grids.C_DIRECTION):
                     for tf in grids.C_TERM_FILTER:
                         if tf and h == "h22":
                             continue
-                        for hy in grids.C_HYSTERESIS:
+                        for hy in (grids.C_HYSTERESIS_TREND if cat == "Trend"
+                                   else grids.C_HYSTERESIS):
                             dd.add(_c_mask(cat, pr[(h, lb)], sg[h], thr, dr, sg["h22"], sg["h1"],
                                            tf, hy, n))
                             params.append(dict(thr=thr, lookback=lb, horizon=h, direction=dr,
@@ -137,7 +138,7 @@ def _d_gates(td, annualize):
     """Затворы D в порядке V4:924-966: стандартный вариант, затем обратная волатильность."""
     sg = {h: (td.sigma[h] * np.sqrt(252.0) if annualize else td.sigma[h]) for h in grids.D_HORIZONS}
     dd, params = Dedup(), []
-    for tv in grids.D_TARGET_VOLS:
+    for tv in (grids.D_TARGET_VOLS if grids.D_STANDARD else []):
         for ml in grids.D_MAX_LEVS:
             for g in grids.D_GAMMA:
                 for vf in grids.D_VOL_FLOORS:
@@ -152,7 +153,7 @@ def _d_gates(td, annualize):
                                                        vol_floor=vf, vol_cap=vc, smooth_span=sm,
                                                        horizon=h, inverse_vol=False,
                                                        gate_threshold=th))
-    for lb in grids.D_INV_LOOKBACKS:
+    for lb in (grids.D_INV_LOOKBACKS if grids.D_INVERSE else []):
         for ml in grids.D_MAX_LEVS:
             for sm in grids.D_SMOOTH:
                 for h in grids.D_HORIZONS:

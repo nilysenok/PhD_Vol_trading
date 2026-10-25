@@ -46,11 +46,13 @@ def align_sigma(dates: np.ndarray, ticker: str) -> dict:
     out = {}
     n = len(dates)
     for h in ("h1", "h5", "h22"):
-        col = f"sigma_{h}"
-        if col not in vp.columns:
-            continue
-        vals = vp[col].values
+        # старый vpred_aligned: sigma_h*; новый σ_pred (data/regen/sigma_pred_h*_v2): sigma_pred_h*
+        col = next((c for c in (f"sigma_{h}", f"sigma_pred_{h}") if c in vp.columns), None)
         arr = np.full(n, np.nan)
+        if col is None:                 # горизонта нет в файле — NaN (дизайн «h=1»)
+            out[h] = arr
+            continue
+        vals = vp[col].values.astype(np.float64)
         idx = np.searchsorted(vp_dates, pd.to_datetime(dates), side="right") - 1
         ok = idx >= 0
         arr[ok] = vals[idx[ok]]
