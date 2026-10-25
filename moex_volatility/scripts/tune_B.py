@@ -74,17 +74,17 @@ def step_data(h, step):
     return _cache[(h, step)]
 
 
-def fit(model, pt, h, step):
+def fit(model, pt, h, step, seed=42):
     s = step_data(h, step); p = GRID.loc[(model, pt)].to_dict(); Xtp, Xvi, _ = s['X']
     if model == 'xgb':
         m = xgb.XGBRegressor(n_estimators=2000, tree_method='hist', max_depth=int(p['max_depth']), learning_rate=p['learning_rate'], subsample=p['subsample'],
                              colsample_bytree=p['colsample_bytree'], min_child_weight=p['min_child_weight'], reg_alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'],
-                             verbosity=0, random_state=42, n_jobs=1, early_stopping_rounds=50).fit(Xtp, s['ytp'], eval_set=[(Xvi, s['yvi'])], verbose=False)
+                             verbosity=0, random_state=seed, n_jobs=1, early_stopping_rounds=50).fit(Xtp, s['ytp'], eval_set=[(Xvi, s['yvi'])], verbose=False)
         bi = int(m.best_iteration)
     else:
         m = lgb.LGBMRegressor(n_estimators=2000, boosting_type='gbdt', max_depth=-1, num_leaves=int(p['num_leaves']), learning_rate=p['learning_rate'],
                               bagging_fraction=p['bagging_fraction'], bagging_freq=1, feature_fraction=p['feature_fraction'], min_data_in_leaf=int(p['min_data_in_leaf']),
-                              reg_alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'], verbosity=-1, random_state=42, n_jobs=1)
+                              reg_alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'], verbosity=-1, random_state=seed, n_jobs=1)
         m.fit(Xtp, s['ytp'], eval_set=[(Xvi, s['yvi'])], eval_metric='l2', callbacks=[lgb.early_stopping(50, verbose=False)])
         bi = int(m.best_iteration_)
     return m, s, bi
@@ -96,11 +96,36 @@ def task(a):
     return dict(model=model, h=h, step=step, point=pt, qlike_val=q, best_iteration=bi, sec=time.time() - t0)
 
 
+def extra_task(a):  # прогнозы val/test для (модель, h, шаг, точка, seed); метки rank/seed добавляются в extra()
+    m, h, s, pt, seed, kind, k = a; mod, sd, _ = fit(m, pt, h, s, seed); out = []
+    for nm, df, X, yr in (('val', sd['vi'], sd['X'][1], sd['vy']), ('test', sd['td'], sd['X'][2], sd['ty'])):
+        out.append((nm, pd.DataFrame({'date': df['date'].values, 'ticker': df['ticker'].values, 'year': yr, 'step': s, 'point': pt, 'seed': seed, kind: k,
+            'rv_actual': df[sd['t']].values, 'rv_pred': np.clip(np.exp(mod.predict(X)), 1e-10, None)})))
+    return (m, h, kind), out
+
+
+def extra(workers, tf):  # этап 2: топ-5 точек по val QLIKE и 3 seed (42,43,44) лучшей точки
+    tr = pd.read_csv(tf).drop_duplicates(['model', 'h', 'step', 'point']); tasks = []
+    for (m, h, s), g in tr.groupby(['model', 'h', 'step']):
+        top = g.sort_values('qlike_val').point.astype(int).tolist()[:5]
+        tasks += [(m, h, s, pt, 42, 'rank', r + 1) for r, pt in enumerate(top)] + [(m, h, s, top[0], sd, 'seed_k', sd) for sd in (43, 44)]
+    res = {}
+    with Pool(workers) as P:
+        for key, out in P.imap_unordered(extra_task, sorted(tasks, key=lambda t: -t[2]), chunksize=1):
+            for nm, df in out: res.setdefault((*key, nm), []).append(df)
+    for (m, h, kind, nm), L in res.items():
+        d = pd.concat(L)
+        if kind == 'rank': d.drop(columns='seed_k', errors='ignore').to_parquet(OUT / f'B_{m}_h{h}_top5_{nm}.parquet', index=False)
+        else: d.to_parquet(OUT / f'B_{m}_h{h}_seeds4344_{nm}.parquet', index=False)  # seed 42 лучшей точки = B_{m}_h{h}_{nm}.parquet
+    print('extra saved', flush=True)
+
+
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--bench', action='store_true'); ap.add_argument('--workers', type=int, default=9)
+    ap = argparse.ArgumentParser(); ap.add_argument('--bench', action='store_true'); ap.add_argument('--extra', action='store_true'); ap.add_argument('--workers', type=int, default=9)
     a = ap.parse_args(); OUT.mkdir(parents=True, exist_ok=True)
     GRID.reset_index().to_csv(OUT / 'B_grid_100.csv', index=False)
     tf = OUT / 'B_trials.csv'
+    if a.extra: return extra(a.workers, tf)
     if a.bench:  # 10 задач на шаге 2025 + оценка полного времени
         rng = np.random.default_rng(0); tasks = [(MODELS[i % 2], HS[i % 3], 9, int(rng.integers(N_PTS))) for i in range(10)]
         t0 = time.time()
