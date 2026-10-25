@@ -26,8 +26,9 @@ def boost(man, ref_dir, prefix='B_'):
     for mh, keys in man['boost'].items():
         m, h = mh.split('_')
         for s in ('val', 'test'):
-            f = Path(ref_dir) / f'{prefix}{m}_h{h}_{s}.parquet'
-            if f.exists():
+            nm = f'{prefix}{m}_h{h}_{s}.parquet'
+            f = next((x for x in (Path(ref_dir) / nm, Path(ref_dir) / 'test_locked' / nm) if x.exists()), None)
+            if f is not None:
                 rows.append(_cmp(f'{f.name}', _pred(s, 'boost', keys), pd.read_parquet(f), man['steps']))
     return rows
 

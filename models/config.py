@@ -9,9 +9,11 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 MV = ROOT / 'moex_volatility'
 ANALYSIS = ROOT / 'scripts/analysis'
-DATA_ROOT = MV / 'data/prepared'
-CACHE = ROOT / 'data/models_cache'
-RUN = ROOT / 'data/run'
+# правило владельца 25.10 18:20: данные, кэши и артефакты — только в общем data/ основного репо (копии агентов — только код)
+MAIN = Path(os.environ.get('MODELS_MAIN', '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading'))
+DATA_ROOT = MAIN / 'moex_volatility/data/prepared'
+CACHE = MAIN / 'data/models_cache'
+RUN = MAIN / 'data/run'
 FINAL = ROOT / 'docs/otchety/FINAL_DESIGN.md'
 TABLES = ROOT / 'docs/tables'
 HS, MODELS = (1, 5, 22), ('xgb', 'lgbm')
@@ -20,9 +22,13 @@ DEV = 6  # разработочный набор: шаги 1-6 (val 2016-2021); 
 WFF = MV / 'scripts/walk_forward_full.py'
 TUNE_B = MV / 'scripts/tune_B.py'
 # протокол B (tune_B.py): ES по l2 на ln(rv), patience 50, max_bin по умолчанию библиотеки (lgb 255, xgb 256)
-B_TRAIN = {'n_estimators': 2000, 'es_metric': 'l2', 'patience': 50, 'max_bin': None}
-# конвейер по умолчанию (задание 25.10): ES по QLIKE, patience 30, max_bin 63 (проверка — docs/otchety/2026-10-25_models_pipeline.md)
-DEFAULT_TRAIN = {'n_estimators': 2000, 'es_metric': 'qlike', 'patience': 30, 'max_bin': 63}
+B_TRAIN = {'n_estimators': 2000, 'es_metric': 'l2', 'patience': 50, 'max_bin': None, 'force_col_wise': False, 'float32': False}
+# протокол B v2 (tune_Bv2.py, финальное обучение): models/v2.py
+B_V2_TRAIN = {'protocol': 'b_v2', 'n_estimators': 1000, 'es_metric': 'l2', 'patience': 30, 'max_bin': 63, 'force_col_wise': True, 'float32': True,
+              'exclude_features': 'data/regen/Bv2_excluded_features.csv'}
+# конвейер по умолчанию (задание 25.10): ES по QLIKE, patience 30; max_bin 255 — проверка 63 на шагах 1-6 не прошла (хуже на 1,5% в среднем,
+# до 7,5% у lgbm h=22; docs/otchety/2026-10-25_models_pipeline.md); ускорения 25.10 18:25: force_col_wise, float32
+DEFAULT_TRAIN = {'n_estimators': 2000, 'es_metric': 'qlike', 'patience': 30, 'max_bin': 255, 'force_col_wise': True, 'float32': True}
 
 if str(ANALYSIS) not in sys.path:
     sys.path.insert(0, str(ANALYSIS))
@@ -46,6 +52,11 @@ def space_B():
         if isinstance(n, ast.Assign) and getattr(n.targets[0], 'id', '') == 'SPACE':
             return ast.literal_eval(n.value)
     raise RuntimeError('SPACE не найден в tune_B.py')
+
+
+def data_path(p):
+    """Относительные пути данных в дизайне — от основного репо (MAIN), абсолютные — как есть."""
+    return Path(p) if os.path.isabs(str(p)) else MAIN / p
 
 
 def blob_hash(path):

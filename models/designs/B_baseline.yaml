@@ -5,12 +5,14 @@ horizons:
 - 1
 - 5
 - 22
-source: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/.claude/worktrees/agent-afcfa1385cb335411/data/regen/B_selected.csv
+source: .claude/worktrees/agent-afcfa1385cb335411/data/regen/B_selected.csv
 train:
   n_estimators: 2000
   es_metric: l2
   patience: 50
   max_bin: null
+  force_col_wise: false
+  float32: false
 hybrid:
   variants:
   - single

@@ -6,7 +6,7 @@ import json, logging, os, time
 from concurrent.futures import ProcessPoolExecutor, FIRST_COMPLETED, Future, wait
 import multiprocessing as mp
 import pandas as pd
-from . import cache as K, config as C, data as D, hybrid as HY, train as TR
+from . import cache as K, config as C, data as D, hybrid as HY, levers as LV, train as TR, v2 as V2
 
 log = logging.getLogger('models')
 
@@ -58,20 +58,33 @@ def run(design, root, workers, confirm=False, smoke=False):
     hs = list(design.get('horizons', C.HS))
     src = D.source(design, root)
     dk = D.stage_data(src, T)
-    fk = D.stage_features(dk, [(h, s) for h in hs for s in st], T)
-    tr, boost = design['train'], {}
-    tasks = []
+    tr, boost, lv = design['train'], {}, dict(design.get('levers') or {})
+    v2 = tr.get('protocol') == 'b_v2'
+    pairs = {(h, s) for h in hs for s in st} | ({(h, 1) for h in hs} if v2 else set())
+    if lv.get('h1_feature'):
+        pairs |= {(1, s) for s in st} | {(1, 1)}
+    fk = D.stage_features(dk, sorted(pairs), T)
+    fc = K.meta('data', dk)['fc']
+    tasks, avg = [], lv.pop('avg_prev_step', False)  # Д8.4 — постобработка, не входит в ключ обучения
     ext = design.get('boost_external')
     for h in hs:
         for m in C.MODELS:
             if ext:
-                boost[(m, h)] = import_external(str(C.ROOT / ext[m]), h, st, T)
+                boost[(m, h)] = import_external(str(C.data_path(ext[m])), h, st, T)
                 continue
             boost[(m, h)] = [None] * len(st)
             for i, s in enumerate(st):
-                tasks.append(dict(dk=dk, fk=fk[(h, s)], model=m, h=h, step=s, params=C.step_params(design, m, h, s), train=tr,
-                                  seed=int(design['seed']), idx=i))
-    tasks.sort(key=lambda t: (-t['step'], t['model'] != 'xgb', -t['h']))  # долгие (поздние шаги, xgb) — первыми
+                t = dict(dk=dk, fk=fk[(h, s)], model=m, h=h, step=s, params=C.step_params(design, m, h, s), train=tr,
+                         seed=int(design['seed']), idx=i)
+                if v2:
+                    t.update(keep=V2.keep_cols(tr.get('exclude_features'), fc, m, h, s), fk1=fk[(h, 1)])
+                if lv:
+                    t['levers'] = lv
+                if lv.get('h1_feature') and h != 1:
+                    t['h1task'] = dict(dk=dk, fk=fk[(1, s)], model=m, h=1, step=s, params=C.step_params(design, m, 1, s), train=tr,
+                                       seed=int(design['seed']), keep=V2.keep_cols(tr.get('exclude_features'), fc, m, 1, s), fk1=fk[(1, 1)])
+                tasks.append(t)
+    tasks.sort(key=lambda t: (t['model'] != 'lgbm', -t['step'], -t['h']))  # длинные первыми: LightGBM раньше XGBoost, поздние шаги раньше (25.10)
     ns, hcfg = len(st), design['hybrid']
     sk = HY.spec_key(dk, ns)
     res, fut, wall = [], {}, {}
@@ -95,7 +108,7 @@ def run(design, root, workers, confirm=False, smoke=False):
                 r = f.result()
                 stg = {'boost': 'прогнозы', 'har': 'HAR-J', 'har_spec': 'HAR-J', 'hybrid': 'гибрид'}[kind]
                 wall[stg] = time.time() - t0
-                T.add(stg, r.get('sec_train', 0) if kind == 'boost' else r.get('sec', 0), hit=r['hit'])
+                T.add(stg, 0 if r['hit'] else (r.get('sec_train', 0) if kind == 'boost' else r.get('sec', 0)), hit=r['hit'])
                 if kind == 'boost':
                     boost[(info['model'], info['h'])][info['idx']] = r['key']
                     left[info['h']] -= 1
@@ -108,6 +121,9 @@ def run(design, root, workers, confirm=False, smoke=False):
                     hyb[info] = r['key']
                 for h in hs:  # гибрид h — как только готовы HAR-J(h) и все обучения h
                     if h in hk and left[h] == 0 and h not in hyb and ('hybrid', h) not in fut.values():
+                        if avg and not ext:
+                            for m in C.MODELS:
+                                boost[(m, h)] = LV.avg_prev(boost[(m, h)], st)
                         t = dict(h=h, har=hk[h], boost={m: boost[(m, h)] for m in C.MODELS}, cfg=hcfg)
                         nf = P.go(HY.run_hybrid, t, K.done('hybrid', HY.hyb_key(h, t['har'], t['boost'], hcfg)))
                         fut[nf] = ('hybrid', h); pending.add(nf)

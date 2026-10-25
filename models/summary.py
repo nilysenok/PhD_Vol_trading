@@ -66,3 +66,25 @@ def table(man, scope='val', confirm=False):
             r[nm] = round(float(v.mean()), 4) if len(v) else np.nan
         out.append(r)
     return pd.DataFrame(out)
+
+
+def compare(base, others):
+    """Правило рычагов 25.10: остаётся при улучшении QLIKE разработочного набора >= 1% к базе или снятии нарушения критериев (по h).
+    base/others — манифесты dev-прогонов. Строки: одиночные XGBoost/LightGBM и гибрид по правилу."""
+    def pick(man):
+        t = table(man).set_index(['h', 'модель'])['разраб. 2016-2021']
+        fin = {h: hyb_tables(man, h)[1].iloc[0] for h in map(int, man['hybrid'])}
+        return t, fin
+    tb, fb = pick(base)
+    rows = []
+    for man in others:
+        to, fo = pick(man)
+        for h in sorted(fo):
+            rb = {m.split(' (')[0]: v for (hh, m), v in tb.items() if hh == h}
+            ro = {m.split(' (')[0]: v for (hh, m), v in to.items() if hh == h}
+            gain = {m: (rb[m] - ro[m]) / rb[m] for m in ('XGBoost', 'LightGBM', 'Гибрид по правилу') if m in rb and m in ro}
+            keep = gain.get('Гибрид по правилу', 0) >= 0.01 or fo[h].n_failed < fb[h].n_failed
+            rows.append({'h': h, 'дизайн': man['design'], **{f'Δ% {m}': round(100 * g, 2) for m, g in gain.items()},
+                         'нарушено база': fb[h].failed if isinstance(fb[h].failed, str) else '-', 'нарушено': fo[h].failed if isinstance(fo[h].failed, str) else '-',
+                         'гибрид': fo[h].design, 'остаётся': 'да' if keep else 'нет'})
+    return pd.DataFrame(rows)

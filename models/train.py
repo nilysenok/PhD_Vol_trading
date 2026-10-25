@@ -11,16 +11,18 @@ warnings.filterwarnings('ignore')  # как tune_B.py / walk_forward_full.py; л
 _ds = {}  # кэш загруженных Dataset в процессе воркера
 
 
-def task_key(fk, model, params, train, seed):
-    return K.key('boost', features=fk, model=model, params=params, train=train, seed=seed, code=C.code_hash('train.py', 'data.py'))
+def task_key(fk, model, params, train, seed, prune=None, **ex):
+    extra = {'prune': prune} if prune else {}
+    code = C.code_hash('train.py', 'data.py', *(('v2.py', 'levers.py') if train.get('protocol') == 'b_v2' else ()))
+    return K.key('boost', features=fk, model=model, params=params, train=train, seed=seed, code=code, **extra, **ex)
 
 
 def _qlike_np(rv, pred_ln):
     return float(C.qlike(rv, np.clip(np.exp(pred_ln), 1e-10, None)))
 
 
-def _load(dk, fk, model, max_bin):
-    dsk, built = D.build_dataset(dk, fk, model, max_bin)
+def _load(dk, fk, model, max_bin, f32=False):
+    dsk, built = D.build_dataset(dk, fk, model, max_bin, f32)
     if dsk not in _ds:
         _ds.clear()
         d = K.stage_dir('dataset', dsk)
@@ -39,8 +41,11 @@ def _load(dk, fk, model, max_bin):
     return _ds[dsk], built
 
 
-def fit(model, p, train, seed, dtr, dva, rv_vi):
+def fit(model, p, train, seed, dtr, dva, rv_vi, prune=None):
+    """prune=(итерация, порог QLIKE): снять, если val-QLIKE на этой итерации выше порога (правило 25.10: хуже лучшего на 20%)."""
     n, pat, es, mb = int(train['n_estimators']), int(train['patience']), train['es_metric'], train['max_bin']
+    assert prune is None or es == 'qlike', 'отсечение — по QLIKE-метрике ранней остановки'
+    pr = []
     if model == 'xgb':
         import xgboost as xgb
         prm = dict(objective='reg:squarederror', tree_method='hist', max_depth=int(p['max_depth']), learning_rate=p['learning_rate'],
@@ -52,9 +57,15 @@ def fit(model, p, train, seed, dtr, dva, rv_vi):
         if es == 'qlike':
             prm['disable_default_eval_metric'] = 1
             kw['custom_metric'] = lambda pr, dm: ('qlike', _qlike_np(rv_vi, pr))
-        b = xgb.train(prm, dtr, n, evals=[(dva, 'val')], early_stopping_rounds=pat, verbose_eval=False, **kw)
+        class Prune(xgb.callback.TrainingCallback):
+            def after_iteration(self, model, epoch, log):
+                if prune and epoch == prune[0] - 1 and log['val']['qlike'][-1] > prune[1]:
+                    pr.append(epoch)
+                    return True
+                return False
+        b = xgb.train(prm, dtr, n, evals=[(dva, 'val')], early_stopping_rounds=pat, verbose_eval=False, callbacks=[Prune()], **kw)
         bi = int(b.best_iteration)
-        return (lambda X: b.predict(xgb.DMatrix(X, nthread=1), iteration_range=(0, bi + 1))), bi
+        return (lambda X: b.predict(xgb.DMatrix(X, nthread=1), iteration_range=(0, bi + 1))), bi, bool(pr)
     import lightgbm as lgb
     prm = dict(objective='regression', boosting_type='gbdt', max_depth=-1, num_leaves=int(p['num_leaves']), learning_rate=p['learning_rate'],
                bagging_fraction=p['bagging_fraction'], bagging_freq=1, feature_fraction=p['feature_fraction'],
@@ -62,34 +73,60 @@ def fit(model, p, train, seed, dtr, dva, rv_vi):
                seed=seed, num_threads=1, metric='l2')
     if mb is not None:
         prm['max_bin'] = int(mb)
+    if train.get('force_col_wise'):
+        prm['force_col_wise'] = True  # ускорение 25.10 (не в протоколе B)
     kw = {}
     if es == 'qlike':
         prm['metric'] = 'None'
         kw['feval'] = lambda pr, ds: ('qlike', _qlike_np(rv_vi, pr), False)
-    b = lgb.train(prm, dtr, n, valid_sets=[dva], callbacks=[lgb.early_stopping(pat, verbose=False)], **kw)
-    return (lambda X: b.predict(X)), int(b.best_iteration)  # predict использует best_iteration
+    def lprune(env):
+        if prune and env.iteration == prune[0] - 1 and env.evaluation_result_list[0][2] > prune[1]:
+            pr.append(env.iteration)
+            raise lgb.callback.EarlyStopException(env.iteration, env.evaluation_result_list)
+    cb = [lgb.early_stopping(pat, verbose=False)] + ([lprune] if prune else [])
+    b = lgb.train(prm, dtr, n, valid_sets=[dva], callbacks=cb, **kw)
+    return (lambda X: b.predict(X)), int(b.best_iteration), bool(pr)  # predict использует best_iteration
 
 
 def run_task(t):
-    """t: dict(dk, fk, model, h, step, params, train, seed[, tag]). Результат кэшируется по ключу обучения."""
-    k = task_key(t['fk'], t['model'], t['params'], t['train'], t['seed'])
+    """t: dict(dk, fk, model, h, step, params, train, seed[, tag, prune, keep, fk1, levers, h1task, save_all]). Кэш по ключу обучения;
+    прогнозы сохраняются и у снятых отсечением (модель на момент снятия, флаг pruned). train.protocol == 'b_v2' — обучение models/v2.py."""
+    ex = {x: t[x] for x in ('keep', 'levers', 'h1task') if t.get(x)}
+    k = task_key(t['fk'], t['model'], t['params'], t['train'], t['seed'], t.get('prune'), **ex)
     jp = K.pred_path('val', 'boost', k).with_suffix('.json')
-    if jp.exists():
+    ap = K.stage_dir('allpred', k) / 'pred.npy'
+    if jp.exists() and (not t.get('save_all') or ap.exists()):
         return {**json.loads(jp.read_text()), 'hit': True}
     t0 = time.time()
     fd = K.stage_dir('features', t['fk'])
-    ids_vi, ids_td = pd.read_parquet(fd / 'ids_vi.parquet'), pd.read_parquet(fd / 'ids_td.parquet')
-    (dtr, dva), built = _load(t['dk'], t['fk'], t['model'], t['train']['max_bin'])
-    t1 = time.time()
-    pred, bi = fit(t['model'], t['params'], t['train'], t['seed'], dtr, dva, ids_vi['rv_actual'].values)
+    ids = {nm: pd.read_parquet(fd / f'ids_{nm}.parquet') for nm in ('vi', 'td', 'nx')}
+    v2 = t['train'].get('protocol') == 'b_v2'
+    if v2:
+        from . import levers as LV, v2 as V2
+        extra, yoff = LV.prepare(t)
+        dtr, dva, Xs = V2.datasets(t, extra, yoff)
+        built, t1 = True, time.time()
+        pred, bi, _ = V2.fit(t['model'], t['params'], t['seed'], dtr, dva, t['train'])
+        pruned, off = False, yoff or {}
+    else:
+        f32 = bool(t['train'].get('float32'))
+        (dtr, dva), built = _load(t['dk'], t['fk'], t['model'], t['train']['max_bin'], f32)
+        t1 = time.time()
+        pred, bi, pruned = fit(t['model'], t['params'], t['train'], t['seed'], dtr, dva, ids['vi']['rv_actual'].values, t.get('prune'))
+        Xs, off = {nm: D.X_rows(t['dk'], t['fk'], nm, f32) for nm in ('vi', 'td', 'nx')}, {}
     t2 = time.time()
     out = {}
-    for scope, ids, nm in (('val', ids_vi, 'vi'), ('test', ids_td, 'td')):
-        df = ids.assign(rv_pred=np.clip(np.exp(pred(D.X_rows(t['dk'], t['fk'], nm))), 1e-10, None))
-        K.write_atomic(df, K.pred_path(scope, 'boost', k))
-        out[scope] = df
-    q = float(C.qlike(out['val']['rv_actual'].values, out['val']['rv_pred'].values))
-    res = dict(key=k, model=t['model'], h=t['h'], step=t['step'], best_iteration=bi, qlike_val=q, tag=t.get('tag'),
+    for scope, kind, nm in (('val', 'boost', 'vi'), ('test', 'boost', 'td'), ('test', 'boost_next', 'nx')):
+        p = pred(Xs[nm]) + off.get(nm, 0) if len(Xs[nm]) else np.zeros(0)
+        out[nm] = ids[nm].assign(rv_pred=np.clip(np.exp(p), 1e-10, None))
+        K.write_atomic(out[nm], K.pred_path(scope, kind, k))
+    if t.get('save_all'):  # ln-прогноз на всех строках матрицы (признак Д8.6)
+        X = np.load(K.stage_dir('data', t['dk']) / 'X.npy', mmap_mode='r')
+        X = np.ascontiguousarray(X[:, t['keep']]).astype(np.float32) if v2 else np.asarray(X, dtype=np.float32 if t['train'].get('float32') else None)
+        ap.parent.mkdir(parents=True, exist_ok=True)
+        np.save(ap, pred(X))
+    q = float(C.qlike(out['vi']['rv_actual'].values, out['vi']['rv_pred'].values))
+    res = dict(key=k, model=t['model'], h=t['h'], step=t['step'], best_iteration=bi, qlike_val=q, pruned=pruned, tag=t.get('tag'),
                sec_dataset=t1 - t0, sec_train=t2 - t1, sec_total=time.time() - t0, dataset_built=built, pid=os.getpid())
     tmp = jp.with_suffix(f'.json.{os.getpid()}')
     tmp.write_text(json.dumps(res))

@@ -17,9 +17,9 @@ def source(design, cli_root=None):
     data.har_features). --data-root (детектор утечек) подменяет data.features."""
     d = dict(design.get('data') or {})
     f = cli_root or d.get('features') or C.DATA_ROOT
-    f = Path(f) if os.path.isabs(str(f)) else C.ROOT / f
+    f = C.data_path(f)
     cfg = d.get('config') or (f / 'config.json' if f.is_dir() else f.with_name(f.stem + '.config.json'))
-    cfg = Path(cfg) if os.path.isabs(str(cfg)) else C.ROOT / cfg
+    cfg = C.data_path(cfg)
     tg = {int(h): str(c) for h, c in (d.get('target') or {}).items()}
     return dict(features=str(f), config=str(cfg), target={h: tg.get(h, f'rv_target_h{h}') for h in C.HS}, har_features=d.get('har_features'))
 
@@ -103,13 +103,14 @@ def stage_features(dk, pairs, T):
                 tr = a[a.year < ty]
                 vy = sorted(tr.year.unique())[-1]
                 tp, vi, td = tr[tr.year != vy].dropna(subset=[t]), tr[tr.year == vy].dropna(subset=[t]), a[a.year == ty].dropna(subset=[t])
+                nx = a[a.year == ty + 1].dropna(subset=[t])  # год после теста — для Д8.4 (модель шага t на тест-году шага t+1)
                 d = K.stage_dir('features', keys[(h, step)])
                 d.mkdir(parents=True, exist_ok=True)
-                for nm, df in (('tp', tp), ('vi', vi), ('td', td)):
+                for nm, df in (('tp', tp), ('vi', vi), ('td', td), ('nx', nx)):
                     np.save(d / f'idx_{nm}.npy', df.index.values)
                 np.save(d / 'ytp.npy', np.log(tp[t].values + 1e-10))
                 np.save(d / 'yvi.npy', np.log(vi[t].values + 1e-10))
-                for nm, df, yr in (('vi', vi, vy), ('td', td, ty)):
+                for nm, df, yr in (('vi', vi, vy), ('td', td, ty), ('nx', nx, ty + 1)):
                     pd.DataFrame({'date': df['date'].values, 'ticker': df['ticker'].values, 'year': yr, 'step': step,
                                   'rv_actual': df[t].values}).to_parquet(d / f'ids_{nm}.parquet', index=False)
                 K.mark('features', keys[(h, step)], h=h, step=step, val_year=int(vy), test_year=ty, data=dk)
@@ -117,14 +118,15 @@ def stage_features(dk, pairs, T):
     return keys
 
 
-def dataset_key(fk, model, max_bin):
-    return K.key('dataset', features=fk, model=model, max_bin=max_bin if model == 'lgbm' else None, code=C.code_hash('data.py'))
+def dataset_key(fk, model, max_bin, f32=False):
+    return K.key('dataset', features=fk, model=model, max_bin=max_bin if model == 'lgbm' else None, f32=bool(f32), code=C.code_hash('data.py'))
 
 
-def X_rows(dk, fk, nm, _mm={}):
+def X_rows(dk, fk, nm, f32=False, _mm={}):
     if dk not in _mm:
         _mm[dk] = np.load(K.stage_dir('data', dk) / 'X.npy', mmap_mode='r')
-    return np.ascontiguousarray(_mm[dk][np.load(K.stage_dir('features', fk) / f'idx_{nm}.npy')])
+    X = np.ascontiguousarray(_mm[dk][np.load(K.stage_dir('features', fk) / f'idx_{nm}.npy')])
+    return X.astype(np.float32) if f32 else X  # float32 — ускорение 25.10 (не для протокола B: меняет бины lightgbm)
 
 
 def lgb_params(max_bin):
@@ -134,15 +136,15 @@ def lgb_params(max_bin):
     return p
 
 
-def build_dataset(dk, fk, model, max_bin):
+def build_dataset(dk, fk, model, max_bin, f32=False):
     """В воркере; запись атомарная (tmp + rename), повторная сборка тем же ключом безопасна."""
-    k = dataset_key(fk, model, max_bin)
+    k = dataset_key(fk, model, max_bin, f32)
     if K.done('dataset', k):
         return k, False
     d = K.stage_dir('dataset', k)
     d.mkdir(parents=True, exist_ok=True)
     fd = K.stage_dir('features', fk)
-    Xtp, Xvi, ytp, yvi = X_rows(dk, fk, 'tp'), X_rows(dk, fk, 'vi'), np.load(fd / 'ytp.npy'), np.load(fd / 'yvi.npy')
+    Xtp, Xvi, ytp, yvi = X_rows(dk, fk, 'tp', f32), X_rows(dk, fk, 'vi', f32), np.load(fd / 'ytp.npy'), np.load(fd / 'yvi.npy')
     pid = os.getpid()
     if model == 'lgbm':
         import lightgbm as lgb
@@ -156,5 +158,5 @@ def build_dataset(dk, fk, model, max_bin):
         for nm, X, y in (('tr', Xtp, ytp), ('va', Xvi, yvi)):
             xgb.DMatrix(X, y, nthread=1).save_binary(str(d / f'{nm}.dm.{pid}'), silent=True)
             os.replace(d / f'{nm}.dm.{pid}', d / f'{nm}.dm')
-    K.mark('dataset', k, model=model, max_bin=max_bin, features=fk)
+    K.mark('dataset', k, model=model, max_bin=max_bin, f32=bool(f32), features=fk)
     return k, True
