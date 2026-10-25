@@ -41,3 +41,6 @@ data/run/
 
 # Замер стратегий: песочница и логи
 data/strat_zamer/
+
+# fastbt: кэши и извлечённый старый код
+data/fastbt/
