@@ -39,22 +39,39 @@ def compute(hv, ht, h, bx, bl, code, lag, log, ext):
         w1, meth, ml = S.v1(vs)
         w10, lam10 = D8.v10(vs)
         W = {'V1_Adaptive': np.array(w1), **W, 'V10_MinQ': w10}
-        pv = {k: S.blend(w, vs) for k, w in W.items()}; pt = {k: S.blend(w, ts) for k, w in W.items()}
+        F = {k: _fixed(w) for k, w in W.items()}  # схема -> применение параметров шага к любому набору строк
         hl = min(D8.HL, key=lambda x: S.qlike(y, vs[f'v7hl{x}'].values))  # Д8.3: полураспад по val-году шага
         for k, c, p in (('V6_TrimmedW', 'w6', 'v6'), ('V7_Rolling_W20', 'w7', 'v7'), ('V7_HalfLife', f'w7hl{hl}', f'v7hl{hl}')):
-            pv[k], pt[k] = vs[p].values, ts[p].values
-            W[k] = vs[[c + 'h', c + 'x', c + 'l']].mean().values
+            F[k] = _cols(p, c)
         th, tau = D8.v11_fit(vs)
         g = D8.gate_fit(vs)
-        for k, fn in (('V11_Gap', lambda d: D8.v11_apply(d, th, tau)), ('Med3', D8.med3), ('Gate_L2', lambda d: D8.gate_apply(d, g))):
-            (pv[k], Wv), (pt[k], _) = fn(vs), fn(ts)
-            W[k] = Wv.mean(axis=0)  # средние эффективные веса val-года (для критерия скачков c4)
+        F['V11_Gap'] = lambda d, th=th, tau=tau: D8.v11_apply(d, th, tau)
+        F['Med3'] = D8.med3
+        F['Gate_L2'] = lambda d, g=g: D8.gate_apply(d, g)
         base = dict(step=st, test_year=int(ts['year'].iloc[0]), val_year=int(vs['year'].iloc[0]), v1_ml=ml, v1_method=meth,
                     regime=reg, regime_ratio=ratio, v1_w_har=w1[0], q_har=S.qlike(y, vs['har'].values), q_har_raw=S.qlike(y, vs['har_raw'].values),
                     q_xgb_single=S.qlike(y, vs['xgb'].values), q_lgb_single=S.qlike(y, vs['lgb'].values), q_hcj_single=S.qlike(y, vs['hcj'].values),
                     v7_hl=hl, v10_lam=lam10, v11_theta=th, v11_tau=tau, gate_b=' '.join(f'{b:.3f}' for b in g['b']))
         iq = 1.0 / np.array([base['q_har'], base['q_xgb_single'], base['q_lgb_single']])  # Г3: веса по обратному val-QLIKE компонент
-        W['G3_InvQ'] = iq / iq.sum(); pv['G3_InvQ'], pt['G3_InvQ'] = S.blend(W['G3_InvQ'], vs), S.blend(W['G3_InvQ'], ts)
+        F['G3_InvQ'] = _fixed(iq / iq.sum())
+        pv, pt, W = {}, {}, {}
+        for k, f in F.items():
+            (pv[k], w), pt[k] = f(vs), f(ts)[0]
+            W[k] = w.mean(axis=0) if np.ndim(w) == 2 else np.asarray(w, dtype=float)  # построчные веса -> средние val-года (для c4)
         q = {k: S.qlike(y, p) for k, p in pv.items()}
-        res.append(dict(q=q, W=W, pv=pv, pt=pt, vs=vs, ts=ts, base=base))
+        res.append(dict(q=q, W=W, pv=pv, pt=pt, vs=vs, ts=ts, base=base, F=F, po=None, qo=None))
+    # оценка разработочного набора вне выборки (решение дирижёра 25.10): параметры шага t-1 -> val-год шага t; шаг 1 - без оценки
+    for prv, r in zip(res[:-1], res[1:]):
+        y = r['vs']['rv_actual'].values
+        r['po'] = {k: f(r['vs'])[0] for k, f in prv['F'].items()}
+        r['qo'] = {k: S.qlike(y, p) for k, p in r['po'].items()}
     return res
+
+
+def _fixed(w):
+    w = np.asarray(w, dtype=float)
+    return lambda d: (S.blend(w, d), w)
+
+
+def _cols(p, c):
+    return lambda d: (d[p].values, d[[c + 'h', c + 'x', c + 'l']].values)

@@ -21,6 +21,11 @@ from gibrid_compute import compute
 from gibrid_io import load_boost, MAIN_REGEN
 
 DEV = 6  # разработочный набор: шаги 1-6 (val 2016-2021); подтверждающий: шаги 7-9 (val 2022-2024), скрыт без --confirm
+LO = 2  # --dev-eval oos (по умолчанию): метрика вне выборки, шаг 1 исключён -> шаги 2-6 (val 2017-2021); --dev-eval in: LO = 1
+
+
+def dev(df):
+    return df[(df.step >= LO) & (df.step <= DEV)]
 CR = ('c1', 'c2', 'c3', 'c4')
 LAMS = (0.0, 0.25, 0.5)
 
@@ -30,7 +35,7 @@ def hide(df, confirm):
     if confirm:
         return df
     df = df.copy()
-    df.loc[df.step > DEV, [c for c in df.columns if c.startswith('q_') or c == 'ratio_har']] = np.nan
+    df.loc[df.step > DEV, [c for c in df.columns if c.startswith(('q_', 'qi_')) or c == 'ratio_har']] = np.nan
     return df
 
 
@@ -42,7 +47,7 @@ def run_h(h, A, harj, a, out, regen):
 
     def add(ch, ov, ot, name):
         ch.insert(0, 'design', name)
-        fl = D.flags(ch[ch.step <= DEV])  # критерии - только на разработочном наборе
+        fl = D.flags(dev(ch))  # критерии - только на разработочном наборе (шаги LO..6)
         ch['ratio_har'] = ch.q_hyb / ch.q_har
         for k in CR + ('worst_ratio', 'worst_ratio_single', 'max_w_jump', 'ml_switches'):
             ch[k + '_h'] = fl[k]
@@ -70,16 +75,16 @@ def run_h(h, A, harj, a, out, regen):
                 for lam in LAMS:
                     rs = D.shrink(res, lam)
                     for sel in ('step', 'minimax', 'g3'):
-                        add(*D.select(rs, sel, h), f'{var}|{sel}|{lab}|L{lam:g}{sfx}')
+                        add(*D.select(rs, sel, h, a.dev_eval), f'{var}|{sel}|{lab}|L{lam:g}{sfx}')
                 if bm == a.blend[0]:  # V0 не зависит от смешивания - один раз
                     for comp in ('har', 'xgb', 'lgb', 'hcj'):
                         add(*D.v0(res, comp, h), f'{var}|V0_{comp.upper()}|{lab}|L0')
         S.MODE = a.blend[0]
         if var == 'single':  # справка (разработочный набор): in-sample Б0.1 и V7 W20 с lag=1 (исходная реализация); шаги, где V7 W20 - лучшая из V1-V7
-            c1, c0, cl = (D.select(compute(hv, ht, h, bx, bl, b, l, [], ext), 'step', h)[0] for b, l in (('ord_in', lag), ('bez', lag), ('bez', 1)))
-            m = lambda c, col: c.loc[c.step <= DEV, col].mean()
+            c1, c0, cl = (D.select(compute(hv, ht, h, bx, bl, b, l, [], ext), 'step', h, a.dev_eval)[0] for b, l in (('ord_in', lag), ('bez', lag), ('bez', 1)))
+            m = lambda c, col: dev(c)[col].mean()
             old = ['q_V1_Adaptive', 'q_V2_MultiVal', 'q_V3_Regime', 'q_V4_Shrinkage', 'q_V5_Combined', 'q_V6_TrimmedW', 'q_V7_Rolling_W20']
-            v7s = lambda c: str([s for s, k in zip(c.step, c[old].idxmin(axis=1)) if k == 'q_V7_Rolling_W20' and s <= DEV])
+            v7s = lambda c: str([s for s, k in zip(c.step, c[old].idxmin(axis=1)) if k == 'q_V7_Rolling_W20' and LO <= s <= DEV])
             ref.append(dict(h=h, hyb_B01_insample=m(c1, 'q_hyb'), har_B01_insample=m(c1, 'q_har'), hyb_bez_lag_h=m(c0, 'q_hyb'),
                             V7_lag_h=m(c0, 'q_V7_Rolling_W20'), V7_lag1_orig=m(cl, 'q_V7_Rolling_W20'), hyb_bez_lag1=m(cl, 'q_hyb'),
                             V7_steps_lag_h=v7s(c0), V7_steps_lag1=v7s(cl)))
@@ -97,7 +102,7 @@ def run_h(h, A, harj, a, out, regen):
     for nm, tag in ((code, f'hyb_{a.boost}_h{h}'),):
         outs[nm][0].to_parquet(out / f'{tag}_val.parquet', index=False); outs[nm][1].to_parquet(out / f'{tag}_test.parquet', index=False)
     # правило выбора: прошедшие все критерии -> мин. средний val-QLIKE; иначе мин. нарушенных, затем мин. QLIKE; всё на 2016-2021
-    Rd = R[R.step <= DEV]
+    Rd = dev(R)
     F = Rd.groupby('design', sort=False).agg(**{k: (k + '_h', 'first') for k in CR}, mean_q=('q_hyb', 'mean')).reset_index()
     F['h'] = h
     F['failed'] = F.apply(lambda r: ','.join(k for k in CR if not r[k]), axis=1)
@@ -110,7 +115,7 @@ def run_h(h, A, harj, a, out, regen):
     ov, ot = outs[win.design.iloc[0]]
     ov.to_parquet(out / f'hyb_{a.boost}_final_h{h}_val.parquet', index=False); ot.to_parquet(out / f'hyb_{a.boost}_final_h{h}_test.parquet', index=False)
     auto = F.groupby('family').head(1).head(5).design.tolist()  # финалисты auto: лучшие по правилу в разных семействах (step/minimax/g3/V0_*), до 5
-    return dict(h=h, Rd=Rd, F=F, win=win, ref=ref, sp=sp[sp.step <= DEV], chs=chs, outs=outs, auto=auto)
+    return dict(h=h, Rd=Rd, F=F, win=win, ref=ref, sp=dev(sp), chs=chs, outs=outs, auto=auto)
 
 
 def main():
@@ -122,11 +127,15 @@ def main():
     ap.add_argument('--v7-lag', default='h', help="'h' (по умолчанию) = без заглядывания в цель; 1 = как в коде")
     ap.add_argument('--blend', nargs='+', default=['rv', 'log'], choices=['rv', 'log'],
                     help='Д8.1: rv - смешивание по RV после индивидуальных поправок (как в коде), log - в логах; оба - измерение дизайна')
+    ap.add_argument('--dev-eval', default='oos', choices=['oos', 'in'],
+                    help='oos: метрика разработочного набора вне выборки (параметры шага t-1 -> val шага t, шаги 2-6); in - справка (шаги 1-6)')
     ap.add_argument('--etalon', default='same', choices=['ord', 'same'], help='эталон c1-c3: Б0.1 ord для всех дизайнов / та же оценка, что у дизайна')
     ap.add_argument('--devlog', default='docs/otchety/dev_log.md')
     ap.add_argument('--confirm', action='store_true', help='подтверждающий набор 2022-2024: только для --finalists, один раз')
     ap.add_argument('--finalists', default='', help='auto или имена дизайнов через запятую, напр. "single|step|B-ord|L0,single|V0_HAR|B-ord|L0"')
     a = ap.parse_args()
+    global LO
+    LO = 2 if a.dev_eval == 'oos' else 1
     out, regen = Path(a.out), Path(a.regen)
     out.mkdir(parents=True, exist_ok=True)
     A, harj = GH.load_all()
@@ -135,7 +144,7 @@ def main():
     if not P:
         return
     cnt = RP.counter(a.devlog, sum(len(p['F']) for p in P), max(len(p['F']) for p in P))
-    L = RP.lines(P, a.boost, a.v7_lag, cnt, a.etalon, a.blend)
+    L = RP.lines(P, a.boost, a.v7_lag, cnt, a.etalon, a.blend, a.dev_eval)
     if a.confirm:  # один раз; критерии 1-4 на шагах 7-9 (c4 внутри 7-9). Финалист не прошёл -> следующий по правилу (М4), без перебора заново
         L += ['', 'ПОДТВЕРЖДАЮЩИЙ НАБОР (val 2022-2024): финалисты в порядке правила, затем следующие по рейтингу до первого прошедшего',
               '| h | дизайн | c1 | c2 | c3 | c4 | средн. q | итог |', '|---|---|---|---|---|---|---|---|']

@@ -20,42 +20,56 @@ def devlog(path, text):
         f.write(head + f'| {n} | {when} | {text.splitlines()[0]} |\n\n' + '\n'.join(text.splitlines()[1:]) + '\n\n')
 
 
-def select(res, mode, h):
-    """res: список шагов {q:{схема:qlike}, W:{схема:w3}, pv, pt, vs, ts, base}. Возвращает таблицу выбора, val- и test-прогнозы."""
+def pick(res, i, mode):
+    """Схема шага i по его val-году (как для теста): step - мин. q; minimax - мин. худшего года среди шагов 1..i; g3 - G3.
+    Кандидаты step/minimax - набор Д8 (CAND); V5 и V7 с окном 20 - только справка."""
+    if mode == 'g3':
+        return 'G3_InvQ'
+    keys = [k for k in CAND if k in res[i]['q']]
+    if mode == 'minimax':
+        return min(keys, key=lambda k: max(x['q'][k] for x in res[:i + 1]))
+    return min(keys, key=lambda k: res[i]['q'][k])
+
+
+def select(res, mode, h, ev='oos'):
+    """res: шаги {q, W, pv, pt, vs, ts, base, po, qo}. Тест шага t - схема и параметры шага t (scheme_test).
+    ev='oos' (по умолчанию, решение дирижёра 25.10): метрика val-года шага t - схема, выбранная на шаге t-1, с её параметрами
+    шага t-1 (q_hyb, scheme, w_* - применённые; q_<схема> - вне выборки, qi_<схема> - в выборке); шаг 1 - q_hyb = NaN.
+    ev='in' - справка: всё по тому же val-году шага. Возвращает таблицу выбора, val- (rv_pred, rv_pred_oos) и test-прогнозы."""
     rows, ov, ot = [], [], []
     for i, r in enumerate(res):
-        q = r['q']
-        # кандидаты step/minimax - набор Д8 (CAND); G3 - отдельный выбор g3; V5 и V7 с окном 20 - только справка
-        keys = [k for k in CAND if k in q]
-        if mode == 'g3':
-            best = 'G3_InvQ'
-        elif mode == 'minimax':  # минимум худшего val-года среди лет, доступных к шагу (шаги 1..i)
-            best = min(keys, key=lambda k: max(x['q'][k] for x in res[:i + 1]))
-        else:
-            best = min(keys, key=lambda k: q[k])
+        q, best = r['q'], pick(res, i, mode)
         w = r['W'][best]
-        row = dict(r['base'], h=h, scheme=best, w_har=w[0], w_xgb=w[1], w_lgb=w[2], q_hyb=q[best])
-        row.update({f'q_{k}': v for k, v in q.items()})
+        row = dict(r['base'], h=h, scheme=best, scheme_test=best, w_har=w[0], w_xgb=w[1], w_lgb=w[2], q_hyb=q[best])
+        row.update({f'q_{k}': v for k, v in q.items()}); row.update({f'qi_{k}': v for k, v in q.items()})
+        po = np.full(len(r['vs']), np.nan)
+        if ev == 'oos':
+            row['q_hyb'] = np.nan
+            if i > 0:
+                bp = pick(res, i - 1, mode); wp = res[i - 1]['W'][bp]
+                row.update(scheme=bp, w_har=wp[0], w_xgb=wp[1], w_lgb=wp[2], v1_ml=res[i - 1]['base']['v1_ml'], q_hyb=r['qo'][bp])
+                row.update({f'q_{k}': v for k, v in r['qo'].items()})
+                po = r['po'][bp]
         rows.append(row)
-        for df, p, lst in ((r['vs'], r['pv'][best], ov), (r['ts'], r['pt'][best], ot)):
-            lst.append(df[['date', 'ticker', 'year', 'step', 'rv_actual']].assign(rv_pred=p))
+        ov.append(r['vs'][['date', 'ticker', 'year', 'step', 'rv_actual']].assign(rv_pred=r['pv'][best], rv_pred_oos=po))
+        ot.append(r['ts'][['date', 'ticker', 'year', 'step', 'rv_actual']].assign(rv_pred=r['pt'][best]))
     return pd.DataFrame(rows), pd.concat(ov), pd.concat(ot)
 
 
 def shrink(res, lam):
     """Рычаг Г4: усадка к равным весам. Прогноз схемы -> (1-lam)*прогноз + lam*среднее(HAR, XGB, LGB); веса так же.
-    Смешивание по S.MODE (--blend): rv - арифметическое, log - геометрическое (и среднее трёх, и усадка)."""
+    Смешивание по S.MODE (--blend): rv - арифметическое, log - геометрическое (и среднее трёх, и усадка). То же - для po (вне выборки)."""
     if lam == 0:
         return res
     out = []
     eq, mix = np.array([1 / 3] * 3), np.array([1 - lam, lam])
     for r in res:
         mv, mt = (S.comb(r[k][['har', 'xgb', 'lgb']].values, eq) for k in ('vs', 'ts'))
-        pv = {k: S.comb(np.column_stack([p, mv]), mix) for k, p in r['pv'].items()}
-        pt = {k: S.comb(np.column_stack([p, mt]), mix) for k, p in r['pt'].items()}
+        sh = lambda P, m: None if P is None else {k: S.comb(np.column_stack([p, m]), mix) for k, p in P.items()}
+        pv, pt, po = sh(r['pv'], mv), sh(r['pt'], mt), sh(r['po'], mv)
         y = r['vs']['rv_actual'].values
-        q = {k: float(np.mean(y / np.clip(p, 1e-10, None) - np.log(y / np.clip(p, 1e-10, None)) - 1)) for k, p in pv.items()}
-        out.append(dict(r, q=q, pv=pv, pt=pt, W={k: (1 - lam) * np.asarray(w, dtype=float) + lam / 3 for k, w in r['W'].items()}))
+        qd = lambda P: None if P is None else {k: S.qlike(y, p) for k, p in P.items()}
+        out.append(dict(r, q=qd(pv), qo=qd(po), pv=pv, pt=pt, po=po, W={k: (1 - lam) * np.asarray(w, dtype=float) + lam / 3 for k, w in r['W'].items()}))
     return out
 
 
