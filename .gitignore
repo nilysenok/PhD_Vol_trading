@@ -44,3 +44,6 @@ data/strat_zamer/
 
 # fastbt: кэши и извлечённый старый код
 data/fastbt/
+
+# Конвейер моделей: кэши (не коммитить)
+data/models_cache/

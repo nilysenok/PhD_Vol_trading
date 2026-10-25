@@ -1,0 +1,14 @@
+# Ворота гибрида: прогнозы бустинга П1 / xgb (regen_boosting.py, data/regen) подаются как внешние,
+# стадии HAR-J-семейство и гибрид конвейера сравниваются с hyb_P1_* (gibrid_v17.py --boost P1).
+name: gate_P1_hybrid
+seed: 42
+horizons: [1, 5, 22]
+boost_external:
+  xgb: data/regen/xgb
+  lgbm: data/regen/P1
+hybrid:
+  variants: [single]
+  select: правило 25.10
+  v7_lag: h
+  ref: true
+models: {}
