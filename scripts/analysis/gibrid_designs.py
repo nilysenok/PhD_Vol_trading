@@ -2,7 +2,7 @@
 c1: q_дизайн <= 1,02*q_HAR(с Б0.1oos) в каждом val-году (V0=HAR-J не сравнивается сама с собой); c2: q_гибрид <= 1,02*min(q_HAR,q_xgb,q_lgb) в каждом году;
 c3: max_год q_гибрид/q_HAR < min(max_год q_xgb/q_HAR, max_год q_lgb/q_HAR) (у HAR отношение 1 по определению — не берётся);
 c4: |Δ w_comp| <= 0,3 между соседними шагами (обе схемы не V1) и не более 3 смен ML у V1. Критерии считаются по каждому h; дизайн проходит, если все h."""
-import re, subprocess
+import os, re, subprocess
 from pathlib import Path
 import numpy as np, pandas as pd
 import gibrid_schemes as S
@@ -82,10 +82,13 @@ def flags(ch):
     v0c = ch.scheme.iloc[0][3:].lower() if ch.scheme.iloc[0].startswith('V0_') else None
     others = {'har': har, 'xgb': xg, 'lgb': lg}
     others.pop(v0c, None)  # V0_HCJ (HAR-CJ, Д8.6) сравнивается со всеми тремя: эталон критериев - прежний
+    if v0c is not None and os.environ.get('GIBRID_SAME_SLOT') == '1':  # третий круг (final3.py): одиночная модель в обоих слотах
+        for k in [k for k, v in others.items() if k != 'har' and np.array_equal(v, hy)]:  # (HEAVY / Realized GARCH, Д24.6) - слот, равный
+            others.pop(k)  # самому дизайну, не эталон c2/c3
     single_min = np.minimum.reduce(list(others.values()))
     worst = (hy / har).max()
     ml_only = [(v / har).max() for k, v in others.items() if k != 'har']  # у HAR отношение к самому себе = 1 — не берётся
-    worst_single = min(ml_only)
+    worst_single = min(ml_only) if ml_only else 1.0  # ML-эталона нет (одиночная модель в обоих слотах) -> худший год лучше HAR-J
     c1 = True if v0c == 'har' else bool((hy <= 1.02 * har).all())  # c1: не хуже HAR-J более чем на 2% (симметрично c2)
     sc, ml = ch.scheme.values, ch.v1_ml.values
     W = ch[['w_har', 'w_xgb', 'w_lgb']].values
