@@ -1,11 +1,21 @@
 """Схемы гибрида V1-V7 «как в коде». Источники (строки в moex_volatility/scripts/):
 V1 walk_forward_full.py:258-290 (+выбор ML adaptive.py:270-273); V2 adaptive_v2.py:53-67,126-158; V3 :204-261;
-V4 :309-338 (lambda=0.3, :293); V5 :394-457; V6 adaptive_v3.py:107-123; V7 adaptive_v3.py:193-223 (окно 20).
-Веса — тройки (w_har, w_xgb, w_lgb)."""
+V4 :309-338 (lambda=0.3, :293); V5 :394-457; V6 adaptive_v3.py:107-123; V7 adaptive_v3.py:193-223 (окно 20; Д8.3 - полураспад hl).
+Веса — тройки (w_har, w_xgb, w_lgb). Смешивание (Д8.1, --blend): MODE='rv' - арифметическое на уровне RV по компонентам с их
+поправками, F = sum w_k F_k (как в коде); MODE='log' - в логах, F = exp(sum w_k ln F_k) (геометрическое, те же поправки)."""
 import numpy as np, pandas as pd
 
 LAMBDA = 0.3
 EQ = np.array([1 / 3, 1 / 3, 1 / 3])
+MODE = 'rv'
+
+
+def comb(P, W):
+    """P: n x k прогнозов; W: k весов или n x k. Смешивание по MODE (rv - арифметическое, log - геометрическое)."""
+    P = np.clip(np.asarray(P, dtype=float), 1e-10, None)
+    if MODE == 'log':
+        return np.clip(np.exp((np.log(P) * W).sum(axis=1)), 1e-10, None)
+    return np.clip((P * W).sum(axis=1), 1e-10, None)
 
 
 def qlike(y, p):
@@ -14,7 +24,7 @@ def qlike(y, p):
 
 
 def blend(w, d):
-    return np.clip(w[0] * d['har'].values + w[1] * d['xgb'].values + w[2] * d['lgb'].values, 1e-10, None)
+    return comb(np.column_stack([d['har'].values, d['xgb'].values, d['lgb'].values]), np.asarray(w, dtype=float))
 
 
 def v1(d):
@@ -22,9 +32,10 @@ def v1(d):
     y = d['rv_actual'].values
     ml = 'xgb' if qlike(y, d['xgb'].values) < qlike(y, d['lgb'].values) else 'lgb'
     m, hr = d[ml].values, d['har'].values
+    P2 = np.column_stack([hr, m])
     bw, bq = 0.0, qlike(y, m)
     for w in np.arange(0, 0.61, 0.01):
-        q = qlike(y, np.clip(w * hr + (1 - w) * m, 1e-10, None))
+        q = qlike(y, comb(P2, np.array([w, 1 - w])))
         if q < bq:
             bq, bw = q, w
     method = 'val_grid'
@@ -36,7 +47,7 @@ def v1(d):
 
 def grid3(d, step=0.02):
     """adaptive_v2.py:53-67: сетка w_har in [0;0,6], w_xgb, w_lgb=остаток."""
-    y, hr, x, l = (d[c].values for c in ('rv_actual', 'har', 'xgb', 'lgb'))
+    y, P = d['rv_actual'].values, np.column_stack([d[c].values for c in ('har', 'xgb', 'lgb')])
     bq, bw = 999, (1 / 3, 1 / 3, 1 / 3)
     for wh in np.arange(0, 0.61, step):
         for wx in np.arange(0, 1.01 - wh, step):
@@ -44,7 +55,7 @@ def grid3(d, step=0.02):
             if wl < -0.001:
                 continue
             wl = max(wl, 0)
-            q = qlike(y, wh * hr + wx * x + wl * l)
+            q = qlike(y, comb(P, np.array([wh, wx, wl])))
             if q < bq:
                 bq, bw = q, (wh, wx, wl)
     return np.array(bw)
@@ -89,11 +100,12 @@ def v6(d):
     mask[np.arange(len(s)), np.argmax(dev, axis=1)] = 0
     iv = 1.0 / np.clip(dev, 1e-8, None) * mask
     W = iv / iv.sum(axis=1, keepdims=True)  # эффективные веса по наблюдениям (для критерия скачков)
-    return np.clip((s * W).sum(axis=1), 1e-10, None), W
+    return comb(s, W), W
 
 
-def v7(series, window=20, lag=1):
+def v7(series, window=20, lag=1, hl=None):
     """adaptive_v3.py:177-223: по тикерам, веса 1/rolling-QLIKE окна [i-window..i-1] (lag=1 как в коде), i<window — среднее.
+    hl (Д8.3): вместо окна - экспоненциальное среднее потерь с полураспадом hl дней (min 10 наблюдений), тот же лаг.
     series: DataFrame date,ticker,rv_actual,har,xgb,lgb; возвращает (прогнозы, эффективные веса)."""
     s = series.sort_values(['ticker', 'date'])
     y = s['rv_actual'].values
@@ -101,10 +113,10 @@ def v7(series, window=20, lag=1):
     for c in ('har', 'xgb', 'lgb'):
         p = np.clip(s[c].values, 1e-10, None)
         loss = pd.Series(y / p - np.log(y / p) - 1, index=s.index)
-        rq = loss.groupby(s['ticker']).transform(lambda v: v.rolling(window).mean().shift(lag))
+        rq = loss.groupby(s['ticker']).transform(lambda v: (v.rolling(window) if hl is None else v.ewm(halflife=hl, min_periods=10)).mean().shift(lag))
         inv.append(1.0 / np.maximum(rq.values, 1e-6)); P.append(p)
     inv, P = np.column_stack(inv), np.column_stack(P)
     ok = ~np.isnan(inv).any(axis=1)
     w = np.where(ok[:, None], inv / np.where(ok, inv.sum(axis=1), 1)[:, None], 1 / 3)
-    pred = pd.Series(np.clip((w * P).sum(axis=1), 1e-10, None), index=s.index).reindex(series.index)
+    pred = pd.Series(comb(P, w), index=s.index).reindex(series.index)
     return pred, pd.DataFrame(w, index=s.index).reindex(series.index).values

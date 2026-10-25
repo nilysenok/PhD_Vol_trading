@@ -2,14 +2,18 @@
 c1: q_дизайн <= 1,02*q_HAR(с Б0.1oos) в каждом val-году (V0=HAR-J не сравнивается сама с собой); c2: q_гибрид <= 1,02*min(q_HAR,q_xgb,q_lgb) в каждом году;
 c3: max_год q_гибрид/q_HAR < min(max_год q_xgb/q_HAR, max_год q_lgb/q_HAR) (у HAR отношение 1 по определению — не берётся);
 c4: |Δ w_comp| <= 0,3 между соседними шагами (обе схемы не V1) и не более 3 смен ML у V1. Критерии считаются по каждому h; дизайн проходит, если все h."""
-import subprocess
+import re, subprocess
 from pathlib import Path
 import numpy as np, pandas as pd
+import gibrid_schemes as S
+
+CAND = ('V1_Adaptive', 'V2_MultiVal', 'V3_Regime', 'V4_Shrinkage', 'V6_TrimmedW', 'V7_HalfLife', 'V10_MinQ', 'V11_Gap', 'Med3', 'Gate_L2')
 
 
 def devlog(path, text):
     p = Path(path)
-    n = 1 + sum(1 for l in p.read_text().splitlines() if l.startswith('| ') and l[2:3].isdigit()) if p.exists() else 1
+    # номер итерации - следующий за наибольшим в строках журнала «| № | дата |» (строки таблиц с дизайнами не считаются)
+    n = 1 + max([int(m.group(1)) for m in re.finditer(r'^\| (\d+) \| \d{4}-\d\d-\d\d', p.read_text(), re.M)] + [0]) if p.exists() else 1
     when = subprocess.run(['date', '+%Y-%m-%d %H:%M'], capture_output=True, text=True).stdout.strip()
     head = '' if p.exists() else '# Журнал разработки (dev_log)\n\n| № | Дата-время | Что меняли |\n|---|---|---|\n'
     with open(p, 'a') as f:
@@ -21,7 +25,8 @@ def select(res, mode, h):
     rows, ov, ot = [], [], []
     for i, r in enumerate(res):
         q = r['q']
-        keys = [k for k in q if k != 'G3_InvQ']  # G3 (рычаг Г3: веса ~ 1/val-QLIKE компонент) - отдельный дизайн, не кандидат step/minimax
+        # кандидаты step/minimax - набор Д8 (CAND); G3 - отдельный выбор g3; V5 и V7 с окном 20 - только справка
+        keys = [k for k in CAND if k in q]
         if mode == 'g3':
             best = 'G3_InvQ'
         elif mode == 'minimax':  # минимум худшего val-года среди лет, доступных к шагу (шаги 1..i)
@@ -38,14 +43,16 @@ def select(res, mode, h):
 
 
 def shrink(res, lam):
-    """Рычаг Г4: усадка к равным весам. Прогноз схемы -> (1-lam)*прогноз + lam*среднее(HAR, XGB, LGB); веса так же."""
+    """Рычаг Г4: усадка к равным весам. Прогноз схемы -> (1-lam)*прогноз + lam*среднее(HAR, XGB, LGB); веса так же.
+    Смешивание по S.MODE (--blend): rv - арифметическое, log - геометрическое (и среднее трёх, и усадка)."""
     if lam == 0:
         return res
     out = []
+    eq, mix = np.array([1 / 3] * 3), np.array([1 - lam, lam])
     for r in res:
-        mv, mt = r['vs'][['har', 'xgb', 'lgb']].mean(axis=1).values, r['ts'][['har', 'xgb', 'lgb']].mean(axis=1).values
-        pv = {k: (1 - lam) * p + lam * mv for k, p in r['pv'].items()}
-        pt = {k: (1 - lam) * p + lam * mt for k, p in r['pt'].items()}
+        mv, mt = (S.comb(r[k][['har', 'xgb', 'lgb']].values, eq) for k in ('vs', 'ts'))
+        pv = {k: S.comb(np.column_stack([p, mv]), mix) for k, p in r['pv'].items()}
+        pt = {k: S.comb(np.column_stack([p, mt]), mix) for k, p in r['pt'].items()}
         y = r['vs']['rv_actual'].values
         q = {k: float(np.mean(y / np.clip(p, 1e-10, None) - np.log(y / np.clip(p, 1e-10, None)) - 1)) for k, p in pv.items()}
         out.append(dict(r, q=q, pv=pv, pt=pt, W={k: (1 - lam) * np.asarray(w, dtype=float) + lam / 3 for k, w in r['W'].items()}))
@@ -58,8 +65,7 @@ def flags(ch):
     # эталон — одиночные модели с Б0.1oos (q_har, q_xgb_single, q_lgb_single). V0 с самой собой не сравнивается (решение 25.10).
     v0c = ch.scheme.iloc[0][3:].lower() if ch.scheme.iloc[0].startswith('V0_') else None
     others = {'har': har, 'xgb': xg, 'lgb': lg}
-    if v0c:
-        others.pop(v0c)
+    others.pop(v0c, None)  # V0_HCJ (HAR-CJ, Д8.6) сравнивается со всеми тремя: эталон критериев - прежний
     single_min = np.minimum.reduce(list(others.values()))
     worst = (hy / har).max()
     ml_only = [(v / har).max() for k, v in others.items() if k != 'har']  # у HAR отношение к самому себе = 1 — не берётся
@@ -80,7 +86,7 @@ def flags(ch):
 def v0(res, comp, h):
     """V0 = одна компонента (с поправкой, если res посчитан с ней): веса one-hot, переключений нет -> c4 выполнен тривиально."""
     rows, ov, ot = [], [], []
-    w = {'har': (1, 0, 0), 'xgb': (0, 1, 0), 'lgb': (0, 0, 1)}[comp]
+    w = {'har': (1, 0, 0), 'xgb': (0, 1, 0), 'lgb': (0, 0, 1), 'hcj': (0, 0, 0)}[comp]  # hcj - вне тройки, веса 0
     for r in res:
         y, p = r['vs']['rv_actual'].values, np.clip(r['vs'][comp].values, 1e-10, None)
         rows.append(dict(r['base'], h=h, scheme='V0_' + comp.upper(), w_har=w[0], w_xgb=w[1], w_lgb=w[2],

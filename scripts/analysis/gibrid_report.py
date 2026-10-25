@@ -9,14 +9,35 @@ TOP = 10
 
 def counter(devlog, n_pairs, n_designs):
     p = Path(devlog)
-    prev = sum(int(x) for x in re.findall(r'Перебрано дизайн×h: (\d+)', p.read_text())) if p.exists() else 0
+    prev = sum(int(x) for x in re.findall(r'Перебрано дизайн×h на разработочном наборе: (\d+)', p.read_text())) if p.exists() else 0
     return f'Перебрано дизайн×h на разработочном наборе: {n_pairs} (до {n_designs} дизайнов на h); накопленно с прошлых итераций: {prev + n_pairs}'
 
 
-def lines(P, boost, lag, cnt, etalon):
+SCH = ('V1_Adaptive', 'V2_MultiVal', 'V3_Regime', 'V4_Shrinkage', 'V6_TrimmedW', 'V7_HalfLife', 'V10_MinQ', 'V11_Gap', 'Med3', 'Gate_L2', 'G3_InvQ')
+
+
+def blend_effect(P, blends):
+    """Д8.1: средний val-QLIKE 2016-2021 каждой схемы при смешивании rv и log (поправка ord, без усадки) и лучший дизайн каждого смешивания."""
+    if len(blends) < 2:
+        return []
+    L = ['', 'Д8.1 смешивание rv (по RV после индивидуальных поправок) против log (в логах): средний val-QLIKE 2016-2021, поправка ord, L0',
+         '| h | смешивание | ' + ' | '.join(s.split('_')[0] for s in SCH) + ' | выбор step | лучший по правилу |', '|' + '---|' * (4 + len(SCH))]
+    for p in P:
+        for bm in ('rv', 'log'):
+            sfx = '' if bm == 'rv' else '|log'
+            g = p['Rd'][p['Rd'].design == 'single|step|B-ord|L0' + sfx]
+            F = p['F'][(p['F'].design.str.endswith('|log') == (bm == 'log')) & ~p['F'].family.str.startswith('V0')]
+            b = F.iloc[0]
+            L.append(f'| {p["h"]} | {bm} | ' + ' | '.join(f'{g["q_" + s].mean():.4f}' for s in SCH) +
+                     f' | {g.q_hyb.mean():.4f} | {b.design.replace("|", "/")} ({b.failed or "-"}; {b.mean_q:.4f}) |')
+    return L
+
+
+def lines(P, boost, lag, cnt, etalon, blends=('rv',)):
     ys = sorted(P[0]['Rd'].val_year.unique())
-    L = [f'Гибрид V0-V7, пространство дизайнов на {boost} (gibrid_v17.py; метрики только разработочный набор 2016-2021; V7 lag={lag}; эталон c1-c3: одиночные с Б0.1 {"ord" if etalon == "ord" else "той же оценки"}; single = одна точка бустинга, не V0)',
+    L = [f'Гибрид V0-V7 + Д8, пространство дизайнов на {boost} (gibrid_v17.py; метрики только разработочный набор 2016-2021; V7 lag={lag}; эталон c1-c3: одиночные с Б0.1 {"ord" if etalon == "ord" else "той же оценки"}; single = одна точка бустинга, не V0; смешивание {"/".join(blends)})',
          cnt + '. Подтверждающий набор (val 2022-2024) скрыт. Правило выбора: прошли все критерии -> мин. средний val-QLIKE; иначе мин. нарушенных, затем мин. QLIKE.']
+    L += blend_effect(P, blends)
     for p in P:
         h, Rd = p['h'], p['Rd']
         L += ['', f'h={h}: топ-{TOP} по правилу (дизайн = нога|выбор|поправка|усадка)',

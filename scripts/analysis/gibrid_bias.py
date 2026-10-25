@@ -6,7 +6,7 @@ ord_in - справка: оценка по тому же val-году (in-sample
 import numpy as np
 
 CODES = ('ord', 'rob', 'sm', 'smrob')
-COMPS = ('har', 'xgb', 'lgb')
+COMPS = ('har', 'xgb', 'lgb', 'hcj')  # hcj - HAR-CJ (Д8.6), та же оценка s2, свои остатки
 
 
 def resid(val):
