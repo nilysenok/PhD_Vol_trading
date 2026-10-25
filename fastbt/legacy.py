@@ -24,7 +24,8 @@ def legacy_dir() -> Path:
     env = os.environ.get("FASTBT_LEGACY_DIR")
     if env:
         return Path(env)
-    d = ROOT / "data" / "fastbt" / f"legacy_{COMMIT}"
+    from fastbt.cache import MAIN
+    d = MAIN / "data" / "fastbt" / f"legacy_{COMMIT}"
     if not all((d / f).exists() for f in FILES):
         d.mkdir(parents=True, exist_ok=True)
         for f in FILES:

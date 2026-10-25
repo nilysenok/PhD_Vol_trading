@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from fastbt import grids
+from fastbt.cache import MAIN
 from fastbt.config import Config, add_args, from_args
 from fastbt.data import TICKERS, year_bounds
 
@@ -102,7 +103,7 @@ def main(argv=None):
     p.add_argument("--tickers", default=",".join(TICKERS))
     p.add_argument("--sids", default="S1,S2,S3,S4,S5,S6")
     p.add_argument("--workers", type=int, default=1)
-    p.add_argument("--out", default=str(ROOT / "data" / "fastbt" / "positions.parquet"))
+    p.add_argument("--out", default=str(MAIN / "data" / "fastbt" / "positions.parquet"))
     a = p.parse_args(argv)
     cfg = from_args(a)
     t0 = time.time()
