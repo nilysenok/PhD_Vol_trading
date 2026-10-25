@@ -130,8 +130,12 @@ def main():
     ap.add_argument('--harx', default='HARX', help='HARX (слагаемые владельца + Д17.3) | HARX0')
     ap.add_argument('--suffix', default='')
     ap.add_argument('--seeds', type=int, nargs='*', default=None)
+    ap.add_argument('--models', nargs='*', default=None, help='замена моделей кандидата (h=1: lgbm для слота LGBM гибрида)')
     a = ap.parse_args()
     G['control'] = a.control
+    if a.models:
+        for c in a.cands:
+            CANDS[c] = dict(CANDS[c], models=tuple(a.models))
     t0 = time.time()
     prepare(a.cands, a.harx)
     jobs = [(cand, *pt) for cand in a.cands for pt in points(CANDS[cand], a.steps, a.seeds)]
