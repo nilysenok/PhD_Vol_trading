@@ -1,7 +1,7 @@
 """Кэш артефактов на диске по хэшу входов и кода (приём 14).
 
 Ключ = sha1(имя, хэши исходников модулей fastbt, переданные части). Файлы — npz в
-data/fastbt/cache/ (в .gitignore). FASTBT_NO_CACHE=1 — выключить.
+<основная копия>/data/fastbt/cache/ (О5). FASTBT_NO_CACHE=1 — выключить.
 """
 from __future__ import annotations
 
@@ -13,7 +13,9 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-CACHE = Path(os.environ.get("FASTBT_CACHE", ROOT / "data" / "fastbt" / "cache"))
+# О5: данные и артефакты — только в общем data/ основной копии (не в копии агента)
+MAIN = Path(os.environ.get("FASTBT_MAIN", "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading"))
+CACHE = Path(os.environ.get("FASTBT_CACHE", MAIN / "data" / "fastbt" / "cache"))
 _CODE = None
 
 

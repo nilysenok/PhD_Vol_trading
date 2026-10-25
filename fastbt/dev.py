@@ -52,12 +52,33 @@ def make_config(design: dict, scope: str):
     return Config(**kw)
 
 
-def append_log(it_hash, scope, tab, deltas, secs):
+def criteria(tab, years) -> str:
+    """Критерии устойчивости плана: X ∈ {C, D} лучше A в каждом году (одно исключение) и
+    худший год X не хуже худшего года A; годы — тестовые годы B/C/D."""
+    t = tab.set_index("approach")
+    if "A" not in t.index:
+        return "—"
+    ys = [str(y) for y in years if str(y) in t.columns]
+    a = t.loc["A", ys].astype(float)
+    out = []
+    for x in ("C", "D"):
+        if x not in t.index:
+            continue
+        v = t.loc[x, ys].astype(float)
+        win = int((v > a).sum())
+        ok = win >= len(ys) - 1 and v.min() >= a.min()
+        out.append(f"{x}: лучше A {win}/{len(ys)}, худший {v.min():.2f} vs A {a.min():.2f} → "
+                   + ("да" if ok else "нет"))
+    return "; ".join(out)
+
+
+def append_log(it_hash, scope, tab, deltas, secs, crit="—", note=""):
     LOG.parent.mkdir(parents=True, exist_ok=True)
     if not LOG.exists():
         LOG.write_text("# Журнал режима разработки стратегий (fastbt.dev)\n\n"
-                       "| № | время | дизайн | область | Шарп МСП по годам (A/B/C/D) | ΔC−A | ΔD−A | с |\n"
-                       "|---|---|---|---|---|---|---|---|\n")
+                       "| № | время | дизайн | область | Шарп МСП по годам (A/B/C/D) | ΔC−A | ΔD−A |"
+                       " критерии устойчивости | пометка | с |\n"
+                       "|---|---|---|---|---|---|---|---|---|---|\n")
     n = sum(1 for ln in LOG.read_text().splitlines() if ln.startswith("| ") and ln[2:3].isdigit())
     yrs = [c for c in tab.columns if c.isdigit()]
     cells = "; ".join(f"{r['approach']}: " + " ".join(f"{r[y]:.2f}" for y in yrs)
@@ -69,7 +90,7 @@ def append_log(it_hash, scope, tab, deltas, secs):
     now = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
     with LOG.open("a") as f:
         f.write(f"| {n + 1} | {now} | {it_hash} | {scope} {yrs[0]}–{yrs[-1]} | {cells} | "
-                f"{d('C-A')} | {d('D-A')} | {secs:.0f} |\n")
+                f"{d('C-A')} | {d('D-A')} | {crit} | {note} | {secs:.0f} |\n")
 
 
 def main(argv=None):
@@ -81,6 +102,7 @@ def main(argv=None):
     p.add_argument("--boot-reps", type=int, default=1000)
     p.add_argument("--workers", type=int, default=1)
     p.add_argument("--no-log", action="store_true")
+    p.add_argument("--note", default="", help="пометка в журнал (например «отладка, старый σ_pred»)")
     a = p.parse_args(argv)
     if a.data_root:
         os.environ["FASTBT_DATA_ROOT"] = a.data_root
@@ -104,10 +126,12 @@ def main(argv=None):
     years = list(cfg.years_a)
     tab, deltas = summary(pos, cfg, years, a.boot_reps)
     secs = time.time() - t0
+    crit = criteria(tab, cfg.years_bcd)
     print(tab.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
     print(deltas.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
     if not (a.no_log or a.smoke):
-        append_log(h.hexdigest()[:10], a.scope, tab, deltas, secs)
+        append_log(h.hexdigest()[:10], a.scope, tab, deltas, secs, crit, a.note)
+    print("критерии:", crit)
     print(f"дизайн {h.hexdigest()[:10]}, {secs:.0f} с")
     return 0
 
