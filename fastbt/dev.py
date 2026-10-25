@@ -18,6 +18,8 @@ import os
 import sys
 from pathlib import Path
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parent.parent
 FINAL = ROOT / "docs" / "otchety" / "FINAL_DESIGN_strategies.md"
 LOG = ROOT / "docs" / "otchety" / "dev_log_strategies.md"
@@ -54,24 +56,70 @@ def make_config(design: dict, scope: str):
     return Config(**kw)
 
 
-def criteria(tab, years) -> str:
-    """Критерии устойчивости плана: X ∈ {C, D} лучше A в каждом году (одно исключение) и
-    худший год X не хуже худшего года A; годы — тестовые годы B/C/D."""
+def evaluate(tab, years, period: dict) -> dict:
+    """Критерии выбора дизайна C и D (план + решение владельца 25.10, 19:20):
+    (а) X лучше A в каждом году, одно исключение; (б) худший год X не хуже худшего года A;
+    (в) избыточный Шарп МСП X за весь период (годы B/C/D) выше, чем у A.
+    Ранжирование прошедших: сначала с положительным избыточным Шарпом за период, среди них —
+    максимальный средний по годам ΔШарп X−A; нет положительных — по (а)–(в) тем же ΔШарп."""
     t = tab.set_index("approach")
-    if "A" not in t.index:
-        return "—"
     ys = [str(y) for y in years if str(y) in t.columns]
     a = t.loc["A", ys].astype(float)
-    out = []
-    for x in ("C", "D"):
+    out = {"A_period": period.get("A")}
+    for x in ("B", "C", "D"):
         if x not in t.index:
             continue
         v = t.loc[x, ys].astype(float)
         win = int((v > a).sum())
-        ok = win >= len(ys) - 1 and v.min() >= a.min()
-        out.append(f"{x}: лучше A {win}/{len(ys)}, худший {v.min():.2f} vs A {a.min():.2f} → "
-                   + ("да" if ok else "нет"))
-    return "; ".join(out)
+        c_years = win >= len(ys) - 1
+        c_worst = bool(v.min() >= a.min())
+        c_period = bool(period.get(x, -np.inf) > period.get("A", np.inf))
+        out[x] = dict(win=win, n_years=len(ys), worst=float(v.min()), worst_A=float(a.min()),
+                      period=period.get(x), c_years=c_years, c_worst=c_worst,
+                      c_period=c_period, passed=bool(c_years and c_worst and c_period),
+                      positive=bool(period.get(x, -np.inf) > 0),
+                      mean_delta=float((v - a).mean()),
+                      years={y: float(v[y]) for y in ys})
+    out["A_years"] = {y: float(a[y]) for y in ys}
+    return out
+
+
+def criteria(tab, years, period=None) -> str:
+    """Строка критериев для журнала (C и D)."""
+    if "A" not in set(tab["approach"]):
+        return "—"
+    ev = evaluate(tab, years, period or {})
+    parts = []
+    for x in ("C", "D"):
+        if x not in ev:
+            continue
+        e = ev[x]
+        per = "—" if e["period"] is None else f"{e['period']:.2f}"
+        pa = "—" if ev["A_period"] is None else f"{ev['A_period']:.2f}"
+        parts.append(f"{x}: лучше A {e['win']}/{e['n_years']}, худший {e['worst']:.2f} vs A "
+                     f"{e['worst_A']:.2f}, период {per} vs A {pa}, ср. Δ {e['mean_delta']:+.2f} → "
+                     + ("да" if e["passed"] else "нет")
+                     + (", избыточный Шарп > 0" if e["positive"] else ""))
+    return "; ".join(parts)
+
+
+def period_sharpe(pos, cfg) -> dict:
+    """Избыточный Шарп МСП по подходам за годы B/C/D (для A — те же годы)."""
+    from fastbt import msp
+    from fastbt.report import portfolios
+    ports = portfolios(pos, cfg, list(cfg.years_bcd))
+    return {ap: msp.sharpe(p["excess"]) for ap, p in ports.items()}
+
+
+def save_run(it_hash, design_path, note, tab, deltas, ev):
+    """JSON прогона в <основная копия>/data/fastbt/dev_runs/ — для ранжирования (fastbt.dev_rank)."""
+    from fastbt.cache import MAIN
+    d = MAIN / "data" / "fastbt" / "dev_runs"
+    d.mkdir(parents=True, exist_ok=True)
+    rec = dict(hash=it_hash, design=str(design_path), note=note,
+               time=dt.datetime.now().strftime("%Y-%m-%d %H:%M"), eval=ev,
+               tab=tab.to_dict(orient="records"), deltas=deltas.to_dict(orient="records"))
+    (d / f"{it_hash}.json").write_text(json.dumps(rec, ensure_ascii=False, default=float))
 
 
 def append_log(it_hash, scope, tab, deltas, secs, crit="—", note=""):
@@ -128,9 +176,13 @@ def main(argv=None):
     years = list(cfg.years_a)
     tab, deltas = summary(pos, cfg, years, a.boot_reps)
     secs = time.time() - t0
-    crit = criteria(tab, cfg.years_bcd)
+    per = period_sharpe(pos, cfg)
+    ev = evaluate(tab, cfg.years_bcd, per)
+    crit = criteria(tab, cfg.years_bcd, per)
     print(tab.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
     print(deltas.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
+    if not a.smoke:
+        save_run(h.hexdigest()[:10], a.design, a.note, tab, deltas, ev)
     if not (a.no_log or a.smoke):
         append_log(h.hexdigest()[:10], a.scope, tab, deltas, secs, crit, a.note)
     print("критерии:", crit)
