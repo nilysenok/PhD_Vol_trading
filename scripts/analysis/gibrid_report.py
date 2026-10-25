@@ -13,7 +13,7 @@ def counter(devlog, n_pairs, n_designs):
     return f'Перебрано дизайн×h на разработочном наборе: {n_pairs} (до {n_designs} дизайнов на h); накопленно с прошлых итераций: {prev + n_pairs}'
 
 
-SCH = ('V3_Regime', 'V7_HalfLife', 'V10_MinQ', 'V10_Pool', 'V10_Fix', 'V11_Gap', 'Med3', 'Gate_L2', 'EQ_Equal', 'ML2_Pair', 'G3_InvQ')
+SCH = ('V3_Regime', 'V7_HalfLife', 'V10_MinQ', 'V10_Pool', 'V11_Gap', 'Med3', 'Gate_L2', 'EQ_Equal', 'ML2_Pair', 'G3_InvQ', 'V10_Fix')  # V10_Fix - справка
 
 
 def blend_effect(P, blends):
