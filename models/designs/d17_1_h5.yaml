@@ -1,0 +1,15 @@
+# Д17.1 — остаточный ученик как GLM с офсетом (агент A, 26.10). Отчёт — docs/otchety/2026-10-26_d17.md
+name: d17_1_h5
+horizon: 5
+seeds: [42, 43, 44]
+data: {features: data/regen/features_pit_v3.parquet, d7: data/regen/features_pit_v3_d7_h5.parquet}
+lever: "objective gamma на уровне RV (LGBM gamma / XGB reg:gamma), init_score/base_margin = ln(основа) + s²/2 (s² — остатки ln основы на обучающем окне шага); ES — нативная gamma-метрика val-года; без поправки на выходе; признаки V9-набора + ln основы (harf) + Д7; Huber снят (несовместим с gamma)"
+bases: {harj: "HAR-J (l2_lib.har_ln)", harx: "HAR-X (harx.py агента d16-harx через d17_1_harx_base.py; D17_BASE=harx); признак harf — тоже ln HAR-X"}
+rule: "OOS шаги 2-5 (2017-2020): >=1% и лучше на каждом seed; 2021 (шаг 6) не хуже текущего; c1-c4 — gibrid_v17 --dev-eval oos --etalon same"
+current: "D12_h5 (V9 + Д8.12 + Д7 + Huber, single/V0_XGB/B-sm)"
+cfg: '{"obj":"gamma","v9":true,"b01":true,"harf":true}'
+variants:
+  - {name: G5, points: "D12_h5", base: harj, boost: D17_1_h5_G5, decision: "отброшен: +1,4%"}
+  - {name: G5opt, points: "optuna-30", base: harj, boost: D17_1_h5_G5opt, decision: "отброшен: -1,25% (порог пройден), 2021 хуже; дизайн гибрида -0,8%"}
+  - {name: G5X, points: "D12_h5", base: harx, boost: D17_1_h5_G5X, decision: "отброшен: -2,9%, 2021 не хуже, но дизайн gamma нарушает c2, лучший дизайн со всеми критериями +0,2%"}
+  - {name: G5Xopt, points: "optuna-30", base: harx, boost: D17_1_h5_G5Xopt, decision: "ПРИНЯТ: -3,8% по 3 seed, 2021 лучше на каждом seed, c1-c4 выполнены (top5|V0_LGB|bez|L0); кандидат final3 (data/regen/final3/kandidaty/D17_1_h5_G5Xopt.yaml)"}
