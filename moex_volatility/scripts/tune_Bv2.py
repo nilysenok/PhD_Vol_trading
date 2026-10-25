@@ -12,7 +12,10 @@ from pathlib import Path
 import numpy as np, pandas as pd
 import lightgbm as lgb, xgboost as xgb
 warnings.filterwarnings('ignore')
-ROOT = Path(__file__).resolve().parents[2]; MV = ROOT / 'moex_volatility'; OUT = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen'); LOCK = OUT / 'test_locked'; TAG = 'Bv2'
+_pre = argparse.ArgumentParser(add_help=False); _pre.add_argument('--tag', default='Bv2'); _pre.add_argument('--max-bin', type=int, default=63)
+PRE, _ = _pre.parse_known_args()  # читается и в дочерних процессах (spawn); --max-bin 255 -> LightGBM и XGBoost 255, иначе 63/64
+MBL = PRE.max_bin; MBX = PRE.max_bin + 1 if PRE.max_bin == 63 else PRE.max_bin
+ROOT = Path(__file__).resolve().parents[2]; MV = ROOT / 'moex_volatility'; OUT = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen'); TAG = PRE.tag; LOCK = OUT / 'test_locked' / (TAG if TAG != 'Bv2' else '')
 FEAT = OUT / 'features_pit_v2.parquet'; EXC = OUT / f'{TAG}_excluded_features.csv'
 ns = {'np': np}
 for n in ast.parse((MV / 'scripts/walk_forward_full.py').read_text()).body:
@@ -90,7 +93,7 @@ def refds(model, h, keep):  # бины строятся на шаге 1 (все 
     if (model, h) not in _ref:
         t = tcol(h); tr = ALL[ALL.year < TEST_YEARS[0]]; vy = sorted(tr.year.unique())[-1]; tp = tr[tr.year != vy].dropna(subset=[t])
         X, y = clean_features(tp[FC].values).astype(np.float32)[:, keep], np.log(tp[t].values + 1e-10)
-        _ref[(model, h)] = xgb.QuantileDMatrix(X, y, max_bin=64) if model == 'xgb' else lgb.Dataset(X, y, params={'max_bin': 63, 'feature_pre_filter': False, 'verbosity': -1}, free_raw_data=False)
+        _ref[(model, h)] = xgb.QuantileDMatrix(X, y, max_bin=MBX) if model == 'xgb' else lgb.Dataset(X, y, params={'max_bin': MBL, 'feature_pre_filter': False, 'verbosity': -1}, free_raw_data=False)
     return _ref[(model, h)]
 
 
@@ -98,21 +101,21 @@ def train(model, h, step, pt, seed, full, ref=None, nmax=NMAX):  # -> (pv, pt, b
     s = SD(model, h, step); p = GRID.loc[(model, pt)].to_dict(); X, y = (s['Xf'], s['yf']) if full else (s['Xh'], s['yh'])
     if model == 'xgb':
         if full not in s['ds']:
-            rd = refds(model, h, s['keep']) if step > 1 else None; d0 = xgb.QuantileDMatrix(X, y, max_bin=64, ref=rd); s['ds'][full] = (d0, xgb.QuantileDMatrix(s['Xv'], s['yv'], ref=d0, max_bin=64))
+            rd = refds(model, h, s['keep']) if step > 1 else None; d0 = xgb.QuantileDMatrix(X, y, max_bin=MBX, ref=rd); s['ds'][full] = (d0, xgb.QuantileDMatrix(s['Xv'], s['yv'], ref=d0, max_bin=MBX))
         dtr, dva = s['ds'][full]; xp = XPrune(ref, s['Xv'], s['yv'])
-        prm = dict(tree_method='hist', max_bin=64, max_depth=int(p['max_depth']), eta=p['learning_rate'], subsample=p['subsample'], colsample_bytree=p['colsample_bytree'],
+        prm = dict(tree_method='hist', max_bin=MBX, max_depth=int(p['max_depth']), eta=p['learning_rate'], subsample=p['subsample'], colsample_bytree=p['colsample_bytree'],
                    min_child_weight=p['min_child_weight'], alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'], nthread=1, seed=seed, verbosity=0, eval_metric='rmse')
         b = xgb.train(prm, dtr, nmax, evals=[(dva, 'val')], early_stopping_rounds=PAT, verbose_eval=False, callbacks=[xp])
         bi = PRUNE_AT - 1 if xp.pruned else int(b.best_iteration); ir = (0, bi + 1); g = b[:bi + 1].get_score(importance_type='total_gain')
         gain = np.array([g.get(f'f{i}', 0.0) for i in range(X.shape[1])])
         return b.inplace_predict(s['Xv'], iteration_range=ir), b.inplace_predict(s['Xt'], iteration_range=ir), bi, gain, xp.pruned
     if full not in s['ds']:
-        d0 = lgb.Dataset(X, y, reference=refds(model, h, s['keep']) if step > 1 else None, params={'max_bin': 63, 'feature_pre_filter': False, 'verbosity': -1}, free_raw_data=False)
+        d0 = lgb.Dataset(X, y, reference=refds(model, h, s['keep']) if step > 1 else None, params={'max_bin': MBL, 'feature_pre_filter': False, 'verbosity': -1}, free_raw_data=False)
         s['ds'][full] = (d0, lgb.Dataset(s['Xv'], s['yv'], reference=d0, free_raw_data=False))
     dtr, dva = s['ds'][full]
     prm = dict(objective='regression', boosting_type='gbdt', max_depth=-1, num_leaves=int(p['num_leaves']), learning_rate=p['learning_rate'], bagging_fraction=p['bagging_fraction'],
                bagging_freq=1, feature_fraction=p['feature_fraction'], min_data_in_leaf=int(p['min_data_in_leaf']), reg_alpha=p['reg_alpha'], reg_lambda=p['reg_lambda'],
-               max_bin=63, verbosity=-1, seed=seed, num_threads=1, metric='l2', force_col_wise=True)
+               max_bin=MBL, verbosity=-1, seed=seed, num_threads=1, metric='l2', force_col_wise=True)
     pr = []
 
     def prune(env):
@@ -173,7 +176,7 @@ def run_h(h, P, cnt, t0):
     tasks = [(m, h, step, sel[m], sd, 1) for step in (7, 8, 9) for m in MODELS for sd in (42, 43, 44)]
     for r, pv, pte in P.map(final, tasks, chunksize=1):
         s = SD('xgb', h, r['step']); fin.append((r, frame(s, 'val', r['step'], pv, point=r['point'], seed=r['seed'], rank=1), frame(s, 'test', r['step'], pte, point=r['point'], seed=r['seed'], rank=1)))
-    LOCK.mkdir(exist_ok=True); pd.DataFrame(trl).to_csv(OUT / f'{TAG}_trials.csv', mode='a', header=not (OUT / f'{TAG}_trials.csv').exists(), index=False)
+    LOCK.mkdir(parents=True, exist_ok=True); pd.DataFrame(trl).to_csv(OUT / f'{TAG}_trials.csv', mode='a', header=not (OUT / f'{TAG}_trials.csv').exists(), index=False)
     sels = pd.DataFrame([r for r, *_ in fin if r['seed'] == 42 and r['rank'] == 1]); sels = sels.join(GRID.reset_index().set_index(['model', 'point']), on=['model', 'point'])
     sels.to_csv(OUT / f'{TAG}_selected_h{h}.csv', index=False)
     for m in MODELS:
@@ -187,7 +190,7 @@ def run_h(h, P, cnt, t0):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--workers', type=int, default=10); ap.add_argument('--hs', default='22,5,1'); ap.add_argument('--bench', action='store_true')
+    ap = argparse.ArgumentParser(); ap.add_argument('--workers', type=int, default=10); ap.add_argument('--hs', default='22,5,1'); ap.add_argument('--bench', action='store_true'); ap.add_argument('--tag'); ap.add_argument('--max-bin')
     a = ap.parse_args(); OUT.mkdir(parents=True, exist_ok=True); G = GRID.reset_index(); G[G.model == 'lgbm'].to_csv(OUT / f'{TAG}_grid_lgbm100.csv', index=False); G[(G.model == 'xgb') & (G.point < 100)].to_csv(OUT / f'{TAG}_grid_xgb40.csv', index=False); G[(G.model == 'xgb') & (G.point >= 100)].to_csv(OUT / f'{TAG}_grid_xgb100.csv', index=False); t0 = time.time(); cnt = [0]
     if a.bench:  # 10 задач шага 9 (полные строки) — только проверка работоспособности и времени
         with Pool(a.workers) as P: P.map(trials, [(m, 22, 9, [0], NMAX) for m in MODELS for _ in range(a.workers)], chunksize=1); t0 = time.time(); P.map(trials, batches({m: list(range(48)) for m in MODELS}, 22, 9, a.workers), chunksize=1); print(f'workers={a.workers}: 96 задач шага 9 за {time.time()-t0:.0f}s', flush=True); return
