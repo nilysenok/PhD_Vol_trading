@@ -22,7 +22,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 SRC = 'Bv2b'
-H = 1
+H = int(os.environ.get('RERUN_H', '1'))  # финальная сборка второго круга: RERUN_H=5/22 — чистый V0 на v3 (точки Bv2b), справка и кандидат V0
 
 
 def tasks_from_src(models=T.MODELS):
@@ -88,7 +88,7 @@ def main():
             pick(lambda r: r['seed'] == 42 and r['rank'] == 1, ix).to_parquet(d / f'{a.tag}_{m}_h{H}_{k}.parquet', index=False)
             pick(lambda r: r['seed'] == 42 and r['step'] <= 6, ix).to_parquet(d / f'{a.tag}_{m}_h{H}_top5_{k}.parquet', index=False)
             pick(lambda r: r['seed'] != 42, ix).to_parquet(d / f'{a.tag}_{m}_h{H}_seeds4344_{k}.parquet', index=False)
-    print(f'h=1 {a.tag} готов {time.strftime("%F %T")}, {time.time() - t0:.0f}s; задач {len(tk)}; признаки {T.FEAT}', flush=True)
+    print(f'h={H} {a.tag} готов {time.strftime("%F %T")}, {time.time() - t0:.0f}s; задач {len(tk)}; признаки {T.FEAT}', flush=True)
 
 
 if __name__ == '__main__':

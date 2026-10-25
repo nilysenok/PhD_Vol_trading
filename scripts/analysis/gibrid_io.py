@@ -49,6 +49,8 @@ def load_boost(boost, h, regen, variant, test=False):
             single = rd(f'{n}_h{h}_{k}.parquet')
             if variant in ('single', 'wrap'):
                 d[k] = single
+            elif variant == 'wrap2':  # обёртка второго круга (final2_wrap.py): одинаковая для всех кандидатов
+                d[k] = rd(f'{n}_h{h}_wrap2_{k}.parquet')
             elif variant == 'top5':
                 t5 = _avg(rd(f'{n}_h{h}_top5_{k}.parquet'))
                 miss = single[~single.step.isin(t5.step.unique())]
