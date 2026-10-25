@@ -1,6 +1,7 @@
 mod cutreport;
 mod cutstats;
 mod download;
+mod ext;
 mod fetch;
 mod idxcmp;
 mod indices;
@@ -64,6 +65,28 @@ enum Cmd {
         #[arg(long, default_value = "docs/otchety/2026-10-25_proverka_dannyh_iss.md")]
         dest: PathBuf,
     },
+    /// Д24.8: 10-мин бары USD000UTSTOM (CETS) и ближних контрактов BR (FORTS) -> {out}/bars_10m_full/
+    ExtBars {
+        /// usd | br | all
+        #[arg(long, default_value = "all")]
+        what: String,
+        #[arg(long, default_value = "2014-05-01")]
+        from: String,
+        #[arg(long, default_value = "2026-02-27")]
+        till: String,
+    },
+    /// Д24.8: дневная RV USDRUB [09:50; 18:50) и ближнего BR [10:00; 18:45) -> parquet + карта склейки
+    ExtRv {
+        #[arg(long)]
+        dest: PathBuf,
+    },
+    /// Д24.10: история 17 тикеров TQBR (+ EQNL для VTBR/PHOR) до начала основной выгрузки
+    HistBars {
+        #[arg(long, default_value = "2011-12-01")]
+        from: String,
+        #[arg(long, default_value = "2014-05-31")]
+        till: String,
+    },
     /// Г4: собрать отчёт .md из сводок
     Report {
         #[arg(long, default_value = "docs/otchety/2026-10-25_proverka_dannyh_iss.md")]
@@ -89,6 +112,9 @@ async fn main() -> Result<()> {
         Cmd::Rv1850 => rv1850::run(&cli.out, &stored::Stored::new(&cli.stored_root), &tickers()),
         Cmd::Report1850 { dest } => cutreport::run(&cli.out, &dest),
         Cmd::Report { dest } => report::run(&cli.out, &dest),
+        Cmd::ExtBars { what, from, till } => ext::bars(&cli.out, &what, &from, &till).await,
+        Cmd::ExtRv { dest } => ext::rv(&cli.out, &dest),
+        Cmd::HistBars { from, till } => ext::hist(&cli.out, &from, &till).await,
         Cmd::Indices { from, till } => {
             let t: Vec<String> = model::INDICES.iter().map(|s| s.to_string()).collect();
             indices::run(&t, &cli.out, &from, &till).await
