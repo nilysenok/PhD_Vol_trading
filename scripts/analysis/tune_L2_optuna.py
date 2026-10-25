@@ -30,6 +30,13 @@ def frame(D, k, step, pred, **kw):
                          'rv_actual': df[L.tcol(G['h'])].values, 'rv_pred': np.clip(np.exp(pred), 1e-10, None)})
 
 
+def _sd(model, step):
+    D = L.step_data(G['A'], G['cols'], G['h'], step, model, G['cfg'], G['btag'])
+    if G['cfg'].get('mono_sign') == -1:  # Д13.5: знак −1 у остаточного ученика (как d13_run.prep)
+        D['mono'] = [-m for m in D['mono']]
+    return D
+
+
 def _ref(model, step):
     return L.make_ref(model, G['A'], G['cols'], G['h'], G['cfg'], G['btag']) if step > 1 else None
 
@@ -38,7 +45,7 @@ def study(a):
     import optuna
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     model, step = a
-    D = L.step_data(G['A'], G['cols'], G['h'], step, model, G['cfg'], G['btag'])
+    D = _sd(model, step)
     ref = _ref(model, step)
     st = optuna.create_study(direction='minimize', sampler=optuna.samplers.TPESampler(seed=42))
     rows, preds, best = [], {}, None
@@ -65,7 +72,7 @@ def study(a):
 
 def refit(a):
     model, step, p, seed, trial = a
-    D = L.step_data(G['A'], G['cols'], G['h'], step, model, G['cfg'], G['btag'])
+    D = _sd(model, step)
     pv, pt, bi, _, _ = L.fit(model, p, D, G['cfg'], seed=seed, ref=_ref(model, step))
     kw = dict(trial=trial, seed=seed, rank=1)
     return dict(model=model, step=step, seed=seed, best_iteration=bi), frame(D, 'val', step, pv, **kw), frame(D, 'test', step, pt, **kw)
