@@ -120,9 +120,10 @@ class Gibrid:
         return {**self._map(wd, fn), 'A': A}
 
     def run(self, wd, h, steps, tag=''):
-        import gibrid_v17 as G
+        import gibrid_compute as GC, gibrid_harcj as HC  # compute перенесён из gibrid_v17 (Д8); ext - HAR-CJ и признаки гейта
         lag = h if self.v7_lag == 'h' else int(self.v7_lag)
-        res = G.compute(wd['hv'], wd['ht'], h, wd['bx'], wd['bl'], 0, lag, [])
+        A = HC.add_cj(wd['A'])
+        res = GC.compute(wd['hv'], wd['ht'], h, wd['bx'], wd['bl'], 'bez', lag, [], dict(hcj=HC.forecasts(h, A), state=HC.state(A)))
         out = []
         for r in res:
             for k in r['pv']:
