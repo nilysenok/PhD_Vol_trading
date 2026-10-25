@@ -336,6 +336,22 @@ def d165(a, harj, leg, slot):
     print('D16.5-варианты: кандидаты и шаг 10 записаны', flush=True)
 
 
+def seeds_x(a):
+    """Три seed для D18x (запрос дирижёра): XGB-слот = Д18.1 с hyb5 = одиночная точка XGB seed s, LGB-слот = Д16.5 single XGB seed s.
+    Только val (для gibrid_v17 --regen data/regen/D18/seeds, тест не нужен). Выход: D18/seeds/D18xs{s}_h22_{xgb|lgbm}_h22_val.parquet."""
+    T = target_df(a, 22, 'val')
+    H6 = pd.read_parquet(R / 'D18_har_sub_h22_6_22_val.parquet')
+    d = OUT / 'seeds'; d.mkdir(parents=True, exist_ok=True)
+    cols = ['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']
+    for seed in (42, 43, 44):
+        hs = load_hyb_seed(seed)
+        b = pd.read_parquet(R / ('D16_5_h22_xgb_h22_val.parquet' if seed == 42 else 'D16_5_h22_xgb_h22_seeds4344_val.parquet'))
+        b = (b[b.seed == seed] if seed != 42 else b)[['date', 'ticker', 'step', 'rv_pred']]
+        combine([hs[5][0], H6], [5 / 22, 17 / 22], tgt=T)[cols].to_parquet(d / f'D18xs{seed}_h22_xgb_h22_val.parquet', index=False)
+        combine([b], [1.0], tgt=T)[cols].to_parquet(d / f'D18xs{seed}_h22_lgbm_h22_val.parquet', index=False)
+    print('seed-файлы D18x записаны', flush=True)
+
+
 def summary():
     """Представители кандидатов по правилу третьего круга (gibrid_v17 --dev-eval oos): ключ - число нарушенных c1-c4 (шаги 2-6), затем
     средний OOS QLIKE 2017-2020 (шаги 2-5); QLIKE по годам 2017-2021 из designs_val (шаги 7-9 скрыты гибридом)."""
@@ -378,6 +394,8 @@ def main():
         st = selftest(a, harj); st.to_csv(OUT / 'selftest_future.csv', index=False); print(st.to_string()); return
     if '--step10' in sys.argv:
         step10(a, harj); return
+    if '--seeds-x' in sys.argv:
+        seeds_x(a); return
     if '--summary' in sys.argv:
         summary(); return
     if '--d165' in sys.argv:  # --d165 <нога> <слот xgb|lgb> - представитель Д16.5 по его гибриду
