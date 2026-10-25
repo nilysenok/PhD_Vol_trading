@@ -12,7 +12,10 @@
   d_mode              — all | standard | inverse;
   ens_k, vote_frac    — размер ансамбля A (топ-k) и порог голосования (доля ненулевых);
   d_continuous, d_cont_gamma — непрерывный D: размер = min(cap, (σ_target/σ_pred)^γ);
-  turnover_filter, tf_min_hold, tf_reentry — фильтр оборота A/B/C/D (fastbt.turnover).
+  turnover_filter, tf_min_hold, tf_reentry — фильтр оборота A/B/C/D (fastbt.turnover);
+  d_gate_mode (abs|rel|hyst), d_rel_window, d_rel_thr, d_hyst_in, d_hyst_gap, d_min_closed —
+  доводка затвора D: относительный порог σ_pred/медиана(σ_pred, окно, прошлое), гистерезис
+  (открыть при r < θ_in, закрыть при r > θ_out = θ_in + gap), доля закрытых дней калибровки ≥ min.
 """
 from __future__ import annotations
 
@@ -26,13 +29,15 @@ from fastbt import grids
 _NAMES = ["C_HORIZONS", "D_HORIZONS", "B_GRIDS", "C_TERM_FILTER", "C_THRESHOLDS",
           "C_THRESHOLDS_V41", "C_LOOKBACKS", "C_DIRECTION_TREND", "C_HYSTERESIS_TREND",
           "D_GATE_THRESHOLDS", "D_TARGET_VOLS", "D_SMOOTH", "D_STANDARD", "D_INVERSE",
-          "ENS_K", "VOTE_FRAC", "D_CONT", "D_CONT_GAMMA", "TF", "TF_HOLD", "TF_REENTRY"]
+          "ENS_K", "VOTE_FRAC", "D_CONT", "D_CONT_GAMMA", "TF", "TF_HOLD", "TF_REENTRY",
+          "D_GATE_MODE", "D_REL_WINDOW", "D_REL_THR", "D_HYST_IN", "D_HYST_GAP", "D_MIN_CLOSED"]
 _DEFAULT = {k: copy.deepcopy(getattr(grids, k)) for k in _NAMES}
 _APPLIED = None
 KEYS = {"horizons", "sigma_smooth", "c_thresholds", "c_lookbacks", "c_trend_direction",
         "c_trend_hysteresis", "d_gate_thresholds", "d_target_vols", "d_smooth", "d_mode",
         "ens_k", "vote_frac", "d_continuous", "d_cont_gamma", "turnover_filter", "tf_min_hold",
-        "tf_reentry"}
+        "tf_reentry", "d_gate_mode", "d_rel_window", "d_rel_thr", "d_hyst_in", "d_hyst_gap",
+        "d_min_closed"}
 
 
 def freeze(d: dict) -> tuple:
@@ -76,6 +81,14 @@ def apply(design: tuple) -> None:
     grids.D_CONT = bool(d.get("d_continuous", False))
     if "d_cont_gamma" in d:
         grids.D_CONT_GAMMA = [float(x) for x in d["d_cont_gamma"]]
+    for k, name in (("d_gate_mode", "D_GATE_MODE"), ("d_rel_window", "D_REL_WINDOW"),
+                    ("d_min_closed", "D_MIN_CLOSED")):
+        if k in d:
+            setattr(grids, name, d[k])
+    for k, name in (("d_rel_thr", "D_REL_THR"), ("d_hyst_in", "D_HYST_IN"),
+                    ("d_hyst_gap", "D_HYST_GAP")):
+        if k in d:
+            setattr(grids, name, [float(x) for x in d[k]])
     grids.TF = bool(d.get("turnover_filter", False))
     if "tf_min_hold" in d:
         grids.TF_HOLD = [int(x) for x in d["tf_min_hold"]]

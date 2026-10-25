@@ -129,6 +129,17 @@ def choices(metas, years) -> str:
                 if int(Y) in years:
                     tf["A"][(t["min_hold"], t["reentry_ban"])] += 1
     parts = []
+    gm = [p for by_sid in metas.values() for m in by_sid.values()
+          for Y, p in m.get("D", {}).items()
+          if int(Y) in years and isinstance(p, dict) and "closed_frac" in p]
+    if gm:
+        thr = Counter(p["theta"] if "theta" in p else
+                      (p["gate_threshold"] if "gate_threshold" in p else
+                       f"{p['theta_in']:g}/{p['theta_out']:g}") for p in gm)
+        parts.append(f"D затвор: доля закрытых дней калибровки в среднем "
+                     f"{np.mean([p['closed_frac'] for p in gm]):.3f} (мин. "
+                     f"{min(p['closed_frac'] for p in gm):.3f}), порог: "
+                     + ", ".join(f"{k}×{v}" for k, v in thr.most_common(4)))
     if g:
         parts.append("D γ: " + ", ".join(f"{k:g}×{v}" for k, v in sorted(g.items())))
     for k, c in tf.items():

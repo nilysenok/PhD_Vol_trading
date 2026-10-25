@@ -72,6 +72,14 @@ ENS_K = 10
 VOTE_FRAC = 0.5
 D_CONT = False                 # непрерывный D (Moreira–Muir) вместо бинарного затвора
 D_CONT_GAMMA = [1.0, 2.0]
+# Доводка D (ночная задача 5, 26.10): режим затвора abs (код) | rel | hyst; окно медианы σ_pred;
+# пороги rel (открыт при σ/медиана < θ); пары (θ_in, θ_out) hyst; минимум доли закрытых дней
+D_GATE_MODE = "abs"
+D_REL_WINDOW = 252
+D_REL_THR = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.5, 2.0]
+D_HYST_IN = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
+D_HYST_GAP = [0.1, 0.2, 0.3, 0.5]
+D_MIN_CLOSED = 0.0
 TF = False                     # фильтр оборота (fastbt.turnover)
 TF_HOLD = [3, 5]
 TF_REENTRY = [0, 1, 3, 5, 10]
