@@ -37,6 +37,25 @@ def hysteresis(pr, above, entry, exit_, n):
     return mask
 
 
+@njit(cache=True)
+def hyst_gate(r, th_in, th_out):
+    """Затвор с гистерезисом: открыт; закрыть при r > th_out; открыть при r < th_in.
+    r = NaN (нет истории) — затвор открыт."""
+    n = len(r)
+    g = np.ones(n, dtype=np.bool_)
+    st = True
+    for i in range(n):
+        v = r[i]
+        if v != v:
+            st = True
+        elif st and v > th_out:
+            st = False
+        elif (not st) and v < th_in:
+            st = True
+        g[i] = st
+    return g
+
+
 class Dedup:
     """Список масок в порядке перебора → уникальные строки + индекс."""
 
@@ -134,8 +153,33 @@ def _d_sigma(raw, smooth, vf, vc):
     return np.where(np.isnan(s) | (s < 1e-6), 1e-6, s)
 
 
+def _d_gates_rel(td):
+    """Относительный затвор (доводка D): r = σ_pred / медиана σ_pred тикера за предыдущие
+    D_REL_WINDOW баров (сдвиг на 1: только прошлое, min 63). Нет r — затвор открыт.
+    rel: открыт при r < θ; hyst: закрыть при r > θ_out, открыть при r < θ_in."""
+    dd, params = Dedup(), []
+    for h in grids.D_HORIZONS:
+        s = pd.Series(td.sigma[h])
+        med = s.shift(1).rolling(grids.D_REL_WINDOW, min_periods=63).median()
+        r = (s / med).values.astype(np.float64)
+        if grids.D_GATE_MODE == "rel":
+            for th in grids.D_REL_THR:
+                dd.add(np.isnan(r) | (r < th))
+                params.append(dict(mode="rel", horizon=h, theta=th))
+        else:
+            for ti in grids.D_HYST_IN:
+                for gap in grids.D_HYST_GAP:
+                    to = round(ti + gap, 4)
+                    dd.add(hyst_gate(r, ti, to))
+                    params.append(dict(mode="hyst", horizon=h, theta_in=ti, theta_out=to))
+    rows, idx = dd.done()
+    return rows, idx, params
+
+
 def _d_gates(td, annualize):
     """Затворы D в порядке V4:924-966: стандартный вариант, затем обратная волатильность."""
+    if grids.D_GATE_MODE in ("rel", "hyst"):
+        return _d_gates_rel(td)
     sg = {h: (td.sigma[h] * np.sqrt(252.0) if annualize else td.sigma[h]) for h in grids.D_HORIZONS}
     dd, params = Dedup(), []
     for tv in (grids.D_TARGET_VOLS if grids.D_STANDARD else []):

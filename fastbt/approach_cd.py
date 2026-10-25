@@ -111,10 +111,19 @@ def run_d(u, cfg, a_res):
         vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
         sh, _, _ = _eval(apos, rows, u.lr, vs, ve, cfg.comm)
         sh = sh[idx]
-        bi = _first_best(sh)
+        # доля закрытых дней окна калибровки (все бары окна); D_MIN_CLOSED — ограничение отбора
+        cf = (1.0 - rows[:, vs:ve].mean(axis=1))[idx]
+        if grids.D_MIN_CLOSED > 0:
+            bi = _first_best(sh, cf >= grids.D_MIN_CLOSED)
+            if bi < 0:                       # недостижимо: берём максимум закрытых дней
+                bi = _first_best(sh, cf >= cf.max() - 1e-9)
+        else:
+            bi = _first_best(sh)
         if bi < 0:
             continue
-        out[Y] = (params[bi], apos * rows[idx[bi]].astype(np.float64), float(sh[bi]))
+        pr = dict(params[bi])
+        pr["closed_frac"] = float(cf[bi])
+        out[Y] = (pr, apos * rows[idx[bi]].astype(np.float64), float(sh[bi]))
     return out
 
 
