@@ -5,7 +5,7 @@
 #   bash scripts/analysis/final3.sh confirm  # ЕДИНСТВЕННОЕ открытие подтверждающего (val 2022-2024) для финалистов; второй раз не запустится (замок)
 #   bash scripts/analysis/final3.sh build    # тестовые прогнозы финала шагов 1-10 без метрик -> test_locked/final3/; σ_pred(h=1)
 #   bash scripts/analysis/final3.sh report   # docs/otchety/FINAL_DESIGN_chernovik.md (перезапись)
-#   bash scripts/analysis/final3.sh all      # dev -> confirm -> build -> report (запуск после 03:00 по команде дирижёра; решение владельца 01:35)
+#   bash scripts/analysis/final3.sh all      # dev -> confirm -> build -> report (запуск по команде дирижёра после всех агентов рычагов; дедлайна нет)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 R=/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen
