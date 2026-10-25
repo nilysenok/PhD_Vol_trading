@@ -30,7 +30,7 @@
   step10_dir / step10_lock: # val 2025 / тест 2026 шага 10 в формате final2_step10.py ({boost}_{m}_h{h}_s10_{val,test}.parquet)
   features_har: ...         # матрица для HAR-J/HAR-CJ гибрида (по умолчанию features_pit_v3.parquet)
   n_variantov: 0            # число вариантов бустинга, перебранных агентом (счётчик FINAL)
-Где ищутся yaml: data/regen/final3/kandidaty/, data/regen/ (верхний уровень), data/regen/{D14,D16,D17,HARX}*/ (до трёх уровней).
+Где ищутся yaml: data/regen/final3/kandidaty/, data/regen/ (верхний уровень), data/regen/{D14,D16,D17,D18-D22,HARX}*/ (до трёх уровней).
 python3 scripts/analysis/final3.py pool|gibrid|select|confirm|build|report [--dry] [--only-krug2] [--zapis] [--confirm] [--workers 6]"""
 import argparse, hashlib, json, os, re, subprocess, sys, time
 from concurrent.futures import ThreadPoolExecutor
@@ -69,7 +69,7 @@ R2 = [
          seen={'seeds3|V0_XGB|B-smrob|L0': 'не прошёл', 'single|minimax|B-smrob|L0.25|log': 'не прошёл', 'single|step|B-smrob|L0.5': 'не прошёл'}),
 ]
 HARJ_HOST = {1: 'D12_h1_A_d812', 5: 'D12_h5', 22: 'D12_h22'}  # HAR-J с поправкой берётся из гибрида этого кандидата (HAR-J общий)
-R3_PREFIX = ('D14', 'D16', 'D17', 'HARX')
+R3_PREFIX = ('D14', 'D16', 'D17', 'D18', 'D19', 'D20', 'D21', 'D22', 'HARX')  # решение 01:35: + Д18-Д22
 F = lambda x, n=4: '—' if x is None or (isinstance(x, float) and not np.isfinite(x)) else f'{x:.{n}f}'.replace('.', ',')
 P = lambda x: '—' if x is None or not np.isfinite(x) else f'{100 * x:+.1f}%'.replace('.', ',')
 
@@ -671,7 +671,7 @@ def report(a, C):
     # 3. правила (объявлены до запуска)
     L += ['', '## 3. Правило выбора третьего круга (объявлено до запуска, `2026-10-26_final3.md`)', '',
           '1. Пул: финалисты второго круга (D12_h1_A_d812, D12_h1_B_b0.25, D12_h1_V0, F2m_h5, D12_h5, L2v3_h5, D12_h22), HAR-J с поправкой (фолбэк h=22) '
-          'и кандидаты третьего круга с OOS-прогнозами и yaml к 02:30 (HAR-X — только как нога гибрида: одиночные модели без бустинга в пул не входят, решение 01:12). '
+          'и кандидаты третьего круга с OOS-прогнозами и yaml к 03:00 (HAR-X — только как нога гибрида: одиночные модели без бустинга в пул не входят, решение 01:12). '
           'Кандидат представлен своим лучшим дизайном по правилу.',
           '2. Рейтинг: число нарушенных критериев c1–c4 (val 2017–2021, OOS: параметры и s² шага t−1 -> val шага t; val 2016 = шаг 1 даёт s² для шага 2; '
           'эталон — модели с той же s²; V0 наравне, сам с собой не сравнивается), затем средний OOS QLIKE val 2017–2020 (шаги 2–5). '
