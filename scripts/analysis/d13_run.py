@@ -30,14 +30,15 @@ def _casc_task(j):
     return T.h1_cascade_task(G['A1'], G['FC1'], st, Y, P, keep)
 
 
-def cascade(steps, pool):
+def cascade(steps, workers):
     if T.CASC_CACHE.exists():
         c = pd.read_parquet(T.CASC_CACHE)
         if set(steps) <= set(c.step.unique()):
             return T.h1_dict(c)
     A1, FC1 = T.load(1)
     G.update(A1=A1, FC1=FC1)
-    res = pool.map(_casc_task, T.h1_cascade_jobs(A1, FC1, range(1, 10)), chunksize=1)  # сразу шаги 1-9 (для --final)
+    with mp.get_context('fork').Pool(workers) as pool:  # fork после загрузки A1
+        res = pool.map(_casc_task, T.h1_cascade_jobs(A1, FC1, range(1, 10)), chunksize=1)  # сразу шаги 1-9 (для --final)
     c = pd.concat(res, ignore_index=True)
     T.D13DIR.mkdir(parents=True, exist_ok=True); c.to_parquet(T.CASC_CACHE, index=False)
     return T.h1_dict(c)
@@ -60,7 +61,7 @@ def task(a):
     c2 = {**cfg, 'h1f': True} if cfg.get('casc') else cfg
     ref = L.make_ref(model, A, cols, h, c2, btag, h1=h1) if step > 1 else None
     D = prep(L.step_data(A, cols, h, step, model, c2, btag, h1=h1), cfg)
-    pv, pt, bi, gain, _ = L.fit(model, p, D, c2, ref=ref, seed=42)
+    pv, pt, bi, gain, _ = L.fit(model, p, D, c2, ref=ref, seed=int(cfg.get('seed', 42)))  # seed — проверка устойчивости к зерну
     out = []
     for k, pr, yr in (('va', pv, D['vy']), ('te', pt, D['ty'])):
         d = D['parts'][k]
@@ -157,8 +158,7 @@ def main():
     steps = list(range(9, 0, -1)) if a.final else list(range(6, 0, -1))
     ctx = mp.get_context('fork')
     if any(c['cfg'].get('casc') for c in cf):
-        with ctx.Pool(a.workers) as P:
-            G['h1'] = cascade(sorted(steps), P)
+        G['h1'] = cascade(sorted(steps), a.workers)
         print(f'каскад h=1 готов ({time.time() - t0:.0f} с)', flush=True)
     tasks = [(c['name'], m, s) for c in cf for s in steps for m in ('lgbm', 'xgb')]
     with ctx.Pool(a.workers) as P:
