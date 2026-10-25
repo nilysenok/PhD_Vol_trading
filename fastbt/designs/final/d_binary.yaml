@@ -1,0 +1,14 @@
+# D бинарный, лучший непрошедший С8 (s04_t14_smooth20)
+vpred: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/sigma_pred_h1_v2.parquet
+fix_c_s12_val: true
+fix_b_median: true
+fix_d_units: true
+fix_c_fill: true
+fix_rate: true
+fix_sharpe: true
+comm: 0.0005
+msp_comm: 0.0005
+horizons: [h1]
+c_trend_direction: ["OFF"]
+c_trend_hysteresis: [0]
+sigma_smooth: 20
