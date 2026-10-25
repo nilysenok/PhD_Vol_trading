@@ -549,6 +549,8 @@ def harx_ext(hs=(1, 5, 22)):
     X = pd.read_parquet(OUT / 'd23_xfeat.parquet')
     A = A.merge(X[['date', 'ticker'] + XF_HARX], on=['date', 'ticker'], how='left', validate='one_to_one')
     lt = HX.leak_test(A, XF_HARX)
+    if HX._SIG.get('v', 0) is None:  # leak_test кладёт None в кэш σ̂, если он был пуст - вернуть пустой
+        HX._SIG.pop('v')
     lt.to_csv(OUT / 'leak_test_harx_terms.csv', index=False)
     print('leak_test слагаемых Д23 (столбцы как есть):', int(lt.mismatch.sum()), flush=True)
     (LOCK / 'D23_HARXc').mkdir(parents=True, exist_ok=True)
@@ -677,10 +679,148 @@ def run_gibrid(boost, h, legs):
     with open(OUT / 'logs' / f'gibrid_{boost}.log', 'w') as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, check=True)
 
+
+# ---------------------------------------------------------------- Д23.3 h=5: D12_h5 (V9 + Д8.12 + Д7 + Huber, optuna-30) с весами/окнами
+G5 = {}
+D12H5_CFG = {'v9': True, 'harf': True, 'huber': True}
+
+
+BCANDS5 = {'hl2': {'hl': 2}, 'hl4': {'hl': 4}, 'r3': {'win': 3}, 'r5': {'win': 5}}
+
+
+def boost5_run(vars_, workers=3, check=False):
+    """Точки D12_h5 (D12_h5_trials.csv: топ-5 неснятых испытаний шага 1-6; шаги 7-9 - точка шага 6; seed 43/44 - выбранная точка),
+    ноги single/top5/seeds3 -> data/regen/D23_h5_<вар>_{xgb,lgbm}_h5{,_top5,_seeds4344}_val.parquet, тест - test_locked/D23_h5_<вар>/."""
+    import multiprocessing as mp
+    import l2_lib as L
+    from tune_L2 import SPACEB
+    _install_win()
+    A, FC = L.load_base(None, ('d7',), 5)
+    A2, cols, _, _ = L.build_features(A, FC, 5, D12H5_CFG)
+    T = pd.read_csv(R / 'D12_h5_trials.csv')
+    T = T[~T.pruned.astype(bool)]
+    S = pd.read_csv(R / 'D12_h5_selected_h5.csv')
+    P = {}  # trial-номера уникальны только внутри (модель, шаг): ключ - (модель, шаг, trial)
+    for r in T.itertuples():
+        P[(r.model, int(r.step), int(r.trial))] = {k: getattr(r, k) for k, *_ in SPACEB[r.model]}
+    sel6 = {m: int(S[(S.model == m) & (S.step == 6)].trial.iloc[0]) for m in ('xgb', 'lgbm')}
+    G5.update(A=A2, cols=cols)
+    plan = []
+    for m in ('xgb', 'lgbm'):
+        for s in range(1, 10):
+            if s <= 6:
+                top = T[(T.model == m) & (T.step == s)].sort_values('qlike_val').trial.astype(int).tolist()[:5]
+                selt = int(S[(S.model == m) & (S.step == s)].trial.iloc[0])
+                assert top[0] == selt, (m, s, top[0], selt)
+                plan += [(m, s, t, 42, r + 1) for r, t in enumerate(top)]
+                plan += [(m, s, selt, sd, 1) for sd in (43, 44)]
+            else:
+                plan += [(m, s, sel6[m], sd, 1) for sd in (42, 43, 44)]
+    # параметры по (модель, шаг, trial): шаги 7-9 - точка шага 6
+    def par(m, s, t):
+        return P[(m, min(s, 6), t)]
+    G5['par'] = par
+    if check:
+        t2 = int(S[(S.model == 'xgb') & (S.step == 2)].trial.iloc[0])
+        r = _job5_p(('base', 'xgb', 2, t2, 42, 1))
+        ref = pd.read_parquet(R / 'D12_h5_xgb_h5_val.parquet')
+        m_ = r[7].merge(ref[ref.step == 2], on=['date', 'ticker'], suffixes=('', '_ref'))
+        print('сверка D12_h5 шаг 2 xgb:', len(m_), float(np.abs(np.log(m_.rv_pred) - np.log(m_.rv_pred_ref)).max()), flush=True)
+        return
+    tasks = [(v,) + t for v in vars_ for t in plan]
+    t0 = time.time()
+    print(f'{time.strftime("%T")} h=5 варианты {vars_}, моделей {len(tasks)}, воркеров {workers}', flush=True)
+    with mp.get_context('fork').Pool(workers) as Pl:
+        res = Pl.map(_job5_p, tasks, chunksize=1)
+    print(f'{time.strftime("%T")} обучено за {time.time() - t0:.0f} с', flush=True)
+    for v in vars_:
+        boost = f'D23_h5_{v}'
+        td = LOCK / boost
+        td.mkdir(parents=True, exist_ok=True)
+        for m in ('xgb', 'lgbm'):
+            rr = [x for x in res if x[0] == v and x[1] == m]
+            sel = lambda f: (pd.concat([x[7] for x in rr if f(x)], ignore_index=True), pd.concat([x[8] for x in rr if f(x)], ignore_index=True))
+            files = {'': sel(lambda x: x[5] == 1 and x[4] == 42), '_top5': sel(lambda x: x[2] <= 6 and x[4] == 42),
+                     '_seeds4344': sel(lambda x: x[4] in (43, 44))}
+            for sfx, (vv, tt) in files.items():
+                vv.sort_values(['step', 'date', 'ticker']).to_parquet(R / f'{boost}_{m}_h5{sfx}_val.parquet', index=False)
+                tt.sort_values(['step', 'date', 'ticker']).to_parquet(td / f'{boost}_{m}_h5{sfx}_test.parquet', index=False)
+        print(boost, 'записан', flush=True)
+
+
+def _job5_p(t):
+    """Как _job5, параметры - G5['par'](модель, шаг, trial); вариант 'base' - без рычага (сверка)."""
+    import l2_lib as L
+    var, model, step, trial, seed, rank = t
+    cfg = dict(D12H5_CFG, **BCANDS5.get(var, {}))
+    p = G5['par'](model, step, trial)
+    D = L.step_data(G5['A'], G5['cols'], 5, step, model, cfg, 'Bv2b')
+    ref = L.make_ref(model, G5['A'], G5['cols'], 5, cfg, 'Bv2b') if step > 1 else None
+    pv, pt, bi, _, _ = L.fit(model, p, D, cfg, seed=seed, ref=ref)
+    out = []
+    for k, pr in (('va', pv), ('te', pt)):
+        df, yr = (D['parts']['va'], D['vy']) if k == 'va' else (D['parts']['te'], D['ty'])
+        out.append(pd.DataFrame({'date': df['date'].values, 'ticker': df['ticker'].values, 'year': yr, 'step': step, 'trial': trial,
+                                 'seed': seed, 'rank': rank, 'rv_actual': df[L.tcol(5)].values, 'rv_pred': np.clip(np.exp(pr), 1e-10, None)}))
+    return var, model, step, trial, seed, rank, bi, out[0], out[1]
+
+
+# ---------------------------------------------------------------- Д23.3: ансамбль по окнам и сводка рычагов бустинга
+def make_wens(h, members, out):
+    """Среднее RV прогнозов кандидатов-членов (одни и те же точки/seed/шаги) -> кандидат out (val и тест, все ноги)."""
+    keys = ['date', 'ticker', 'year', 'step', 'seed', 'rank', 'rv_actual']
+    td = LOCK / out
+    td.mkdir(parents=True, exist_ok=True)
+    for m in ('xgb', 'lgbm'):
+        for sfx in ('', '_top5', '_seeds4344'):
+            for kind in ('val', 'test'):
+                fr = []
+                for b in members:
+                    p = (R / f'{b}_{m}_h{h}{sfx}_val.parquet') if kind == 'val' else (LOCK / b / f'{b}_{m}_h{h}{sfx}_test.parquet')
+                    d = pd.read_parquet(p)
+                    pk = 'point' if 'point' in d else 'trial'
+                    fr.append(d.rename(columns={pk: 'pt'}))
+                k = [c for c in keys if c in fr[0]] + ['pt']
+                M = fr[0][k + ['rv_pred']]
+                for i, d in enumerate(fr[1:], 1):
+                    M = M.merge(d[k + ['rv_pred']], on=k, suffixes=('', f'_{i}'), validate='one_to_one')
+                assert len(M) == len(fr[0]), (m, sfx, kind, len(M), len(fr[0]))
+                M['rv_pred'] = M[[c for c in M.columns if c.startswith('rv_pred')]].mean(axis=1)
+                M = M[k + ['rv_pred']].rename(columns={'pt': 'point'})
+                if kind == 'val':
+                    M.to_parquet(R / f'{out}_{m}_h{h}{sfx}_val.parquet', index=False)
+                else:
+                    M.to_parquet(td / f'{out}_{m}_h{h}{sfx}_test.parquet', index=False)
+    print(out, 'записан', flush=True)
+
+
+def eval_boost(h, boosts, base):
+    """Ноги и сиды кандидатов против базы (одни и те же точки): 2017-2020, 2021, s2 - лучшая из sm/smrob."""
+    rows = [leg_eval(b, h).assign(kind='leg') for b in [base] + boosts]
+    srows = [seed_eval(b, h).assign(kind='seed') for b in [base] + boosts]
+    L_ = pd.concat(rows, ignore_index=True)
+    S_ = pd.concat(srows, ignore_index=True)
+    L_.to_csv(OUT / f'd23_boost_legs_h{h}.csv', index=False)
+    S_.to_csv(OUT / f'd23_boost_seeds_h{h}.csv', index=False)
+    pd.set_option('display.width', 250)
+    print(L_.round(5).to_string(), flush=True)
+    pv = S_.pivot_table(index=['boost', 'model'], columns='seed', values='2017-2020')
+    pv['mean3'] = pv.mean(axis=1)
+    print(pv.round(5).to_string(), flush=True)
+    return L_, S_
+
 if __name__ == '__main__':
     OUT.mkdir(parents=True, exist_ok=True)
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'ebar'
-    if cmd == 'summary':
+    if cmd == 'wens':  # wens <h> <out> <члены...>
+        make_wens(int(sys.argv[2]), sys.argv[4:], sys.argv[3])
+    elif cmd == 'evalb':  # evalb <h> <база> <кандидаты...>
+        eval_boost(int(sys.argv[2]), sys.argv[4:], sys.argv[3])
+    elif cmd == 'boost5':  # boost5 <вар...> [--workers N] [--check]
+        args = sys.argv[2:]
+        w = int(args[args.index('--workers') + 1]) if '--workers' in args else 3
+        boost5_run([x for x in args if x in BCANDS5], workers=w, check='--check' in args)
+    elif cmd == 'summary':
         gibrid_summary()
     elif cmd == 'gibrid':  # gibrid <boost> <h> <ноги...>
         run_gibrid(sys.argv[2], int(sys.argv[3]), sys.argv[4:] or ['single'])
