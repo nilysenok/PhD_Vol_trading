@@ -76,16 +76,17 @@ def main():
     ap.add_argument('--h', type=int, required=True); ap.add_argument('--cfg', default='{}'); ap.add_argument('--workers', type=int, default=6)
     ap.add_argument('--tag', default=None); ap.add_argument('--btag', default='Bv2b', help='исключения признаков шагов >= 2 (как в точке B)')
     ap.add_argument('--trials', type=int, default=30)
+    ap.add_argument('--blocks', default='', help='d7,d10 — блоки признаков (как l2_run.py)')
     a = ap.parse_args()
     h, cfg = a.h, json.loads(a.cfg)
     TAG = a.tag or f'L2_h{h}'
     OUT, LOCK = L.REGEN, L.REGEN / 'test_locked' / TAG
     LOCK.mkdir(parents=True, exist_ok=True)
-    A, FC = L.load_base()
+    A, FC = L.load_base(None, tuple(x for x in a.blocks.split(',') if x), h)
     A2, cols, _, _ = L.build_features(A, FC, h, cfg)
     G.update(A=A2, cols=cols, cfg=cfg, h=h, btag=a.btag, n=a.trials)
     t0 = time.time()
-    print(f'{TAG}: optuna TPE {a.trials} (seed 42), cfg={cfg}, признаков {len(cols)}, воркеров {a.workers}', flush=True)
+    print(f'{TAG}: optuna TPE {a.trials} (seed 42), cfg={cfg}, блоки={a.blocks or "-"}, признаков {len(cols)}, воркеров {a.workers}', flush=True)
     ctx = mp.get_context('fork')
     with ctx.Pool(a.workers) as P:
         res = P.map(study, [(m, s) for m in ('lgbm', 'xgb') for s in range(6, 0, -1)], chunksize=1)
