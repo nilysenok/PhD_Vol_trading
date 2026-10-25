@@ -21,10 +21,13 @@ def select(res, mode, h):
     rows, ov, ot = [], [], []
     for i, r in enumerate(res):
         q = r['q']
-        if mode == 'minimax':  # минимум худшего val-года среди лет, доступных к шагу (шаги 1..i)
-            best = min(q, key=lambda k: max(x['q'][k] for x in res[:i + 1]))
+        keys = [k for k in q if k != 'G3_InvQ']  # G3 (рычаг Г3: веса ~ 1/val-QLIKE компонент) - отдельный дизайн, не кандидат step/minimax
+        if mode == 'g3':
+            best = 'G3_InvQ'
+        elif mode == 'minimax':  # минимум худшего val-года среди лет, доступных к шагу (шаги 1..i)
+            best = min(keys, key=lambda k: max(x['q'][k] for x in res[:i + 1]))
         else:
-            best = min(q, key=q.get)
+            best = min(keys, key=lambda k: q[k])
         w = r['W'][best]
         row = dict(r['base'], h=h, scheme=best, w_har=w[0], w_xgb=w[1], w_lgb=w[2], q_hyb=q[best])
         row.update({f'q_{k}': v for k, v in q.items()})
@@ -32,6 +35,21 @@ def select(res, mode, h):
         for df, p, lst in ((r['vs'], r['pv'][best], ov), (r['ts'], r['pt'][best], ot)):
             lst.append(df[['date', 'ticker', 'year', 'step', 'rv_actual']].assign(rv_pred=p))
     return pd.DataFrame(rows), pd.concat(ov), pd.concat(ot)
+
+
+def shrink(res, lam):
+    """Рычаг Г4: усадка к равным весам. Прогноз схемы -> (1-lam)*прогноз + lam*среднее(HAR, XGB, LGB); веса так же."""
+    if lam == 0:
+        return res
+    out = []
+    for r in res:
+        mv, mt = r['vs'][['har', 'xgb', 'lgb']].mean(axis=1).values, r['ts'][['har', 'xgb', 'lgb']].mean(axis=1).values
+        pv = {k: (1 - lam) * p + lam * mv for k, p in r['pv'].items()}
+        pt = {k: (1 - lam) * p + lam * mt for k, p in r['pt'].items()}
+        y = r['vs']['rv_actual'].values
+        q = {k: float(np.mean(y / np.clip(p, 1e-10, None) - np.log(y / np.clip(p, 1e-10, None)) - 1)) for k, p in pv.items()}
+        out.append(dict(r, q=q, pv=pv, pt=pt, W={k: (1 - lam) * np.asarray(w, dtype=float) + lam / 3 for k, w in r['W'].items()}))
+    return out
 
 
 def flags(ch):

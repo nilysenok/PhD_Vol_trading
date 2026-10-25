@@ -1,33 +1,37 @@
 """Текст итерации dev_log: только разработочный набор (val-годы 2016-2021, шаги 1-6). Метрики 2022-2024 здесь не выводятся
-(их печатает только --confirm --finalists, один раз)."""
+(их печатает только --confirm --finalists, один раз). Полные таблицы - ranking_*/designs_val_* по h."""
 import re
 from pathlib import Path
 
 CR = ('c1', 'c2', 'c3', 'c4')
+TOP = 10
 
 
 def counter(devlog, n_pairs, n_designs):
     p = Path(devlog)
     prev = sum(int(x) for x in re.findall(r'Перебрано дизайн×h: (\d+)', p.read_text())) if p.exists() else 0
-    return f'Перебрано дизайн×h на разработочном наборе: {n_pairs} ({n_designs} дизайнов x 3 h); накопленно с прошлых итераций: {prev + n_pairs}'
+    return f'Перебрано дизайн×h на разработочном наборе: {n_pairs} (до {n_designs} дизайнов на h); накопленно с прошлых итераций: {prev + n_pairs}'
 
 
-def lines(Rd, win, ref, sp, boost, lag, cnt, ys):
-    L = [f'Гибрид V1-V7 + V0, дизайны на {boost} (gibrid_v17.py; метрики только разработочный набор 2016-2021; V7 lag={lag}; Б0.1 только oos; c1-c3 относительно одиночных с Б0.1oos; single = одна точка бустинга, не V0)',
-         cnt + '. Подтверждающий набор (val 2022-2024) скрыт; по П1 он был виден до введения правила разработка/подтверждение, поэтому П1 не является чистой проверкой.',
-         '| дизайн | h | ' + ' | '.join(str(y) for y in ys) + ' | средн. q | худш. отн. к HAR | c1 | c2 | c3 | c4 |', '|' + '---|' * (8 + len(ys))]
-    for (d, h), g in Rd.groupby(['design', 'h'], sort=False):
-        f = g.iloc[0]
-        L.append(f'| {d.replace("|", "/")} | {h} | ' + ' | '.join(f'{r.q_hyb:.3f} ({r.ratio_har:.2f})' for r in g.itertuples())
-                 + f' | {g.q_hyb.mean():.3f} | {f.worst_ratio_h:.2f} | ' + ' | '.join('+' if f[k + '_h'] else '-' for k in CR) + ' |')
-    L += ['', 'Выбор по правилу (прошли все -> мин. средний val-QLIKE; иначе мин. нарушенных, затем мин. QLIKE; на 2016-2021):', '| h | дизайн | не выполнены | средн. q |', '|---|---|---|---|']
-    L += [f'| {r.h} | {r.design.replace("|", "/")} | {r.failed or "-"} | {r.mean_q:.3f} |' for r in win.itertuples()]
-    L += ['', 'Справка (single/step, средний val-QLIKE 2016-2021):', '| h | гибрид Б0.1 in-sample | HAR Б0.1 in-sample | V7 lag=h | V7 lag=1 (исходная, с заглядыванием на h-1 дней) | шаги V7 lag=h | шаги V7 lag=1 |', '|---|---|---|---|---|---|---|']
-    L += [f'| {r["h"]} | {r["hyb_B01_insample"]:.3f} | {r["har_B01_insample"]:.3f} | {r["V7_lag_h"]:.3f} | {r["V7_lag1_orig"]:.3f} | {r["V7_steps_lag_h"]} | {r["V7_steps_lag1"]} |' for r in ref]
-    ob = Rd[Rd.design == 'single|step|B0.1oos']
-    L += ['', 'HAR-J, val-QLIKE: (а) расширяющееся без поправки; (б) то же с Б0.1oos (эталон критериев и DM); (в) лучшая спецификация шага из списка этапа 2б (только строка устойчивости)',
-          '| h | строка | ' + ' | '.join(map(str, ys)) + ' | средн. |', '|' + '---|' * (3 + len(ys))]
-    for h in (1, 5, 22):
-        for nm, v in (('(а)', ob[ob.h == h].q_har_raw), ('(б)', ob[ob.h == h].q_har), ('(в)', sp[sp.h == h].q_chosen)):
-            L.append(f'| {h} | {nm} | ' + ' | '.join(f'{x:.3f}' for x in v) + f' | {v.mean():.3f} |')
+def lines(P, boost, lag, cnt, etalon):
+    ys = sorted(P[0]['Rd'].val_year.unique())
+    L = [f'Гибрид V0-V7, пространство дизайнов на {boost} (gibrid_v17.py; метрики только разработочный набор 2016-2021; V7 lag={lag}; эталон c1-c3: одиночные с Б0.1 {"ord" if etalon == "ord" else "той же оценки"}; single = одна точка бустинга, не V0)',
+         cnt + '. Подтверждающий набор (val 2022-2024) скрыт. Правило выбора: прошли все критерии -> мин. средний val-QLIKE; иначе мин. нарушенных, затем мин. QLIKE.']
+    for p in P:
+        h, Rd = p['h'], p['Rd']
+        L += ['', f'h={h}: топ-{TOP} по правилу (дизайн = нога|выбор|поправка|усадка)',
+              '| # | дизайн | не выполнены | ' + ' | '.join(map(str, ys)) + ' | средн. q |', '|' + '---|' * (4 + len(ys))]
+        for i, r in enumerate(p['F'].head(TOP).itertuples(), 1):
+            q = Rd[Rd.design == r.design].q_hyb.values
+            L.append(f'| {i} | {r.design.replace("|", "/")} | {r.failed or "-"} | ' + ' | '.join(f'{x:.3f}' for x in q) + f' | {r.mean_q:.3f} |')
+        L.append(f'финалисты auto (лучшие в разных семействах): ' + '; '.join(d.replace('|', '/') for d in p['auto']))
+        ob = Rd[Rd.design == 'single|step|B-ord|L0']
+        L += ['', f'h={h}: HAR-J, val-QLIKE (а) как в диссертации (расширяющееся, без поправки); (б) с Б0.1 ord - эталон критериев и DM; (в) лучшая спецификация шага (этап 2б), только устойчивость',
+              '| строка | ' + ' | '.join(map(str, ys)) + ' | средн. |', '|' + '---|' * (2 + len(ys))]
+        for nm, v in (('(а)', ob.q_har_raw), ('(б)', ob.q_har), ('(в)', p['sp'].q_chosen)):
+            L.append(f'| {nm} | ' + ' | '.join(f'{x:.3f}' for x in v) + f' | {v.mean():.3f} |')
+        r = p['ref'][0]
+        L.append(f'Справка (single/step/bez, 2016-2021): V7 lag=h {r["V7_lag_h"]:.3f}; V7 lag=1 (исходная, с заглядыванием на h-1 дней) {r["V7_lag1_orig"]:.3f}; шаги V7 {r["V7_steps_lag_h"]} / {r["V7_steps_lag1"]}; Б0.1 ord in-sample: гибрид {r["hyb_B01_insample"]:.3f}, HAR-J {r["har_B01_insample"]:.3f}')
+    L += ['', 'Выбор по правилу:', '| h | дизайн | не выполнены | средн. q |', '|---|---|---|---|']
+    L += [f'| {p["h"]} | {p["win"].design.iloc[0].replace("|", "/")} | {p["win"].failed.iloc[0] or "-"} | {p["win"].mean_q.iloc[0]:.3f} |' for p in P]
     return L
