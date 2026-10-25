@@ -1,0 +1,41 @@
+[
+  {
+    "index": "MCFTR",
+    "rows": 1035,
+    "from": "2022-01-03",
+    "to": "2026-02-27",
+    "reference": "data/mcftr_iss.csv",
+    "ref_rows": 1035,
+    "common": 1035,
+    "off": 0,
+    "max_rel": 0.0,
+    "only_iss": 0,
+    "only_ref": 0
+  },
+  {
+    "index": "RGBITR",
+    "rows": 1039,
+    "from": "2022-01-03",
+    "to": "2026-02-27",
+    "reference": "data/rgbitr_iss.csv",
+    "ref_rows": 1039,
+    "common": 1039,
+    "off": 0,
+    "max_rel": 0.0,
+    "only_iss": 0,
+    "only_ref": 0
+  },
+  {
+    "index": "IMOEX",
+    "rows": 1037,
+    "from": "2022-01-03",
+    "to": "2026-02-27",
+    "reference": "master_dataset.close_IMOEX",
+    "ref_rows": 2874,
+    "common": 1019,
+    "off": 92,
+    "max_rel": 0.0629149023357466,
+    "only_iss": 1,
+    "only_ref": 0
+  }
+]
