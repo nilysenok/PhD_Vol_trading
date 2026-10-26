@@ -1,92 +1,86 @@
-# R2, агент О: движок отбора LOYO (scripts/analysis/r2_loyo.py). Протокол — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md (v2).
-# В таблице «Исполнители» протокола yaml назван r2_O_otbor.yaml; в задании дирижёра 26.10 — r2_O_loyo.yaml. Файл один — этот.
+# R2, агент O: движок отбора (scripts/analysis/r2_loyo.py) и факторный скрининг (scripts/analysis/r2_factor.py).
+# Протокол v3 — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md (PR #160): правила — разд. 2 (кластер 9), план — разд. 3, гейты — 2.9, 4.
+# История: v2 (12:55) и решения 14:20 — в docs/otchety/dev_log_r2_O.md; режим protokol_v2 сохранён для самопроверки.
 agent: O
 data: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen   # данные — только общий data/, абсолютные пути
 out: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/R2/O
+schema: models/designs/r2/schema_v1.yaml
 
-# ---- окно: только разработка, val 2017–2021 = шаги 2–6 (OOS: всё, что оценивается по val, на шаге t берётся с шага t−1)
-steps_T: [2, 3, 4, 5, 6]          # складки LOYO: год Y = 2015 + шаг
-max_step_read: 6                  # чтение parquet — фильтр step <= 6 (pyarrow filters); assert год <= 2021
+# ---- окно: только разработка, val 2017–2021 = шаги 2–6; читается step <= 6 (фильтр pyarrow + assert год <= 2021)
+steps_T: [2, 3, 4, 5, 6]
+max_step_read: 6
 
-# ---- критерии c1–c4: gibrid_designs.flags импортируется без изменений; GIBRID_SAME_SLOT=1 (как final3.env_of)
-c1_etalon: sm                     # c1 — против замороженного HAR-J с поправкой sm (протокол, «Критерии»); 'same' — как gibrid_v17 --etalon same
-c2_leg_v0: true                   # c2 — ещё и против ноги самой единицы в роли V0 (той же s²); у V0-ячейки — нет (сама с собой)
-etalon_bez: ord                   # эталон c1–c3 у вариантов без поправки — ord (как gibrid_v17: code == 'bez' -> эталон ord)
-c4_runs: true                    # c4 — только пары соседних шагов, оба в обучающих годах складки (флаги — по непрерывным отрезкам)
+# ---- режим отбора
+rezhim: v3                         # v3 (по умолчанию) | protokol_v2 (справочно: c1–c4 на складках, хвостовой ранг)
+v3:
+  vybor_kriterii: [c3]             # п. 2.1: вложенный выбор — мин. средний QLIKE на T\{Y} среди вариантов с c3 на T\{Y}
+  vhod_a_min: 3                    # п. 2.2 (а): q_u(Y) < q_E(Y) не меньше чем в 3 складках из 5
+  vhod_c: [c1, c2, c4]             # п. 2.2 (в), ❓ 1 (умолчание): на всех 5 годах T по варианту, выбранному на T, gibrid_designs.flags
+  c1_c3_etalon: E                  # c1 и c3 — против E_h (п. 2.2 б, в); c2 — против одиночных той же s² (HAR-J, ML, нога V0)
+  calib_jump_max: 0.5              # аналог c4 у калибровки кластера 3: скачок параметра > 50% между соседними шагами — отказ
+  rank_pool: proshedshie           # п. 2.3: ранги — среди прошедших вход (а)–(в) и F_h(d0)
+  shtraf: {rank_delta: 1, qlike_rel: 0.01}   # п. 2.4 (= schema_v1 selection.complexity_penalty)
+  finalisty_k: 3                   # п. 2.5, ❓ 3: до 3 лучших после штрафа + V0-кандидаты, прошедшие вход
+  v0_kandidaty: [HAR-X+s², RVI-anchor+s²]
+c2_leg_v0: true                    # c2 — ещё и против ноги единицы в роли V0 той же s² (у V0-ячейки — нет)
+etalon_bez: ord                    # эталон c2 у вариантов bez — ord (как gibrid_v17)
+c4_runs: true                      # c4 — по непрерывным отрезкам шагов
 
-# ---- решения владельца 26.10, 14:20 (через дирижёра)
-# (1) единое информационное множество — данные по день d включительно; эталон — HAR-J d0 с эмбарго с поправкой sm (ряд Э HARJ_emb_d0);
-#     F_h для сравнений — финал первого раунда, перестроенный на ногах d0 (ВЫР-1, R2/cache/VYR/, seed 42–51); прежний F_h — справочно.
-# (2) условие входа LOYO: кандидат лучше ЭТАЛОНА на отложенном году не менее чем в 3 складках из 5 и c3 на всех складках; среди
-#     прошедших — средний ранг; 2σ по 10 seed — к F_h(d0), отдельной колонкой.
-# (3) эмбарго в бустинге роли — основная версия.
-rezhim: vladelec_1420              # vladelec_1420 | protokol_v2 (c1–c4 на всех складках, хвостовой ранг недопущенных)
-vybor_kriterii: [c3]               # критерии выбора варианта внутри складки (protokol_v2: [c1, c2, c3, c4]); c1–c4 — в выводе справочно
-vhod: {etalon_folds_min: 3, c3_all_folds: true}
-rank_pool: proshedshie             # ранги — среди прошедших условие входа и F_h (контрольная единица); protokol_v2: vse
-etalon:
-  file: "R2/cache/E/HARJ_emb_d0_h{h}_sdet_val.parquet"
+# ---- эталон E_h и база F_h(d0) (разд. 1; заморожены, п. 2.8)
+etalon:                            # ВЫР-1: har_raw — HAR-J d0 сырой (эталон (а)), har_corr — с поправкой sm (эталон (б) = E_h);
+  file: "vyr/etalon_d0_h{h}_val.parquet"   # сверка 26.10: q(har_raw, sm OOS) = q(har_corr) = q(Э HARJ_emb_d0, sm) по шагам 2–6, Δ = 0
+  col: har_raw                     # c1/c3 — E = har_raw с sm (= har_corr); c2 «HAR-J той же s²» — har_raw с кодом варианта
   s2: sm
-F_h_d0:                            # ВЫР-1, PR #158 (INDEX_VYR.csv): F_1(d0) = D22_h1, F_5(d0) = D12_h5 на HAR-ноге/признаке d0 + эмбарго;
-                                   # F_22(d0) = эталон (б) d0, детерминирован, продублирован по seed. Прежний F_h — справочно (proverka_r1).
+F_h_d0:                            # ВЫР-1, PR #158 (INDEX_VYR.csv); F_22(d0) = E_22, продублирован по seed
   file: "R2/cache/VYR/F_d0_h{h}_s{seed}_val.parquet"
-  s2: bez                          # ряды уже с поправкой sm (сверка: q F_22(d0) = q эталона Э HARJ_emb_d0 sm = ETA_b_d0 по всем шагам)
+  s2: bez                          # поправка уже в ряде
   otstuplenie: "ВЫР-1: в F_h(d0) на d0 переведены только HAR-нога и ln HAR как признак; сырые признаки и обучение бустинга без эмбарго — как в первом раунде. 2σ R2 (бустинг с эмбарго) против F_h(d0) — разные режимы эмбарго в бустинге"
-
-# ---- ранги
-rank_ties: average                # равные q на отложенном году — средний ранг
-rank_nedopushchen: tail_average   # недопущенные в складке — «последний ранг»: среднее мест n_доп+1 … N (они равны между собой)
-tie_break: [R_bar, mean_q, n_rych]
-
-# ---- порог 2σ (Д24.3): парно с F_h на seed 42–51, по среднему QLIKE за 5 лет T
 seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
-sigma_rule: "d_s = Q̄_T(канд, s) − Q̄_T(F_h, s); d̄ < −2σ/√10, σ — ddof = 1; детерминированный ряд — одно значение на все seed"
+seeds_skrining: [42, 43, 44]
 
-# ---- ворота: кандидат лучше F_h на отложенном году не менее чем в 3 складках из 5
-gate_min_folds: 3
+# ---- п. 2.6: проверка информационного множества каждого ряда
+sdvig:
+  features: features_pit_v3.parquet   # дневная RV тикера — столбец rv (строка дня d); читается date <= 2021-12-31
+  rv_col: rv
+  sdvigi: [-2, -1, 0, 1]
+  data_max: "2021-12-31"
+  out: R2/O/blok_sdvig.csv
 
-# ---- финалы первого раунда F_h (FD §0 п. 10) — контрольная единица каждого уровня
+# ---- п. 2.7: ожидаемое число ложных победителей
+lozhnye: {t_df: 9, t_porog: -2, skrining_alpha: 0.025, n_faktorov: 14}
+
+# ---- разд. 3: факторный скрининг (r2_factor.py)
+factor:
+  plan: models/designs/r2/factor_plan_v1.csv
+  plan_sha256: 31b2897751e5d81c776bcd11041dd2d7c2a5ba59b48d438102bbebcdcea3c9b8
+  generatory: {G: BCDEF, H: CDE, J: ABCDF, K: BCE, L: ACF, M: ACD, N: ABCDE, O: DEF}
+  t_975_4: 2.776
+  porog: -0.005                    # п. 3.4: оставить, если ē ≤ −0,005 и верхняя граница интервала < 0
+  dizainy: models/designs/r2/factor_v1   # h{h}.yaml — 64 дизайна по схеме v1 (r2_factor.py plan)
+  q_vhod: R2/O/factor/q_h{h}.csv          # таблица шагов прогонов (unit = run, variant = точка сетки ноги), из кэша S
+  out: R2/O/factor
+
+# ---- проверка механики на сохранённых рядах первого раунда (не выбор)
 F_h:
   1:  {name: F_1 (D22_h1), designs_val: final3/gibrid/D22_h1/designs_val_D22_h1_h1.csv, design: "top5|V0_XGB|B-sm|L0"}
   5:  {name: F_5 (D12_h5), designs_val: final2/gibrid/D12_h5/designs_val_D12_h5_h5.csv, design: "wrap2|V0_XGB|B-sm|L0"}
   22: {name: F_22 (HARJ_corr), designs_val: final2/gibrid/D12_h22/designs_val_D12_h22_h22.csv, design: "single|V0_HAR|B-sm|L0"}
-
-# ---- проверка механики на сохранённых рядах первого раунда (не выбор): кандидаты третьего круга
 proverka_r1:
-  kandidaty: final3/kandidaty          # *.yaml (boost, h)
-  gibrid_dirs: [final3/gibrid, final3_dry/gibrid]   # designs_val_<boost>_h<h>.csv; final3_dry — только для D25 (после открытия, справочно)
-  isklyuchit_designs: '\|V0_(?:HAR|HCJ)\|'          # как final3.designs: HAR-J и HAR-CJ — не вклад кандидата; V0_HCJ к тому же по d−1 (PR #154)
+  kandidaty: final3/kandidaty
+  gibrid_dirs: [final3/gibrid, final3_dry/gibrid]
+  isklyuchit_designs: '\|V0_(?:HAR|HCJ)\|'   # HAR-J и HAR-CJ — не вклад кандидата; V0_HCJ к тому же по d−1 (PR #154)
   out: R2/O/proverka_r1
-  sigma_demo:                           # 2σ на сохранённых seed 42–51 (val шагов 1–6): D12_h5
-    h: 5
-    xgb: [D12_h5_xgb_h5_val.parquet, D12_h5_xgb_h5_seeds4344_val.parquet, D24_3_D12_h5_xgb_h5_seeds4551_val.parquet]
-    lgbm: [D12_h5_lgbm_h5_val.parquet, D12_h5_lgbm_h5_seeds4344_val.parquet, D24_3_D12_h5_lgbm_h5_seeds4551_val.parquet]
-    wrap2_s42: D12_h5_xgb_h5_wrap2_val.parquet   # контроль: wrap2 seed 42 = (xgb + lgbm)/2, q по шагам = designs_val F_5
-  series_demo:                          # ряды -> q по шагам (адаптер уровня 1): HAR-X / HARX0 V0 × s², Bv3 V0
-    h: 5
-    legs: {HARX: HARX_h5_val.parquet, HARX0: HARX0_h5_val.parquet}
-    xgb_v0: Bv3_xgb_h5_val.parquet
-    lgb_v0: Bv3_lgbm_h5_val.parquet
-    harj_designs_val: final2/gibrid/D12_h5/designs_val_D12_h5_h5.csv   # HAR-J по s² — строки single|V0_HAR|B-<s²>|L0
 
 s2_codes: [bez, ord, rob, sm, smrob]
+harcj_d0: vyr/ref_harcj_d0/REF_HARCJ_d0_h{h}_val.parquet   # HAR-CJ — только d0 (PR #154); assert в series_tab
 
-# HAR-CJ (дирижёр 26.10, аудит справочных PR #154): из справочных день d не видит только HAR-CJ; ячейка V0_HCJ gibrid_v17 строится по d−1 —
-# в отборе R2 не используется (исключена в proverka, assert в series_tab). Если HAR-CJ нужен — только d0 с эмбарго из этого каталога.
-# V0, NN, GARCH, HEAVY, RG день d видят — как есть.
-harcj_d0: vyr/ref_harcj_d0/REF_HARCJ_d0_h{h}_val.parquet
-
-# ---- уровень 1 (после Э, Б1, Б2): спецификация ячеек — R2/O/spec_level1_h{h}.csv
-# колонки: unit (h|нога|роль), role (V0|priznak|ostatok|ofset), leg, variant, files (через ';' — среднее по RV), s2, n_rych
-# эталоны: R2/O/spec_ref_h{h}.csv — har (HAR-J сырой), xgb_v0, lgb_v0 (сохранённые val Bv3 / D12_h1_V0), leg_v0:<нога>
-level1:
-  spec: R2/O/spec_level1_h{h}.csv
+# ---- уровни (спецификация рядов): R2/O/spec_level{L}_h{h}.csv — unit, role, leg, variant, files (';' — агрегат seed × lib),
+# s2, design_yaml (путь к yaml дизайна — для сложности и хэша), [agg: mean|median], [weights], [calib_param — csv step,param]
+# эталоны c2: R2/O/spec_ref_h{h}.csv — key (xgb_v0, lgb_v0, leg_v0:<нога>), file. E_h подставляется сам.
+level:
+  spec: R2/O/spec_level{L}_h{h}.csv
   ref: R2/O/spec_ref_h{h}.csv
-  boost_roles: [priznak, ostatok, ofset]
-  kandidat_V0: HAR-X+s²               # решение владельца 12:55: кандидат V0 на всех h, идёт прямо в ворота
-  # версии рядов (дирижёр 26.10): ноги Э — основная `_emb_d0` (колонка osnovnaya в INDEX_E.csv); роли Б1/Б2 — основная: нога `_emb_d0`
-  # + бустинг с эмбарго; ряды без эмбарго в бустинге — только контроль (в единицы уровня не входят); версии `_emb` и `_d0` не берутся.
-  # F_h — замороженные ряды первого раунда без пересчёта.
-  versii:
-    E: {osnovnaya: _emb_d0, isklyuchit: [_emb, _d0]}
-    B: {osnovnaya: "нога _emb_d0 + бустинг с эмбарго", kontrol: "бустинг без эмбарго", isklyuchit: [_emb, _d0]}
+  boost_roles: [feature, residual, offset, residual_std]
+  versii:                          # дирижёр 26.10: нога _emb_d0 + бустинг с эмбарго — основная; без эмбарго — контроль; _emb, _d0 — не брать
+    noga: _emb_d0
+    isklyuchit: [_emb, _d0]
