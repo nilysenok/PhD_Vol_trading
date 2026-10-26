@@ -13,7 +13,7 @@ shift_check, run_phase. Код первого раунда не меняется
   boost.boost_refit  yearly | quarterly_warm | monthly — остаточный ученик LightGBM (boost.role = residual) на ноге дизайна:
                    quarterly_warm — тёплый старт init_model, +warm_add деревьев, lr тот же; num_threads = 1, без ранней остановки.
   calib.update     step | daily — слой калибровки L (r2_calib.calibrate); пока его нет в базе — свой слой для calib.* = default.
-Ряды: R[__<вариант>] — итог (для O s2 = bez), R_raw[__<вариант>] — до калибровки. Параметры по шагам — R2/cache/<hash>/params.csv.
+Ряды: R[__<вариант>] — итог (для O s2 = bez), R_raw[__<вариант>] — до калибровки. Параметры по шагам — R2/cache/<hash>/params_R.csv.
 Год валидации — только для оценки: деревьев фиксированное число, гиперпараметров по нему нет; ничего ≥ 2022 не читается и не пишется.
 
 python3 scripts/analysis/r2_refit.py selftest
@@ -47,6 +47,7 @@ KEY = ['date', 'ticker', 'step']
 EPS = 1e-10
 S_TERMS = {k: list(v) for k, v in CFG['leg']['s_terms'].items()}
 FAR = np.datetime64('2100-01-01', 'ns')
+PARAMS_FILE = 'params_R.csv'            # свой файл параметров в каталоге дизайна (решение дирижёра 26.10: не общий params.csv)
 PLANT = {'layer': None, 'mode': None}   # подлог детектора: слой leg | boost | calib, режим lookahead | noemb
 
 
@@ -125,8 +126,12 @@ def check(design):
         variants = [((f'l{float(l):g}_a{float(a):g}' if many else 'base'), float(l), float(a)) for l in lams for a in als]
     else:
         variants = [('base', None, None)]
-    return dict(h=int(d['h']), type=leg['type'], regs=leg['regressors'], refit=leg['refit'], lam=lam, est=leg['estimator'],
+    regs_list = list(leg['regressors']) if isinstance(leg['regressors'], list) else [leg['regressors']]
+    if leg['type'] == 'HARX' and 'none' in regs_list:
+        raise NotApplicable('HARX: в сетке leg.regressors есть none')
+    return dict(h=int(d['h']), type=leg['type'], regs=regs_list[0], regs_list=regs_list, refit=leg['refit'], lam=lam, est=leg['estimator'],
                 role=role, boost_refit=b['boost_refit'], features=list(d['features']), update=cal['update'], cal_default=cal_default,
+                s2emb=bool(C._norm(cal.get('s2_embargo', True)) in (True, 'on')),
                 variants=variants, data=dict(recency=str(data['recency_halflife']), window=data['window'], winsor=data['winsor']))
 
 
@@ -327,7 +332,7 @@ def fit_lin(H, Z, y, w, variants, est, ylvl=None, prev=None, loss=None):
         bs, it = _newton(Ds, ylvl, W, beta0, loss or CFG['estimator']['qmle_level']['loss'])
         beta = np.zeros(D.shape[1])
         beta[kp] = bs[1:] / sdD[kp]
-        return {'base': Lin(bs[0] - mD @ beta, beta, zp, ph, it=it, n=len(y))}
+        return {variants[0][0]: Lin(bs[0] - mD @ beta, beta, zp, ph, it=it, n=len(y))}
     out = {}
     Ghh, bh = G[:ph, :ph], b[:ph]
     if zp is None or D.shape[1] == ph:
@@ -423,7 +428,7 @@ class LegStep:
                 continue
             nxt = self.cuts[i + 1] if i + 1 < len(self.cuts) else pd.Timestamp(f'{self.vy + 1}-01-01')
             ms = self.fit_at(c, nxt, prev)
-            prev = ms.get('base')
+            prev = ms.get(spec['variants'][0][0])   # тёплый старт QMLE (один вариант)
             rows_v = self.vidx[sel]
             for t, m in ms.items():
                 self.pred[t][sel] = m.predict(ctx.H[rows_v], None if self.Z is None else self.Z[rows_v])
@@ -537,9 +542,10 @@ def calib_layer():
     return _LAYER['v']
 
 
-def calib_fallback(V, ctx, update):
-    """calib.* = default (sm, κ = 0,5, const, off, off) по определению L: step — окно шагов t−3..t−1 (шаг 1 — без поправки);
-    daily — строки с концом цели < d за 3 года до d; ≥ 30 строк; s² = Var(ln(y + 1e-10) − ln ŷ); ŷ·exp(κ·s²)."""
+def calib_fallback(V, ctx, update, s2emb=True):
+    """calib.* = default (sm, κ = 0,5, const, off, off) по определению L: step — окно шагов t−3..t−1 (шаг 1 — без поправки),
+    calib.s2_embargo = on — без строк, чьё окно цели заходит в val-год шага (конец цели ≥ 1 янв. vy); daily — строки с концом цели < d
+    за 3 года до d; ≥ 30 строк; s² = Var(ln(y + 1e-10) − ln ŷ); ŷ·exp(κ·s²)."""
     d = V[COLS].merge(pd.DataFrame({'date': ctx.date, 'ticker': ctx.ticker, 'tend': ctx.tend}), on=['date', 'ticker'], how='left')
     d = d.sort_values(['date', 'ticker']).reset_index(drop=True)
     ok = (d.rv_actual > 1e-12).values
@@ -554,6 +560,9 @@ def calib_fallback(V, ctx, update):
         for t in sorted(np.unique(step)):
             hi = t if mode == 'lookahead' else t - 1
             pool = ok & (step <= hi) & (step >= t - 3)
+            if s2emb and mode is None:
+                vy = int(d.year.values[step == t][0])
+                pool &= tend < np.datetime64(f'{vy}-01-01', 'ns')
             s2 = float(np.var(e[pool])) if pool.sum() >= 30 else None
             if s2 is not None:
                 p[step == t] = p0[step == t] * np.exp(0.5 * s2)
@@ -598,7 +607,7 @@ def calibrate(design, V, ctx, spec):
         return Vc[COLS], stab, 'L'
     if not spec['cal_default']:
         raise NotApplicable('calib.* ≠ default без слоя L')
-    Vc, stab = calib_fallback(V, ctx, spec['update'])
+    Vc, stab = calib_fallback(V, ctx, spec['update'], spec['s2emb'])
     return Vc, stab, 'R'
 
 
@@ -612,24 +621,32 @@ def run_one(design, A, harj, seed, steps, ctx=None):
     spec = check(design)
     d = C.validate(design)
     ctx = ctx or Ctx(A, harj, spec['h'])
-    tags = [t for t, _, _ in spec['variants']]
+    # сетка leg.regressors (S-наборы HARX) × сетка leg.enet — каждый вариант свой ряд (тег <S>[_l<λ>_a<α>] при сетке S)
+    many = len(spec['regs_list']) > 1
+    subs = []
+    for r in spec['regs_list']:
+        vv = [((r if t == 'base' else f'{r}_{t}') if many else t, lam_, al_) for t, lam_, al_ in spec['variants']]
+        subs.append(dict(spec, regs=r, variants=vv))
+    tags = [t for sp in subs for t, _, _ in sp['variants']]
     raw = {t: [] for t in tags}
     prows = []
     for k in range(1, max(steps) + 1):
         C.assert_dev_step(k)
         if k > MAXSTEP:
             raise AssertionError(f'шаг {k} > {MAXSTEP}')
-        ls = LegStep(ctx, spec, k)
-        lnp = {t: ls.pred[t].copy() for t in tags}
-        prows += ls.params(tags)
-        if spec['role'] == 'residual':
-            f, pb = boost_step(ls, seed)
-            prows += pb
-            for t in tags:
-                lnp[t] += f[t]
-        for t in tags:
-            raw[t].append(pd.DataFrame({'date': ctx.date[ls.vidx], 'ticker': ctx.ticker[ls.vidx], 'year': ls.vy, 'step': k,
-                                        'rv_actual': ctx.ylvl[ls.vidx], 'rv_pred': np.clip(np.exp(lnp[t]), 1e-10, None)}))
+        for sp in subs:
+            tg = [t for t, _, _ in sp['variants']]
+            ls = LegStep(ctx, sp, k)
+            lnp = {t: ls.pred[t].copy() for t in tg}
+            prows += ls.params(tg)
+            if sp['role'] == 'residual':
+                f, pb = boost_step(ls, seed)
+                prows += pb
+                for t in tg:
+                    lnp[t] += f[t]
+            for t in tg:
+                raw[t].append(pd.DataFrame({'date': ctx.date[ls.vidx], 'ticker': ctx.ticker[ls.vidx], 'year': ls.vy, 'step': k,
+                                            'rv_actual': ctx.ylvl[ls.vidx], 'rv_pred': np.clip(np.exp(lnp[t]), 1e-10, None)}))
     out = {}
     keep = set(steps)
     for t in tags:
@@ -677,7 +694,7 @@ def phase_fn(design, seed, steps):
     S = C.SHARED
     h = int(design['h'])
     out, prows = run_one(design, S['A'], S['harj'], seed, steps)
-    write_params(design, h, seed, prows, C.cache_dir(design, root=S.get('R_root')) / 'params.csv')
+    write_params(design, h, seed, prows, C.cache_dir(design, root=S.get('R_root')) / PARAMS_FILE)
     return out
 
 
@@ -691,16 +708,26 @@ def run(designs, h, seeds, steps, workers=None, phase='C', root=None, check_gate
     if A is None:
         A, harj = C.load_d0(tickers)
     C.share(A=A, harj=harj, R_root=root)
-    ok = []
+    block_file = block_file or os.environ.get('R2_BLOCK_FILE') or None
+    ok, mon = [], []
     for d in designs:
         full = C.validate({**d, 'h': h})
         try:
-            check(full)
-            ok.append(full)
+            sp = check(full)
         except NotApplicable as e:
             log(f'не применим: {full.get("design")} — {e}')
-    return C.run_phase(phase, h, ok, phase_fn, seeds=tuple(seeds), steps=tuple(steps), workers=workers, module=MODULE, root=root,
-                       block_file=block_file, check_gate=check_gate)
+            continue
+        (mon if sp['role'] == 'residual' and sp['boost_refit'] == 'monthly' else ok).append(full)
+    # решение дирижёра 26.10: boost_refit = monthly — только seed 42 (приложение), в финалисты E не идёт
+    mseeds = tuple(s for s in seeds if int(s) == int(CFG['boost']['monthly_only_seed']))
+    if mon and len(mseeds) < len(seeds):
+        log(f'boost_refit = monthly: {len(mon)} дизайнов — только seed {CFG["boost"]["monthly_only_seed"]} (решение дирижёра), прочие seed пропущены')
+    T = [C.run_phase(phase, h, ok, phase_fn, seeds=tuple(seeds), steps=tuple(steps), workers=workers, module=MODULE, root=root,
+                     block_file=block_file, check_gate=check_gate)]
+    if mon and mseeds:
+        T.append(C.run_phase(phase, h, mon, phase_fn, seeds=mseeds, steps=tuple(steps), workers=workers, module=MODULE, root=root,
+                             block_file=block_file, check_gate=check_gate))
+    return pd.concat(T, ignore_index=True)
 
 
 # ================================================================ детектор «будущее не влияет»
@@ -744,7 +771,7 @@ def leak_bench(design, A, harj, seed, steps, cuts_mid, refit_points, plant_point
             ok, why = bool(dl <= tol and n > 0), ''
             if nm.startswith('R_raw'):
                 raw_ok[nm.replace('R_raw', 'R', 1)] = ok
-            elif not ok and cut.month == 1 and spec['update'] == 'step' and raw_ok.get(nm):
+            elif not ok and cut.month == 1 and spec['update'] == 'step' and not spec['s2emb'] and raw_ok.get(nm):
                 ok, why = True, 'calib_step_yanvar: калибровка step (Б0.1) берёт строки шага t−1 с концом цели в январе vy (нога и бустинг: Δ = 0)'
             rows.append(dict(test=f'srez {cut.date()} ({kind})', ryad=nm, kmax=kmax, strok_do=n, max_dln_do=dl, max_dln_posle=da, ok=ok,
                              ogovorka=why))
@@ -874,6 +901,7 @@ def control(steps=tuple(range(1, MAXSTEP + 1))):
     rows = []
     for h in C.HS:
         out, _ = run_one({'h': h}, A, harj, 42, steps)
+        off, _ = run_one({'h': h, 'calib': {'s2_embargo': 'off'}}, A, harj, 42, steps)   # off = Б0.1 R1 = V0_F (только контроль)
         ref = pd.read_parquet(E / f'HARJ_emb_d0_h{h}_sdet_val.parquet')
         ref = ref[ref.step.isin(steps)]
         F = pd.read_csv(E / f'V0_F_h{h}.csv')
@@ -881,7 +909,7 @@ def control(steps=tuple(range(1, MAXSTEP + 1))):
         m = out['R_raw'].merge(ref, on=KEY, suffixes=('', '_r'))
         dr = float(np.abs(np.log(m.rv_pred / m.rv_pred_r)).max())
         dy = float(np.abs(m.rv_actual / m.rv_actual_r - 1).max())
-        mc = out['R'].merge(ref.assign(rv_pred=ref.rv_pred * ref.step.map(F)), on=KEY, suffixes=('', '_r'))
+        mc = off['R'].merge(ref.assign(rv_pred=ref.rv_pred * ref.step.map(F)), on=KEY, suffixes=('', '_r'))
         dc = float(np.abs(np.log(mc.rv_pred / mc.rv_pred_r)).max())
         # свой слой (default) = слой L в обоих режимах calib.update
         ctx = Ctx(A, harj, h)
@@ -893,7 +921,12 @@ def control(steps=tuple(range(1, MAXSTEP + 1))):
         ok = len(m) == len(ref) == len(out['R_raw']) and dr <= 1e-8 and dc <= 1e-8 and dy < 1e-12 and max(dfb.values()) <= 1e-10
         rows.append(dict(h=h, strok=len(m), max_dln_raw=dr, max_dln_calib=dc, max_rel_y=dy, sloy=calib_layer(),
                          fallback_vs_L_step=dfb['step'], fallback_vs_L_daily=dfb['daily'], ok=bool(ok)))
-        log(f'контроль h={h}: R_raw {dr:.1e}, R {dc:.1e}, цель {dy:.1e}; свой слой = L: step {dfb["step"]:.1e}, daily {dfb["daily"]:.1e}',
+        fo = calib_fallback(out['R_raw'], ctx, 'step', False)[0].merge(off['R'], on=KEY, suffixes=('', '_l'))
+        dfb['step_off'] = float(np.abs(np.log(fo.rv_pred / fo.rv_pred_l)).max())
+        ok = ok and dfb['step_off'] <= 1e-10
+        rows[-1].update(fallback_vs_L_step_off=dfb['step_off'], ok=bool(ok))
+        log(f'контроль h={h}: R_raw {dr:.1e}, R(s2_embargo=off) = ×V0_F {dc:.1e}, цель {dy:.1e}; свой слой = L: step {dfb["step"]:.1e}, '
+            f'step/off {dfb["step_off"]:.1e}, daily {dfb["daily"]:.1e}',
             'OK' if ok else 'ОШИБКА')
     return pd.DataFrame(rows)
 
@@ -977,7 +1010,7 @@ def dym():
         rp.append(T.assign(h=h))
     RP = pd.concat(rp, ignore_index=True)
     RP.to_csv(out / 'run_phase.csv', index=False)
-    pf = sorted((out / 'cache').glob('*/params.csv'))
+    pf = sorted((out / 'cache').glob(f'*/{PARAMS_FILE}'))
     ok = S[S.status == 'ok']
     log(f'дым: контуров {len(ok)}, детектор {int(ok.leak_ok.sum())}/{len(ok)}, сдвиг {int(ok.shift_ok.sum())}/{len(ok)}, '
         f'не применимо {int((S.status == "ne_primenim").sum())}, контроль {int(ctl.ok.sum())}/{len(ctl)}; run_phase: рядов {len(RP)}, '
@@ -987,7 +1020,7 @@ def dym():
 
 def _signature(spec):
     """Что в дизайне меняет механику R (детектору достаточно одного дизайна на сигнатуру)."""
-    return (spec['h'], spec['type'], spec['regs'], spec['refit'], spec['lam'], spec['est'], spec['role'], spec['boost_refit'],
+    return (spec['h'], spec['type'], tuple(spec['regs_list']), spec['refit'], spec['lam'], spec['est'], spec['role'], spec['boost_refit'],
             spec['update'], spec['cal_default'], tuple(spec['features']) if spec['role'] == 'residual' else (), tuple(sorted(spec['data'].items())))
 
 
@@ -1000,6 +1033,12 @@ def leak_cmd(designs, steps, tickers, seed, h=None):
     rows, seen = [], set()
     for d in designs:
         des = C.validate({**d, 'seed': seed, **({'h': h} if h else {})})
+        # сетки внутри складки механику R не меняют: детектору — наибольший S-набор и первая точка эл. сети
+        if isinstance(des['leg']['regressors'], list):
+            des['leg']['regressors'] = des['leg']['regressors'][-1]
+        for k in ('lambda', 'alpha'):
+            if isinstance(des['leg']['enet'][k], list):
+                des['leg']['enet'][k] = des['leg']['enet'][k][0]
         try:
             sg = _signature(check(des))
         except NotApplicable as e:
@@ -1042,7 +1081,8 @@ def main():
     elif a.mode == 'dym':
         dym()
     elif a.mode == 'run':
-        T = run(load_designs(a.designs), a.h, a.seeds, a.steps, a.workers, a.phase, check_gate=a.check_gate)
+        T = run(load_designs(a.designs), a.h, a.seeds, a.steps, a.workers, a.phase, check_gate=a.check_gate,
+                tickers=None if a.tickers in (None, ['ALL']) else tuple(a.tickers))
         print(T.to_string(index=False) if len(T) else 'задач нет (готовое пропущено или неприменимо)')
         sys.exit(1 if len(T) and 'ryad' in T and (T.ryad == 'ОШИБКА').any() else 0)
     else:

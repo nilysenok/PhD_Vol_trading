@@ -23,8 +23,8 @@ max_step: 6                                 # val шагов 1–6 (2016–2021)
 out:
   series: "R2/cache/<sha256[:16]>/R[__<вариант>]_h{h}_s{seed}_val.parquet — итог (нога [+ остаточный бустинг] + калибровка; для O s2 = bez);
            R_raw[__<вариант>]_h{h}_s{seed}_val.parquet — до калибровки (сырой)"
-  params: "R2/cache/<sha256[:16]>/params.csv — design_sha, h, step, param, value, seed; строки модуля — param с префиксом 'R.'
-           (запись под flock; заменяются только свои строки (h, seed, R.*))"
+  params: "R2/cache/<sha256[:16]>/params_R.csv (свой файл модуля, не общий params.csv — решение дирижёра 26.10) — design_sha, h, step,
+           param, value, seed; param с префиксом 'R.' (запись под flock; заменяются строки (h, seed))"
   dym: data/regen/R2/R/dym                  # дым на Маке — не кэш боевого счёта, в выбор не идёт
   blok_sdvig: data/regen/R2/O/blok_sdvig.csv  # п. 2.6 через r2_core.shift_check; дым — dym/blok_sdvig_dym.csv
 
@@ -34,7 +34,9 @@ leg:
     HARJ: "HAR-J d0 (harj-столбцы r2_core.load_d0: rv_d, rv_w, rv_m, jump, jump_annualized, jump_lag1/5/22), ln(clip 1e-10), clean (nan -> 0);
            МНК на ln(rv_target_h + 1e-10) — как r2_nogi.fam_harj / r2_core._harj_ln; leg.regressors = none"
     HARX: "HAR-J + слагаемые набора leg.regressors (harx.TERMS, как черновик L): HAR-J без штрафа, слагаемые — стандартизация по обучению
-           (взвешенная) и эластичная сеть (Фриш–Во, как harx.fit_en); пропуски слагаемых — (взвешенным) средним обучения"
+           (взвешенная) и эластичная сеть (Фриш–Во, как harx.fit_en); пропуски слагаемых — (взвешенным) средним обучения.
+           leg.regressors списком (сетка внутри складки, драйвер: S1–S4 / S1–S5) — каждый S-набор × точка эл. сети — свой ряд
+           R__<S>[_l<λ>_a<α>]; детектор (leak) — на наибольшем S-наборе и первой точке сети (механика та же)"
   s_terms:
     S1: [ln_rvi2]
     S2: [ln_rvi2, ln_rvm_imoex]
@@ -91,6 +93,8 @@ boost:                                      # boost.boost_refit — только
                      +warm_add деревьев, lr тот же"
     monthly: "заново с нуля на 1-е число каждого месяца, n_trees"
   warm_add: 75
+  monthly_only_seed: 42                     # решение дирижёра 26.10: boost_refit = monthly на Маке слишком дорог — только seed 42 (приложение)
+  finalisty_boost_refit: [yearly, quarterly_warm]   # в финалисты E (10 seed) — только эти; monthly в E не берётся
   seed: "seed дизайна (seed, bagging_seed, feature_fraction_seed — из него)"
   not_applicable: "role ∉ {none, residual}; при residual: lib ≠ lightgbm, resid_source ≠ in_sample, grid ≠ current, early_stop ≠ native
                    (здесь не используется: деревьев фиксированное число), monotone/clip_sigma/prob/shrink/objective ≠ default;
