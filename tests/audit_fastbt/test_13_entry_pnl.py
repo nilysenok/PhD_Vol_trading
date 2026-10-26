@@ -11,7 +11,6 @@ from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from _eng import bars, mutant, pnl, run_lvl
 from fastbt import pipeline, stats
@@ -39,7 +38,18 @@ MUTATIONS = {
     "sel_stats_lookahead": lambda mp: mp.setattr(stats, "seg_stats_trades", mutant(
         stats.seg_stats_trades, [("d * lr[e]", "d * lr[e - 1]", 1),
                                  ("d * lr[t]", "d * lr[t - 1]", 1)])),
+    # Н5 вернули: выход позиции, открытой на конце окна, без комиссии
+    "no_exit_comm_at_window_end": lambda mp: _no_end_exit(mp),
 }
+
+
+def _no_end_exit(mp):
+    from fastbt import msp, s9
+    mp.setattr(s9.Engine, "port", mutant(s9.Engine.port, [
+        ("np.where(last, np.abs(pos), 0.0)", "0.0", 1),
+        ("np.where(last, np.abs(eff), 0.0)", "0.0", 1)]))
+    mp.setattr(msp, "portfolio", mutant(msp.portfolio, [
+        ('sides = sides + g["position"].abs().where(last, 0.0)', "sides = sides", 1)]))
 
 
 def _lr(c):
@@ -133,10 +143,9 @@ def _engine2(pos_rows, lr_last=0.02):
 POS2 = np.array([0.0, 1.0, 1.0, 1.0, 0.0, 0.0])   # пара 1 открыта на конце окна, пара 2 закрыта
 
 
-@pytest.mark.xfail(strict=True, reason="Н5 (владелец 26.10, 23:50): позиция, открытая на последнем "
-                                       "баре окна и закрытая по close первого бара после окна, "
-                                       "должна платить комиссию выхода")
 def test_window_end_exit_commission_s9():
+    """Н5 (Ъ владельца 26.10, 23:50; исправлено): позиция, открытая на последнем баре окна и
+    закрытая по close первого бара после окна, платит комиссию выхода."""
     from fastbt import s9
     e = _engine2(POS2)
     p = s9.Engine.port(e, POS2, C)
@@ -148,8 +157,8 @@ def test_window_end_exit_commission_s9():
     assert np.isclose((pw["gross"] - pw["r"]).sum(), 4 * C * 0.5)
 
 
-@pytest.mark.xfail(strict=True, reason="Н5: то же в msp.portfolio (табл. маржи, тест главы 4)")
 def test_window_end_exit_commission_msp():
+    """Н5: то же в msp.portfolio (табл. маржи, тест главы 4); печати v1 (ставка «back») — без."""
     from fastbt import msp
     dates = pd.to_datetime(["2021-12-28", "2021-12-29", "2021-12-30"])
     d = pd.DataFrame({"date": list(dates) * 2, "ticker": ["AAA"] * 3 + ["BBB"] * 3,
@@ -158,6 +167,10 @@ def test_window_end_exit_commission_msp():
     p = msp.portfolio(d, pd.Series([0.0], pd.to_datetime(["2020-01-01"])), C)
     assert np.isclose((p["r"] - (d.groupby("date")["daily_gross_return"].mean())).sum(), -2 * C)
     assert np.isclose(p["r"].iloc[-1], 0.02 / 2 - C / 2)
+    back = pd.Series([0.0], pd.to_datetime(["2020-01-01"]))
+    back.attrs["cal"] = "back"
+    q = msp.portfolio(d, back, C)                         # ворота печатей v1 — прежнее соглашение
+    assert np.isclose(q["r"].iloc[-1], 0.02 / 2)
 
 
 def test_pipeline_rows_gross_return():

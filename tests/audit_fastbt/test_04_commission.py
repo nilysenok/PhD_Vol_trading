@@ -27,15 +27,17 @@ def _half(f, pos_comm):
     return g
 
 
-def _exit_at_end(f):
+def _no_exit_at_end(f):
+    """Мутация: прежнее соглашение — выход открытой на конце окна позиции не оплачивается."""
     def g(self, pos, comm=0.0005, *a, **k):
         p = f(self, pos, comm, *a, **k)
-        p.iloc[-1, p.columns.get_loc("r")] -= abs(pos[-1]) * comm
+        p.iloc[-1, p.columns.get_loc("r")] += abs(pos[-1]) * comm
         return p
     return g
 
 
-MUTATIONS = {"comm_exit_at_end": lambda mp: mp.setattr(s9.Engine, "port", _exit_at_end(s9.Engine.port)),
+MUTATIONS = {"comm_no_exit_at_end": lambda mp: mp.setattr(s9.Engine, "port",
+                                                          _no_exit_at_end(s9.Engine.port)),
              "comm_once_per_trade": lambda mp: (
     mp.setattr(s9.Engine, "port", _half(s9.Engine.port, 2)),
     mp.setattr(msp, "portfolio", _half(msp.portfolio, 2)),
@@ -52,10 +54,10 @@ def test_round_trip_costs_two_sides():
     assert np.isclose((POS[:4] * LR[:4]).sum() - NET[:4].sum(), 2 * C)   # вход t=1, выход t=3
 
 
-def test_open_position_at_window_end_pays_entry_only():
-    """Спецификация п. 8: разность с prepend=0 от начала окна, без «append» в конце — позиция,
-    открытая на последнем дне окна (30.12.2021 в разработке), платит только вход (оценка СP:
-    10 сторон из 3 956, ΔШарп МСП порядка 1e-4)."""
+def test_open_position_at_window_end_pays_entry_and_exit():
+    """Ъ владельца 26.10, 23:50 (аудит FA2a, Н5; было — соглашение спецификации п. 8 «без append»):
+    позиция, открытая на последнем дне окна (30.12.2021 в разработке) и закрытая по close
+    03.01.2022, платит вход и выход (10 сторон из 3 956, ΔШарп МСП порядка 1e-4)."""
     pos = np.array([0.0, 1.0, 1.0])
     n = len(pos)
     e = object.__new__(s9.Engine)
@@ -66,7 +68,7 @@ def test_open_position_at_window_end_pays_entry_only():
     e.kr = e.rf = np.zeros(n)
     e.cal = np.ones(n)
     p = s9.Engine.port(e, pos, C)
-    assert np.isclose((p["gross"] - p["r"]).sum(), C)
+    assert np.isclose((p["gross"] - p["r"]).sum(), 2 * C)
 
 
 def test_s9_engine_port():
