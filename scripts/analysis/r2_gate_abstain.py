@@ -20,7 +20,7 @@
 Выбор τ, k, q, λ, δ — вложенно в складке Y по обучающим годам T \\ {Y} (протокол v4 § 2): максимум средней по годам панельной t против
 эталона (r2_gates агента O, если в нём есть panel_t; до того — ftp_stats.dm_main: d_t — средняя по тикерам разность QLIKE
 эталон − кандидат, NW лаг h − 1); равенство — средний QLIKE. Отложенный год в выбор не входит. Параметры по шагам —
-<кэш дизайна>/params.csv (строки modul = G). Прогнозы — только val 2017–2021 (шаги 2–6).
+r2_core.params_path(дизайн, 'G') = <кэш дизайна>/params_G.csv (PR #201; читать — r2_core.load_params). Прогнозы — только val 2017–2021 (шаги 2–6).
 
 Обвязка: проверка сдвига п. 2.6 (r2_core.shift_check — каждый выходной ряд) и детектор «будущее не влияет»: при фиксированных
 параметрах возмущение всех входов после среза (ряды, эталон, матрица d0 — r2_core.perturb_frame) не меняет g_t и ŷ на строках ≤ среза;
@@ -317,14 +317,15 @@ def series_out(F, variants, choice, c):
                          'rv_actual': b.rv_actual.values, 'rv_pred': np.exp(lnp)})
 
 
-def write_params(cdir, P):
-    """<кэш>/params.csv: свои строки (modul = G, те же ряды) заменяются, чужие сохраняются; запись атомарная."""
-    f = Path(cdir) / 'params.csv'
-    P = P.assign(modul=MODUL)
+def write_params(design, P, root=None):
+    """Свой файл параметров r2_core.params_path(дизайн, 'G') = <кэш>/<hash16>/params_G.csv (общий params.csv не пишется, PR #201):
+    строки тех же рядов и h заменяются, остальные сохраняются; запись атомарная. Читать — r2_core.load_params(хэш, modul='G')."""
+    f = C.params_path(design, MODUL, root=root)
+    P = P.drop(columns=['modul'], errors='ignore')
     if f.exists():
         old = pd.read_csv(f)
-        if 'modul' in old and 'ryad' in old:
-            old = old[~((old.modul == MODUL) & old.ryad.isin(P.ryad.unique()) & old.h.isin(P.h.unique()))]
+        if 'ryad' in old and 'h' in old:
+            old = old[~(old.ryad.isin(P.ryad.unique()) & old.h.isin(P.h.unique()))]
         P = pd.concat([old, P], ignore_index=True)
     buf = io.StringIO(); P.to_csv(buf, index=False)
     C._atomic_write(f, buf.getvalue().encode('utf-8'))
@@ -360,7 +361,7 @@ def run_h(design, h, F, A, M, steps_all, root=None, block_file=None, which=('k16
         Pall.append(P)
     P = pd.concat(Pall, ignore_index=True)
     if write:
-        write_params(C.cache_dir(full, root=root), P)
+        write_params(full, P, root=root)
     return pd.DataFrame(S), P
 
 
@@ -511,7 +512,7 @@ def dym():
     t0 = time.time(); dc = CFG['dym']
     tick, steps, seed = list(dc['tickers']), list(dc['steps']), int(dc['seed'])
     steps_out = [s for s in steps if s in CFG['steps_out']]
-    D = OUT / 'dym'; root = D / 'cache'; D.mkdir(parents=True, exist_ok=True)
+    D = OUT / 'dym'; root = D / 'cache_p'; D.mkdir(parents=True, exist_ok=True)  # cache_p — кэш дыма после PR #201 (params_G.csv)
     blk = D / 'blok_sdvig_dym.csv'
     A, harj = C.load_d0()  # все тикеры: RV рынка и обучение привратника; ряды — 3 тикера
     C.check_d0(A)
@@ -521,7 +522,7 @@ def dym():
     S, P, LK = [], [], []
     for h in dc['hs']:
         try:
-            design = C.validate({'h': h, 'boost': {'role': 'residual'}})
+            design = C.validate({'h': h, 'boost': {'role': 'residual', 'early_stop': 'qlike_total'}})
         except C.DesignError:
             design = C.validate({'h': h})
         rd = lambda p: _val_only(pd.read_parquet(src / p), p)
@@ -684,7 +685,7 @@ def fn_G(design, seed, steps):
             ch, P = nested(F, vs, h, CFG['etalon']['ref'], CFG['vybor']['rezhim'])
             prows.append(P.assign(ryad=(f'G_*' if len(groups) == 1 else f'G_{pv}__*'), h=h, vhod_modul=prev, panel_t=PANEL_T_SRC))
     if prows:
-        write_params(C.cache_dir(full, root=root), pd.concat(prows, ignore_index=True))
+        write_params(full, pd.concat(prows, ignore_index=True), root=root)
     return out
 
 
@@ -745,7 +746,7 @@ def dym_batch(A_done=None):
     """Дым контракта: дизайны schema_v2 (по одному на ворота/группу) × h; входы цепочки (L — нога, B — гибриды xgb/lgbm) пишутся
     в кэш дыма под хэш каждого дизайна; run_batch с 3 воркерами, без ворот; проверки — ряды G по вариантам, DONE, params.csv, повтор."""
     dc = CFG['dym']; tick, steps, seed = list(dc['tickers']), list(dc['steps']), int(dc['seed'])
-    D = OUT / 'dym_batch'; root = D / 'cache'; D.mkdir(parents=True, exist_ok=True)
+    D = OUT / 'dym_batch'; root = D / 'cache_p'; D.mkdir(parents=True, exist_ok=True)  # cache_p — кэш дыма после PR #201
     src = C.REGEN / 'R2' / 'cache'
     G_DES = [{'k16': {'gate': 'conf_seed'}}, {'k16': {'gate': 'regime'}}, {'k16': {'gate': 'shock_fresh', 'k': [3, 5]}},
              {'k16': {'gate': 'soft'}}, {'k16': {'gate': 'halt'}}, {'k18': {'lam_to_ref': 'on'}},
@@ -755,7 +756,7 @@ def dym_batch(A_done=None):
     for h in dc['hs']:
         des = []
         for i, gk in enumerate(G_DES):
-            d = C.validate({'design': f'dymG_{i}', 'h': h, 'boost': {'role': 'residual'}, **gk})
+            d = C.validate({'design': f'dymG_{i}', 'h': h, 'boost': {'role': 'residual', 'early_stop': 'qlike_total'}, **gk})
             rd = lambda p: _val_only(pd.read_parquet(src / p), p)
             L = rd(dc['noga'].format(h=h))
             C.write_series(d, 'noga_dym', L[L.step.isin(steps) & L.ticker.isin(tick)], h, None, module='L', root=root)
@@ -775,12 +776,15 @@ def dym_batch(A_done=None):
             nexp = (len(K['tau']) if K['gate'] == 'conf_seed' else len(__import__('r2_ens').TAUS) if K['gate'] == 'soft'
                     else len(K['k']) * len(K['q']) if K['gate'] == 'shock_fresh' else 1) \
                 * (len(K['delta']) if K['sign_delta'] != 'off' else 1) * (len(K['lam']) if K['lam_to_ref'] == 'on' else 1)
-            pc = C.cache_dir(d, root=root) / 'params.csv'
+            pc = C.params_path(d, MODUL, root=root)
+            lp = C.load_params(sha, modul=MODUL, root=root)
+            stary = (C.cache_dir(d, root=root) / 'params.csv').exists()  # общий params.csv не пишется (PR #201)
             rows.append(dict(h=h, design=d['design'], hash=sha[:16], ryadov=Ls.ryad.nunique(), ozhidalos=nexp,
                              shagi=','.join(map(str, sorted(Ls.step.unique()))) if len(Ls) else '',
-                             done=C.done_path(d, MODUL, h, seed, root).exists(), params=pc.exists(),
+                             done=C.done_path(d, MODUL, h, seed, root).exists(), params=bool(pc.exists() and len(lp) and not stary),
                              sdvig_ok=bool(T[T.hash == sha[:16]].sdvig_ok.all()) if len(T) else False,
-                             ok=bool(Ls.ryad.nunique() == nexp and C.done_path(d, MODUL, h, seed, root).exists() and pc.exists()
+                             ok=bool(Ls.ryad.nunique() == nexp and C.done_path(d, MODUL, h, seed, root).exists()
+                                     and pc.exists() and len(lp) and not stary
                                      and len(T) and T[T.hash == sha[:16]].sdvig_ok.all())))
         rows.append(dict(h=h, design='povtor', ryadov=len(T2), ozhidalos=0, ok=bool(len(T2) == 0)))  # готовое пропущено (DONE_G)
         rows.append(dict(h=h, design='dymG_bez', ryadov=0, ozhidalos=0,

@@ -2,7 +2,7 @@
 # Протокол v4 docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, раздел 6 и раздел 7 (строка G). Модуль — scripts/analysis/r2_gate_abstain.py.
 # Ключи дизайна — schema_v2 (PR #184): k16.gate/tau/k/q/measure/regime_calib, k18.lam_to_ref/lam, k20.sign_delta/delta/base.
 # Боевой счёт (run --designs): ряды G_<ворота>__<точка сетки> по seed — в каталог дизайна (цепочка L → … → G, modul = G),
-# варианты выбирает O (r2_gates.ocenka); справочный выбор G и параметры по шагам — <каталог>/params.csv (строки modul = G).
+# варианты выбирает O (r2_gates.ocenka); справочный выбор G и параметры по шагам — r2_core.params_path(дизайн, 'G') = <каталог>/params_G.csv (PR #201).
 # Разделы k16/k18/k20 ниже — сетки для дыма и справочного семейного счёта; в бою сетки берутся из ключей дизайна.
 max_year: 2021
 steps_out: [2, 3, 4, 5, 6]          # прогнозы — только val 2017–2021 (шаги кода 2–6); шаг 1 (2016) — только обучение привратника
