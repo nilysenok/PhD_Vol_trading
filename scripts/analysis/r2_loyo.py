@@ -280,6 +280,15 @@ def fh_d0_seeds(h):
 
 
 # ---------------------------------------------------------------- адаптер: ряды -> таблица шагов (уровни 1–3)
+def harcj_guard(files, what=''):
+    """HAR-CJ (V0_HCJ gibrid_v17) строится по d−1 — в отборе R2 не берётся; допустим только HAR-CJ d0 с эмбарго (vyr/ref_harcj_d0, PR #154)."""
+    d0 = str(R / Path(CFG['harcj_d0']).parent)
+    for f in str(files).split(';'):
+        p = str(f if Path(f).is_absolute() else R / f)
+        if re.search(r'hcj|harcj|har_cj', Path(p).name, re.I):
+            assert p.startswith(d0 + '/'), f'{what}: HAR-CJ по d−1 ({p}) — в R2 только d0 из {d0}'
+
+
 def series_tab(spec, ref, h):
     """spec — DataFrame: unit, role, leg, variant, files (через ';'), s2, n_rych [, weights — csv step,w_har,w_xgb,w_lgb].
     ref — {'har': {код: {шаг: q}}, 'xgb_v0': ..., 'lgb_v0': ..., 'leg_v0:<нога>': ...}; HAR-J sm для c1 — ref['har']['sm'].
@@ -287,6 +296,7 @@ def series_tab(spec, ref, h):
     cache, rows = {}, []
     et = lambda code: 'ord' if code == 'bez' and CFG.get('etalon_bez', 'ord') == 'ord' else code
     for r in spec.itertuples():
+        harcj_guard(r.files, f'{r.unit} / {r.variant}')
         key = (r.files, r.s2)
         if key not in cache:
             files = [x if Path(x).is_absolute() else R / x for x in str(r.files).split(';')]
@@ -311,6 +321,7 @@ def ref_from_files(files_by_key):
     """{'har': путь, 'xgb_v0': путь, ...} -> {ключ: {код: {шаг: q}}} по всем s²."""
     out = {}
     for k, f in files_by_key.items():
+        harcj_guard(f, f'эталон {k}')
         s = series([f if Path(f).is_absolute() else R / f])
         out[k] = {c: q_steps(s, c) for c in CODES}
     return out
@@ -572,6 +583,14 @@ def selftest():
         gp = gL[gL.unit.isin(pool)]
         assert gL[~gL.unit.isin(pool)]['rank'].isna().all() and abs(gp['rank'].sum() - len(gp) * (len(gp) + 1) / 2) < 1e-9
     assert set(vybor(W9, k=10).unit) == set(pool) - {'F'} and list(W9.poryadok[:len(pool)]) == list(range(1, len(pool) + 1))
+    # 10. HAR-CJ: по d−1 — отказ; d0 из vyr/ref_harcj_d0 — допустим; прочие ряды не затрагиваются
+    harcj_guard(CFG['harcj_d0'].format(h=5)); harcj_guard('Bv3_xgb_h5_val.parquet')
+    for bad in ('ref_v0_base/HCJ_h5_val.parquet', 'HARCJ_h5_val.parquet'):
+        try:
+            harcj_guard(bad, 'тест')
+            raise AssertionError('HAR-CJ по d−1 не пойман')
+        except AssertionError as e:
+            assert 'd−1' in str(e), e
     g9 = vorota(W9, 'A', sigma2({s: 0.25 for s in SEEDS}, {s: 0.29 + 1e-3 * (s % 3) for s in SEEDS}))
     assert g9['u1_vhod'] and g9['u2_2sigma_Fd0'] and g9['u3_luchshe_F'] and not g9['u4_test'] and not g9['proshyol']
     print('selftest r2_loyo: OK (протокол v2: ранги и хвост, c4 по отрезкам; режим владельца 14:20: вход «эталон >= 3 из 5 + c3», ранги среди '

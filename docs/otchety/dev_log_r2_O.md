@@ -30,6 +30,9 @@
   - F_h(d0) — `F_h_d0.file` в yaml. ❓ Имя файла ВЫР-1 пока неизвестно; умолчание — `R2/cache/VYR/F_d0_h{h}_s{seed}_val.parquet`, а пока файла нет, используется прежний F_h с пометкой «справочно».
   - Режим `protokol_v2` сохранён. `--selftest` покрывает оба режима; `proverka` на рядах первого раунда прогнана в новом режиме.
 
+Ъ Дирижёр 26.10 (аудит справочных, PR #154): «Из всех справочных моделей день d не видит только HAR-CJ, его перестроили в d0 с эмбарго: val шагов 1–6 — в `data/regen/vyr/ref_harcj_d0/`. В пространстве дизайнов `gibrid_v17` ячейка `V0_HCJ` по-прежнему строится по d−1. В отборе R2 её не используй, либо подставь HAR-CJ d0 … V0, NN, GARCH, HEAVY и RG день d видят, их можно брать как есть.»
+- V0_HCJ в отборе не используется. В proverka она исключена `isklyuchit_designs` (в выводе 0 строк HCJ); прочие схемы gibrid_v17 HAR-CJ не используют, а `flags` берёт только har / xgb / lgb. Для рядов уровней 1–3 добавлен `harcj_guard` (assert): ряд HAR-CJ допускается только из `vyr/ref_harcj_d0/` (yaml `harcj_d0`). Покрыто `--selftest` (ветка `r2-O-hcj`).
+
 Запреты агента О (сводно): метрики за годы ≥ 2022; `test_locked` до заморозки; `docs/tables/*test*`, `docs/tables/dlya_teksta/`, `docs/prilozheniya/`, `docs/tekst_chernoviki/`, `2026-10-26_test_glava3.md`, разделы 12–13 FINAL_DESIGN; `docs/otchety/2026-10-26_proverka_laga_harj.md`; `docs/zadaniya/2026-10-25_pereschet.md`; `final_test.py` как скрипт не запускать.
 
 ## Решения и толкования (до счёта уровней R2)
