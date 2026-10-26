@@ -5,7 +5,7 @@ ref_garch (GARCH и GJR с калибровкой, scripts/analysis/ref_garch_ca
 NN: бюджет детектора уменьшен (LEAK_NN_CFG: 3 испытания, 4 эпохи, patience 2), подмножество тикеров LEAK_NN_TICKERS, три seed;
 путь кода (эмбарго, стандартизация, исследование шага t-1 -> переобучение шага t, Б0.1 по шагу t-1) — тот же.
 Внедрённая утечка (самопроверка): NN — признак leak_rv = цель строки; GARCH — калибровка шага t по году оценки шага t+1."""
-import sys
+import os, sys
 import numpy as np, pandas as pd
 from . import noise as N
 from .world import REPO
@@ -15,7 +15,7 @@ if str(AN) not in sys.path:
     sys.path.insert(0, str(AN))
 FEAT = '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/features_pit_v3.parquet'
 LEAK_NN_TICKERS = ['SBER', 'LKOH', 'IRAO']
-LEAK_NN_CFG = dict(ntr=3, epochs=4, pat=2, batch=32)
+LEAK_NN_CFG = dict(ntr=3, epochs=int(os.environ.get('LEAK_NN_EPOCHS', 4)), pat=int(os.environ.get('LEAK_NN_PAT', 2)), batch=32)
 tcol = lambda h: 'rv_target_h1' if h == 1 else f'rv_target_mean_h{h}'
 TG = {tcol(h): h for h in (1, 5, 22)}
 
