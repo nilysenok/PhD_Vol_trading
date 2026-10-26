@@ -44,6 +44,8 @@ k18:
   rule: "ln ŷ = ln HAR + λ·(ln ŷ_канд − ln HAR), HAR — эталон (столбец har), кандидат — гибрид-ансамбль"
   har: har_corr
   lam: [0.25, 0.5, 0.75, 1.0]
+  ref: etalon        # k18.ref дизайна (❓ S: в schema), если ключа нет: etalon — эталон В2; noga — нога (E8: ŷ = нога + λ·(кандидат − нога))
+  # E8 (владелец 20:20): λ = 0 (= ref) и k16.k = 0 (= без воздержания) модуль допускает; в schema_v2 нулей нет — ❓ S
 k20:
   rule: "ln ŷ = ln база + δ·s_t; s = sign(c̄) (znak) или 2p − 1, p — доля компонент seed × lib с c > 0 (dolya, аналог Д19.3)"
   baza: noga          # noga | etalon
