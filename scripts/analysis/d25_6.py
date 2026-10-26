@@ -104,17 +104,21 @@ def _chunk(t, y):
     f, done = BARS / f'{t}_{y}.csv', BARS / f'{t}_{y}.done'
     if done.exists():
         return t, y, -1, 0
-    fr = f'{y}-05-01' if y == 2014 else f'{y}-01-01'
-    rows, start, pages = [], 0, 0
-    while True:
-        d = _get_retry(BASE.format(t=t) + f'/candles.json?interval=1&from={fr}&till={y}-12-31&start={start}&iss.meta=off')
-        c = d['candles']
-        idx = {k: i for i, k in enumerate(c['columns'])}
-        rows += [[r[idx[k]] for k in COLS] for r in c['data']]
-        pages += 1
-        if len(c['data']) < 500:
-            break
-        start += 500
+    # с 06:17 — помесячно: у LKOH 2023 годовой запрос оборвался на 35-й странице (ISS вернул < 500 строк в середине года)
+    rows, pages = [], 0
+    for mo in range(5 if y == 2014 else 1, 13):
+        fr = f'{y}-{mo:02d}-01'
+        till = (pd.Timestamp(fr) + pd.offsets.MonthEnd(0)).strftime('%Y-%m-%d')
+        start = 0
+        while True:
+            d = _get_retry(BASE.format(t=t) + f'/candles.json?interval=1&from={fr}&till={till}&start={start}&iss.meta=off')
+            c = d['candles']
+            idx = {k: i for i, k in enumerate(c['columns'])}
+            rows += [[r[idx[k]] for k in COLS] for r in c['data']]
+            pages += 1
+            if len(c['data']) < 500:
+                break
+            start += 500
     pd.DataFrame(rows, columns=COLS).to_csv(f, index=False)
     done.write_text(json.dumps({'rows': len(rows), 'pages': pages, 'time': time.strftime('%F %T')}))
     return t, y, len(rows), pages
@@ -366,6 +370,33 @@ def post(h, var):
         J.stage_eval(a)
 
 
+def peek(var):
+    """Ранний срез по части 1-6: одиночная точка XGB, OOS QLIKE с Б0.1 sm, 2017-2020 (шаги 2-5), по seed — против той же конструкции на 10-мин цели."""
+    import pickle
+    import l2_lib as L
+    base = {1: 'D22_h1', 5: 'D12_h5', 22: 'D16_5_h22'}
+    rows = []
+    for h in HS:
+        f = OUT / 'm6' / f'res_{VAR[var]}_h{h}_1-6.pkl'
+        if not f.exists():
+            continue
+        res = pickle.load(open(f, 'rb'))
+        get = {1: lambda r: (r[0], r[2], r[4]), 5: lambda r: (r[0], r[3], r[6]), 22: lambda r: ('xgb', r[1], r[3])}[h]
+        for sd in (42, 43, 44):
+            v = pd.concat([get(r)[2] for r in res if get(r)[0] == 'xgb' and get(r)[1] == sd])
+            a_ = pd.read_parquet(DATA / 'regen' / f'{base[h]}_xgb_h{h}{"" if sd == 42 else "_seeds4344"}_val.parquet')
+            a_ = a_[(a_.seed == sd) & (a_.step <= 6)]
+            if 'rank' in a_:
+                a_ = a_[a_['rank'] == 1]
+            q, qb = L.evaluate(v[v.step <= 6], lo=2, hi=5)['sm'], L.evaluate(a_, lo=2, hi=5)['sm']
+            rows.append(dict(var=var, h=h, seed=sd, q_1720=q[0], base_1720=qb[0], d=q[0] / qb[0] - 1,
+                             q_2021=L.evaluate(v[v.step <= 6], lo=6, hi=6)['sm'][0], base_2021=L.evaluate(a_, lo=6, hi=6)['sm'][0]))
+    df = pd.DataFrame(rows)
+    df.to_csv(OUT / 'm6' / f'peek_{var}.csv', index=False)
+    print(df.round(4).to_string(index=False))
+    print(df.groupby('h')[['q_1720', 'base_1720', 'q_2021', 'base_2021']].mean().assign(d=lambda x: x.q_1720 / x.base_1720 - 1).round(4).to_string())
+
+
 def smoke(h):
     """Проверка подмены без обучения: шаг 2, XGB — доля строк обучения с RV5 и сверка ytr_ln с ln t5 (вне винзоризации)."""
     import l2_lib as L
@@ -384,6 +415,11 @@ if __name__ == '__main__':
         os.environ.setdefault('L2_FEAT', str(DATA / 'regen' / 'features_pit_v3.parquet'))
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         post(int(sys.argv[2]), sys.argv[3])
+        sys.exit(0)
+    if sys.argv[1] == 'peek':
+        os.environ.setdefault('L2_FEAT', str(DATA / 'regen' / 'features_pit_v3.parquet'))
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        peek(sys.argv[2])
         sys.exit(0)
     if sys.argv[1] == 'smoke':
         os.environ.setdefault('L2_FEAT', str(DATA / 'regen' / 'features_pit_v3.parquet'))
