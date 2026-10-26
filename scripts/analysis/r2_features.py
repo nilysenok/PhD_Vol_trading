@@ -49,7 +49,7 @@ DATA = MAIN / 'data'
 REG = DATA / 'regen'
 OUT = REG / 'R2' / 'feat'
 WORK = OUT / '_work'
-COMB = REG / 'R2' / 'features' / 'features_r2_v1.parquet'
+COMB = REG / 'R2' / 'features' / 'features_r2_v2.parquet'  # v2 (26.10, 16:30): без 3 столбцов, заблокированных O (PR #167); v1 не меняется
 DOCS = ROOT / 'docs' / 'otchety' / 'r2_F'
 YAML = ROOT / 'models' / 'designs' / 'r2' / 'r2_F_features.yaml'
 V3H = REG / 'features_pit_v3h.parquet'
@@ -566,8 +566,17 @@ DESC = {
 }
 
 
-def build_all(I, groups=GROUPS):
-    return {gk: BUILD[gk](I) for gk in groups}
+#: v2: столбцы, заблокированные O по п. 2.6 (PR #167). Ошибки в коде нет (stage razbor), максимум на +1 — свойство ряда; столбцы убраны.
+DROP = {'G4': ['g4_jbig_n22'], 'G7': ['g7_ln_amihud_w', 'g7_ln_amihud_m']}
+
+
+def build_all(I, groups=GROUPS, drop=True):
+    out = {gk: BUILD[gk](I) for gk in groups}
+    if drop:
+        for gk, cols in DROP.items():
+            if gk in out:
+                out[gk] = out[gk].drop(columns=cols)
+    return out
 
 
 def stage_build(a):
@@ -604,7 +613,7 @@ def stage_build(a):
     L = ['# R2, агент F: группы признаков кластера 5 (schema_v1: features). Строится scripts/analysis/r2_features.py --stage build.',
          '# Информационное множество d0: строка (d, ticker) — данные по день d включительно; RV_d до 18:50; без shift(1).',
          '# Ключи — features_pit_v3h (ISS_start); history_start = 2014 -> строки date >= 2014-06-09.',
-         'agent: F', 'version: features_r2_v1', f'combined: {{file: {COMB.relative_to(MAIN)}, sha256: {sha(COMB)}}}',
+         'agent: F', 'version: features_r2_v2', 'removed_v2: [' + ', '.join(sum(DROP.values(), [])) + ']  # блок O (PR #167), разбор — stage razbor', f'combined: {{file: {COMB.relative_to(MAIN)}, sha256: {sha(COMB)}}}',
          'key: [date, ticker]', 'history_start: {"2014": "date >= 2014-06-09 (ключи v3)", ISS_start: "все строки (v3h, с 2011-12-08)"}',
          'groups:', '  G0: {file: data/regen/features_pit_v3.parquet, note: "база; в версии d0 — у агента S/L (rv_d, rv_w, rv_m, jump_lag* там сдвинуты на 1)"}']
     for r in rows[:-1]:
@@ -817,6 +826,70 @@ def stage_check(a):
     print(G.to_string())
 
 
+# ================================================================ razbor: 3 столбца, заблокированные O (PR #167)
+def stage_razbor(a):
+    """1) пересчёт «в лоб» по сырым рядам только с датами ≤ d на 3000 случайных строк 2017–2021; 2) детектор на этих столбцах;
+    3) профили сдвига: столбец, подложенная утечка (окно d−w+2…d+1), leakify, разложение Amihud = |r_d| / оборот_d."""
+    I = load_inputs()
+    rng = np.random.default_rng(20261026)
+    cols = sum(DROP.values(), [])
+    F = {gk: BUILD[gk](I) for gk in DROP}
+    X = pd.concat([F['G4'][['date', 'ticker', 'g4_jbig_n22']], F['G7'][['g7_ln_amihud_w', 'g7_ln_amihud_m']]], axis=1)
+    rows = []
+    # 1) пересчёт в лоб
+    XS = I['XS'].sort_values(['ticker', 'date'])
+    B = I['B'].sort_values(['ticker', 'date'])
+    dev = X[(X.date >= pd.Timestamp('2017-01-01')) & (X.date <= LAST_DEV)]
+    smp = dev.sample(3000, random_state=1)
+    err = {c: 0.0 for c in cols}
+    for _, r in smp.iterrows():
+        xs = XS[(XS.ticker == r.ticker) & (XS.date <= r.date)]['amihud']
+        for c, w, mp in (('g7_ln_amihud_w', 5, 3), ('g7_ln_amihud_m', 22, 13)):
+            v = xs.iloc[-w:]
+            m = v.mean() if v.notna().sum() >= mp else np.nan
+            ref = np.log(m) if np.isfinite(m) and m > 0 else np.nan
+            got = r[c]
+            err[c] = max(err[c], 0.0 if (np.isnan(ref) and np.isnan(got)) else abs(ref - got) if np.isfinite(ref - got) else 1.0)
+        b = B[(B.ticker == r.ticker) & (B.date <= r.date)].iloc[-22:]
+        ind = ((b.j >= 0.25 * b.rv) & (b.j > 0)).astype(float).where(b.j.notna())
+        ref = ind.sum() if ind.notna().sum() >= 13 else np.nan
+        got = r['g4_jbig_n22']
+        err['g4_jbig_n22'] = max(err['g4_jbig_n22'], 0.0 if (np.isnan(ref) and np.isnan(got)) else abs(ref - got))
+    for c in cols:
+        rows.append(dict(proverka='пересчёт в лоб по датам ≤ d (3000 строк 2017–2021)', col=c, znachenie=err[c]))
+    # 2) детектор на этих столбцах
+    cal = pd.DatetimeIndex(np.sort(I['KEYS'].date.unique()))
+    LK = {gk: BUILD[gk](leakify(I, cal)) for gk in DROP}
+    for t in CUTS:
+        P = perturb(I, t, rng)
+        PB = {gk: BUILD[gk](P) for gk in DROP}
+        PL = {gk: BUILD[gk](leakify(P, cal)) for gk in DROP}
+        for gk, cc in DROP.items():
+            for c in cc:
+                d0 = diff_le(F[gk][['date', 'ticker', c]], PB[gk][['date', 'ticker', c]], t)
+                d1 = diff_le(LK[gk][['date', 'ticker', c]], PL[gk][['date', 'ticker', c]], t)
+                rows.append(dict(proverka=f'детектор, срез {t}: без утечки max|Δ| / ячеек', col=c, znachenie=d0[0], yacheek=d0[2]))
+                rows.append(dict(proverka=f'детектор, срез {t}: подложенная утечка max|Δ| / ячеек', col=c, znachenie=d1[0], yacheek=d1[2]))
+    R = pd.DataFrame(rows)
+    R.to_csv(DOCS / 'razbor_3stolbca.csv', index=False)
+    print(R.to_string())
+    # 3) профили сдвига
+    P = X.copy()
+    g = P.sort_values(['ticker', 'date']).groupby('ticker')
+    for c in cols:  # подложенная утечка: окно сдвинуто на день вперёд (d−w+2 … d+1)
+        P[f'{c}__utechka_okno+1'] = g[c].shift(-1)
+    for c in cols:
+        P[f'{c}__leakify'] = pd.concat([LK['G4'], LK['G7']], axis=1)[c].values
+    k = on_keys(I, I['XS'], ['amihud', 'value'])
+    absr = k.amihud * k.value / 1e9  # |ln C_d/C_{d−1}|
+    P['ln_amihud_d'] = np.log(k.amihud.where(k.amihud > 0)).values
+    P['ln_abs_r_d'] = np.log(absr.where(absr > 0)).values
+    P['minus_ln_oborot_d'] = -np.log(k.value.where(k.value > 0)).values
+    S = shift_table(P, I, 'razbor')
+    S.to_csv(DOCS / 'razbor_3stolbca_sdvig.csv', index=False)
+    print(S[['col', 'rho_-2', 'rho_-1', 'rho_0', 'rho_1', 'argmax', 'drho_-2', 'drho_-1', 'drho_0', 'drho_1', 'd_argmax']].to_string())
+
+
 # ================================================================ nobs: ISS_start
 def stage_nobs(a):
     DOCS.mkdir(parents=True, exist_ok=True)
@@ -845,7 +918,7 @@ def stage_nobs(a):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--stage', required=True, choices=['bars', 'daily', 'build', 'check', 'nobs', 'all'])
+    ap.add_argument('--stage', required=True, choices=['bars', 'daily', 'build', 'check', 'nobs', 'razbor', 'all'])
     ap.add_argument('--bin', default=None)
     a = ap.parse_args()
     for s in (['bars', 'daily', 'build', 'check', 'nobs'] if a.stage == 'all' else [a.stage]):
