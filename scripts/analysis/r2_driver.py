@@ -847,6 +847,8 @@ def cmd_smoke(a):
     ok('проверка сдвига: блоков нет (HAR-J d0)', not (SMOKE_DIR / 'blok_sdvig.csv').exists() or
        not (pd.read_csv(SMOKE_DIR / 'blok_sdvig.csv').ok == False).any())  # noqa: E712 — «плоский профиль» пишется с ok = True
     ok('режим R2: запись ≥ 2022 отклоняется', C._raises(lambda: C.check_no_future(pd.DataFrame({'date': ['2022-01-03'], 'year': [2022]}), 'driver_smoke')))
+    K = contract_check()
+    ok(f'контракт подключённых модулей (опции шаблона есть в argparse модуля): {K}', all(v == 'OK' or v.endswith('ждёт') for v in K.values()) and K.get('E') == 'OK' and K.get('G') == 'OK')
     T = pd.DataFrame(rows)
     T.to_csv(SMOKE_DIR / 'smoke_driver.csv', index=False)
     with pd.option_context('display.max_colwidth', 120, 'display.width', 220):
@@ -854,6 +856,26 @@ def cmd_smoke(a):
     log(f'дым r2_driver: {"ВСЕ OK" if T.ok.all() else "ЕСТЬ ОШИБКИ"} за {time.time() - t0:.0f} с (конвейеры {time.time() - t1:.0f} с) '
         f'-> {SMOKE_DIR / "smoke_driver.csv"}')
     return 0 if T.ok.all() else 1
+
+
+def contract_check():
+    """Для каждого модуля: файла нет / нет run (ждёт) / OK — все опции шаблонов run и leak объявлены в argparse модуля."""
+    import re
+    out = {}
+    r = Runner(False)
+    for m, spec in CFG['modules'].items():
+        f = HERE / spec['file']
+        if not f.exists():
+            out[m] = 'нет файла — ждёт'
+            continue
+        if not r.ready(m):
+            out[m] = 'нет run — ждёт'
+            continue
+        src = f.read_text(encoding='utf-8', errors='ignore')
+        opts = set(re.findall(r'(--[a-z][a-z0-9-]*)', spec['run'] + ' ' + spec.get('leak', '')))
+        miss = [o for o in sorted(opts) if f"'{o}'" not in src]
+        out[m] = 'OK' if not miss else f'нет опций {miss}'
+    return out
 
 
 def cmd_status(a):
