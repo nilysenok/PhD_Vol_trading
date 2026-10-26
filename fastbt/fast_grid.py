@@ -203,9 +203,71 @@ def run(reps: int, cache: dict, timings: dict | None = None) -> None:
             timings["run"] = time.time() - t1
 
 
+BENCH_SRCS = ("hyb_h1", "hyb_h5", "harj_h1", "naive_h1")
+
+
+def bench(reps: int, cache: dict, fast: bool, srcs=BENCH_SRCS, lw: bool = True) -> dict:
+    """Замер сетки в сотни конфигураций: D, B, C (с доп. точками, если загружены) на σ-источниках
+    srcs; каждое Δ (к A, к C) — IID-бутстрап reps и, при lw, Ледуа–Вольф (блок 5, reps), как в
+    раунде владельца. fast=False — старый путь, True — быстрый. Время — по слоям."""
+    from fastbt import fast_sigma, s9, s9_stats
+    tm = {k: 0.0 for k in ("sigma", "select", "port_metrics", "boot_iid", "boot_lw", "всего")}
+    cnt = {"points": 0, "deltas": 0}
+    ctx = patched() if fast else contextlib.nullcontext()
+    t_all = time.time()
+    with ctx:
+        eng = s9.Engine(cache)
+        x = s9.S9(eng, reps)
+        if fast:
+            t = time.time()
+            fast_sigma.precompute(eng, srcs)
+            tm["sigma"] += time.time() - t
+
+        def timed(obj, name, key):
+            f = getattr(obj, name)
+
+            def w(*a, **k):
+                t = time.time()
+                try:
+                    return f(*a, **k)
+                finally:
+                    tm[key] += time.time() - t
+            setattr(obj, name, w)
+            return f
+        timed(eng, "select", "select")
+        for nm in ("d_points", "c_points", "b_weights"):
+            timed(x, nm, "sigma")
+        boot0 = timed(x, "boot", "boot_iid")
+        lwf = s9_stats.lw_sharpe_diff
+        delta0 = x.delta
+
+        def delta(r, key, p1, p0):
+            delta0(r, key, p1, p0)
+            cnt["deltas"] += 1
+            if lw:
+                t = time.time()
+                r[f"p_lw_{key}"] = lwf(p1["excess"].values, p0["excess"].values, reps, 5)[2]
+                tm["boot_lw"] += time.time() - t
+        x.delta = delta
+        dfs = []
+        for src in srcs:
+            dfs.append(x.run_d((src,))[0])
+            dfs.append(x.run_b((src,))[0])
+            dfs.append(x.run_c((src,))[0])
+        del boot0
+    tm["всего"] = time.time() - t_all
+    tm["port_metrics"] = tm["всего"] - tm["sigma"] - tm["select"] - tm["boot_iid"] - tm["boot_lw"]
+    import pandas as pd
+    df = pd.concat(dfs, ignore_index=True)
+    cnt["points"] = int(df["d_vs_A"].notna().sum())      # конфигурации с Δ к A
+    return dict(tm, **cnt, frame=df)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
-    p.add_argument("stage", choices=["cache", "run", "all"])
+    p.add_argument("stage", choices=["cache", "run", "all", "bench"])
+    p.add_argument("--bench-path", choices=["old", "new", "both"], default="both")
+    p.add_argument("--no-lw", action="store_true", help="bench: без Ледуа–Вольфа на каждое Δ")
     p.add_argument("--boot-reps", type=int, default=1000)
     p.add_argument("--sigma-h1", default="final3_full")
     p.add_argument("--workers", type=int, default=4)
@@ -233,6 +295,26 @@ def main(argv=None):
         run(a.boot_reps, cache, tm)
         print(f"run (быстрый слой): σ-признаки {tm['sigma_precompute']:.1f} с, "
               f"таблицы {tm['run']:.1f} с", flush=True)
+    if a.stage == "bench":
+        import json
+        res = {}
+        paths = ("old", "new") if a.bench_path == "both" else (a.bench_path,)
+        frames = {}
+        for pth in paths:
+            r = bench(a.boot_reps, cache, pth == "new", lw=not a.no_lw)
+            frames[pth] = r.pop("frame")
+            res[pth] = r
+            print(pth, json.dumps({k: (round(v, 2) if isinstance(v, float) else v)
+                                   for k, v in r.items()}, ensure_ascii=False), flush=True)
+            frames[pth].to_csv(s9.OUT / f"bench_{pth}.csv", sep=";", index=False,
+                               float_format="%.10g")
+        if len(frames) == 2:
+            fo, fn = frames["old"], frames["new"]
+            num = fo.select_dtypes("number").columns
+            dmax = float(np.nanmax(np.abs(fo[num].values - fn[num].values))) if len(num) else 0.0
+            print(f"bench: строк {len(fo)}, max|Δ| числовых столбцов старый/новый = {dmax:.3g}")
+            res["max_abs_diff"] = dmax
+        (s9.OUT / "bench.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
     return 0
 
 
