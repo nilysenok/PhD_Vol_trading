@@ -277,6 +277,39 @@ def fn_v0(design, seed, steps):
     return out
 
 
+def _state_M():
+    """Матрица L для state_frame (RVI, вол-оф-вол, режим, ln RV_d/w/m): r2_core.SHARED['M'] или строится один раз (17 тикеров, ≤ 2021)."""
+    import r2_core as RC
+    if RC.SHARED.get('M') is None:
+        A, harj = RC.load_d0()
+        RC.share(M=N.mat_from(A, harj))
+    return RC.SHARED['M']
+
+
+def fn_v0_panel(design, seed, steps):
+    """Модуль для r2_core.run_phase: сырой ряд агента P (r2_panel.phase_fn, leg.panel ≠ off) × общий слой калибровки L (calib.*, boost.prob).
+    Ряды — <ряд P>__cal; параметры калибровки — params.csv (param = <ряд P>__cal:calib_*). Данные P — SHARED['A'] из r2_panel.load_A()."""
+    import r2_panel as RP
+    h = int(design['h'])
+    S = state_frame(_state_M(), h)
+    out, par = {}, []
+    for name, V in RP.phase_fn(design, seed, steps).items():
+        Vc, T = calibrate(design, V, S)
+        out[f'{name}__cal'] = Vc
+        par += [(f'{name}__cal', s, n, v) for _, s, n, v in calib_params('base', T)]
+    _write_cal_params(design, h, par)
+    return out
+
+
+def _write_cal_params(design, h, rows):
+    """rows: (ряд, шаг, параметр, значение) -> params.csv (формат D) через r2_nogi.write_params (ряд — как есть)."""
+    by = {}
+    for r, s, n, v in rows:
+        by.setdefault(r, []).append(('base', s, n, v))
+    for r, rr in by.items():
+        N.write_params(design, h, rr, kind=r)
+
+
 def calib_params(tag, T):
     """Таблица стабильности -> строки (тег, шаг, calib_<параметр>, значение) для write_params (формат D)."""
     cols = [c for c in T.columns if c not in ('step', 'flag_50') and not c.startswith('skachok_')]

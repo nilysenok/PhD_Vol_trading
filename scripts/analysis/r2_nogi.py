@@ -530,8 +530,8 @@ def zamer():
 #   struct (кластер 11): tau_midas — τ_d = Σ_{j<W} w_j RV_{d−j}, Beta(1, 5), W = tau_window; tau_rvi — τ_d = якорь RVI (h=22);
 #     нога моделирует ln(y/τ_ext) на HAR от ln(RV/τ_d); tau_extend const — τ_ext = τ_d, AR1 — ln τ среднее-возвратный AR(1) на обучении;
 #     tau_boost — бустинг, агент B (здесь — NotImplementedError). struct_split = bv_plus_jump — HAR-CJ d0 (BV и скачок раздельно).
-#   panel (кластер 14): P_i = α_i + β_i·ln ŷ_рынка (α, β — скользящая регрессия ln RV_i на ln m за panel_beta_window дней по день d);
-#     factor — ln ŷ = P_i; factor_shrink_s — ln ŷ = (1−s)·ln ŷ_ноги + s·P_i, s = 0,25 / 0,5; _state — s = 0,5 при RVI выше медианы, иначе 0,25.
+#   panel (кластер 14) — только агент P (r2_panel.py, решение дирижёра): здесь leg.panel ≠ off -> ValueError; s² на ряд P —
+#     r2_calib.fn_v0_panel (общий слой калибровки).
 #   refit (кластер 15): yearly — подгонка на 1 янв. vy; quarterly / monthly — заново на начало квартала / месяца года vy по строкам,
 #     чьё окно цели кончилось до этой даты; rls_lambda < 1 — ежедневное переобучение с весами λ^(возраст в торговых днях) (RLS с забыванием).
 #   data: recency_halflife (веса 0,5^(возраст/полураспад)), winsor (1/99 по тикеру на обучении), history_start (дата из ctx) — поддержаны;
@@ -1084,35 +1084,10 @@ def _run_garch(A, h, leg, var, harj, data, ctx, steps, didx):
     return _fin(V), pd.concat(W).sort_values(['date', 'ticker']).reset_index(drop=True)
 
 
-def _panel(A, h, leg, V, W, mk, data, ctx, steps):
-    """Кластер 14: P_i = α_i + β_i·ln ŷ_рынка; смесь с ногой по leg.panel."""
-    if leg['panel'] == 'off':
-        return V, W
-    col = 'm_' + leg['panel_market']; n = int(leg['panel_beta_window'])
-    x = np.log(A[col].values); y = np.log(A['_rvp'].values)
-    df = pd.DataFrame({'tk': A['ticker'].values, 'x': x, 'y': y, 'xy': x * y, 'xx': x * x})
-    r = df.groupby('tk')[['x', 'y', 'xy', 'xx']].transform(lambda s: s.rolling(n, min_periods=n // 2).mean())
-    beta = ((r.xy - r.x * r.y) / (r.xx - r.x ** 2)).values
-    alpha = (r.y - beta * r.x).values
-    s = {'factor': 1.0, 'factor_shrink_025': 0.25, 'factor_shrink_05': 0.5}.get(leg['panel'])
-    sv = np.where(A['I2'].values > 0, 0.5, 0.25) if s is None else np.full(len(A), s)
-    key = pd.DataFrame({'date': A['date'], 'ticker': A['ticker'], 'alpha': alpha, 'beta': beta, 'sv': sv})
-    outV, W2 = [], W.copy()
-    for k in steps:
-        vy = 2015 + k
-        mp = _market(A, mk, h, col, pd.Timestamp(f'{vy}-01-01'), None)[0]
-        P = key.assign(P=alpha + beta * mp)
-        v = V[V.step == k].merge(P, on=['date', 'ticker'], how='left')
-        lnl = np.log(v.rv_pred.values)
-        Pk = np.where(np.isfinite(v.P.values), v.P.values, lnl)
-        v['rv_pred'] = np.exp((1 - v.sv.values) * lnl + v.sv.values * Pk)
-        outV.append(v[COLS])
-        _rec(ctx, k, 'panel_beta_median', float(np.nanmedian(v.beta.values)) if np.isfinite(v.beta.values).any() else np.nan)
-        _rec(ctx, k, 'panel_s_mean', float(np.mean(v.sv.values)))
-        wm = W2[['date', 'ticker']].merge(P, on=['date', 'ticker'], how='left')
-        Pw = np.where(np.isfinite(wm.P.values), wm.P.values, W2[f'ln_s{k}'].values)
-        W2[f'ln_s{k}'] = (1 - wm.sv.values) * W2[f'ln_s{k}'].values + wm.sv.values * Pw
-    return _fin(outV), W2
+def _no_panel(leg):
+    """Решение дирижёра: дизайны с leg.panel ≠ off считает только агент P (r2_panel.phase_fn); одна реализация кластера 14."""
+    if leg['panel'] != 'off':
+        raise ValueError('leg.panel ≠ off — модуль P (scripts/analysis/r2_panel.py, phase_fn); s² — r2_calib.fn_v0_panel')
 
 
 def _prep(M):
@@ -1137,7 +1112,8 @@ def fit_predict(design, train_mask, predict_mask, M=None, tag=None):
       (r2_core.train_mask / _tend{h}); здесь маска только пересекается с «цель есть».
     -> pd.Series ln-прогноза (без калибровки) с индексом строк A[predict_mask].
     Все ноги кластера 2 (HARJ, HARX, HARX_regime, HARX_pooled, MIDAS_RV, HAR_perlead, RVI_anchor, factor, HEAVY, RealizedGARCH),
-    struct (τ), struct_split, robust, estimator, data.recency/winsor, panel. refit/RLS не применяются: одна подгонка на маске
+    struct (τ), struct_split, robust, estimator, data.recency/winsor. leg.panel ≠ off — только модуль P (r2_panel), здесь ValueError.
+    refit/RLS не применяются: одна подгонка на маске
     (веса давности — от первой даты прогноза). HEAVY / RealizedGARCH: целей в обучении нет, поэтому QMLE — по всем строкам тикера
     до его первой даты прогноза (как run_leg); обучение должно начинаться с начала истории тикера, иначе ValueError."""
     d = complete(design)
@@ -1148,6 +1124,7 @@ def fit_predict(design, train_mask, predict_mask, M=None, tag=None):
     if tag is None and len(vs) > 1:
         raise ValueError(f'в дизайне сетка ноги — нужен tag из {[v[0] for v in vs]}')
     tg, leg, var = next(v for v in vs if tag is None or v[0] == tag)
+    _no_panel(leg)
     leg = dict(leg, rls_lambda=1)
     t = leg['type']; tc = target_col(h)
     tr = np.asarray(train_mask, bool) & A[tc].notna().values
@@ -1212,17 +1189,6 @@ def fit_predict(design, train_mask, predict_mask, M=None, tag=None):
             ln[gg['_i'].values[sel]] = np.log(np.clip(F[h][sel] / 1e4, 1e-10, None))
     else:
         raise ValueError(f'leg.type = {t}')
-    if leg['panel'] != 'off':
-        col = 'm_' + leg['panel_market']; n = int(leg['panel_beta_window'])
-        x = np.log(A[col].values); yv = np.log(A['_rvp'].values)
-        df = pd.DataFrame({'tk': A['ticker'].values, 'x': x, 'y': yv, 'xy': x * yv, 'xx': x * x})
-        r = df.groupby('tk')[['x', 'y', 'xy', 'xx']].transform(lambda s: s.rolling(n, min_periods=n // 2).mean())
-        beta = ((r.xy - r.x * r.y) / (r.xx - r.x ** 2)).values; alpha = (r.y - beta * r.x).values
-        s = {'factor': 1.0, 'factor_shrink_025': 0.25, 'factor_shrink_05': 0.5}.get(leg['panel'])
-        sv = np.where(A['I2'].values > 0, 0.5, 0.25) if s is None else np.full(len(A), s)
-        P = alpha + beta * _market(A, mk, h, col, c, None)[0]
-        P = np.where(np.isfinite(P), P, ln)
-        ln[pm] = (1 - sv[pm]) * ln[pm] + sv[pm] * P[pm]
     return pd.Series(ln[pm], index=A.index[pm], name=f'ln_{tg}')
 
 
@@ -1234,6 +1200,7 @@ def run_leg(design, M=None, steps=STEPS, tickers=None, feat=FEAT, ctx=None, para
     h, leg, data = int(d['h']), d['leg'], d['data']
     if data['target'] != 'ln_mean':
         raise NotImplementedError('data.target ≠ ln_mean — кластер 1, не L')
+    _no_panel(leg)
     ctx = dict(ctx or {})
     M = mat_L(feat, tickers=tickers) if M is None else M
     A, harj, mk, didx = _prep(M)
@@ -1249,7 +1216,7 @@ def run_leg(design, M=None, steps=STEPS, tickers=None, feat=FEAT, ctx=None, para
             V, W = _run_factor(A, h, lg, var, harj, data, c, steps, didx, mk)
         else:
             V, W = fn(A, h, lg, var, harj, data, c, steps, didx)
-        out[tag] = _panel(A, h, lg, V, W, mk, data, c, steps)
+        out[tag] = (V, W)
         if params is not None:
             params += [(tag, s, p, v) for s, p, v in c['_par']]
     return out
@@ -1385,8 +1352,6 @@ DYM_DESIGNS = {  # дым: ключевые ветки кода (каждая н
     'factor_eq17': {'leg': {'type': 'factor', 'panel_market': 'RV_eq17'}}, 'factor_imoex': {'leg': {'type': 'factor'}},
     'tau_midas_AR1': {'leg': {'struct': 'tau_midas', 'tau_window': [22, 66], 'tau_extend': 'AR1'}},
     'tau_rvi': {'leg': {'struct': 'tau_rvi'}}, 'cj': {'leg': {'struct_split': 'bv_plus_jump'}},
-    'panel_shrink_state': {'leg': {'panel': 'factor_shrink_state', 'panel_beta_window': 126}},
-    'panel_factor': {'leg': {'panel': 'factor'}},
     'refit_monthly': {'leg': {'refit': 'monthly'}}, 'refit_q_S1': {'leg': {'type': 'HARX', 'regressors': 'S1', 'refit': 'quarterly',
                                                                            'enet': {'lambda': [0.01], 'alpha': [1.0]}}},
     'rls_099': {'leg': {'rls_lambda': 0.99}},
@@ -1440,7 +1405,7 @@ def dym(hs=HS, names=None, workers=2):
     # fit_predict (API для E) = run_leg на годовой подгонке: обучение r2_core.train_mask(vy), прогноз — val-год
     FP = []
     for nm in ('HARJ', 'HARX_S5_l01', 'regime3', 'pooled', 'MIDAS', 'perlead', 'RVI_anchor', 'factor_imoex', 'HEAVY', 'tau_midas_AR1', 'cj',
-               'panel_shrink_state', 'HARX_S2_qmle'):
+               'HARX_S2_qmle'):
         if nm not in sel:
             continue
         for h in hs:
