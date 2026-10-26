@@ -16,7 +16,10 @@ API (подробно — docs/server_r2.md, раздел «r2_core»):
     get(design, 'boost.role')                             значение по пути с точками
     series_path / write_series / read_series / have_series   ряды `<имя>_h{h}_s{seed|det}_{part}.parquet` в каталоге дизайна;
                                                           запись атомарная (tmp + os.replace), индекс — свой файл на процесс (один писатель)
-    merge_index() -> DataFrame                            R2/cache/INDEX_R2.csv из _index/*.csv
+    merge_index() / read_index() -> DataFrame             R2/cache/INDEX_R2.csv из _index/*.csv (read_index — без записи)
+    load_series(design_sha, part='val', ryad=, h=, seed=, modul=, steps=) -> DataFrame
+                                                          все ряды дизайна по хэшу (64 hex, префикс ≥ 16 или сам дизайн) одним
+                                                          длинным DataFrame + ryad, h, seed, part, modul, hash; SHA файла сверяется с индексом
 
   Данные d0, эмбарго, годы
     load_d0(tickers=None, plant=False) -> (A, harj)       features_pit_v3 в версии d0 (r2_nogi.load(d0=True)), строки ≤ 2021, `_tend{h}`
@@ -31,8 +34,10 @@ API (подробно — docs/server_r2.md, раздел «r2_core»):
                                                           ошибка задачи не роняет остальные: {task, ok, result, error, seconds}
 
   Проверки (кластер 9, п. 2.6) и детектор утечек
-    shift_check(V, A, h, name, design=None, block_file=None) -> dict   Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2,−1,0,+1}, val 2017–2021,
-                                                          по тикерам -> медиана; argmax ≠ 0 -> блок, строка в R2/O/blok_sdvig.csv
+    shift_check(V, A, h, name, design=None, block_file=None, K=None) -> dict   п. 2.6 по правилу O (импорт r2_loyo.sdvig/sdvig_ok):
+                                                          ок, если min K ≤ argmax ≤ 0 (K — последние известные дни входов: явно или
+                                                          r2_loyo.K_dizaina(design) по группам признаков); +1 — блок всегда;
+                                                          блок -> R2/O/blok_sdvig.csv (r2_loyo.blok_zapis)
     perturb_frame(A, cut, seed) / plant_frame(A)          шум после среза (и цели, чьё окно заходит за срез) / подложенная утечка «день d+1»
     leak_check(build, A, name, cuts=..., h=None) -> DataFrame   build(A) -> {ряд: DataFrame(date, ticker, step, rv_pred[, part])}:
                                                           Δ на строках ≤ среза = 0, после среза > 0, подлог пойман (середина года);
@@ -57,11 +62,11 @@ for _k in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS', 'VECLIB
     os.environ.setdefault(_k, '1')
 
 import argparse
-import fcntl
 import hashlib
 import io
 import itertools
 import multiprocessing as mp
+import re
 import socket
 import sys
 import time
@@ -470,14 +475,66 @@ def write_series(design, name, df, h, seed, part='val', module='core', root=None
     return path
 
 
-def merge_index(root=None):
+def read_index(root=None):
+    """Индекс кэша из файлов писателей _index/*.csv (без записи INDEX_R2.csv); последняя запись файла побеждает."""
     root = Path(root or CACHE_ROOT)
     fs = sorted((root / '_index').glob('*.csv'))
     if not fs:
-        return pd.DataFrame()
-    I = pd.concat([pd.read_csv(f) for f in fs], ignore_index=True).drop_duplicates(['fayl'], keep='last').sort_values(['hash', 'ryad'])
-    I.to_csv(root / 'INDEX_R2.csv', index=False)
+        return pd.DataFrame(columns=['fayl', 'hash', 'ryad', 'h', 'seed', 'part', 'stroki', 'shagi', 'sha256', 'modul', 'vremya', 'note'])
+    I = pd.concat([pd.read_csv(f, dtype={'hash': str, 'seed': str}) for f in fs], ignore_index=True)
+    return I.sort_values('vremya', kind='mergesort').drop_duplicates(['fayl'], keep='last').sort_values(['hash', 'ryad']).reset_index(drop=True)
+
+
+def merge_index(root=None):
+    root = Path(root or CACHE_ROOT)
+    I = read_index(root)
+    if len(I):
+        I.to_csv(root / 'INDEX_R2.csv', index=False)
     return I
+
+
+_SERIES_RE = re.compile(r'^(?P<ryad>.+)_h(?P<h>\d+)_s(?P<seed>det|\d+)_(?P<part>[a-z]+)\.parquet$')
+
+
+def load_series(design_sha, part='val', ryad=None, h=None, seed=None, modul=None, steps=None, root=None, verify=True):
+    """Точка входа для модулей-потребителей (E, M, O, D): все ряды дизайна по его хэшу -> один длинный DataFrame
+    (колонки ряда + ryad, h, seed, part, modul, hash).
+      design_sha — полный SHA-256 (64 hex), префикс ≥ 16 (= имя каталога кэша) или сам дизайн (dict/yaml);
+      фильтры — ryad (строка или список), h, seed (int | 'det' | список), modul (кто записал: 'B', 'M', …), steps;
+      источник — индекс кэша (_index/*.csv, его пишет write_series); ряды каталога без строки индекса тоже берутся
+      (modul = '?'); verify — сверка SHA-256 файла с индексом (иначе ValueError: файл переписан мимо write_series).
+    Пустой результат — пустой DataFrame. Годы > 2021 в val не бывает (write_series)."""
+    root = Path(root or CACHE_ROOT)
+    if not isinstance(design_sha, str) or not re.fullmatch(r'[0-9a-f]{16,64}', design_sha):
+        design_sha = design_hash(design_sha)
+    hid = design_sha[:16]
+    d = root / hid
+    if not d.is_dir():
+        raise FileNotFoundError(f'нет каталога кэша {d} (дизайн {design_sha[:16]}…)')
+    I = read_index(root)
+    I = I[I['hash'].astype(str) == hid]
+    rows = {}
+    for r in I.itertuples():
+        rows[Path(r.fayl).name] = dict(sha256=r.sha256, modul=r.modul)
+    want = lambda x, v: x is None or (str(v) in {str(y) for y in (x if isinstance(x, (list, tuple, set)) else [x])})
+    out = []
+    for f in sorted(d.glob('*.parquet')):
+        m = _SERIES_RE.match(f.name)
+        if not m or m['part'] != part:
+            continue
+        if not (want(ryad, m['ryad']) and want(h, m['h']) and want(seed, m['seed'])):
+            continue
+        meta = rows.get(f.name, dict(sha256=None, modul='?'))
+        if not want(modul, meta['modul']):
+            continue
+        b = f.read_bytes()
+        if verify and meta['sha256'] and sha_bytes(b) != meta['sha256']:
+            raise ValueError(f'{f}: SHA-256 не совпадает с индексом кэша')
+        x = pd.read_parquet(io.BytesIO(b))
+        if steps is not None:
+            x = x[x['step'].isin(list(steps))]
+        out.append(x.assign(ryad=m['ryad'], h=int(m['h']), seed=m['seed'], part=part, modul=meta['modul'], hash=hid))
+    return pd.concat(out, ignore_index=True) if out else pd.DataFrame()
 
 
 # ================================================================ данные d0, эмбарго
@@ -593,42 +650,25 @@ def run_pool(fn, tasks, workers=None, label='pool'):
 
 
 # ================================================================ проверка сдвига (п. 2.6)
-def shift_check(V, A, h, name, design=None, block_file=None, years=DEV_YEARS):
-    """Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2, −1, 0, +1}, по тикерам на val 2017–2021, затем медиана; RV — дневная RV тикера
-    (последний положительный RV), сдвиг — по торговым дням тикера. argmax ≠ 0 -> блок и строка в blok_sdvig.csv."""
-    D = A[['date', 'ticker', 'rv']].copy()
-    D['date'] = pd.to_datetime(D['date'])
-    D = D.sort_values(['ticker', 'date'])
-    D['rv'] = D['rv'].where(D['rv'] > 0).groupby(D['ticker']).ffill()
-    for s in SHIFTS:
-        D[f'l{s}'] = np.log(D.groupby('ticker')['rv'].shift(-s))
-    X = V[['date', 'ticker', 'rv_pred']].copy()
-    X['date'] = pd.to_datetime(X['date'])
-    X = X[X['date'].dt.year.isin(list(years))].merge(D, on=['date', 'ticker'], how='inner')
-    X['lp'] = np.log(X['rv_pred'])
-    per = {s: [] for s in SHIFTS}
-    for _, g in X.groupby('ticker'):
-        for s in SHIFTS:
-            per[s].append(g['lp'].corr(g[f'l{s}'], method='spearman'))
-    med = {s: float(np.nanmedian(per[s])) if per[s] else float('nan') for s in SHIFTS}
-    arg = SHIFTS[int(np.nanargmax([med[s] for s in SHIFTS]))] if X.shape[0] else None
-    r = dict(ryad=name, h=int(h), hash=(design_hash(design)[:16] if design is not None else ''), n_tikerov=int(X['ticker'].nunique()),
-             n_strok=int(len(X)), **{f'corr_s{s:+d}': med[s] for s in SHIFTS}, argmax=arg, ok=bool(arg == 0),
-             vremya=time.strftime('%F %T'))
+def shift_check(V, A, h, name, design=None, block_file=None, K=None):
+    """П. 2.6 по правилу агента O (PR #167) — импорт r2_loyo, не копия:
+      корреляции и argmax — r2_loyo.sdvig (Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2,−1,0,+1}, по тикерам, медиана, val 2017–2021);
+      решение — r2_loyo.sdvig_ok: ок, если min K ≤ argmax ≤ 0; +1 блокируется всегда; K — последние известные дни входов ряда:
+      явно (K=…) или r2_loyo.K_dizaina(design) по группам признаков (метаданные F, r2_O_loyo.yaml sdvig.izvestnyy_den_grupp); иначе {0};
+      блок — строка в R2/O/blok_sdvig.csv через r2_loyo.blok_zapis (тот же формат, с posledniy_izvestnyy_den).
+    A — таблица с date, ticker, rv (дневная RV дня строки), строки ≤ 2021 (load_d0)."""
+    import r2_loyo as O
+    if K is None:
+        K = O.K_dizaina(design) if design is not None else (0,)
+    rv = A[['date', 'ticker', 'rv']].copy()
+    rv['date'] = pd.to_datetime(rv['date'])
+    rv = rv[rv['date'].dt.year <= MAX_YEAR]
+    s = O.sdvig(V[['date', 'ticker', 'rv_pred']], rv, K=tuple(K))
+    r = dict(ryad=name, h=int(h), hash=(design_hash(design)[:16] if design is not None else ''), **s, vremya=time.strftime('%F %T'))
     if not r['ok']:
-        r['prichina'] = 'отстаёт (info_set < d0)' if arg is not None and arg < 0 else 'заглядывание (+1)'
-        _append_locked(Path(block_file or (O_DIR / 'blok_sdvig.csv')), r)
-        log(f'БЛОК сдвига: {name} h={h} argmax={arg} {r["prichina"]}')
+        O.blok_zapis([{k: v for k, v in r.items() if k not in ('blok', 'vremya')}], block_file or (O_DIR / 'blok_sdvig.csv'))
+        log(f'БЛОК сдвига: {name} h={h} argmax={r["argmax"]} K={r["posledniy_izvestnyy_den"]} {r["prichina"]}')
     return r
-
-
-def _append_locked(path, row):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'a+', encoding='utf-8') as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        f.seek(0, 2)
-        pd.DataFrame([row]).to_csv(f, header=f.tell() == 0, index=False)
-        fcntl.flock(f, fcntl.LOCK_UN)
 
 
 # ================================================================ детектор утечек (как Д26 / ВЫР-1, только 2017–2021)
@@ -913,8 +953,26 @@ def cmd_smoke(a):
                          ok=bool(len(T) == 1 and T.sdvig_ok.iloc[0] and sorted(V.step.unique()) == list(SMOKE_STEPS))))
         V1 = _smoke_series(A1, harj1, h, SMOKE_STEPS)  # обязан блокироваться (argmax = −1)
         sc1 = shift_check(V1, A, h, f'kontrol_R1_dminus1_h{h}', block_file=blk)
-        rows.append(dict(blok='сдвиг', proverka=f'h={h}: ряд на d−1 блокируется (argmax={sc1["argmax"]}; '
-                                                f'corr −1/0 = {sc1["corr_s-1"]:.4f}/{sc1["corr_s+0"]:.4f})', ok=bool(sc1['argmax'] == -1)))
+        rows.append(dict(blok='сдвиг', proverka=f'h={h}: ряд на d−1 при K={{0}} блокируется (argmax={sc1["argmax"]}; '
+                                                f'corr −1/0 = {sc1["corr_s-1"]:.4f}/{sc1["corr_s+0"]:.4f})',
+                         ok=bool(sc1['argmax'] == -1 and not sc1['ok'])))
+        # правило O (PR #167): тот же ряд при K = {−1, 0} (лаг публикации, как G1) проходит; заглядывание +1 блокируется при любом K
+        import r2_loyo as O
+        Kg1 = O.K_dizaina(validate({'h': h, 'features': ['G0', 'G1']}))
+        sc2 = shift_check(V1, A, h, f'kontrol_R1_dminus1_K_G1_h{h}', block_file=blk, K=Kg1)
+        D_ = A[['date', 'ticker', 'rv']].sort_values(['ticker', 'date'])
+        nxt = D_.assign(rv_pred=D_.groupby('ticker')['rv'].shift(-1).clip(lower=1e-10)).dropna(subset=['rv_pred'])
+        Vp = V[['date', 'ticker', 'step']].merge(nxt[['date', 'ticker', 'rv_pred']], on=['date', 'ticker'])
+        sc3 = shift_check(Vp, A, h, f'kontrol_zaglyadyvanie_h{h}', block_file=blk, K=Kg1)
+        rows.append(dict(blok='сдвиг', proverka=f'h={h}: K(G0+G1) = {Kg1}: ряд на d−1 проходит (argmax={sc2["argmax"]}); '
+                                                f'ряд = RV_{{d+1}} блокируется (argmax={sc3["argmax"]}, {sc3["prichina"]})',
+                         ok=bool(tuple(Kg1) == (-1, 0) and sc2['ok'] and sc3['argmax'] == 1 and not sc3['ok'])))
+        # load_series: по хэшу дизайна те же ряды, что read_series; фильтр по модулю
+        L1 = load_series(design_hash(designs[h]), root=root, modul='S_smoke')
+        L0 = load_series(design_hash(designs[h])[:16], root=root, modul='чужой')
+        rows.append(dict(blok='кэш', proverka=f'h={h}: load_series(design_sha) = read_series ({len(L1)} строк, ряды {sorted(L1.ryad.unique())}); '
+                                              f'фильтр modul', ok=bool(len(L1) == len(V) and L0.empty and np.allclose(
+                             L1.sort_values(KEY).rv_pred.values, V.sort_values(KEY).rv_pred.values, rtol=0, atol=0))))
         # детектор: «будущее не влияет» и эмбарго; отрицательный контроль — без эмбарго граница года обязана «протечь»
         cuts = ('2017-06-30', '2017-12-31') if a.fast else ('2017-06-30', '2018-06-29', '2017-12-31')
         R = leak_check(_smoke_build(True, h), A, f'smoke_h{h}', cuts=cuts, out=out_dir / f'leak_h{h}.csv')
