@@ -22,16 +22,17 @@
 python3 scripts/analysis/r2_sborka_test.py --selftest        # синтетика во временном каталоге; test_locked не читается
 python3 scripts/analysis/r2_sborka_test.py                   # фаза F, после ворот E; один раз (повтор — сверка байтов)
 
-Ворота E (пишет агент O, R2/O/gate_E_h{h}.yaml), нужные поля: h; pobeditel — имя дизайна или F_h_d0; design_sha — SHA-256 канонического
-yaml (схема v1, раздел 5) или null у F_h_d0.
+Ворота E — R2/O/gate_E_h{h}.yaml (r2_loyo.gate_E / write_gate): phase: E; h; pobeditel: {pobeditel: <единица> | 'F_h(d0)', V0: bool,
+poryadok}. Победил V0 — финал = эконометрическая компонента: pravilo single, одна компонента. design_sha в воротах, если появится, сверяется.
 
 Спецификация (models/designs/r2/r2_A_sborka.yaml):
   status: zamorozheno
   gate_E_sha: {1: <sha256 gate_E_h1.yaml>, 5: ..., 22: ...}
   h:
     5:
-      design: <pobeditel из gate_E_h5>
-      design_sha: <design_sha из gate_E_h5>
+      design: <pobeditel.pobeditel из gate_E_h5>
+      design_sha: <SHA-256 канонического yaml победителя (схема v1, раздел 5)>
+      design_yaml: {file: models/designs/r2/<...>.yaml, sha: <sha256 файла>}          # сверка SHA
       pravilo: single | mean | median | weights | ridge_noga
       komponenty:                                  # сырые тестовые прогнозы шагов 1-10 (без s²), по одному файлу
         - {name: luchshiy, file: test_locked/R2/B/<ряд>_h5_test.parquet, factors: {1: F1, ..., 6: F6} | F,
@@ -65,6 +66,7 @@ TARGET = ('rv_actual', 'rv_target', 'y')  # R2-guard: целевые колон�
 KEY = ['date', 'ticker', 'step']
 LAST = 6  # последний шаг разработки (val 2021)
 RULES = ('single', 'mean', 'median', 'weights', 'ridge_noga')
+F_D0 = (None, 'F_h(d0)', 'F_h_d0')  # «победителя нет» в gate_E (r2_loyo.pobeditel пишет 'F_h(d0)')
 READ, WROTE = [], []
 
 
@@ -127,25 +129,30 @@ def vorota(spec_path):
         if sha(g) != gsha.get(h):
             raise Stop(f'{g.name}: SHA-256 не совпал со спецификацией (ворота изменены после записи спецификации)')
         G = yaml.safe_load(g.read_text())
-        assert int(G['h']) == h, g.name
-        win = G['pobeditel']
-        if win in (None, 'F_h_d0'):
+        if G.get('phase') != 'E' or int(G['h']) != h:
+            raise Stop(f'{g.name}: не ворота E на h={h}')
+        pb = G['pobeditel'] if isinstance(G.get('pobeditel'), dict) else dict(pobeditel=G.get('pobeditel'), V0=False)
+        win = pb['pobeditel']
+        if win in F_D0:
             if h not in fd0:
                 raise Stop(f'h={h}: по воротам победителя нет (F_h(d0)), а спецификация собирает {hs.get(h, {}).get("design")}')
             continue
         if h not in hs:
             raise Stop(f'h={h}: победитель {win}, а в спецификации сборки нет')
         c = hs[h]
-        if c.get('design') != win or c.get('design_sha') != G.get('design_sha'):
-            raise Stop(f'h={h}: дизайн спецификации ({c.get("design")}, {c.get("design_sha")}) != ворота ({win}, {G.get("design_sha")})')
+        if c.get('design') != win or (G.get('design_sha') and c.get('design_sha') != G['design_sha']):
+            raise Stop(f'h={h}: дизайн спецификации {c.get("design")} != ворота {win} (или design_sha)')
         if c.get('pravilo') not in RULES:
             raise Stop(f'h={h}: правило {c.get("pravilo")!r} не из {RULES}')
-        src = c.get('istochnik_parametrov')
-        if src:
-            p = Path(src['file']) if Path(src['file']).is_absolute() else MAIN / src['file']
-            assert 'test_locked' not in p.parts, f'h={h}: параметры — только из val-файлов вне test_locked'
-            if sha(p) != src['sha']:
-                raise Stop(f'h={h}: {p.name}: SHA-256 источника параметров не совпал')
+        if pb.get('V0') and (c['pravilo'] != 'single' or len(c['komponenty']) != 1):
+            raise Stop(f'h={h}: победил V0 — финал = эконометрическая компонента (single, одна компонента)')
+        for key in ('design_yaml', 'istochnik_parametrov'):  # yaml дизайна и val-файл параметров: вне test_locked, SHA совпал
+            src = c.get(key)
+            if src:
+                p = Path(src['file']) if Path(src['file']).is_absolute() else MAIN / src['file']
+                assert 'test_locked' not in p.parts, f'h={h}: {key} — только вне test_locked'
+                if sha(p) != src['sha']:
+                    raise Stop(f'h={h}: {p.name}: SHA-256 ({key}) не совпал')
     return spec, hs
 
 
@@ -310,8 +317,9 @@ def selftest():
         pv.write_text('step,F\n1,1.1\n')
         F = {k: 1 + k / 100 for k in range(1, 7)}
         B = {k: 0.5 + k / 100 for k in range(1, 7)}
-        gates = {1: dict(h=1, pobeditel='F_h_d0', design_sha=None), 5: dict(h=5, pobeditel='D_h5_x', design_sha='a' * 64),
-                 22: dict(h=22, pobeditel='V0_HARX_h22', design_sha='b' * 64)}
+        gates = {1: dict(phase='E', h=1, pobeditel=dict(pobeditel='F_h(d0)', V0=False, poryadok=['u1'])),
+                 5: dict(phase='E', h=5, pobeditel=dict(pobeditel='D_h5_x', V0=False, poryadok=['D_h5_x']), design_sha='a' * 64),
+                 22: dict(phase='E', h=22, pobeditel=dict(pobeditel='V0_HARX_h22', V0=True, poryadok=['u2', 'V0_HARX_h22']))}
         for h, g in gates.items():
             (GATES / f'gate_E_h{h}.yaml').write_text(yaml.safe_dump(g, allow_unicode=True))
         spec = dict(status='zamorozheno', gate_E_sha={h: sha(GATES / f'gate_E_h{h}.yaml') for h in HS}, F_h_d0=[1], h={
@@ -364,7 +372,8 @@ def selftest():
         stop({**spec, 'F_h_d0': []}, 'разбивать')
         stop({**spec, 'h': {**spec['h'], 5: {**spec['h'][5], 'design_sha': 'c' * 64}}}, 'ворота')
         stop({**spec, 'h': {**spec['h'], 5: {**spec['h'][5], 'pravilo': 'stack'}}}, 'правило')
-        stop({**spec, 'h': {**spec['h'], 5: {**spec['h'][5], 'istochnik_parametrov': dict(file=str(pv), sha='0' * 64)}}}, 'источника')
+        stop({**spec, 'h': {**spec['h'], 5: {**spec['h'][5], 'istochnik_parametrov': dict(file=str(pv), sha='0' * 64)}}}, 'istochnik')
+        stop({**spec, 'h': {**spec['h'], 22: {**spec['h'][22], 'pravilo': 'mean'}}}, 'V0')
         g5 = GATES / 'gate_E_h5.yaml'
         g5.write_text(g5.read_text() + '# правка\n')
         stop(spec, 'SHA-256 не совпал')
