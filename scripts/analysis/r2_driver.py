@@ -55,6 +55,7 @@ STATE = C.REGEN / CFG['state_dir']
 FACTOR_V1 = REPO / 'models' / 'designs' / 'r2' / 'factor_v1'
 LOCK = threading.Lock()
 RUN_EXTRA = {}  # модуль -> добавка к {extra} (только дым --real: --tickers у B, BG)
+E8_DYM = {'tickers': None, 'dir': None}  # дым e8 против готовых рядов: фильтр тикеров рядов/эталона/F и каталог ворот (иначе — бой)
 
 
 def log(*a):
@@ -412,15 +413,15 @@ def designs_E_2010(h):
         e1.append(v('E1 разложение hyb₅', 'M', b, {'mh.scheme': 'decomp', 'mh.decomp_k': 5}, '(hyb₅ + 17·HAR₆₋₂₂)/22', True, f'E_h{h}_E1_k5'))
     e2 = v('E2 forward HAR', 'M', b, {'mh.persist': 'OLS'}, 'hyb₁ вместо RV_d' + ('; ❓ M: hyb₅ вместо RV_w — нет в коде' if h == 22 else ''),
            True, f'E_h{h}_E2')
-    e3 = v('E3 равные веса ног', 'E', b, {'ens.leg_ens': 'equal'}, '½ HAR-J+s² + ½ HAR-X+s²; ❓ E: набор ног и вариант с RVI по ⅓ — нет в коде',
-           name=f'E_h{h}_E3')
-    e4 = v('E4 AveW HAR-X', 'E', dict(noga, leg=dict(type='HARX')), {'ens.window_ens': 'on'}, 'окна: расширяющееся, 5 лет, 3 года',
-           name=f'E_h{h}_E4')
+    # E3 (E, PR #218): объединение ног L+s² без подбора весов — ens.leg_union (гибрид не используется, основа — нога, роль none -> V0);
+    # ноги — ряды L3 дизайнов econ_h{h} (HAR-X — каждый вариант сетки, выбор O)
+    v('E3 равные веса ног', 'E', noga, {'ens.leg_union': 'harj_harx'}, '½ HAR-J+s² + ½ HAR-X+s²', name=f'E_h{h}_E3')
+    v('E3 по ⅓ с RVI', 'E', noga, {'ens.leg_union': 'harj_harx_rvi'}, '⅓ HAR-J+s² + ⅓ HAR-X+s² + ⅓ RVI-anchor+s²', name=f'E_h{h}_E3rvi')
+    v('E4 AveW HAR-X', 'E', dict(noga, leg=dict(type='HARX')), {'ens.window_ens': 'on'}, 'окна: расширяющееся, 5 лет, 3 года',
+      name=f'E_h{h}_E4')
     v('E5 воздержание shock_fresh', 'G', b, {'k16.gate': 'shock_fresh'}, 'k ∈ {3, 5, 10} — вложенно по t; halt — только при сборке (A)',
       name=f'E_h{h}_E5')
-    for i, x in enumerate(e1 + [e2, e3, e4], 1):
-        v(f'E6 усадка P поверх {x["design"].split("_")[-1]}', 'P', x, {'leg.panel': 'factor_shrink_05'}, 'кросс-секционная усадка (кластер 14)',
-          name=f'{x["design"]}_E6')
+    # E6 (P, PR #216) — вторым проходом поверх готовых рядов E1–E4: `r2_driver.py e6` (designs_E6, маршрут [P, L3])
     v('E7 Хьюбер', 'L', b, {'leg.robust': 'Huber'}, '❓ M: «среднее прямого и итерированного HAR» — нет в коде', name=f'E_h{h}_E7')
     for f in CFG['E'].get('faktory_na_E_20_15', {}).get(h, []):
         for d in designs_faktory_E(b, [f], h):
@@ -474,6 +475,100 @@ def cmd_ryady_E(a):
     return 0
 
 
+E6_BAZY = ('E1_k1', 'E1_k5', 'E2', 'E3', 'E3rvi', 'E4')  # владелец 20:10: E6 = усадка P поверх каждого из E1–E4
+
+
+def designs_E6(h, bazy=None):
+    """E6 (P, PR #216): дизайн = база x (E1–E4 из E_2010_h{h}) + leg.panel = factor_shrink_05 + inputs.base = {design_sha x, series = модуль
+    перед L3 у x} (идентичность входа — в хэше). Прочие ключи описывают базу (P их не читает); маршрут — [P, L3] (route).
+    -> [(база, дизайн E6)]."""
+    by = {d['design']: d for d in read_designs(f'E_2010_h{h}')}
+    out = []
+    for tag in E6_BAZY:
+        x = by.get(f'E_h{h}_{tag}')
+        if x is None:
+            continue
+        ch = route(x)
+        series = ch[-2] if len(ch) > 1 else 'L'  # сырой итог базы (до L3): P берёт все ряды этого модуля (load_series modul=…)
+        d = copy.deepcopy(x)
+        _set(d, 'leg.panel', 'factor_shrink_05')
+        d['design'] = f'{x["design"]}_E6'
+        d = C.with_inputs(d, {**(x.get('inputs') or {}), 'base': {'design_sha': C.design_hash(x), 'series': series}})
+        d['design'] = f'{x["design"]}_E6'
+        out.append((x, d))
+    return out
+
+
+def cmd_e6(a):
+    """E6 вторым проходом (дирижёр 20:4x): база готова (DONE_<модуль перед L3> и итог L3) -> дизайны E6 -> driver_v1/E6_h{h}.yaml ->
+    цепочка [P, L3] пакетом (h параллельно). Отчёт — R2/report/E6_varianty.md. Готовое модули пропускают по DONE."""
+    hs = a.h or [5, 22]
+    runner = Runner(False)
+    plan = {h: designs_E6(h) for h in hs}
+    for h in hs:
+        write_designs(f'E6_h{h}', [d for _, d in plan[h]], dict(faza='E', h=h, blok='владелец 20:10, E6 поверх E1–E4 (P, PR #216)',
+                                                                bazy=[x['design'] for x, _ in plan[h]]))
+    if a.only_generate:
+        return 0
+    if a.dym:
+        return e6_dym(plan, hs)
+    res, gotovo = {}, {}
+
+    def go(h):
+        ok_ = [(x, d) for x, d in plan[h] if final_series(x, h, [42])]
+        gotovo[h] = {x['design']: bool(final_series(x, h, [42])) for x, _ in plan[h]}
+        res[h] = runner.chain([d for _, d in ok_], h, [42], CFG['steps'], a.workers, 'E', partial=True) if ok_ else (False, 'нет готовых баз')
+    th = [threading.Thread(target=go, args=(h,), name=f'E6_h{h}') for h in hs]
+    for t in th:
+        t.start()
+    for t in th:
+        t.join()
+    L = [f'# E6 — усадка P поверх готовых E1–E4 ({time.strftime("%F %T")})', '',
+         'leg.panel = factor_shrink_05, inputs.base = {design_sha базы, series = модуль перед L3}; маршрут [P, L3]; seed 42.', '']
+    for h in hs:
+        L += [f'## h = {h}', '', f'- цепочки: {res[h]}', '', '| база | база готова | дизайн E6 | хэш | ряд L3 |', '|---|---|---|---|---|']
+        for x, d in plan[h]:
+            L.append(f'| {x["design"]} | {"да" if gotovo[h].get(x["design"]) else "нет"} | {d["design"]} | {C.design_hash(d)[:16]} | '
+                     f'{"есть" if final_series(d, h, [42]) else "нет"} |')
+        L.append('')
+    REPORT.mkdir(parents=True, exist_ok=True)
+    (REPORT / 'E6_varianty.md').write_text('\n'.join(L), encoding='utf-8')
+    log(f'E6: {res} -> {REPORT / "E6_varianty.md"}')
+    return 0
+
+
+def e6_dym(plan, hs):
+    """Дым E6 против готовых рядов: P (r2_panel.run_design, в процессе, без записи) на 3 тикерах × шагах конвейера поверх итога базы
+    из боевого кэша; проверка: строки = строки базы, прогноз конечный и > 0, Δ ln к базе. -> R2/S/driver_smoke/e6/e6_dym.csv."""
+    import r2_panel as P
+    Dt = P.Data(P.load_A()[0], list(SMOKE_TICKERS))
+    rows = []
+    for h in hs:
+        for x, d in plan[h]:
+            r = dict(h=h, baza=x['design'], e6=d['design'], hash=C.design_hash(d)[:16], marshrut='>'.join(route(d)))
+            try:
+                f = C.validate(d)
+                P.check(f)
+                base = P.load_base(f, 42, CFG['steps'], list(SMOKE_TICKERS))
+                V, _, _ = P.run_design(f, Dt, 42, tuple(CFG['steps']))
+                for nm, v in V.items():
+                    b = base[next(iter(base))] if len(base) == 1 else base[nm.split('__', 1)[1]]
+                    m = v.merge(b[['date', 'ticker', 'step', 'rv_pred']].assign(date=lambda z: pd.to_datetime(z.date)),
+                                on=['date', 'ticker', 'step'], suffixes=('', '_b'))
+                    dl = np.log(m.rv_pred) - np.log(m.rv_pred_b)
+                    rows.append(dict(r, ryad=nm, strok=len(v), strok_bazy=len(b), konechn=bool(np.isfinite(v.rv_pred).all() and (v.rv_pred > 0).all()),
+                                     dln_mean=float(dl.mean()), dln_sd=float(dl.std()), ok=len(v) == len(b) and len(m) == len(v)))
+            except Exception as e:  # noqa: BLE001 — база не готова и т. п.
+                rows.append(dict(r, ok=False, oshibka=f'{type(e).__name__}: {str(e)[:150]}'))
+    T = pd.DataFrame(rows)
+    out = SMOKE_DIR / 'e6' / 'e6_dym.csv'
+    out.parent.mkdir(parents=True, exist_ok=True)
+    T.to_csv(out, index=False)
+    print(T.to_string(index=False))
+    log(f'дым E6: {int(T.ok.sum())} из {len(T)} OK -> {out}')
+    return 0
+
+
 def designs_E(best, ofat):
     out = []
     for k, vals in ofat.items():
@@ -493,6 +588,8 @@ def designs_E(best, ofat):
 def route(design):
     """Цепочка модулей дизайна по ключам схемы (r2_S_driver.yaml chain_order)."""
     f = C.validate(design)
+    if 'base' in (f.get('inputs') or {}):  # E6 (P, PR #216): усадка поверх готового ряда inputs.base — только P и L3, без L/B/M/E
+        return ['P', 'L3']
     g = lambda k: 'off' if C.get(f, k) is False else str(C.get(f, k))  # off/on схемы — bool (YAML 1.1)
     need = {'L'}
     if g('leg.panel') != 'off':
@@ -710,8 +807,11 @@ def final_series(design, h, seeds, root=None, steps=None):
     last = ch[-1]
     assert last == 'L3', f'{design.get("design")}: итог не прошёл L3 (цепочка {ch}) — сравнение с эталоном s² невозможно'
     stand_in = SMOKE_FLAG['on'] and not SMOKE_FLAG.get('real')  # дым с заменой модулей HAR-J — ряды smoke_<модуль>
-    L = C.load_series(C.design_hash(design), modul=f'smoke_{last}' if stand_in else last, seed=[str(s) for s in seeds],
-                      root=root, steps=steps)
+    try:
+        L = C.load_series(C.design_hash(design), modul=f'smoke_{last}' if stand_in else last, seed=[str(s) for s in seeds],
+                          root=root, steps=steps)
+    except FileNotFoundError:  # каталога кэша ещё нет (дизайн не считался) — рядов нет
+        return {}
     if L.empty:
         return {}
     if not stand_in:
@@ -730,6 +830,8 @@ def final_series(design, h, seeds, root=None, steps=None):
         P = g.pivot_table(index=['date', 'ticker', 'year', 'step'], columns='seed', values='rv_pred')
         y = g.drop_duplicates(['date', 'ticker', 'step']).set_index(['date', 'ticker', 'year', 'step'])['rv_actual']
         out[v] = pd.DataFrame({'rv_pred': P.median(axis=1) if agg == 'median' else P.mean(axis=1), 'rv_actual': y}).reset_index()
+        if E8_DYM['tickers']:  # дым e6/e8 против готовых рядов: 3 тикера
+            out[v] = out[v][out[v].ticker.isin(E8_DYM['tickers'])].reset_index(drop=True)
     return out
 
 
@@ -746,6 +848,8 @@ def etalon(h):
         E = RG.etalon_df(h)
     if SMOKE_FLAG['on']:
         E = E[E.ticker.isin(SMOKE_TICKERS) & (E.step <= max(SMOKE_STEPS))]
+    if E8_DYM['tickers']:
+        E = E[E.ticker.isin(E8_DYM['tickers'])]
     return E
 
 
@@ -771,6 +875,8 @@ def ocenka_units(units, h, seeds, root):
 
 
 def write_gate(phase, h, payload, inputs=()):
+    if E8_DYM['dir']:  # дым e8: ворота — в свой каталог, не в R2/O
+        return ydump(dict(phase=phase, h=int(h), time=time.strftime('%F %T'), dym=True, **payload), E8_DYM['dir'] / f'gate_{phase}_h{h}.yaml')
     if SMOKE_FLAG['on']:
         g = dict(phase=phase, h=int(h), time=time.strftime('%F %T'), dym=True, **payload)
         return ydump(g, gate_path(phase, h, smoke=True))
@@ -816,7 +922,10 @@ def F_emb(h, seeds=None):
     import r2_loyo as O
     seeds = list(seeds or CFG['E']['seeds_final'])
     fs = {s: C.REGEN / CFG['etalon_vorot']['F'].format(h=h, seed=s) for s in seeds}
-    return {s: O.series([f]) for s, f in fs.items()} if all(f.exists() for f in fs.values()) else None
+    if not all(f.exists() for f in fs.values()):
+        return None
+    F = {s: O.series([f]) for s, f in fs.items()}
+    return {s: x[x.ticker.isin(E8_DYM['tickers'])] for s, x in F.items()} if E8_DYM['tickers'] else F
 
 
 def opora(h):
@@ -938,13 +1047,15 @@ def odin_ryad(V):
     return V[sorted(V)[0]] if V else None
 
 
-def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1, tab1=None):
+def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1, tab1=None, seeds=None, extra=None, faza='E', dop=None):
     """v4 § 2, § 6 — ворота O (PR #193): ocenka на 10 seed (вход заново) -> 2σ r2_gates.sigma2_F парно с F_h(d0) (V0 — один ряд) ->
     r2_gates.gate_E_v4 (финалисты, победитель, мощность, itog_E по порогам владельца 16:45, нога _noga, лестница и абляции).
     Правило «остаётся нога» при P < 0,5 (дирижёр 17:10): V0 с той же ногой, что у победителя (нога + калибровка). Нет такого ряда —
-    драйвер ставит «нога + калибровка» победителя в очередь (L + L3, run_phase) и только при невозможности оставляет F_h(d0)."""
+    драйвер ставит «нога + калибровка» победителя в очередь (L + L3, run_phase) и только при невозможности оставляет F_h(d0).
+    extra — единицы с готовой оценкой (E8: {R, S, sig, dizainy}; рядов в кэше нет, барьер L3 к ним не относится); faza — имя файла
+    ворот (E8 -> gate_E8_h{h}.yaml); dop — ключи, дописываемые в payload."""
     import r2_gates as RG
-    seeds = CFG['E']['seeds_final'] if not SMOKE_FLAG['on'] else [42]
+    seeds = seeds or (CFG['E']['seeds_final'] if not SMOKE_FLAG['on'] else [42])
     R, S = ocenka_units(units, h, seeds, root)
     sig = {}
     Fe = None if SMOKE_FLAG['on'] else F_emb(h, seeds)  # F_h(d0) с эмбарго s² (дирижёр 17:35); нет файлов — ряды O
@@ -959,8 +1070,15 @@ def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1, tab1=No
     if SMOKE_FLAG['on'] and R:
         top = max((u for u in R if u not in v0_units), key=lambda u: R[u]['t_mean'], default=None)
         sig = {u: dict(passed=(u == top), d_mean=np.nan, sigma=np.nan, thr=np.nan, pometka='дым: 2σ не считается') for u in R}
-    g = RG.gate_E_v4(R, S, units, sig, h, list(v0_units), lestnica=not SMOKE_FLAG['on'],
-                     out_dir=(SMOKE_O / f'gate_E_h{h}_dizainy') if SMOKE_FLAG['on'] else None, opora=opora(h))
+    dizainy = dict(units)
+    if extra:
+        R.update(extra['R'])
+        S.update(extra['S'])
+        sig.update(extra['sig'])
+        dizainy.update(extra['dizainy'])
+    out_dir = (SMOKE_O / f'gate_E_h{h}_dizainy') if SMOKE_FLAG['on'] else \
+        (E8_DYM['dir'] / f'gate_{faza}_h{h}_dizainy' if E8_DYM['dir'] else (C.O_DIR / f'gate_{faza}_h{h}_dizainy' if faza != 'E' else None))
+    g = RG.gate_E_v4(R, S, dizainy, sig, h, list(v0_units), lestnica=not SMOKE_FLAG['on'], out_dir=out_dir, opora=opora(h))
     g['barier_L3'] = bar
     if tab1:
         g['tablica_E_1seed'] = tab1
@@ -968,7 +1086,7 @@ def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1, tab1=No
     it = pb.get('itog') or {}
     noga = pb.get('noga') or {}
     if it.get('deystvie') == 'final_V0' and (not noga.get('unit') or noga.get('nuzhen_schet')):
-        nd, why = noga_v_ochered(units.get(pb['pobeditel_otbora']), noga, h, runner, steps, workers, root)
+        nd, why = noga_v_ochered(dizainy.get(pb['pobeditel_otbora']), noga, h, runner, steps, workers, root)
         if nd is not None:
             pb.update(pobeditel=nd['design'], V0=True)
             g.update(design_sha=C.design_hash(nd), dizayn=nd)
@@ -979,7 +1097,8 @@ def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1, tab1=No
             pb['pobeditel'], it['final'] = 'F_h(d0)', 'F_h(d0)'
             noga['pometka'] = f'нога + калибровка не посчитана ({why}) — на h остаётся F_h(d0)'
         pb['noga'], pb['itog'] = noga, it
-    return write_gate('E', h, g)
+    g.update(dop or {})
+    return write_gate(faza, h, g)
 
 
 def noga_dizain(pob_design, noga):
@@ -1009,6 +1128,284 @@ def noga_v_ochered(pob_design, noga, h, runner, steps, workers, root):
     V = final_series(nd, h, [42], root) if ok else {}
     log(f'ворота E h={h}: нога {nd["design"]} ({">".join(route(nd))}) — {"посчитана" if V else why or "нет ряда"}')
     return (nd, '') if V else (None, why or 'нет итогового ряда')
+
+
+# ================================================================ E8 «настройка под t» (владелец 20:20): λ × k × вес ноги поверх лучшего E
+def e8_setka():
+    """Сетка E8 (r2_S_driver.yaml E.E8_setka, объявлена до прохода): [(λ, k, w)] — 5 × 4 × 3 = 60 точек."""
+    s = CFG['E']['E8_setka']
+    return [(float(l), int(k), w) for l in s['lam_k_noge'] for k in s['k_vozderzhaniya'] for w in s['ves_nogi']]
+
+
+def e8_tag(v, l, k, w):
+    return f'{v}|lam={l:g}|k={k}|w={w}'
+
+
+def e8_razbor(tag):
+    """'<вариант базы>|lam=…|k=…|w=…' -> (вариант базы, λ, k, w)."""
+    v, l, k, w = tag.rsplit('|', 3)
+    return v, float(l.split('=')[1]), int(k.split('=')[1]), w.split('=')[1]
+
+
+def e8_dizain(best, h):
+    """Дизайн E8 = лучший E + сетки ключей schema_v2 (G: k16.gate = shock_fresh, k16.k с 0, k16.q — одно значение; k18.lam_to_ref = on,
+    k18.ref = noga, k18.lam с 0 — PR #217; E: ens.leg_w — PR #218) -> (дизайн | None, причина). Ряды точек сетки считает драйвер из
+    готовых рядов (итог L3 лучшего и его ноги), тем же правилом, что модули: G — ln ŷ = ln нога + λ·g_k·(ln канд − ln нога), E — ŷ = w·нога +
+    (1 − w)·ŷ_G (r2_ens.leg_w_mix)."""
+    s = CFG['E']['E8_setka']
+    d = copy.deepcopy(best)
+    d.pop('schema', None)
+    for k, x in (('k16.gate', 'shock_fresh'), ('k16.k', [int(v) for v in s['k_vozderzhaniya']]), ('k16.q', s['q_shock']),
+                 ('k18.lam_to_ref', 'on'), ('k18.ref', 'noga'), ('k18.lam', [float(v) for v in s['lam_k_noge']]),
+                 ('ens.leg_w', list(s['ves_nogi']))):
+        _set(d, k, x)
+    d['design'] = f'E8_{best.get("design", "best")}'
+    try:
+        C.validate(d)
+        return d, ''
+    except C.DesignError as e:
+        return None, f'схема: {str(e).splitlines()[-1].strip()}'
+
+
+def e8_vse_dizainy(h):
+    by = {}
+    for nm in (f'E_2010_h{h}', f'E6_h{h}'):
+        if designs_file(nm).exists():
+            by.update({d['design']: d for d in read_designs(nm)})
+    return by
+
+
+def _rol(d):
+    return str(C.get(C.validate(d), 'boost.role'))
+
+
+def e8_istochnik(h, gate_file=None, unit=None):
+    """Лучший вариант E на h: gate_E_h{h}.yaml — победитель отбора, иначе финалисты (top) по порядку, иначе таблица по 1 seed (макс. t̄);
+    без ворот (только дым) — таблица по 1 seed над готовыми рядами E_2010 + E6. Дизайн — finalist_<u>.yaml каталога ворот, иначе
+    driver_v1 по имени. -> dict(unit, dizayn, seeds, istochnik, finalisty {u: дизайн}, v0 [u], tab1, seeds_vorot)."""
+    import r2_gates as RG
+    by = e8_vse_dizainy(h)
+    g = yaml.safe_load(gate_file.read_text()) if gate_file is not None and gate_file.exists() else None
+    if g:
+        ddir = gate_file.parent / f'gate_E_h{h}_dizainy'
+
+        def diz(u):
+            f = ddir / f'finalist_{u}.yaml'
+            if f.exists():
+                return yaml.safe_load(f.read_text())
+            return by.get(u) or (g.get('dizayn') if (g.get('pobeditel') or {}).get('pobeditel') == u else None)
+        rows = g.get('finalisty') or []
+        fin = {r['unit']: diz(r['unit']) for r in rows}
+        v0 = [r['unit'] for r in rows if r.get('tip') == 'V0']
+        pb = (g.get('pobeditel') or {}).get('pobeditel_otbora')
+        tab1 = g.get('tablica_E_1seed') or []
+        order = [pb] if pb and pb != 'F_h(d0)' else []
+        order += [r['unit'] for r in sorted(rows, key=lambda r: r.get('poryadok') or 99) if r.get('tip') == 'top']
+        order += [r['unit'] for r in sorted(tab1, key=lambda r: -(r.get('t_mean') if r.get('t_mean') is not None else -99)) if not r.get('opora')]
+        src, seeds_v = f'{gate_file.name}', list(CFG['E']['seeds_final'])
+    else:
+        R, S = ocenka_units({u: d for u, d in by.items() if _rol(d) != 'none'}, h, [42], None)
+        _, T = RG.vybor(R, S)
+        T = T.sort_values('t_mean', ascending=False)
+        top = list(T.unit.head(CFG['E']['finalists_k']))
+        v0 = [u for u, d in by.items() if _rol(d) == 'none' and final_series(d, h, [42])]
+        fin = {u: by[u] for u in top + v0}
+        order, tab1 = list(T.unit), T.to_dict('records')
+        src, seeds_v = 'дым: ворот E нет — таблица по 1 seed над готовыми рядами E_2010 + E6', [42]
+    if unit:
+        order = [unit] + order
+    for u in order:
+        d = fin.get(u) or by.get(u)
+        if d is None:
+            continue
+        sd = list(CFG['E']['seeds_final']) if str(C.get(C.validate(d), 'ens.seeds')) == '10' and g else [42]
+        if all(final_series(d, h, [s]) for s in sd[:1] + sd[-1:]):
+            return dict(unit=u, dizayn=d, seeds=sd, istochnik=src, finalisty={k: v for k, v in fin.items() if v is not None}, v0=v0,
+                        tab1=tab1, seeds_vorot=seeds_v)
+    raise RuntimeError(f'E8 h={h}: нет лучшего варианта с готовыми рядами ({src})')
+
+
+def e8_noga(best, h):
+    """Нога лучшего с калибровкой: «нога + калибровка» (noga_dizain, без inputs), иначе нога финала R1 (E0). -> (источник, дизайн, кадр)."""
+    b = copy.deepcopy(best)
+    b.pop('inputs', None)
+    kand = []
+    try:
+        kand.append(('нога + калибровка лучшего (noga_dizain)', noga_dizain(b, {})))
+    except Exception:  # noqa: BLE001
+        pass
+    n0 = e8_vse_dizainy(h).get(f'E_h{h}_F_R1_noga')
+    if n0 is not None:
+        kand.append(('нога финала R1 d0 (E0)', n0))
+    for src, nd in kand:
+        V = final_series(nd, h, [42])
+        if V:
+            return src, nd, odin_ryad(V)
+    raise RuntimeError(f'E8 h={h}: нет ряда ноги ({[s for s, _ in kand]})')
+
+
+def e8_gk(A, ks):
+    """g_t воздержания shock_fresh по дате (r2_gate_abstain.shock_flags / market_rv — импорт G, не копия): k = 0 — g ≡ 1."""
+    import r2_gate_abstain as GA
+    s = CFG['E']['E8_setka']
+    sf = GA.CFG['k16']['shock_fresh']
+    mrv = GA.market_rv(A)
+    return {k: GA.shock_flags(mrv, k, float(s['q_shock']), int(sf['okno']), sf['mera']) for k in ks if k > 0}
+
+
+def e8_varianty(Vc, leg, gk):
+    """{вариант базы: кадр} × сетка -> {тег точки: кадр}. G: ln ŷ_G = ln нога + λ·g_k·(ln канд − ln нога); E: ŷ = w·нога + (1 − w)·ŷ_G."""
+    import r2_ens as EN
+    out = {}
+    lg = leg[['date', 'ticker', 'step', 'rv_pred']].rename(columns={'rv_pred': 'noga'})
+    for v, c in Vc.items():
+        m = c.merge(lg, on=['date', 'ticker', 'step'], how='inner')
+        lc, ll = np.log(np.clip(m.rv_pred.values, 1e-12, None)), np.log(np.clip(m.noga.values, 1e-12, None))
+        dts = pd.to_datetime(m.date)
+        g = {k: dts.map(x).fillna(1.0).values.astype(float) for k, x in gk.items()}
+        base = m[['date', 'ticker', 'year', 'step', 'rv_actual']]
+        for l, k, w in e8_setka():
+            yg = np.exp(ll + l * (g[k] if k > 0 else 1.0) * (lc - ll))
+            ww = EN.w_of(w)
+            out[e8_tag(v, l, k, w)] = base.assign(rv_pred=ww * m.noga.values + (1 - ww) * yg)
+    return out
+
+
+def e8_h(h, src, A):
+    """Один h: сетка из готовых рядов -> таблица t по точкам (5 складок) -> вложенный выбор r2_gates.ocenka (складка Y: точка по T \\ {Y},
+    c3 на обучающих, макс. средней t, равенство — QLIKE; t — на отложенном Y) -> ряды по seed с выбором складок (2σ) -> единица E8."""
+    import r2_gates as RG
+    E = etalon(h)
+    best, seeds = src['dizayn'], src['seeds']
+    nsrc, nd, leg = e8_noga(best, h)
+    gk = e8_gk(A, sorted({k for _, k, _ in e8_setka()}))
+    Vc = final_series(best, h, seeds)
+    V = e8_varianty(Vc, leg, gk)
+    folds = list(C.DEV_YEARS)
+    rows = []
+    for tag, df in V.items():
+        r = RG.t_skladok(df, E, h, folds)
+        v, l, k, w = e8_razbor(tag)
+        rows.append(dict(variant=tag, baza=v, lam=l, k=k, w=w, **{f't_{y}': r['t'][y] for y in folds}, t_mean=r['t_mean'],
+                         vyigrysh_pct=r['vyigrysh_pct'], q_mean=r['q_mean']))
+    T = pd.DataFrame(rows).sort_values(['t_mean', 'q_mean'], ascending=[False, True]).reset_index(drop=True)
+    R0 = RG.ocenka(Vc, E, h)  # лучший без E8 — справочно
+    R8 = RG.ocenka(V, E, h)
+    F = R8['folds']
+    choice = dict(zip(F.Y.astype(int), F.variant))
+    per_seed = {}
+    for s in seeds:
+        Vs = e8_varianty(final_series(best, h, [s]), leg, gk)
+        per_seed[s] = pd.concat([Vs[choice[y]][Vs[choice[y]].year == y] for y in folds], ignore_index=True)
+    Fe = F_emb(h, CFG['E']['seeds_final'])
+    if len(seeds) > 1:
+        sig = RG.sigma2_F(per_seed, h, seeds=seeds, F={s: Fe[s] for s in seeds} if Fe else None)
+    else:  # кандидат по 1 seed (не финалист 10 seed): ряд как детерминированный против F_h(d0) по 10 seed — справочно
+        sig = RG.sigma2_F(per_seed[seeds[0]], h, seeds=CFG['E']['seeds_final'], F=Fe)
+        sig['pometka'] = 'кандидат по 1 seed: 2σ справочно (нужен прогон финалиста на 10 seed)'
+    d8, why = e8_dizain(best, h)
+    vyb = [dict(Y=int(r.Y), variant=r.variant, **dict(zip(('baza', 'lam', 'k', 'w'), e8_razbor(r.variant))), t_otlozh=float(r.t),
+                t_obuch=float(r.t_obuch), c3=bool(r.c3)) for r in F.itertuples()]
+    konst = T.iloc[0]  # константы для сборки (A): точка по всем 5 складкам (макс. t̄, равенство — средний QLIKE)
+    info = dict(
+        luchshiy=src['unit'], istochnik=src['istochnik'], seeds=seeds, noga=dict(istochnik=nsrc, design=nd.get('design'),
+                                                                                 design_sha=C.design_hash(nd)),
+        setka=dict(CFG['E']['E8_setka'], tochek=len(e8_setka()), variantov_bazy=len(Vc)),
+        dizayn_E8=d8, design_sha_E8=C.design_hash(d8) if d8 else None, dizayn_pometka=why,
+        pravilo='вложенно (v4 § 2): точка складки Y — по T \\ {Y} (r2_gates.ocenka: c3 на обучающих годах, макс. средней панельной t, '
+                'равенство — средний QLIKE); t — на отложенном Y; ряды точек — из готовых рядов L3 лучшего и его ноги',
+        vybor_po_skladkam=vyb, t_mean_vlozhenno=R8['t_mean'], vhod=R8['vhod'], moshchnost=R8['moshchnost'],
+        bez_E8=dict(t_mean=R0['t_mean'], vyigrysh_pct=R0['vyigrysh_pct'], vhod=R0['vhod']['proshyol'],
+                    P=R0['moshchnost']['P_p_lt_005']),
+        konstanty_sborki=dict(variant=konst.variant, baza=konst.baza, lam=float(konst.lam), k=int(konst.k), w=str(konst.w),
+                              t_mean_vse_5=float(konst.t_mean), pometka='выбор по всем 5 складкам — для теста (A), t̄ этой точки оптимистична'),
+        sigma2=sig, tablica_setki=T.to_dict('records'))
+    u8 = f'E8_{src["unit"]}'
+    dz = d8 or dict(copy.deepcopy(best), design=u8)
+    return u8, R8, C.complexity(d8) if d8 else C.complexity(best) + 3, sig, dz, info
+
+
+def e8_report(res, hs, out):
+    """R2/report/gate_E8.md: таблица t по сетке, выбор по складкам, константы, итог ворот E с учётом E8 (мощность 0,8 / 0,5, опора)."""
+    fm = lambda x: '—' if x is None or (isinstance(x, float) and x != x) else (f'{x:.3f}' if isinstance(x, float) else str(x))
+    L = [f'# E8 — настройка под t ({time.strftime("%F %T")}){" — дым, 3 тикера" if E8_DYM["tickers"] else ""}', '',
+         'Владелец 20:20: λ усадки к ноге × k воздержания × вес ноги в объединении, сетка 5 × 4 × 3 (r2_S_driver.yaml E.E8_setka), '
+         'подбор вложенный на LOYO 2017–2021 по панельной t (r2_gates). Только val 2017–2021.', '']
+    for h in hs:
+        if h not in res:
+            L += [f'## h = {h}', '', 'не посчитано', '']
+            continue
+        info, g = res[h]
+        pb = g.get('pobeditel') or {}
+        it = pb.get('itog') or {}
+        L += [f'## h = {h}', '', f'- лучший вариант E: **{info["luchshiy"]}** ({info["istochnik"]}), seed {info["seeds"]}',
+              f'- нога: {info["noga"]["design"]} — {info["noga"]["istochnik"]}',
+              f'- дизайн E8: {info["design_sha_E8"] or "—"} {info["dizayn_pometka"]}',
+              f'- без E8: t̄ = {fm(info["bez_E8"]["t_mean"])}, выигрыш {fm(info["bez_E8"]["vyigrysh_pct"])}%, вход {info["bez_E8"]["vhod"]}, '
+              f'P = {fm(info["bez_E8"]["P"])}',
+              f'- **E8 вложенно**: t̄ = {fm(info["t_mean_vlozhenno"])}, вход {info["vhod"]["proshyol"]} ({info["vhod"]["net"] or "все условия"}), '
+              f'P(p < 0,05) = {fm(info["moshchnost"]["P_p_lt_005"])} — {info["moshchnost"]["pometka"]}',
+              f'- 2σ против F_h(d0): прошёл {info["sigma2"].get("passed")} (d̄ = {fm(info["sigma2"].get("d_mean"))}, '
+              f'порог {fm(info["sigma2"].get("thr"))}) {info["sigma2"].get("pometka", "")}',
+              f'- константы для сборки (по всем 5 складкам): λ = {info["konstanty_sborki"]["lam"]:g}, k = {info["konstanty_sborki"]["k"]}, '
+              f'w = {info["konstanty_sborki"]["w"]} (t̄ = {fm(info["konstanty_sborki"]["t_mean_vse_5"])}, оптимистична)', '',
+              '**Выбор по складкам (точка — по остальным 4, t — на отложенной)**', '',
+              '| Y | λ | k | w | t обуч. | t отлож. | c3 |', '|---|---|---|---|---|---|---|']
+        L += [f'| {r["Y"]} | {r["lam"]:g} | {r["k"]} | {r["w"]} | {fm(r["t_obuch"])} | {fm(r["t_otlozh"])} | {r["c3"]} |'
+              for r in info['vybor_po_skladkam']]
+        L += ['', f'**Итог ворот E с учётом E8** (gate_E8_h{h}.yaml; мощность: P ≥ 0,8 — значимый, 0,5–0,8 — граница, < 0,5 — нога; '
+              'опора F_R1_d0 — последняя строка, в выборе не участвует)', '',
+              '| победитель отбора | E[t] | P(p < 0,05) | категория | финал на открытие |', '|---|---|---|---|---|',
+              f'| {pb.get("pobeditel_otbora", "—")} | {fm(it.get("t_ozhid"))} | {fm(it.get("P_p_lt_005"))} | {it.get("pometka", "—")} | '
+              f'{pb.get("pobeditel", "—")} |', '']
+        if g.get('finalisty'):
+            L += ['| финалист | тип | t̄ | выигрыш % | вход | P | 2σ |', '|---|---|---|---|---|---|---|']
+            L += [f'| {r["unit"]} | {r.get("tip")} | {fm(r.get("t_mean"))} | {fm(r.get("vyigrysh_pct"))} | {r.get("vhod")} | '
+                  f'{fm(r.get("P_moshchnost"))} | {r.get("s2_passed")} |' for r in g['finalisty']]
+        if g.get('opora'):
+            op = g['opora']
+            L.append(f'\n- опора {op.get("unit", "F_R1_d0")}: t̄ = {fm(op.get("t_mean"))}, выигрыш {fm(op.get("vyigrysh_pct"))}%')
+        T = pd.DataFrame(info['tablica_setki'])
+        cols = ['lam', 'k', 'w'] + [c for c in T.columns if c.startswith('t_')] + ['vyigrysh_pct'] + (['baza'] if T.baza.nunique() > 1 else [])
+        L += ['', f'**Таблица t по сетке** ({len(T)} точек, по убыванию t̄ на 5 складках; справочно — выбор вложенный выше)', '',
+              '| ' + ' | '.join(cols) + ' |', '|' + '---|' * len(cols)]
+        L += ['| ' + ' | '.join(fm(x) if not isinstance(x, (int, np.integer)) else str(x) for x in r) + ' |' for r in T[cols].head(60).values]
+        L.append('')
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text('\n'.join(L), encoding='utf-8')
+    return out
+
+
+def cmd_e8(a):
+    """E8 (владелец 20:20): по gate_E_h{h}.yaml — лучший вариант E, сетка λ × k × w из готовых рядов, вложенный выбор по t, затем ворота E
+    заново с единицей E8 (финалисты ворот E + E8; 2σ, мощность 0,8 / 0,5, опора F_R1_d0) -> R2/O/gate_E8_h{h}.yaml и R2/report/gate_E8.md.
+    --dym: 3 тикера (SBER, LKOH, AFLT) против готовых рядов кэша; без ворот E — таблица по 1 seed; всё — в R2/S/driver_smoke/e8/."""
+    hs = a.h or [5, 22]
+    if a.dym:
+        E8_DYM.update(tickers=list(SMOKE_TICKERS), dir=SMOKE_DIR / 'e8')
+        E8_DYM['dir'].mkdir(parents=True, exist_ok=True)
+    A, _ = C.load_d0()  # RV рынка для shock_fresh — по всем тикерам (как G)
+    runner = None if a.dym else Runner(False)
+    res = {}
+    for h in hs:
+        gf = Path(a.gate) if a.gate else gate_path('E', h)
+        if not gf.exists() and not a.dym:
+            log(f'E8 h={h}: нет {gf} — E8 ждёт ворот E')
+            continue
+        src = e8_istochnik(h, gf if gf.exists() else None, a.unit)
+        u8, R8, S8, sig8, d8, info = e8_h(h, src, A)
+        units = dict(src['finalisty'])
+        seeds_v = src['seeds_vorot']
+        g = gate_E(h, units, None, [u for u in src['v0'] if u in units], runner, CFG['steps'], a.workers, tab1=src['tab1'], seeds=seeds_v,
+                   extra=dict(R={u8: R8}, S={u8: S8}, sig={u8: sig8}, dizainy={u8: d8}), faza='E8', dop={'E8': info})
+        res[h] = (info, yaml.safe_load(Path(g).read_text()))
+        T = pd.DataFrame(info['tablica_setki'])
+        T.to_csv((E8_DYM['dir'] or REPORT) / f'gate_E8_setka_h{h}.csv', index=False)
+        log(f'E8 h={h}: лучший {src["unit"]}, t̄ без E8 {info["bez_E8"]["t_mean"]:.3f} -> вложенно {info["t_mean_vlozhenno"]:.3f}; '
+            f'ворота: {res[h][1]["pobeditel"]["pobeditel"]} -> {g}')
+    out = e8_report(res, hs, (E8_DYM['dir'] or REPORT) / 'gate_E8.md')
+    log(f'E8 -> {out}')
+    return 0 if res else 1
 
 
 # ================================================================ отчёт владельцу
@@ -1155,6 +1552,8 @@ def pipeline(h, runner, smoke=False, once=False):
         if not designs_file(f'E_2010_h{h}').exists():
             write_designs(f'E_2010_h{h}', [x[2] for x in designs_E_2010(h) if x[2] is not None], dict(faza='E', h=h))
         E2010 = read_designs(f'E_2010_h{h}')
+        if designs_file(f'E6_h{h}').exists():  # E6 — вторым проходом (`e6`): маршрут [P, L3] поверх готовых E1–E4
+            E2010 += read_designs(f'E6_h{h}')
     if best is None and not E2010:
         st['zhdyot'] = 'gate_D без лучшего дизайна — на h остаётся F_h(d0)'
         save_state(h, st, smoke)
@@ -1591,10 +1990,25 @@ def main():
     p.add_argument('--h', type=int, nargs='+')
     p.add_argument('--workers', type=int, default=5)
     p.add_argument('--only-generate', dest='only_generate', action='store_true')
+    p = sp.add_parser('e6', help='E6 вторым проходом: усадка P поверх готовых E1–E4 (inputs.base, маршрут [P, L3])')
+    p.add_argument('--h', type=int, nargs='+')
+    p.add_argument('--workers', type=int, default=5)
+    p.add_argument('--only-generate', dest='only_generate', action='store_true')
+    p.add_argument('--dym', action='store_true', help='P в процессе на 3 тикерах поверх готовых рядов, без записи; R2/S/driver_smoke/e6/')
+    p = sp.add_parser('e8', help='E8 «настройка под t»: сетка λ × k × w из готовых рядов, вложенно по t; ворота E заново -> gate_E8')
+    p.add_argument('--h', type=int, nargs='+')
+    p.add_argument('--workers', type=int, default=5)
+    p.add_argument('--gate', help='файл ворот E (по умолчанию R2/O/gate_E_h{h}.yaml)')
+    p.add_argument('--unit', help='вариант E вместо лучшего по воротам')
+    p.add_argument('--dym', action='store_true', help='3 тикера против готовых рядов; без ворот E — таблица по 1 seed; R2/S/driver_smoke/e8/')
     sp.add_parser('status')
     a = ap.parse_args()
     if a.cmd == 'ryady-E':
         return cmd_ryady_E(a)
+    if a.cmd == 'e6':
+        return cmd_e6(a)
+    if a.cmd == 'e8':
+        return cmd_e8(a)
     if a.cmd == 'smoke' and a.real:
         return cmd_smoke_real(a)
     if a.cmd == 'generate':
