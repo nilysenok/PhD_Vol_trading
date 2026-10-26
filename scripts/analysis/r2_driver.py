@@ -444,6 +444,8 @@ class Runner:
         cmd = [sys.executable, str(HERE / spec['file'])] + spec['run'].format(
             designs=dfile, h=h, seeds=' '.join(map(str, seeds)), steps=' '.join(map(str, steps)), workers=workers, extra=extra,
             faza=faza).split()
+        if m == 'L3':
+            self.l3_stale(designs, h, seeds)
         import r2_dataset_cache as DS
         try:  # дирижёр 18:40: < 2 ГБ на томе кэша — стоп до старта задач модуля (не 70 упавших задач с No space left)
             DS.proverka_mesta()
@@ -464,6 +466,32 @@ class Runner:
         if net:
             log(f'модуль {m} h={h}: без DONE {len(net)} из {len(designs) * len(seeds)} (неприменимые или ошибка задачи): {net[:3]}')
         return True, ''
+
+    @staticmethod
+    def l3_stale(designs, h, seeds):
+        """Перезапуск 19:10: L3 переехал в конец цепочки — у дизайнов, где раньше стоял до E/G, DONE_L3 относится к рядам другого
+        звена. Отметка DONE_L3 без рядов <ряд предыдущего звена>__cal переименовывается в .stale (L3 пересчитает). -> [задача]."""
+        I = _index(fresh=True)
+        out = []
+        for d in designs:
+            full = C.validate({**d, 'h': h})
+            ch = route(full)
+            prev = ch[-2] if len(ch) > 1 else 'L'
+            hid = C.design_hash(full)[:16]
+            Ih = I[(I['hash'].astype(str) == hid) & (I['h'].astype(int) == int(h))]
+            for s in seeds:
+                dp = C.done_path(full, 'L3', h, s)
+                if not dp.exists():
+                    continue
+                Is = Ih[Ih['seed'].astype(str).isin([str(s), 'det'])]
+                need = {f'{r}__cal' for r in Is[Is['modul'] == prev]['ryad']}
+                have = set(Is[Is['modul'] == 'L3']['ryad'])
+                if need and not need <= have:
+                    os.replace(dp, dp.with_name(f'{dp.name}.stale_{time.strftime("%H%M%S")}'))
+                    out.append(f'{full.get("design")}/s{s}')
+        if out:
+            log(f'L3 h={h}: устаревших DONE_L3 (звено до L3 сменилось) — {len(out)}, пересчёт: {out[:3]}')
+        return out
 
     @staticmethod
     def done_missing(m, designs, h, seeds):
@@ -494,6 +522,19 @@ class Runner:
         return not fails, '; '.join(fails)
 
 
+_IDX = {}
+
+
+def _index(root=None, fresh=False, ttl=60):
+    """r2_core.read_index с памятью на ttl секунд (final_series зовётся сотни раз за ворота)."""
+    k = str(root or C.CACHE_ROOT)
+    t, I = _IDX.get(k, (0, None))
+    if fresh or I is None or time.time() - t > ttl:
+        I = C.read_index(root)
+        _IDX[k] = (time.time(), I)
+    return I
+
+
 def final_series(design, h, seeds, root=None, steps=None):
     """Итоговый ряд дизайна: ряды последнего модуля цепочки; варианты (сетка внутри складки) — по имени ряда; seed — среднее
     (медиана при ens.agg = median). -> {вариант: кадр val}."""
@@ -507,6 +548,12 @@ def final_series(design, h, seeds, root=None, steps=None):
         return {}
     if not stand_in:
         assert L['ryad'].astype(str).str.endswith('__cal').all(), f'{design.get("design")}: ряды L3 без __cal'
+        prev = ch[-2] if len(ch) > 1 else 'L'  # только калибровка рядов ТЕКУЩЕГО предыдущего звена (не устаревшие __cal прежней цепочки)
+        I = _index(root=root)
+        hid = C.design_hash(design)[:16]
+        base = set(I[(I['hash'].astype(str) == hid) & (I['modul'] == prev)]['ryad'].astype(str))
+        if base:
+            L = L[L['ryad'].astype(str).str[:-len('__cal')].isin(base)]
         if len(ch) > 1 and ch[-2] == 'R':  # после R калибруется R_raw (R уже со своей поправкой — двойная калибровка), дирижёр 17:28
             L = L[L['ryad'].astype(str).str.startswith('R_raw')]
     agg = 'median' if str(C.get(C.validate(design), 'ens.agg')) == 'median' else 'mean'
