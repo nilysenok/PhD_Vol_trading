@@ -1,0 +1,102 @@
+# R2, агент S: драйвер фаз B–E (scripts/analysis/r2_driver.py). Протокол v4 (docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md),
+# решение владельца 16:25: весь счёт на Маке, 10 воркеров; ворота — r2_gates / r2_halving агента O (PR #174); остановка — перед открытием.
+# Записано до счёта. Дизайны уровней — models/designs/r2/driver_v1/ (r2_driver.py generate), коммитятся до счёта.
+
+features: {file: R2/features/features_r2_v3.parquet, sha256: 977a87d31f0474c5f4d113aa524f040fe3fe1a5f290da1c27c22ff1878af7a72}  # F, PR #176
+hs: [5, 22, 1]                     # параллельные конвейеры (v4 § 0 п. 6: h = 5 и h = 22; h = 1 — только группы признаков в B)
+workers_total: 10                  # v4 § 0 п. 4
+workers: {main: 3, econ: 1}        # на конвейер h: основной поток и эконометрика (3 × (3 + 1) = 12 > 10 — пул r2_core ограничит)
+steps: [1, 2, 3, 4, 5, 6]          # шаг 1 — начальная оценка s²/весов, складки — шаги 2–6 (v4 § 1)
+poll_s: 60                         # ожидание ворот/модулей другого агента
+designs_dir: models/designs/r2/driver_v1
+report_dir: R2/report              # от data/regen
+state_dir: R2/S/driver
+
+# ---- фаза B (v4 § 3): h = 5, 22 — план 2^(14−8) IV, 64 прогона; h = 1 — 2³ по J, K, L (8 прогонов); 1 seed, LightGBM, 50% строк
+B:
+  seeds: [42]
+  lib: lightgbm
+  row_frac: 0.5                    # подвыборка (дата, тикер), зерно 20261026 — параметр запуска модуля B (не ключ схемы v1)
+  row_seed: 20261026
+  h1_factors: [J, K, L]
+
+# ---- эконометрика сразу (v4 § 3, последний пункт): кластеры 2, 3, 6, 14, 15 на h = 1, 5, 22, роль none
+econ:
+  legs: [HARJ, HARX, HARX_regime, HARX_pooled, HEAVY, RealizedGARCH, MIDAS_RV, HAR_perlead, RVI_anchor, factor]
+  harx_regressors: {1: [S1, S2, S3, S4], 5: [S1, S2, S3, S4], 22: [S1, S2, S3, S4, S5]}   # сетка внутри складки
+  base_legs: [HARX, HARJ, RVI_anchor]   # ноги, на которых считаются калибровка (3), многогоризонтные (6), панель (14), переоценка (15)
+
+# ---- фаза C (v4 § 4): ноги × роли × факторы, включённые в B; 1 seed, LightGBM, все строки
+C:
+  legs: [HARJ, HARX, HARX_regime, HEAVY, RVI_anchor, HAR_perlead]
+  roles: [feature, residual, offset]
+  seeds: [42]
+  lib: lightgbm
+  v0: [HARX, RVI_anchor]           # V0-кандидаты (роль none) — сразу в финалисты (v4 § 2)
+
+# ---- фаза D (v4 § 5): LHS-60 по 7 измерениям, отсечение r2_halving (O), 3 seed LightGBM
+D:
+  lhs_seed: 20261026
+  n: 60
+  levels:                          # уровни v2/v3 § 4; bagging_fraction — ❓ (в протоколах не задан) умолчание {0,7; 1,0}
+    num_leaves: [4, 8, 16]
+    max_depth: [2, 3]
+    min_data_in_leaf: [200, 500, 1000]
+    learning_rate: [0.01, 0.03]
+    lambda_l2: [1, 10, 100]
+    feature_fraction: [0.3, 0.5]
+    bagging_fraction: [0.7, 1.0]
+  max_trees: 300
+  patience: 30
+  seeds: [42, 43, 44]
+
+# ---- фаза E (v4 § 6): надстройки поверх лучшего (по одной, OFAT), затем финалисты 10 seed LightGBM + XGBoost
+E:
+  seeds_final: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+  lib_final: both_avg
+  finalists_k: 3
+  # ключи схемы v1 (по одному изменению к лучшему дизайну D)
+  ofat:
+    calib.s2_est: [smrob, sm_pooled, sm_by_ticker, sm_roll1y, sm_roll2y, sm_ewma097]
+    calib.kappa: [fit]
+    calib.s2_state: [RVI, RVI_volvol, regime2]
+    calib.c_qlike: [roll_all, roll_2y]
+    calib.mz: [on]
+    calib.update: [daily]
+    boost.prob: [scale_boost, scale_har, quantile5]
+    mh.scheme: [decomp, iterated, joint_h, perlead]
+    mh.persist: [OLS, qlike, pos_neg, sqrtRQ]
+    mh.slope: [on]
+    mh.reconcile: [MinT]
+    ens.agg: [median]
+    ens.leg_ens: [equal, median, qlike_shrunk_05, qlike_shrunk_075]
+    ens.window_ens: [on]
+    ens.ticker_bag: [on]
+    ens.uncert_shrink: [on]
+    ens.ec: [m5, m10]
+    ens.range_guard: [on]
+    leg.moe: [k2, k3]
+    leg.panel: [factor, factor_shrink_025, factor_shrink_05, factor_shrink_state]
+    leg.refit: [quarterly, monthly]
+    leg.rls_lambda: [0.995, 0.99]
+    boost.boost_refit: [quarterly_warm, monthly]
+  # кластеры 16, 18, 20 (v4 § 6) — ключей в schema_v1 нет: модуль G получает их параметром запуска (❓ schema_v2 — у архитектора)
+  vne_skhemy:
+    abstain: [conf_seed, regime, shock_fresh, uncert_shrink]       # 16; halt — только при сборке (даты ≥ 2022)
+    abstain_k: [3, 5, 10]
+    shrink_to_etalon_lambda: [0.25, 0.5, 0.75, 1.0]                 # 18
+    sign_delta: [0.1, 0.2, 0.3]                                     # 20
+
+# ---- модули: команда запуска (контракт S: --designs <yaml со списком designs> --h --seeds --steps --workers) и детектор
+# {designs} {h} {seeds} {steps} {workers} {extra} подставляет драйвер; модуль пишет ряды через r2_core.run_phase (module = ключ ниже)
+modules:
+  L:  {file: r2_nogi.py,         run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
+  P:  {file: r2_panel.py,        run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
+  R:  {file: r2_refit.py,        run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
+  B:  {file: r2_roli.py,         run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
+  BG: {file: r2_resid_grid.py,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
+  M:  {file: r2_mh.py,           run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
+  L3: {file: r2_calib.py,        run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
+  E:  {file: r2_ens.py,          run: "run --design {design} --h {h}", per_design: true, leak: "leak --h {h}"}
+  G:  {file: r2_gate_abstain.py, run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
+chain_order: [L, P, R, B, BG, M, L3, E, G]   # цепочка модулей дизайна; итог дизайна — ряды последнего модуля цепочки

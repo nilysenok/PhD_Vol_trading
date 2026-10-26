@@ -290,9 +290,16 @@ def validate(design, schema=None, keep_scalar_grid=False):
     S = schema or load_schema()
     if isinstance(design, (str, Path)):
         design = yaml.safe_load(open(design))
+    design = dict(design)
+    inputs = design.pop('inputs', None)
     flat = _flatten(design)
     flat.pop(('schema',), None)
     errs, full = [], {}
+    if inputs is not None:
+        try:
+            inputs = _check_inputs(inputs)
+        except DesignError as e:
+            errs.append(str(e))
     for p in flat:
         if p not in S.leaves:
             errs.append(f'неизвестный ключ {".".join(p)}')
@@ -339,13 +346,78 @@ def validate(design, schema=None, keep_scalar_grid=False):
         raise DesignError('дизайн не прошёл схему ' + S.version + ':\n  ' + '\n  '.join(errs))
     out = _nest(full)
     out['schema'] = S.version
+    if inputs:
+        out['inputs'] = inputs
     return out
+
+
+# ---------------------------------------------------------------- внешние входы дизайна (O, PR #172): base_1 / leg_1 для persist и reconcile
+INPUT_ID = ('file', 'col', 'design_sha', 'series', 'sha256')  # поля, задающие идентичность входа (описания вроде `ryad` в хэш не идут)
+H1_INPUT_NAMES = ('base_1', 'leg_1')
+
+
+def _check_inputs(inputs):
+    if not isinstance(inputs, dict) or not all(isinstance(v, dict) for v in inputs.values()):
+        raise DesignError('inputs: словарь {имя входа: {file | design_sha + series, [col], [sha256]}}')
+    out = {}
+    for name, spec in inputs.items():
+        if not (spec.get('file') or spec.get('design_sha')):
+            raise DesignError(f'inputs.{name}: нужен file или design_sha')
+        out[str(name)] = {k: spec[k] for k in spec if k in INPUT_ID or k in ('ryad', 's2', 'seed')}
+    return out
+
+
+def _file_sha_memo(p):
+    st = p.stat()
+    k = (str(p), st.st_size, st.st_mtime_ns)
+    if k not in _FSHA:
+        _FSHA[k] = sha_file(p)
+    return _FSHA[k]
+
+
+_FSHA = {}
+
+
+def inputs_identity(inputs):
+    """Канон входов для хэша: только поля идентичности; у входа-файла без sha256 — SHA содержимого (шаблон {seed} — все seed 42–51,
+    что есть на диске, SHA их списка). Вход из кэша R2 — design_sha + series (имя ряда)."""
+    out = {}
+    for name, spec in sorted(inputs.items()):
+        ident = {k: spec[k] for k in INPUT_ID if k in spec}
+        if 'file' in spec and 'sha256' not in spec:
+            f = str(spec['file'])
+            fs = [f.format(seed=s) for s in range(42, 52)] if '{seed}' in f else [f]
+            shas = []
+            for x in fs:
+                p = Path(x) if Path(x).is_absolute() else REGEN / x
+                if p.exists():
+                    shas.append(f'{x}:{_file_sha_memo(p)}')
+            if not shas:
+                raise DesignError(f'inputs.{name}: нет файла {f}')
+            ident['sha256'] = sha_bytes('\n'.join(shas).encode())
+        out[name] = ident
+    return out
+
+
+def needs_h1_inputs(design):
+    """persist / reconcile на h ≠ 1 читают ряды h=1 (base_1, leg_1) — они обязаны входить в хэш (O, PR #172)."""
+    full = validate(design)
+    return int(full['h']) != 1 and (str(get(full, 'mh.persist')) not in ('off', 'False') or str(get(full, 'mh.reconcile')) not in ('off', 'False'))
+
+
+def with_inputs(design, inputs):
+    """Дизайн + внешние входы (только идентичность: file/col/sha256 или design_sha/series)."""
+    d = dict(validate(design))
+    d['inputs'] = _check_inputs({k: dict(v) for k, v in inputs.items()})
+    return d
 
 
 def canonical(design):
     """Канонический yaml: полный дизайн без `design`, с `schema`; числа — десятичные строки (шапка schema_v1.yaml, пп. 1–5)."""
     full = validate(design)
     full.pop('design', None)
+    if 'inputs' in full:  # внешние входы (base_1, leg_1 …) — в хэш входят их идентичность и SHA содержимого
+        full['inputs'] = inputs_identity(full['inputs'])
     return yaml.safe_dump(_norm(full), sort_keys=True, allow_unicode=True, default_flow_style=False)
 
 
@@ -600,6 +672,13 @@ def check_no_future(df, name='ряд'):
     yrs = pd.to_datetime(df['date']).dt.year
     ymax = int(max(yrs.max(), df['year'].max() if 'year' in df else yrs.max()))
     if ymax > MAX_YEAR:
+        try:  # протокол v4, разд. 1: исключение, остановка задачи, строка в R2/S/otkaz_2022.csv
+            f = S_DIR / 'otkaz_2022.csv'
+            S_DIR.mkdir(parents=True, exist_ok=True)
+            pd.DataFrame([dict(vremya=time.strftime('%F %T'), ryad=name, god_max=ymax, stroki_2022plus=int((yrs > MAX_YEAR).sum()),
+                               pid=os.getpid())]).to_csv(f, mode='a', header=not f.exists(), index=False)
+        except OSError:
+            pass
         raise PermissionError(f'{name}: прогнозы за {ymax} > {MAX_YEAR} — режим R2 запрещает запись ≥ 2022 (отбор — только val 2017–2021)')
 
 
@@ -824,8 +903,13 @@ def _phase_task(t):
         sc = shift_check(V, A, h, name, d, block_file=t.get('block_file')) if A is not None else {'ok': None}
         rows.append(dict(ryad=name, h=h, seed=seed, hash=p.parent.name, fayl=p.name, stroki=len(V), sdvig_ok=sc.get('ok'),
                          argmax=sc.get('argmax')))
-    _atomic_write(cache_dir(d, root=root) / f'DONE_h{h}_s{seed}', time.strftime('%F %T').encode())
+    _atomic_write(done_path(d, t['module'], h, seed, root), time.strftime('%F %T').encode())
     return rows
+
+
+def done_path(design, module, h, seed, root=None):
+    """Отметка готовности — своя у каждого модуля (цепочка L -> B -> M -> E пишет в один каталог дизайна)."""
+    return cache_dir(design, root=root) / f'DONE_{module}_h{int(h)}_s{seed}'
 
 
 def run_phase(phase, h, designs, fn, seeds=(42,), steps=STEPS_DEV, workers=None, module='core', root=None, block_file=None,
@@ -842,7 +926,7 @@ def run_phase(phase, h, designs, fn, seeds=(42,), steps=STEPS_DEV, workers=None,
             raise DesignError(f'дизайн {full.get("design")}: h={full["h"]} ≠ {h}')
         cd = cache_dir(full, root=root)
         for s in seeds:
-            if (cd / f'DONE_h{h}_s{s}').exists():
+            if done_path(full, module, h, s, root).exists():
                 continue
             tasks.append(dict(design=full, seed=s, steps=list(steps), h=int(h), root=root, module=module, block_file=block_file,
                               cost=complexity(full) + 1))
@@ -960,6 +1044,15 @@ def _schema_selftest():
         except PermissionError:
             ok(f'флаг сборки: отказ ({who}, {Path(gate).name})', True)
     ok('шаг 7 в разработке запрещён', _raises(lambda: assert_dev_step(7)))
+    # входы h=1 (O, PR #172): base_1 / leg_1 входят в хэш (идентичность + SHA содержимого), описания — нет
+    dp = {'h': 5, 'mh': {'persist': 'qlike'}}
+    i1 = {'base_1': {'file': 'R2/cache/VYR/F_d0_h1_s{seed}_val.parquet', 'ryad': 'F_1(d0)'},
+          'leg_1': {'file': 'vyr/etalon_d0_h1_val.parquet', 'col': 'har_corr'}}
+    i2 = {'base_1': dict(i1['base_1'], ryad='другое описание'), 'leg_1': i1['leg_1']}
+    i3 = {'base_1': {'design_sha': '0' * 64, 'series': 'B_feature_h1'}, 'leg_1': i1['leg_1']}
+    hs_ = [design_hash(x) for x in (dp, with_inputs(dp, i1), with_inputs(dp, i2), with_inputs(dp, i3))]
+    ok('входы h=1 в хэше: без входов ≠ с F_1(d0) ≠ с ячейкой C; описание входа хэш не меняет',
+       needs_h1_inputs(dp) and hs_[0] != hs_[1] and hs_[1] == hs_[2] and hs_[1] != hs_[3])
     return rows
 
 

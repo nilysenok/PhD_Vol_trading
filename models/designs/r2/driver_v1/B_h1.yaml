@@ -1,0 +1,271 @@
+faza: B
+h: 1
+plan: 2³ по J, K, L (v4 § 3)
+tablica:
+- run: 1
+  J: -1
+  K: -1
+  L: -1
+- run: 2
+  J: 1
+  K: -1
+  L: -1
+- run: 3
+  J: -1
+  K: 1
+  L: -1
+- run: 4
+  J: 1
+  K: 1
+  L: -1
+- run: 5
+  J: -1
+  K: -1
+  L: 1
+- run: 6
+  J: 1
+  K: -1
+  L: 1
+- run: 7
+  J: -1
+  K: 1
+  L: 1
+- run: 8
+  J: 1
+  K: 1
+  L: 1
+n: 8
+designs:
+- leg:
+    type: HARX
+    regressors: S4
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: feature
+    lib: lightgbm
+    grid: current
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 1
+  design: B_h1_r1 (J/K/L = -1/-1/-1)
+  h: 1
+- leg:
+    type: HARX
+    regressors: S4
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: feature
+    lib: lightgbm
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 1
+  design: B_h1_r2 (J/K/L = +1/-1/-1)
+  h: 1
+- leg:
+    type: HARX
+    regressors: S4
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: feature
+    lib: lightgbm
+    grid: current
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 1
+  design: B_h1_r3 (J/K/L = -1/+1/-1)
+  h: 1
+- leg:
+    type: HARX
+    regressors: S4
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: feature
+    lib: lightgbm
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 1
+  design: B_h1_r4 (J/K/L = +1/+1/-1)
+  h: 1
+- leg:
+    type: HARX
+    regressors: S4
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: feature
+    lib: lightgbm
+    grid: current
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 1
+  design: B_h1_r5 (J/K/L = -1/-1/+1)
+  h: 1
+- leg:
+    type: HARX
+    regressors: S4
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: feature
+    lib: lightgbm
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 1
+  design: B_h1_r6 (J/K/L = +1/-1/+1)
+  h: 1
+- leg:
+    type: HARX
+    regressors: S4
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: feature
+    lib: lightgbm
+    grid: current
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 1
+  design: B_h1_r7 (J/K/L = -1/+1/+1)
+  h: 1
+- leg:
+    type: HARX
+    regressors: S4
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: feature
+    lib: lightgbm
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 1
+  design: B_h1_r8 (J/K/L = +1/+1/+1)
+  h: 1
+index:
+- design: B_h1_r1 (J/K/L = -1/-1/-1)
+  design_sha: 1f100e3a7d7d2cf4884ae73830f2024f1f72c86bffa80a9e816bcab58b69239e
+  slozhnost: 4
+- design: B_h1_r2 (J/K/L = +1/-1/-1)
+  design_sha: 0118ebc546ec8669afa3304dd7e4a14d37cd70984f17214382c00fd46368dca8
+  slozhnost: 6
+- design: B_h1_r3 (J/K/L = -1/+1/-1)
+  design_sha: d41246b6f23ff0079a13ebfe1b0aeddad42efcd20d8d0afa9cdaaec284caa957
+  slozhnost: 6
+- design: B_h1_r4 (J/K/L = +1/+1/-1)
+  design_sha: 7b67df669f3e629a564d307df25992d571bb257346466e48e6f2c4043106ad34
+  slozhnost: 8
+- design: B_h1_r5 (J/K/L = -1/-1/+1)
+  design_sha: e31eb862a2f6078054d874e45a11a55a53ba11545f2125709ab1fc2bb6d4e3d7
+  slozhnost: 6
+- design: B_h1_r6 (J/K/L = +1/-1/+1)
+  design_sha: a1849042c48e84b0126134088773c8323463977323e5e62336ca3d1b342b5961
+  slozhnost: 8
+- design: B_h1_r7 (J/K/L = -1/+1/+1)
+  design_sha: ad5312cc2bf17c9602b27885db4766c4c8757dc22104b64ddb8fbfde51ebbcb1
+  slozhnost: 8
+- design: B_h1_r8 (J/K/L = +1/+1/+1)
+  design_sha: 9d764dfb1d0a6a0262b42c684046b4f1f8a704c7e38ea784eebcf3ef062d2e98
+  slozhnost: 10

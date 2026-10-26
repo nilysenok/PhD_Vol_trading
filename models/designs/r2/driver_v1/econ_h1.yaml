@@ -1,0 +1,803 @@
+faza: econ
+h: 1
+klastery:
+- 2
+- 3
+- 6
+- 14
+- 15
+rol: none
+n: 78
+designs:
+- design: econ_h1_HARJ
+  h: 1
+  leg:
+    type: HARJ
+- design: econ_h1_HARX
+  h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+- design: econ_h1_HARX_regime
+  h: 1
+  leg:
+    type: HARX_regime
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+- design: econ_h1_HARX_pooled
+  h: 1
+  leg:
+    type: HARX_pooled
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    pooled_kappa:
+    - 0
+    - 0.5
+    - 1
+- design: econ_h1_HEAVY
+  h: 1
+  leg:
+    type: HEAVY
+- design: econ_h1_RealizedGARCH
+  h: 1
+  leg:
+    type: RealizedGARCH
+- design: econ_h1_MIDAS_RV
+  h: 1
+  leg:
+    type: MIDAS_RV
+- design: econ_h1_RVI_anchor
+  h: 1
+  leg:
+    type: RVI_anchor
+- design: econ_h1_factor
+  h: 1
+  leg:
+    type: factor
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_est=smrob
+  calib:
+    s2_est: smrob
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_est=sm_pooled
+  calib:
+    s2_est: sm_pooled
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_est=sm_by_ticker
+  calib:
+    s2_est: sm_by_ticker
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_est=sm_roll1y
+  calib:
+    s2_est: sm_roll1y
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_est=sm_roll2y
+  calib:
+    s2_est: sm_roll2y
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_est=sm_ewma097
+  calib:
+    s2_est: sm_ewma097
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.kappa=fit
+  calib:
+    kappa: fit
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_state=RVI
+  calib:
+    s2_state: RVI
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_state=RVI_volvol
+  calib:
+    s2_state: RVI_volvol
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.s2_state=regime2
+  calib:
+    s2_state: regime2
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.c_qlike=roll_all
+  calib:
+    c_qlike: roll_all
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.c_qlike=roll_2y
+  calib:
+    c_qlike: roll_2y
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.mz=on
+  calib:
+    mz: 'on'
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  design: econ_h1_HARX_calib.update=daily
+  calib:
+    update: daily
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    panel: factor
+  design: econ_h1_HARX_leg.panel=factor
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    panel: factor_shrink_025
+  design: econ_h1_HARX_leg.panel=factor_shrink_025
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    panel: factor_shrink_05
+  design: econ_h1_HARX_leg.panel=factor_shrink_05
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    panel: factor_shrink_state
+  design: econ_h1_HARX_leg.panel=factor_shrink_state
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    refit: quarterly
+  design: econ_h1_HARX_leg.refit=quarterly
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    refit: monthly
+  design: econ_h1_HARX_leg.refit=monthly
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    rls_lambda: 0.995
+  design: econ_h1_HARX_leg.rls_lambda=0.995
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    rls_lambda: 0.99
+  design: econ_h1_HARX_leg.rls_lambda=0.99
+- h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+    estimator: qmle_level
+  design: econ_h1_HARX_leg.estimator=qmle_level
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_est=smrob
+  calib:
+    s2_est: smrob
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_est=sm_pooled
+  calib:
+    s2_est: sm_pooled
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_est=sm_by_ticker
+  calib:
+    s2_est: sm_by_ticker
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_est=sm_roll1y
+  calib:
+    s2_est: sm_roll1y
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_est=sm_roll2y
+  calib:
+    s2_est: sm_roll2y
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_est=sm_ewma097
+  calib:
+    s2_est: sm_ewma097
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.kappa=fit
+  calib:
+    kappa: fit
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_state=RVI
+  calib:
+    s2_state: RVI
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_state=RVI_volvol
+  calib:
+    s2_state: RVI_volvol
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.s2_state=regime2
+  calib:
+    s2_state: regime2
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.c_qlike=roll_all
+  calib:
+    c_qlike: roll_all
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.c_qlike=roll_2y
+  calib:
+    c_qlike: roll_2y
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.mz=on
+  calib:
+    mz: 'on'
+- h: 1
+  leg:
+    type: HARJ
+  design: econ_h1_HARJ_calib.update=daily
+  calib:
+    update: daily
+- h: 1
+  leg:
+    type: HARJ
+    panel: factor
+  design: econ_h1_HARJ_leg.panel=factor
+- h: 1
+  leg:
+    type: HARJ
+    panel: factor_shrink_025
+  design: econ_h1_HARJ_leg.panel=factor_shrink_025
+- h: 1
+  leg:
+    type: HARJ
+    panel: factor_shrink_05
+  design: econ_h1_HARJ_leg.panel=factor_shrink_05
+- h: 1
+  leg:
+    type: HARJ
+    panel: factor_shrink_state
+  design: econ_h1_HARJ_leg.panel=factor_shrink_state
+- h: 1
+  leg:
+    type: HARJ
+    refit: quarterly
+  design: econ_h1_HARJ_leg.refit=quarterly
+- h: 1
+  leg:
+    type: HARJ
+    refit: monthly
+  design: econ_h1_HARJ_leg.refit=monthly
+- h: 1
+  leg:
+    type: HARJ
+    rls_lambda: 0.995
+  design: econ_h1_HARJ_leg.rls_lambda=0.995
+- h: 1
+  leg:
+    type: HARJ
+    rls_lambda: 0.99
+  design: econ_h1_HARJ_leg.rls_lambda=0.99
+- h: 1
+  leg:
+    type: HARJ
+    estimator: qmle_level
+  design: econ_h1_HARJ_leg.estimator=qmle_level
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_est=smrob
+  calib:
+    s2_est: smrob
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_est=sm_pooled
+  calib:
+    s2_est: sm_pooled
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_est=sm_by_ticker
+  calib:
+    s2_est: sm_by_ticker
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_est=sm_roll1y
+  calib:
+    s2_est: sm_roll1y
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_est=sm_roll2y
+  calib:
+    s2_est: sm_roll2y
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_est=sm_ewma097
+  calib:
+    s2_est: sm_ewma097
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.kappa=fit
+  calib:
+    kappa: fit
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_state=RVI
+  calib:
+    s2_state: RVI
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_state=RVI_volvol
+  calib:
+    s2_state: RVI_volvol
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.s2_state=regime2
+  calib:
+    s2_state: regime2
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.c_qlike=roll_all
+  calib:
+    c_qlike: roll_all
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.c_qlike=roll_2y
+  calib:
+    c_qlike: roll_2y
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.mz=on
+  calib:
+    mz: 'on'
+- h: 1
+  leg:
+    type: RVI_anchor
+  design: econ_h1_RVI_anchor_calib.update=daily
+  calib:
+    update: daily
+- h: 1
+  leg:
+    type: RVI_anchor
+    panel: factor
+  design: econ_h1_RVI_anchor_leg.panel=factor
+- h: 1
+  leg:
+    type: RVI_anchor
+    panel: factor_shrink_025
+  design: econ_h1_RVI_anchor_leg.panel=factor_shrink_025
+- h: 1
+  leg:
+    type: RVI_anchor
+    panel: factor_shrink_05
+  design: econ_h1_RVI_anchor_leg.panel=factor_shrink_05
+- h: 1
+  leg:
+    type: RVI_anchor
+    panel: factor_shrink_state
+  design: econ_h1_RVI_anchor_leg.panel=factor_shrink_state
+- h: 1
+  leg:
+    type: RVI_anchor
+    refit: quarterly
+  design: econ_h1_RVI_anchor_leg.refit=quarterly
+- h: 1
+  leg:
+    type: RVI_anchor
+    refit: monthly
+  design: econ_h1_RVI_anchor_leg.refit=monthly
+- h: 1
+  leg:
+    type: RVI_anchor
+    rls_lambda: 0.995
+  design: econ_h1_RVI_anchor_leg.rls_lambda=0.995
+- h: 1
+  leg:
+    type: RVI_anchor
+    rls_lambda: 0.99
+  design: econ_h1_RVI_anchor_leg.rls_lambda=0.99
+- h: 1
+  leg:
+    type: RVI_anchor
+    estimator: qmle_level
+  design: econ_h1_RVI_anchor_leg.estimator=qmle_level
+index:
+- design: econ_h1_HARJ
+  design_sha: 13d0fb8dc1ac14b59cc253dbe04a5bfcac6a3adbcb5acb0041b5c4444f58bc25
+  slozhnost: 0
+- design: econ_h1_HARX
+  design_sha: 942068b74735612f54221e0ec729485ab4d8fd9b46232c074a2c08c31c0a8ee8
+  slozhnost: 2
+- design: econ_h1_HARX_regime
+  design_sha: 34567e6948d5d1094c52b9bf28fefba0db863f5811641eab46c08854786b041c
+  slozhnost: 2
+- design: econ_h1_HARX_pooled
+  design_sha: 5a686220e91481e62ea7a372342f66dd1eb22f211c947273ad5f3075640913fb
+  slozhnost: 3
+- design: econ_h1_HEAVY
+  design_sha: 077ccab07b6808459d27ee9cb02cd74ad54850213e540b47c00ffd709e394161
+  slozhnost: 1
+- design: econ_h1_RealizedGARCH
+  design_sha: 3346a59efa94f107fac35a62b3e0b9462c3b6a1ec295b64f0ac39fee18537153
+  slozhnost: 1
+- design: econ_h1_MIDAS_RV
+  design_sha: be127236e5cc20ce30af5ef8e3bdeb2ef6ada0c35a559674389c74a97742faf5
+  slozhnost: 1
+- design: econ_h1_RVI_anchor
+  design_sha: 902b45b8a60930bb7adcf5aeb8b6e3b2c2f2d514dcba72bf072b2a3ee7fa4ef5
+  slozhnost: 1
+- design: econ_h1_factor
+  design_sha: 78f0bd7f0aed65d81371870f283c8cbe17753aa483add46cf9f8d8ee448287ab
+  slozhnost: 1
+- design: econ_h1_HARX_calib.s2_est=smrob
+  design_sha: 2f2d8ad040ecbd2ffcc8286d2f9d13a61ba16562b9a851291627ad322888fc98
+  slozhnost: 3
+- design: econ_h1_HARX_calib.s2_est=sm_pooled
+  design_sha: 2ae33f8b6aa7d07b53f590cdf36bf9e43ed0745a563beb9010a5b10b32dd0292
+  slozhnost: 3
+- design: econ_h1_HARX_calib.s2_est=sm_by_ticker
+  design_sha: befa421667d8ddb36b3958cdd37569047d2c141ebd16e4763bace1908273a2ca
+  slozhnost: 3
+- design: econ_h1_HARX_calib.s2_est=sm_roll1y
+  design_sha: bb392cf1dd7cdb4bd32739781b66b29ce0b106ad2b1c47cadeb2635acdc51c90
+  slozhnost: 3
+- design: econ_h1_HARX_calib.s2_est=sm_roll2y
+  design_sha: 6dc3407173e2ac3137e704b1cfbc22fd787d5e939f9f69be519db8f1df52f48a
+  slozhnost: 3
+- design: econ_h1_HARX_calib.s2_est=sm_ewma097
+  design_sha: 8b3a454e91acc67aef1faf2cde03beacbc295c38f04643866b35a36a7a0fd7fb
+  slozhnost: 3
+- design: econ_h1_HARX_calib.kappa=fit
+  design_sha: 066835663c5d78025458c6de578c6092a2d2d05acb127aec19a3cb6d952d8dbf
+  slozhnost: 3
+- design: econ_h1_HARX_calib.s2_state=RVI
+  design_sha: 768d9c5c921e3b63f722b25adda909ab7d523b9817cd9f4f6464dd4565631c99
+  slozhnost: 3
+- design: econ_h1_HARX_calib.s2_state=RVI_volvol
+  design_sha: b8ce3e71ac82122ef488d5bcdb6f8abe8b67ffb2b4f511dab180a3acf2e3dceb
+  slozhnost: 3
+- design: econ_h1_HARX_calib.s2_state=regime2
+  design_sha: 0d05f4ba77f78e23bf81c904b4eff7067adf37fd62bceaeacbca8a0da19f464e
+  slozhnost: 3
+- design: econ_h1_HARX_calib.c_qlike=roll_all
+  design_sha: b1cf55956ded2345479b597e0d8b5dcfaa950b8ca71ee0de877a0789b69dd2ee
+  slozhnost: 3
+- design: econ_h1_HARX_calib.c_qlike=roll_2y
+  design_sha: 2d41953d23ee71efb7ce3d13efb60e8a385476d3d528d113afbf9bf31c378b14
+  slozhnost: 3
+- design: econ_h1_HARX_calib.mz=on
+  design_sha: 55e95608e0d5f8e2fea7048de6e7f7bcd9887321113eeb3e91ab51364ebf0019
+  slozhnost: 3
+- design: econ_h1_HARX_calib.update=daily
+  design_sha: 5fa9bbdce20273f8082fbdd5904d3bdbb1ed8bb17ace16ea2f7cfebd6ed0ea7a
+  slozhnost: 3
+- design: econ_h1_HARX_leg.panel=factor
+  design_sha: 2187aafdf3040c853ae55b6080b3a8f8051037d1bd2f41a6e1124926b370b51c
+  slozhnost: 3
+- design: econ_h1_HARX_leg.panel=factor_shrink_025
+  design_sha: 9518e85dbef970720cd88ca39f3c66c4fdef51ec14451ddc4c2bbccae804e029
+  slozhnost: 3
+- design: econ_h1_HARX_leg.panel=factor_shrink_05
+  design_sha: 4eb705042d39dbc984a67721268b51cb2fe69fda00c1a9bffd458505be76cb52
+  slozhnost: 3
+- design: econ_h1_HARX_leg.panel=factor_shrink_state
+  design_sha: 872bedbc9bd17aecb024fed1b27e9b0a0ae3a2357dbd32f1531f0ae6a68821c5
+  slozhnost: 3
+- design: econ_h1_HARX_leg.refit=quarterly
+  design_sha: a05715e50acf735146196cd2322adefc6ca03eb5f6773857bd8bd3140558cf53
+  slozhnost: 3
+- design: econ_h1_HARX_leg.refit=monthly
+  design_sha: 9f9d93e268fab46c025bcf98be9fa5b3a96b5d49dc0004a1dc3765221bcf7377
+  slozhnost: 3
+- design: econ_h1_HARX_leg.rls_lambda=0.995
+  design_sha: dc32ca3d7df766d9953296533db7d6f368bedaeda289d36668b5d54ab88a9a30
+  slozhnost: 3
+- design: econ_h1_HARX_leg.rls_lambda=0.99
+  design_sha: e413916665f5ac04c05b330261c2d404d817449f25dea38b6a4f8e88ecf0f2e3
+  slozhnost: 3
+- design: econ_h1_HARX_leg.estimator=qmle_level
+  design_sha: 932cac5f2dfb8ddd036d803babff5b2daa7b2df93089aa0ee61b3d858a2cb5c7
+  slozhnost: 3
+- design: econ_h1_HARJ_calib.s2_est=smrob
+  design_sha: 2b9fbe13fa5cc82f39c37d8a3bd6c6227e0756f85d91d7b5ad9fbd140d0a73a8
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.s2_est=sm_pooled
+  design_sha: 5aa2ebe468e43286791c6321bfb2d8018664792a24c35d66b76b11483179cf93
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.s2_est=sm_by_ticker
+  design_sha: c3ed519a44069528d81b66e07f73cbda960a779a8f0f636ef103b9679837adaf
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.s2_est=sm_roll1y
+  design_sha: 33711935f9f980ce546c6b321837f29985e5a0dd323ea6c05ac48334ea90bc3b
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.s2_est=sm_roll2y
+  design_sha: cce8d68a9eb1f4d118eda5b56dfdc8a4991b9dfae5ecb085f4472c0a7bfae689
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.s2_est=sm_ewma097
+  design_sha: 2f98501b94f555bf571fe39ee232909719961f257496e6184c9b41e0de5b7f3b
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.kappa=fit
+  design_sha: f6f06260834129cc02745e2ed7e18f0355537c7a9dc8d80989d6b1959f154693
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.s2_state=RVI
+  design_sha: 90e38026cf14aa8492f98a4b0cc8d00f65af19ed7303ff6022b0aed0cb389874
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.s2_state=RVI_volvol
+  design_sha: 7a64ddc5623af60e8dfca351f8b8ca13da0da70ed2d8a89f7df501575622f434
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.s2_state=regime2
+  design_sha: 22b9ae93757c5002d11db5e347ade78a8ecb98456e31dece7b6c1ef1f57564a9
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.c_qlike=roll_all
+  design_sha: 68d438e56c8be9b76ff9dbcd0579d657fcf886bb0301a24940031033aaf369c7
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.c_qlike=roll_2y
+  design_sha: a4bf6eafabc394c3af348b7e58246bc83db931ae3d2b5e52ac2c03dcdab09462
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.mz=on
+  design_sha: 564de3949f81ddda8d83f342d75689428d26205450de3f29ab229db790d52782
+  slozhnost: 1
+- design: econ_h1_HARJ_calib.update=daily
+  design_sha: 3bb472aed81030e9e25e3363460198fbfcaa7a4345ea5316e25fb9bc317324fc
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.panel=factor
+  design_sha: dfe27527b6745c33631354540c33992a53b71f8e049e8e288f702ac59256588a
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.panel=factor_shrink_025
+  design_sha: 69a281fc05c5af170b6985a764e79c41d877b6375a08c94b0fc28b054b417692
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.panel=factor_shrink_05
+  design_sha: bb0962accddcb72c140bf20c670a538ac5d0887274d3acfa3255ad3690994035
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.panel=factor_shrink_state
+  design_sha: 34126fd0d07690131597499e551dbe3440cf0e28d057c59722a85eb5d9a15df5
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.refit=quarterly
+  design_sha: 27fc46ca8e1227b6da24f7f47f1afa7ec58d10e8868a8a6efd0d6de8850ffbe5
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.refit=monthly
+  design_sha: 623bab06253eff69c366ecf066d2747676a07d0557597cd5670e90d693c0c8e5
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.rls_lambda=0.995
+  design_sha: 677ed59514d8364fe7a4a9fc486ab0d66113bbd5d78b837da6f7dd563fb77336
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.rls_lambda=0.99
+  design_sha: 245d0405c8c41e9bfc6e46aa62479f44a72cc36641edbfc54addb29da8870ec3
+  slozhnost: 1
+- design: econ_h1_HARJ_leg.estimator=qmle_level
+  design_sha: 7ec8c40998c78e71ba322b574498b755b0041c1f03bd6dbd85f921c5a6cd64b7
+  slozhnost: 1
+- design: econ_h1_RVI_anchor_calib.s2_est=smrob
+  design_sha: 5aeb0d766600849ce7c2ba50959b1152b96eec0d1acec5e982aa4b4a30a4b921
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.s2_est=sm_pooled
+  design_sha: 5f71b90c126e4cc6dc9e9e50bf0a78d45cadbeeb09614b4a3aed235fd17e2b34
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.s2_est=sm_by_ticker
+  design_sha: bb828d50725e2f31dab3fdcde39bbf4cc6014b8101f77dd8850b5aca6cff7bc5
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.s2_est=sm_roll1y
+  design_sha: b8d441f7db95730528787e7d1bc55560f011127ae392c936a25e17c2f0bd3379
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.s2_est=sm_roll2y
+  design_sha: 598223dd0e451d0cfa61f2f9f5feeab63b7af2b1ecf74be11b776de31deb12af
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.s2_est=sm_ewma097
+  design_sha: 1ff4901e9d3b49d732198dad6585e39ea3b6d18c6fc9cb57937a8f23d81580a6
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.kappa=fit
+  design_sha: 55bd6f53aceff3a9e670af44a681e968bc738073ff2ffebd5c3e025b7dbfe142
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.s2_state=RVI
+  design_sha: 2d87b1608166f140fcdeb1d9aba1f7240deeea738e5abef43839f26d6defabd6
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.s2_state=RVI_volvol
+  design_sha: 7064519b2bb008baf45aebd1fff5120b5082daf00ee6d586b2bbc3212d393268
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.s2_state=regime2
+  design_sha: 1af6e482827792907eb93058886fba8ee46170eebc687852cfb59caa9b28e38e
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.c_qlike=roll_all
+  design_sha: 054d5a94de0ec8c683be67980dc3f2d013d1bd128080ec9415f3fe2408c5a887
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.c_qlike=roll_2y
+  design_sha: 5388260ff9f4f39cf4d6d75e395a170fae8ccdead47b98852ef297aee227f00b
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.mz=on
+  design_sha: 91aa0fb88f80d1274e9a02f4e41ca26beb54bb945f9f86f7692b59b2c32cd300
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_calib.update=daily
+  design_sha: b732ad692b9488f7aef966e7fd4004e4b2630f666196c2ab5878cbfe7570ef52
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.panel=factor
+  design_sha: 85c11f79d359d1b6518b7e504f2cd5621572394efb62fab850288182129a08b6
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.panel=factor_shrink_025
+  design_sha: 69e236fc24ef2dc8503096205702230963279172ecd22c4d7458ca1e5c49dd79
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.panel=factor_shrink_05
+  design_sha: 925b5c3651049bfbe8ae7003ae9ecaf45b523090f1884cbbdff388ee77aaf491
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.panel=factor_shrink_state
+  design_sha: f3a9ca6825f7f4423c2da824451c57c121603e2f492fc2501709ec60c6a2ad65
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.refit=quarterly
+  design_sha: 1b90abf674dceda1881c53be712002a9846c8b71151e81d023f1ef70654e0d18
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.refit=monthly
+  design_sha: 7a11e399fcf225450bb64d1f0d38d3e97b05fcf5010f1475ed1260f80021465e
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.rls_lambda=0.995
+  design_sha: c5a9f95bc9d4f8d839cc96ee48e1e1ce1ce86f7526d180f33a3af09c67acc56c
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.rls_lambda=0.99
+  design_sha: df47d510a8a0a9d2bfb48ab2f68515477de1efffea1ea6be60d6ba62750cdf3f
+  slozhnost: 2
+- design: econ_h1_RVI_anchor_leg.estimator=qmle_level
+  design_sha: 5a43dff88f48c6296aedbd14e5eca06c3039fbc27ae9e00c96ee9777c0da9380
+  slozhnost: 2

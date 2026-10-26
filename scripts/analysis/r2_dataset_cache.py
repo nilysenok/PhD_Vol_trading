@@ -96,11 +96,27 @@ def _canon(x):
     return x
 
 
+FEATURES_R2 = C.REGEN / 'R2' / 'features' / 'features_r2_v3.parquet'   # признаки R2 (агент F, PR #176)
+FEATURES_R2_SHA = '977a87d31f0474c5f4d113aa524f040fe3fe1a5f290da1c27c22ff1878af7a72'
+
+
+def features_r2_sha():
+    """SHA-256 актуальной матрицы признаков R2 (features_r2_v3): сверка с константой и с файлом .sha256 агента F; расхождение — ошибка."""
+    got = data_sha(FEATURES_R2)
+    side = FEATURES_R2.with_name(FEATURES_R2.name + '.sha256')
+    want_side = side.read_text().split()[0] if side.exists() else got
+    if not (got == FEATURES_R2_SHA == want_side):
+        raise AssertionError(f'{FEATURES_R2.name}: SHA {got[:12]}… ≠ {FEATURES_R2_SHA[:12]}… (или .sha256 {want_side[:12]}…)')
+    return got
+
+
 def ds_key(**parts):
-    """Ключ набора: шаг, признаки, h, цель и всё, что меняет бины. Обязательные части: step, features, h, target."""
+    """Ключ набора: шаг, признаки, h, цель и всё, что меняет бины. Обязательные части: step, features, h, target.
+    В ключ всегда входят SHA матрицы признаков R2 (features_r2_v3) и, если передана, подвыборка строк (row_frac, row_seed)."""
     for need in ('step', 'features', 'h', 'target'):
         if need not in parts:
             raise ValueError(f'ds_key: нет части {need}')
+    parts = dict(parts, features_r2=dict(file=FEATURES_R2.name, sha256=features_r2_sha()))
     txt = json.dumps(dict(_canon(parts), _v=VERSION), ensure_ascii=False, sort_keys=True, separators=(',', ':'))
     return hashlib.sha256(txt.encode('utf-8')).hexdigest()
 

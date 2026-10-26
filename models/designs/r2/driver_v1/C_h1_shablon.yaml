@@ -1,0 +1,239 @@
+faza: C
+h: 1
+primechanie: факторы B — по gate_B_h{h}.yaml при запуске
+n: 17
+designs:
+- design: C_h1_HARJ_feature
+  h: 1
+  leg:
+    type: HARJ
+  boost:
+    role: feature
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARJ_residual
+  h: 1
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARJ_offset
+  h: 1
+  leg:
+    type: HARJ
+  boost:
+    role: offset
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARX_feature
+  h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  boost:
+    role: feature
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARX_residual
+  h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  boost:
+    role: residual
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARX_offset
+  h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  boost:
+    role: offset
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARX_regime_feature
+  h: 1
+  leg:
+    type: HARX_regime
+  boost:
+    role: feature
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARX_regime_residual
+  h: 1
+  leg:
+    type: HARX_regime
+  boost:
+    role: residual
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARX_regime_offset
+  h: 1
+  leg:
+    type: HARX_regime
+  boost:
+    role: offset
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HEAVY_feature
+  h: 1
+  leg:
+    type: HEAVY
+  boost:
+    role: feature
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HEAVY_residual
+  h: 1
+  leg:
+    type: HEAVY
+  boost:
+    role: residual
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HEAVY_offset
+  h: 1
+  leg:
+    type: HEAVY
+  boost:
+    role: offset
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_RVI_anchor_feature
+  h: 1
+  leg:
+    type: RVI_anchor
+  boost:
+    role: feature
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_RVI_anchor_residual
+  h: 1
+  leg:
+    type: RVI_anchor
+  boost:
+    role: residual
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_RVI_anchor_offset
+  h: 1
+  leg:
+    type: RVI_anchor
+  boost:
+    role: offset
+    lib: lightgbm
+  features:
+  - G0
+  - G1
+- design: C_h1_HARX_V0
+  h: 1
+  leg:
+    type: HARX
+    regressors:
+    - S1
+    - S2
+    - S3
+    - S4
+  boost:
+    role: none
+- design: C_h1_RVI_anchor_V0
+  h: 1
+  leg:
+    type: RVI_anchor
+  boost:
+    role: none
+index:
+- design: C_h1_HARJ_feature
+  design_sha: 8645f772f7d6db73186e416ea1ef6f97582bbf8d30391e010a238638caf8657e
+  slozhnost: 2
+- design: C_h1_HARJ_residual
+  design_sha: 0523104bb6af19b1ce626f70f2a52e77349d3a30ec2da080a21b2c471660eb3b
+  slozhnost: 2
+- design: C_h1_HARJ_offset
+  design_sha: 2d92e9b3c06c0c86aaea0053c5bcfd8505dd25352905f13642275c4da0a4d562
+  slozhnost: 2
+- design: C_h1_HARX_feature
+  design_sha: dd3428328f7dbbb614c892c69728d059e7ddcace69e4bd99c4a0599779f2be7f
+  slozhnost: 4
+- design: C_h1_HARX_residual
+  design_sha: 69db70e1b2075c6f7f0d8416cf371de40d98763df292f982f48d916dcc1592cc
+  slozhnost: 4
+- design: C_h1_HARX_offset
+  design_sha: fd5aaa28299fd01d5ed3508aecd796bb1d9510311b198853788fa9b5af562887
+  slozhnost: 4
+- design: C_h1_HARX_regime_feature
+  design_sha: bc600fd3283078dd79887f380a64c0bf64efcca98980b2076d2f7a176566a5c5
+  slozhnost: 3
+- design: C_h1_HARX_regime_residual
+  design_sha: d9cf1467cdb786a4e1e13fa4524d33801fce260f1cc7cc2b17c9a2c27b93377e
+  slozhnost: 3
+- design: C_h1_HARX_regime_offset
+  design_sha: 18092b759dafc7414f07f1191dd171f2c702e630ef02185fc9f0ac4e551afb5a
+  slozhnost: 3
+- design: C_h1_HEAVY_feature
+  design_sha: 39155f21bb8e90d8ae5c89227c7b7a1c4140a38b11cef53048765a31a74a8aa5
+  slozhnost: 3
+- design: C_h1_HEAVY_residual
+  design_sha: a1fe77071c6b953e86ceff35b84f0831e7ba779276b9d1737ce5ef324b307be5
+  slozhnost: 3
+- design: C_h1_HEAVY_offset
+  design_sha: d296d7f80d4ed9c977bf96f46be4c740834813e4498f65bfeaa90f1fc6431b77
+  slozhnost: 3
+- design: C_h1_RVI_anchor_feature
+  design_sha: a06eec3a5392b5bd66628da480d0eab057118af4409603b317bd4e63e66524c5
+  slozhnost: 3
+- design: C_h1_RVI_anchor_residual
+  design_sha: 939f5a2754e29864d7ca002de5695d5b1998626ddc6b4c431daafa688bdb2afb
+  slozhnost: 3
+- design: C_h1_RVI_anchor_offset
+  design_sha: c43b6717e278378f4d1e4adf4580b099d356454d034519997bfdb05588436584
+  slozhnost: 3
+- design: C_h1_HARX_V0
+  design_sha: 942068b74735612f54221e0ec729485ab4d8fd9b46232c074a2c08c31c0a8ee8
+  slozhnost: 2
+- design: C_h1_RVI_anchor_V0
+  design_sha: 902b45b8a60930bb7adcf5aeb8b6e3b2c2f2d514dcba72bf072b2a3ee7fa4ef5
+  slozhnost: 1
