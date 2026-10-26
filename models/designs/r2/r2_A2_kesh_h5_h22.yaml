@@ -1,0 +1,89 @@
+# R2, агент А2: кэш бустинга h=5/22 на 10 seed (протокол docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, строка «А2»).
+# Гиперпараметры бустинга фиксированы (сохранённые точки первого раунда), не переподбираются.
+# Шаги 1–9: точка шага из {points}_selected_h{h}.csv (шаги 7–9 — точка шага 6); шаг 10 (обучение <= 2024, val 2025, тест 01–02.2026) —
+# точка шага 6, как final2_step10.py. top5 — только seed 42, шаги 1–6 (на шагах 7–10 — точка шага, как нога top5 первого раунда).
+# Выход: val шагов 1–6 — data/regen/R2/cache/A2/<нога>_h{h}_s{seed}_val.parquet;
+#        val шагов 7–10 — data/regen/test_locked/R2/cache/A2/<нога>_h{h}_s{seed}_val710_test.parquet;
+#        тест шагов 1–10 — data/regen/test_locked/R2/cache/A2/<нога>_h{h}_s{seed}_test.parquet (только запись, SHA256.txt).
+# Колонки: date, ticker, year, step, rv_actual, rv_pred. <нога> = <имя>_<модель> (xgb | lgbm), <имя>_<модель>_top5, производные — ниже.
+seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+steps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+control_tol: 1.0e-7          # seed 42, шаги 1–6: max |Δ ln rv_pred| к сохранённому ряду первого раунда; больше — стоп
+workers: 3                   # + главный процесс = 4 процесса (правило «не больше 4»)
+legs:
+  D12_h5:                    # F_5 (wrap2/V0_XGB/B-sm/L0): V9 + Д8.12 + Д7 + Huber, optuna-30 на v3
+    h: 5
+    engine: d24              # d24_1._unit (как Д24.3)
+    cfg: {v9: true, harf: true, huber: true}
+    matrix: features_pit_v3.parquet
+    blocks: d7
+    points: D12_h5
+    models: [xgb, lgbm]
+    top5: true
+    saved: {single: D12_h5_{m}_h5_val.parquet, top5: D12_h5_{m}_h5_top5_val.parquet}
+  G5Xopt:                    # Р5.5, Д17.1 gamma с офсетом ln HAR-X + s²/2 (D17_BASE=harx), optuna-30 (Д24.3)
+    h: 5
+    engine: d17harx
+    cfg: {obj: gamma, v9: true, b01: true, harf: true}
+    matrix: features_pit_v3.parquet
+    blocks: d7
+    points: D17_1_h5_G5Xopt
+    models: [xgb, lgbm]
+    top5: true
+    saved: {single: D17_1_h5_G5Xopt_{m}_h5_val.parquet, top5: D17_1_h5_G5Xopt_{m}_h5_top5_val.parquet}
+  D16_h5_D12x:               # Р5.7 / Д16.1: V9 на HAR-X на точках D12_h5 (d16_v9.py: подмена l2_lib.har_ln на ln HAR-X шага)
+    h: 5
+    engine: d16v9
+    cfg: {v9: true, harf: true, huber: true}
+    matrix: features_pit_v3.parquet
+    blocks: d7
+    points: D12_h5
+    models: [xgb, lgbm]
+    top5: false
+    saved: {single: D16_h5_D12x_val.parquet}
+  D16_5_h22:                 # LGBM-слот h=22 и бустинг-часть D18e / D19_4y / D19_1x (Д16.5, XGB single)
+    h: 22
+    engine: d24
+    cfg: {}
+    matrix: features_pit_v3_d165.parquet
+    blocks: ''
+    points: D16_5_h22
+    models: [xgb, lgbm]
+    top5: true
+    saved: {single: D16_5_h22_{m}_h22_val.parquet, top5: D16_5_h22_{m}_h22_top5_val.parquet}
+  D12_h22:                   # XGB-слот h=22 (хост HARJ_corr h=22 в final3: V9 + linear_tree λ=1 у LGBM)
+    h: 22
+    engine: d24
+    cfg: {v9: true, linear_lambda: 1}
+    matrix: features_pit_v3.parquet
+    blocks: ''
+    points: D12_h22
+    models: [xgb, lgbm]
+    top5: true
+    saved: {single: D12_h22_{m}_h22_val.parquet, top5: D12_h22_{m}_h22_top5_val.parquet}
+  D12_h1_A_d812:             # бустинг-часть D19_4y / D19_1x (hyb1 в r1 = ln hyb1 − ln HAR1; основная нога — top5 XGB) и ē Д23.1
+    h: 1
+    engine: d24
+    cfg: {harf: true}
+    matrix: features_pit_v3.parquet
+    blocks: ''
+    points: Bv2b
+    models: [xgb, lgbm]
+    top5: true
+    saved: {single: D12_h1_A_d812_{m}_h1_val.parquet, top5: D12_h1_A_d812_{m}_h1_top5_val.parquet}
+  D25_3slope:                # бустинг-часть D25_3: бустинг на наклон ln(RV̄22/RV̄5), точки D15_h22 (d25_3.py _task); rv_pred = exp(ŝ)
+    h: 22
+    engine: slope
+    cfg: {}
+    matrix: features_pit_v3.parquet
+    blocks: ''
+    points: D15_h22
+    models: [xgb, lgbm]
+    top5: false
+    saved: {single: D25b/d25_3/boost_slope_val.parquet}
+derived:                     # строятся в том же процессе из рядов моделей (тест — из памяти, test_locked не читается)
+  D12_h5_wrap2: {from: D12_h5, rule: level_mean, note: 'XGB-слот wrap2 = (RV_xgb + RV_lgbm)/2 seed s (final2_wrap, компонент 2); LGB-слот — D12_h5_lgbm'}
+  D16_h5_D12x_wrap2: {from: D16_h5_D12x, rule: level_mean, note: 'как у D12_h5 (нога wrap2 Д16.1)'}
+  D25_3slope_mean: {from: D25_3slope, rule: ln_mean, note: 'прогноз наклона seed s = exp(среднее ln XGB и ln LGBM), как d25_3.py build'}
+leak:                        # детектор «будущее не влияет»: шаг 3, seed 42; шум с 1 января тестового года — val равны; с 1 января val-года — изменились
+  step: 3
