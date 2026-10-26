@@ -975,8 +975,9 @@ def selftest():
             OUT = out0_
         d = rf.set_index('obekt').reshenie
         assert d['группа G1'] == 'ок' and d['столбец g1_pc1'] == 'ок' and d['столбец g1_pc2'] == 'ок' and d['столбец g1_pc3'] == 'ок'
-        assert (d[['столбец g7_ln_amihud_w', 'столбец g7_ln_amihud_m', 'столбец g4_jbig_n22']] == 'блок').all()
-        assert set(rf[rf.reshenie == 'блок'].obekt) == {'столбец g7_ln_amihud_w', 'столбец g7_ln_amihud_m', 'столбец g4_jbig_n22'}
+        tri = {'столбец g7_ln_amihud_w', 'столбец g7_ln_amihud_m', 'столбец g4_jbig_n22'}  # в F v2 (PR #170) столбцы уже убраны
+        est = tri & set(d.index)
+        assert (d[list(est)] == 'блок').all() and set(rf[rf.reshenie == 'блок'].obekt) == est
     # чтение: шаги 7+ не загружаются; OOS s²; заморозка множителей; median-агрегат
     tmp = Path(tempfile.mkdtemp())
     dd = pd.DataFrame([(pd.Timestamp(f'{2015 + st}-06-01') + pd.Timedelta(days=i), 'T', 2015 + st, st, 1.0, np.exp(-0.1 * st))
