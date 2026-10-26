@@ -1,52 +1,48 @@
 #!/usr/bin/env python3
 """R2, агент M (протокол v3 docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, раздел 6, строка «M»; yaml models/designs/r2/r2_M_mh.yaml).
+Ядро — scripts/analysis/r2_core.py (агент S): validate / design_hash / cache_dir / write_series, load_d0, perturb_frame / plant_frame,
+shift_check, leak_check, run_phase. Код первого раунда не меняется (рецепты — Д18, Д19, Д20 = x6 Д22, Д24.2, Д25.3, Д26.3).
 
-Кластер 6 — многогоризонтные схемы над готовым рядом h (нога L или роль B), ключи mh.*:
-  scheme   direct | decomp[k] | iterated[k_iter] | joint_h | perlead (h=5)       — R1: Д18, Д20 (x6 Д22), Д24.2, Д26.3
-  slope    наклон срочной структуры ŷ_h = ŷ_k · exp(ŝ)                            — R1: Д25.3
-  persist  ln ŷ_h += ρ·r̂₁, r̂₁ = ln base_1 − ln leg_1; ρ: OLS | qlike | pos_neg | sqrtRQ — R1: Д19.1, x3 Д22
+Кластер 6 — схемы над готовым рядом h (нога L или роль B), ключи mh.*:
+  scheme    direct | decomp[k] | iterated[k_iter] | joint_h | perlead (h=5)
+  slope     наклон срочной структуры: ŷ_h = ŷ_k · exp(ŝ)
+  persist   ln ŷ_h += ρ·r̂₁, r̂₁ = ln base_1 − ln leg_1; ρ: OLS | qlike | pos_neg | sqrtRQ
   reconcile MinT: узлы {RV̄₁, RV̄₂₋₅, RV̄₆₋₂₂} -> {RV̄₅, RV̄₂₂}, Σ — Ледуа–Вольф по прошлым OOS
   Порядок: scheme -> slope -> persist -> reconcile. На h=1 persist и reconcile — фиктивные (ряд не меняется).
-Кластер 11 — нога τ × g (ключи leg.struct, struct_split, tau_window, tau_extend): tau_midas | tau_rvi | tau_boost; BV + J.
-Определения — в yaml (раздел mh / struct); они записаны до счёта.
+Кластер 11 — нога τ × g (leg.struct, struct_split, tau_window, tau_extend): tau_midas | tau_rvi | tau_boost; BV + J.
+Определения — в yaml (разделы mh, struct), записаны до счёта.
 
-Окна (раздел 1 протокола): шаг k — val-год vy = 2015 + k, обучение — годы < vy, эмбарго по концу цели (строка t+b тикера < 1 янв. vy).
-Всё, что оценивается по прошлым ошибкам (ρ, Σ MinT), на шаге t — по OOS-строкам шагов < t с тем же эмбарго; шаг 1 — без поправки.
-Ничего за годы >= 2022 не читается: features_pit_v3 — фильтр date <= 2021-12-31 при чтении + assert; входные ряды — step <= 6 + assert.
+Окна (раздел 1): шаг k — val-год vy = 2015 + k, обучение — годы < vy, эмбарго по концу цели (день t+b тикера < 1 янв. vy).
+ρ и Σ MinT на шаге t — по OOS-строкам шагов < t с тем же эмбарго («ρ только на окне шага»); шаг 1 — без поправки.
+Ничего за годы ≥ 2022 не читается: матрица — r2_core.load_d0 (строки ≤ 2021), входные ряды — фильтр step ≤ 6 + assert.
 test_locked/ не читается. Метрик модуль не считает (выбор — агент O).
 
-Ядро r2_core (агент S): если модуль есть — берутся его validate_design / design_hash / cache_dir; иначе — локальная реализация по
-шапке schema_v1.yaml (до PR агента S).
-
 python3 scripts/analysis/r2_mh.py selftest
-python3 scripts/analysis/r2_mh.py control  [--steps 1 2 3]          # HAR[1..h] модуля = нога L HARJ_emb_d0 (17 тикеров), допуск 1e-7
-python3 scripts/analysis/r2_mh.py dym                               # дым: 3 тикера × шаги 1–3 × seed 42 × h ∈ {1, 5, 22} + сдвиг + детектор
-python3 scripts/analysis/r2_mh.py run --designs <file.yaml> [--steps 1..6] [--seed 42] [--inputs <file.yaml>]   # боевой счёт (сервер)
-python3 scripts/analysis/r2_mh.py leak --designs <file.yaml> [--tickers ...] [--steps ...]"""
+python3 scripts/analysis/r2_mh.py control [--steps 1 2 3]       # HAR[1..h] модуля = нога L HARJ_emb_d0 (17 тикеров), допуск 1e-7
+python3 scripts/analysis/r2_mh.py dym                           # 3 тикера × шаги 1–3 × seed 42 × h ∈ {1, 5, 22}: ряды, сдвиг, детектор
+python3 scripts/analysis/r2_mh.py run --designs <f.yaml> --h 5 [--seeds 42 43 44] [--steps 1 .. 6] [--inputs <f.yaml>] [--workers N]
+                                                                 # боевой счёт (сервер): r2_core.run_phase -> кэш, сдвиг, DONE
+python3 scripts/analysis/r2_mh.py leak --designs <f.yaml> [--tickers ...] [--steps ...]"""
 import os
 for _k in ('OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'VECLIB_MAXIMUM_THREADS'):
     os.environ.setdefault(_k, '1')
-import argparse, copy, hashlib, json, subprocess, sys, time, warnings
+import argparse, hashlib, sys, time, warnings
 from pathlib import Path
 import numpy as np, pandas as pd
 import yaml
 from sklearn.linear_model import LinearRegression
 from sklearn.covariance import LedoitWolf
 from scipy.optimize import minimize_scalar
-from scipy.stats import spearmanr
 
 warnings.filterwarnings('ignore')
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
+import r2_core as C  # noqa: E402
+
 YAML = REPO / 'models' / 'designs' / 'r2' / 'r2_M_mh.yaml'
-SCHEMA_F = REPO / 'models' / 'designs' / 'r2' / 'schema_v1.yaml'
 CFG = yaml.safe_load(YAML.read_text())
-SCHEMA = yaml.safe_load(SCHEMA_F.read_text())
-ROOT = Path(os.environ.get('PHD_ROOT', CFG['root']))
-REG = ROOT / 'data' / 'regen'
-FEAT = ROOT / CFG['features']
-MAXD = pd.Timestamp(CFG['max_date'])
+REG = C.REGEN
 MAXSTEP = int(CFG['max_step'])
 COLS = ['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']
 KEY = ['date', 'ticker', 'step']
@@ -55,143 +51,32 @@ FLOOR = float(CFG['struct']['floor'])
 EPS = 1e-10
 RHO_LO, RHO_HI = CFG['mh']['persist']['rho_bounds']
 S_MINT = np.array([[1 / 5, 4 / 5, 0], [1 / 22, 4 / 22, 17 / 22], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype='float64')
-
-try:  # ядро агента S (появится в его PR)
-    import r2_core as CORE
-except Exception:  # noqa: BLE001
-    CORE = None
+MODULE = 'M'
 
 
 class NotApplicable(Exception):
     """Сочетание ключей не применимо на этом h (дизайн отклоняется до счёта)."""
 
 
-def now():
-    return time.strftime('%F %T')
-
-
 def log(*a):
-    print(now(), *a, flush=True)
+    print(time.strftime('%F %T'), *a, flush=True)
 
 
-def sha_bytes(b):
-    return hashlib.sha256(b).hexdigest()
+def off(v):
+    return v in (False, None, 'off')
 
 
-def sha_file(p):
-    return sha_bytes(Path(p).read_bytes())
-
-
-def git_head():
-    try:
-        return subprocess.run(['git', '-C', str(REPO), 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True).stdout.strip()
-    except Exception:  # noqa: BLE001
-        return ''
-
-
-# ================================================================ схема: дополнение default, валидация, канонический хэш (fallback ядра)
-def _is_leaf(v):
-    return isinstance(v, dict) and bool({'values', 'default', 'type', 'fixed'} & set(v))
-
-
-def _defaults(node):
-    out = {}
-    for k, v in node.items():
-        if k == 'schema':
-            continue
-        if _is_leaf(v):
-            if 'default' in v:
-                out[k] = copy.deepcopy(v['default'])
-            elif 'values' in v and v.get('fixed'):
-                out[k] = copy.deepcopy(v['values'][0])
-            elif v.get('fixed'):
-                out[k] = {a: b for a, b in v.items() if a not in ('fixed', 'note')}
-        elif isinstance(v, dict):
-            out[k] = _defaults(v)
-    return out
-
-
-def _merge(a, b):
-    r = copy.deepcopy(a)
-    for k, v in (b or {}).items():
-        r[k] = _merge(r[k], v) if isinstance(v, dict) and isinstance(r.get(k), dict) else copy.deepcopy(v)
-    return r
-
-
-def full_design(d):
-    return _merge(_defaults(SCHEMA), d)
-
-
-def validate_design(d):
-    """Значение вне списка схемы — ошибка (до счёта). Проверяются все ключи дизайна, которые есть в схеме; неизвестный ключ — ошибка."""
-    if CORE is not None and hasattr(CORE, 'validate_design'):
-        return CORE.validate_design(d)
-
-    def walk(node, sch, path):
-        for k, v in node.items():
-            if k in ('design', 'schema'):
-                continue
-            if k not in sch:
-                raise ValueError(f'ключа {path}{k} нет в схеме v1')
-            s = sch[k]
-            if _is_leaf(s):
-                vals = s.get('values')
-                if vals is None:
-                    continue
-                if isinstance(v, list) and k == 'features':
-                    bad = [x for x in v if x not in vals]
-                    if bad or 'G0' not in v:
-                        raise ValueError(f'{path}{k}: {v} вне списка или без G0')
-                elif v not in vals and not (isinstance(v, list) and all(x in vals for x in v)):
-                    raise ValueError(f'{path}{k} = {v!r} вне списка {vals}')
-            elif isinstance(v, dict):
-                walk(v, s, f'{path}{k}.')
-    walk(d, SCHEMA, '')
-    if 'h' not in d:
-        raise ValueError('в дизайне нет h')
-    return True
-
-
-def _canon(x):
-    if isinstance(x, bool) or x is None:
-        return x
-    if isinstance(x, (int, float, np.integer, np.floating)):
-        return ('%.15g' % float(x)) if not float(x).is_integer() else str(int(x))
-    if isinstance(x, dict):
-        return {str(k): _canon(v) for k, v in sorted(x.items())}
-    if isinstance(x, (list, tuple)):
-        return [_canon(v) for v in x]
-    return x
-
-
-def design_hash(d):
-    if CORE is not None and hasattr(CORE, 'design_hash'):
-        return CORE.design_hash(d)
-    f = full_design(d)
-    f.pop('design', None)
-    f['schema'] = 'v1'
-    s = yaml.safe_dump(_canon(f), sort_keys=True, allow_unicode=True, default_flow_style=False)
-    return sha_bytes(s.encode())
-
-
-def cache_dir(d):
-    if CORE is not None and hasattr(CORE, 'cache_dir'):
-        return Path(CORE.cache_dir(d))
-    return ROOT / CFG['out']['cache'] / design_hash(d)[:16]
-
-
-# ================================================================ применимость
+# ================================================================ применимость (дизайн — полный, после C.validate)
 def is_struct(d):
-    lg = d['leg']
-    return lg['struct'] != 'single' or lg['struct_split'] != 'rv_whole'
+    return d['leg']['struct'] != 'single' or d['leg']['struct_split'] != 'rv_whole'
 
 
 def check_mh(d):
-    """Возвращает список нужных входов; NotApplicable — сочетание не применимо."""
+    """-> множество нужных входов; NotApplicable — сочетание не применимо."""
     h, m = int(d['h']), d['mh']
     sch, need = m['scheme'], set()
     if h == 1:
-        if sch != 'direct' or m['slope'] == 'on':
+        if sch != 'direct' or m['slope'] is True:
             raise NotApplicable(f'h=1: scheme={sch}, slope={m["slope"]} не применимы')
         return need  # persist / reconcile на h=1 — фиктивные
     if sch != 'decomp' and m['decomp_k'] is not None:
@@ -202,21 +87,20 @@ def check_mh(d):
         k = m['decomp_k']
         if k not in CFG['mh']['decomp_k'][h]:
             raise NotApplicable(f'decomp_k={k} на h={h}')
-        need |= {'base_1'} if k == 1 else {'base_5'}
+        need.add('base_1' if k == 1 else 'base_5')
     elif sch == 'iterated':
-        k = m['iterated_k']
-        if k not in CFG['mh']['iterated_k'][h]:
-            raise NotApplicable(f'iterated_k={k} на h={h}')
+        if m['iterated_k'] not in CFG['mh']['iterated_k'][h]:
+            raise NotApplicable(f'iterated_k={m["iterated_k"]} на h={h}')
         need |= {'base_1', 'leg_1'}
     elif sch == 'perlead':
         if h != 5:
             raise NotApplicable('perlead — только h=5')
         need.add('base_1')
-    if m['slope'] == 'on':
+    if m['slope'] is True:
         if sch != 'direct':
             raise NotApplicable('slope — только при scheme=direct')
         need.add('base_5' if h == 22 else 'base_1')
-    if m['persist'] != 'off':
+    if not off(m['persist']):
         need |= {'base_1', 'leg_1'}
     if m['reconcile'] == 'MinT':
         need |= {'base_1', 'base_22' if h == 5 else 'base_5'}
@@ -224,80 +108,36 @@ def check_mh(d):
 
 
 def check_struct(d):
-    lg = d['leg']
+    lg, m = d['leg'], d['mh']
     if lg['struct'] == 'single':
         if lg['struct_split'] == 'rv_whole':
             raise NotApplicable('single + rv_whole — нога L (HARJ)')
-        if lg['tau_window'] != 22 or lg['tau_extend'] != 'const':
+        if int(lg['tau_window']) != 22 or lg['tau_extend'] != 'const':
             raise NotApplicable('tau_window / tau_extend без τ')
-    if any(v != 'off' and v is not None and v != 'direct' for v in (d['mh']['persist'], d['mh']['reconcile'], d['mh']['scheme'])):
-        raise NotApplicable('нога кластера 11 и схема кластера 6 — разные вызовы (нога -> роль -> схема); ядро вызывает их по очереди')
+    if m['scheme'] != 'direct' or m['slope'] is True or not off(m['persist']) or not off(m['reconcile']):
+        raise NotApplicable('нога кластера 11 и схема кластера 6 — разные вызовы (нога -> роль -> схема)')
 
 
-# ================================================================ матрица признаков (<= 2021) и подмодели шагов
-def _feat_cols():
-    import pyarrow.parquet as pq
-    names = pq.read_schema(FEAT).names
-    jump = [c for c in names if 'jump' in c.lower() and 'target' not in c.lower() and 'idx_' not in c.lower()]
-    return jump, ['date', 'ticker', 'rv', 'bv', 'rkurt', 'n_bars', 'close_RVI', 'rv_IMOEX'] + jump
-
-
-_RAW = {}
-
-
-def read_features(tickers=None):
-    """features_pit_v3, только date <= 2021-12-31 (фильтр при чтении) и нужные столбцы."""
-    k = tuple(tickers) if tickers else None
-    if k not in _RAW:
-        jump, cols = _feat_cols()
-        flt = [('date', '<=', MAXD)] + ([('ticker', 'in', list(tickers))] if tickers else [])
-        A = pd.read_parquet(FEAT, columns=cols, filters=flt)
-        A['date'] = pd.to_datetime(A['date'])
-        assert A['date'].max() <= MAXD and A['date'].dt.year.max() <= 2021, 'прочитаны строки >= 2022'
-        _RAW[k] = (A, jump)
-    A, jump = _RAW[k]
-    return A.copy(), jump
-
-
-def perturb_frame(A, cut, seed, cols=None):
-    """Всё числовое после среза × U(lo; hi) (детектор «будущее не влияет»)."""
-    lo, hi = CFG['guards']['leak']['noise']
-    rng = np.random.default_rng(seed)
-    B = A.copy()
-    fut = (B['date'] > pd.Timestamp(cut)).values
-    for c in (cols or [c for c in B.columns if c not in ('date', 'ticker', 'year', 'step') and pd.api.types.is_numeric_dtype(B[c])]):
-        B.loc[fut, c] = B.loc[fut, c].values * rng.uniform(lo, hi, fut.sum())
-    return B
-
-
+# ================================================================ матрица d0 и подмодели шагов
 class Ctx:
-    """Матрица d0 (данные по день d включительно) и подмодели шагов. plant: None | 'look1' (регрессоры и входы дня d+1) | 'noemb'."""
+    """A — кадр r2_core.load_d0 (возможно, после perturb_frame / plant_frame). plant: None | 'look1' (входные ряды дня d+1) | 'noemb'."""
 
-    def __init__(self, tickers=None, steps=STEPS, perturb=None, plant=None, seed=42):
-        assert max(steps) <= MAXSTEP
-        A, self.jump = read_features(tickers)
-        if perturb is not None:
-            A = perturb_frame(A, *perturb)
+    def __init__(self, A, harj, steps=STEPS, plant=None):
+        for k in steps:
+            C.assert_dev_step(k)
         A = A.sort_values(['date', 'ticker'], kind='mergesort').reset_index(drop=True)
-        A['year'] = A['date'].dt.year
-        tk = A['ticker']
-        rv = A['rv'].astype('float64')
-        rvp = rv.where(rv > 0).groupby(tk).ffill().fillna(rv)
-        A['rv_d'] = rvp
-        A['rv_w'] = rvp.groupby(tk).transform(lambda s: s.rolling(5, min_periods=1).mean())
-        A['rv_m'] = rvp.groupby(tk).transform(lambda s: s.rolling(22, min_periods=1).mean())
-        if plant == 'look1':
-            A['rv_d'] = A.groupby('ticker')['rv_d'].shift(-1).fillna(A['rv_d'])
-        self.A, self.steps, self.plant, self.seed = A, tuple(steps), plant, seed
-        self.harj = ['rv_d', 'rv_w', 'rv_m'] + [c for c in self.jump if c not in ('rv_d', 'rv_w', 'rv_m')]
+        assert A['date'].dt.year.max() <= C.MAX_YEAR
+        self.A, self.harj, self.steps, self.plant = A, list(harj), tuple(steps), plant
         self.H = np.nan_to_num(np.log(A[self.harj].values.astype('float64').clip(1e-10)), nan=0, posinf=0, neginf=0)
         self.year = A['year'].values
-        self.key = pd.DataFrame({'date': A['date'].values, 'ticker': A['ticker'].values.astype(str), 'ai': np.arange(len(A))})
+        self.tk = A['ticker'].values.astype(str)
+        self.key = pd.DataFrame({'date': A['date'].values, 'ticker': self.tk, 'ai': np.arange(len(A))})
         self.q = np.sqrt((A['n_bars'].astype('float64') * A['rkurt'].astype('float64') / 3).clip(lower=0)).clip(upper=10).fillna(1.0).values
         self._c = {}
+        self.used = set()
 
-    # ---- цели и эмбарго
     def tgt(self, a, b):
+        """RV̄_{a..b}: среднее RV за [t+a, t+b] (дни тикера); после конца данных (> 2021) — NaN."""
         k = ('tgt', a, b)
         if k not in self._c:
             g = self.A.groupby('ticker')['rv']
@@ -305,11 +145,9 @@ class Ctx:
         return self._c[k]
 
     def tend(self, b):
-        """Год дня t+b тикера (конец окна цели); нет дня (конец данных) — 9999."""
         k = ('tend', b)
         if k not in self._c:
-            d = self.A.groupby('ticker')['date'].shift(-b)
-            self._c[k] = d.dt.year.fillna(9999).values.astype(int)
+            self._c[k] = self.A.groupby('ticker')['date'].shift(-b).dt.year.fillna(9999).values.astype(int)
         return self._c[k]
 
     def emb_ok(self, b, vy):
@@ -320,27 +158,52 @@ class Ctx:
 
     def rows(self, df):
         ai = df[['date', 'ticker']].merge(self.key, on=['date', 'ticker'], how='left')['ai']
-        assert ai.notna().all(), f'строк ряда нет в матрице: {ai.isna().sum()}'
+        assert ai.notna().all(), f'строк ряда нет в матрице: {int(ai.isna().sum())}'
         return ai.values.astype(int)
 
     def lagmat(self, s, L):
         """(n, L): уровни дней t−L+1 … t тикера; недостающее начало — ближайшее известное."""
-        g = pd.Series(s).groupby(self.A['ticker'].values)
+        g = pd.Series(s).groupby(self.tk)
         M = np.column_stack([g.shift(k).values for k in range(L - 1, -1, -1)]).astype('float64')
         for j in range(L - 2, -1, -1):
             M[:, j] = np.where(np.isnan(M[:, j]), M[:, j + 1], M[:, j])
         return M
 
-    # ---- HAR-J d0 на цель RV̄_{a..b}
-    def har_sub(self, a, b):
-        k = ('har', a, b)
-        if k not in self._c:
-            y = np.log(self.tgt(a, b) + EPS)
+    def _fit_steps(self, key, X, y, b):
+        self.used.add(key)
+        if key not in self._c:
             ln, co = {}, {}
             for s in self.steps:
                 m = self.trmask(2015 + s, b, y)
-                lr = LinearRegression().fit(self.H[m], y[m])
-                ln[s], co[s] = lr.predict(self.H), np.r_[lr.intercept_, lr.coef_]
+                lr = LinearRegression().fit(X[m], y[m])
+                ln[s], co[s] = lr.predict(X), np.r_[lr.intercept_, lr.coef_]
+            self._c[key] = (ln, co)
+        return self._c[key]
+
+    def har_sub(self, a, b):
+        """HAR-J d0 на ln RV̄_{a..b} (как r2_nogi.fam_harj, эмбарго по концу цели)."""
+        return self._fit_steps(('har', a, b), self.H, np.log(self.tgt(a, b) + EPS), b)
+
+    def slope_ln(self, h):
+        kk = 5 if h == 22 else 1
+        return self._fit_steps(('slope', h), self.H, np.log(self.tgt(1, h) + EPS) - np.log(self.tgt(1, kk) + EPS), h)
+
+    def joint_ln(self, h):
+        """Одна HAR на объединённой выборке h' ∈ {1, 5, 22}: регрессоры HAR-J, они же × ln h', фиктивные h' (Д24.2 в эконометрике)."""
+        k = ('joint', h)
+        self.used.add(k)
+        if k not in self._c:
+            n = len(self.H)
+            Xh = lambda hh: np.column_stack([self.H, self.H * np.log(hh), np.full(n, float(hh == 5)), np.full(n, float(hh == 22))])
+            ln, co = {}, {}
+            for s in self.steps:
+                Xs, ys = [], []
+                for hh in (1, 5, 22):
+                    y = np.log(self.tgt(1, hh) + EPS)
+                    m = self.trmask(2015 + s, hh, y)
+                    Xs.append(Xh(hh)[m]); ys.append(y[m])
+                lr = LinearRegression().fit(np.vstack(Xs), np.concatenate(ys))
+                ln[s], co[s] = lr.predict(Xh(h)), np.r_[lr.intercept_, lr.coef_]
             self._c[k] = (ln, co)
         return self._c[k]
 
@@ -351,58 +214,82 @@ class Ctx:
             out[m] = D[int(s)][ai[m]]
         return out
 
+    def coef_meta(self, meta):
+        """Коэффициенты подмоделей шагов, которыми пользовался этот дизайн (детектор эмбарго, диагностика D)."""
+        for k in sorted(self.used, key=str):
+            for s, c in self._c[k][1].items():
+                meta.setdefault(s, {})['_'.join(map(str, k))] = c
 
-# ================================================================ входы
-def read_series(rel, seed=42, h=None, tickers=None, steps=STEPS):
-    p = REG / rel.format(seed=seed, h=h)
+
+_D0 = {}
+
+
+def load_A(tickers=None):
+    k = tuple(tickers) if tickers else None
+    if k not in _D0:
+        _D0[k] = C.load_d0(tickers)
+        C.check_d0(_D0[k][0])
+    A, harj = _D0[k]
+    return A.copy(), harj
+
+
+# ================================================================ входные ряды (ноги L, роли B)
+def read_input(rel, seed=42, h=None, tickers=None, steps=STEPS):
     import pyarrow.parquet as pq
+    p = REG / rel.format(seed=seed, h=h)
     flt = [('step', '<=', MAXSTEP)] + ([('ticker', 'in', list(tickers))] if tickers else [])
     d = pq.read_table(p, columns=COLS, filters=flt).to_pandas()
     d['date'] = pd.to_datetime(d['date'])
-    assert d['year'].max() <= 2021 and d['step'].max() <= MAXSTEP, f'{p}: строки >= 2022'
-    d = d[d.step.isin(steps)]
-    return d.sort_values(KEY).reset_index(drop=True), p
+    assert d['year'].max() <= C.MAX_YEAR and d['step'].max() <= MAXSTEP, f'{p}: строки ≥ 2022'
+    return d[d.step.isin(list(steps))].sort_values(KEY).reset_index(drop=True), p
 
 
-def default_inputs(h, seed, tickers, steps, need=('leg_1', 'base_1', 'base_5', 'base_22')):
+def default_inputs(h, seed, tickers, steps, override=None):
+    """base — ряд h дизайна; leg_1, base_1, base_5, base_22 — соседние горизонты; ref — строки и rv_actual (нога L HARJ_emb_d0_h{h})."""
+    src = {**CFG['inputs_default'], **(override or {})}
     I, files = {}, {}
-    src = CFG['inputs_default']
-    if h != 1:
-        I['base'], files['base'] = read_series(src[f'base_{h}'], seed, h, tickers, steps)
-    else:
-        I['base'], files['base'] = read_series(src['base_1'], seed, 1, tickers, steps)
-    for nm in need:
-        I[nm], files[nm] = read_series(src[nm], seed, h, tickers, steps)
-    I['ref'], files['ref'] = read_series(src['ref'], seed, h, tickers, steps)
+    I['base'], files['base'] = read_input(src.get('base', src[f'base_{h}']), seed, h, tickers, steps)
+    for nm in ('leg_1', 'base_1', 'base_5', 'base_22', 'ref'):
+        I[nm], files[nm] = read_input(src[nm], seed, h, tickers, steps)
     return I, files
 
 
 def perturb_inputs(I, cut, seed):
+    lo, hi = CFG['guards']['leak']['noise']
     out = {}
     for i, (k, d) in enumerate(sorted(I.items())):
-        out[k] = perturb_frame(d, cut, seed + 1000 + i, cols=['rv_pred'])
+        rng = np.random.default_rng(seed + 1000 + i)
+        d = d.copy()
+        fut = (d['date'] > pd.Timestamp(cut)).values
+        d.loc[fut, 'rv_pred'] = d.loc[fut, 'rv_pred'].values * rng.uniform(lo, hi, int(fut.sum()))
+        out[k] = d
+    return out
+
+
+def plant_inputs(I):
+    """Подлог: входной ряд строки d := значение строки d+1 того же тикера и шага."""
+    out = {}
+    for k, d in I.items():
+        d = d.sort_values(['ticker', 'step', 'date']).copy()
+        d['rv_pred'] = d.groupby(['ticker', 'step'])['rv_pred'].shift(-1).fillna(d['rv_pred'])
+        out[k] = d.sort_values(KEY).reset_index(drop=True)
     return out
 
 
 # ================================================================ кластер 6
 def _ols0(X, y):
-    X = np.atleast_2d(X.T).T
-    if len(y) < 30:
-        return np.zeros(X.shape[1])
-    return np.linalg.lstsq(X, y, rcond=None)[0]
+    X = np.asarray(X, dtype='float64').reshape(len(y), -1)
+    return np.zeros(X.shape[1]) if len(y) < 30 else np.linalg.lstsq(X, y, rcond=None)[0]
 
 
 def _q_profile(y, lnf):
-    f = np.exp(lnf)
-    x = y / f
+    x = y / np.exp(lnf)
     x = x / x.mean()
     return float(np.mean(x - np.log(x) - 1))
 
 
 def persist(F, ctx, mode, h, meta):
-    r = (np.log(F['base_1'].values) - np.log(F['leg_1'].values))
-    if ctx.plant == 'look1':  # подлог: r̂₁ дня d+1
-        r = pd.Series(r).groupby(F['ticker'].values).shift(-1).fillna(pd.Series(r)).values
+    r = np.log(F['base_1'].values) - np.log(F['leg_1'].values)
     ai, step = F['ai'].values, F['step'].values
     y, q = ctx.tgt(1, h)[ai], ctx.q[ai]
     lnp = np.log(F['p'].values)
@@ -426,14 +313,10 @@ def persist(F, ctx, mode, h, meta):
             par = _ols0(np.column_stack([rh, rh * qh]), res)
         else:
             raise ValueError(mode)
-        par = np.clip(par, RHO_LO, RHO_HI) if mode != 'sqrtRQ' else par
+        if mode != 'sqrtRQ':
+            par = np.clip(par, RHO_LO, RHO_HI)
         m = step == s
-        if mode == 'pos_neg':
-            rho = np.where(r[m] > 0, par[0], par[1])
-        elif mode == 'sqrtRQ':
-            rho = par[0] + par[1] * q[m]
-        else:
-            rho = par[0]
+        rho = np.where(r[m] > 0, par[0], par[1]) if mode == 'pos_neg' else (par[0] + par[1] * q[m] if mode == 'sqrtRQ' else par[0])
         out[m] = lnp[m] + rho * np.nan_to_num(r[m])
         meta.setdefault(s, {})[f'persist_{mode}'] = np.r_[par, hist.sum()]
     F['p'] = np.exp(out)
@@ -452,69 +335,26 @@ def iterate(hist, ln_f1, delta, c, J):
     return F
 
 
-def daily_hist(ctx):
-    if 'dh' not in ctx._c:
-        rv = ctx.A['rv_d'].astype('float64').clip(lower=FLOOR).values
-        Hd = ctx.lagmat(rv, 22)
-        X = np.column_stack([np.log(Hd[:, -1]), np.log(Hd[:, -5:].mean(1)), np.log(Hd.mean(1))])
-        ctx._c['dh'] = (Hd, X)
-    return ctx._c['dh']
-
-
 def scheme_iterated(F, ctx, h, k, meta):
-    Hd, X = daily_hist(ctx)
+    if 'dh' not in ctx._c:
+        Hd = ctx.lagmat(ctx.A['rv_d'].astype('float64').clip(lower=FLOOR).values, 22)
+        ctx._c['dh'] = (Hd, np.column_stack([np.log(Hd[:, -1]), np.log(Hd[:, -5:].mean(1)), np.log(Hd.mean(1))]))
+    Hd, X = ctx._c['dh']
     y = np.log(ctx.tgt(1, 1) + EPS)
     kk = min(int(k), h)
     ai, step = F['ai'].values, F['step'].values
-    far = np.exp(ctx.at_steps(ctx.har_sub(kk + 1, h)[0], ai, step)) if kk < h else 0.0
+    far = np.exp(ctx.at_steps(ctx.har_sub(kk + 1, h)[0], ai, step)) if kk < h else np.zeros(len(F))
     it = np.empty(len(F))
     for s in sorted(np.unique(step)):
         m_tr = ctx.trmask(2015 + s, 1, y)
         c = np.linalg.lstsq(np.column_stack([np.ones(m_tr.sum()), X[m_tr]]), y[m_tr], rcond=None)[0]
         m = step == s
         a_ = ai[m]
-        base = c[0] + X[a_] @ c[1:]
-        delta = np.log(F['leg_1'].values[m]) - base
+        delta = np.log(F['leg_1'].values[m]) - (c[0] + X[a_] @ c[1:])
         P = iterate(Hd[a_], np.log(F['base_1'].values[m]), delta, c, kk)
-        fr = far[m] if kk < h else 0.0
-        it[m] = (P.sum(1) + (h - kk) * fr) / h
-        meta.setdefault(s, {})['iter_c'] = c
+        it[m] = (P.sum(1) + (h - kk) * far[m]) / h
+        meta.setdefault(s, {})['iter_daily'] = c
     F['p'] = 0.5 * (it + F['p'].values)
-
-
-def joint_ln(ctx, h):
-    k = ('joint', h)
-    if k not in ctx._c:
-        HS = (1, 5, 22)
-
-        def X_of(hh):
-            n = len(ctx.H)
-            return np.column_stack([ctx.H, ctx.H * np.log(hh), np.full(n, float(hh == 5)), np.full(n, float(hh == 22))])
-        out, co = {}, {}
-        for s in ctx.steps:
-            Xs, ys = [], []
-            for hh in HS:
-                y = np.log(ctx.tgt(1, hh) + EPS)
-                m = ctx.trmask(2015 + s, hh, y)
-                Xs.append(X_of(hh)[m]); ys.append(y[m])
-            lr = LinearRegression().fit(np.vstack(Xs), np.concatenate(ys))
-            out[s], co[s] = lr.predict(X_of(h)), np.r_[lr.intercept_, lr.coef_]
-        ctx._c[k] = (out, co)
-    return ctx._c[k]
-
-
-def slope_ln(ctx, h):
-    k = ('slope', h)
-    if k not in ctx._c:
-        kk = 5 if h == 22 else 1
-        y = np.log(ctx.tgt(1, h) + EPS) - np.log(ctx.tgt(1, kk) + EPS)
-        out, co = {}, {}
-        for s in ctx.steps:
-            m = ctx.trmask(2015 + s, h, y)
-            lr = LinearRegression().fit(ctx.H[m], y[m])
-            out[s], co[s] = lr.predict(ctx.H), np.r_[lr.intercept_, lr.coef_]
-        ctx._c[k] = (out, co)
-    return ctx._c[k]
 
 
 def reconcile_mint(F, ctx, h, meta):
@@ -526,70 +366,63 @@ def reconcile_mint(F, ctx, h, meta):
     Ya = np.column_stack([ctx.tgt(1, 5), ctx.tgt(1, 22), ctx.tgt(1, 1), ctx.tgt(2, 5), ctx.tgt(6, 22)])[ai]
     row = 0 if h == 5 else 1
     out = F['p'].values.copy()
-    S = S_MINT
     for s in sorted(np.unique(step)):
         hist = (step < s) & np.isfinite(Ya).all(1) & np.isfinite(Yh).all(1) & ctx.emb_ok(22, 2015 + s)[ai]
         if hist.sum() < 50:
             meta.setdefault(s, {})['mint_n'] = np.array([hist.sum()])
             continue
-        E = Ya[hist] / Yh[hist] - 1
-        Sig = LedoitWolf().fit(E).covariance_
+        Sig = LedoitWolf().fit(Ya[hist] / Yh[hist] - 1).covariance_
         Si = np.linalg.inv(Sig)
         m = step == s
         Dinv = 1.0 / Yh[m]
         Winv = Si[None, :, :] * Dinv[:, :, None] * Dinv[:, None, :]
-        M = np.einsum('ki,nkl,lj->nij', S, Winv, S)
-        v = np.einsum('ki,nkl,nl->ni', S, Winv, Yh[m])
+        M = np.einsum('ki,nkl,lj->nij', S_MINT, Winv, S_MINT)
+        v = np.einsum('ki,nkl,nl->ni', S_MINT, Winv, Yh[m])
         b = np.linalg.solve(M, v[..., None])[..., 0]
-        out[m] = np.clip(b @ S[row], 1e-10, None)
-        meta.setdefault(s, {})['mint_sigma'] = np.r_[Sig.ravel(), hist.sum()]
+        out[m] = np.clip(b @ S_MINT[row], 1e-10, None)
+        G = np.linalg.solve(S_MINT.T @ Si @ S_MINT, S_MINT.T @ Si)  # веса при равных уровнях узлов (D = I): ỹ_h = w·ŷ
+        meta.setdefault(s, {}).update(mint_w=S_MINT[row] @ G, mint_sigma=Sig.ravel(), mint_n=np.array([hist.sum()]))
     F['p'] = out
 
 
 def apply_mh(design, ctx, I):
-    """Кластер 6 над рядом I['base'] (h дизайна). Возвращает (ряд COLS, meta {шаг: {имя: массив}})."""
-    d = full_design(design)
+    """Кластер 6 над рядом I['base'] (h дизайна). -> (ряд COLS, meta {шаг: {имя: массив}})."""
+    d = C.validate(design)
     h, m = int(d['h']), d['mh']
     need = check_mh(d)
+    ctx.used = set()
     miss = [k for k in need if k not in I]
     if miss:
         raise ValueError(f'нет входов {miss}')
     F = I['base'][COLS].copy().sort_values(KEY).reset_index(drop=True)
+    F = F[F.step.isin(ctx.steps)].reset_index(drop=True)
     F['ai'] = ctx.rows(F)
-    for nm in need:
-        x = I[nm][KEY + ['rv_pred']].rename(columns={'rv_pred': nm})
-        F = F.merge(x, on=KEY, how='left', validate='one_to_one')
-        assert F[nm].notna().all(), f'вход {nm}: нет {F[nm].isna().sum()} строк'
+    for nm in sorted(need):
+        F = F.merge(I[nm][KEY + ['rv_pred']].rename(columns={'rv_pred': nm}), on=KEY, how='left', validate='one_to_one')
+        assert F[nm].notna().all(), f'вход {nm}: нет {int(F[nm].isna().sum())} строк'
     F['p'] = F['rv_pred'].astype('float64')
     meta = {}
     if h == 1:  # persist / reconcile — фиктивные
-        return F[COLS].assign(rv_pred=F['p']), meta
+        return F[COLS].assign(rv_pred=F['p'].values), meta
     ai, step = F['ai'].values, F['step'].values
     sch = m['scheme']
     if sch == 'decomp':
-        if m['decomp_k'] == 1:
-            near, parts = F['base_1'].values, [(2, 5, 4)] + ([(6, 22, 17)] if h == 22 else [])
-        else:
-            near, parts = 5 * F['base_5'].values, [(6, 22, 17)]
+        near, parts = ((F['base_1'].values, [(2, 5, 4)] + ([(6, 22, 17)] if h == 22 else [])) if m['decomp_k'] == 1
+                       else (5 * F['base_5'].values, [(6, 22, 17)]))
         F['p'] = (near + sum(w * np.exp(ctx.at_steps(ctx.har_sub(a, b)[0], ai, step)) for a, b, w in parts)) / h
     elif sch == 'iterated':
         scheme_iterated(F, ctx, h, m['iterated_k'], meta)
     elif sch == 'joint_h':
-        F['p'] = 0.5 * (np.exp(ctx.at_steps(joint_ln(ctx, h)[0], ai, step)) + F['p'].values)
+        F['p'] = 0.5 * (np.exp(ctx.at_steps(ctx.joint_ln(h)[0], ai, step)) + F['p'].values)
     elif sch == 'perlead':
         F['p'] = (F['base_1'].values + sum(np.exp(ctx.at_steps(ctx.har_sub(j, j)[0], ai, step)) for j in range(2, 6))) / 5
-    if m['slope'] == 'on':
-        F['p'] = (F['base_5'] if h == 22 else F['base_1']).values * np.exp(ctx.at_steps(slope_ln(ctx, h)[0], ai, step))
-    if m['persist'] != 'off':
+    if m['slope'] is True:
+        F['p'] = (F['base_5'] if h == 22 else F['base_1']).values * np.exp(ctx.at_steps(ctx.slope_ln(h)[0], ai, step))
+    if not off(m['persist']):
         persist(F, ctx, m['persist'], h, meta)
     if m['reconcile'] == 'MinT':
         reconcile_mint(F, ctx, h, meta)
-    for nm, D in (('har', None),):
-        pass
-    for k, v in ctx._c.items():  # коэффициенты подмоделей шагов — в meta (детектор эмбарго, диагностика D)
-        if isinstance(v, tuple) and len(v) == 2 and isinstance(v[1], dict):
-            for s, c in v[1].items():
-                meta.setdefault(s, {})['_'.join(map(str, k))] = c
+    ctx.coef_meta(meta)
     assert np.isfinite(F['p']).all() and (F['p'] > 0).all(), 'нечисловой прогноз'
     return F[COLS].assign(rv_pred=F['p'].values), meta
 
@@ -601,34 +434,88 @@ def _beta_w(W, om):
     return w / w.sum()
 
 
+def tau_ext(ctx, lntau, s, h, ext, meta):
+    """ln τ̄ за [t+1, t+h] из τ_t: const — τ_t; AR1 — пул φ по окну шага с тикерными средними."""
+    if ext == 'const':
+        return lntau
+    vy = 2015 + s
+    win = ctx.year < vy
+    mu = pd.Series(np.where(win, lntau, np.nan)).groupby(ctx.tk).transform('mean').fillna(np.nanmean(lntau[win])).values
+    nxt = pd.Series(lntau).groupby(ctx.tk).shift(-1).values
+    x, yv = lntau - mu, nxt - mu
+    ok = win & ctx.emb_ok(1, vy) & np.isfinite(x) & np.isfinite(yv)
+    phi = float(np.clip((x[ok] * yv[ok]).sum() / max((x[ok] ** 2).sum(), 1e-12), 0.0, 0.9999))
+    meta.setdefault(s, {})['ar1_phi'] = np.array([phi])
+    pw = phi ** np.arange(1, h + 1)
+    return np.log(np.exp(mu[:, None] + x[:, None] * pw[None, :]).mean(1))
+
+
+def _rvi(ctx):
+    return pd.Series(ctx.A['close_RVI'].astype('float64').values).groupby(ctx.tk).ffill().values
+
+
+def tau_rvi(ctx, Hz, W, s, meta):
+    vy = 2015 + s
+    x = np.log(_rvi(ctx) ** 2)
+    flat = np.log(Hz[:, -W:].mean(1))
+    ok = np.isfinite(x)
+    D = pd.get_dummies(pd.Categorical(ctx.tk, categories=sorted(set(ctx.tk)))).values.astype('float64')
+    X = np.column_stack([D, np.where(ok, x, 0.0)])
+    m = (ctx.year < vy) & ok
+    co = np.linalg.lstsq(X[m], flat[m], rcond=None)[0]
+    meta.setdefault(s, {})['tau_rvi'] = co
+    return np.where(ok, X @ co, flat)
+
+
+def tau_boost(ctx, Zp, Hz, W, s, seed, meta):
+    import lightgbm as lgb
+    vy = 2015 + s
+    imx = pd.Series(ctx.A['rv_IMOEX'].astype('float64').values).groupby(ctx.tk).ffill()
+    imx22 = imx.groupby(ctx.tk).transform(lambda v: v.rolling(22, min_periods=1).mean()).values
+    codes = pd.Categorical(ctx.tk, categories=sorted(set(ctx.tk))).codes.astype('float64')
+    X = np.column_stack([np.log(Hz[:, -5:].mean(1)), np.log(Hz[:, -22:].mean(1)), np.log(Hz[:, -66:].mean(1)), np.log(Hz[:, -W:].mean(1)),
+                         np.log(_rvi(ctx) ** 2), np.log(np.clip(imx22, 1e-12, None)), codes])
+    g = pd.Series(Zp).groupby(ctx.tk)
+    yt = np.log((sum(g.shift(-j) for j in range(1, W + 1)) / W).values + EPS)
+    P = dict(CFG['struct']['lgbm'])
+    nest = int(P.pop('n_estimators'))
+    P.update(objective='regression', seed=int(seed))
+    fit = lambda mask: lgb.train(P, lgb.Dataset(X[mask], yt[mask], categorical_feature=[6]), num_boost_round=nest)
+    m_all = ctx.trmask(vy, W, yt)
+    lntau = fit(m_all).predict(X)
+    tend = ctx.tend(W)
+    for Y in sorted(set(ctx.year[m_all])):  # кросс-фит строк обучения: год Y — модель без года Y и без целей, заходящих в Y
+        mY = m_all & (ctx.year != Y) & (tend != Y)
+        rY = m_all & (ctx.year == Y)
+        if mY.sum() > 100 and rY.any():
+            lntau[rY] = fit(mY).predict(X[rY])
+    meta.setdefault(s, {})['tau_boost'] = np.array([m_all.sum(), float(np.mean(lntau[m_all]))])
+    return lntau
+
+
 def struct_leg(design, ctx, ref):
-    """Нога кластера 11 на строках ref (val шагов ctx.steps). Возвращает (ряд COLS, lnall, meta)."""
-    d = full_design(design)
+    """Нога кластера 11 на строках ref (val шагов ctx.steps). -> (ряд COLS, lnall: date, ticker, year, step, part, rv_pred, emb_ok, meta)."""
+    d = C.validate(design)
     check_struct(d)
     h, lg = int(d['h']), d['leg']
     st, split, W, ext = lg['struct'], lg['struct_split'], int(lg['tau_window']), lg['tau_extend']
-    A, n = ctx.A, len(ctx.A)
+    A, tk = ctx.A, ctx.tk
     rv = A['rv'].astype('float64').values
     jmp = A['jump'].astype('float64').clip(lower=0).values
     Z = rv if split == 'rv_whole' else np.clip(rv - jmp, 0, None)
-    tk = A['ticker'].values
     Zp = pd.Series(np.where(Z > 0, Z, np.nan)).groupby(tk).ffill().fillna(FLOOR).clip(lower=FLOOR).values
-    if ctx.plant == 'look1':
-        Zp = pd.Series(Zp).groupby(tk).shift(-1).fillna(pd.Series(Zp)).values
-    L = max(66, W)
-    Hz = ctx.lagmat(Zp, L)
+    Hz = ctx.lagmat(Zp, max(66, W))
     zd, zw, zm = np.log(Hz[:, -1]), np.log(Hz[:, -5:].mean(1)), np.log(Hz[:, -22:].mean(1))
-    Jx = ctx.H[:, 3:]
+    Jx = ctx.H[:, 3:]  # скачки HAR-J
     g = pd.Series(Z).groupby(tk)
     y = np.log(sum(g.shift(-j) for j in range(1, h + 1)).values / h + EPS)
-    meta, ln_pred = {}, {}
+    meta, lnp = {}, {}
 
     def fit_g(s, lntau):
         m = ctx.trmask(2015 + s, h, y)
         lnbar = tau_ext(ctx, lntau, s, h, ext, meta)
         X = np.column_stack([zd - lntau, zw - lntau, zm - lntau, Jx])
-        yg = y - lnbar
-        lr = LinearRegression().fit(X[m], yg[m])
+        lr = LinearRegression().fit(X[m], (y - lnbar)[m])
         pr = lnbar + lr.predict(X)
         return pr, float(np.mean((y[m] - pr[m]) ** 2)), np.r_[lr.intercept_, lr.coef_]
 
@@ -637,293 +524,261 @@ def struct_leg(design, ctx, ref):
             m = ctx.trmask(2015 + s, h, y)
             X = np.column_stack([zd, zw, zm, Jx])
             lr = LinearRegression().fit(X[m], y[m])
-            ln_pred[s] = lr.predict(X)
+            lnp[s] = lr.predict(X)
             meta.setdefault(s, {})['single'] = np.r_[lr.intercept_, lr.coef_]
-            continue
-        if st == 'tau_midas':
+        elif st == 'tau_midas':
             best = None
             for om in CFG['struct']['omega_grid']:
-                lntau = np.log(Hz[:, -W:] @ _beta_w(W, om)[::-1])
-                pr, mse, co = fit_g(s, lntau)
+                pr, mse, co = fit_g(s, np.log(Hz[:, -W:] @ _beta_w(W, om)[::-1]))
                 if best is None or mse < best[1]:
                     best = (pr, mse, co, om)
-            ln_pred[s] = best[0]
+            lnp[s] = best[0]
             meta.setdefault(s, {})['midas'] = np.r_[best[3], best[2]]
         elif st == 'tau_rvi':
-            lntau = tau_rvi(ctx, Hz, W, s, meta)
-            ln_pred[s], _, co = fit_g(s, lntau)
+            lnp[s], _, co = fit_g(s, tau_rvi(ctx, Hz, W, s, meta))
             meta.setdefault(s, {})['g'] = co
         elif st == 'tau_boost':
-            lntau = tau_boost(ctx, Zp, Hz, W, s, int(d['seed']), meta)
-            ln_pred[s], _, co = fit_g(s, lntau)
+            lnp[s], _, co = fit_g(s, tau_boost(ctx, Zp, Hz, W, s, d['seed'], meta))
             meta.setdefault(s, {})['g'] = co
         else:
             raise ValueError(st)
-    pred = {s: np.exp(ln_pred[s]) for s in ctx.steps}
+    pred = {s: np.exp(lnp[s]) for s in ctx.steps}
     if split == 'bv_plus_jump':
         Jh = ctx.lagmat(jmp, 22)
         XJ = np.column_stack([Jh[:, -1], Jh[:, -5:].mean(1), Jh.mean(1)])
-        gj = pd.Series(jmp).groupby(tk)
-        yj = (sum(gj.shift(-j) for j in range(1, h + 1)) / h).values
+        yj = (sum(pd.Series(jmp).groupby(tk).shift(-j) for j in range(1, h + 1)) / h).values
         for s in ctx.steps:
             m = ctx.trmask(2015 + s, h, yj)
             lr = LinearRegression().fit(XJ[m], yj[m])
             pred[s] = pred[s] + np.clip(lr.predict(XJ), 0, None)
             meta.setdefault(s, {})['jump'] = np.r_[lr.intercept_, lr.coef_]
-    R = ref[COLS].copy().sort_values(KEY).reset_index(drop=True)
+    R = ref[COLS].copy()
+    R = R[R.step.isin(ctx.steps)].sort_values(KEY).reset_index(drop=True)
     ai, step = ctx.rows(R), R['step'].values
     R['rv_pred'] = np.clip(ctx.at_steps(pred, ai, step), 1e-10, None)
     assert np.isfinite(R['rv_pred']).all()
-    # lnall (формат ног L): tr — годы < vy с целью, va — строки ref шага; emb_ok — конец цели < 1 янв. vy
-    la = []
+    la = []  # lnall (формат ног L): tr — годы < vy с целью, va — строки ref шага; emb_ok — конец цели < 1 янв. vy
     for s in ctx.steps:
         vy = 2015 + s
-        tr = np.where((ctx.year < vy) & np.isfinite(y))[0]
-        va = ai[step == s]
-        for part, idx in (('tr', tr), ('va', va)):
-            la.append(pd.DataFrame({'date': A['date'].values[idx], 'ticker': tk[idx].astype(str), 'step': s, 'part': part,
-                                    'base_ln': np.log(np.clip(pred[s][idx], 1e-10, None)), 'emb_ok': ctx.tend(h)[idx] < vy}))
+        for part, idx in (('tr', np.where((ctx.year < vy) & np.isfinite(y))[0]), ('va', ai[step == s])):
+            la.append(pd.DataFrame({'date': A['date'].values[idx], 'ticker': tk[idx], 'year': ctx.year[idx], 'step': s, 'part': part,
+                                    'rv_pred': np.clip(pred[s][idx], 1e-10, None), 'emb_ok': ctx.tend(h)[idx] < vy}))
     return R[COLS], pd.concat(la, ignore_index=True), meta
 
 
-def tau_ext(ctx, lntau, s, h, ext, meta):
-    """ln τ̄ за [t+1, t+h] из τ_t: const — τ_t; AR1 — пул φ по окну шага с тикерными средними."""
-    if ext == 'const':
-        return lntau
-    vy = 2015 + s
-    tk = ctx.A['ticker'].values
-    m = (ctx.year < vy) & ctx.emb_ok(1, vy)
-    mu = pd.Series(np.where(ctx.year < vy, lntau, np.nan)).groupby(tk).transform('mean').fillna(np.nanmean(lntau[ctx.year < vy])).values
-    nxt = pd.Series(lntau).groupby(tk).shift(-1).values
-    x, yv = lntau - mu, nxt - mu
-    ok = m & np.isfinite(x) & np.isfinite(yv)
-    phi = float(np.clip((x[ok] * yv[ok]).sum() / max((x[ok] ** 2).sum(), 1e-12), 0.0, 0.9999))
-    meta.setdefault(s, {})['ar1'] = np.array([phi])
-    pw = phi ** np.arange(1, h + 1)
-    return np.log(np.exp(mu[:, None] + x[:, None] * pw[None, :]).mean(1))
-
-
-def tau_rvi(ctx, Hz, W, s, meta):
-    A, vy = ctx.A, 2015 + s
-    tk = A['ticker'].values
-    rvi = pd.Series(A['close_RVI'].astype('float64').values).groupby(tk).ffill().values
-    x = np.log(rvi ** 2)
-    flat = np.log(Hz[:, -W:].mean(1))
-    ok = np.isfinite(x)
-    D = pd.get_dummies(pd.Categorical(tk, categories=sorted(set(tk)))).values.astype('float64')
-    X = np.column_stack([D, np.where(ok, x, 0.0)])
-    m = (ctx.year < vy) & ok
-    co = np.linalg.lstsq(X[m], flat[m], rcond=None)[0]
-    meta.setdefault(s, {})['rvi'] = co
-    return np.where(ok, X @ co, flat)
-
-
-def tau_boost(ctx, Zp, Hz, W, s, seed, meta):
-    import lightgbm as lgb
-    A, vy = ctx.A, 2015 + s
-    tk = A['ticker'].values
-    rvi = pd.Series(A['close_RVI'].astype('float64').values).groupby(tk).ffill().values
-    imx = pd.Series(A['rv_IMOEX'].astype('float64').values).groupby(tk).ffill()
-    imx22 = imx.groupby(tk).transform(lambda v: v.rolling(22, min_periods=1).mean()).values
-    codes = pd.Categorical(tk, categories=sorted(set(tk))).codes.astype('float64')
-    X = np.column_stack([np.log(Hz[:, -5:].mean(1)), np.log(Hz[:, -22:].mean(1)), np.log(Hz[:, -66:].mean(1)), np.log(Hz[:, -W:].mean(1)),
-                         np.log(rvi ** 2), np.log(np.clip(imx22, 1e-12, None)), codes])
-    g = pd.Series(Zp).groupby(tk)
-    yt = np.log((sum(g.shift(-j) for j in range(1, W + 1)) / W).values + EPS)
-    P = dict(CFG['struct']['lgbm'])
-    nest = int(P.pop('n_estimators'))
-    P.update(objective='regression', seed=seed)
-
-    def fit(mask):
-        ds = lgb.Dataset(X[mask], yt[mask], categorical_feature=[6], free_raw_data=False)
-        return lgb.train(P, ds, num_boost_round=nest)
-    m_all = ctx.trmask(vy, W, yt)
-    bst = fit(m_all)
-    lntau = bst.predict(X)
-    tend = ctx.tend(W)
-    for Y in sorted(set(ctx.year[m_all])):  # кросс-фит на строках обучения: год Y — модель без года Y и без целей, заходящих в Y
-        mY = m_all & (ctx.year != Y) & (tend != Y)
-        rowsY = m_all & (ctx.year == Y)
-        if mY.sum() > 100 and rowsY.any():
-            lntau[rowsY] = fit(mY).predict(X[rowsY])
-    meta.setdefault(s, {})['boost'] = np.array([m_all.sum(), float(np.mean(lntau[m_all]))])
-    return lntau
-
-
-# ================================================================ охрана: сдвиг (п. 2.6) и детектор
-def shift_check(out, ctx):
-    """Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2, −1, 0, +1}, val 2017–2021, по тикерам, медиана. argmax должен быть 0."""
-    g = CFG['guards']['shift_check']
-    d = out[(out.year >= g['years'][0]) & (out.year <= g['years'][1])].copy()
-    if d.empty:
-        return {'ok': None, 'argmax': None}
-    ai = ctx.rows(d)
-    gr = ctx.A.groupby('ticker')['rv']
-    res = {}
-    for s in g['s']:
-        rvs = gr.shift(-s).values[ai]
-        cs = []
-        for t, x in d.assign(_r=rvs).groupby('ticker'):
-            ok = (x._r > 0) & np.isfinite(x._r)
-            if ok.sum() > 20:
-                cs.append(spearmanr(np.log(x.rv_pred[ok]), np.log(x._r[ok])).correlation)
-        res[s] = float(np.median(cs)) if cs else np.nan
-    am = max(res, key=lambda k: res[k])
-    return {'ok': am == g['need_argmax'], 'argmax': am, **{f'c{s:+d}': v for s, v in res.items()}}
+# ================================================================ один дизайн; детектор
+def run_one(design, ctx, I):
+    d = C.validate(design)
+    if is_struct(d):
+        out, la, meta = struct_leg(d, ctx, I['ref'])
+        return out, meta, la
+    out, meta = apply_mh(d, ctx, I)
+    return out, meta, None
 
 
 def fingerprint(meta, steps):
     h = hashlib.sha256()
     for s in sorted(k for k in meta if k in steps):
         for nm in sorted(meta[s]):
-            h.update(nm.encode()); h.update(np.ascontiguousarray(np.asarray(meta[s][nm], dtype='float64')).tobytes())
+            h.update(nm.encode())
+            h.update(np.ascontiguousarray(np.asarray(meta[s][nm], dtype='float64')).tobytes())
     return h.hexdigest()
 
 
-def run_one(design, ctx, I):
-    d = full_design(design)
-    if is_struct(d):
-        out, _, meta = struct_leg(d, ctx, I['ref'])
-    else:
-        out, meta = apply_mh(d, ctx, I)
-    return out, meta
-
-
-def _maxdl(a, b, cut):
+def _maxdl(a, b, cut, after=False):
     m = a.merge(b, on=KEY, suffixes=('', '_p'))
-    m = m[m.date <= pd.Timestamp(cut)]
-    return float(np.abs(np.log(m.rv_pred) - np.log(m.rv_pred_p)).max()) if len(m) else np.nan
+    m = m[(m.date > pd.Timestamp(cut)) if after else (m.date <= pd.Timestamp(cut))]
+    return float(np.abs(np.log(m.rv_pred) - np.log(m.rv_pred_p)).max()) if len(m) else float('nan')
 
 
 class LeakBench:
-    """Контексты детектора на один срез (тикеры, шаги): основа, шум после средних срезов, шум после 31.12, подлоги."""
+    """Детектор для схем кластера 6: шум после среза — и в матрице (r2_core.perturb_frame), и во входных рядах (ноги L, роли B);
+    середина года — Δ = 0 до среза; 31.12 — параметры шагов с vy ≤ год + 1 совпадают (эмбарго); подлоги look1 (матрица и входы
+    дня d+1, r2_core.plant_frame) и noemb (без эмбарго) пойманы. Ноги кластера 11 — r2_core.leak_check (ряды на всех строках, lnall)."""
 
-    def __init__(self, tickers, steps, seed=42):
+    def __init__(self, tickers, steps):
         L = CFG['guards']['leak']
-        self.mid, self.ye = L['cuts_mid'], L['cut_year_end']
-        self.ctx = {'base': Ctx(tickers, steps, seed=seed)}
-        for i, c in enumerate(self.mid):
-            self.ctx[c] = Ctx(tickers, steps, perturb=(c, 20261026 + i), seed=seed)
-        self.ctx[self.ye] = Ctx(tickers, steps, perturb=(self.ye, 20261099), seed=seed)
-        self.ctx['look1'] = Ctx(tickers, steps, perturb=(self.mid[0], 20261026), plant='look1', seed=seed)
-        self.ctx['noemb'] = Ctx(tickers, steps, perturb=(self.ye, 20261099), plant='noemb', seed=seed)
+        self.mid, self.ye, self.steps, self.tickers = L['cuts_mid'], L['cut_year_end'], tuple(steps), tickers
+        A, self.harj = load_A(tickers)
+        self.A = A
+        self.ctx = {'base': Ctx(A, self.harj, steps)}
+        self.seeds = {c: 20261026 + i for i, c in enumerate(self.mid)}
+        self.seeds[self.ye] = 20261099
+        for c, sd in self.seeds.items():
+            self.ctx[c] = Ctx(C.perturb_frame(A, c, sd), self.harj, steps)
+        self.ctx['look1'] = Ctx(C.plant_frame(C.perturb_frame(A, self.mid[0], self.seeds[self.mid[0]])), self.harj, steps, plant='look1')
+        self.ctx['look1_0'] = Ctx(C.plant_frame(A), self.harj, steps, plant='look1')
+        self.ctx['noemb'] = Ctx(C.perturb_frame(A, self.ye, self.seeds[self.ye]), self.harj, steps, plant='noemb')
+        self.ctx['noemb_0'] = Ctx(A, self.harj, steps, plant='noemb')
 
-    def check(self, design, I):
-        d = full_design(design)
-        base, mb = run_one(d, self.ctx['base'], I)
-        rows = []
-        for i, c in enumerate(self.mid):
-            o, _ = run_one(d, self.ctx[c], perturb_inputs(I, c, 20261026 + i))
-            dl = _maxdl(base, o, c)
-            rows.append(dict(test=f'srez {c}', delta=dl, ok=bool(dl <= CFG['guards']['leak']['tol'])))
-        yv = pd.Timestamp(self.ye).year + 1
-        st_ok = [s for s in self.ctx['base'].steps if 2015 + s <= yv]
-        o, mp = run_one(d, self.ctx[self.ye], perturb_inputs(I, self.ye, 20261099))
-        same = fingerprint(mb, st_ok) == fingerprint(mp, st_ok)
-        rows.append(dict(test=f'embargo {self.ye} (param. shagov {st_ok})', delta=0.0 if same else 1.0, ok=bool(same)))
-        trivial = not mb  # прямой ряд без оценок: подлогу нечего ловить
-        o, _ = run_one(d, self.ctx['look1'], perturb_inputs(I, self.mid[0], 20261026))
-        dl = _maxdl(base, o, self.mid[0])
-        rows.append(dict(test='podlog look1', delta=dl, ok=bool(trivial or dl > 0)))
-        o, mp = run_one(d, self.ctx['noemb'], perturb_inputs(I, self.ye, 20261099))
-        caught = fingerprint(mb, st_ok) != fingerprint(mp, st_ok)
-        rows.append(dict(test='podlog noemb', delta=float(caught), ok=bool(trivial or caught)))
+    def check_mh(self, design, I):
+        base, mb, _ = run_one(design, self.ctx['base'], I)
+        rows, tol = [], CFG['guards']['leak']['tol']
+        for c in self.mid:
+            o, _, _ = run_one(design, self.ctx[c], perturb_inputs(I, c, self.seeds[c]))
+            dl, da = _maxdl(base, o, c), _maxdl(base, o, c, after=True)
+            rows.append(dict(test=f'srez {c}', max_dln_do=dl, max_dln_posle=da, ok=bool(dl <= tol)))
+        st = [s for s in self.steps if 2015 + s <= pd.Timestamp(self.ye).year + 1]
+        _, mp, _ = run_one(design, self.ctx[self.ye], perturb_inputs(I, self.ye, self.seeds[self.ye]))
+        same = fingerprint(mb, st) == fingerprint(mp, st)
+        rows.append(dict(test=f'embargo {self.ye}, parametry shagov {st}', max_dln_do=0.0 if same else 1.0, ok=bool(same)))
+        trivial = not mb  # прямой ряд без оценок (direct, h=1): подлогу нечего ловить
+        o0, _, _ = run_one(design, self.ctx['look1_0'], plant_inputs(I))  # подлог после шума (как plant_frame(perturb_frame(A)))
+        o1, _, _ = run_one(design, self.ctx['look1'], plant_inputs(perturb_inputs(I, self.mid[0], self.seeds[self.mid[0]])))
+        dl = _maxdl(o0, o1, self.mid[0])
+        rows.append(dict(test='podlog look1', max_dln_do=dl, ok=bool(trivial or dl > 0)))
+        _, m0, _ = run_one(design, self.ctx['noemb_0'], I)
+        _, m1, _ = run_one(design, self.ctx['noemb'], perturb_inputs(I, self.ye, self.seeds[self.ye]))
+        caught = fingerprint(m0, st) != fingerprint(m1, st)
+        rows.append(dict(test='podlog noemb', max_dln_do=float(caught), ok=bool(trivial or caught)))
+        return base, rows
+
+    def check_struct(self, design, I, name):
+        def build(A):
+            out, _, la = run_one(design, Ctx(A, self.harj, self.steps), I)
+            return {f'{name}_val': out, f'{name}_all': la}
+        R = C.leak_check(build, self.A, f'M:{name}', cuts=tuple(self.mid) + (self.ye,))
+        base, _, _ = run_one(design, self.ctx['base'], I)
+        rows = [dict(test=f'core {r["srez"]} {r["ryad"]}', max_dln_do=r['max_dln_do'], max_dln_posle=r['max_dln_posle'],
+                     podlog=r.get('podlog_max_dln_do', np.nan), ok=bool(r['ok'])) for r in R.to_dict('records')]
+        # noemb: без эмбарго граница года должна «протечь» (детектор видит)
+        nb = lambda A: run_one(design, Ctx(A, self.harj, self.steps, plant='noemb'), I)[2]
+        a0, a1 = nb(self.A), nb(C.perturb_frame(self.A, self.ye, self.seeds[self.ye]))
+        on = ['date', 'ticker', 'step', 'part']
+        m = a0.merge(a1, on=on, suffixes=('', '_p'))
+        kmax = pd.Timestamp(self.ye).year - 2015 + 1
+        m = m[(m.date <= pd.Timestamp(self.ye)) & (m.step <= kmax)]
+        dl = float(np.abs(np.log(m.rv_pred) - np.log(m.rv_pred_p)).max())
+        rows.append(dict(test='podlog noemb', max_dln_do=dl, ok=bool(dl > 0)))
         return base, rows
 
 
-# ================================================================ запись
-def write_series(df, path, extra=None):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    df = df.sort_values(['step', 'date', 'ticker']).reset_index(drop=True)[COLS]
-    assert df['year'].max() <= 2021
-    df.to_parquet(path, index=False)
-    return sha_file(path)
+# ================================================================ параметры по шагам (единый формат для D)
+NODES = ('RV5', 'RV22', 'RV1', 'RV2_5', 'RV6_22')
+PNAMES = {  # имя массива meta -> имена элементов (иначе — имя[i])
+    'persist_OLS': ('rho', None, 'n_hist'), 'persist_qlike': ('rho', None, 'n_hist'),
+    'persist_pos_neg': ('rho_pos', 'rho_neg', 'n_hist'), 'persist_sqrtRQ': ('rho0', 'rho_q', 'n_hist'),
+    'mint_w': tuple(f'mint_w_{n}' for n in NODES), 'mint_n': ('mint_n_hist',), 'ar1_phi': ('tau_ar1_phi',),
+    'tau_boost': ('tau_boost_n_train', 'tau_boost_mean_lntau'),
+}
 
 
-def write_meta(meta, path):
-    rows = [dict(step=s, name=nm, values=json.dumps([float(x) for x in np.ravel(v)])) for s in sorted(meta) for nm, v in sorted(meta[s].items())]
-    pd.DataFrame(rows).to_csv(path, index=False)
+def params_rows(design_sha, h, seed, meta):
+    """meta {шаг: {имя: массив}} -> строки design_sha, h, step, param, value (+ seed: ρ и Σ зависят от seed входных рядов)."""
+    rows = []
+    for s in sorted(meta):
+        for nm, v in sorted(meta[s].items()):
+            v = np.ravel(np.asarray(v, dtype='float64'))
+            names = PNAMES.get(nm)
+            if nm == 'mint_sigma':
+                k = int(round(np.sqrt(len(v))))
+                names = tuple(f'mint_sigma_{NODES[i]}_{NODES[j]}' for i in range(k) for j in range(k))
+            elif nm == 'midas':
+                names = ('tau_midas_omega',) + tuple(f'g_coef[{i}]' for i in range(len(v) - 1))
+            for i, x in enumerate(v):
+                p = names[i] if names and i < len(names) else f'{nm}[{i}]'
+                if p is not None:
+                    rows.append(dict(design_sha=design_sha, h=int(h), step=int(s), param=p, value=float(x), seed=seed))
+    return rows
 
 
-def index_row(f, ryad, h, seed, steps, rows, sha, dh, note):
-    return dict(fayl=str(Path(f).relative_to(REG)) if str(f).startswith(str(REG)) else str(f), ryad=ryad, h=h, seed=seed,
-                shagi=f'{min(steps)}-{max(steps)}', stroki=rows, sha256=sha, sha_koda=sha_file(__file__)[:16],
-                yaml=f'{YAML.relative_to(REPO)}@{sha_file(YAML)[:16]}', sha_design=dh[:16], git=git_head(), vremya=now(), primechanie=note)
+def write_params(design, h, seed, meta, path):
+    """R2/cache/<hash>/params.csv: свои строки (h, seed) заменяются; запись под flock + os.replace (несколько seed одного дизайна в пуле)."""
+    import fcntl
+    new = pd.DataFrame(params_rows(C.design_hash(design)[:16], h, seed, meta),
+                       columns=['design_sha', 'h', 'step', 'param', 'value', 'seed'])
+    with open(str(path) + '.lock', 'a') as lk:
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        old = pd.read_csv(path) if path.exists() else new.iloc[:0]
+        old = old[~((old.h == int(h)) & (old.seed.astype(str) == str(seed)))]
+        tmp = path.with_name(f'.params.{os.getpid()}.tmp')
+        pd.concat([old, new], ignore_index=True).sort_values(['h', 'seed', 'step', 'param']).to_csv(tmp, index=False)
+        os.replace(tmp, path)
+        fcntl.flock(lk, fcntl.LOCK_UN)
 
 
-def append_csv(rows, path):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    df = pd.DataFrame(rows)
-    df.to_csv(path, mode='a', header=not path.exists(), index=False)
+# ================================================================ run_phase ядра
+def phase_fn(design, seed, steps):
+    """fn для r2_core.run_phase: SHARED['A'], SHARED['harj'] (load_d0 до пула), SHARED['M_inputs'] — {h: {вход: путь}} (необязательно)."""
+    S = C.SHARED
+    h = int(design['h'])
+    ctx = Ctx(S['A'], S['harj'], steps)
+    I, files = default_inputs(h, seed, None, steps, (S.get('M_inputs') or {}).get(h))
+    out, meta, la = run_one(design, ctx, I)
+    res = {'M': out}
+    if la is not None:
+        C.write_series(design, 'M', la, h, seed, part='lnall', module=MODULE, root=S.get('M_root'))
+    cd = C.cache_dir(design, root=S.get('M_root'))
+    write_params(design, h, seed, meta, cd / 'params.csv')
+    pd.DataFrame([dict(vhod=k, fayl=str(Path(p).relative_to(REG)), sha256=C.sha_file(p)) for k, p in sorted(files.items())]).to_csv(
+        cd / f'M_h{h}_s{seed}_vhody.csv', index=False)
+    return res
 
 
 # ================================================================ режимы
 def selftest():
-    # MinT: согласованный вход не меняется; несогласованный — становится согласованным
     rng = np.random.default_rng(1)
     b = rng.uniform(1e-4, 1e-3, (50, 3))
     Y = b @ S_MINT.T
     Si = np.linalg.inv(np.diag([1.0, 2.0, 0.5, 0.7, 1.5]))
-    Dinv = 1.0 / Y
-    Winv = Si[None] * Dinv[:, :, None] * Dinv[:, None, :]
-    M = np.einsum('ki,nkl,lj->nij', S_MINT, Winv, S_MINT)
-    v = np.einsum('ki,nkl,nl->ni', S_MINT, Winv, Y)
-    bt = np.linalg.solve(M, v[..., None])[..., 0]
-    assert np.abs(bt / b - 1).max() < 1e-10, 'MinT меняет согласованный вход'
-    Y2 = Y * rng.uniform(0.8, 1.2, Y.shape)
-    v = np.einsum('ki,nkl,nl->ni', S_MINT, Si[None] / Y2[:, :, None] / Y2[:, None, :], Y2)
-    M = np.einsum('ki,nkl,lj->nij', S_MINT, Si[None] / Y2[:, :, None] / Y2[:, None, :], S_MINT)
-    bt = np.linalg.solve(M, v[..., None])[..., 0]
-    yt = bt @ S_MINT.T
-    assert np.abs(yt[:, 0] - (yt[:, 2] + 4 * yt[:, 3]) / 5).max() < 1e-15 and np.abs(yt[:, 1] - (yt[:, 2] + 4 * yt[:, 3] + 17 * yt[:, 4]) / 22).max() < 1e-15
-    # ρ: OLS и QLIKE восстанавливают подложенный ρ
+
+    def mint(Yh):
+        Wi = Si[None] / Yh[:, :, None] / Yh[:, None, :]
+        M = np.einsum('ki,nkl,lj->nij', S_MINT, Wi, S_MINT)
+        v = np.einsum('ki,nkl,nl->ni', S_MINT, Wi, Yh)
+        return np.linalg.solve(M, v[..., None])[..., 0]
+    assert np.abs(mint(Y) / b - 1).max() < 1e-10, 'MinT меняет согласованный вход'
+    yt = mint(Y * rng.uniform(0.8, 1.2, Y.shape)) @ S_MINT.T
+    assert np.abs(yt[:, 0] - (yt[:, 2] + 4 * yt[:, 3]) / 5).max() < 1e-15
+    assert np.abs(yt[:, 1] - (yt[:, 2] + 4 * yt[:, 3] + 17 * yt[:, 4]) / 22).max() < 1e-15
     r = rng.normal(0, 0.3, 20000)
     lnp = rng.normal(-7, 0.5, 20000)
     y = np.exp(lnp + 0.6 * r + rng.normal(0, 0.4, 20000))
     assert abs(_ols0(r, np.log(y) - lnp)[0] - 0.6) < 0.02
     rq = minimize_scalar(lambda c: _q_profile(y, lnp + c * r), bounds=(RHO_LO, RHO_HI), method='bounded').x
     assert abs(rq - 0.6) < 0.05, rq
-    # веса MIDAS
     for W in (22, 44, 66):
         for om in CFG['struct']['omega_grid']:
             w = _beta_w(W, om)
             assert abs(w.sum() - 1) < 1e-12 and (np.diff(w) <= 1e-15).all()
-    # схема: дополнение, валидация, хэш
-    d = {'design': 'x', 'h': 5, 'mh': {'persist': 'qlike'}}
-    validate_design(d)
-    assert design_hash(d) == design_hash({'design': 'y', 'h': 5, 'mh': {'persist': 'qlike', 'reconcile': 'off'}})
-    assert design_hash(d) != design_hash({'h': 5, 'mh': {'persist': 'OLS'}})
-    for bad in ({'h': 5, 'mh': {'persist': 'xx'}}, {'h': 7}, {'h': 5, 'mh': {'nope': 1}}):
-        try:
-            validate_design(bad)
-            raise AssertionError(f'не поймано: {bad}')
-        except ValueError:
-            pass
     for na in ({'h': 1, 'mh': {'scheme': 'decomp', 'decomp_k': 1}}, {'h': 5, 'mh': {'scheme': 'iterated', 'iterated_k': 10}},
                {'h': 22, 'mh': {'scheme': 'perlead'}}, {'h': 5, 'mh': {'scheme': 'decomp', 'decomp_k': 5}},
-               {'h': 22, 'mh': {'scheme': 'joint_h', 'slope': 'on'}}):
+               {'h': 22, 'mh': {'scheme': 'joint_h', 'slope': 'on'}}, {'h': 5, 'mh': {'decomp_k': 1}}):
         try:
-            check_mh(full_design(na))
+            check_mh(C.validate(na))
             raise AssertionError(f'не поймано: {na}')
         except NotApplicable:
             pass
-    assert check_mh(full_design({'h': 1, 'mh': {'persist': 'qlike', 'reconcile': 'MinT'}})) == set()
-    log('selftest OK (MinT, ρ, MIDAS, схема, применимость)', 'ядро:', 'r2_core' if CORE else 'fallback')
+    for na in ({'h': 5, 'leg': {'struct': 'single'}}, {'h': 5, 'leg': {'struct': 'single', 'struct_split': 'bv_plus_jump', 'tau_window': 44}},
+               {'h': 5, 'leg': {'struct': 'tau_rvi'}, 'mh': {'persist': 'OLS'}}):
+        try:
+            check_struct(C.validate(na))
+            raise AssertionError(f'не поймано: {na}')
+        except NotApplicable:
+            pass
+    assert check_mh(C.validate({'h': 1, 'mh': {'persist': 'qlike', 'reconcile': 'MinT'}})) == set()
+    assert check_mh(C.validate({'h': 22, 'mh': {'persist': 'sqrtRQ', 'reconcile': 'MinT'}})) == {'base_1', 'leg_1', 'base_5'}
+    try:
+        C.validate({'h': 5, 'mh': {'persist': 'xx'}})
+        raise AssertionError('схема не поймала persist=xx')
+    except C.DesignError:
+        pass
+    log('selftest OK: MinT (согласованность), ρ (OLS, QLIKE), веса MIDAS, применимость, схема через r2_core')
 
 
 def control(steps):
     """HAR[1..h] модуля (d0, эмбарго по концу цели) = нога L HARJ_emb_d0_h{h} на 17 тикерах."""
-    ctx = Ctx(None, steps)
+    A, harj = load_A(None)
+    ctx = Ctx(A, harj, steps)
     rows = []
     for h in (1, 5, 22):
-        ref, p = read_series(CFG['inputs_default']['ref'], 42, h, None, steps)
+        ref, _ = read_input(CFG['inputs_default']['ref'], 42, h, None, steps)
         ai = ctx.rows(ref)
-        ln = ctx.at_steps(ctx.har_sub(1, h)[0], ai, ref.step.values)
-        dl = float(np.abs(ln - np.log(ref.rv_pred.values)).max())
+        dl = float(np.abs(ctx.at_steps(ctx.har_sub(1, h)[0], ai, ref.step.values) - np.log(ref.rv_pred.values)).max())
         y = ctx.tgt(1, h)[ai]
         ok = np.isfinite(y)
         dy = float(np.abs(y[ok] / ref.rv_actual.values[ok] - 1).max())
-        rows.append(dict(h=h, rows=len(ref), max_dln=dl, max_rel_target=dy, ok=dl <= CFG['guards']['control']['tol'] and dy < 1e-9))
+        rows.append(dict(h=h, rows=len(ref), max_dln=dl, max_rel_target=dy, ok=bool(dl <= CFG['guards']['control']['tol'] and dy < 1e-9)))
         log(f'контроль h={h}: max|Δ ln| = {dl:.2e}, цель {dy:.2e}', 'OK' if rows[-1]['ok'] else 'ОШИБКА')
     return pd.DataFrame(rows)
 
@@ -931,49 +786,49 @@ def control(steps):
 def dym():
     D = CFG['dym']
     tick, steps, seed = D['tickers'], tuple(D['steps']), int(D['seed'])
-    out = ROOT / CFG['out']['dym']
+    out = C.MAC_ROOT / CFG['out']['dym']
     out.mkdir(parents=True, exist_ok=True)
     selftest()
     ctl = control(steps)
     ctl.to_csv(out / 'kontrol.csv', index=False)
-    bench = LeakBench(tick, steps, seed)
-    summ, leak_rows, sdvig = [], [], []
+    bench = LeakBench(tick, steps)
+    summ, leak_rows, sdvig, par_rows = [], [], [], []
     for h in D['h']:
-        I, files = default_inputs(h, seed, tick, steps)
+        I, _ = default_inputs(h, seed, tick, steps)
         for spec in D['designs']:
             if spec.get('only_h') and h not in spec['only_h']:
                 continue
-            des = {'design': spec['name'], 'h': h, 'seed': seed, **{k: v for k, v in spec.items() if k in ('mh', 'leg')}}
+            nm = spec['name']
+            des = C.validate({'design': nm, 'h': h, 'seed': seed, **{k: v for k, v in spec.items() if k in ('mh', 'leg')}})
             t0 = time.time()
             try:
-                validate_design(des)
-                dfull = full_design(des)
-                (check_struct if is_struct(dfull) else check_mh)(dfull)
+                (check_struct if is_struct(des) else check_mh)(des)
             except NotApplicable as e:
-                summ.append(dict(h=h, design=spec['name'], status='ne_primenim', note=str(e)))
+                summ.append(dict(h=h, design=nm, status='ne_primenim', note=str(e)))
                 continue
-            base, lr = bench.check(des, I)
-            sc = shift_check(base, bench.ctx['base'])
-            sha = write_series(base, out / f'{spec["name"]}_h{h}_s{seed}_val.parquet')
-            ratio = base.merge(I['base'][KEY + ['rv_pred']], on=KEY, suffixes=('', '_in'))
-            rr = np.log(ratio.rv_pred / ratio.rv_pred_in)
-            fict = h == 1 and not is_struct(dfull)
-            summ.append(dict(h=h, design=spec['name'], status='ok', rows=len(base), nan=int(base.rv_pred.isna().sum()),
-                             dln_vs_input_mean=float(rr.mean()), dln_vs_input_sd=float(rr.std()), fiktivnyy=fict,
-                             leak_ok=all(r['ok'] for r in lr), shift_ok=sc['ok'], shift_argmax=sc['argmax'], sec=round(time.time() - t0, 1),
-                             sha_design=design_hash(des)[:16], sha_file=sha[:16]))
-            for r in lr:
-                leak_rows.append(dict(h=h, design=spec['name'], **r))
-            sdvig.append(dict(h=h, design=spec['name'], **sc))
-            log(f'h={h} {spec["name"]}: строк {len(base)}, детектор {"OK" if summ[-1]["leak_ok"] else "ОШИБКА"}, '
+            base, lr = (bench.check_struct(des, I, nm) if is_struct(des) else bench.check_mh(des, I))
+            sc = C.shift_check(base, bench.A, h, f'M:{nm}', des, block_file=out / 'blok_sdvig_dym.csv')
+            base.to_parquet(out / f'{nm}_h{h}_s{seed}_val.parquet', index=False)
+            rr = base.merge(I['base'][KEY + ['rv_pred']], on=KEY, suffixes=('', '_in'))
+            rr = np.log(rr.rv_pred / rr.rv_pred_in)
+            summ.append(dict(h=h, design=nm, status='ok', rows=len(base), dln_vs_base_mean=float(rr.mean()), dln_vs_base_sd=float(rr.std()),
+                             fiktivnyy=bool(h == 1 and not is_struct(des)), leak_ok=all(r['ok'] for r in lr), shift_ok=sc['ok'],
+                             shift_argmax=sc['argmax'], sec=round(time.time() - t0, 1), sha_design=C.design_hash(des)[:16],
+                             slozhnost=C.complexity(des)))
+            leak_rows += [dict(h=h, design=nm, **r) for r in lr]
+            par_rows += [dict(design=nm, **r) for r in params_rows(C.design_hash(des)[:16], h, seed, run_one(des, bench.ctx['base'], I)[1])]
+            sdvig.append(dict(h=h, design=nm, **{k: v for k, v in sc.items() if k.startswith('corr') or k in ('argmax', 'ok', 'n_strok')}))
+            log(f'h={h} {nm}: строк {len(base)}, детектор {"OK" if summ[-1]["leak_ok"] else "ОШИБКА"}, '
                 f'сдвиг argmax={sc["argmax"]} {"OK" if sc["ok"] else "БЛОК"}, {summ[-1]["sec"]} с')
-    pd.DataFrame(summ).to_csv(out / 'dym_summary.csv', index=False)
-    pd.DataFrame(leak_rows).to_csv(out / 'leak.csv', index=False)
-    pd.DataFrame(sdvig).to_csv(out / 'sdvig.csv', index=False)
     S = pd.DataFrame(summ)
+    S.to_csv(out / 'dym_summary.csv', index=False)
+    pd.DataFrame(leak_rows).to_csv(out / 'leak.csv', index=False)
+    pd.DataFrame(par_rows).to_csv(out / 'params.csv', index=False)  # формат D (design_sha, h, step, param, value, seed) + имя дизайна
+    pd.DataFrame(sdvig).to_csv(out / 'sdvig.csv', index=False)
     ok = S[S.status == 'ok']
-    log(f'дым: {len(ok)} контуров, детектор {int(ok.leak_ok.sum())}/{len(ok)}, сдвиг {int((ok.shift_ok == True).sum())}/{len(ok)}, '
+    log(f'дым: контуров {len(ok)}, детектор {int(ok.leak_ok.sum())}/{len(ok)}, сдвиг {int((ok.shift_ok == True).sum())}/{len(ok)}, '
         f'не применимо {int((S.status == "ne_primenim").sum())}, контроль {int(ctl.ok.sum())}/{len(ctl)}')
+    return S
 
 
 def load_designs(p):
@@ -981,48 +836,31 @@ def load_designs(p):
     return Y['designs'] if isinstance(Y, dict) and 'designs' in Y else (Y if isinstance(Y, list) else [Y])
 
 
-def run(designs, steps, seed, tickers=None, inputs_yaml=None):
-    """Боевой счёт (сервер): ряд дизайна -> R2/cache/<sha16>/M_h{h}_s{seed}_val.parquet; сдвиг (блок -> R2/O/blok_sdvig.csv); INDEX_M."""
-    ctx = Ctx(tickers, steps, seed=seed)
-    extra = yaml.safe_load(Path(inputs_yaml).read_text()) if inputs_yaml else {}
-    idx = []
-    for des in load_designs(designs):
-        des = {**des, 'seed': des.get('seed', seed)}
-        validate_design(des)
-        d = full_design(des)
-        h = int(d['h'])
-        (check_struct if is_struct(d) else check_mh)(d)
-        I, files = default_inputs(h, seed, tickers, steps)
-        for k, rel in (extra.get(h, {}) or extra.get(str(h), {}) or {}).items():
-            I[k], files[k] = read_series(rel, seed, h, tickers, steps)
-        dh = design_hash(des)
-        cd = cache_dir(des)
-        if is_struct(d):
-            out, la, meta = struct_leg(d, ctx, I['ref'])
-            la.to_parquet(cd / f'M_h{h}_lnall.parquet', index=False) if cd.mkdir(parents=True, exist_ok=True) is None else None
-        else:
-            out, meta = apply_mh(d, ctx, I)
-        sc = shift_check(out, ctx)
-        f = cd / f'M_h{h}_s{seed}_val.parquet'
-        sha = write_series(out, f)
-        write_meta(meta, cd / f'M_h{h}_s{seed}_meta.csv')
-        (cd / 'design.yaml').write_text(yaml.safe_dump(d, sort_keys=True, allow_unicode=True))
-        if not sc['ok']:
-            append_csv([dict(ryad=f'M:{des.get("design", "")}', h=h, sha_design=dh[:16], **sc, vremya=now())], ROOT / CFG['out']['blok_sdvig'])
-            log(f'БЛОК по сдвигу: {des.get("design")} h={h} argmax={sc["argmax"]} — доклад дирижёру')
-        idx.append(index_row(f, des.get('design', dh[:16]), h, seed, steps, len(out), sha, dh,
-                             ('BLOK_sdvig ' if not sc['ok'] else '') + 'vhody: ' + ', '.join(f'{k}={Path(v).name}' for k, v in sorted(files.items()))))
-        log(f'{des.get("design")} h={h}: {len(out)} строк -> {f.relative_to(ROOT)}')
-    append_csv(idx, ROOT / CFG['out']['index'])
+def run(designs, h, seeds, steps, inputs=None, workers=None, phase='E', root=None, check_gate=True, block_file=None):
+    """Боевой счёт (сервер) через r2_core.run_phase: ворота, кэш, запись, сдвиг, DONE. Дизайны — только применимые.
+    root / check_gate=False / block_file — только для проверки механики вне боевого кэша."""
+    A, harj = load_A(None)
+    C.share(A=A, harj=harj, M_inputs=(yaml.safe_load(Path(inputs).read_text()) if inputs else None), M_root=root)
+    ok = []
+    for d in load_designs(designs):
+        full = C.validate({**d, 'h': h})
+        try:
+            (check_struct if is_struct(full) else check_mh)(full)
+            ok.append(full)
+        except NotApplicable as e:
+            log(f'не применим: {full.get("design")} — {e}')
+    return C.run_phase(phase, h, ok, phase_fn, seeds=tuple(seeds), steps=tuple(steps), workers=workers, module=MODULE, root=root,
+                       block_file=block_file, check_gate=check_gate)
 
 
 def leak_cmd(designs, steps, tickers, seed):
-    bench = LeakBench(tickers, steps, seed)
+    bench = LeakBench(tickers, steps)
     rows = []
-    for des in load_designs(designs):
+    for d in load_designs(designs):
+        des = C.validate({**d, 'seed': seed})
         h = int(des['h'])
         I, _ = default_inputs(h, seed, tickers, steps)
-        _, lr = bench.check({**des, 'seed': seed}, I)
+        _, lr = bench.check_struct(des, I, des['design'] or 'M') if is_struct(des) else bench.check_mh(des, I)
         rows += [dict(design=des.get('design'), h=h, **r) for r in lr]
     R = pd.DataFrame(rows)
     print(R.to_string(index=False))
@@ -1034,9 +872,13 @@ def main():
     ap.add_argument('cmd', choices=['selftest', 'control', 'dym', 'run', 'leak'])
     ap.add_argument('--designs')
     ap.add_argument('--inputs')
+    ap.add_argument('--h', type=int)
+    ap.add_argument('--phase', default='E')
     ap.add_argument('--steps', type=int, nargs='+', default=list(STEPS))
+    ap.add_argument('--seeds', type=int, nargs='+', default=[42])
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--tickers', nargs='+')
+    ap.add_argument('--workers', type=int)
     a = ap.parse_args()
     if a.cmd == 'selftest':
         selftest()
@@ -1045,7 +887,7 @@ def main():
     elif a.cmd == 'dym':
         dym()
     elif a.cmd == 'run':
-        run(a.designs, tuple(a.steps), a.seed, a.tickers, a.inputs)
+        print(run(a.designs, a.h, a.seeds, a.steps, a.inputs, a.workers, a.phase).to_string(index=False))
     elif a.cmd == 'leak':
         leak_cmd(a.designs, tuple(a.steps), a.tickers, a.seed)
 

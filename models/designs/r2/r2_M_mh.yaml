@@ -3,15 +3,15 @@
 # Схема ключей — models/designs/r2/schema_v1.yaml (mh.*, leg.struct*, leg.tau_*). Записан до счёта.
 agent: M
 script: scripts/analysis/r2_mh.py
-root: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading     # данные — общий data/ (на сервере — PHD_ROOT)
-features: data/regen/features_pit_v3.parquet              # читается с фильтром date <= 2021-12-31 (pyarrow filters) + assert
-max_date: '2021-12-31'
+core: scripts/analysis/r2_core.py                         # агент S (PR #162): validate, design_hash, cache_dir, write_series, load_d0,
+                                                          # perturb_frame, plant_frame, shift_check, leak_check, run_phase
+features: "r2_core.load_d0 (features_pit_v3 в версии d0 через r2_nogi.load(d0=True), строки <= 2021)"
 max_step: 6                                               # val шагов 1–6 (2016–2021); шаги 7–10 и тест — только после ворот E
 out:
-  cache: data/regen/R2/cache                              # <sha256[:16]>/M_h{h}_s{seed}_val.parquet (+ _lnall, _meta.csv, design.yaml)
-  index: data/regen/R2/cache/INDEX_M.csv
+  cache: "r2_core.cache_dir: data/regen/R2/cache/<sha256[:16]>/M_h{h}_s{seed}_val.parquet; нога кл. 11 — ещё M_h{h}_s{seed}_lnall.parquet
+          (part tr/va, emb_ok); M_h{h}_s{seed}_meta.csv (ρ, Σ, коэффициенты шагов), M_h{h}_s{seed}_vhody.csv (входы и SHA); индекс — _index/M_*.csv"
   dym: data/regen/R2/M/dym                                # дым на Маке (3 тикера) — не кэш, в выбор не идёт
-  blok_sdvig: data/regen/R2/O/blok_sdvig.csv              # п. 2.6: заблокированные ряды (дописывается)
+  blok_sdvig: data/regen/R2/O/blok_sdvig.csv              # п. 2.6 (r2_core.shift_check); дым — dym/blok_sdvig_dym.csv
 
 # ---- входы по умолчанию (конвейер ядра передаёт ряды своего дизайна через inputs; здесь — для дыма и ручного прогона).
 # Все ряды сырые (без s²): date, ticker, year, step, rv_actual, rv_pred. r̂₁ = ln base_1 − ln leg_1 (Д19).
@@ -69,12 +69,13 @@ struct:
 
 # ---- охрана (кластер 9, п. 2.6) — на каждом новом контуре
 guards:
-  shift_check: {s: [-2, -1, 0, 1], years: [2017, 2021], stat: spearman_median_by_ticker, need_argmax: 0}
-  leak:
-    cuts_mid: ['2017-06-30', '2018-03-31']   # строки <= среза совпадают точно (Δ = 0)
-    cut_year_end: '2016-12-31'               # параметры шагов с vy <= год среза + 1 совпадают точно (эмбарго)
-    noise: [0.5, 2.0]                        # всё числовое после среза (признаки и входные ряды) × U(0,5; 2)
-    plants: [look1, noemb]                   # look1 — регрессоры и входы дня d+1; noemb — без эмбарго: оба должны быть пойманы
+  shift_check: "r2_core.shift_check: Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2, −1, 0, +1}, 2017–2021, медиана по тикерам; argmax ≠ 0 — блок"
+  leak:                                      # срезы — внутри шагов дыма 1–3 (val 2016–2018); на сервере — те же или CUTS ядра
+    cuts_mid: ['2017-06-30', '2018-03-30']   # строки <= среза совпадают точно (Δ = 0)
+    cut_year_end: '2016-12-31'               # эмбарго: параметры шагов с vy <= год среза + 1 совпадают точно
+    noise: [0.5, 2.0]                        # матрица — r2_core.perturb_frame; входные ряды (L, B) после среза × U(0,5; 2)
+    plants: [look1, noemb]                   # look1 — r2_core.plant_frame + входы дня d+1; noemb — без эмбарго: оба должны быть пойманы
+    struct: "ноги кл. 11 — r2_core.leak_check по val и lnall (ряд на всех строках, part tr/va) + подлог noemb"
     tol: 0.0
   control: {tol: 1.0e-7, note: "HAR[1..h] модуля = нога L HARJ_emb_d0_h{h} на шагах дыма, 17 тикеров"}
 
