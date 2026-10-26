@@ -3,9 +3,10 @@
 agent: E
 script: scripts/analysis/r2_ens.py
 schema: models/designs/r2/schema_v1.yaml
-core: scripts/analysis/r2_core.py      # агент S; если модуля нет — локальные хэш, проверка сдвига и детектор r2_ens (↺ в журнале)
-data: data/regen                       # корень; на сервере — переменная окружения R2_DATA
-features: data/regen/features_pit_v3.parquet   # читается фильтром date < 2022-01-01 (assert)
+core: scripts/analysis/r2_core.py      # агент S (PR #162): validate, design_hash, load_d0, train_mask, run_phase, write_series,
+                                       # shift_check, leak_check / perturb_frame / plant_frame
+data: data/regen                       # корень — r2_core.REGEN; переопределение — R2_DATA
+features: "r2_core.load_d0(): features_pit_v3 в версии d0, строки <= 2021"
 steps: [1, 2, 3, 4, 5, 6]              # val 2016–2021; метрики только шагов 2–6 (2017–2021); шаги 7–10 не строятся
 max_year: 2021
 
@@ -75,11 +76,11 @@ inputs:
 
 # ------------------------------------------------------------------ выход
 out:
-  cache: "R2/cache/<sha256[:16]>/E_<вариант>_h{h}_s{seed|ens}_val.parquet (хэш — канонический yaml дизайна, шапка схемы)"
-  index: R2/cache/INDEX_Eens.csv
-  dym: R2/E/dym/                         # дым на Маке (не кэш)
-  sdvig: R2/E/sdvig_E.csv                # проверка сдвига (п. 2.6) по каждому ряду; блок — также R2/O/blok_sdvig.csv
-  leak: R2/E/leak_E.csv
+  cache: "r2_core.run_phase('E', h, [дизайн], r2_ens.fn_E): R2/cache/<sha256[:16]>/E_<вариант>_h{h}_s{seed}_val.parquet, DONE_h{h}_s{seed}"
+  index: "r2_core: R2/cache/_index/E_<хост>_<pid>.csv -> INDEX_R2.csv"
+  sdvig: "r2_core.shift_check по каждому ряду; блок — R2/O/blok_sdvig.csv (дым — R2/E/dym/blok_sdvig_dym.csv)"
+  dym: R2/E/dym/                         # дым на Маке (не боевой кэш; run_phase дыма — R2/E/dym/cache/)
+  leak: R2/E/leak_E.csv                  # --full; дым — R2/E/dym/dym_leak_E.csv
 
 # ------------------------------------------------------------------ дым (Мак) и детектор
 dym:
@@ -87,8 +88,15 @@ dym:
   steps: [1, 2, 3]
   seed: 42
   h: [1, 5, 22]
+  design:                              # дизайн для run_phase дыма (h подставляется по каждому h)
+    design: E_dym
+    h: 5
+    leg: {type: HARX, regressors: S3, moe: k2, moe_gate: logit, moe_calib: isotonic, moe_hard: 'off'}
+    ens: {seeds: 3, agg: median, lib_agg: avg, uncert_shrink: 'on', ec: m5, range_guard: 'on', window_ens: 'on', leg_ens: qlike_shrunk_075}
 leak:
-  cuts_mid: ['2017-06-30', '2018-06-29']
+  cuts_mid: ['2017-06-30', '2018-06-29']   # срезы — в пределах шагов дыма; --full — те же (шаги 1–6)
+  cuts_year_end: ['2017-12-31']
   mult: [0.5, 2.0]
   rng: 20261026
-  rule: "без утечки max|Δ| на строках ≤ среза = 0; подлог (сдвиг на день вперёд / текущий шаг в весах) пойман: max|Δ| > 0"
+  rule: "контуры с переобучением — r2_core.leak_check (perturb_frame / plant_frame); контуры на рядах — свой: Δ ln ŷ на строках ≤ среза = 0,
+         подлог (вход на день вперёд / текущий шаг в весах, κ, стеке, границах) пойман: max|Δ| > 0"

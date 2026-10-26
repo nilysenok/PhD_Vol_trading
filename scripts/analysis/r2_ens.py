@@ -20,14 +20,19 @@
 Обвязка на каждом контуре: проверка сдвига (п. 2.6: Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2..+1}, 2017–2021, медиана по тикерам,
 argmax ≠ 0 — блок) и детектор утечек (как Д26: возмущение всего после среза; Δ на строках <= среза = 0; подлог пойман).
 
+Ядро — r2_core.py (агент S): validate / design_hash / get (схема и хэш), load_d0 / train_mask (d0, эмбарго), write_series / run_phase
+(кэш, пул, DONE), shift_check (п. 2.6, блок в R2/O/blok_sdvig.csv), leak_check / perturb_frame / plant_frame (детектор контуров
+с переобучением). Детектор контуров уровня итога (на рядах) — свой: ядро возмущает матрицу, а эти контуры читают готовые ряды.
+Функция фазы для r2_core.run_phase — fn_E(design, seed, steps) (данные — r2_core.SHARED: E_M, по желанию E_inputs, E_tickers).
+
 python3 scripts/analysis/r2_ens.py selftest
-python3 scripts/analysis/r2_ens.py dym                        # Мак: 3 тикера × шаги 1–3 × seed 42 × h 1, 5, 22
+python3 scripts/analysis/r2_ens.py dym                        # Мак: 3 тикера × шаги 1–3 × seed 42 × h 1, 5, 22 (+ run_phase дыма)
 python3 scripts/analysis/r2_ens.py leak [--h 1 5 22] [--full] # детектор (по умолчанию — объём дыма)
-python3 scripts/analysis/r2_ens.py run --design <yaml> --h 5  # сервер: дизайн → кэш по хэшу (входы — ядро S или inputs yaml)"""
+python3 scripts/analysis/r2_ens.py run --design <yaml> [--h 5] [--dym]   # сервер: дизайн → r2_core.run_phase('E', …) → кэш"""
 import os
 for _k in ('OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'VECLIB_MAXIMUM_THREADS'):
     os.environ.setdefault(_k, '1')
-import argparse, hashlib, subprocess, sys, time, warnings
+import argparse, subprocess, sys, time, warnings
 from pathlib import Path
 import numpy as np, pandas as pd, yaml
 from sklearn.linear_model import LinearRegression
@@ -36,24 +41,10 @@ warnings.filterwarnings('ignore')
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
+import r2_core as C  # noqa: E402  ядро агента S
+
 CFG = yaml.safe_load((REPO / 'models' / 'designs' / 'r2' / 'r2_E_ens.yaml').read_text())
-SCHEMA = yaml.safe_load((REPO / 'models' / 'designs' / 'r2' / 'schema_v1.yaml').read_text())
-try:  # ядро агента S (если уже есть): канонический хэш берётся оттуда
-    import r2_core as CORE  # noqa: F401
-except Exception:  # noqa: BLE001
-    CORE = None
-
-
-def _root():
-    if os.environ.get('R2_DATA'):
-        return Path(os.environ['R2_DATA'])
-    for p in (REPO / 'data' / 'regen', Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen')):
-        if (p / 'features_pit_v3.parquet').exists() and (p / 'R2').exists():  # в worktree data/regen — неполная копия
-            return p
-    return REPO / 'data' / 'regen'
-
-
-R = _root()
+R = Path(os.environ['R2_DATA']) if os.environ.get('R2_DATA') else C.REGEN
 OUT = R / 'R2' / 'E'
 MAXY = int(CFG['max_year'])
 MAXSTEP = MAXY - 2015
@@ -86,77 +77,32 @@ def q_years(df, lo=2017, hi=MAXY):
 
 
 # ================================================================ схема и хэш
-def _num(x):
-    if isinstance(x, bool) or x is None:
-        return x
-    if isinstance(x, (int, np.integer)):
-        return str(int(x))
-    if isinstance(x, (float, np.floating)):
-        return 'inf' if np.isinf(x) else np.format_float_positional(float(x), trim='-')
-    if isinstance(x, dict):
-        return {str(k): _num(v) for k, v in x.items()}
-    if isinstance(x, (list, tuple)):
-        return [_num(v) for v in x]
-    return x
-
-
-def _defaults(node):
-    out = {}
-    for k, s in node.items():
-        if k in ('schema', 'design', 'h') or not isinstance(s, dict):
-            continue
-        if 'default' in s:
-            out[k] = s['default']
-        elif s.get('fixed') and 'values' in s:
-            out[k] = s['values'][0]
-        elif s.get('fixed'):
-            out[k] = {a: b for a, b in s.items() if a not in ('fixed', 'note')}
-        elif 'values' not in s:
-            out[k] = _defaults(s)
-    return out
-
-
-def _merge(a, b):
-    o = dict(a)
-    for k, v in b.items():
-        o[k] = _merge(o[k], v) if isinstance(v, dict) and isinstance(o.get(k), dict) else v
-    return o
+MOE_KEYS = ('moe', 'moe_gate', 'moe_calib', 'moe_hard')
+ENS_KEYS = tuple(p[1] for p in C.load_schema().leaves if p[0] == 'ens')
 
 
 def canon_hash(design):
-    """SHA-256 канонического yaml (шапка схемы v1): дополнение default, сортировка ключей, числа — десятичные строки, `schema: v1`,
-    поле design не входит. Если ядро S даёт canon_hash — берётся оно."""
-    if CORE is not None and hasattr(CORE, 'canon_hash'):
-        return CORE.canon_hash(design)
-    d = _merge(_defaults(SCHEMA), {k: v for k, v in design.items() if k != 'design'})
-    d['schema'] = 'v1'
-    txt = yaml.safe_dump(_num(d), sort_keys=True, allow_unicode=True, default_flow_style=False)
-    return hashlib.sha256(txt.encode()).hexdigest()
-
-
-MOE_KEYS = ('moe', 'moe_gate', 'moe_calib', 'moe_hard')
+    """SHA-256 канонического yaml — r2_core.design_hash (единое правило с O)."""
+    return C.design_hash(design)
 
 
 def onoff(v):
-    """PyYAML (YAML 1.1) читает off/on как False/True — и в схеме, и в дизайне; приводится к строкам 'off'/'on'."""
+    """Схема читается YAML 1.1: off/on — False/True; r2_core.validate нормализует дизайн так же. Для модуля — строки 'off'/'on'."""
     return {False: 'off', True: 'on'}.get(v, v) if isinstance(v, bool) else v
 
 
 def ens_cfg(design):
-    """Ключи ens.* и leg.moe* дизайна с default схемы; значение вне списка — ошибка до счёта. λ = 0 (веса без усадки) — ошибка."""
-    e, lg = dict(design.get('ens') or {}), dict(design.get('leg') or {})
-    bad = set(e) - set(SCHEMA['ens'])
-    if bad:
-        raise ValueError(f'неизвестные ключи ens: {sorted(bad)}')
-    out = {}
-    for src, keys, sch in ((e, SCHEMA['ens'].keys(), SCHEMA['ens']), (lg, MOE_KEYS, SCHEMA['leg'])):
-        for k in keys:
-            v = onoff(src.get(k, sch[k]['default']))
-            if v not in [onoff(x) for x in sch[k]['values']]:
-                raise ValueError(f'{k} = {v!r} вне {sch[k]["values"]}')
-            out[k] = v
+    """r2_core.validate (неизвестный ключ, значение вне списка — DesignError до счёта) -> ключи ens.* и leg.moe*.
+    Скаляр-сетка (ключ списком) у ens.* / leg.moe* не поддерживается — выбор внутри складки здесь только по вариантам (tau, lib).
+    λ = 0 (веса без усадки) — ошибка."""
+    full = C.validate(design)
+    out = {k: onoff(C.get(full, f'ens.{k}')) for k in ENS_KEYS}
+    out.update({k: onoff(C.get(full, f'leg.{k}')) for k in MOE_KEYS})
+    for k, v in out.items():
+        if isinstance(v, list):
+            raise C.DesignError(f'{k}: сетка внутри складки для ключей E не предусмотрена')
     if out['leg_ens'].startswith('qlike_shrunk') and LAM.get(out['leg_ens'], 0) <= 0:
-        raise ValueError('веса без усадки запрещены')
+        raise C.DesignError('веса без усадки запрещены')
     return out
 
 
@@ -183,46 +129,32 @@ def inp(name, h, seed=42, lib=None, **kw):
     return read_val(R / s.format(h=h, seed=seed), **kw)
 
 
-def load_raw():
-    a = pd.read_parquet(R / 'features_pit_v3.parquet', filters=[('date', '<', pd.Timestamp(f'{MAXY + 1}-01-01'))])
-    assert pd.to_datetime(a.date).dt.year.max() <= MAXY
-    return a
+def load_d0():
+    """r2_core.load_d0: матрица d0 (rv_d = RV дня d), строки <= 2021, _tend{h}; проверка info_set = d."""
+    A, harj = C.load_d0()
+    C.check_d0(A)
+    assert A.date.dt.year.max() <= MAXY
+    return A, harj
 
 
-def prep(raw, plant=False):
-    """Матрица d0 (как r2_nogi.load(d0=True), без чтения >= 2022): rv_d = RV_d, rv_w/rv_m — окна по d; цели h=5/22 — средние;
-    слагаемые HAR-X (harx.TERMS, без ln_sig1); _fd{h} — дата строки t+h тикера. plant — rv_d := значение строки d+1 (подлог)."""
+def prep(A, harj):
+    """Матрица модуля: A (d0, возможно возмущённая/с подлогом ядра) + слагаемые HAR-X (harx.TERMS, без ln_sig1) + ln HAR-J."""
     import harx as HX
-    A = raw.sort_values('date').reset_index(drop=True).copy()
+    A = A.copy()
     A['date'] = pd.to_datetime(A.date)
     A['year'] = A.date.dt.year
-    for h in (5, 22):
-        A[f'rv_target_h{h}'] = A[f'rv_target_mean_h{h}']
-    jump = [c for c in A.columns if 'jump' in c.lower() and 'target' not in c.lower() and 'idx_' not in c.lower()]
-    harj = [f for f in ['rv_d', 'rv_w', 'rv_m'] + [c for c in jump if c not in ('rv_d', 'rv_w', 'rv_m')] if f in A.columns]
-    rvp = A['rv'].where(A['rv'] > 0).groupby(A['ticker']).ffill().fillna(A['rv'])
-    gp = rvp.groupby(A['ticker'])
-    A['rv_d'] = rvp
-    A['rv_w'] = gp.transform(lambda s: s.rolling(5, min_periods=1).mean())
-    A['rv_m'] = gp.transform(lambda s: s.rolling(22, min_periods=1).mean())
-    if plant:
-        A['rv_d'] = A.groupby('ticker')['rv_d'].shift(-1).fillna(A['rv_d'])
-    g = A.groupby('ticker')
-    for h in (1, 5, 22):
-        A[f'_fd{h}'] = g['date'].shift(-h)
-    HX._SIG.clear()
-    names = sorted(set(sum(SMAP.values(), [])))
-    X = HX.build_terms(A, names)
+    HX._SIG.clear(); HX.GH_HARJ = harj
+    X = HX.build_terms(A, sorted(set(sum(SMAP.values(), []))))
     H = np.nan_to_num(np.log(A[harj].values.clip(1e-10)), nan=0, posinf=0, neginf=0)
     return dict(A=A, harj=harj, X=X, H=H)
 
 
 def trmask(M, h, vy, plant=False):
+    """r2_core.train_mask (эмбарго h); plant — подлог «обучение видит val-год» (для детектора контуров на рядах)."""
     A = M['A']
-    m = (A.year.values < vy) & A[f'rv_target_h{h}'].notna().values
     if plant:
-        return m | ((A.year.values == vy) & A[f'rv_target_h{h}'].notna().values)
-    return m & (A[f'_fd{h}'].values < np.datetime64(f'{vy}-01-01'))
+        return (A.year.values <= vy) & A[f'rv_target_h{h}'].notna().values
+    return C.train_mask(A, h, vy)
 
 
 def leg_terms(design, h):
@@ -346,7 +278,7 @@ def moe(M, h, terms, mode, gate='logit', calib='none', hard='off', seed=42, step
         if hard != 'off':
             j = Pc.argmax(1); top = Pc.max(1) >= float(hard)
             pred = np.where(top, lv[np.arange(len(lv)), j], pred)
-        past.append(pd.DataFrame({**{f'p{r}': P[va, r] for r in range(nk)}, 'lab': lab[va], 'fd': A[f'_fd{h}'].values[va]}))
+        past.append(pd.DataFrame({**{f'p{r}': P[va, r] for r in range(nk)}, 'lab': lab[va], 'fd': pd.to_datetime(A[f'_tend{h}']).values[va]}))
         V.append(_val(M, h, k, pred, tickers))
         info.append(dict(step=k, year=vy, cuts=';'.join(f'{c:.4f}' for c in cuts), auc_raw=_auc(lab[va], P[va], nk),
                          auc_calib=_auc(lab[va], Pc[va], nk), dolya_hard=float((Pc[va].max(1) >= float(hard)).mean()) if hard != 'off' else 0.0))
@@ -528,25 +460,11 @@ def leg_level(cfg, design, h, M, legs=(), seed=42, steps=STEPS, tickers=None):
 
 
 # ================================================================ проверка сдвига (п. 2.6)
-def rv_daily(M):
-    A = M['A'].sort_values(['ticker', 'date'])
-    return A[['date', 'ticker', 'rv_d']].rename(columns={'rv_d': 'rv'}).reset_index(drop=True)
-
-
-def shift_check(df, rvd, name, h, lo=2017, hi=MAXY):
-    """Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2, −1, 0, +1}, по тикерам на годах lo..hi, медиана по тикерам; argmax ≠ 0 — блок."""
-    r = rvd.copy(); g = r.groupby('ticker')['rv']
-    for s in (-2, -1, 0, 1):
-        r[f'rv{s:+d}'] = g.shift(-s)
-    d = df[(df.year >= lo) & (df.year <= hi)][K + ['rv_pred']].merge(r, on=K)
-    rows = {}
-    for s in (-2, -1, 0, 1):
-        c = f'rv{s:+d}'
-        v = [x[['rv_pred', c]].apply(lambda z: np.log(np.clip(z, 1e-12, None))).corr(method='spearman').iloc[0, 1]
-             for _, x in d.dropna(subset=[c]).groupby('ticker')]
-        rows[s] = float(np.nanmedian(v)) if v else np.nan
-    am = max(rows, key=lambda s: -np.inf if np.isnan(rows[s]) else rows[s])
-    return dict(ryad=name, h=h, **{f'rho_{s:+d}': rows[s] for s in rows}, argmax=am, blok=bool(am != 0), vremya=now())
+def sdvig(df, M, h, name, design=None, block_file=None):
+    """r2_core.shift_check (п. 2.6) на матрице d0; блок — строка в block_file (по умолчанию R2/O/blok_sdvig.csv)."""
+    r = C.shift_check(df, M['A'], h, name, design, block_file=block_file)
+    r['blok'] = not r['ok']
+    return r
 
 
 # ================================================================ детектор утечек
@@ -566,19 +484,6 @@ def perturb_series(df, cut, h, rng, tm=None):
     o.loc[aft, 'rv_pred'] = o.rv_pred.values[aft] * rng.uniform(0.5, 2.0, aft.sum())
     o.loc[tgt, 'rv_actual'] = o.rv_actual.values[tgt] * m[tgt]
     return o
-
-
-def perturb_raw(raw, cut, rng):
-    """Как r2_nogi._perturb: числовые столбцы строк > среза и цели строк <= среза, чей горизонт заходит за срез, × U(0,5; 2)."""
-    B = raw.copy(); dt = pd.to_datetime(B.date)
-    fut = (dt > cut).values
-    num = [c for c in B.columns if c != 'year' and pd.api.types.is_float_dtype(B[c])]
-    B.loc[fut, num] = B.loc[fut, num].values * rng.uniform(0.5, 2.0, size=(fut.sum(), len(num)))
-    past = B.assign(_dt=dt).sort_values(['ticker', '_dt']).loc[lambda d: d._dt <= cut]
-    for c in [c for c in num if 'target' in c]:
-        ix = past.groupby('ticker').tail(int(c.split('_h')[-1])).index
-        B.loc[ix, c] = B.loc[ix, c].values * rng.uniform(0.5, 2.0, size=len(ix))
-    return B
 
 
 def _dd(a, b, cut):
@@ -624,38 +529,24 @@ def leak_posthoc(h, comps, leg, src1, M, Mp, cut, rng):
     return rows
 
 
-def leak_refit(h, raw, cut, rng, design, steps, tickers):
-    """Контуры уровня ноги (переобучение): матрица возмущается после среза; подлог — rv_d дня d+1."""
-    rawp = perturb_raw(raw, cut, rng)
-    M, Mp = prep(raw), prep(rawp)
-    Mpl, Mplp = prep(raw, plant=True), prep(rawp, plant=True)
-    terms = leg_terms(design, h); kmax = cut.year - 2015
-    st = [k for k in steps if k <= kmax]
-    T = {'window_ens': lambda MM: window_ens(MM, h, terms, st, tickers)[0],
-         'ticker_bag': lambda MM: ticker_bag(MM, h, terms, st, tickers)[0],
-         'moe_k2_logit_iso': lambda MM: moe(MM, h, terms, 'k2', 'logit', 'isotonic', 'off', 42, st, tickers)[0],
-         'moe_k3_boost_hard': lambda MM: moe(MM, h, terms, 'k3', 'boost', 'none', 0.7, 42, st, tickers)[0]}
-    rows = []
-    for nm, f in T.items():
-        d0, f0 = _dd(f(M), f(Mp), cut); d1, _ = _dd(f(Mpl), f(Mplp), cut)
-        rows.append(dict(h=h, kontur=nm, srez=str(cut.date()), max_d_do_sreza=d0, max_d_posle=f0, podlog_max_d_do_sreza=d1,
-                         ok=bool(d0 == 0.0 and d1 > 0)))
-    return rows, M
+def leak_refit(h, A, harj, cuts, design, steps, tickers, seed):
+    """Контуры уровня ноги (переобучение) — r2_core.leak_check: perturb_frame после среза, подлог plant_frame («вход d := d+1»)."""
+    terms = leg_terms(design, h)
+
+    def build(AA):
+        MM = prep(AA, harj)
+        return {'window_ens': window_ens(MM, h, terms, steps, tickers)[0],
+                'ticker_bag': ticker_bag(MM, h, terms, steps, tickers)[0],
+                'moe_k2_logit_iso': moe(MM, h, terms, 'k2', 'logit', 'isotonic', 'off', 42, steps, tickers)[0],
+                'moe_k3_boost_hard': moe(MM, h, terms, 'k3', 'boost', 'none', 0.7, 42, steps, tickers)[0]}
+    L = C.leak_check(build, A, f'E_h{h}', cuts=cuts, seed=seed)
+    return [dict(h=h, kontur=r.ryad, srez=r.srez, max_d_do_sreza=r.max_dln_do, max_d_posle=r.max_dln_posle,
+                 podlog_max_d_do_sreza=r.get('podlog_max_dln_do', np.nan), ok=bool(r.ok)) for _, r in L.iterrows()]
 
 
 # ================================================================ дым и входы дыма
 DYM_DESIGN = {1: {'leg': {'type': 'HARX', 'regressors': 'S4'}}, 5: {'leg': {'type': 'HARX', 'regressors': 'S3'}},
               22: {'leg': {'type': 'HARJ'}}}
-
-
-def dym_inputs(h, tickers, steps, seed):
-    kw = dict(tickers=tickers, steps=steps)
-    hyb = {('xgboost', seed): inp('F_d0', h, seed, **kw)}
-    if h == 5:
-        hyb = {(lb, seed): inp('boost_h5', h, seed, lb, **kw) for lb in ('xgboost', 'lightgbm')}
-    legs = [inp(n, h, **kw) for n in ('leg_HARJ', 'leg_HEAVY', 'leg_HARX')]
-    src1 = inp('F_d0', 1, seed, **kw) if h != 1 else None
-    return hyb, legs, src1
 
 
 VARIANTS = [  # (имя, отличие от default) — по одному ключу, плюс сочетания для h = 5 (две lib)
@@ -671,112 +562,135 @@ LEG_VARIANTS = [('window_ens', {'window_ens': 'on'}), ('ticker_bag', {'ticker_ba
 
 
 def _cfg(diff, h):
-    d = dict(DYM_DESIGN[h]); d['ens'] = {k: v for k, v in diff.items() if k in SCHEMA['ens']}
+    d = dict(DYM_DESIGN[h]); d['h'] = h
+    e = {k: v for k, v in diff.items() if k in ENS_KEYS}
+    if e:  # пустой словарь r2_core.validate считает листом «ens»
+        d['ens'] = e
     d['leg'] = dict(d['leg'], **{k: v for k, v in diff.items() if k in MOE_KEYS})
     return d, ens_cfg(d)
+
+
+def fname(nm):
+    return nm.replace('|', '_').replace('=', '-')
+
+
+def fn_E(design, seed, steps):
+    """Функция фазы для r2_core.run_phase: полный дизайн -> {ряд: DataFrame}. Данные — r2_core.SHARED: E_M (prep), E_tickers (дым);
+    E_inputs(design, h, seeds, steps, tickers) -> (hyb {(lib, seed): ряд}, legs [ряды], src1 ряд h=1) — от ядра/оркестрации;
+    без него — inputs r2_E_ens.yaml (ряды R2/cache до кэша по хэшу)."""
+    cfg = ens_cfg(design); h = int(design['h']); M = C.SHARED['E_M']; tk = C.SHARED.get('E_tickers')
+    seeds = SEEDS[int(cfg['seeds'])]
+    if C.SHARED.get('E_seeds_only'):
+        seeds = [s for s in seeds if s in C.SHARED['E_seeds_only']]
+    getter = C.SHARED.get('E_inputs') or yaml_inputs
+    hyb, legs, src1 = getter(design, h, seeds, list(steps), tk)
+    lref = legs[2] if h != 22 else legs[0]
+    res = {f'E_{fname(k)}': v for k, v in post(cfg, h, hyb, lref, legs, src1, M).items()}
+    res.update({f'E_{fname(k)}': v[0] for k, v in leg_level(cfg, design, h, M, legs, int(seed), list(steps), tk).items()})
+    return res
+
+
+def yaml_inputs(design, h, seeds, steps, tickers):
+    """Входы по inputs r2_E_ens.yaml: гибрид — F_d0 (h = 1, 22) или F5_D12_h5 xgb + lgbm (h = 5); ноги L — HARJ, HEAVY, HARX_ols."""
+    kw = dict(tickers=tickers, steps=steps)
+    hyb = {}
+    for s in seeds:
+        hyb.update({(lb, s): inp('boost_h5', h, s, lb, **kw) for lb in ('xgboost', 'lightgbm')} if h == 5 else
+                   {('xgboost', s): inp('F_d0', h, s, **kw)})
+    legs = [inp(n, h, **kw) for n in ('leg_HARJ', 'leg_HEAVY', 'leg_HARX')]
+    src1 = inp('F_d0', 1, seeds[0], **kw) if h != 1 else hyb[sorted(hyb)[0]]
+    return hyb, legs, src1
 
 
 def dym():
     c = CFG['dym']; tk, st, seed = list(c['tickers']), list(c['steps']), int(c['seed'])
     od = OUT / 'dym'; od.mkdir(parents=True, exist_ok=True)
-    t0 = time.time(); raw = load_raw(); M = prep(raw); rvd = rv_daily(M)
+    blk = od / 'blok_sdvig_dym.csv'
+    t0 = time.time(); A, harj = load_d0(); M = prep(A, harj)
     Q, SD, AUC = [], [], []
 
-    def rec(h, name, df, ref, hsh):
-        df.to_parquet(od / f'{name.replace("|", "_").replace("=", "-")}_h{h}_s{seed}_val.parquet', index=False)
+    def rec(h, name, df, ref, design):
+        df.to_parquet(od / f'{fname(name)}_h{h}_s{seed}_val.parquet', index=False)
         qy, qr = q_years(df), q_years(ref)
-        Q.append(dict(h=h, ryad=name, hash=hsh[:16], n=len(df), **{f'q{y}': qy.get(y) for y in sorted(qy)},
+        Q.append(dict(h=h, ryad=name, hash=canon_hash(design)[:16], n=len(df), **{f'q{y}': qy.get(y) for y in sorted(qy)},
                       **{f'otn{y}': qy[y] / qr[y] for y in sorted(qy) if y in qr}))
-        SD.append(shift_check(df, rvd, name, h))
+        SD.append(sdvig(df, M, h, name, design, blk))
 
     for h in CFG['dym']['h']:
-        hyb, legs, src1 = dym_inputs(h, tk, st, seed)
-        if h == 1:
-            src1 = list(hyb.values())[0]
+        hyb, legs, src1 = yaml_inputs(None, h, [seed], st, tk)
         ref = agg(list(hyb.values()))
         for nm, diff in VARIANTS:
             d, cfg = _cfg(diff, h)
             for vn, df in post(cfg, h, hyb, leg=legs[2] if h != 22 else legs[0], legs=legs, src1=src1, M=M).items():
-                rec(h, f'{nm}|{vn}' if vn != 'ens' else nm, df, ref, canon_hash(d))
+                rec(h, f'{nm}|{vn}' if vn != 'ens' else nm, df, ref, d)
         lref = legs[2] if h != 22 else legs[0]
         for nm, diff in LEG_VARIANTS:
             d, cfg = _cfg(diff, h)
             for vn, (df, tab) in leg_level(cfg, d, h, M, legs, seed, st, tk).items():
-                rec(h, nm, df, lref, canon_hash(d))
+                rec(h, nm, df, lref, d)
                 if vn.startswith('moe') and tab is not None:
                     AUC.append(tab.assign(h=h, ryad=nm))
         print(f'h={h} готов, {time.time() - t0:.0f} с', flush=True)
-    Q = pd.DataFrame(Q); S = pd.DataFrame(SD); A = pd.concat(AUC, ignore_index=True)
-    Q.to_csv(od / 'dym_qlike.csv', index=False); S.to_csv(od / 'dym_sdvig.csv', index=False); A.to_csv(od / 'dym_moe_auc.csv', index=False)
-    print(Q.round(4).to_string()); print(S.round(3).to_string()); print(A.round(3).to_string())
-    L = leak(hs=CFG['dym']['h'], full=False, raw=raw)
-    ok = bool(L.ok.all()) and not S.blok.any()
-    print(f'дым: рядов {len(Q)}, блок сдвига {int(S.blok.sum())}, детектор {"OK" if L.ok.all() else "ОШИБКА"}, {time.time() - t0:.0f} с')
+    Q = pd.DataFrame(Q); S = pd.DataFrame(SD); AU = pd.concat(AUC, ignore_index=True)
+    Q.to_csv(od / 'dym_qlike.csv', index=False); S.to_csv(od / 'dym_sdvig.csv', index=False); AU.to_csv(od / 'dym_moe_auc.csv', index=False)
+    print(Q.round(4).to_string()); print(S.round(3).to_string()); print(AU.round(3).to_string())
+    P = run(CFG['dym']['design'], hs=CFG['dym']['h'], dym_scope=True, A=A, harj=harj, M=M)  # r2_core.run_phase на дыме
+    L = leak(hs=CFG['dym']['h'], full=False, A=A, harj=harj)
+    ok = bool(L.ok.all()) and not S.blok.any() and bool(P.sdvig_ok.all()) and 'ОШИБКА' not in set(P.ryad)
+    print(f'дым: рядов {len(Q)} + run_phase {len(P)}, блок сдвига {int(S.blok.sum())}, детектор {"OK" if L.ok.all() else "ОШИБКА"}, '
+          f'{time.time() - t0:.0f} с')
     return ok
 
 
-def leak(hs=(1, 5, 22), full=False, raw=None):
+def leak(hs=(1, 5, 22), full=False, A=None, harj=None):
+    """Детектор: контуры с переобучением — r2_core.leak_check; контуры на рядах — свой (возмущение рядов и матрицы после среза)."""
     c = CFG['dym']; lc = CFG['leak']
     tk = None if full else list(c['tickers']); st = list(STEPS) if full else list(c['steps']); seed = int(c['seed'])
-    raw = load_raw() if raw is None else raw
+    if A is None:
+        A, harj = load_d0()
+    M = prep(A, harj)
+    cuts = [x for x in lc['cuts_mid'] + lc['cuts_year_end'] if pd.Timestamp(x).year - 2015 <= max(st)]
     rows = []
     for h in hs:
-        for cs in lc['cuts_mid']:
+        rows += leak_refit(h, A, harj, cuts, DYM_DESIGN[h], st, tk, int(lc['rng']) + h)
+        hyb, legs, src1 = yaml_inputs(None, h, [seed], st, tk)
+        comps = list(hyb.values()) + ([legs[1]] if len(hyb) == 1 else [])  # ≥ 2 компоненты для agg/uncert
+        for i, cs in enumerate(lc['cuts_mid']):
             cut = pd.Timestamp(cs)
             if cut.year - 2015 > max(st):
                 continue
-            rng = np.random.default_rng(int(lc['rng']) + h)
-            r, M = leak_refit(h, raw, cut, rng, DYM_DESIGN[h], st, tk)
-            rows += r
-            hyb, legs, src1 = dym_inputs(h, tk, st, seed)
-            if h == 1:
-                src1 = list(hyb.values())[0]
-            comps = list(hyb.values()) + ([legs[1]] if len(hyb) == 1 else [])  # ≥ 2 компоненты для agg/uncert
-            Mp = prep(perturb_raw(raw, cut, np.random.default_rng(int(lc['rng']) + 100 + h)))
+            rng = np.random.default_rng(int(lc['rng']) + 100 * h + i)
+            Mp = prep(C.perturb_frame(A, cut, int(lc['rng']) + 1000 + h), harj)
             rows += leak_posthoc(h, comps, legs[0], src1, M, Mp, cut, rng)
-            print(f'детектор h={h} срез {cs} готов', flush=True)
-    L = pd.DataFrame(rows); OUT.mkdir(parents=True, exist_ok=True)
+        print(f'детектор h={h} готов', flush=True)
+    L = pd.DataFrame(rows); (OUT / 'dym').mkdir(parents=True, exist_ok=True)
     L.to_csv(OUT / ('leak_E.csv' if full else 'dym' + os.sep + 'dym_leak_E.csv'), index=False)
     print(L.to_string()); print('ВСЕ OK' if L.ok.all() else 'ЕСТЬ ОШИБКИ')
     return L
 
 
-# ================================================================ сервер: дизайн → кэш
-def run_design(path, hs, dym_scope=False):
-    """Дизайн yaml -> ряды в R2/cache/<sha16>/ + INDEX_Eens.csv + проверка сдвига каждого ряда. Входы — inputs yaml (до ядра S).
-    dym_scope — объём дыма (3 тикера × шаги 1–3 × seed 42), выход в R2/E/dym/run_<sha16>/, индекс не пишется."""
-    design = yaml.safe_load(Path(path).read_text()); cfg = ens_cfg(design)
-    hsh = canon_hash(design)
+# ================================================================ сервер: дизайн → r2_core.run_phase → кэш
+def run(path, hs=None, dym_scope=False, A=None, harj=None, M=None, seeds=None, workers=None):
+    """Дизайн yaml -> r2_core.run_phase('E', h, …, fn_E): запись в кэш по хэшу, shift_check каждого ряда, DONE.
+    dym_scope — объём дыма: 3 тикера × шаги 1–3 × seed 42, корень кэша R2/E/dym/cache, без ворот, блок — в R2/E/dym/."""
+    design = dict(path) if isinstance(path, dict) else yaml.safe_load(Path(path).read_text())
+    if A is None:
+        A, harj = load_d0()
+    M = M or prep(A, harj)
     c = CFG['dym']
-    tk, st = (list(c['tickers']), list(c['steps'])) if dym_scope else (None, list(STEPS))
-    od = (OUT / 'dym' / f'run_{hsh[:16]}') if dym_scope else (R / 'R2' / 'cache' / hsh[:16]); od.mkdir(parents=True, exist_ok=True)
-    raw = load_raw(); M = prep(raw); rvd = rv_daily(M); idx, SD = [], []
-    for h in hs:
-        hyb, legs, src1 = dym_inputs(h, tk, st, 42)
-        hyb = {}
-        seeds = [s for s in SEEDS[int(cfg['seeds'])] if not dym_scope or s == int(c['seed'])]
-        kw = dict(tickers=tk, steps=st)
-        for s in seeds:
-            hyb.update({(lb, s): inp('boost_h5', h, s, lb, **kw) for lb in ('xgboost', 'lightgbm')} if h == 5 else {('xgboost', s): inp('F_d0', h, s, **kw)})
-        src1 = src1 if h != 1 else hyb[sorted(hyb)[0]]
-        lref = legs[2] if h != 22 else legs[0]
-        res = {f'E_{k}': v for k, v in post(cfg, h, hyb, lref, legs, src1, M).items()}
-        res.update({f'E_{k}': v[0] for k, v in leg_level(cfg, design, h, M, legs, int(design.get('seed', 42)), st, tk).items()})
-        for nm, df in res.items():
-            f = od / f'{nm.replace("|", "_").replace("=", "-")}_h{h}_sens_val.parquet'
-            df.to_parquet(f, index=False)
-            sc = shift_check(df, rvd, nm, h); SD.append(sc)
-            idx.append(dict(file=str(f.relative_to(R)), ryad=nm, h=h, hash=hsh, stroki=len(df), vremya=now(), blok_sdvig=sc['blok']))
-    S = pd.DataFrame(SD); I = pd.DataFrame(idx)
-    if dym_scope:
-        S.to_csv(od / 'sdvig.csv', index=False); print(I.to_string()); print(S.round(3).to_string())
-        return
-    ip = R / CFG['out']['index']
-    I.to_csv(ip, mode='a', header=not ip.exists(), index=False)
-    if S.blok.any():
-        bp = R / 'R2' / 'O' / 'blok_sdvig.csv'; bp.parent.mkdir(parents=True, exist_ok=True)
-        S[S.blok].assign(hash=hsh).to_csv(bp, mode='a', header=not bp.exists(), index=False)
-    print(I.to_string()); print(S.round(3).to_string())
+    C.share(A=A, E_M=M, E_tickers=list(c['tickers']) if dym_scope else None,
+            E_seeds_only=[int(c['seed'])] if dym_scope else None)
+    st = list(c['steps']) if dym_scope else list(STEPS)
+    root = (OUT / 'dym' / 'cache') if dym_scope else None
+    T = []
+    for h in (hs or [design['h']]):
+        d = dict(design, h=int(h))
+        T.append(C.run_phase('E', int(h), [d], fn_E, seeds=tuple(seeds or (int(d.get('seed', 42)),)), steps=st, workers=workers or 1,
+                             module='E', root=root, block_file=(OUT / 'dym' / 'blok_sdvig_dym.csv') if dym_scope else None,
+                             check_gate=not dym_scope))
+    P = pd.concat(T, ignore_index=True)
+    print(P.to_string())
+    return P
 
 
 # ================================================================ самопроверка (синтетика)
@@ -799,15 +713,15 @@ def selftest():
     le, W = leg_ens(comps, 'qlike_shrunk_05', 1)
     wc = W[[c for c in W if c.startswith('w')]].values
     assert np.allclose(wc.sum(1), 1) and (wc >= 0.5 / 3 - 1e-12).all() and np.allclose(wc[0], 1 / 3)
-    try:
-        ens_cfg({'ens': {'leg_ens': 'qlike_raw'}}); raise AssertionError
-    except ValueError:
-        pass
-    try:
-        ens_cfg({'ens': {'agg': 'trimmed'}}); raise AssertionError
-    except ValueError:
-        pass
-    assert ens_cfg({})['agg'] == 'mean' and ens_cfg({'leg': {'moe': 'k2', 'moe_hard': 0.7}})['moe_hard'] == 0.7
+    for bad in ({'h': 1, 'ens': {'leg_ens': 'qlike_raw'}}, {'h': 1, 'ens': {'agg': 'trimmed'}}, {'h': 1, 'ens': {'agg': ['mean', 'median']}},
+                {'h': 1, 'ens': {'tau': 0.01}}):
+        try:
+            ens_cfg(bad); raise AssertionError(bad)
+        except C.DesignError:
+            pass
+    cf = ens_cfg({'h': 1, 'leg': {'moe': 'k2', 'moe_hard': 0.7}, 'ens': {'range_guard': 'on', 'ec': 'off'}})
+    assert ens_cfg({'h': 1})['agg'] == 'mean' and ens_cfg({'h': 1})['window_ens'] == 'off'
+    assert cf['moe_hard'] == 0.7 and cf['range_guard'] == 'on' and cf['ec'] == 'off' and cf['moe'] == 'k2'
     h1 = canon_hash({'design': 'a', 'h': 1, 'ens': {'agg': 'median', 'ec': 'm5'}})
     h2 = canon_hash({'ens': {'ec': 'm5', 'agg': 'median'}, 'h': 1, 'design': 'b'})
     h3 = canon_hash({'h': 1, 'ens': {'agg': 'median', 'ec': 'm5', 'seeds': 1}})  # seeds = default
@@ -835,30 +749,35 @@ def selftest():
         d0, _ = _dd(f(comps, False), f(pc, False), cut); d1, _ = _dd(f(comps, True), f(pc, True), cut)
         assert d0 == 0.0 and d1 > 0, (d0, d1)
     # сдвиг: прогноз = RV_d (s = 0) — argmax 0; прогноз = RV_{d+1} — +1 (блок)
-    rvd = base[K].assign(rv=lv)
+    import tempfile
+    Mx = {'A': base[K].assign(rv=lv)}
     sh = base.assign(rv_pred=lv)
-    assert shift_check(sh, rvd, 's0', 1, 2016, 2018)['argmax'] == 0
-    nx = sh.copy(); nx['rv_pred'] = nx.groupby('ticker').rv_pred.shift(-1).fillna(1e-4)
-    assert shift_check(nx, rvd, 's+1', 1, 2016, 2018)['blok']
+    with tempfile.TemporaryDirectory() as td:
+        assert sdvig(sh, Mx, 1, 's0', block_file=Path(td) / 'b.csv')['argmax'] == 0
+        nx = sh.copy(); nx['rv_pred'] = nx.groupby('ticker').rv_pred.shift(-1).fillna(1e-4)
+        assert sdvig(nx, Mx, 1, 's+1', block_file=Path(td) / 'b.csv')['blok'] and (Path(td) / 'b.csv').exists()
     print('selftest OK')
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('mode', choices=['selftest', 'dym', 'leak', 'run'])
-    ap.add_argument('--h', type=int, nargs='*', default=[1, 5, 22])
+    ap.add_argument('--h', type=int, nargs='*', default=None)
     ap.add_argument('--full', action='store_true')
     ap.add_argument('--design')
-    ap.add_argument('--dym', action='store_true', help='run: объём дыма, выход в R2/E/dym/run_<sha16>/')
+    ap.add_argument('--seeds', type=int, nargs='*', default=None)
+    ap.add_argument('--workers', type=int, default=None)
+    ap.add_argument('--dym', action='store_true', help='run: объём дыма, кэш в R2/E/dym/cache/, без ворот')
     a = ap.parse_args()
     if a.mode == 'selftest':
         selftest()
     elif a.mode == 'dym':
         sys.exit(0 if dym() else 1)
     elif a.mode == 'leak':
-        sys.exit(0 if leak(tuple(a.h), a.full).ok.all() else 1)
+        sys.exit(0 if leak(tuple(a.h or (1, 5, 22)), a.full).ok.all() else 1)
     else:
-        run_design(a.design, a.h, a.dym)
+        P = run(a.design, a.h, a.dym, seeds=a.seeds, workers=a.workers)
+        sys.exit(0 if 'ОШИБКА' not in set(P.ryad) else 1)
 
 
 if __name__ == '__main__':
