@@ -89,6 +89,15 @@ def _engine_cls():
     class FastEngine(s9.Engine):
         """s9.Engine с пакетным выбором по валидации (результат тот же)."""
 
+        def __init__(self, cache):
+            super().__init__(cache)
+            # Ъ ~23:20: ставка «back» ((d_prev, d], rate_restored) — только печати v1;
+            # быстрый слой — ставка ЦБ и дни [d, d_next)
+            from fastbt import msp
+            assert msp.rate_cbr().attrs.get("cal") != "back", "быстрый слой: ставка «back» запрещена"
+            assert np.array_equal(self.cal, msp.cal_days(self.dates, forward=True)), \
+                "быстрый слой: дни ставки не [d, d_next)"
+
         def _jobs(self):
             if getattr(self, "_fs_jobs", None) is None:
                 jobs, Arows = [], []

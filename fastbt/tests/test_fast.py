@@ -102,6 +102,14 @@ def test_lw_same_p():
     assert wrong[2] != o[2] or wrong[1] != o[1]
 
 
+def test_fast_engine_forbids_back_rate():
+    """Ъ ~23:20: быстрый слой не принимает ставку «back» (дни (d_prev, d], печати v1)."""
+    import inspect
+    from fastbt import fast_grid
+    src = inspect.getsource(fast_grid._engine_cls)
+    assert 'attrs.get("cal") != "back"' in src and "forward=True" in src
+
+
 def _kernel(apos, row, kind, lr, vs, ve, comm=0.0005):
     out = np.zeros((1, 1))
     grid_val_sharpe(apos[None, :].copy(), lr[None, :].copy(), np.zeros(1, np.int64),
