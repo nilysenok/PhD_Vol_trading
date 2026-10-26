@@ -72,6 +72,23 @@ SIGMA_H1 = {"final2": REGEN / "sigma_pred_h1_final2.parquet",
             # тот же ряд final3, собранный кодом главы 3 на весь период (sigma_pred_h1_final3_full.py);
             # побитно = final3 (SHA 5bed7be9…), таблицы и кэш — с суффиксом _final3
             "final3_full": REGEN / "sigma_pred_h1_final3_full.parquet"}
+# σ-набор v2 (раунд 22:20 / решение 22:30, агент СD, «до аудита»): выровненные σ S0
+# (data/regen/ch4_dev, SHA — SHA256.txt) — гибрид, HAR-J (б), наивная; h=1 и h=5. Флаг --sigma-set v2.
+# Прежние источники (SOURCES выше) не тронуты: без флага таблицы разработки воспроизводятся побайтно.
+# В v2: W504 с разгоном 252 → 504 (Ъ владельца, вариант (а)); D1/D2/D4/D7 — плюс W504; p к A —
+# Ледуа–Вольф (блок 5), IID справочно; таблицы — docs/tables/strat_dev_v2/s9_*_v2.csv, столбец pometka.
+CH4 = REGEN / "ch4_dev"
+SOURCES_V2 = {
+    "hyb_h1": (CH4 / "sigma_hyb_h1_dev.parquet", "sigma_pred_h1", "h1"),
+    "hyb_h5": (CH4 / "sigma_hyb_h5_dev.parquet", "sigma_pred_h5", "h5"),
+    "harj_h1": (CH4 / "sigma_harj_b_h1_dev.parquet", "sigma_pred_h1", "h1"),
+    "harj_h5": (CH4 / "sigma_harj_b_h5_dev.parquet", "sigma_pred_h5", "h5"),
+    "naive_h1": (CH4 / "sigma_naive_dev.parquet", "sigma_pred_h1", "h1"),
+    "naive_h5": (CH4 / "sigma_naive_dev.parquet", "sigma_pred_h1", "h5"),   # √RV_w от h не зависит
+}
+V2 = False
+POMETKA = "до аудита"
+TABLES_V2 = ROOT / "docs" / "tables" / "strat_dev_v2"
 SUFFIX = ""
 SCOPE = "dev"
 TABLES_DEV = ROOT / "docs" / "tables" / "strat_dev"      # источник выбора по С8 для теста
@@ -118,8 +135,50 @@ def use_sigma_h1(name: str, suffix: str | None = None) -> None:
         SUFFIX += f"_{SCOPE}"
 
 
+def use_v2() -> dict:
+    """σ-набор v2: входы сверены с data/regen/ch4_dev/SHA256.txt до счёта; только разработка."""
+    global V2, TABLES, SUFFIX
+    if SCOPE != "dev":
+        raise SystemExit("--sigma-set v2 — только --scope dev (тест закрыт)")
+    ref = {}
+    for ln in (CH4 / "SHA256.txt").read_text().splitlines():
+        parts = ln.split()
+        if len(parts) >= 2 and len(parts[0]) == 64:
+            ref[Path(parts[1]).name] = parts[0]
+    sha = {}
+    for lab, (p, _, _) in SOURCES_V2.items():
+        h = hashlib.sha256(Path(p).read_bytes()).hexdigest()
+        if ref.get(Path(p).name) != h:
+            raise SystemExit(f"SHA σ не совпал с SHA256.txt: {Path(p).name}")
+        sha[lab] = h
+    V2, TABLES, SUFFIX = True, TABLES_V2, "_v2"
+    SOURCES.clear()
+    SOURCES.update(SOURCES_V2)
+    return sha
+
+
+def _minp(W: int) -> int:
+    """v2: W504 с разгоном 252 → 504 (растущее окно); иначе — s9_stats.minp."""
+    from fastbt.s9_stats import minp
+    return 252 if (V2 and W == 504) else minp(W)
+
+
+def _past_median(s: np.ndarray, W: int) -> np.ndarray:
+    from fastbt.s9_stats import past_median
+    if V2 and W == 504:
+        return pd.Series(s).shift(1).rolling(W, min_periods=_minp(W)).median().values
+    return past_median(s, W)
+
+
+def _d_windows() -> tuple:
+    return (126, 252, 504) if V2 else (126, 252)
+
+
 def to_csv(df: pd.DataFrame, name: str) -> Path:
     TABLES.mkdir(parents=True, exist_ok=True)
+    if V2:
+        df = df.copy()
+        df.insert(0, "pometka", POMETKA)
     if SUFFIX:
         name = name.replace(".csv", f"{SUFFIX}.csv")
     p = TABLES / name
@@ -647,7 +706,7 @@ class S9:
         основной p — Ледуа–Вольф, круговой блочный, блок 5; IID — справочно в p_key_iid."""
         d, pv = self.boot(p1, p0)
         r[f"d_{key}"] = d
-        if SCOPE == "dev":
+        if SCOPE == "dev" and not V2:
             r[f"p_{key}"] = pv
             return
         from fastbt.s9_stats import lw_sharpe_diff
@@ -690,12 +749,12 @@ class S9:
                 G[ti, :n] = fn(ti, n)
             return G
         rk = {}
-        for W in (126, 252):
+        for W in _d_windows():
             rk[W] = np.full((T, N), np.nan)
             for ti in range(T):
                 n = e.n_t[ti]
-                rk[W][ti, :n] = past_rank(S[ti, :n].copy(), W, minp(W))
-        for W in (126, 252):
+                rk[W][ti, :n] = past_rank(S[ti, :n].copy(), W, _minp(W))
+        for W in _d_windows():
             for p in (0.70, 0.80, 0.90):
                 R = rk[W]
                 fams["D1"].append((f"W{W}_p{int(p*100)}", np.where(R > p, 0.0, 1.0), "mask"))
@@ -708,11 +767,11 @@ class S9:
             for ti in range(T):
                 n = e.n_t[ti]
                 Se[ti, :n] = ema(S[ti, :n], span)
-            for W in (126, 252):
+            for W in _d_windows():
                 R = np.full((T, N), np.nan)
                 for ti in range(T):
                     n = e.n_t[ti]
-                    R[ti, :n] = past_rank(Se[ti, :n].copy(), W, minp(W))
+                    R[ti, :n] = past_rank(Se[ti, :n].copy(), W, _minp(W))
                 for p in (0.70, 0.80, 0.90):
                     fams["D4"].append((f"ema{span}_W{W}_p{int(p*100)}",
                                        np.where(R > p, 0.0, 1.0), "mask"))
@@ -729,11 +788,11 @@ class S9:
                 R[ti, :n] = past_rank(np.ascontiguousarray(ratio[ti, :n]), 252, minp(252))
             for p in (0.70, 0.80, 0.90):
                 fams[key].append((f"W252_p{int(p*100)}", np.where(R > p, 0.0, 1.0), "mask"))
-        for W in (126, 252):
+        for W in _d_windows():
             med = np.full((T, N), np.nan)
             for ti in range(T):
                 n = e.n_t[ti]
-                med[ti, :n] = past_median(S[ti, :n], W)
+                med[ti, :n] = _past_median(S[ti, :n], W)
             for gm in (1.0, 2.0):
                 w = np.minimum(1.0, (med / S) ** gm)
                 fams["D7"].append((f"W{W}_g{int(gm)}", np.where(np.isnan(w), 1.0, w), "scale"))
@@ -843,7 +902,7 @@ class S9:
             rk[W] = np.full((T, N), np.nan)
             for ti in range(T):
                 n = e.n_t[ti]
-                rk[W][ti, :n] = past_rank(S[ti, :n].copy(), W, minp(W))
+                rk[W][ti, :n] = past_rank(S[ti, :n].copy(), W, _minp(W))
         pts1 = []
         for W in (126, 252, 504):
             R = rk[W]
@@ -906,20 +965,32 @@ class S9:
         return pd.DataFrame(rows), ports
 
     # ---------- C3: точность прогноза → результат ----------
-    def run_c3(self, c_ports):
+    def run_c3(self, c_ports, srcs=("hyb_h1", "harj_h1", "naive_h1")):
+        """v2: srcs — тройка одного h (h1 или h5), в списке и точки C2."""
         from fastbt.s9_stats import lw_sharpe_diff
         rows = []
-        srcs = ("hyb_h1", "harj_h1", "naive_h1")
+        pref = ("C1:", "C2:") if V2 else ("C1:",)
         kinds = ["Cref", "C1 семья", "C2 семья"] + sorted({k for k, s in c_ports
-                                                        if k.startswith("C1:") and s == "hyb_h1"})
+                                                        if k.startswith(pref) and s == srcs[0]})
         for kind in kinds:
             ps = {s: c_ports[(kind, s)][0] for s in srcs if (kind, s) in c_ports}
             if len(ps) < 3:
                 continue
             r = dict(design=kind)
+            if V2:
+                r["h"] = SOURCES[srcs[0]][2]
             for s in srcs:
-                r[f"sharpe_{s}"] = metrics(ps[s])["sharpe"]
-            for a, b in (("hyb_h1", "harj_h1"), ("hyb_h1", "naive_h1"), ("harj_h1", "naive_h1")):
+                if V2:                         # одна таблица на h=1 и h=5: столбцы без h
+                    m = metrics(ps[s])
+                    tag = s.split("_")[0]
+                    r[f"sharpe_{tag}"] = m["sharpe"]
+                    for y in YEARS:
+                        r[f"{y}_{tag}"] = m[str(y)]
+                    r[f"d_vs_A_{tag}"] = m["sharpe"] - self.mA["sharpe"]
+                else:
+                    r[f"sharpe_{s}"] = metrics(ps[s])["sharpe"]
+            hy, hj, nv = srcs
+            for a, b in ((hy, hj), (hy, nv), (hj, nv)):
                 d, se, p = lw_sharpe_diff(ps[a]["excess"].values, ps[b]["excess"].values,
                                           self.reps, 5)
                 _, pb = self.boot(ps[a], ps[b])
@@ -1068,7 +1139,8 @@ def run_all_experiments(reps: int) -> None:
     to_csv(dfb, "s9_B_targetirovanie.csv")
     print(f"B: {len(dfb)} строк, {time.time() - t0:.0f} с", flush=True)
     # C (+ HAR-J, наивная для C3)
-    dfc, cports = s9.run_c(("hyb_h1", "hyb_h5", "harj_h1", "naive_h1"))
+    dfc, cports = s9.run_c(("hyb_h1", "hyb_h5", "harj_h1", "harj_h5", "naive_h1", "naive_h5") if V2
+                           else ("hyb_h1", "hyb_h5", "harj_h1", "naive_h1"))
     if SCOPE == "dev":
         to_csv(dfc, "s9_C_rezhim.csv")
     else:                                  # тест: одна заданная точка C + сетка «чувствительность»
@@ -1076,7 +1148,8 @@ def run_all_experiments(reps: int) -> None:
         main_c, sens_c = split_c_test(dfc, kt["C"])
         to_csv(main_c, "s9_C_osnovnaya.csv")
         to_csv(sens_c, "s9_C_chuvstvitelnost.csv")
-    dfc3 = s9.run_c3(cports)
+    dfc3 = (pd.concat([s9.run_c3(cports, (f"hyb_{h}", f"harj_{h}", f"naive_{h}")) for h in ("h1", "h5")],
+                      ignore_index=True) if V2 else s9.run_c3(cports))
     to_csv(dfc3, "s9_C3_tochnost_v_rezultat.csv")
     print(f"C: {len(dfc)} строк, C3 {len(dfc3)}, {time.time() - t0:.0f} с", flush=True)
     # выбор лучших по С8 (в тесте — не повторяется: ключи из таблиц разработки)
@@ -1088,6 +1161,10 @@ def run_all_experiments(reps: int) -> None:
     log.append(f"выбор по С8{'' if SCOPE == 'dev' else ' (из разработки)'}: {choice}")
     if SCOPE != "dev":
         to_csv(main_rows(s9, eng, sel, choice, k["passed"]), "s9_osnovnye.csv")
+    if V2:
+        to_csv(vybor_v2(s9, dfd, dfb, dfc), "s9_vybor_C8.csv")
+        h2 = dfc3[(dfc3["design"] == k["C"][0]) & (dfc3["h"] == SOURCES[k["C"][1]][2])]
+        to_csv(h2.assign(rol="H2 внутри выбранной точки C: без выбора"), "s9_H2_vybrannaya_C.csv")
     print(log[-1], flush=True)
     dfp2, p2 = s9.run_p2(sel)
     to_csv(dfp2, "s9_P2_multistrategiya.csv")
@@ -1179,6 +1256,45 @@ def select_keys(dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) -> dict
                 passed={k: bool(v["passed"]) for k, v in (("B", best_b), ("C", best_c), ("D", best_d))})
 
 
+def _holm(p: np.ndarray) -> np.ndarray:
+    p = np.asarray(p, float)
+    o = np.argsort(p)
+    adj = np.minimum(1.0, np.maximum.accumulate((len(p) - np.arange(len(p))) * p[o]))
+    out = np.empty_like(adj)
+    out[o] = adj
+    return out
+
+
+def vybor_v2(s9: "S9", dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) -> pd.DataFrame:
+    """v2: один дизайн на подход по С8 (rank_c8, кандидаты — как в select_keys); p к A —
+    Ледуа–Вольф (блок 5); поправка на число кандидатов: Бонферрони и Холм по p_vs_A кандидатов."""
+    cand = {"D": dfd[dfd["point"] == "семья"],
+            "B": dfb[(dfb["family"] == "B") & (dfb["scenario"] == "спот")],
+            "C": dfc[dfc["sigma"].isin(["hyb_h1", "hyb_h5"])]}
+    grid = {"D": int(dfd["sharpe"].notna().sum()), "B": len(cand["B"]), "C": len(cand["C"])}
+    rows = [dict(approach="A", design="main.yaml:A (эталон С8)", sigma="—", **s9.mA)]
+    for ap, c in cand.items():
+        c = c.copy()
+        c["p_holm"] = _holm(c["p_vs_A"].values)
+        c["p_bonf"] = np.minimum(1.0, c["p_vs_A"] * len(c))
+        best = rank_c8(c).iloc[0]
+        r = dict(approach=ap, design=f"{best['family']}:{best['point']}", sigma=best["sigma"],
+                 h=best["h"], n_kandidatov=len(c), n_tochek_setki=grid[ap],
+                 n_proshli_C8=int(c["passed"].sum()))
+        for col in ("sharpe", "sortino", "calmar", "mdd_excess_pct", "exposure_pct", "turnover_y",
+                    "sharpe_net", "turnover_y", *[str(y) for y in YEARS], "worst", "win", "c_years",
+                    "c_worst", "c_period", "passed", "positive", "n_met", "mean_delta", "d_vs_A",
+                    "p_vs_A", "p_vs_A_iid", "p_holm", "p_bonf"):
+            if col in best.index:
+                r[col] = best[col]
+        if ap == "B":
+            r["sharpe"] = best["sharpe_net"]
+        r["fakt"] = ("прошёл С8" if best["passed"] else "лучший по С8, С8 не прошёл") + \
+                    ("; положительный период" if best["positive"] else "; положительного периода нет")
+        rows.append(r)
+    return pd.DataFrame(rows)
+
+
 def frozen_keys() -> dict:
     """Тест: выбор по С8 из таблиц разработки того же σ (docs/tables/strat_dev), без перевыбора."""
     suf = SUFFIX[:-len(f"_{SCOPE}")] if SCOPE != "dev" else SUFFIX
@@ -1225,6 +1341,8 @@ def main(argv=None):
                    help="σ_pred гибрида h=1 (final3 — финал третьего круга D22_h1); "
                         "по умолчанию dev — final2, test — final3")
     p.add_argument("--suffix", default=None, help="суффикс таблиц/кэша (по умолчанию от --sigma-h1)")
+    p.add_argument("--sigma-set", choices=["old", "v2"], default="old",
+                   help="v2 — выровненные σ S0 (data/regen/ch4_dev), только dev, «до аудита»")
     p.add_argument("--val-start", type=int, default=None,
                    help="начало замороженного окна валидации в тесте (по умолчанию 2018; конец — "
                         "2021); в разработке всегда 2017…Y−1")
@@ -1238,7 +1356,13 @@ def main(argv=None):
             raise SystemExit("--c-dop только для --scope dev (нет √RV_w на тест)")
         load_c_dop(a.c_dop)
     set_scope(a.scope, a.val_start)
-    use_sigma_h1(a.sigma_h1 or ("final2" if a.scope == "dev" else "final3_full"), a.suffix)
+    if a.sigma_set == "v2":
+        print("σ v2 (SHA сверены):", {k: v[:12] for k, v in use_v2().items()}, flush=True)
+        if a.stage == "sources":           # σ — готовые файлы S0; RVI — прежний rvi_1850 (не σ_pred)
+            print("v2: sources не собираются — σ из data/regen/ch4_dev; RVI:", RVI.name)
+            return 0
+    else:
+        use_sigma_h1(a.sigma_h1 or ("final2" if a.scope == "dev" else "final3_full"), a.suffix)
     if a.stage == "sources":
         build_sources()
     elif a.stage == "cache":
