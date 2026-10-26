@@ -21,7 +21,7 @@ k16:                  # ŷ = нога · exp(g_t · c_t), g_t ∈ [0, 1] — т�
     rule: "g = 1{SD_{seed×lib}(c) < τ·|c̄|}, SD — ddof = 0"
     tau: [0.25, 0.5, 1.0, 2.0, 4.0]
   regime:
-    rule: "g = P(спокойно на горизонте) — привратник кластера 13 (r2_ens._gate: logit|boost) на матрице r2_ens.prep; метка — ln y_h ниже медианы тикера на обучении шага"
+    rule: "g = p0 из r2_ens.moe_proba (агент E, mode k2, слагаемые S3): P(спокойно) — ln y_h ниже медианы тикера на обучении шага"
     gate: logit
     kalibr: none      # none | isotonic (по OOS шагов < t, конец цели < 1 янв. vy)
   shock_fresh:
