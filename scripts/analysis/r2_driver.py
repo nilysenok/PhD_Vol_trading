@@ -1183,7 +1183,12 @@ def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1, tab1=No
         dizainy.update({u: razrezhit(d) for u, d in extra['dizainy'].items()})
     out_dir = (SMOKE_O / f'gate_E_h{h}_dizainy') if SMOKE_FLAG['on'] else \
         (E8_DYM['dir'] / f'gate_{faza}_h{h}_dizainy' if E8_DYM['dir'] else (C.O_DIR / f'gate_{faza}_h{h}_dizainy' if faza != 'E' else None))
-    g = RG.gate_E_v4(R, S, dizainy, sig, h, list(v0_units), lestnica=not SMOKE_FLAG['on'], out_dir=out_dir, opora=opora(h))
+    try:
+        g = RG.gate_E_v4(R, S, dizainy, sig, h, list(v0_units), lestnica=not SMOKE_FLAG['on'], out_dir=out_dir, opora=opora(h))
+    except ValueError as e:  # лестница O (r2_loyo.validate) не принимает inputs (E1: base_1, основа: F_R1) — ворота без лестницы
+        log(f'ворота {faza} h={h}: лестница O не построена ({e}) — ворота без лестницы и абляций (❓ O: inputs в r2_loyo.validate)')
+        g = RG.gate_E_v4(R, S, dizainy, sig, h, list(v0_units), lestnica=False, out_dir=out_dir, opora=opora(h))
+        g['lestnica_pometka'] = f'не построена: {e} (❓ O: r2_loyo.validate без inputs)'
     g['barier_L3'] = bar
     if tab1:
         g['tablica_E_1seed'] = tab1
@@ -1330,17 +1335,18 @@ def e8_istochnik(h, gate_file=None, unit=None):
 
 
 def e8_noga(best, h):
-    """Нога лучшего с калибровкой: «нога + калибровка» (noga_dizain, без inputs), иначе нога финала R1 (E0). -> (источник, дизайн, кадр)."""
+    """Нога: нога основы E — HAR-J d0 + s² (E_h{h}_F_R1_noga; закон владельца 21:00: основа F_R1_d0 «с ногой HAR-J d0»), иначе «нога +
+    калибровка» лучшего (noga_dizain, без inputs). -> (источник, дизайн, кадр)."""
     b = copy.deepcopy(best)
     b.pop('inputs', None)
     kand = []
+    n0 = e8_vse_dizainy(h).get(f'E_h{h}_F_R1_noga')
+    if n0 is not None:
+        kand.append(('нога основы E: HAR-J d0 + s² (E0)', n0))
     try:
         kand.append(('нога + калибровка лучшего (noga_dizain)', noga_dizain(b, {})))
     except Exception:  # noqa: BLE001
         pass
-    n0 = e8_vse_dizainy(h).get(f'E_h{h}_F_R1_noga')
-    if n0 is not None:
-        kand.append(('нога финала R1 d0 (E0)', n0))
     for src, nd in kand:
         V = final_series(nd, h, [42])
         if V:
