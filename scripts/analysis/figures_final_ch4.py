@@ -1,4 +1,6 @@
-"""Рисунки 4.0-4.8 из финальных дневных рядов МСП (см. figures_final.py)."""
+"""Рисунки 4.0-4.8: 4.0 — ставка ЦБ (от стратегий не зависит); 4.1-4.8 — ряды МСП разработки
+2018–2021 на σ_pred h=1 финала главы 3 (figures_final_dev.py). Тест стратегий 2022–2026 закрыт:
+тестовые версии рисунков ждут теста стратегий."""
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
@@ -8,13 +10,17 @@ from figures_final_common import (BLUE1, BLUE2, BLUE3, GREY, RED, SN, boot_delta
                                   load_strat, plt, save, sharpe)
 
 AP = "ABCD"
-PRINT_SH = dict(A=1.32, B=1.47, C=2.51, D=2.54)
-PRINT_DSH = dict(B=0.15, C=1.19, D=1.22)
 COMM_RU = dict(inst="Инст.", std="Розн.")
+WAIT = "тестовая версия (2022–2026) ждёт теста стратегий"
 
 
 def _xs(ctx, ap):
     return load_msp(ctx, ap).excess_ret.values
+
+
+def best(ctx):
+    """МСП-BEST — подход B/C/D с максимальным избыточным Шарпом МСП на разработке 2018–2021."""
+    return max("BCD", key=lambda ap: sharpe(_xs(ctx, ap)))
 
 
 def fig_4_0(ctx):
@@ -31,8 +37,10 @@ def fig_4_0(ctx):
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y")); ax.xaxis.set_major_locator(mdates.YearLocator())
     comma_axes(ax, axis="y")
     ctx.chk("4.0", "средняя ставка 2022-2025, %", mean, 14.3, "подпись «среднее 14,3%»; ряд ЦБ (ступени)", 0.05)
+    footer, ctx.footer = ctx.footer, "Ряд ключевой ставки ЦБ (ступени); от σ_pred и стратегий не зависит"
     save(ctx, fig, "fig_4_0_key_rate", kr.rename("key_rate_pct").rename_axis("date").reset_index())
-    ctx.ok("4.0", f"ряд до {kr.index[-1].date()}, среднее {mean:.2f}")
+    ctx.footer = footer
+    ctx.status.append(("4.0", "построен", "ставка ЦБ 2022–2026", f"ряд до {kr.index[-1].date()}, среднее {mean:.2f}; от стратегий не зависит"))
 
 
 def fig_4_1(ctx):
@@ -40,23 +48,25 @@ def fig_4_1(ctx):
     data = np.array([[sharpe(load_strat(ctx, i, "A", c).excess_ret.values) for i in range(1, 7)]
                      for c in ("inst", "std")])
     lab = [f"{COMM_RU[c]} ({dec(rates.get(c, np.nan) * 100, 2)}%)" for c in ("inst", "std")]
+    lo, hi = min(data.min(), 0), max(data.max(), 0)
+    m = max(abs(lo), abs(hi))
     fig, ax = plt.subplots(figsize=(6.3, 2.0))
-    im = ax.imshow(data, cmap="Blues", aspect="auto", vmin=0, vmax=data.max() * 1.1)
+    im = ax.imshow(data, cmap="RdBu", aspect="auto", vmin=-m, vmax=m)
     ax.set_xticks(range(6)); ax.set_xticklabels(SN); ax.set_yticks(range(2)); ax.set_yticklabels(lab)
     for i in range(2):
         for j in range(6):
             ax.text(j, i, dec(data[i, j]), ha="center", va="center", fontsize=10,
-                    color="white" if data[i, j] > data.max() * 0.6 else "black")
+                    color="white" if abs(data[i, j]) > m * 0.6 else "black")
     ax.set_title("Шарп стратегий (дневной таймфрейм, подход A)"); ax.grid(False)
     fig.colorbar(im, ax=ax, shrink=0.8)
     for c, r in zip(("inst", "std"), data):
         rows += [dict(comm=c, strategy=s, sharpe_excess=v) for s, v in zip(SN, r)]
     save(ctx, fig, "fig_4_1_heatmap_daily_A", pd.DataFrame(rows))
-    ctx.ok("4.1", "строки: инст./розн.; строки «без комиссий» нет в рядах")
+    ctx.ok("4.1", "подход A от σ_pred не зависит; строки инст./розн.; " + WAIT)
 
 
 def fig_4_2(ctx):
-    ctx.skip("4.2", "нет часовых дневных рядов доходности стратегий (только hourly_wf_A_results.csv, без B/C/D)")
+    ctx.skip("4.2", "нет часовых дневных рядов доходности стратегий (fastbt — только дневной таймфрейм); " + WAIT)
 
 
 def fig_4_3(ctx):
@@ -67,11 +77,12 @@ def fig_4_3(ctx):
         v = [np.mean([sharpe(load_strat(ctx, i, "A", c).excess_ret.values) for i in ids]) for ids in cats.values()]
         ax.bar(x + k * w, v, w, label=f"{COMM_RU[c]}", color=col)
         rows += [dict(comm=c, category=n.replace("\n", " "), sharpe_mean=a) for n, a in zip(cats, v)]
+    ax.axhline(0, color="black", linewidth=0.5)
     ax.set_xticks(x + w / 2); ax.set_xticklabels(list(cats), fontsize=9)
     ax.set_ylabel("Шарп"); ax.set_title("Дневной"); ax.legend(fontsize=9, frameon=False); comma_axes(ax, axis="y")
     fig.tight_layout()
     save(ctx, fig, "fig_4_3_category_comparison", pd.DataFrame(rows))
-    ctx.ok("4.3", "только дневная панель; часовой нет ряда")
+    ctx.ok("4.3", "только дневная панель; подход A от σ_pred не зависит; " + WAIT)
 
 
 def fig_4_4(ctx):
@@ -81,10 +92,11 @@ def fig_4_4(ctx):
         v = [sharpe(load_strat(ctx, i, ap).excess_ret.values) for i in range(1, 7)]
         ax.bar(x + k * w, v, w, label=f"Подход {ap}", color=col)
         rows += [dict(approach=ap, strategy=s, sharpe_excess=a) for s, a in zip(SN, v)]
+    ax.axhline(0, color="black", linewidth=0.5)
     ax.set_xticks(x + 1.5 * w); ax.set_xticklabels(SN); ax.set_ylabel("Шарп")
     ax.set_title("Шарп стратегий по подходам (дневной)"); ax.legend(fontsize=9); comma_axes(ax, axis="y")
     save(ctx, fig, "fig_4_4_ew_portfolios_abcd", pd.DataFrame(rows))
-    ctx.ok("4.4", "по рядам S{i}_{A..D}_inst")
+    ctx.ok("4.4", "по рядам S{i}_{A..D}_inst; " + WAIT)
 
 
 def fig_4_5(ctx):
@@ -94,21 +106,22 @@ def fig_4_5(ctx):
         v = [sharpe(load_strat(ctx, i, ap).excess_ret.values) for i in range(1, 7)]
         ax.bar(x + (k - 0.5) * w, v, w, label=f"Подход {ap}", color=col)
         rows += [dict(approach=ap, strategy=s, sharpe_excess=a) for s, a in zip(SN, v)]
+    ax.axhline(0, color="black", linewidth=0.5)
     ax.set_xticks(x); ax.set_xticklabels(SN); ax.set_ylabel("Шарп"); ax.legend(fontsize=8)
     ax.set_title("Подход A и подход C (масштабирование по σ), дневной", fontsize=10); comma_axes(ax, axis="y")
     save(ctx, fig, "fig_4_5_a_vs_best_bcd", pd.DataFrame(rows))
-    ctx.ok("4.5", "только дневная панель")
+    ctx.ok("4.5", "только дневная панель; C — финалист С8 (u02); " + WAIT)
 
 
 def fig_4_6(ctx):
-    ctx.skip("4.6", "нет рядов МСП по методам взвешивания на финальных рядах: extended_daily_returns даёт EW-A 1,285 вместо 1,32 (другой прогон)")
+    ctx.skip("4.6", "нет рядов МСП по методам взвешивания (fastbt.export пишет только EW); " + WAIT)
 
 
 def fig_4_7(ctx):
     im = imoex_ret(ctx)
     fig, ax = plt.subplots(figsize=(6.3, 3.0))
     rows = {}
-    for ap, col, ls in (("A", BLUE3, "-"), ("C", BLUE1, "-")):
+    for ap, col in (("A", BLUE3), ("C", BLUE1)):
         d = load_msp(ctx, ap)
         rows[f"msp_{ap}_cum_pct"] = (np.cumprod(1 + d.total_ret.values) - 1) * 100
         ax.plot(d.index, rows[f"msp_{ap}_cum_pct"], color=col, linewidth=1.2, label=f"МСП-{ap}")
@@ -120,26 +133,27 @@ def fig_4_7(ctx):
     ax.legend(fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3, frameon=False)
     comma_axes(ax, axis="y")
     save(ctx, fig, "fig_4_7_cumulative_returns", pd.DataFrame(rows, index=idx).rename_axis("date").reset_index())
-    ctx.ok("4.7", "ряды скользящей калибровки (те же, что дают 1,32/2,51)")
+    ctx.ok("4.7", "полная доходность МСП (с ФДР) и IMOEX; " + WAIT)
 
 
 def fig_4_8(ctx):
     a = _xs(ctx, "A")
-    reps, labs = {}, []
+    reps, labs, rows = {}, [], []
     for ap in "BCD":
         t = _xs(ctx, ap)
         d = boot_deltas(sharpe, t, a)
         obs = sharpe(t) - sharpe(a)
         reps[f"{ap}_vs_A"] = d
-        labs.append(f"{ap} против A\n{'+' if obs >= 0 else '−'}{dec(abs(obs))}")
-        ctx.chk("4.8", f"ΔШарп {ap} против A", obs, PRINT_DSH[ap], "печать бутстрапа (fix_all_bootstrap_ce)")
+        labs.append(f"{ap} против A\n{'+' if obs >= 0 else '−'}{dec(abs(obs))} (p={dec(np.mean(d <= 0), 3)})")
+        if ap in ctx.refs.get("dsh", {}):
+            ctx.chk("4.8", f"ΔШарп {ap} против A", obs, ctx.refs["dsh"][ap], "fastbt.report.summary (пайплайн, 2018–2021)")
     fig, ax = plt.subplots(figsize=(5.0, 3.0))
     parts = ax.violinplot([reps[k] for k in reps], positions=range(3), showmeans=True, showmedians=True)
     for pc in parts["bodies"]:
         pc.set_facecolor(BLUE2); pc.set_alpha(0.7)
     ax.axhline(0, color=RED, linestyle="--", linewidth=1, label="H₀: Δ = 0")
-    ax.set_xticks(range(3)); ax.set_xticklabels(labs, fontsize=9)
+    ax.set_xticks(range(3)); ax.set_xticklabels(labs, fontsize=8)
     ax.set_ylabel("Δ Шарп"); ax.set_title("Бутстреп-распределения Δ Шарп (дневной, 10 000 реплик)", fontsize=10)
     ax.legend(fontsize=9); comma_axes(ax, axis="y")
     save(ctx, fig, "fig_4_8_bootstrap_distributions", pd.DataFrame(reps))
-    ctx.ok("4.8", "настоящий бутстреп: seed 42, 10 000 реплик")
+    ctx.ok("4.8", "бутстреп seed 42, 10 000 реплик; " + WAIT)

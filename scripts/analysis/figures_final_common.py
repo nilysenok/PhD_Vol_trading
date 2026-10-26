@@ -1,6 +1,7 @@
 """Общий загрузчик, стиль и статистика для figures_final*.py (рисунки глав 3-4).
 
-Все числа берутся из рядов/результатов; здесь только оформление и формулы.
+Все числа берутся из рядов; здесь только оформление и формулы. Данные — только общий data/
+основной копии (MAIN) по абсолютным путям; в копии агента — код.
 Бутстрап - схема moex_volatility/scripts/fix_all_bootstrap_ce.py: seed 42, iid
 randint(0, n, n), одни индексы для обеих серий, 10 000 реплик, p = доля дельт <= 0.
 """
@@ -18,10 +19,13 @@ from matplotlib.ticker import FuncFormatter  # noqa: E402
 
 warnings.filterwarnings("ignore")
 ROOT = Path(__file__).resolve().parents[2]
-VOL = ROOT / "moex_volatility"
+MAIN = Path("/Users/nilysenok/Desktop/Старое/PhD_Vol_trading")
+VOL = ROOT / "moex_volatility"          # только код (stage8_economic.py)
 BPY, N_BOOT, SEED = 252, 10_000, 42
 BLUE1, BLUE2, BLUE3, GREY, RED, GREEN = "#2E75B6", "#4472C4", "#A5C8E1", "#808080", "#C0504D", "#70AD47"
 SN = ["S1", "S2", "S3", "S4", "S5", "S6"]
+TEST_SRC = MAIN / "data/regen/test_locked/final3"
+TABLES = ROOT / "docs/tables"
 
 plt.rcParams.update({
     "font.family": "serif", "font.size": 11, "axes.grid": True, "grid.alpha": 0.3,
@@ -31,28 +35,28 @@ plt.rcParams.update({
 
 
 class Ctx:
-    """Пути и накопитель сверки рисунок = таблица."""
+    """Пути, подпись периода (footer) и накопитель сверки рисунок = таблица."""
 
-    def __init__(self, series, out, wf=None, t2019=None, keyrate=None, features=None):
-        self.series = Path(series)
+    def __init__(self, out, series=None, refs=None, keyrate=None, features=None):
+        self.series = Path(series) if series else None
         self.out = Path(out)
         self.out.mkdir(parents=True, exist_ok=True)
-        self.wf = Path(wf) if wf else VOL / "results/final/data/predictions_walkforward"
-        self.t2019 = Path(t2019) if t2019 else VOL / "data/predictions/test_2019"
-        self.keyrate = Path(keyrate) if keyrate else ROOT / "moex_discovery/data/external/macro/raw/key_rate_cbr.parquet"
-        self.features = Path(features) if features else VOL / "data/features/features_all.parquet"
+        self.refs = refs or {}
+        self.keyrate = Path(keyrate) if keyrate else MAIN / "moex_discovery/data/external/macro/raw/key_rate_cbr.parquet"
+        self.features = Path(features) if features else MAIN / "moex_volatility/data/features/features_all.parquet"
+        self.footer, self.period = "", ""
         self.checks, self.status = [], []
 
     def chk(self, fig, item, value, ref, src, tol=0.01):
         self.checks.append(dict(fig=fig, item=item, figure_value=float(value), ref=float(ref),
                                 diff=float(value - ref), flag=bool(abs(value - ref) > tol), src=src))
 
-    def skip(self, fig, why):
-        self.status.append((fig, "не построен", why))
-        print(f"  {fig}: не строится - {why}")
+    def skip(self, fig, why, status="не построен"):
+        self.status.append((fig, status, self.period, why))
+        print(f"  {fig}: {status} - {why}")
 
     def ok(self, fig, note=""):
-        self.status.append((fig, "построен", note))
+        self.status.append((fig, "построен", self.period, note))
 
 
 def dec(v, nd=2):
@@ -69,6 +73,10 @@ def comma_axes(*axes, axis="both"):
 
 
 def save(ctx, fig, name, df):
+    if ctx.footer:   # ниже всех элементов (легенды под осями), чтобы не перекрывать
+        r = fig.canvas.get_renderer()
+        y0 = fig.get_tightbbox(r).y0 / fig.get_size_inches()[1]
+        fig.text(0.5, min(y0, 0.0) - 0.01, ctx.footer, ha="center", va="top", fontsize=7, color="0.4")
     fig.savefig(ctx.out / f"{name}.png")
     plt.close(fig)
     df.to_csv(ctx.out / f"{name}.csv", index=False)

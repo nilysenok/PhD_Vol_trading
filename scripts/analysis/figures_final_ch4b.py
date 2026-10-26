@@ -1,14 +1,15 @@
-"""Рисунки 4.9-4.16 из финальных дневных рядов МСП (см. figures_final.py)."""
+"""Рисунки 4.9-4.16 из дневных рядов МСП разработки 2018–2021 (σ_pred h=1 финала главы 3,
+figures_final_dev.py). Тестовые версии (2022–2026) ждут теста стратегий."""
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
 
+from figures_final_ch4 import WAIT, best
 from figures_final_common import (BLUE1, BLUE2, BLUE3, BPY, GREY, RED, SN, comma_axes, dce, dec,
                                   econ_costs, imoex_ret, load_msp, load_strat, mdd_pct, plt, save,
                                   sharpe)
 
 KS = (1, 2, 3)  # множители масштабирования экспозиции (сетка рисунка)
-PRINT_SH = dict(A=1.32, B=1.47, C=2.51, D=2.54)
 
 
 def scaled(d, k):
@@ -33,7 +34,7 @@ def fig_4_9(ctx):
     ax.set_title(f"Дневной (ρ̄ = {dec(rbar)})", fontsize=10); fig.colorbar(im, ax=ax, shrink=0.8)
     fig.suptitle("Корреляционная матрица стратегий (подход A)", fontsize=11)
     save(ctx, fig, "fig_4_9_correlation_matrices", r.corr().rename_axis("strategy").reset_index())
-    ctx.ok("4.9", "только дневная панель")
+    ctx.ok("4.9", "только дневная панель; подход A от σ_pred не зависит; " + WAIT)
 
 
 def fig_4_10(ctx):
@@ -50,7 +51,7 @@ def fig_4_10(ctx):
     ax.set_xticks(x); ax.set_xticklabels(names); ax.set_ylabel("Годовая доходность, %")
     ax.set_title("Декомпозиция доходности МСП (дневной)"); ax.legend(fontsize=9); comma_axes(ax, axis="y")
     save(ctx, fig, "fig_4_10_return_decomposition", pd.DataFrame(rows))
-    ctx.ok("4.10", "торговая часть и ФДР = total_ret - trading_ret из рядов")
+    ctx.ok("4.10", "торговая часть и ФДР = total_ret - trading_ret из рядов; " + WAIT)
 
 
 def _cum_figure(ctx, name, lines, ncol, title_note):
@@ -72,24 +73,32 @@ def _cum_figure(ctx, name, lines, ncol, title_note):
 
 def fig_4_12(ctx):
     m = {ap: load_msp(ctx, ap) for ap in "ABCD"}
+    b = best(ctx)
     mean = (m["B"].total_ret + m["C"].total_ret + m["D"].total_ret) / 3
     _cum_figure(ctx, "fig_4_12_msp_vs_imoex",
                 [("МСП-A (1×)", m["A"].total_ret, BLUE3, "-"), ("МСП-MEAN (1×)", mean, BLUE2, "-"),
-                 ("МСП-BEST = D (1×)", m["D"].total_ret, BLUE1, "-")], 4, "")
+                 (f"МСП-BEST = {b} (1×)", m[b].total_ret, BLUE1, "-")], 4, "")
     for ap in "ABCD":
-        ctx.chk("4.12/4.7", f"Шарп МСП-{ap}", sharpe(m[ap].excess_ret.values), PRINT_SH[ap], "печать Шарпа МСП")
-    ctx.ok("4.12", "MEAN = среднее дневных доходностей B, C, D; BEST = D (максимальный Шарп 2,54)")
+        v = sharpe(m[ap].excess_ret.values)
+        if ap in ctx.refs.get("sharpe", {}):
+            ctx.chk("4.12/4.7", f"Шарп МСП-{ap}", v, ctx.refs["sharpe"][ap], "fastbt.report.portfolios (пайплайн, 2018–2021)", 1e-6)
+        if ap in ctx.refs.get("s9", {}):
+            ref, src = ctx.refs["s9"][ap]
+            ctx.chk("4.12/4.7", f"Шарп МСП-{ap} против s9", v, ref, src, 0.005)
+    ctx.ok("4.12", f"MEAN = среднее дневных доходностей B, C, D; BEST = {b} (максимальный Шарп МСП на разработке); " + WAIT)
 
 
 def fig_4_13(ctx):
-    d, im = load_msp(ctx, "D"), imoex_ret(ctx)
+    b = best(ctx)
+    d, im = load_msp(ctx, b), imoex_ret(ctx)
     r_im = im.reindex(d.index).fillna(0).values
     dd = {}
-    for lab, r in (("МСП-BEST (D)", d.total_ret.values), ("IMOEX", r_im)):
+    lb = f"МСП-BEST ({b})"
+    for lab, r in ((lb, d.total_ret.values), ("IMOEX", r_im)):
         cum = np.cumsum(r)
         dd[lab] = (cum - np.maximum.accumulate(cum)) * 100
     fig, ax = plt.subplots(figsize=(6.3, 3.0))
-    ax.fill_between(d.index, 0, dd["МСП-BEST (D)"], alpha=0.5, color=BLUE1, label=f"МСП-BEST (MDD = {dec(mdd_pct(d.total_ret.values), 1)}%)")
+    ax.fill_between(d.index, 0, dd[lb], alpha=0.5, color=BLUE1, label=f"{lb} (MDD = {dec(mdd_pct(d.total_ret.values), 1)}%)")
     ax.fill_between(d.index, 0, dd["IMOEX"], alpha=0.3, color=RED, label=f"IMOEX (MDD = {dec(mdd_pct(r_im), 1)}%)")
     ax.set_ylabel("Просадка, %"); ax.set_title("Профиль просадок МСП-BEST и IMOEX")
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y")); ax.xaxis.set_major_locator(mdates.YearLocator())
@@ -98,15 +107,16 @@ def fig_4_13(ctx):
     p = ctx.series.parent / "msp_results.csv"
     if p.exists():
         t = pd.read_csv(p)
-        t = t[(t.level == "msp") & (t.comm_label == "inst")].set_index("approach").max_dd
+        t = t[t.comm_label == "inst"].set_index("approach").mdd_pct
         for ap in "ABCD":
-            ctx.chk("4.13", f"MDD МСП-{ap}, %", mdd_pct(load_msp(ctx, ap).total_ret.values), t[ap], "msp/msp_results.csv (max_dd)")
-    ctx.ok("4.13", "просадки из дневных рядов, MDD по накопленной сумме доходностей")
+            ctx.chk("4.13", f"MDD МСП-{ap}, %", mdd_pct(load_msp(ctx, ap).total_ret.values), t[ap], "msp_results.csv (fastbt.export, mdd_pct)", 1e-6)
+    ctx.ok("4.13", f"BEST = {b}; просадки из дневных рядов, MDD по накопленной сумме доходностей; " + WAIT)
 
 
 def fig_4_11_14(ctx):
     rows = []
-    for ap in "AD":
+    b = best(ctx)
+    for ap in ("A", b):
         d = load_msp(ctx, ap)
         for k in KS:
             t, f, lv, tot, share = scaled(d, k)
@@ -115,26 +125,27 @@ def fig_4_11_14(ctx):
                              mdd_pct=mdd_pct(tot), share_days_lev=share))
     df = pd.DataFrame(rows)
     fig, ax = plt.subplots(figsize=(5.0, 3.0))
-    for ap, col, mk in (("A", BLUE3, "s"), ("D", BLUE1, "o")):
+    for ap, col, mk in (("A", BLUE3, "s"), (b, BLUE1, "o")):
         s = df[df.msp == ap]
-        ax.plot(s.mdd_pct, s.total_pct, mk + "-", color=col, linewidth=1.5, markersize=7, label="МСП-A" if ap == "A" else "МСП-BEST (D)")
+        ax.plot(s.mdd_pct, s.total_pct, mk + "-", color=col, linewidth=1.5, markersize=7, label="МСП-A" if ap == "A" else f"МСП-BEST ({b})")
         for _, r in s.iterrows():
             ax.annotate(f"{int(r.k)}×", (r.mdd_pct, r.total_pct), textcoords="offset points", xytext=(6, 4), fontsize=9, color=col)
     ax.set_xlabel("Максимальная просадка (MDD), %"); ax.set_ylabel("Годовая доходность, %")
     ax.legend(fontsize=9, loc="upper left"); comma_axes(ax)
     save(ctx, fig, "fig_4_11_efficient_frontier", df)
-    s = df[df.msp == "D"]
+    s = df[df.msp == b]
     fig, ax = plt.subplots(figsize=(4.2, 3.0))
     x = np.arange(len(KS))
     ax.bar(x, s.trading_pct, 0.6, label="Торговая доходность", color=BLUE1)
     ax.bar(x, s.fdr_pct, 0.6, bottom=s.trading_pct, label="ФДР", color=BLUE3)
     ax.bar(x, s.lev_cost_pct, 0.6, label="Стоимость плеча", color=RED)
     ax.axhline(0, color="black", linewidth=0.5); ax.set_xticks(x); ax.set_xticklabels([f"{k}×" for k in KS])
-    ax.set_xlabel("k"); ax.set_ylabel("Годовая доходность, %"); ax.set_title("Дневной, МСП-BEST (D)")
+    ax.set_xlabel("k"); ax.set_ylabel("Годовая доходность, %"); ax.set_title(f"Дневной, МСП-BEST ({b})")
     ax.legend(fontsize=8, loc="upper left"); comma_axes(ax, axis="y")
     save(ctx, fig, "fig_4_14_scaling_decomposition", df)
-    ctx.ok("4.11", "сетка k=1,2,3; плечо тарифицируется по ставке ЦБ без надбавки (экспозиция в рядах < 1: плечо не возникает)")
-    ctx.ok("4.14", "только дневная панель; МСП-BEST = D")
+    lev = df.share_days_lev.max()
+    ctx.ok("4.11", f"сетка k=1,2,3; плечо по ставке ЦБ без надбавки; доля дней с плечом не выше {lev:.3f}; " + WAIT)
+    ctx.ok("4.14", f"только дневная панель; МСП-BEST = {b}; " + WAIT)
 
 
 def fig_4_15_16(ctx):
@@ -155,8 +166,10 @@ def fig_4_15_16(ctx):
     h1, l1 = ax1.get_legend_handles_labels(); h2, l2 = ax2.get_legend_handles_labels()
     ax1.legend(h1 + h2, l1 + l2, fontsize=6.5, loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=2, frameon=False); comma_axes(ax1, ax2, axis="y")
     save(ctx, fig, "fig_4_15_delta_gamma", pd.DataFrame(rows))
-    ctx.chk("4.15", "ΔCE(C, γ=10), % годовых", rows["dCE_C_pct"][9], 2.07, "печать ΔCE (fix_all_bootstrap_ce)")
-    ctx.ok("4.15", f"ΔCE из рядов (геометрическое CE); затраты {c1}/{c2} млн из stage8_economic.py; economic/*.csv нули/inf (расчёт на пустых данных)")
+    if "dce_C_g10" in ctx.refs:
+        ctx.chk("4.15", "ΔCE(C, γ=10), % годовых", rows["dCE_C_pct"][9], ctx.refs["dce_C_g10"], "fastbt.final_test.ce на портфелях пайплайна", 1e-6)
+    npos = int(np.sum(np.r_[rows["dCE_C_pct"], rows["dCE_D_pct"]] > 0))
+    ctx.ok("4.15", f"ΔCE из рядов (геометрическое CE); затраты {c1}/{c2} млн из stage8_economic.py; K_min только при ΔCE > 0 (точек с ΔCE > 0: {npos} из 30); " + WAIT)
     labs, er, rk, rs, tot, rr = ["C против A (γ=5)", "D против A (γ=5)"], [], [], [], [], []
     for ap in "CD":
         er.append((pair[ap].mean() - a.mean()) * BPY * 100)
@@ -171,4 +184,4 @@ def fig_4_15_16(ctx):
     ax.set_yticks(y); ax.set_yticklabels(labs); ax.set_xlabel("Δ, процентные пункты годовых")
     ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.3), ncol=3, frameon=False); comma_axes(ax, axis="x")
     save(ctx, fig, "fig_4_16_delta_decomposition", pd.DataFrame(dict(pair=labs, dE_pct=er, risk_pct=rk, other_pct=rs, dCE_pct=tot)))
-    ctx.ok("4.16", "ΔE(r), −(γ/2)Δσ², остаток и ΔCE из рядов C, D против A")
+    ctx.ok("4.16", "ΔE(r), −(γ/2)Δσ², остаток и ΔCE из рядов C, D против A; " + WAIT)
