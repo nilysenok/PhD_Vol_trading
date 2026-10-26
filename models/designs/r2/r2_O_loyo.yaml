@@ -45,6 +45,22 @@ sdvig:
   sdvigi: [-2, -1, 0, 1]
   data_max: "2021-12-31"
   out: R2/O/blok_sdvig.csv
+  # «Последний известный день» (дирижёр 26.10 после PR #163): правило п. 2.6 — максимум на последнем известном дне ряда. Для столбца
+  # с лагом публикации последний известный день — свой (метаданные F: INDEX_F.csv, G1 — «PC1–PC3 … Yahoo — лаг доступности 1»).
+  # Ряд прогноза с входами из нескольких столбцов: K = множество их последних известных дней. ок: min K ≤ argmax ≤ 0;
+  # argmax = +1 — блок (заглядывание); argmax < min K — блок (отстаёт). При K = {0} это ровно правило протокола (argmax = 0).
+  izvestnyy_den_stolbcy: {g1_pc1: -1, g1_pc2: -1, g1_pc3: -1}   # остальные столбцы F и G0 — 0 (день d)
+  izvestnyy_den_grupp: {G1: [-1, 0]}                              # группа -> K её столбцов; не указанные — [0]
+  # Решение O по столбцам F (правило выше, профили F docs/otchety/r2_F/shift_check.csv; оконные уровни — по приращению, как у F):
+  blok_stolbcy:                      # блок — в R2 не используются (детектор чистый; вернуть — только решением владельца)
+    g7_ln_amihud_w: "K = {0}; уровень argmax −1 (окно), приращение argmax +1 (0,041 > 0,037) — +1, блок"
+    g7_ln_amihud_m: "K = {0}; уровень argmax −2 (окно), приращение argmax +1 (0,058 > 0,032) — +1, блок"
+    g4_jbig_n22: "K = {0}; уровень argmax +1 (|ρ| 0,035 — наибольший и по модулю), — +1, блок"
+  dopushcheny_stolbcy:
+    g1_pc1: "K = {−1}; уровень argmax −1 — на последнем известном дне, ок"
+    g1_pc2: "K = {−1}; |ρ| < 0,05; приращение argmax −1 — ок"
+    g1_pc3: "K = {−1}; уровень argmax −1 — ок"
+    G1: "ряд группы: K = {−1, 0}; argmax −1 ∈ [−1; 0] — ок (профиль плоский: 0,3148 / 0,3140)"
 
 # ---- п. 2.7: ожидаемое число ложных победителей
 lozhnye: {t_df: 9, t_porog: -2, skrining_alpha: 0.025, n_faktorov: 14}
@@ -84,3 +100,35 @@ level:
   versii:                          # дирижёр 26.10: нога _emb_d0 + бустинг с эмбарго — основная; без эмбарго — контроль; _emb, _d0 — не брать
     noga: _emb_d0
     isklyuchit: [_emb, _d0]
+
+# ---- формат data/regen/R2/O/gate_E_h{h}.yaml (пишет r2_loyo.gate_E; читают A — сборка, D — лестница и абляции; PR #165, #166)
+# Пути — абсолютные. design_sha — канонический хэш r2_core.design_hash агента S (полный yaml с default); кэш — R2/cache/<design_sha[:16]>/,
+# ряды в кэше — <имя>_h{h}_s{seed|det}_{val|test}.parquet (r2_core.series_path). Дизайны лестницы и абляций лежат в
+# R2/O/gate_E_h{h}_dizainy/*.yaml; их ряды считаются по этим yaml (кэш по design_sha), O их не считает.
+gate_E_format:
+  shapka: {phase: E, h: int, time: str, code_sha256: str, yaml_sha256: str, gibrid_designs_sha256: str,
+           inputs: "{путь: sha256} — спецификация уровня 3, эталон, ряды эталонов c2, yaml дизайнов финалистов"}
+  finalisty: "список: unit, tip (top | V0), R_bar, mean_q, slozhnost, vhod, design_yaml, design_sha, cache_dir, canonical_yaml_sha256,
+              yaml_file_sha256, s2_n, s2_d_mean, s2_sigma, s2_thr, s2_t, s2_passed, s2_n_better (2σ к F_h(d0) по 10 seed)"
+  pobeditel:
+    pobeditel: "unit победителя или 'F_h(d0)'"
+    V0: "true — финал = эконометрическая компонента"
+    poryadok: "финалисты в порядке п. 2.4, затем V0 по R̄"
+    design_sha: "sha256 канонического yaml (r2_core.design_hash); null, если победителя нет"
+    cache_dir: "design_sha[:16]"
+    design_yaml: "путь к yaml дизайна победителя"
+    yaml_file_sha256: "sha256 файла design_yaml как он лежит"
+    canonical_yaml_sha256: "= design_sha"
+    canonical_yaml: "текст канонического yaml"
+    ryady: "{cache_dir: R2/cache/<sha16>, shablon: '*_h{h}_s*_val.parquet', files: [val-файлы победителя из спецификации, files10]};
+            без победителя — {files: R2/cache/VYR/F_d0_h{h}_s{42..51}_val.parquet}"
+  lestnica: "список ступеней по порядку (null без победителя): stupen ∈ [HAR-J, +s², +HAR-X, +калибровка, +бустинг, +согласование, финал];
+             HAR-J и +s² — замороженные ряды ВЫР-1: design_sha null, ryad {file: vyr/etalon_d0_h{h}_val.parquet, col: har_raw,
+             s2: bez | sm} (+s² = E_h = col har_corr); остальные — design_yaml, design_sha, cache_dir, ryady_shablon, bez_izmeneniy.
+             Ступень = default + ключи победителя накопительно: +HAR-X — leg.*; +калибровка — calib.*; +бустинг — boost.*, features,
+             data.*; +согласование — mh.*, ens.*; ens.seeds — как у победителя на всех ступенях; финал = победитель"
+  ablyacii: "список (null без победителя): klaster (номер кластера схемы), klyuchi (пути ключей, вернувшихся к default), design_yaml,
+             design_sha, cache_dir, ryady_shablon; по одному на каждый кластер, где у победителя есть ключи ≠ default
+             (те же ключи, что считает сложность п. 2.4)"
+  lozhnye: "п. 2.7: p0, n_fin, E_FW_2sigma, skrining_lozhno_vklyuchennyh, urovni, vhod_a_pri_nule, ogovorka"
+  primechanie_Fd0: "отступление ВЫР-1 (бустинг F_h(d0) без эмбарго)"

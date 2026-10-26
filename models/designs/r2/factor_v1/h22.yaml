@@ -2,6 +2,21 @@ plan: models/designs/r2/factor_plan_v1.csv
 plan_sha256: 31b2897751e5d81c776bcd11041dd2d7c2a5ba59b48d438102bbebcdcea3c9b8
 fiktivnye:
 - D
+mh_vhod:
+  faza: B
+  base_1:
+    ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+    file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    seed: как у прогона (скрининг — 42, 43, 44)
+    s2: bez (поправка в ряде)
+  leg_1:
+    ryad: HAR-J+s² d0 = E_1 (нога₁)
+    file: vyr/etalon_d0_h1_val.parquet
+    col: har_corr
+    seed: det
+  posle_C: 'лучшая ячейка h=1 из gate_C_h1.yaml (её ряд и её нога); вход меняет прогноз,
+    но не yaml дизайна — ❓ S/M: в хэш кэша должен входить вход h=1 (иначе ряды фазы
+    B и после C под одним design_sha)'
 dizainy:
 - design: B_h22_r01 (точки D12_h22)
   h: 22
