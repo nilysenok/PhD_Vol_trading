@@ -217,8 +217,9 @@ class Leaf:
             if 'default' in node:
                 self.default = _native(node['default'])
                 self.kind = 'list' if isinstance(self.default, list) and not self.fixed else 'scalar'
-            elif parent_default:
-                self.kind, self.default = 'grid', list(self.values)
+            elif parent_default:  # grid_default — сетка по умолчанию у́же values (k16.k, k18.lam: 0 — только явно, E8; хэши прежние)
+                self.kind, self.default = 'grid', list(_native(node.get('grid_default', node['values'])))
+                assert set(map(str, self.default)) <= set(map(str, self.values)), f'{".".join(path)}: grid_default вне values'
             elif self.fixed:
                 self.kind, self.default = 'scalar', self.values[0]
             else:

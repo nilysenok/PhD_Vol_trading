@@ -40,7 +40,9 @@ k16:                                          # кластер 16 — возде
   gate: {values: [off, conf_seed, regime, shock_fresh, halt, soft], default: off, cluster: 16,
          note: "halt — только при сборке A (даты ≥ 2022), в отборе не действует"}
   tau: {values: [0.25, 0.5, 1.0, 2.0, 4.0], cluster: 16, note: "conf_seed: g = 1{SD_seed×lib(c) < τ·|c̄|}"}
-  k: {values: [3, 5, 10], cluster: 16, note: "shock_fresh: g = 0 в первые k дней после скачка RV рынка"}
+  # E8 (владелец 20:20; G PR #217): k = 0 — без воздержания (g ≡ 1). grid_default — сетка по умолчанию прежняя (без 0): хэши и смысл
+  # готовых дизайнов (E5) не меняются; 0 входит в сетку только явно (дизайны E8)
+  k: {values: [0, 3, 5, 10], grid_default: [3, 5, 10], cluster: 16, note: "shock_fresh: g = 0 в первые k дней после скачка RV рынка; 0 — без воздержания"}
   q: {values: [0.9, 0.95, 0.99], cluster: 16, note: "shock_fresh: порог — q-квантиль RV рынка за прошлые 250 дней"}
   measure: {values: [uroven, prirost], default: uroven, cluster: 16}
   regime_calib: {values: [none, isotonic], default: none, cluster: 16}
@@ -48,7 +50,9 @@ k16:                                          # кластер 16 — возде
 k18:                                          # кластер 18 — постоянство: усадка к эталону
   default: "сетка λ — целиком, выбор по t"
   lam_to_ref: {values: [off, on], default: off, cluster: 18, note: "ln ŷ = ln HAR + λ·(ln ŷ_канд − ln HAR)"}
-  lam: {values: [0.25, 0.5, 0.75, 1.0], cluster: 18}
+  lam: {values: [0, 0.25, 0.5, 0.75, 1.0], grid_default: [0.25, 0.5, 0.75, 1.0], cluster: 18, note: "0 — сам ref (E8, только явно)"}
+  ref: {values: [etalon, noga], default: etalon, cluster: 18,
+        note: "к чему усадка: etalon — HAR эталона В2; noga — нога дизайна (E8, владелец 20:20: «к ноге»; G PR #217). etalon в канон не пишется"}
   ticker_choice: {values: [off, on], default: off, cluster: 18, prio: Б, note: "по тикерам «гибрид или нога»"}
 
 k20:                                          # кластер 20 — ограниченная коррекция «знак × δ» (Д19.3)
