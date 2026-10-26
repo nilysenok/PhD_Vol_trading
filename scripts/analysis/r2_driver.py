@@ -312,6 +312,48 @@ def apply_gate_B(designs, gate, h=None):
     return out
 
 
+def faktory_na_E(gate):
+    """Решение владельца 18:35: околопороговый фактор скрининга не выключается, а идёт на уровень E явным вариантом поверх финалиста h.
+    Критерий: не включён в B, средний эффект e_bar ≤ −0,005 (порог ворот B, `porog.e_bar_max`) и полоса пересекает ноль
+    (ci_low ≤ 0 ≤ ci_high). Положительный средний эффект — выключен. -> [буквы факторов]."""
+    thr = float(((gate or {}).get('porog') or {}).get('e_bar_max', -0.005))
+    out = []
+    for f in (gate or {}).get('faktory') or []:
+        if f.get('vklyuchen'):
+            continue
+        e, lo, hi = f.get('e_bar'), f.get('ci_low'), f.get('ci_high')
+        if e is not None and lo is not None and hi is not None and e <= thr and lo <= 0 <= hi:
+            out.append(f['faktor'])
+    return out
+
+
+def designs_faktory_E(best, letters, h=None):
+    """Варианты уровня E: лучший дизайн D (финалист h) + один околопороговый фактор B (+1 уровень, r2_factor.FAKTORY). Фактор,
+    неприменимый к модулю цепочки, пропускается с пометкой (NEPR). -> [дизайн]."""
+    import r2_factor as RF
+    out = []
+    for f in letters:
+        d = copy.deepcopy(best)
+        key, _, plus = RF.FAKTORY[f]
+        if key == 'features':
+            d['features'] = list(d.get('features', ['G0'])) + [g for g in plus if g not in d.get('features', ['G0'])]
+        else:
+            _set(d, key, plus)
+        d['design'] = f'E_{best.get("design", "best")}_faktor{f}'
+        bad = [m for m in route(d) if factor_unsupported(m, f)]
+        if bad:
+            NEPR[(h, d['design'])] = [f'{f} ({",".join(bad)})']
+            continue
+        try:
+            C.validate(d)
+        except C.DesignError as e:
+            log(f'фактор {f} поверх {best.get("design")} не принят схемой: {e}')
+            continue
+        if C.design_hash(d) != C.design_hash(best):  # фактор уже в лучшем — вариант совпал бы с ним
+            out.append(_maybe_inputs(d))
+    return out
+
+
 def designs_E(best, ofat):
     out = []
     for k, vals in ofat.items():
@@ -402,6 +444,12 @@ class Runner:
         cmd = [sys.executable, str(HERE / spec['file'])] + spec['run'].format(
             designs=dfile, h=h, seeds=' '.join(map(str, seeds)), steps=' '.join(map(str, steps)), workers=workers, extra=extra,
             faza=faza).split()
+        import r2_dataset_cache as DS
+        try:  # дирижёр 18:40: < 2 ГБ на томе кэша — стоп до старта задач модуля (не 70 упавших задач с No space left)
+            DS.proverka_mesta()
+        except DS.MestaNet as e:
+            log(f'модуль {m} h={h}: {e}')
+            return False, f'модуль {m}: {e}'
         t0 = time.time()
         rc = subprocess.run(cmd, cwd=REPO).returncode
         net = self.done_missing(m, designs, h, seeds)
@@ -734,9 +782,15 @@ def report(phase, hs, smoke=False):
                 cols = [c for c in ('unit', 'tip', 'poryadok', 't_mean', 'vyigrysh_pct', 'vhod', 'P_moshchnost', 's2_passed') if c in T]
                 L += ['', '**финалисты**', '', '| ' + ' | '.join(cols) + ' |', '|' + '---|' * len(cols)]
                 L += ['| ' + ' | '.join(f'{x:.4g}' if isinstance(x, float) else str(x) for x in r) + ' |' for r in T[cols].values]
+        if phase == 'B' and g.get('faktory'):
+            fe = faktory_na_E(g)
+            L.append(f'- **на уровень E** (владелец 18:35: e_bar ≤ {(g.get("porog") or {}).get("e_bar_max", -0.005)}, полоса через 0; '
+                     f'вариант поверх финалиста h): {fe or "нет"}')
         for k in ('faktory', 'tablica'):
             if g.get(k):
                 T = pd.DataFrame(g[k])
+                if phase == 'B' and k == 'faktory' and 'faktor' in T:
+                    T['na_uroven_E'] = T.faktor.isin(faktory_na_E(g)).map({True: 'да', False: ''})
                 L += ['', f'**{k}**', '', '| ' + ' | '.join(T.columns) + ' |', '|' + '---|' * len(T.columns)]
                 for _, r in T.head(40).iterrows():
                     L.append('| ' + ' | '.join(f'{x:.4g}' if isinstance(x, float) else str(x) for x in r.values) + ' |')
@@ -776,7 +830,8 @@ def pipeline(h, runner, smoke=False, once=False):
     def stage(name, fn):
         t0 = time.strftime('%F %T')
         r = fn()
-        st['etapy'][name] = dict(start=t0, end=time.strftime('%F %T'), ok=bool(r is not None and r is not False))
+        ok_ = r[0] if isinstance(r, tuple) else (r is not None and r is not False)  # chain -> (ok, причина)
+        st['etapy'][name] = dict(start=t0, end=time.strftime('%F %T'), ok=bool(ok_))
         save_state(h, st, smoke)
         return r
 
@@ -830,6 +885,11 @@ def pipeline(h, runner, smoke=False, once=False):
     Ed = designs_E(best, CFG['E']['ofat'])
     if smoke:
         Ed = Ed[:4]
+    # решение владельца 18:35: околопороговые факторы B (e_bar ≤ −0,005, полоса через 0) — явные варианты поверх лучшего h
+    fE = faktory_na_E(gB)
+    Ef = designs_faktory_E(best, fE, h)
+    st['faktory_na_E'] = dict(faktory=fE, variantov=len(Ef))
+    Ed = Ed + [d for d in Ef if d['design'] not in {x['design'] for x in Ed}]
     ok, why = stage('E_schet', lambda: chain(Ed, h, [42], steps, W, 'E', partial=True))  # надстройки независимы (OFAT)
     if not ok:
         st['E_schet_oshibki'] = why  # упавшие надстройки — без ряда, в ворота E не попадут (ocenka_units пропускает)
@@ -919,6 +979,9 @@ def stop_note(states, smoke):
 
 
 def cmd_run(a, smoke=False):
+    if not smoke:
+        import r2_dataset_cache as DS
+        log(f'место на томах кэша (ГБ): {DS.proverka_mesta()}')  # < 2 ГБ — MestaNet, драйвер не стартует
     if not (DDIR / 'B_h5.yaml').exists():
         cmd_generate()
     runner = Runner(smoke)
@@ -1060,6 +1123,26 @@ def cmd_smoke(a):
     ok('параметры: params_<модуль>.csv на модуль, load_params читает все (общий params.csv не используется)',
        sorted(Pm.modul.unique()) == ['L', 'M'] and len(C.load_params(dz, modul='M', root=SMOKE_ROOT)) == 1,
        f'общий params.csv ещё в коде: {params_obshchiy() or "нет"}')
+    import r2_dataset_cache as DS
+
+    def _mesta_stop():
+        try:
+            DS.proverka_mesta(min_gb=10 ** 6)
+            return False
+        except DS.MestaNet:
+            return True
+    ok(f'место: кэш наборов по умолчанию — SSD ({DS.cache_root() if not os.environ.get("R2_DS_CACHE") else "R2_DS_CACHE"}); '
+       f'< порога — MestaNet до старта задач', _mesta_stop() and bool(DS.proverka_mesta(min_gb=0))
+       and (os.environ.get('R2_DS_CACHE') or str(DS.cache_root()) == str(DS.SSD_DEFAULT)))
+    gB22 = dict(porog=dict(e_bar_max=-0.005), faktory=[  # таблица ворот B h=22 боевого счёта 18:18 (O): решение владельца 18:35
+        dict(faktor=f, e_bar=e, ci_low=lo, ci_high=hi, vklyuchen=False) for f, e, lo, hi in (
+            ('A', 0.0005, -0.015, 0.0161), ('D', -0.0073, -0.0204, 0.0059), ('E', -0.0, -0.0097, 0.0096), ('G', 0.0175, -0.0009, 0.0359),
+            ('K', -0.0104, -0.0279, 0.0071), ('L', -0.0053, -0.0862, 0.0757), ('M', -0.0229, -0.0794, 0.0336),
+            ('O', -0.0469, -0.1891, 0.0954))])
+    best_ = dict(design='D_best', h=22, leg=dict(type='HARJ'), boost=dict(role='residual', early_stop='qlike_total'))
+    vE = designs_faktory_E(best_, faktory_na_E(gB22), 22)
+    ok(f'на уровень E (владелец 18:35): h=22 -> {faktory_na_E(gB22)}; вариантов поверх лучшего {len(vE)}',
+       faktory_na_E(gB22) == ['D', 'K', 'L', 'M', 'O'] and len(vE) >= 4, str([d['design'] for d in vE]))
     ok('ранняя остановка: у бустинга native (год оценки) запрещена в validate; дизайны driver_v1 — qlike_total',
        C._raises(lambda: C.validate(dict(h=5, boost=dict(role='residual'))))
        and all(str(C.get(C.validate(d), 'boost.early_stop')) == 'qlike_total'
