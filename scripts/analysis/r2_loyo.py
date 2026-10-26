@@ -441,23 +441,27 @@ def K_dizaina(design=None, features=None, leg=None, h=None):
 
 
 def sdvig_ok(argmax, K=(0,), corr=None, eps=None):
-    """Правило п. 2.6 с последним известным днём и допуском ε (умолчание дирижёра 26.10, ❓ 3 протокола):
-    - будущее: если corr дан — блок, если max_{s>0} corr(s) − corr(max K) > ε (заглядывание); иначе при argmax > 0 — ок с пометкой
-      «плоский профиль»; без corr — argmax > 0 всегда блок (как раньше);
-    - прошлое: argmax < min K — блок (отстаёт);
-    -> (ok, причина или пометка). При K = {0} и ε = 0 — ровно «argmax = 0» протокола."""
+    """Правило п. 2.6 с последним известным днём и симметричным допуском ε (решение дирижёра по ❓ 5 протокола, 26.10):
+    диапазон последних известных дней — [min K; max K]; c_in — максимум корреляции на сдвигах внутри диапазона, c_out — на сдвигах вне его.
+    Ряд проходит, если c_out − c_in ≤ ε (при argmax вне диапазона — с пометкой «плоский профиль»); иначе блок: сдвиг вне диапазона
+    справа — заглядывание, слева — отстаёт. Без corr — по argmax (вне диапазона — блок). -> (ok, причина или пометка)."""
     eps = CFG['sdvig'].get('eps', 0.0) if eps is None else eps
     if argmax is None:
         return False, 'нет пар'
+    lo, hi = min(K), max(K)
     if corr is not None:
-        fut = [corr[s] for s in corr if s > 0 and corr[s] == corr[s]]
-        c0 = corr.get(max(K))
-        if fut and c0 is not None and c0 == c0:
-            ex = max(fut) - c0
+        c = {s: v for s, v in corr.items() if v == v}
+        cin = [v for s, v in c.items() if lo <= s <= hi]
+        cout = {s: v for s, v in c.items() if s < lo or s > hi}
+        if cin and cout:
+            s_out = max(cout, key=cout.get)
+            ex = cout[s_out] - max(cin)
             if ex > eps:
-                return False, f'заглядывание (+1): превышение {ex:.4f} > ε = {eps}'
-            if argmax > 0:
-                return True, f'плоский профиль: превышение +1 над днём {max(K)} = {ex:.4f} ≤ ε = {eps}'
+                side = 'заглядывание (+1)' if s_out > hi else 'отстаёт (info_set < d0)'
+                return False, f'{side}: сдвиг {s_out:+d} выше диапазона на {ex:.4f} > ε = {eps}'
+            if argmax < lo or argmax > hi:
+                return True, f'плоский профиль: сдвиг {s_out:+d} выше диапазона [{lo}; {hi}] на {ex:.4f} ≤ ε = {eps}'
+            return True, ''
     if argmax > 0:
         return False, 'заглядывание (+1)'
     if argmax < min(K):
@@ -534,8 +538,8 @@ def peresmotr_blok(zapis=True):
     (последняя строка по (ryad, h, hash) — действующая). -> таблица пересмотра."""
     f = R / CFG['sdvig']['out']
     B = pd.read_csv(f)
-    B = B[B.hash.notna() & (B.hash.astype(str) != '') & ~B.ok.astype(str).str.lower().eq('true')]
-    B = B.drop_duplicates(['ryad', 'h', 'hash'], keep='last')
+    B = B[B.hash.notna() & (B.hash.astype(str) != '')].drop_duplicates(['ryad', 'h', 'hash'], keep='last')  # действующая строка
+    B = B[~B.ok.astype(str).str.lower().eq('true')]
     rows = []
     for r in B.to_dict('records'):
         dz = R / 'R2' / 'cache' / str(r['hash']) / 'design.yaml'
@@ -1112,7 +1116,12 @@ def selftest():
     ok_, why_ = sdvig_ok(1, (0,), corr={-2: 0.300, -1: 0.302, 0: 0.304, 1: 0.310})
     assert ok_ and why_.startswith('плоский профиль')
     assert not sdvig_ok(1, (0,), corr={-2: 0.30, -1: 0.30, 0: 0.30, 1: 0.32})[0]
-    assert not sdvig_ok(-1, (-1, 0), corr={-2: 0.30, -1: 0.40, 0: 0.30, 1: 0.39})[0]  # будущее > дня 0 на 0,09 — блок при любом argmax
+    assert not sdvig_ok(-1, (-1, 0), corr={-2: 0.30, -1: 0.30, 0: 0.30, 1: 0.39})[0]  # будущее выше диапазона на 0,09 — блок
+    # симметричный ε (решение по ❓ 5): MIDAS h=22 (−1 выше дня 0 на 0,008) — проходит «плоский профиль»; прежний HAR-J d−1 (~0,09) — блок
+    okm, whym = sdvig_ok(-1, (0,), corr={-2: 0.6933, -1: 0.7031, 0: 0.6949, 1: 0.5572})
+    assert okm and whym.startswith('плоский профиль')
+    okh, whyh = sdvig_ok(-1, (0,), corr={-2: 0.71, -1: 0.827, 0: 0.727, 1: 0.579})
+    assert not okh and whyh.startswith('отстаёт')
     assert K_dizaina({'h': 22, 'leg': {'type': 'RVI_anchor'}}) == (-22, 0) and K_dizaina(leg='RVI_anchor', h=5) == (-5, 0)
     assert sdvig_ok(-2, K_dizaina(leg='RVI_anchor', h=5), corr={-2: 0.305, -1: 0.304, 0: 0.300, 1: 0.299})[0]
     # детектор утечек с допуском: плоский ряд (окно 252 дня) проходит; тот же ряд с подложенной утечкой (RV_{d+1}) — блок
@@ -1128,6 +1137,9 @@ def selftest():
     sp0, sp1 = sdvig(ploskiy(0.0), rvd, K=Ka), sdvig(ploskiy(0.3), rvd, K=Ka)
     assert sp0['ok'] and sp1['blok'] and sp1['argmax'] == 1, (sp0, sp1)
     assert sdvig(pred_from(1), rvd)['blok'] and sdvig(pred_from(1), rvd, K=(-22, 0))['blok']
+    # детектор с симметричным допуском: подложенная утечка (d+1) и подложенный лаг (d−1) — оба блок при K = {0}
+    lk, lg = sdvig(pred_from(1), rvd), sdvig(pred_from(-1), rvd)
+    assert lk['blok'] and lk['prichina'].startswith('заглядывание') and lg['blok'] and lg['prichina'].startswith('отстаёт'), (lk, lg)
     bf = Path(tempfile.mkdtemp()) / 'blok.csv'
     pd.DataFrame([dict(ryad='core', h=1, argmax=-1, ok=False)]).to_csv(bf, index=False)  # строка ядра без нового поля
     blok_zapis([dict(ryad='O', h=1, argmax=1, ok=False, posledniy_izvestnyy_den='0')], f=bf)
