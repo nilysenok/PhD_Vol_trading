@@ -5,6 +5,11 @@
 # status: zamorozheno и коммитит до запуска сборки; дальше файл не меняется (SHA — в журнале и SHA256.txt выхода).
 
 status: ждёт ворот E
+# s² калибровки у эталона (б) d0, F_h(d0) и победителя — одним правилом (решение владельца «s² последовательно при открытии»;
+# эмбарго s² — PR #194, #195, решение владельца 17:35): t−1 по OOS-остаткам val шагов окна, с эмбарго; на шагах 7–10 — остатки
+# val 2022–2025 из test_locked (только part = val, метка R2-guard-s2). zamorozka (раздел 8 протокола) — справочный режим.
+s2_pravilo: posledovatelno
+s2_etalon: {est: sm, kappa: 0.5, embargo: "on"}   # эталон (б) d0 и F_h(d0): Б0.1 sm, как ВЫР-1, плюс эмбарго
 gate_E_sha: {}          # {h: sha256 R2/O/gate_E_h{h}.yaml}
 h: {}                   # {h: {design, design_sha, pravilo, komponenty, ...}} — только h с победителем R2
 F_h_d0: []              # h без победителя R2: строка гибрида — F_h(d0) (ВЫР-1)
@@ -32,10 +37,15 @@ zamorozheno:
   vyr/ref_harcj_d0/REF_HARCJ_d0_h5_test.parquet: 02959e651fdacded944a85be294b409ba372bf30b7e252e9a103eee508591496
   vyr/ref_harcj_d0/REF_HARCJ_d0_h22_test.parquet: ee36287815153af9d2aee119908e90d7e7a57dc7271c38b0665005ba18b3da5c
 
+# Собрано r2_sborka_test.py (пишется после сборки, до «да»; без этих SHA final_test_r2 откажет до замка). Пути — от test_locked/.
+#   R2/final/etalon_d0_s2emb_h{1,5,22}_test.parquet, R2/final/final_d0_s2emb_h{1,5,22}_test.parquet, R2/final/final_r2_h{h}_test.parquet
+sobrano: {}
+
 # Строки второго открытия в версии d0 (final_test_r2.py):
-#   HAR-J (а) d0 / HAR-J (б) d0  — vyr/etalon_d0_h{h}_test.parquet, part = test: har_raw / har_corr;
-#   Гибридная                    — R2/final/final_r2_h{h}_test.parquet, иначе F_h(d0) = vyr/final_d0_h{h}_test.parquet (part = test);
-#   F_h(d0) отдельной строкой    — справочно, сравнение с победителем R2;
+#   HAR-J (а) d0 / HAR-J (б) d0  — R2/final/etalon_d0_s2emb_h{h}_test.parquet: har_raw (= ВЫР-1) / har_corr (s² t−1 с эмбарго);
+#                                  прежний (б) ВЫР-1 (vyr/etalon_d0_*, s² как R1) — только справочно;
+#   Гибридная                    — R2/final/final_r2_h{h}_test.parquet, иначе F_h(d0) = R2/final/final_d0_s2emb_h{h}_test.parquet;
+#   F_h(d0) отдельной строкой    — справочно, сравнение с победителем R2; прежний F_h(d0) ВЫР-1 — справочно;
 #   V0 XGBoost / LightGBM (raw, с поправкой) — кадр первого теста как есть (ВЫР-2: день d видят, не перестраивались);
 #   HAR-CJ d0                    — vyr/ref_harcj_d0 (справочно, в таблице периодов);
 #   HAR-X с поправкой (раскладка) — кадр первого теста, версия R1 (❓ A-2: d0-ряда HAR-X с поправкой на тесте нет).
