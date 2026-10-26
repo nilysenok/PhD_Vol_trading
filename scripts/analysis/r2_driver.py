@@ -440,7 +440,8 @@ def final_series(design, h, seeds, root=None, steps=None):
     """Итоговый ряд дизайна: ряды последнего модуля цепочки; варианты (сетка внутри складки) — по имени ряда; seed — среднее
     (медиана при ens.agg = median). -> {вариант: кадр val}."""
     last = route(design)[-1]
-    L = C.load_series(C.design_hash(design), modul=last if not SMOKE_FLAG['on'] else f'smoke_{last}', seed=[str(s) for s in seeds],
+    stand_in = SMOKE_FLAG['on'] and not SMOKE_FLAG.get('real')  # дым с заменой модулей HAR-J — ряды smoke_<модуль>
+    L = C.load_series(C.design_hash(design), modul=f'smoke_{last}' if stand_in else last, seed=[str(s) for s in seeds],
                       root=root, steps=steps)
     if L.empty:
         return {}
@@ -948,6 +949,59 @@ def cmd_smoke(a):
     return 0 if T.ok.all() else 1
 
 
+def cmd_smoke_real(a):
+    """Дым с НАСТОЯЩИМИ модулями (подпроцессы run/leak по контракту, как в бою): R2_TICKERS = 3 тикера (модули, которые его читают:
+    L, L3; P и M берут все 17), шаги 1–3, seed 42, кэш — свой корень с отметкой времени, блок сдвига — свой файл; ворота — дымовые
+    (2 складки); состояние, отчёты, ворота — в R2/S/driver_smoke/real/. Модуль без файла — этап ждёт (один проход). Замеры —
+    R2/S/driver/dym_real/zamery.csv (оценка боевого времени)."""
+    global SMOKE_ROOT, SMOKE_O, SMOKE_REPORT, STATE
+    t0 = time.time()
+    base = SMOKE_DIR / 'real'
+    SMOKE_ROOT = base / time.strftime('cache_%Y%m%d_%H%M%S')
+    SMOKE_O, SMOKE_REPORT, STATE = base / 'O', base / 'report', STATE / 'dym_real'
+    for d in (SMOKE_ROOT, SMOKE_O, SMOKE_REPORT, STATE / 'run'):
+        d.mkdir(parents=True, exist_ok=True)
+    for d in (SMOKE_O, SMOKE_REPORT):
+        for f in d.glob('*'):
+            if f.is_file():
+                f.unlink()
+    os.environ.update(R2_CACHE=str(SMOKE_ROOT), R2_TICKERS=','.join(SMOKE_TICKERS), R2_BLOCK_FILE=str(base / 'blok_sdvig.csv'))
+    C.CACHE_ROOT = SMOKE_ROOT
+    SMOKE_FLAG.update(on=True, real=True)
+    if not (DDIR / 'B_h5.yaml').exists():
+        cmd_generate()
+    runner = Runner(False)
+    hs = a.h or SMOKE_HS
+    res, econ_res, th = {}, {}, []
+    for h in hs:
+        th.append(threading.Thread(target=lambda h=h: econ_res.__setitem__(h, econ(h, runner, True)), name=f'econ_h{h}'))
+
+        def guarded(h=h):
+            try:
+                res[h] = pipeline(h, runner, True, True)
+            except Exception as e:  # noqa: BLE001
+                res[h] = dict(h=h, zhdyot=f'ОШИБКА: {type(e).__name__}: {e}')
+        th.append(threading.Thread(target=guarded, name=f'h{h}'))
+    for t in th:
+        t.start()
+    for t in th:
+        t.join()
+    stop_note([res[h] for h in hs if h in res], True)
+    Z = pd.read_csv(STATE / 'zamery.csv') if (STATE / 'zamery.csv').exists() else pd.DataFrame()
+    print(Z.to_string(index=False) if len(Z) else 'замеров нет')
+    blk = pd.read_csv(base / 'blok_sdvig.csv') if (base / 'blok_sdvig.csv').exists() else pd.DataFrame()
+    if len(blk):
+        blk = blk[blk.vremya >= time.strftime('%F %T', time.localtime(t0))]
+    rows = [dict(h=h, econ_ok=econ_res.get(h, {}).get('ok'), econ_prichina=str(econ_res.get(h, {}).get('prichina'))[:200],
+                 konveyer=str(res.get(h, {}).get('zhdyot'))[:200]) for h in hs]
+    T = pd.DataFrame(rows)
+    T.to_csv(base / 'smoke_real.csv', index=False)
+    print(T.to_string(index=False))
+    print(f'блоки сдвига (предварительные на 3 тикерах): {int((blk.ok.astype(str) == "False").sum()) if len(blk) else 0}')
+    log(f'дым с модулями: {time.time() - t0:.0f} с -> {base / "smoke_real.csv"}')
+    return 0 if all(r['econ_ok'] or 'ждёт модуль' in r['econ_prichina'] for r in rows) else 1
+
+
 def _ok_midas(n):
     """Корреляции MIDAS_RV h=22 (1e838122…, R2/O/blok_sdvig.csv и дым L 16:54) -> решение r2_loyo.sdvig_ok при K = {0}, ε = 0,01."""
     import r2_loyo as O
@@ -991,9 +1045,13 @@ def main():
     p = sp.add_parser('run')
     p.add_argument('--h', type=int, nargs='+')
     p.add_argument('--once', action='store_true', help='не ждать ворот/модулей (один проход)')
-    sp.add_parser('smoke')
+    p = sp.add_parser('smoke')
+    p.add_argument('--real', action='store_true', help='настоящие модули по контракту (3 тикера, шаги 1–3), замеры времени')
+    p.add_argument('--h', type=int, nargs='+')
     sp.add_parser('status')
     a = ap.parse_args()
+    if a.cmd == 'smoke' and a.real:
+        return cmd_smoke_real(a)
     if a.cmd == 'generate':
         return cmd_generate(a)
     if a.cmd == 'run':
