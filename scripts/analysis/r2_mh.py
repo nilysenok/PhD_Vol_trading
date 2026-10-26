@@ -1142,13 +1142,13 @@ def b_E7(ctx, S, I, s2emb='on', h=None):
     return V, par, None
 
 
-def b_E2(ctx, S, I, s2emb='on'):
-    """E2 (h=22): forward HAR ln RV̄₂₂ = β₀ + β₁ ln hyb₁ + β₂ ln hyb₅ + β₃ ln RV_m; β — OLS по OOS шагов < t с эмбарго 22."""
-    h = 22
-    m = _merge_in(I['rows'], I, ['hyb_1', 'hyb_5'])
+def b_E2(ctx, S, I, s2emb='on', h=22):
+    """E2 — forward HAR, β — OLS по OOS шагов < t с эмбарго h:
+    h=22: ln RV̄₂₂ = β₀ + β₁ ln hyb₁ + β₂ ln hyb₅ + β₃ ln RV_m;  h=5 (21:05): ln RV̄₅ = β₀ + β₁ ln hyb₁ + β₂ ln RV_w + β₃ ln RV_m."""
+    m = _merge_in(I['rows'], I, ['hyb_1', 'hyb_5'] if h == 22 else ['hyb_1'])
     ai, step = ctx.rows(m), m.step.values
-    X = np.column_stack([np.ones(len(m)), np.log(m.hyb_1.values), np.log(m.hyb_5.values),
-                         np.log(ctx.A['rv_m'].astype('float64').values[ai].clip(1e-10))])
+    lr = lambda c: np.log(ctx.A[c].astype('float64').values[ai].clip(1e-10))
+    X = np.column_stack([np.ones(len(m)), np.log(m.hyb_1.values), np.log(m.hyb_5.values) if h == 22 else lr('rv_w'), lr('rv_m')])
     y = np.log(ctx.tgt(1, h) + EPS)[ai]
     direct = np.exp(ctx.at_steps(ctx.har_sub(1, h)[0], ai, step))
     raw, bs = direct.copy(), {}
@@ -1223,7 +1223,7 @@ def e_level(seeds=SEEDS10, which=('E2', 'E7_5', 'E7_22', 'E1b')):
     ctx = Ctx(A, harj, STEPS)
     M = LC.N.mat_L()
     hyb = {k: {s: read_input(EL[k], s, int(k[-1]))[0] for s in seeds} for k in ('hyb_1', 'hyb_5')}
-    spec = {'E2': (22, b_E2, True), 'E7_5': (5, lambda c, S, I, e='on': b_E7(c, S, I, e, h=5), False),
+    spec = {'E2': (22, b_E2, True), 'E2_5': (5, lambda c, S, I, e='on': b_E2(c, S, I, e, h=5), True),'E7_5': (5, lambda c, S, I, e='on': b_E7(c, S, I, e, h=5), False),
             'E7_22': (22, lambda c, S, I, e='on': b_E7(c, S, I, e, h=22), False), 'E1b': (22, b_E1b, True)}
     rows, leak_rows, sdv, opora_done = [], [], [], set()
     for nm in which:
@@ -1241,13 +1241,14 @@ def e_level(seeds=SEEDS10, which=('E2', 'E7_5', 'E7_22', 'E1b')):
             des = C.with_inputs({'design': 'E1b_decomp5_h22', 'h': 22, 'mh': {'scheme': 'decomp', 'decomp_k': 5}},
                                 {'base_5': {'file': EL['hyb_5']}, 'far': {'file': str(far_f.relative_to(REG))}})
         elif name == 'E2':
-            des = C.with_inputs({'design': 'E2_fwdHAR_h22', 'h': 22},
-                                {'base_1': {'file': EL['hyb_1']}, 'base_5': {'file': EL['hyb_5']}, 'recipe_E2': RECIPE})
+            des = C.with_inputs({'design': f'E2_fwdHAR_h{h}', 'h': h},
+                                {'base_1': {'file': EL['hyb_1']}, **({'base_5': {'file': EL['hyb_5']}} if h == 22 else {}),
+                                 'recipe_E2': RECIPE})
         else:
             des = C.with_inputs({'design': f'E7_dir_iter_h{h}', 'h': h}, {'recipe_E7': RECIPE})
         for s, v in V.items():
             sd = s if by_seed else 'det'
-            C.write_series(des, f'M_{name}', v, h, sd, module=MODULE, note=f'{name} (уровень E, поручение 20:30): {EL[name][:80]}')
+            C.write_series(des, f'M_{name}', v, h, sd, module=MODULE, note=f'{nm} (уровень E): {EL.get(nm, EL[name])[:80]}')
             C.done_path(des, MODULE, h, sd).write_text(time.strftime('%F %T'))
         write_params(des, h, 42 if by_seed else 'det',
                      {int(s): {c: np.array([par.loc[s, c]]) for c in par.columns if np.isfinite(par.loc[s, c])} for s in par.index},
@@ -1267,9 +1268,10 @@ def e_level(seeds=SEEDS10, which=('E2', 'E7_5', 'E7_22', 'E1b')):
             rows.append(_row('F_R1_d0 (опора)', h, GT.opora_ocenka(h, Eb, F=Fs, seeds=list(seeds)), opora=True))
             opora_done.add(h)
     T = pd.DataFrame(rows)
-    T.to_csv(od / 'e_tablica.csv', index=False)
-    pd.DataFrame(leak_rows).to_csv(od / 'e_leak.csv', index=False)
-    pd.DataFrame(sdv).to_csv(od / 'e_sdvig.csv', index=False)
+    sfx = '' if set(which) == {'E2', 'E7_5', 'E7_22', 'E1b'} else '_' + '_'.join(which)  # частичный прогон не затирает общий
+    T.to_csv(od / f'e_tablica{sfx}.csv', index=False)
+    pd.DataFrame(leak_rows).to_csv(od / f'e_leak{sfx}.csv', index=False)
+    pd.DataFrame(sdv).to_csv(od / f'e_sdvig{sfx}.csv', index=False)
     pd.set_option('display.width', 250)
     print(T.drop(columns=[c for c in T.columns if c.startswith('t_20')]).to_string(index=False))
     return T
@@ -1287,6 +1289,7 @@ def main():
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--tickers', nargs='+')
     ap.add_argument('--workers', type=int)
+    ap.add_argument('--which', nargs='+', help='elevel: E2 E2_5 E7_5 E7_22 E1b (по умолчанию — все, кроме E2_5)')
     a = ap.parse_args()
     if a.cmd == 'selftest':
         selftest()
@@ -1299,7 +1302,7 @@ def main():
     elif a.cmd == 'e1':
         e1()
     elif a.cmd == 'elevel':
-        e_level()
+        e_level(which=tuple(a.which)) if a.which else e_level()
     elif a.cmd == 'leak':
         leak_cmd(a.designs, a.steps, a.tickers, a.seed)
 
