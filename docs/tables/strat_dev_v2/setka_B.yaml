@@ -1,0 +1,26 @@
+# Сетка B (агент СD, раунд 22:20 п. 4, смягчение 22:25) — объявлена ДО первого прогона.
+# Разведочный счёт «до аудита», разработка 2018–2021 (2017 — прогрев), тест закрыт.
+# Без отбора и без «улучшений» по результатам: выбор делает СF по С8.
+# Код: fastbt/dev_v2_db.py (поверх fastbt.s9.Engine, fastbt.s9_stats).
+pometka: до аудита
+agent: СD
+osnova: вес над позицией A основного дизайна (fastbt/designs/final/main.yaml, после фильтра оборота); позиция = A·w
+sigma:
+  osnovnoy: {h5: data/regen/ch4_dev/sigma_hyb_h5_dev.parquet}     # веса по h=5
+  spravochno_dlya_SF:
+    harj_b: {h5: data/regen/ch4_dev/sigma_harj_b_h5_dev.parquet}
+    naive: data/regen/ch4_dev/sigma_naive_dev.parquet
+vyravnivanie: последнее σ с датой ≤ даты бара d (fastbt.s9.align); решение на закрытии d, позиция d→d+1
+otnositelnaya_sigma_target: σ_target_t = k · median(σ[t−252..t−1]) — свой уровень тикера по прошлому (fastbt.s9_stats.past_median, текущий бар не входит)
+ves: w_t = min(cap, σ_target_t / σ_t); NaN (нет истории) — вес 1; затем полоса бездействия (fastbt.s9_stats.band_hold)
+setka:
+  h: [h5]
+  k: [0.8, 1.0, 1.2]
+  cap_plecha: [1.0, 1.5]
+  polosa_bezdeystviya: [0.10, 0.20]   # держим вес, пока |w_t / w_held − 1| ≤ полоса
+chislo_tochek: 12                     # 3 k × 2 cap × 2 полосы
+fiksirovano: {okno_mediany: 252, komissiya_na_storonu: 0.0005, scenariy: спот (плечо > 1 — займ под ключевую ставку + 2 п. п.)}
+semi: нет (как в прежней сетке B, FINAL_DESIGN п. 9.4)
+spravochno: те же 12 точек на HAR-J (б) h=5 и наивной
+metriki: [Шарп избыточной доходности МСП, Сортино, Кальмар, max просадка, экспозиция, доля закрытых дней, оборот, ΔШарп к A, p Ледуа–Вольфа (блок 5, 1000), годы лучше A] — по годам 2018–2021 и за период
+p_k_A: fastbt.s9_stats.lw_sharpe_diff(excess, excess_A, reps=1000, block=5, seed=42)

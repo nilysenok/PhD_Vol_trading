@@ -1,0 +1,43 @@
+# Сетка D (агент СD, раунд 22:20 п. 3, смягчение 22:25) — объявлена ДО первого прогона.
+# Разведочный счёт «до аудита», разработка 2018–2021 (2017 — прогрев/калибровка), тест закрыт.
+# Без отбора и без «улучшений» по результатам: выбор делает СF по С8.
+# Код: fastbt/dev_v2_db.py (поверх fastbt.s9.Engine, fastbt.approach_cd, fastbt.s9_stats, fastbt.masks).
+pometka: до аудита
+agent: СD
+osnova: надстройка над позицией A основного дизайна (fastbt/designs/final/main.yaml, после фильтра оборота)
+sigma:
+  osnovnoy: {h1: data/regen/ch4_dev/sigma_hyb_h1_dev.parquet, h5: data/regen/ch4_dev/sigma_hyb_h5_dev.parquet}
+  spravochno_dlya_SF:
+    harj_b: {h1: data/regen/ch4_dev/sigma_harj_b_h1_dev.parquet, h5: data/regen/ch4_dev/sigma_harj_b_h5_dev.parquet}
+    naive: {h1_i_h5: data/regen/ch4_dev/sigma_naive_dev.parquet}   # √RV_w от h не зависит — один набор (h=naive)
+vyravnivanie: последнее σ с датой ≤ даты бара d (fastbt.s9.align); решение на закрытии d, позиция d→d+1
+otnositelnye_edinicy: ранг σ_t в прошлом окне [t−W, t−1] (fastbt.s9_stats.past_rank, текущий бар не входит, min max(50, W/5))
+fiksirovano:
+  okno_ranga_W: [126, 252]          # как в прежней сетке D1–D7 (FINAL_DESIGN п. 9.3)
+  komissiya_na_storonu: 0.0005
+  ranq_NaN: затвор открыт / вес 1
+binarnyy:                           # затвор 1/0, позиция = A·g
+  h: [h1, h5]
+  sglazhivanie: [net, ema3, ema5, ema10]   # EMA σ (fastbt.s9_stats.ema) до ранга
+  zatvor:
+    prostoy: закрыть при ранг > p
+    gisterezis: закрыть при ранг > p, открыть при ранг < p − 0.10 (fastbt.masks.hyst_gate)
+  p: [0.70, 0.80, 0.90]
+  chislo_tochek: 96                 # 2 h × 4 сглаживания × 2 затвора × 3 p × 2 W
+  otsev: точка отсеяна (screened_in = False), если средняя по тикеро-годам доля закрытых баров окна калибровки 2017…Y−1 вне [0.10, 0.50]; метрики отсеянных считаются, но в выбор СF они не идут
+nepreryvnyy:                        # вес, позиция = A·w
+  formula: w_t = min(cap, (median(σ[t−W..t−1]) / σ_t)^γ)   # без отсева (как D7)
+  h: [h1, h5]
+  W: [126, 252]
+  gamma: [1, 2]
+  cap_plecha: [1.0, 1.5]            # плечо > 1 — займ под ключевую ставку + 2 п. п. (fastbt.s9.Engine._finish)
+  chislo_tochek: 16
+semi:                               # выбор по валидации 2017…Y−1 на пару-год, объявлен заранее (как «семья» С9)
+  - {nazvanie: D-бинарный семья, h: h1, iz: 48 точек binarnyy h1, otsev_v_okne: [0.10, 0.50]}
+  - {nazvanie: D-бинарный семья, h: h5, iz: 48 точек binarnyy h5, otsev_v_okne: [0.10, 0.50]}
+  - {nazvanie: D-непрерывный семья, h: h1, iz: 8 точек nepreryvnyy h1}
+  - {nazvanie: D-непрерывный семья, h: h5, iz: 8 точек nepreryvnyy h5}
+chislo_tochek_vsego: 112            # + 4 семьи = 116 строк на σ-источник
+spravochno: те же 116 строк на HAR-J (б); на наивной — 58 строк (h не различается)
+metriki: [Шарп избыточной доходности МСП, Сортино, Кальмар, max просадка, экспозиция, доля закрытых дней, оборот, ΔШарп к A, p Ледуа–Вольфа (блок 5, 1000), годы лучше A] — по годам 2018–2021 и за период
+p_k_A: fastbt.s9_stats.lw_sharpe_diff(excess, excess_A, reps=1000, block=5, seed=42)
