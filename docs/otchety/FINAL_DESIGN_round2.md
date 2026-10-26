@@ -135,10 +135,24 @@
 | `vyr/ref_harcj_d0/REF_HARCJ_d0_h1_test.parquet` | `a42b1ae379eb2388b8f7af4312a7702cf076ae30d8d38c5b17b2c97cd236f8ed` |
 | `vyr/ref_harcj_d0/REF_HARCJ_d0_h5_test.parquet` | `02959e651fdacded944a85be294b409ba372bf30b7e252e9a103eee508591496` |
 | `vyr/ref_harcj_d0/REF_HARCJ_d0_h22_test.parquet` | `ee36287815153af9d2aee119908e90d7e7a57dc7271c38b0665005ba18b3da5c` |
+| `ref_nn_garch/REF_GRU_h1_test.parquet` | `5f5443d7f4f05e21874118a8f6f3bc6a2f4a3be08442d23a9a696fab0328d2a3` |
+| `ref_nn_garch/REF_GRU_h5_test.parquet` | `02bf4ff2badcad5ef01d8b5198910f2c116371b38e00ac86c340e1172c293370` |
+| `ref_nn_garch/REF_GRU_h22_test.parquet` | `a330b1183a95fb4dc7bb3c59fa76eb5307099804248dbf852ab8dfe0bf576924` |
+| `ref_nn_garch/REF_LSTM_h1_test.parquet` | `ae726e37ec98ad2547bc9d4f67f98dc69eff06ad6e484103d864614a9bb57e0d` |
+| `ref_nn_garch/REF_LSTM_h5_test.parquet` | `f349ad30f6e0f56b7e71b427d687db9e05cbf2d4d65939c03aa5a58a14a9ec6e` |
+| `ref_nn_garch/REF_LSTM_h22_test.parquet` | `0a4e35a5da578519f0bb3d3ffbbaa03da2dd9423c56d7f6efeb5b46afbbaff3c` |
+| `ref_nn_garch/REF_GARCH_h1_test.parquet` | `db4e7b93ac65227a99a8553535690cce8b7e173f05320297fa2cef52f9d56d9d` |
+| `ref_nn_garch/REF_GARCH_h5_test.parquet` | `cb039e04ea69a5b01ee14ab3526ed400a9053b4baa89a8ec35e21b2df9be4c00` |
+| `ref_nn_garch/REF_GARCH_h22_test.parquet` | `e5a8691ec20a507226b2754733174ecc71598646664a9a5d4fe5ea5972044831` |
+| `ref_nn_garch/REF_GJR_h1_test.parquet` | `714678801fd872bf8563295af10f24562d0639b0bf142ff21083ef3a6c3fe59f` |
+| `ref_nn_garch/REF_GJR_h5_test.parquet` | `f2a486533ab7d48d48b242c3c62ccb005094d707bbb2b054a5fc7638efa3ae8b` |
+| `ref_nn_garch/REF_GJR_h22_test.parquet` | `b435823e167ddfc6d16bb3b81890b3b321ece952f9b7096563c8d2c0f78588be` |
+
+SHA справочных NN / GARCH взяты из журнала записи `docs/otchety/2026-10-26_ref_nn_garch.md` (раздел «Хэши SHA-256», закрытые прогнозы); `test_locked` не открывался. Сверяются `final_test_r2.py` до замка — 24 замороженных файла.
 
 - **Собранные файлы** `R2/final/etalon_d0_s2emb_h{1,5,22}_test.parquet` и `final_d0_s2emb_h{1,5,22}_test.parquet`: их SHA вносятся в `r2_A_sborka.yaml: sobrano` после сборки и до запуска открытия.
 - **Код** (SHA-256 на коммите этого PR):
-  - `r2_sborka_test.py` `62f9e401e02e0fdd…`, `final_test_r2.py` `8c0753ad697a0409…`;
+  - `r2_sborka_test.py` `62f9e401e02e0fdd…`, `final_test_r2.py` `ac3e5a1f49d0ddea…` (справочные NN / GARCH добавлены);
   - `r2_driver.py` `59f539ae4e9f8633…` (PR #219), `r2_gates.py` `9c8524e26f3a7381…`, `r2_gate_abstain.py` `b69b96135f09ab59…`, `r2_mh.py` `3bb2fa6a21afb309…`, `r2_core.py` `0417e91ca088c68b…`, `r2_calib.py` `09f59056b0493348…`, `r2_nogi.py` `b24d48cced846…`, `r2_ens.py` `83f3a875bc5d9885…`;
   - без изменений: `gibrid_designs.py` `7462015b2989ffce…`, `gibrid_bias.py` `40e65cacbd4be1fd…`, `final_test.py` `ea67239fe302f566…`, `ftp_tables.py` `2feca8238c617a66…`, `ftp_stats.py` `ce705f96f5337633…`;
   - `code_sha256` ворот не равен текущим файлам: код менялся после записи ворот. Ворота — по своему SHA.
@@ -226,6 +240,7 @@
 | HAR-J (б) d0 и F_h(d0) с s² как R1 | `vyr/etalon_d0_h{h}_test.parquet`, `vyr/final_d0_h{h}_test.parquet` | ВЫР-1 до эмбарго s², справочно |
 | V0 XGBoost / LightGBM | кадр `final3` | день d видят (ВЫР-2) |
 | HAR-CJ d0 | `vyr/ref_harcj_d0/` | ВЫР-2, справочно |
+| GRU, LSTM, GARCH(1,1), GJR-GARCH | `ref_nn_garch/REF_{GRU,LSTM,GARCH,GJR}_h{h}_test.parquet`, `rv_pred` | По ВЫР-2 (PR #154) день d видят, не перестраивались. Справочные строки без изменений: таблица периодов (QLIKE / RMSE / MAE). Не в H1, DM против эталона и MCS |
 | HAR-X с поправкой (раскладка) | кадр `final3`, R1 | ❓ A-2: пометка «R1, до выравнивания» |
 
 - Правило закрытия биржи: основная версия — без правила, с правилом — рядом.
@@ -253,6 +268,7 @@
 | эмбарго s² | в R1 и у эталона s² оценивалась по прошлым OOS-остаткам, включая декабрьские строки, у которых окно цели заходит в январь. Утечка в ln-прогнозе — до 3e-4 (h=5) и 6,6e-3 (h=22) в январе | эмбарго симметрично для эталона и кандидатов. QLIKE В2 2017–2021: +0,00% / +0,06% / +0,41% (h = 1 / 5 / 22). На тесте — то же правило | PR #194, #195, владелец 17:35 |
 | калибровка в воротах | до 19:10 кандидаты сравнивались сырыми рядами с эталоном с s² | L3 (s² дизайна) — всегда последнее звено; ворота B–E пересчитаны 20:42, прежние — архив `*_bez_s2_rf` | PR #209 (S) |
 | хэш доли строк | без ключа `boost.row_frac` в хэше ячейка C совпала с прогоном скрининга B_h22_r01 и взяла ряд, обученный на 50% строк | `boost.row_frac` ∈ {1; 0,5} — в схеме v2 и в хэше дизайна; 0,5 — только скрининг B | schema_v2 (19:5x) |
+| ранняя остановка | дизайны скрининга драйвера останавливали бустинг по году оценки (до 1000 деревьев); оценка получалась оптимистичной | во всех фазах остановка — только на внутренней складке (год vy−1 с эмбарго h), ≤ 300 деревьев, patience 30; assert «год остановки < года оценки»; `validate` отвергает остановку по году оценки | PR #200 (B), #201 (S); найдено B, решение дирижёра 17:4x |
 | основа E | основой уровня E был прогон r01 (бустинг R2, LightGBM, 1 seed), а не F_d0_s2emb; у E2, E7, факторов и кл. 11–13 бустинг переобучался (h=22: −35,8% к В2) | основа E = ровно F_R1_d0 (закон владельца 21:00: L > R1 > L3); `osnova_check` \|Δ QLIKE\| < 1e-9 по складкам (h=5, 22: 0), иначе E не запускается; E2, E7, факторы, кл. 11–13 сняты с драйвера | PR #219 (S), 21:10 |
 
 - **ВЫР-1:** эталоны (а), (б) d0; F_1(d0) = D22_h1 и F_5(d0) = D12_h5 на HAR-ноге и HAR-признаке d0 с эмбарго; F_22(d0) = эталон (б) d0.
@@ -263,6 +279,7 @@
   - ноги RVI-anchor h=5/22 и MIDAS h=22.
 
   У рядов E8 (G) и E1/E1b/E2 (M) argmax = 0, детекторы OK (G — 28/28 на h, M — 5/5).
+- **Эталоны (а), (б) d0 и F_h(d0)** проверку сдвига проходят: argmax = 0 на h = 1, 5, 22 (O, дым PR #161, `dev_log_r2_O.md`). Прежний HAR-J d−1 — argmax = −1, блок. Детектор ВЫР-1 «будущее не влияет» — 60 из 60 OK (`2026-10-26_vyr1.md`, раздел 4; `data/regen/vyr/vyr1/leak_vyr1.csv`).
 
 ## 3. Оговорки текста
 
