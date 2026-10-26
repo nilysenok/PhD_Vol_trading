@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """СC, Ъ 22:30: дымовой прогон новых точек сетки C С9 (C2W, C*1, C*2; fastbt/designs/s9/setka_C.yaml)
 на 2–3 тикерах и выровненных σ из data/regen/ch4_dev/ + детектор утечек на позициях новых точек.
-Полный прогон С9 ведёт СD (fastbt.s9 run --c-dop). Пометка «до аудита».
+Полный прогон С9 ведёт СD (fastbt.s9 run --c-dop). Пометка — POMETKA ниже.
 
 python3 scripts/analysis/s9_cdop_dym.py [--tickers SBER,LKOH,MTSS] [--reps 200]
 Вход A: кэш С9 (dev) с позицией A основного дизайна (A от σ не зависит), путь --a-cache.
@@ -29,7 +29,7 @@ SIG = {"hyb_h1": ("sigma_hyb_h1_dev.parquet", "sigma_pred_h1", "h1"),
        "hyb_h5": ("sigma_hyb_h5_dev.parquet", "sigma_pred_h5", "h5"),
        "naive_h1": ("sigma_naive_dev.parquet", "sigma_pred_h1", "h1")}
 DET_DATES = ("2019-06-28", "2020-03-16", "2021-06-30")
-POMETKA = "до завершения аудита сигналов, сделок, B; дымовой прогон, 3 тикера"   # Ъ 23:10, п. 5
+POMETKA = "после аудита (Н1–Н5, H3, ключи кэшей); дымовой прогон, 3 тикера"   # ЭТ, 26.10
 
 
 def check_sha():
