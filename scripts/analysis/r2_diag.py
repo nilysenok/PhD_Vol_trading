@@ -21,8 +21,13 @@
   d_terciles.csv    пороги терцилей RVI периода (для теста передаются пороги 2017–2021)
   d_s2_F.csv        множители Б0.1 по шагам у рядов, к которым поправку применяет этот модуль (s2 != bez)
 
+Ядро агента S (scripts/analysis/r2_core.py, только импорт): данные d0 — RC.load_d0 + RC.check_d0 (RV_d, RV_m, RVI, цели);
+ряды дизайнов R2 — путь кэша RC.cache_dir(RC.validate(design)) (D только читает, каталог не создаёт), rv_actual — из цели d0;
+проверка сдвига — RC.shift_check (блоки D пишет в свой d_blok_sdvig.csv, блокирует O); эмбарго в SHAP — RC.train_mask / val_mask;
+шаги — RC.assert_dev_step; «будущее не влияет» в самопроверке — RC.perturb_frame.
+
 Ряды задаются в models/designs/r2/r2_D_diag.yaml (профиль r1 — ряды первого раунда d0: ВЫР-1, Э; профиль r2 — заполняется по
-gate_E). Ряды с s2 != bez получают поправку Б0.1 по прошлым шагам (harx.s2_est, как r2_nogi.v0_tables): val шага k × exp(s²/2),
+gate_E: {design: yaml, name: ряд, seeds: [...]}). Ряды с s2 != bez получают поправку Б0.1 по прошлым шагам (harx.s2_est, как r2_nogi.v0_tables): val шага k × exp(s²/2),
 s² — по остаткам шагов < k; шаг 1 — F = 1. Годы до начала периода (warm_years) читаются только для s² и прогрева рангов.
 
 Режимы:  python3 scripts/analysis/r2_diag.py [--profile r1] [--period 2017 2021] [--hs 1 5 22] [--smoke] [--selftest]
@@ -45,6 +50,7 @@ for _p in (str(HERE), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 import harx as HX                                    # только s2_est, без изменений
+import r2_core as RC                                 # ядро агента S: d0-данные, эмбарго, кэш дизайнов, shift_check, perturb_frame
 from fastbt.masks import c_masks                     # режим C главы 4
 from fastbt.signals.interface import TickerData
 
@@ -108,15 +114,46 @@ def apply_s2(df, code):
     return out, F
 
 
-def load_series(spec, h, period, regen, warm=3, allow_test=False, tickers=None, seeds=None):
-    """Ряд по спецификации yaml: среднее по seed, поправка s², годы [y0 − warm, y1]. Возвращает (df, {шаг: F})."""
+def core_path(design, name, h, seed, part='val', root=None):
+    """Путь ряда дизайна в кэше ядра (имя — как RC.series_path), без создания каталога: D только читает."""
+    sd = 'det' if seed in (None, 'det') else int(seed)
+    return RC.cache_dir(RC.validate(design), create=False, root=root) / f'{name}_h{int(h)}_s{sd}_{part}.parquet'
+
+
+def attach_target(d, A, h):
+    """rv_actual из d0-данных ядра (rv_target_h{h} строки d; ряды кэша R2 пишутся без цели — RC.SERIES_COLS)."""
+    m = d.drop(columns=[c for c in ('rv_actual',) if c in d]).merge(
+        A[['date', 'ticker', f'rv_target_h{h}']].rename(columns={f'rv_target_h{h}': 'rv_actual'}), on=KEY, how='left')
+    assert m.rv_actual.notna().mean() > 0.99, f'h={h}: цель не найдена у {int(m.rv_actual.isna().sum())} строк'
+    return m
+
+
+def load_series(spec, h, period, regen, warm=3, allow_test=False, tickers=None, seeds=None, A=None):
+    """Ряд по спецификации yaml: среднее по seed, поправка s², годы [y0 − warm, y1]. Возвращает (df, {шаг: F}).
+    spec: {files: шаблон от regen} — сохранённые ряды (R1, ВЫР); или {design: yaml | dict, name: имя ряда} — кэш ядра R2
+    (RC.validate → R2/cache/<sha16>/<name>_h{h}_s{seed|det}_val.parquet); нет rv_actual — берётся из A (RC.load_d0)."""
     y0, y1 = guard_period(period, allow_test)
-    files = spec['files']
-    ss = (seeds or spec.get('seeds') or [None]) if '{seed}' in files else [None]
+    if 'design' in spec:
+        des = spec['design']
+        des = yaml.safe_load(open(ROOT / des)) if isinstance(des, str) else dict(des)
+        des = dict(des, h=h)
+        ss = seeds or spec.get('seeds') or ['det']
+        paths = [core_path(des, spec['name'], h, s, root=spec.get('root')) for s in ss]
+        files = f"{spec['name']}@{RC.design_hash(RC.validate(des))[:16]}"
+    else:
+        files = spec['files']
+        ss = (seeds or spec.get('seeds') or [None]) if '{seed}' in files else [None]
+        paths = [Path(regen) / files.format(h=h, seed=s) for s in ss]
     parts = []
-    for s in ss:
-        p = Path(regen) / files.format(h=h, seed=s)
-        parts.append(_read(p, y0 - warm, y1, allow_test))
+    for p in paths:
+        x = _read(p, y0 - warm, y1, allow_test)
+        if not allow_test:
+            for k in x.step.unique():
+                RC.assert_dev_step(k)
+        if 'rv_actual' not in x:
+            assert A is not None, f'{p}: нет rv_actual — нужен A (RC.load_d0)'
+            x = attach_target(x, A, h)
+        parts.append(x)
     d = pd.concat(parts, ignore_index=True)
     g = d.groupby(['date', 'ticker', 'year', 'step'], sort=True)
     cnt = g.size()
@@ -130,20 +167,22 @@ def load_series(spec, h, period, regen, warm=3, allow_test=False, tickers=None, 
     return d.sort_values(['date', 'ticker']).reset_index(drop=True)[COLS], F
 
 
-def load_features(regen, period, cols, warm=3, allow_test=False, tickers=None, extra_to=None):
-    """features_pit_v3: только нужные столбцы, даты [y0 − warm, y1] (extra_to — верхняя граница года для обучения smoke)."""
+_A = {}
+
+
+def load_A(period, allow_test=False, tickers=None):
+    """Данные d0 ядра: RC.load_d0 (r2_nogi.load(d0=True); rv_d, rv_w, rv_m — по день d; строки ≤ y1), RC.check_d0.
+    Один раз на (y1, тикеры). После открытия max_year = y1 — только с allow_test."""
     y0, y1 = guard_period(period, allow_test)
-    hi = y1 if extra_to is None else min(y1, extra_to)
-    p = guard_path(Path(regen) / 'features_pit_v3.parquet', allow_test)
-    d = pq.read_table(p, columns=['date', 'ticker'] + list(cols),
-                      filters=[('date', '>=', pd.Timestamp(f'{y0 - warm}-01-01')),
-                               ('date', '<', pd.Timestamp(f'{hi + 1}-01-01'))]).to_pandas()
-    d['date'] = pd.to_datetime(d['date'])
-    d['ticker'] = d['ticker'].astype(str)
-    if tickers:
-        d = d[d.ticker.isin(tickers)]
-    d['year'] = d.date.dt.year
-    return guard_frame(d.sort_values(['ticker', 'date']).reset_index(drop=True), hi)
+    k = (y1, tuple(tickers) if tickers else None)
+    if k not in _A:
+        A, _ = RC.load_d0(tickers=tickers, max_year=y1)
+        RC.check_d0(A)
+        A['date'] = pd.to_datetime(A['date'])
+        A['ticker'] = A['ticker'].astype(str)
+        A['year'] = A['date'].dt.year
+        _A[k] = guard_frame(A.sort_values(['ticker', 'date']).reset_index(drop=True), y1)
+    return _A[k]
 
 
 # ================================================================ метрики
@@ -257,42 +296,37 @@ def shap_groups(contrib, cols, groups, terc=None, h=None, tag=''):
     return pd.DataFrame(rows)
 
 
-def har_d0(F):
-    """HAR-регрессоры d0 (как r2_nogi.load(d0=True)): RV дня d, средние 5 и 22 дней по день d."""
-    rvp = F['rv'].where(F['rv'] > 0).groupby(F['ticker']).ffill().fillna(F['rv'])
-    g = rvp.groupby(F['ticker'])
-    F['har_d'] = rvp
-    F['har_w'] = g.transform(lambda s: s.rolling(5, min_periods=1).mean())
-    F['har_m'] = g.transform(lambda s: s.rolling(22, min_periods=1).mean())
-    return F
+SHAP_RAW = (['rv_d', 'rv_w', 'rv_m', 'jump', 'close_RVI', 'rv_IMOEX', 'rsv_pos', 'rsv_neg', 'rskew', 'rkurt', 'rv_morning', 'rv_midday',
+             'rv_evening']
+            + [f'idx_RVI_rv_annualized_{s}' for s in ('ret1', 'ret5', 'ret22', 'vol22')]
+            + [f'idx_IMOEX_rv_annualized_{s}' for s in ('ret1', 'ret5', 'ret22', 'vol22')]
+            + [f'yahoo_{a}_{s}' for a in ('vix', 'brent', 'sp500') for s in ('ret1', 'ret5', 'vol22')]
+            + [f'{a}_{s}' for a in ('key_rate_cbr', 'cpi_ru', 'si_fut') for s in ('lag1', 'diff22')])
 
 
 def shap_smoke(cfg, h, regen, rvi_thr=None, allow_test=False):
-    """Дымовой остаточный ученик: LightGBM на ln y − ln HAR-J(d0, эмбарго) (lnall, часть tr, emb_ok), 3 тикера × шаги smoke.
+    """Дымовой остаточный ученик: LightGBM на ln y − ln HAR-J(d0, эмбарго) (lnall Э, часть tr), 3 тикера × шаги smoke.
+    Данные — RC.load_d0 (HAR-регрессоры d0), обучение — RC.train_mask (эмбарго h), val — RC.val_mask.
     Вклады — на val-годах шагов, входящих в 2017–2021. Только проверка кода: модели R2 и группы G0–G10 придут от B и F."""
     sm = cfg['shap']['smoke']
-    steps = [k for k in sm['steps']]
+    steps = [int(k) for k in sm['steps']]
+    for k in steps:
+        RC.assert_dev_step(k, allow_test)
     vys = [2015 + k for k in steps]
     guard_period((min(vys), max(vys)), allow_test)
     import lightgbm as lgb
     groups = cfg['shap']['groups']
     t = f'rv_target_h{h}'
-    raw = ['rv', 'jump', 'close_RVI', 'rv_IMOEX', 'rsv_pos', 'rsv_neg', 'rskew', 'rkurt', 'rv_morning', 'rv_midday', 'rv_evening']
-    raw += [f'idx_RVI_rv_annualized_{s}' for s in ('ret1', 'ret5', 'ret22', 'vol22')]
-    raw += [f'idx_IMOEX_rv_annualized_{s}' for s in ('ret1', 'ret5', 'ret22', 'vol22')]
-    raw += [f'yahoo_{a}_{s}' for a in ('vix', 'brent', 'sp500') for s in ('ret1', 'ret5', 'vol22')]
-    raw += [f'{a}_{s}' for a in ('key_rate_cbr', 'cpi_ru', 'si_fut') for s in ('lag1', 'diff22')]
-    F = load_features(regen, (min(vys), max(vys)), raw + [t], warm=max(vys) - 2013, allow_test=allow_test, tickers=sm['tickers'])
-    F = har_d0(F)
-    feats = [c for c in F.columns if c not in ('date', 'ticker', 'year', 'rv', t)]
+    A = load_A((min(vys), max(vys)), allow_test, sm['tickers'])
+    feats = [c for c in SHAP_RAW if c in A]
     base = _read_lnall(Path(regen) / sm['base'].format(h=h), max(steps), allow_test)
     base = base[base.ticker.isin(sm['tickers'])]
     out = []
     for k in steps:
         vy = 2015 + k
-        B = base[base.step == k].merge(F, on=KEY, how='inner')
-        tr = B[(B.part == 'tr') & B.emb_ok & B[t].notna()]
-        va = B[(B.part == 'va')]
+        bk = base[base.step == k][KEY + ['part', 'base_ln']]
+        tr = A[RC.train_mask(A, h, vy)].merge(bk[bk.part == 'tr'], on=KEY, how='inner')
+        va = A[RC.val_mask(A, h, vy)].merge(bk[bk.part == 'va'], on=KEY, how='inner')
         y = np.log(tr[t].values + 1e-10) - tr.base_ln.values
         m = lgb.LGBMRegressor(random_state=int(sm['seed']), n_jobs=1, **sm['params']).fit(tr[feats], y)
         if vy < 2017:
@@ -384,20 +418,19 @@ def tercile(x, thr):
     return np.where(np.isfinite(x), t, 0)
 
 
-def regime_frame(regen, period, cfg, allow_test=False, tickers=None, rvi_thr=None):
-    """date, ticker, rvi, rvm, rvi_t (терциль RVI по датам периода), rvm_t (терциль RV_m внутри тикера), rv_d (RV дня d)."""
+def regime_frame(A, period, cfg, allow_test=False, rvi_thr=None):
+    """По данным d0 ядра (load_A): date, ticker, rv_d (RV дня d), rvi, rvm (rv_m ядра: среднее RV_{d−21..d}),
+    rvi_t (терциль RVI по датам периода), rvm_t (терциль RV_m внутри тикера по периоду)."""
     y0, y1 = guard_period(period, allow_test)
     rc = cfg['regimes']
-    F = load_features(regen, period, ['rv', rc['rvi_col']], warm=1, allow_test=allow_test, tickers=tickers)
-    F['rvm'] = F.groupby('ticker')['rv'].transform(lambda s: s.where(s > 0).ffill().rolling(int(rc['rvm_window']), min_periods=5).mean())
-    F = F[(F.year >= y0) & (F.year <= y1)].copy()
+    F = A[(A.year >= y0) & (A.year <= y1)][['date', 'ticker', 'year', 'rv_d', rc['rvm_col'], rc['rvi_col']]].copy()
+    F['rvm'] = F[rc['rvm_col']]
     F['rvi'] = F[rc['rvi_col']]
     dd = F.drop_duplicates('date')[['date', 'rvi']].dropna()
     if rvi_thr is None:
         rvi_thr = tuple(np.quantile(dd.rvi.values, [1 / 3, 2 / 3]))
     F['rvi_t'] = tercile(F.rvi.values, rvi_thr)
     F['rvm_t'] = F.groupby('ticker')['rvm'].transform(lambda s: pd.Series(tercile(s.values, np.nanquantile(s.values, [1 / 3, 2 / 3])), index=s.index))
-    F = F.rename(columns={'rv': 'rv_d'})
     thr = pd.DataFrame([dict(peremennaya='RVI', period=f'{y0}-{y1}', t1=rvi_thr[0], t2=rvi_thr[1], n_dat=len(dd))])
     return F[['date', 'ticker', 'year', 'rv_d', 'rvi', 'rvm', 'rvi_t', 'rvm_t']], thr, rvi_thr
 
@@ -570,21 +603,13 @@ def appendix(S, names, h, period, ref=None, allow_test=False):
 
 
 # ================================================================ проверка информационного множества (п. 2.6)
-def shift_check(d, R, name, h, period, allow_test=False):
-    """Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2, −1, 0, +1}, по тикерам (RV — дневная RV тикера), медиана; argmax должен быть 0."""
+def shift_check(d, A, name, h, period, block_file, allow_test=False):
+    """RC.shift_check ядра на годах периода (A — load_A, строки ≤ y1: RV_{d+1} последнего дня периода не читается).
+    Блок пишется в block_file D (R2/D/<профиль>/d_blok_sdvig.csv), не в R2/O/blok_sdvig.csv: блокирует ряды агент O."""
     y0, y1 = guard_period(period, allow_test)
-    Rr = R.sort_values(['ticker', 'date']).copy()
-    g = Rr.groupby('ticker')['rv_d']
-    for s in (-2, -1, 0, 1):
-        Rr[f'rv_{s}'] = g.shift(-s)
-    m = d[(d.year >= y0) & (d.year <= y1)].merge(Rr, on=KEY + ['year'])
-    cor = {}
-    for s in (-2, -1, 0, 1):
-        c = f'rv_{s}'
-        cor[s] = float(m.groupby('ticker').apply(
-            lambda x: stats.spearmanr(np.log(x.rv_pred), np.log(x[c].where(x[c] > EPS)), nan_policy='omit')[0]).median())
-    am = max(cor, key=cor.get)
-    return dict(h=h, ryad=name, **{f'rho_s{s:+d}': v for s, v in cor.items()}, argmax=am, blok=am != 0)
+    r = RC.shift_check(d, A, h, name, block_file=block_file, years=tuple(range(y0, y1 + 1)))
+    r['blok'] = not r['ok']
+    return r
 
 
 # ================================================================ прогон
@@ -600,14 +625,22 @@ def run(cfg, profile, period, hs, out, smoke=False, allow_test=False, log=print)
     warm = int(cfg.get('warm_years', 3))
     tick = cfg['smoke']['tickers'] if smoke else None
     seeds = cfg['smoke']['seeds'] if smoke else None
-    R, thr, rvi_thr = regime_frame(regen, period, cfg, allow_test, tick)
+    A = load_A(period, allow_test)
+    fix = cfg['regimes'].get('rvi_thr')
+    R, thr, rvi_thr = regime_frame(A, period, cfg, allow_test, tuple(fix) if fix else None)
+    if tick:
+        R = R[R.ticker.isin(tick)]
+    out.mkdir(parents=True, exist_ok=True)
+    blk = out / 'd_blok_sdvig.csv'
+    if blk.exists():
+        blk.unlink()
     T = {k: [] for k in ('ladder', 'ablation', 'shap', 'stab', 'stab_svod', 'regimes', 'tickers_sign', 'rank', 'regime_c', 'mz',
                          'coverage', 'rmse_mae', 'sdvig')}
     SS, Fm = {}, []
     for h in hs:
         S = {}
         for n, spec in P['series'].items():
-            S[n], F = load_series(spec, h, period, regen, warm, allow_test, tick, seeds)
+            S[n], F = load_series(spec, h, period, regen, warm, allow_test, tick, seeds, A)
             Fm += [dict(h=h, ryad=n, step=k, F=v) for k, v in F.items()]
         SS[h] = S
         log(f'h={h}: рядов {len(S)}, строк периода {", ".join(f"{n}={len(in_period(v, period, allow_test))}" for n, v in S.items())}')
@@ -624,7 +657,8 @@ def run(cfg, profile, period, hs, out, smoke=False, allow_test=False, log=print)
                 T['rank'].append(rank_metrics(S[n], R, n, h, period, int(cfg['rank']['pct_lookback']), allow_test))
         mz, cov, err = appendix(S, list(S), h, period, ro.get('etalon'), allow_test)
         T['mz'].append(mz); T['coverage'].append(cov); T['rmse_mae'].append(err)
-        T['sdvig'].append(pd.DataFrame([shift_check(S[n], R, n, h, period, allow_test) for n in S]))
+        AT = A[A.ticker.isin(tick)] if tick else A
+        T['sdvig'].append(pd.DataFrame([shift_check(S[n], AT, n, h, period, blk, allow_test) for n in S]))
         par = [calib_from_pair(S[c], S[b], h, lab, period, allow_test) for lab, (c, b) in (P.get('calib_pairs') or {}).items()
                if c in S and b in S]
         par.append(read_param_files(regen, P.get('param_files'), h, period, allow_test))
@@ -644,7 +678,6 @@ def run(cfg, profile, period, hs, out, smoke=False, allow_test=False, log=print)
         if all(a in SS[h] and b in SS[h] for h in hs):
             T['regime_c'].append(regime_c({h: SS[h][a] for h in hs}, {h: SS[h][b] for h in hs}, (a, b), period,
                                           tuple(cfg['rank']['c_cats']), bool(cfg['rank']['c_v41']), allow_test))
-    out.mkdir(parents=True, exist_ok=True)
     files = []
     for k, v in T.items():
         v = [x for x in v if x is not None and not x.empty]
@@ -652,6 +685,8 @@ def run(cfg, profile, period, hs, out, smoke=False, allow_test=False, log=print)
             f = out / f'd_{k}.csv'
             pd.concat(v, ignore_index=True).to_csv(f, index=False, float_format='%.6g')
             files.append(f)
+    if blk.exists():
+        files.append(blk)
     thr.to_csv(out / 'd_terciles.csv', index=False); files.append(out / 'd_terciles.csv')
     pd.DataFrame(Fm).to_csv(out / 'd_s2_F.csv', index=False, float_format='%.8g'); files.append(out / 'd_s2_F.csv')
     with open(out / 'SHA256.txt', 'w') as f:
@@ -662,8 +697,12 @@ def run(cfg, profile, period, hs, out, smoke=False, allow_test=False, log=print)
 
 
 # ================================================================ самопроверка
-def selftest(cfg, log=print):
+def selftest(cfg, out, log=print):
     rows = []
+    out.mkdir(parents=True, exist_ok=True)
+    blk = out / 'selftest_blok_sdvig.csv'
+    if blk.exists():
+        blk.unlink()
     regen = Path(cfg['regen'])
     # 1. охрана периода и пути
     for per in [(2017, 2022), (2022, 2026)]:
@@ -680,14 +719,18 @@ def selftest(cfg, log=print):
         ok = True
     rows.append(dict(test='guard_path test_locked', ok=ok))
     rows.append(dict(test='guard_period(2017,2026, allow_test) без чтения', ok=guard_period((2017, 2026), True) == (2017, 2026)))
-    # 2. «будущее не влияет»: порча лет 2019+ (×U(0,5; 2)) не меняет метрик периода 2017–2018
+    # 2. «будущее не влияет»: порча рядов 2019+ (×U(0,5; 2)) и данных d0 после 31.12.2018 (RC.perturb_frame) не меняет
+    #    метрик периода 2017–2018 (лестница, ранговые метрики, режим C)
     P = cfg['profiles']['r1']
     per, tick = (2017, 2018), ['SBER', 'LKOH', 'AFLT']
-    R, _, _ = regime_frame(regen, (2017, 2021), cfg, tickers=tick)
+    A = load_A((2017, 2021))
+    At = A[A.ticker.isin(tick)]
+    R, _, _ = regime_frame(At, per, cfg)
+    Rp, _, _ = regime_frame(RC.perturb_frame(At, f'{per[1]}-12-31'), per, cfg)
     rng = np.random.default_rng(20261026)
     SS, SP = {}, {}
     for h in (1, 5, 22):
-        SS[h] = {n: load_series(P['series'][n], h, (2017, 2021), regen, 3, False, tick)[0] for n in ('HAR-J', 'HAR-J+s2', 'F_d0')}
+        SS[h] = {n: load_series(P['series'][n], h, (2017, 2021), regen, 3, False, tick, A=A)[0] for n in ('HAR-J', 'HAR-J+s2', 'F_d0')}
         SP[h] = {}
         for n, d in SS[h].items():
             x = d.copy()
@@ -697,19 +740,19 @@ def selftest(cfg, log=print):
             SP[h][n] = x
     lad = [['HAR-J', 'HAR-J'], ['+s2', 'HAR-J+s2'], ['final', 'F_d0']]
 
-    def bundle(S):
-        a = [ladder(S[h], lad, h, per) for h in S] + [rank_metrics(S[h]['F_d0'], R, 'F_d0', h, per) for h in S]
+    def bundle(S, RR):
+        a = [ladder(S[h], lad, h, per) for h in S] + [rank_metrics(S[h]['F_d0'], RR, 'F_d0', h, per) for h in S]
         a.append(regime_c({h: S[h]['F_d0'] for h in S}, {h: S[h]['HAR-J'] for h in S}, ('F_d0', 'HAR-J'), per, ('Trend', 'Range')))
-        a.append(pd.DataFrame([shift_check(S[h]['F_d0'], R, 'F_d0', h, per) for h in S]))
+        a += [errors_by_regime(S[h], 'F_d0', ['HAR-J+s2', 'HAR-J'], RR, h, per)[0] for h in S]
         return a
-    A, B = bundle(SS), bundle(SP)
+    BA, BB = bundle(SS, R), bundle(SP, Rp)
     dmax = 0.0
-    for a, b in zip(A, B):
+    for a, b in zip(BA, BB):
         na, nb = a.select_dtypes('number').fillna(-9).values, b.select_dtypes('number').fillna(-9).values
         dmax = max(dmax, float(np.max(np.abs(na - nb))) if na.size else 0.0)
     rows.append(dict(test='будущее не влияет: max |Δ| метрик 2017–2018 при порче 2019+', ok=dmax == 0.0, znach=dmax))
     # s² по прошлым шагам: порча 2019+ сырого ряда не меняет поправленный ряд 2017–2018
-    raw = load_series(dict(P['series']['HAR-X'], s2='bez'), 5, (2017, 2021), regen, 3)[0]
+    raw = load_series(dict(P['series']['HAR-X'], s2='bez'), 5, (2017, 2021), regen, 3, A=A)[0]
     bad = raw.copy()
     fut = (bad.year > per[1]).values
     bad.loc[fut, 'rv_actual'] *= rng.uniform(0.5, 2, fut.sum())
@@ -725,11 +768,20 @@ def selftest(cfg, log=print):
     # 3. подложенная утечка: ŷ_d := RV_{d+1} (цель h=1) — argmax = +1, ряд блокируется; честный F_d0 — argmax 0
     d = SS[1]['F_d0']
     leak = d.assign(rv_pred=np.clip(d.rv_actual.values, 1e-10, None))
-    s_ok = shift_check(d, R, 'F_d0', 1, (2017, 2021))
-    s_lk = shift_check(leak, R, 'utechka', 1, (2017, 2021))
+    s_ok = shift_check(d, At, 'F_d0', 1, (2017, 2021), blk)
+    s_lk = shift_check(leak, At, 'utechka', 1, (2017, 2021), blk)
     rows.append(dict(test='честный F_d0 h=1: argmax сдвига = 0', ok=s_ok['argmax'] == 0, znach=s_ok['argmax']))
     rows.append(dict(test='подложенная утечка поймана: argmax = +1, blok', ok=s_lk['argmax'] == 1 and s_lk['blok'], znach=s_lk['argmax']))
-    # 4. SHAP: сумма вкладов = прогноз (assert внутри), группы покрывают все признаки
+    # 4. ряд дизайна из кэша ядра: RC.write_series (без rv_actual) -> load_series({design, name}) = исходный ряд, цель — из A
+    tmp = out / 'selftest_cache'
+    des = {'design': 'D_selftest', 'h': 1}
+    RC.write_series(des, 'diag_test', d.drop(columns=['rv_actual']), 1, 42, module='D', root=tmp)
+    back = load_series({'design': des, 'name': 'diag_test', 'seeds': [42], 'root': str(tmp)}, 1, (2017, 2021), regen, 3, A=A)[0]
+    cmp = d.merge(back, on=KEY + ['year', 'step'], suffixes=('', '_c'))
+    okc = len(cmp) == len(d) == len(back) and np.allclose(cmp.rv_pred, cmp.rv_pred_c, rtol=1e-12) and \
+        np.allclose(cmp.rv_actual, cmp.rv_actual_c, rtol=1e-9)
+    rows.append(dict(test='кэш ядра: write_series -> load_series(design) совпадает, rv_actual из RC.load_d0', ok=bool(okc), znach=len(back)))
+    # 5. SHAP: сумма вкладов = прогноз (assert внутри), группы покрывают все признаки
     sh = shap_smoke(cfg, 1, regen)
     tot = sh[sh.srez == 'vse'].groupby('model').dolya.sum()
     rows.append(dict(test='SHAP: доли групп в сумме 1', ok=bool(np.allclose(tot.values, 1.0)), znach=float(tot.mean())))
@@ -758,8 +810,8 @@ def main():
     out = Path(cfg['regen']) / cfg['out'] / (prof + ('_smoke' if a.smoke else '') + ('' if per == (2017, 2021) else f'_{per[0]}_{per[1]}'))
     t0 = datetime.now()
     if a.selftest:
-        T = selftest(cfg)
-        out.mkdir(parents=True, exist_ok=True)
+        out = Path(cfg['regen']) / cfg['out'] / 'selftest'
+        T = selftest(cfg, out)
         T.to_csv(out / 'd_selftest.csv', index=False)
         print(f'selftest: {int(T.ok.sum())}/{len(T)} OK, {(datetime.now() - t0).seconds} с')
         sys.exit(0 if T.ok.all() else 1)

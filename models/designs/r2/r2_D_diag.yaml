@@ -47,7 +47,9 @@ profiles:
     # ρ_h,k = Σ e·r̂ / Σ r̂² на val шага k (описательно, не выбор)
     rho_demo: {leg: HAR-J+s2, fin_1: F_d0}
   r2:
-    note: "заполняется после ворот E по R2/O/gate_E_h{h}.yaml: пути рядов дизайна-победителя (кэш <sha16>) и его ступеней с выключенными кластерами"
+    note: "заполняется после ворот E по R2/O/gate_E_h{h}.yaml: дизайн-победитель и его ступени с выключенными кластерами"
+    # ряд кэша ядра: {design: путь к yaml дизайна от корня репо | dict, name: имя ряда, seeds: [42, …, 51] | [det]};
+    # h подставляется; путь — RC.cache_dir(RC.validate(design)) / <name>_h{h}_s{seed}_val.parquet; rv_actual — из RC.load_d0
     series: {}
     ladder:
       - [HAR-J, null]
@@ -68,8 +70,8 @@ stability: {jump_max: 0.5}        # аналог c4 кластера 3: скач
 # ---- режимы
 regimes:
   rvi_col: close_RVI              # уровень RVI дня d (features_pit_v3), терцили — по датам периода
-  rvm_window: 22                  # RV_m(d0) = среднее RV_{d−21..d} тикера; терцили — внутри тикера по периоду
-  tercile_ref: period             # пороги — по периоду вызова; на тесте передаются пороги 2017–2021 (d_terciles.csv)
+  rvm_col: rv_m                   # RV_m(d0) ядра (RC.load_d0): среднее RV_{d−21..d} тикера; терцили — внутри тикера по периоду
+  rvi_thr: null                   # null — пороги по периоду вызова; на тесте — пороги 2017–2021 из d_terciles.csv: [22.27, 26.9533]
 
 # ---- ранговые метрики главы 4
 rank:
@@ -86,7 +88,7 @@ shap:
                    colsample_bytree: 0.8, verbose: -1}}
   # группы признаков (регулярные выражения по имени столбца); до схемы групп G0–G10 агента F — рабочие группы
   groups:
-    HAR_d0: "^(har_d|har_w|har_m|jump)$"
+    HAR_d0: "^(rv_d|rv_w|rv_m|jump)$"        # d0 из RC.load_d0: RV дня d и средние 5 / 22 дней по день d
     RVI: "^(close_RVI|idx_RVI_rv_annualized_(ret1|ret5|ret22|vol22))$"
     rynok: "^(rv_IMOEX|idx_IMOEX_rv_annualized_(ret1|ret5|ret22|vol22))$"
     vnutridnev: "^(rsv_pos|rsv_neg|rskew|rkurt|rv_morning|rv_midday|rv_evening)$"
