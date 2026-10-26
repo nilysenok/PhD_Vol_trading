@@ -42,7 +42,7 @@ def fake(tmp_path, monkeypatch):
     for lab, v in spec['vhody']['sigma_test'].items():
         f = _put(locked / v['fayl'], f'поддельный σ {lab}'.encode())
         v['sha256'] = sob[v['fayl']] = _sha(f)
-    for k in ('features', 'bary', 'stavka'):
+    for k in F.VHODY:
         f = _put(main / spec['vhody'][k]['fayl'], f'поддельный {k}'.encode())
         spec['vhody'][k]['sha256'] = _sha(f)
     for p in list(spec['kod']):
@@ -104,7 +104,7 @@ def test_not_frozen(fake, mut, frag):
 def test_sha_ok_then_lock_once(fake):
     P, spec = fake
     s, shas = F.precheck_test(P)
-    assert len(shas) == 1 + 4 + 3 + len(spec['kod']) + 1
+    assert len(shas) == 1 + 4 + len(F.VHODY) + len(spec['kod']) + 1
     F.acquire_lock(P, dict(proba=1))
     assert json.loads(P.lock.read_text())['status'] == 'начато'
     with pytest.raises(F.Stop) as ei:                 # второй запуск: замок есть
@@ -118,8 +118,9 @@ def test_sha_ok_then_lock_once(fake):
 
 
 def test_require_base_real_repo():
-    """Настоящий репозиторий: код не раньше ce57e41 (исправления FA #238, #239); несуществующий коммит — отказ."""
-    F.require_base(ROOT, 'ce57e41')
+    """Настоящий репозиторий: код не раньше 642f084 (исправления FA #238, #239, #241, #242); несуществующий коммит — отказ."""
+    assert F.KOD_NE_RANSHE == '642f084'
+    F.require_base(ROOT, F.KOD_NE_RANSHE)
     with pytest.raises(F.Stop):
         F.require_base(ROOT, '0' * 40)
 

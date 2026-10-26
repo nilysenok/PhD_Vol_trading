@@ -24,6 +24,8 @@ models/designs/ch4_v2/ch4_v2_sborka.yaml. Первое открытие тест
            (scope test, окна заморожены на 2018–2021); надстройки — к позиции A, как в разработке;
         6) метрики — fastbt.s9.metrics, Δ к A — fastbt.s9_stats.lw_sharpe_diff (Ледуа–Вольф, блок 5, 10 000), как в разработке;
            окна 2022–2026 и 2025–01.2026; без правила закрытия биржи и с ним — рядом (столбец pravilo);
+           H3 и табл. 4.9 — fastbt.bench после #242 (код не раньше 642f084, иначе отказ); перед счётом — проверка сдвига
+           каждого σ-ряда теста, включая наивную √RV_w для C* (правило S0; не прошёл — отказ);
         7) таблицы → docs/tables/strat_test_v2/, ряды → data/fastbt/test_v2/; замок дописывается (status «завершено», SHA выходов).
 
 Считаются только дизайны spec.dizayny (по одному на подход) + A и таблица H2 внутри выбранной точки spec.h2.dizayn
@@ -83,6 +85,8 @@ DEV_FILES = {   # метка: (файл data/regen/ch4_dev, столбец, те
     'naive': ('sigma_naive_dev.parquet', 'sigma_pred_h1', 'h1'),
 }
 POMETKA = 'до аудита'
+VHODY = ('features', 'bary', 'stavka', 'mcftr', 'rgbitr')     # файлы данных теста (кроме σ) — SHA в спецификации
+KOD_NE_RANSHE = '642f084'      # исправления аудита FA: #238 Н1, #239 Н2, #241 Н3, #242 H3-выравнивание
 
 
 class Stop(SystemExit):
@@ -152,7 +156,7 @@ def check_frozen(spec: dict) -> None:
         for lab, v in ((spec.get('vhody') or {}).get(grp) or {}).items():
             if not v.get('sha256'):
                 bad.append(f'нет SHA σ {lab}')
-    for k in ('features', 'bary', 'stavka'):
+    for k in VHODY:
         if not ((spec.get('vhody') or {}).get(k) or {}).get('sha256'):
             bad.append(f'нет SHA входа {k}')
     for p, s in (spec.get('kod') or {}).items():
@@ -194,7 +198,7 @@ def verify_sha(spec: dict, P: Puti) -> dict:
         if sob.get(v['fayl']) != v['sha256']:
             bad.append(f'σ {lab}: SHA спецификации ≠ r2_A_sborka.yaml: sobrano[{v["fayl"]}]')
         one(P.locked / v['fayl'], v['sha256'], f'σ {lab}')
-    for k in ('features', 'bary', 'stavka'):
+    for k in VHODY:
         v = spec['vhody'][k]
         one(P.main / v['fayl'], v['sha256'], f'вход {k}')
     for p, s in (spec.get('kod') or {}).items():
@@ -232,7 +236,7 @@ def finish_lock(P: Puti, extra: dict, status: str = 'завершено') -> Non
 
 
 def require_base(root, commit) -> None:
-    """Код — не раньше commit (исправления аудита FA #238, #239 — ce57e41)."""
+    """Код — не раньше commit (исправления аудита FA #238, #239, #241, #242 — 642f084)."""
     r = subprocess.run(['git', '-C', str(root), 'merge-base', '--is-ancestor', str(commit), 'HEAD'],
                        capture_output=True, text=True, timeout=20)
     if r.returncode != 0:
@@ -244,7 +248,8 @@ def precheck_test(P: Puti) -> tuple:
     spec = load_spec(P)
     check_frozen(spec)
     check_lock_free(P)
-    require_base(P.root, spec.get('kod_ne_ranshe') or 'ce57e41')
+    for c in {KOD_NE_RANSHE, spec.get('kod_ne_ranshe') or KOD_NE_RANSHE}:   # спецификация может только поднять порог
+        require_base(P.root, c)
     return spec, verify_sha(spec, P)
 
 
@@ -662,6 +667,7 @@ def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, ro
         R.add(f'dop:{k}', d)
     ez, hit = closure_engine(e, *zakr)
     engines = {'bez': e, 's_pravilom': ez}
+    R.engines = engines
     rows = []
     keys = ['A'] + order + [f'dop:{k}' for k in dop]
     main_c, main_podpis = comm if isinstance(comm, tuple) else (comm, 'основная')
@@ -726,6 +732,35 @@ def run_h2(R, engines, diz, h2, okna, comm, reps, pometka) -> pd.DataFrame:
             r['pometka'] = pometka
             rows.append(r)
     return pd.DataFrame(rows)
+
+
+def run_h3(R, engines, diz, okna, comm, reps, pometka) -> pd.DataFrame:
+    """H3 и табл. 4.9 — кодом fastbt.bench после #242 (экспозиция d × доходность бенчмарка d→d+1, ставка за [d, d_next)):
+    МСП подхода против MCFTR с той же экспозицией, MCFTR 16 % + ставка, MCFTR/RGBITR 20/80, 60/40, 80/20; p — ЛВ, блок 5.
+    Основная строка — A (как табл. 4.9 v1, chapter4_a); выбранные дизайны — рядом."""
+    from fastbt import bench, msp
+    rate = msp.rate_cbr()
+    out = []
+    for pr, eng in engines.items():
+        for k in ['A'] + [x for x in diz if x in PODHODY]:
+            p = R.port(eng, k, comm)
+            for ok, (lo, hi) in okna.items():
+                t = bench.h3_table(p, rate, reps, lo, hi, lw_block=5)
+                out.append(t.assign(podhod=k, okno=ok, pravilo=pr, komissiya_pct=comm * 100,
+                                    rol='табл. 4.9: МСП-A (основная)' if k == 'A' else 'H3 для выбранного дизайна (рядом)',
+                                    pometka=pometka))
+    return pd.concat(out, ignore_index=True)
+
+
+def synthetic_bench(dates) -> None:
+    """Псевдотест: индексы MCFTR/RGBITR в data/ начинаются 03.01.2022 — не читаются; вместо них синтетика на датах
+    разработки (проверка механики H3, числа смысла не имеют)."""
+    from fastbt import bench
+    rng = np.random.RandomState(7)
+    idx = pd.DatetimeIndex(dates)
+    ser = {str(bench.MCFTR): np.exp(np.cumsum(rng.normal(3e-4, 0.012, len(idx)))) * 1000,
+           str(bench.RGBITR): np.exp(np.cumsum(rng.normal(2e-4, 0.003, len(idx)))) * 100}
+    bench._close = lambda path: pd.Series(ser[str(path)], index=idx, name='close')
 
 
 def komissiya_main(tst: dict) -> tuple:
@@ -826,6 +861,9 @@ def selftest(P: Puti, reps: int) -> int:
     tst = spec['test']
     tab, h2t, hit, R = run_tables(e, diz, spec.get('h2') or {}, okna, zakr, komissiya_main(tst), tst['komissiya_chuvstv'],
                                   reps, P.root, 'псевдотест 2018–2021, заглушки; ' + POMETKA, dop)
+    synthetic_bench(e.dates)
+    h3t = run_h3(R, R.engines, diz, okna, float(tst['komissiya']), reps, 'псевдотест, СИНТЕТИЧЕСКИЕ индексы; ' + POMETKA)
+    to_csv(h3t, out / 'selftest_h3_sintetika.csv')
     leaks = leak_check(R, diz, dop)
     to_csv(tab, out / 'selftest_podhody.csv')
     to_csv(h2t, out / 'selftest_h2.csv')
@@ -843,7 +881,8 @@ def selftest(P: Puti, reps: int) -> int:
                                                   != tab[tab.pravilo == 'bez']['sharpe'].values).any()),
         detektor=all(r['ok'] for r in leaks),
         sdvig=bool(sdv['proshel'].all()) and len(sdv) == 3 * len(src),
-        kod_posle_ce57e41=_ok(lambda: require_base(P.root, spec.get('kod_ne_ranshe') or 'ce57e41')),
+        kod_posle_642f084=_ok(lambda: require_base(P.root, KOD_NE_RANSHE)),
+        h3=len(h3t) == len(['A'] + list(diz)) * 2 * 2 * 6 and bool(h3t['p_boot'].dropna().between(0, 1).all()),
         A_sovpadaet_s_s9=None)
     # A той же математикой, что разработка S9 (Engine.port по позиции A) — Шарп по годам ≠ NaN
     mA = s9.metrics(e.port(e.A_row))
@@ -891,7 +930,9 @@ def run_test(P: Puti, workers: int, reps_override: int | None = None) -> int:
     pom = POMETKA if not spec.get('audit_zakryt') else 'после аудита'
     tab, h2t, hit, R = run_tables(e, spec['dizayny'], spec.get('h2') or {}, okna, tuple(tst['zakrytie']),
                                   komissiya_main(tst), tst['komissiya_chuvstv'], reps, P.root, pom)
-    outs = [to_csv(tab, out_t / 'ch4_v2_podhody_test.csv'), to_csv(h2t, out_t / 'ch4_v2_h2_test.csv')]
+    h3t = run_h3(R, R.engines, spec['dizayny'], okna, float(tst['komissiya']), reps, pom)
+    outs = [to_csv(tab, out_t / 'ch4_v2_podhody_test.csv'), to_csv(h2t, out_t / 'ch4_v2_h2_test.csv'),
+            to_csv(h3t, out_t / 'ch4_v2_tabl_4_9_h3_test.csv'), p_sdv]
     for k in R.pos:
         if not k.startswith('h2:'):
             R.port(e, k, tst['komissiya']).to_parquet(out_d / f'port_{k}_test.parquet')

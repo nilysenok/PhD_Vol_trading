@@ -31,6 +31,9 @@ vhody:
   features: {fayl: data/regen/features_pit_v3.parquet, sha256: 8c51bfa1eb6ee8624f7e9e0759c693152402a4c76b9e438d69a8f542aadfe0bc}
   bary:     {fayl: moex_volatility/results/final/strategies/data/ohlcv_daily_full.parquet, sha256: ''}
   stavka:   {fayl: moex_discovery/data/external/macro/raw/key_rate_cbr.parquet, sha256: ''}
+  # H3 / табл. 4.9 (fastbt.bench после #242): индексы MCFTR, RGBITR — с 03.01.2022 (в псевдотесте не читаются: синтетика)
+  mcftr:    {fayl: data/mcftr_iss.csv, sha256: ''}
+  rgbitr:   {fayl: data/rgbitr_iss.csv, sha256: ''}
   # разработка (псевдотест --selftest): σ — data/regen/ch4_dev/, SHA — data/regen/ch4_dev/SHA256.txt (S0, PR #234, #235)
 
 # Код (пути от корня репозитория; пустая строка — заполнить при заморозке; несовпадение — отказ до замка).
@@ -51,9 +54,10 @@ kod:
   scripts/analysis/r2_loyo.py: ''
   models/designs/r2/r2_O_loyo.yaml: ''
 # Весь код fastbt (*.py, *.yaml) одной SHA: python3 scripts/analysis/final_test_ch4_v2.py --sha-fastbt (данных не читает).
-# Код — не раньше ce57e41 (исправления аудита FA: #238 c_rank_past, #239 ставка за [d, d_next)); иначе отказ.
+# Код — не раньше 642f084 (исправления аудита FA: #238 Н1 c_rank_past, #239 Н2 ставка за [d, d_next), #241 Н3 отсев от позиций A,
+# #242 H3 — бенчмарк d→d+1 и дни ставки [d, d_next)); иначе отказ. Порог в скрипте (KOD_NE_RANSHE) спецификацией не понижается.
 fastbt_sha_vse: ''
-kod_ne_ranshe: ce57e41
+kod_ne_ranshe: 642f084
 
 # Дизайны теста: по одному на подход; A — эталон, всегда. Пусто до «да».
 # Формат: {semya: C1|C2|Cmed|Cstar|D1|D2|D4|Dcont|B|P1|P2, sigma: hyb_h1|hyb_h5|harj_b_h1|harj_b_h5|naive, параметры семьи,
@@ -62,7 +66,7 @@ kod_ne_ranshe: ce57e41
 # скрипта, математика fastbt.s9 / s9_stats).
 dizayny:
   B: {}
-  C: {}        # C или C* — один на подход C (❓ F2-1 в черновике FINAL v2)
+  C: {}        # один из C ∪ C* (C*, C2W — точки сетки C, Ъ 22:30, PR #240)
   D: {}
   MSP: {}      # P1 или P2 — один на подход МСП
 
