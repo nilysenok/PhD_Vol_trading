@@ -74,18 +74,35 @@ def _trend_mask(dsg):
     return rows[idx[params.index(WANT)]], td
 
 
+def _rank_by_hand(s, W, minp):
+    out = np.full(len(s), np.nan)
+    for t in range(len(s)):
+        w = s[max(0, t - W):t]                  # окно [t−W, t−1]
+        w = w[~np.isnan(w)]
+        if not np.isnan(s[t]) and len(w) >= minp:
+            out[t] = (w < s[t]).sum() / len(w)
+    return out
+
+
 def test_main_c_mask_rank_excludes_current_day():
-    """Н1 исправлено: основной дизайн (main.yaml, c_rank_past: true) — ранг без текущего дня."""
+    """Н1 исправлено (Ъ ~23:20: ручки c_rank_past нет): маски C основного дизайна и любого
+    другого — ранг без текущего дня; сверка с рангом «руками», а не с past_rank (мутация
+    past_rank ловится и здесь)."""
     from fastbt import dev
     from conftest import ROOT
     d, _ = dev.load_design(ROOT / "fastbt" / "designs" / "final" / "main.yaml")
     cfg = dev.make_config(d, "dev")
-    assert ("c_rank_past", True) in cfg.design
-    m, td = _trend_mask(cfg.design)
-    pr = s9_stats.past_rank(td.sigma["h1"].copy(), 126, max(50, 126 // 5))
-    assert (m == (~np.isnan(pr) & (pr > 0.55))).all()
+    assert not any(k == "c_rank_past" for k, _ in cfg.design)
+    assert not hasattr(grids, "C_RANK_PAST")
+    for dsg in (cfg.design, ()):
+        masks._CACHE.clear()
+        m, td = _trend_mask(dsg)
+        pr = _rank_by_hand(td.sigma["h1"], 126, max(50, 126 // 5))
+        assert (m == (~np.isnan(pr) & (pr > 0.55))).all()
 
 
+@pytest.mark.skip(reason="Ъ ~23:20: ранг C c22a4b3 (с текущим днём) не воспроизводится, ручки нет; "
+                         "печати v1 — docs/otchety/arhiv_do_audita/")
 def test_gate_default_keeps_c22a4b3_rank():
     """Без ручки (ворота c22a4b3) ранг прежний — pandas rolling.rank с текущим днём."""
     import pandas as pd

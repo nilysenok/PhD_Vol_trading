@@ -460,6 +460,9 @@ class Engine:
         self.lr_row = self.lr[self.r["tick"], self.r["bar"]]
         self.cnt = np.bincount(self.r["date"], minlength=len(self.dates)).astype(float)
         rate = msp.rate_cbr()
+        # Ъ ~23:20: режим «back» (дни (d_prev, d], rate_restored) — только для печатей v1;
+        # в разработке и тесте v2 — ставка ЦБ и дни [d, d_next)
+        assert rate.attrs.get("cal") != "back", "С9: ставка с днями (d_prev, d] запрещена"
         kr = rate.reindex(rate.index.union(self.dates)).sort_index().ffill().bfill()
         self.kr = kr.reindex(self.dates).values
         self.rf = self.kr / 365.0

@@ -108,6 +108,14 @@ def test_s9_engine_same_rate_in_excess():
     assert np.allclose(e.rf * 365, [0.0425, 0.0425, 0.045, 0.045])
 
 
+def test_s9_forbids_back_rate():
+    """Ъ ~23:20: режим «back» (rate_restored, дни (d_prev, d]) — только печати v1; Engine С9
+    (разработка и тест v2) его не принимает."""
+    import inspect
+    src = inspect.getsource(s9.Engine.__init__)
+    assert 'rate.attrs.get("cal") != "back"' in src and "assert" in src
+
+
 def test_cash_accrues_over_position_period():
     """Н2 исправлено: позиция пятницы держится пт→пн — кэш пятницы за 3 дня по экспозиции и
     ставке пятницы; выходные перед сменой ставки (пн 22.03.2021) идут по старой ставке."""

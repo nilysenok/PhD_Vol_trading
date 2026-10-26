@@ -108,26 +108,21 @@ def _cached(name, td, *args):
 
 
 def c_masks(td, cat, v41):
-    return _cached("c_masks", td, cat, v41, bool(grids.C_RANK_PAST))
+    return _cached("c_masks", td, cat, v41)
 
 
 def d_gates(td, annualize):
     return _cached("d_gates", td, annualize)
 
 
-def _c_masks(td, cat, v41, past=False):
+def _c_masks(td, cat, v41):
     """(уникальные маски [M, T], индекс конфигурации → строка, список параметров).
-    past=True — ранг по окну без текущего дня (grids.C_RANK_PAST)."""
+    Ранг σ — по окну [t−L, t−1] без текущего дня (s9_stats.past_rank; аудит FA, Н1, Ъ ~23:20:
+    ручки нет). Ранг c22a4b3 (pandas rolling.rank с текущим днём) не воспроизводится."""
+    from fastbt.s9_stats import past_rank
     sg, n = td.sigma, td.n
-    if past:
-        from fastbt.s9_stats import past_rank
-        pr = {(h, lb): past_rank(np.ascontiguousarray(sg[h], dtype=np.float64), lb,
-                                 max(50, lb // 5))
-              for h in grids.C_HORIZONS for lb in grids.C_LOOKBACKS}
-    else:
-        pr = {(h, lb): pd.Series(sg[h]).rolling(lb, min_periods=max(50, lb // 5))
-              .rank(pct=True).values
-              for h in grids.C_HORIZONS for lb in grids.C_LOOKBACKS}
+    pr = {(h, lb): past_rank(np.ascontiguousarray(sg[h], dtype=np.float64), lb, max(50, lb // 5))
+          for h in grids.C_HORIZONS for lb in grids.C_LOOKBACKS}
     if cat == "Range":
         outer = grids.C_RANGE_BANDS_V41 if v41 else grids.C_RANGE_BANDS
     else:

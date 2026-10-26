@@ -37,6 +37,11 @@ def test_grids_match_legacy(L):
     assert grids.D_GATE_THRESHOLDS == L.v4.D_GATE_THRESHOLDS
 
 
+V1_SKIP = ("Ъ ~23:20: ранг C всегда без текущего дня (аудит FA, Н1) — позиции C ворот v1 "
+           "(c22a4b3) не воспроизводятся; печати v1 — docs/otchety/arhiv_do_audita/")
+
+
+@pytest.mark.skip(reason=V1_SKIP)
 def test_smoke_gate():
     """Дымовой набор: позиции = daily_positions_pre2026 для 2022–2023, все подходы."""
     from fastbt.gate import compare
@@ -50,6 +55,7 @@ def test_smoke_gate():
     assert (res["only_new"] == 0).all() and (res["only_saved"] == 0).all(), res
 
 
+@pytest.mark.skip(reason=V1_SKIP)
 def test_equiv_one_ticker():
     from fastbt.equiv import run
     df = run(["SBER"], 25, seed=1)
