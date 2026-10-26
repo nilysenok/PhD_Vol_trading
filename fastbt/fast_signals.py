@@ -99,7 +99,6 @@ def _ctx():
 def _job_parts(args):
     """Тот же расчёт, что s9._job, с кэшем частей: A по (тикер, стратегия), C по (…, σ)."""
     ticker, srcs, code = args[:3]
-    os.environ["NUMBA_NUM_THREADS"] = "1"
     from fastbt import dev, masks, s9, turnover
     from fastbt import design as dsg
     from fastbt.approach_a import ApproachA
@@ -177,7 +176,10 @@ def _job_whole(args):
     k = _key("T", ticker, code, sh, *_ctx())
     v = _get(k)
     if v is None:
-        _, v = s9._job((ticker, srcs) + tuple(args[3:]))
+        old = os.environ.get("NUMBA_NUM_THREADS")
+        _, v = s9._job((ticker, srcs) + tuple(args[3:]))    # ставит NUMBA_NUM_THREADS=1
+        if old is not None:
+            os.environ["NUMBA_NUM_THREADS"] = old
         _put(k, v)
         return ticker, v, {"T_miss": 1}
     return ticker, v, {"T_hit": 1}
@@ -215,8 +217,13 @@ def build(workers: int = 4, tickers=None, log=print) -> dict:
         pool = None
     else:
         import multiprocessing as mp
-        os.environ["NUMBA_NUM_THREADS"] = "1"
+        old = os.environ.get("NUMBA_NUM_THREADS")
+        os.environ["NUMBA_NUM_THREADS"] = "1"          # процессы-работники — по 1 потоку
         pool = mp.get_context("spawn").Pool(min(workers, len(jobs)))
+        if old is None:                                # родитель — с прежним числом потоков
+            os.environ.pop("NUMBA_NUM_THREADS")
+        else:
+            os.environ["NUMBA_NUM_THREADS"] = old
         it = pool.imap_unordered(fn, jobs)
     for tk, out, st in it:
         res[tk] = out

@@ -24,8 +24,8 @@ PW_MAX = 8192            # до этой длины попарная сумма 
 
 
 @njit(cache=True)
-def _pw(a, s, n):
-    """numpy pairwise_sum (DOUBLE): n < 8 — подряд; n ≤ 128 — 8 аккумуляторов; иначе пополам."""
+def _leaf(a, s, n):
+    """Лист pairwise_sum: n < 8 — подряд; n ≤ 128 — 8 аккумуляторов."""
     if n < 8:
         res = 0.0
         for i in range(n):
@@ -57,9 +57,56 @@ def _pw(a, s, n):
             res += a[s + i]
             i += 1
         return res
-    n2 = n // 2
-    n2 -= n2 % 8
-    return _pw(a, s, n2) + _pw(a, s + n2, n - n2)
+    return 0.0
+
+
+@njit(cache=True)
+def _pw(a, s, n):
+    """numpy pairwise_sum (DOUBLE): n ≤ 128 — лист; иначе пополам (n2 = n/2 − (n/2 mod 8)),
+    результат = сумма(левая) + сумма(правая). Рекурсия развёрнута в стек: рекурсивные
+    функции numba с cache=True падают при загрузке из кэша."""
+    if n <= 128:
+        return _leaf(a, s, n)
+    fs = np.empty(64, np.int64)
+    fn = np.empty(64, np.int64)
+    fp = np.empty(64, np.int64)
+    vals = np.empty(64)
+    top = 0
+    nv = 0
+    fs[0] = s
+    fn[0] = n
+    fp[0] = 0
+    top = 1
+    while top > 0:
+        top -= 1
+        cs = fs[top]
+        cn = fn[top]
+        ph = fp[top]
+        if cn <= 128:
+            vals[nv] = _leaf(a, cs, cn)
+            nv += 1
+        elif ph == 0:
+            n2 = cn // 2
+            n2 -= n2 % 8
+            fs[top] = cs
+            fn[top] = cn
+            fp[top] = 1
+            top += 1
+            fs[top] = cs + n2           # правая — после левой
+            fn[top] = cn - n2
+            fp[top] = 0
+            top += 1
+            fs[top] = cs
+            fn[top] = n2
+            fp[top] = 0
+            top += 1
+        else:
+            r = vals[nv - 1]
+            l = vals[nv - 2]
+            nv -= 2
+            vals[nv] = l + r
+            nv += 1
+    return vals[0]
 
 
 @njit(cache=True)
