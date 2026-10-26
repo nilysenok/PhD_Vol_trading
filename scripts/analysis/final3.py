@@ -711,6 +711,65 @@ def uses_harx(c):
     return 'harx' in b.lower() or b.endswith('X') or 'HAR-X' in str(c.get('opisanie', '')) + str(c.get('fam', ''))
 
 
+PURE_EXTRA = {'D17F_h5_V0_rrvgk'}  # чистый бустинг без прогноза HAR в признаках (Д17.2 — только RRV); Д17.4 (итер. HAR как признак) — не чистый
+Y3 = (2022, 2023, 2024)
+
+
+def etalon(O):
+    """Единый эталон (поручение владельца 04:30): HAR-J с поправкой, s² — по правилу третьего круга (final3.designs: дизайны single|V0_HAR|B-<s²>|L0,
+    ord/rob/sm/smrob; final3.summarize/select: число нарушенных c1-c4 на 2017-2021, затем средний OOS QLIKE 2017-2020). Подтверждающий —
+    ref_q_har_<год> сохранённого открытия 03:30 у финалистов с той же s² (новых открытий нет). -> DataFrame по h."""
+    CF = pd.read_csv(O / 'confirm_finalists.csv') if (O / 'confirm_finalists.csv').exists() else None
+    rows = []
+    for h in (1, 5, 22):
+        S = pd.read_csv(O / f'designs_rank_HARJ_corr_h{h}.csv')
+        e = S.iloc[0]
+        code = e.design.split('|')[2]
+        r = dict(h=h, design=e.design, code=code.replace('B-', ''), **{f'q_{y}': e[f'q_{y}'] for y in range(2017, 2022)},
+                 mean_1720=e.mean_1720, mean_1721=e.mean_1721)
+        if CF is not None:
+            g = CF[(CF.h == h) & CF.design.str.contains(re.escape('|' + code + '|'))]
+            for y in Y3:
+                r[f'q_{y}'] = float(g[f'ref_q_har_{y}'].iloc[0]) if len(g) else np.nan
+            r['mean_2224'] = float(np.mean([r[f'q_{y}'] for y in Y3])) if len(g) else np.nan
+        rows.append(r)
+    E = pd.DataFrame(rows)
+    E.to_csv(O / 'etalon.csv', index=False)
+    return E
+
+
+def tiebreak22(O):
+    """h=22 по правилу владельца (04:30): никто не прошёл -> минимум нарушений -> tie-break: гибрид, если отстаёт от своей одиночной компоненты (V0 —
+    лучшая по правилу из XGB-/LGB-слота его ноги: число нарушений, затем средний QLIKE) не больше чем на 1% и нарушает не больше; иначе HAR-J с
+    поправкой. Только сохранённые результаты открытия 03:30 (val 2022-2024); 2025 не открывался. -> (таблица, решение, причина)."""
+    CF = pd.read_csv(O / 'confirm_finalists.csv')
+    g = CF[CF.h == 22].sort_values('finalist')
+    rows = []
+    for r in g.itertuples():
+        q = np.array([getattr(r, f'q_{y}') for y in Y3]); har = np.array([getattr(r, f'ref_q_har_{y}') for y in Y3])
+        xg = np.array([getattr(r, f'ref_q_xgb_single_{y}') for y in Y3]); lg = np.array([getattr(r, f'ref_q_lgb_single_{y}') for y in Y3])
+        v0 = []
+        for nm, p, o in (('XGB-слот', xg, lg), ('LGB-слот', lg, xg)):  # флаги V0 как gibrid_designs.flags (c4 у V0 выполнен тривиально)
+            c1 = bool((p <= 1.02 * har).all()); c2 = bool((p <= 1.02 * np.minimum(har, o)).all()); c3 = bool((p / har).max() < (o / har).max())
+            v0.append(dict(slot=nm, mean=float(p.mean()), nf=3 - c1 - c2 - c3, c=(c1, c2, c3)))
+        v = sorted(v0, key=lambda d: (d['nf'], d['mean']))[0]
+        nf = sum(not getattr(r, k) for k in CR)
+        lag = q.mean() / v['mean'] - 1
+        rows.append(dict(finalist=r.finalist, cand=r.cand, design=r.design, ok=bool(r.ok), **{f'q_{y}': q[i] for i, y in enumerate(Y3)},
+                         **{f'k_{y}': q[i] / har[i] for i, y in enumerate(Y3)}, mean=q.mean(), har_mean=har.mean(), c1=r.c1, c2=r.c2, c3=r.c3, c4=r.c4,
+                         nf=nf, v0=v['slot'], v0_mean=v['mean'], v0_nf=v['nf'], lag=lag, tb=bool(lag <= 0.01 and nf <= v['nf'])))
+    T = pd.DataFrame(rows)
+    if T.ok.any():
+        r = T[T.ok].iloc[0]
+        return T, r.cand, f'прошёл {r.cand} (М4)'
+    m = T[T.nf == T.nf.min()]
+    for r in m.itertuples():
+        if r.tb:
+            return T, r.cand, f'никто не прошёл; минимум нарушений {r.nf}; tie-break: {r.cand} отстаёт от своей V0 ({r.v0}) на {100 * r.lag:+.2f}% при не большем числе нарушений'
+    why = '; '.join(f'{r.cand}: {r.nf} нарушения против {r.v0_nf} у V0 ({r.v0}), к V0 {100 * r.lag:+.2f}%' for r in m.itertuples())
+    return T, 'HARJ_corr', f'никто не прошёл; у всех по {int(T.nf.min())} нарушения (минимум); tie-break не выполнен — {why} → HAR-J с поправкой'
+
+
 def extra_fields(a, O, Lk, A, FN, FC, CF, byc):
     """Обязательные поля ночного режима владельца (01:45/01:50)."""
     L = ['', '## 6а. Обязательные поля (ночной режим владельца 01:45/01:50)', '',
@@ -757,6 +816,31 @@ def extra_fields(a, O, Lk, A, FN, FC, CF, byc):
     return L
 
 
+def goal3(O, A, h, et):
+    """Цель (3) против единого эталона: чистый бустинг = V0_XGB/V0_LGB (без HAR в прогнозе) кандидатов chistyy и PURE_EXTRA; лучший по правилу V0.
+    Если лучший дизайн кандидата по правилу — схема с весом HAR > 1%, это отмечается (в цель идёт его V0)."""
+    best, note = None, []
+    for cand in A[(A.h == h) & (A.chistyy.astype(bool) | A.cand.isin(PURE_EXTRA))].cand:
+        S = pd.read_csv(O / f'designs_rank_{cand}_h{h}.csv')
+        v = S[S.design.str.contains(r'\|V0_(?:XGB|LGB)\|')]
+        if not len(v):
+            continue
+        v = v.iloc[0]
+        top = S.iloc[0].design
+        if '|V0_' not in top:
+            dv = pd.read_csv(O.parent / 'final3' / 'gibrid' / cand / f'designs_val_{cand}_h{h}.csv', usecols=['design', 'step', 'w_har'])
+            wh = dv[(dv.design == top) & dv.step.between(2, 6)].w_har
+            if len(wh) and wh.mean() > 0.01:
+                note.append(f'лучший дизайн {cand} по правилу {top.replace("|", "/")} содержит HAR (вес {F(float(wh.min()), 2)}–{F(float(wh.max()), 2)})')
+        if best is None or v.mean_1721 < best[1]:
+            best = (cand, v.mean_1721, v.design, v.mean_1720)
+    if best is None:
+        return 'чистого бустинга в пуле нет'
+    rel = best[1] / et.mean_1721 - 1
+    return (f'{"да" if rel <= 0 else "нет"}: {best[0]} {best[2].replace("|", "/")} {F(best[1])} против эталона {F(et.mean_1721)}, {P(rel)} '
+            f'(2017–2020: {P(best[3] / et.mean_1720 - 1)})' + ('; ' + '; '.join(note) if note else ''))
+
+
 def report(a, C):
     O, Lk = out_dir(a), lock_dir(a)
     A = pd.concat([pd.read_csv(O / f'ranking_h{h}.csv') for h in (1, 5, 22) if (O / f'ranking_h{h}.csv').exists()], ignore_index=True)
@@ -777,8 +861,9 @@ def report(a, C):
          '**Подтверждающий набор использовался трижды, не более трёх кандидатов на горизонт за раз.**', '']
     # 1. финальный дизайн
     L += ['## 1. Финальный дизайн по горизонтам', '',
-          '| h | кандидат | семейство | дизайн (нога / схема / s² / усадка) | описание | разраб. 2017–2020 | отложенный 2021 | разраб. 2017–2021 | подтв. 2022 / 2023 / 2024 (средн.) | HAR-J с поправкой (та же s²): 2017–2021 / подтв. | итог |',
-          '|' + '---|' * 11]
+          '| h | кандидат | семейство | дизайн (нога / схема / s² / усадка) | описание | разраб. 2017–2020 | отложенный 2021 | разраб. 2017–2021 | подтв. 2022 / 2023 / 2024 (средн.) | эталон HAR-J с поправкой: 2017–2021 / подтв. | к эталону: разраб. / подтв. | итог |',
+          '|' + '---|' * 12]
+    ET = etalon(O).set_index('h')
     for r in FC.itertuples():
         e = A[(A.h == r.h) & (A.cand == r.cand)].iloc[0] if len(A[(A.h == r.h) & (A.cand == r.cand)]) else None
         S = pd.read_csv(O / f'designs_rank_{r.cand}_h{r.h}.csv')
@@ -787,8 +872,30 @@ def report(a, C):
         cf = CF[(CF.h == r.h) & (CF.cand == r.cand) & (CF.design == r.design)] if CF is not None else pd.DataFrame()
         cq = (f'{F(cf.q_2022.iloc[0])} / {F(cf.q_2023.iloc[0])} / {F(cf.q_2024.iloc[0])} ({F(cf.mean_confirm.iloc[0])})' if len(cf) else 'не открывался' if CF is None else 'не проверялся (фолбэк)')
         hc = (np.nanmean([cf[f'ref_q_har_{y}'].iloc[0] for y in (2022, 2023, 2024)]) if len(cf) and 'ref_q_har_2022' in cf else np.nan)
+        et = ET.loc[r.h]
+        qc = float(cf.mean_confirm.iloc[0]) if len(cf) else (et.get('mean_2224', np.nan) if r.cand == 'HARJ_corr' else np.nan)
         L.append(f'| {r.h} | {r.cand} | {c["fam"]} | {r.design.replace("|", " / ")} | {c.get("opisanie", "")} | {F(s.mean_1720)} | {F(s.q2021)} | {F(s.mean_1721)} | {cq} | '
-                 f'{F(s.har_1721)} / {F(hc)} | {r.mark}{"; " + r.note if isinstance(r.note, str) and r.note else ""} |')
+                 f'{F(et.mean_1721)} / {F(et.get("mean_2224", np.nan))} | {P(s.mean_1721 / et.mean_1721 - 1)} / {P(qc / et.get("mean_2224", np.nan) - 1)} | '
+                 f'{r.mark}{"; " + r.note if isinstance(r.note, str) and r.note else ""} |')
+    L += ['', '### 1а. Единый эталон — HAR-J с поправкой, s² по правилу (поручение владельца 04:30)', '',
+          'Код: `final3.designs` (дизайны `single|V0_HAR|B-<s²>|L0`, s² ∈ {ord, rob, sm, smrob}) → `final3.summarize`/`select` (число нарушенных c1–c4 на '
+          '2017–2021, затем средний OOS QLIKE 2017–2020) → `final3.etalon`. Правило — раздел 3, п. 2. Все четыре s² у HAR-J нарушают c2, c3 (по 2), выбор — по '
+          '2017–2020. Подтверждающий — эталонная строка (ref_q_har) сохранённого открытия 03:30; новых открытий нет. В `final_test.py` эталон задан одним местом '
+          '(`ETALON`), столбец `har_corr` тестовых файлов — HAR-J с этой s² (у всех трёх финалов дизайн с той же s²).', '',
+          '| h | s² | 2017 | 2018 | 2019 | 2020 | 2021 | 2017–2020 | 2017–2021 | 2022 | 2023 | 2024 | 2022–2024 |', '|' + '---|' * 13]
+    for r in ET.reset_index().itertuples():
+        L.append(f'| {r.h} | {r.code} | ' + ' | '.join(F(getattr(r, f"q_{y}")) for y in range(2017, 2022)) + f' | {F(r.mean_1720)} | {F(r.mean_1721)} | '
+                 + ' | '.join(F(getattr(r, f'q_{y}', np.nan)) for y in Y3) + f' | {F(getattr(r, "mean_2224", np.nan))} |')
+    T22, ch22, why22 = tiebreak22(O)
+    L += ['', '### 1б. h=22: три финалиста на подтверждающем и правило владельца (04:30)', '',
+          '| № | финалист | дизайн | 2022 | 2023 | 2024 | 2025 | к эталону 2022 / 2023 / 2024 | среднее (эталон) | c1 | c2 | c3 | c4 | нарушений | V0 (своя одиночная) | к V0 |',
+          '|' + '---|' * 16]
+    for r in T22.itertuples():
+        L.append(f'| {r.finalist} | {r.cand} | {r.design.replace("|", "/")} | {F(r.q_2022)} | {F(r.q_2023)} | {F(r.q_2024)} | не открывался, ждёт решения владельца | '
+                 f'{F(r.k_2022, 3)} / {F(r.k_2023, 3)} / {F(r.k_2024, 3)} | {F(r.mean)} ({F(r.har_mean)}) | ' + ' | '.join('+' if getattr(r, k) else '−' for k in CR)
+                 + f' | {r.nf} | {r.v0}: {F(r.v0_mean)}, нарушений {r.v0_nf} | {P(r.lag)} |')
+    L += ['', f'**Решение h=22 по правилу:** {"HAR-J с поправкой" if ch22 == "HARJ_corr" else ch22} — {why22}. '
+          '2025 (val шага 10 = тестовый год шага 9) не открывался: его открытие — просмотр теста.']
     # 2. финалисты и подтверждающий
     L += ['', f'## 2. Финалисты третьего круга (записаны в `dev_log.md` {lg.get("time", "—")}, до открытия) и подтверждающий набор (открыт {lk.get("time", "—")})', '',
           '| h | № | кандидат | дизайн | семейство | нарушено (2017–2021) | 2017–2020 | 2021 | c1 | c2 | c3 | c4 | 2022 | 2023 | 2024 | средн. | итог | пометка |', '|' + '---|' * 18]
@@ -822,7 +929,16 @@ def report(a, C):
           'по порядку финалистов; h=22 — если никто, HAR-J с поправкой (s² по правилу); h=1/5 — если никто, первый финалист с пометкой.', '']
     # 4. пул
     L += ['## 4. Пул кандидатов (все круги)', ''] + pool_md(C)
-    L += ['', '### Рейтинг по h (разработочный набор)', ''] + (O / 'select.md').read_text().splitlines()
+    L += ['', '### Рейтинг по h (разработочный набор) — против единого эталона', '']
+    for h in (1, 5, 22):
+        E = pd.read_csv(O / f'ranking_h{h}.csv'); et = ET.loc[h]
+        L += ['', f'h={h}: эталон HAR-J с поправкой ({et.code}) 2017–2020 {F(et.mean_1720)}, 2017–2021 {F(et.mean_1721)}. Критерии c1–c3 — по правилу (модели с той же s², что у дизайна).', '',
+              '| № | кандидат | круг | семейство | лучший дизайн | нарушено | 2017–2020 | 2021 | 2017–2021 | к эталону 2017–2020 | к эталону 2017–2021 | видел подтв. | не допущен | финалист |',
+              '|' + '---|' * 14]
+        for r in E.itertuples():
+            L.append(f'| {r.rank} | {r.cand} | {r.krug} | {r.fam} | {r.design.replace("|", "/")} | {r.failed if isinstance(r.failed, str) and r.failed else "—"} | '
+                     f'{F(r.mean_1720)} | {F(r.q2021)} | {F(r.mean_1721)} | {P(r.mean_1720 / et.mean_1720 - 1)} | {P(r.mean_1721 / et.mean_1721 - 1)} | {r.videl} | '
+                     f'{r.ne_dopushchen if isinstance(r.ne_dopushchen, str) and r.ne_dopushchen else "—"} | {r.finalist or "—"} |')
     # 5. четыре цели
     L += ['', '## 5. Четыре цели владельца (21:40) — разработочный (2017–2021, OOS) и подтверждающий наборы, финальный дизайн', '',
           '| h | набор | (1) гибрид лучше HAR-J с поправкой | (2) гибрид не хуже ни одной модели | (3) чистый бустинг не хуже HAR-J с поправкой | (4) лучше GRU |', '|---|---|---|---|---|---|']
@@ -852,9 +968,7 @@ def report(a, C):
         if best is None or hj < best[1]:
             best = ('HAR-J с поправкой', hj) if r.cand != 'HARJ_corr' else best
         g2 = f'{"да" if s.mean_1721 <= best[1] else "нет"}: лучшая одиночная — {best[0]} {F(best[1])}, финал {P(s.mean_1721 / best[1] - 1)}' if best else '—'
-        pure = A[(A.h == r.h) & (A.chistyy)]
-        g3 = (f'{"да" if pure.mean_1721.iloc[0] <= pure.har_1721.iloc[0] else "нет"}: {pure.cand.iloc[0]} {F(pure.mean_1721.iloc[0])} против {F(pure.har_1721.iloc[0])}, '
-              f'{P(pure.mean_1721.iloc[0] / pure.har_1721.iloc[0] - 1)}') if len(pure) else 'чистого бустинга в пуле нет (второй круг: h=5 Д15 −6,0%, h=22 +10,6%)'
+        g3 = goal3(O, A, r.h, ET.loc[r.h])
         g4 = 'да (справочный GRU, решение дирижёра 00:05; финал третьего круга против GRU не перепроверялся)'
         L.append(f'| {r.h} | разработочный | {g1} | {g2} | {g3} | {g4} |')
         cf = CF[(CF.h == r.h) & (CF.cand == r.cand) & (CF.design == r.design)] if CF is not None else pd.DataFrame()
@@ -920,7 +1034,9 @@ def report(a, C):
           '  1. Первый круг (25.10, 19:55): одно открытие — 30 проверенных дизайнов (финалисты и следующие по рейтингу на h=22); до него 5 случаев частичного '
           'просмотра (таблица — `2026-10-25_final_assembly.md`).',
           '  2. Второй круг (26.10, 00:27): одно открытие, 3 финалиста на h (9 дизайнов), список зафиксирован до открытия (`dev_log.md` № 48).',
-          f'  3. Третий круг ({lk.get("time", "не открывался")}): одно открытие, {len(FN)} финалистов (≤ 3 на h), список в `dev_log.md` ({lg.get("time", "—")}) до открытия.',
+          f'  3. Третий круг: третье открытие — 26.10.2026 {lk.get("time", "—")[-5:]} по Маку, `bash scripts/analysis/final3.sh all` (`gibrid_v17.py --confirm`), '
+          'запуск агентом сборки по команде дирижёра; явной команды владельца «открывай» не было — дирижёр толковал ночной режим 01:45/01:50 (приоритет 1) и '
+          f'решение ~01:27 как разрешение. {len(FN)} финалистов (≤ 3 на h), список в `dev_log.md` ({lg.get("time", "—")}) до открытия.',
           '  4. Случайный просмотр круга 3 (шестой случайный): Д24.2 (агент Д24a), отвергнутый дизайн, 26.10 02:27 — в `D24_2_selected.csv` попал val-QLIKE '
           'шагов 7–9; значения стёрты, код исправлен; на отбор не влиял (дизайн отвергнут по разработочному набору, в пул не подавался).',
           '  - Отчёты круга 3 (`docs/otchety/2026-10-26_*.md`, `dev_log_d24.md`) перепроверены сборкой на признания такого рода: других случаев не найдено '
