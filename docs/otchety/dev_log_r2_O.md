@@ -1,0 +1,33 @@
+# Журнал R2, агент О (движок отбора, тестовая сборка, второе открытие)
+
+Протокол — `docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md` (v2). Ветка `r2-O-loyo` от `kanon-v22-pereschet` @ 6c1b4fe. Время — по `date` на Маке.
+
+| № | Дата-время | Что делали |
+|---|---|---|
+| 1 | 2026-10-26 13:06 | старт: прочитан протокол v2; ветка `r2-O-loyo` |
+| 2 | 2026-10-26 13:15–13:21 | `r2_loyo.py` + `r2_O_loyo.yaml`; `--selftest` OK; `proverka` на сохранённых рядах первого раунда (только val шагов 2–6) |
+| 3 | 2026-10-26 13:20 | `final_test_r2.py --selftest` OK (синтетика); `r2_sborka_test.py` — заготовка, не запускалась (только `py_compile` и grep) |
+
+## Решения и толкования (до счёта уровней R2)
+
+- ↺ Имя yaml: в таблице «Исполнители» — `r2_O_otbor.yaml`, в задании дирижёра — `r2_O_loyo.yaml`. Файл один, `models/designs/r2/r2_O_loyo.yaml` · откат: переименовать (26.10).
+- c1–c4 — `gibrid_designs.flags` импортом, без изменений. Как подаются входы:
+  - c1 — эталон HAR-J sm (протокол, «Критерии»): второй вызов `flags` с `q_har := q_har_c1`. У дизайнов с s² sm это то же самое;
+  - c2 — ещё и против ноги единицы в роли V0 (той же s²): второй вызов `flags` с ногой V0 в обоих ML-слотах. У самой V0-ячейки этой проверки нет;
+  - c4 — `flags` по непрерывным отрезкам обучающих шагов, чтобы шаги по обе стороны от отложенного года не считались соседними. Смены ML у V1 считаются по всем шагам;
+  - эталон у вариантов bez — ord, как в gibrid_v17 (`code == 'bez'` → эталон ord); `GIBRID_SAME_SLOT=1`, как в final3.
+- Недопущенные в складке получают «последний ранг» как средний ранг хвоста: (n_доп + 1 + N)/2. Они равны между собой, поэтому при равенстве — средний ранг.
+- Перебор вариантов в складке идёт по возрастанию среднего q на T\{Y} до первого допущенного. Результат тот же, что при полном переборе.
+- Чтение val — `pd.read_parquet(filters=[('step','<=',6)])` плюс assert год ≤ 2021. В designs_val — assert, что у шагов 7+ нет метрик, затем они отбрасываются.
+
+## Прочитанные файлы (проверка механики, val шагов ≤ 6), SHA-256 (первые 16)
+
+designs_val (final3/gibrid, final2/gibrid; D25 — final3_dry/gibrid): D16_5_h1 2bb4fde330777e9f · D16_h1_d812x c2d62f8260a34eba · D22_h1 aa6a81542c33a3a5 · D24_10_h1 1f1be2b7339cdf38 · D24_6_heavy_h1 fac0d6fd5a152356 · D24_6_rgarch_h1 ddeb46ad5298eb37 · D16_10_D12_h5 cb96ab8c4fef0d7b · D17F_h5_V0_ih 632065184828aced · D17F_h5_V0_rrvgk 7874405f2499af16 · D17F_h5_V0_rrvgk_ih 56cb18570b3ab8dd · D17_1_h5_G5Xopt e92753330e6d98f0 · D24_6_rgarch_h5 7e29e985de6e9e6c · D25_1b_h5 ced6aac7aacb24a1 · D12_h5 4f7a11d96f56ddcb · D16_10_D15_h22 2d6684ec4cb072ca · D16_5_h22 51195e83edfd3549 · D17F_h22_V0_rrvgk_ih 21b2b0ea6cca72c0 · D18x_h22 7edfcc34857d5c2e · D19_1x_h22 759cc25ddb12d5e8 · D19_4_h22 fa6b789b556a92de · D19_4y_h22 4e96d33efc24afd2 · D23_1_h22e d359c3acf9a6d8e9 · D24_6_d18r d52cd05c3452d12b · D25_3_h22 f5fdccabdeb43a14 · D12_h22 f2192da1d6a4430e.
+
+Ряды (data/regen): HARX_h5_val 633a897bf309d4a3 · HARX0_h5_val f4f50e03cc235990 · Bv3_xgb_h5_val c0ad8b3a348acba9 · Bv3_lgbm_h5_val 2a4acc67a768e9c4 · D12_h5_xgb_h5_val 2445ec18c318f56a · D12_h5_lgbm_h5_val 6a041baa83033531 · D12_h5_{xgb,lgbm}_h5_seeds4344_val 36d10b8fe9f6b36f / b5c35fa543ac82f4 · D24_3_D12_h5_{xgb,lgbm}_h5_seeds4551_val 040f3b7f414b78aa / fe323d130c66e98c · D12_h5_xgb_h5_wrap2_val 9b8e8ff758cc2b22.
+
+`test_locked` не читался. Таблицы и отчёты теста не читались. `final_test.py` как скрипт не запускался: `final_test_r2 --selftest` импортирует `final_test.run` и гоняет его на синтетике во временном каталоге.
+
+## Код (SHA-256, первые 16)
+
+r2_loyo.py 2f0028b02e2279b3 · final_test_r2.py 280f3985bf342e51 · r2_sborka_test.py 515d764eb0ff086e · r2_O_loyo.yaml e6324b0531d78f27 · gibrid_designs.py (импорт) 7462015b2989ffce.

@@ -1,0 +1,62 @@
+# R2, агент О: движок отбора LOYO (scripts/analysis/r2_loyo.py). Протокол — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md (v2).
+# В таблице «Исполнители» протокола yaml назван r2_O_otbor.yaml; в задании дирижёра 26.10 — r2_O_loyo.yaml. Файл один — этот.
+agent: O
+data: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen   # данные — только общий data/, абсолютные пути
+out: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/R2/O
+
+# ---- окно: только разработка, val 2017–2021 = шаги 2–6 (OOS: всё, что оценивается по val, на шаге t берётся с шага t−1)
+steps_T: [2, 3, 4, 5, 6]          # складки LOYO: год Y = 2015 + шаг
+max_step_read: 6                  # чтение parquet — фильтр step <= 6 (pyarrow filters); assert год <= 2021
+
+# ---- критерии c1–c4: gibrid_designs.flags импортируется без изменений; GIBRID_SAME_SLOT=1 (как final3.env_of)
+c1_etalon: sm                     # c1 — против замороженного HAR-J с поправкой sm (протокол, «Критерии»); 'same' — как gibrid_v17 --etalon same
+c2_leg_v0: true                   # c2 — ещё и против ноги самой единицы в роли V0 (той же s²); у V0-ячейки — нет (сама с собой)
+etalon_bez: ord                   # эталон c1–c3 у вариантов без поправки — ord (как gibrid_v17: code == 'bez' -> эталон ord)
+c4_runs: true                    # c4 — только пары соседних шагов, оба в обучающих годах складки (флаги — по непрерывным отрезкам)
+
+# ---- ранги
+rank_ties: average                # равные q на отложенном году — средний ранг
+rank_nedopushchen: tail_average   # недопущенные в складке — «последний ранг»: среднее мест n_доп+1 … N (они равны между собой)
+tie_break: [R_bar, mean_q, n_rych]
+
+# ---- порог 2σ (Д24.3): парно с F_h на seed 42–51, по среднему QLIKE за 5 лет T
+seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+sigma_rule: "d_s = Q̄_T(канд, s) − Q̄_T(F_h, s); d̄ < −2σ/√10, σ — ddof = 1; детерминированный ряд — одно значение на все seed"
+
+# ---- ворота: кандидат лучше F_h на отложенном году не менее чем в 3 складках из 5
+gate_min_folds: 3
+
+# ---- финалы первого раунда F_h (FD §0 п. 10) — контрольная единица каждого уровня
+F_h:
+  1:  {name: F_1 (D22_h1), designs_val: final3/gibrid/D22_h1/designs_val_D22_h1_h1.csv, design: "top5|V0_XGB|B-sm|L0"}
+  5:  {name: F_5 (D12_h5), designs_val: final2/gibrid/D12_h5/designs_val_D12_h5_h5.csv, design: "wrap2|V0_XGB|B-sm|L0"}
+  22: {name: F_22 (HARJ_corr), designs_val: final2/gibrid/D12_h22/designs_val_D12_h22_h22.csv, design: "single|V0_HAR|B-sm|L0"}
+
+# ---- проверка механики на сохранённых рядах первого раунда (не выбор): кандидаты третьего круга
+proverka_r1:
+  kandidaty: final3/kandidaty          # *.yaml (boost, h)
+  gibrid_dirs: [final3/gibrid, final3_dry/gibrid]   # designs_val_<boost>_h<h>.csv; final3_dry — только для D25 (после открытия, справочно)
+  isklyuchit_designs: '\|V0_(?:HAR|HCJ)\|'          # как final3.designs: HAR-J и HAR-CJ — не вклад кандидата
+  out: R2/O/proverka_r1
+  sigma_demo:                           # 2σ на сохранённых seed 42–51 (val шагов 1–6): D12_h5
+    h: 5
+    xgb: [D12_h5_xgb_h5_val.parquet, D12_h5_xgb_h5_seeds4344_val.parquet, D24_3_D12_h5_xgb_h5_seeds4551_val.parquet]
+    lgbm: [D12_h5_lgbm_h5_val.parquet, D12_h5_lgbm_h5_seeds4344_val.parquet, D24_3_D12_h5_lgbm_h5_seeds4551_val.parquet]
+    wrap2_s42: D12_h5_xgb_h5_wrap2_val.parquet   # контроль: wrap2 seed 42 = (xgb + lgbm)/2, q по шагам = designs_val F_5
+  series_demo:                          # ряды -> q по шагам (адаптер уровня 1): HAR-X / HARX0 V0 × s², Bv3 V0
+    h: 5
+    legs: {HARX: HARX_h5_val.parquet, HARX0: HARX0_h5_val.parquet}
+    xgb_v0: Bv3_xgb_h5_val.parquet
+    lgb_v0: Bv3_lgbm_h5_val.parquet
+    harj_designs_val: final2/gibrid/D12_h5/designs_val_D12_h5_h5.csv   # HAR-J по s² — строки single|V0_HAR|B-<s²>|L0
+
+s2_codes: [bez, ord, rob, sm, smrob]
+
+# ---- уровень 1 (после Э, Б1, Б2): спецификация ячеек — R2/O/spec_level1_h{h}.csv
+# колонки: unit (h|нога|роль), role (V0|priznak|ostatok|ofset), leg, variant, files (через ';' — среднее по RV), s2, n_rych
+# эталоны: R2/O/spec_ref_h{h}.csv — har (HAR-J сырой), xgb_v0, lgb_v0 (сохранённые val Bv3 / D12_h1_V0), leg_v0:<нога>
+level1:
+  spec: R2/O/spec_level1_h{h}.csv
+  ref: R2/O/spec_ref_h{h}.csv
+  boost_roles: [priznak, ostatok, ofset]
+  kandidat_V0: HAR-X+s²               # решение владельца 12:55: кандидат V0 на всех h, идёт прямо в ворота
