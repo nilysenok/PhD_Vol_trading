@@ -87,7 +87,13 @@ SOURCES_V2 = {
     "naive_h5": (CH4 / "sigma_naive_dev.parquet", "sigma_pred_h1", "h5"),   # √RV_w от h не зависит
 }
 V2 = False
-POMETKA = "до аудита"
+POMETKA = "после аудита Н1–Н3; не проверены сигналы, сделки, B"
+# Ъ 22:45: комиссия v2 — 0,04% за сторону «всё включено»; чувствительность 0,035 / 0,05 / 0,06%
+COMM_V2 = 0.0004
+T1_COMMS_V2 = (0.00035, 0.0004, 0.0005, 0.0006)
+T1_PODPIS = {35: "0,035% — институциональный инвестор",
+             40: "0,04% — основная: тариф «Премиум» Т-Банка, биржевой сбор включён",
+             50: "0,05% — тариф «Трейдер» Т-Банка", 60: "0,06% — консервативная"}
 TABLES_V2 = ROOT / "docs" / "tables" / "strat_dev_v2"
 SUFFIX = ""
 SCOPE = "dev"
@@ -135,9 +141,15 @@ def use_sigma_h1(name: str, suffix: str | None = None) -> None:
         SUFFIX += f"_{SCOPE}"
 
 
-def use_v2() -> dict:
-    """σ-набор v2: входы сверены с data/regen/ch4_dev/SHA256.txt до счёта; только разработка."""
-    global V2, TABLES, SUFFIX
+def _csuf() -> str:
+    """Суффикс кэша: в v2 один кэш на все комиссии (сигналы и A от комиссии МСП не зависят)."""
+    return "_v2" if V2 else SUFFIX
+
+
+def use_v2(comm: float | None = None) -> dict:
+    """σ-набор v2: входы сверены с data/regen/ch4_dev/SHA256.txt до счёта; только разработка.
+    comm — комиссия МСП и выбора на валидации (по умолчанию COMM_V2); не 0,04% — суффикс _k<…>."""
+    global V2, TABLES, SUFFIX, COMM
     if SCOPE != "dev":
         raise SystemExit("--sigma-set v2 — только --scope dev (тест закрыт)")
     ref = {}
@@ -151,7 +163,9 @@ def use_v2() -> dict:
         if ref.get(Path(p).name) != h:
             raise SystemExit(f"SHA σ не совпал с SHA256.txt: {Path(p).name}")
         sha[lab] = h
-    V2, TABLES, SUFFIX = True, TABLES_V2, "_v2"
+    V2, TABLES = True, TABLES_V2
+    COMM = COMM_V2 if comm is None else comm
+    SUFFIX = "_v2" if abs(COMM - COMM_V2) < 1e-12 else f"_v2_k{COMM * 100:.3f}".replace(".", "")
     SOURCES.clear()
     SOURCES.update(SOURCES_V2)
     return sha
@@ -392,7 +406,7 @@ def build_cache(workers: int = 2) -> Path:
         pool.join()
     p = OUT / f"cache_{cache_key()}.pkl"
     p.write_bytes(pickle.dumps(res, protocol=4))
-    (OUT / f"cache_latest{SUFFIX}.txt").write_text(p.name)
+    (OUT / f"cache_latest{_csuf()}.txt").write_text(p.name)
     print(f"кэш → {p} ({time.time() - t0:.0f} с)")
     return p
 
@@ -521,7 +535,8 @@ class Engine:
         return G[self.r["cat"], self.r["tick"], self.r["bar"]]
 
     # ---- МСП ----
-    def port(self, pos, comm=COMM, cap=1.0, wgt=None):
+    def port(self, pos, comm=None, cap=1.0, wgt=None):
+        comm = COMM if comm is None else comm      # v2: COMM задаётся --comm (Ъ 22:45: 0,04%)
         dp = np.diff(pos, prepend=0.0)
         dp[self.first] = pos[self.first]
         di = self.r["date"]
@@ -969,17 +984,21 @@ class S9:
         """v2: srcs — тройка одного h (h1 или h5), в списке и точки C2."""
         from fastbt.s9_stats import lw_sharpe_diff
         rows = []
-        pref = ("C1:", "C2:") if V2 else ("C1:",)
-        kinds = ["Cref", "C1 семья", "C2 семья"] + sorted({k for k, s in c_ports
-                                                        if k.startswith(pref) and s == srcs[0]})
+        if V2:                             # все точки и семьи C (в т. ч. --c-dop)
+            kinds = sorted({k for k, s in c_ports if s == srcs[0]})
+        else:
+            kinds = ["Cref", "C1 семья", "C2 семья"] + sorted({k for k, s in c_ports
+                                                            if k.startswith("C1:") and s == srcs[0]})
         for kind in kinds:
             ps = {s: c_ports[(kind, s)][0] for s in srcs if (kind, s) in c_ports}
-            if len(ps) < 3:
-                continue
+            if (len(ps) < 3) if not V2 else not (srcs[0] in ps and srcs[1] in ps):
+                continue                       # v2: C* на наивной не строится — без неё
             r = dict(design=kind)
             if V2:
                 r["h"] = SOURCES[srcs[0]][2]
             for s in srcs:
+                if V2 and s not in ps:
+                    continue
                 if V2:                         # одна таблица на h=1 и h=5: столбцы без h
                     m = metrics(ps[s])
                     tag = s.split("_")[0]
@@ -991,6 +1010,8 @@ class S9:
                     r[f"sharpe_{s}"] = metrics(ps[s])["sharpe"]
             hy, hj, nv = srcs
             for a, b in ((hy, hj), (hy, nv), (hj, nv)):
+                if a not in ps or b not in ps:
+                    continue
                 d, se, p = lw_sharpe_diff(ps[a]["excess"].values, ps[b]["excess"].values,
                                           self.reps, 5)
                 _, pb = self.boot(ps[a], ps[b])
@@ -1071,12 +1092,17 @@ class S9:
     def run_t1(self, sel: dict):
         e = self.e
         rows = []
+        comms, slips = (T1_COMMS_V2, (0.0,)) if V2 else ((0.0005, 0.0010, 0.0020), (0.0, 0.0005))
         for nm, pos in sel.items():
-            for c in (0.0005, 0.0010, 0.0020):
-                for sl in (0.0, 0.0005):
+            for c in comms:
+                for sl in slips:
                     for sc, cs in (("спот", 1.0), ("маржа 20%", MARGIN)):
                         m = metrics(e.port(pos, comm=c + sl, cap=cs))
-                        rows.append(dict(design=nm, comm_pct=c * 100, slippage_pct=sl * 100,
+                        if V2:                 # Ъ 22:55: подписи ставок, «всё включено»
+                            rows.append(dict(podpis=T1_PODPIS[round(c * 1e5)]))
+                        else:
+                            rows.append({})
+                        rows[-1].update(dict(design=nm, comm_pct=c * 100, slippage_pct=sl * 100,
                                          scenario=sc, sharpe=m["sharpe"],
                                          ann_excess_pct=m["ann_excess_pct"],
                                          comm_pct_y=m["comm_pct_y"], worst=m["worst"],
@@ -1102,7 +1128,7 @@ class S9:
 
 
 def load_cache() -> dict:
-    name = (OUT / f"cache_latest{SUFFIX}.txt").read_text().strip()
+    name = (OUT / f"cache_latest{_csuf()}.txt").read_text().strip()
     return pickle.loads((OUT / name).read_bytes())
 
 
@@ -1162,7 +1188,12 @@ def run_all_experiments(reps: int) -> None:
     if SCOPE != "dev":
         to_csv(main_rows(s9, eng, sel, choice, k["passed"]), "s9_osnovnye.csv")
     if V2:
-        to_csv(vybor_v2(s9, dfd, dfb, dfc), "s9_vybor_C8.csv")
+        vb = vybor_v2(s9, dfd, dfb, dfc)
+        to_csv(vb, "s9_vybor_C8.csv")
+        alt = TABLES / "s9_vybor_C8_v2_k0050.csv"      # прогон --comm 0.0005 (тот же кэш), если был
+        if SUFFIX == "_v2" and alt.exists():
+            to_csv(sravnenie_komissiy(vb, pd.read_csv(alt, sep=";", decimal=",", encoding="utf-8-sig")),
+                   "s9_vybor_C8_komissiya.csv")
         h2 = dfc3[(dfc3["design"] == k["C"][0]) & (dfc3["h"] == SOURCES[k["C"][1]][2])]
         to_csv(h2.assign(rol="H2 внутри выбранной точки C: без выбора"), "s9_H2_vybrannaya_C.csv")
     print(log[-1], flush=True)
@@ -1295,6 +1326,20 @@ def vybor_v2(s9: "S9", dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) 
     return pd.DataFrame(rows)
 
 
+def sravnenie_komissiy(v04: pd.DataFrame, v05: pd.DataFrame) -> pd.DataFrame:
+    """Ъ 22:45/22:55: совпал бы выбор С8 на 0,05% с выбором на 0,04% (по подходам); отбор не меняет."""
+    rows = []
+    for ap in ("B", "C", "D"):
+        a, b = v04[v04["approach"] == ap].iloc[0], v05[v05["approach"] == ap].iloc[0]
+        same = (a["design"], a["sigma"]) == (b["design"], b["sigma"])
+        rows.append(dict(approach=ap, vybor_0_04=f"{a['design']} на {a['sigma']}",
+                         sharpe_0_04=a["sharpe"], passed_0_04=a["passed"],
+                         vybor_0_05=f"{b['design']} на {b['sigma']}", sharpe_0_05=b["sharpe"],
+                         passed_0_05=b["passed"], sovpal="да" if same else "нет",
+                         primechanie="справочно: отбор — на 0,04%, по этой таблице не меняется"))
+    return pd.DataFrame(rows)
+
+
 def frozen_keys() -> dict:
     """Тест: выбор по С8 из таблиц разработки того же σ (docs/tables/strat_dev), без перевыбора."""
     suf = SUFFIX[:-len(f"_{SCOPE}")] if SCOPE != "dev" else SUFFIX
@@ -1342,7 +1387,9 @@ def main(argv=None):
                         "по умолчанию dev — final2, test — final3")
     p.add_argument("--suffix", default=None, help="суффикс таблиц/кэша (по умолчанию от --sigma-h1)")
     p.add_argument("--sigma-set", choices=["old", "v2"], default="old",
-                   help="v2 — выровненные σ S0 (data/regen/ch4_dev), только dev, «до аудита»")
+                   help="v2 — выровненные σ S0 (data/regen/ch4_dev), только dev")
+    p.add_argument("--comm", type=float, default=None,
+                   help="v2: комиссия МСП/выбора за сторону (по умолчанию 0,0004 — Ъ 22:45)")
     p.add_argument("--val-start", type=int, default=None,
                    help="начало замороженного окна валидации в тесте (по умолчанию 2018; конец — "
                         "2021); в разработке всегда 2017…Y−1")
@@ -1357,7 +1404,8 @@ def main(argv=None):
         load_c_dop(a.c_dop)
     set_scope(a.scope, a.val_start)
     if a.sigma_set == "v2":
-        print("σ v2 (SHA сверены):", {k: v[:12] for k, v in use_v2().items()}, flush=True)
+        print("σ v2 (SHA сверены):", {k: v[:12] for k, v in use_v2(a.comm).items()},
+              f"комиссия {COMM * 100:.3f}%, суффикс {SUFFIX}", flush=True)
         if a.stage == "sources":           # σ — готовые файлы S0; RVI — прежний rvi_1850 (не σ_pred)
             print("v2: sources не собираются — σ из data/regen/ch4_dev; RVI:", RVI.name)
             return 0
