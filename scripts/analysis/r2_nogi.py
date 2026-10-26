@@ -536,7 +536,7 @@ def zamer():
 #     чьё окно цели кончилось до этой даты; rls_lambda < 1 — ежедневное переобучение с весами λ^(возраст в торговых днях) (RLS с забыванием).
 #   data: recency_halflife (веса 0,5^(возраст/полураспад)), winsor (1/99 по тикеру на обучении), history_start (дата из ctx) — поддержаны;
 #     target ≠ ln_mean — NotImplementedError (кластер 1, не L).
-SCHEMA = HERE.parents[1] / 'models' / 'designs' / 'r2' / 'schema_v1.yaml'
+SCHEMA = HERE.parents[1] / 'models' / 'designs' / 'r2' / 'schema_v2.yaml'  # валидация — r2_core.validate (schema_v2, хэши v1 не меняются)
 LDIR = REG / 'R2' / 'L'
 DYM_TK = ('SBER', 'LKOH', 'AFLT')
 DYM_STEPS = range(1, 4)
@@ -836,7 +836,9 @@ def grid_keys_L(full):
     """Сетки внутри складки, которые относятся к ноге этого дизайна (r2_core.variants(keys=...))."""
     leg = _onoff(full)['leg']
     k = []
-    if leg['type'] == 'HARX' and leg['regressors'] != 'none' and _kind(leg) == 'ols':
+    if isinstance(leg['regressors'], list) and leg['type'] in ('HARX', 'HARX_regime', 'HARX_pooled', 'HAR_perlead'):
+        k.append('leg.regressors')  # набор S — тоже сетка внутри складки (драйвер: econ.harx_regressors)
+    if leg['type'] == 'HARX' and leg['regressors'] not in ('none', ['none']) and _kind(leg) == 'ols':
         k += ['leg.enet.lambda', 'leg.enet.alpha']
     if leg['type'] == 'HARX_pooled':
         k.append('leg.pooled_kappa')
@@ -856,7 +858,7 @@ def _variants(full):
     out = []
     for tag, _, d in _core().variants(full, keys=grid_keys_L(full)):
         leg = dict(_onoff(d)['leg'])
-        for k in ('pooled_kappa', 'regime_count', 'tau_window', 'rls_lambda'):
+        for k in ('pooled_kappa', 'regime_count', 'tau_window', 'rls_lambda', 'regressors'):
             leg[k] = _scal(leg[k])
         e = leg['enet'] if isinstance(leg['enet'], dict) else {'lambda': ENET_LAM, 'alpha': ENET_ALPHA}
         var = {'lam': float(_scal(e['lambda'])), 'alpha': float(_scal(e['alpha'])), 'pooled_kappa': leg['pooled_kappa'],
@@ -1251,6 +1253,19 @@ def write_params(design, h, rows, kind='leg', root=None):
     return p
 
 
+def leg_design(full):
+    """Что считает L для дизайна цепочки драйвера (одна реализация каждого кластера): ключи R (leg.refit, leg.rls_lambda,
+    leg.estimator) и M (leg.struct) сбрасываются в default — их применяют R и M к своей ноге; panel ≠ off — L не считает (P)."""
+    import copy
+    d = copy.deepcopy(_core().validate(full))
+    d['leg'].update(refit='yearly', rls_lambda=1, estimator='log_ols_calib', struct='single')
+    return d
+
+
+def is_P(full):
+    return _onoff(_core().validate(full))['leg']['panel'] != 'off'
+
+
 def fn_leg(design, seed, steps):
     """Модуль для r2_core.run_phase: {ряд: V} по всем вариантам сетки ноги (seed не влияет). Данные — r2_core.SHARED['M'] (mat_from).
     Параметры по шагам — write_params (params.csv каталога дизайна)."""
@@ -1258,7 +1273,7 @@ def fn_leg(design, seed, steps):
     M = RC.SHARED['M']
     h = int(design['h'])
     par = []
-    res = run_leg(design, M=M, steps=steps, params=par)
+    res = run_leg(leg_design(design), M=M, steps=steps, params=par)  # считается нога без ключей других модулей; пишется под хэшем дизайна
     write_params(design, h, par)
     cd = RC.cache_dir(design, root=RC.SHARED.get('L_root'))
     for tag, (_, W) in res.items():  # ln для ролей B: <ряд>_h{h}_lnall.parquet (tr/va, emb_ok), не ряд прогноза
@@ -1481,13 +1496,104 @@ def kontrol_L():
     return bool((R.status == 'OK').all())
 
 
+# ---------------------------------------------------------------- контракт драйвера S (r2_driver.py, PR #184)
+def env_tickers():
+    """Дым через драйвер: R2_TICKERS=SBER,LKOH,AFLT — срез строк после построения рыночных рядов (иначе все 17)."""
+    t = os.environ.get('R2_TICKERS')
+    return tuple(t.split(',')) if t else None
+
+
+def read_designs_file(p, h):
+    import yaml
+    Y = yaml.safe_load(open(p))
+    D = Y['designs'] if isinstance(Y, dict) and 'designs' in Y else (Y if isinstance(Y, list) else [Y])
+    return [_core().validate({**d, 'h': h}) for d in D]
+
+
+def cmd_run(designs, h, seeds, steps, workers):
+    """run --designs <yaml> --h --seeds --steps --workers: ноги L по дизайнам в кэш по хэшу (r2_core.run_phase, модуль 'L'; готовое — DONE_L
+    пропускается); шаги только 1–6 (режим R2: assert_dev_step, write_series запрещает ≥ 2022). panel ≠ off — пропуск (считает P).
+    -> код 0 (всё записано) / 1 (ошибка хотя бы одной задачи)."""
+    RC = _core()
+    D = read_designs_file(designs, h)
+    todo = [d for d in D if not is_P(d)]
+    for d in D:
+        if is_P(d):
+            RC.log(f"L: {d.get('design')} — leg.panel ≠ off, считает P")
+    if not todo:
+        return 0
+    A, harj = RC.load_d0(); RC.check_d0(A)
+    M = mat_from(A, harj, env_tickers())
+    RC.share(M=M, A=M['A'], harj=harj, L_root=None)
+    T = RC.run_phase('L', h, todo, fn_leg, seeds=tuple(seeds), steps=tuple(steps), workers=workers, module='L', check_gate=False,
+                     block_file=os.environ.get('R2_BLOCK_FILE'))
+    bad = int((T.get('ryad') == 'ОШИБКА').sum()) if len(T) else 0
+    RC.log(f'L run h={h}: дизайнов {len(todo)}, рядов {len(T) - bad}, ошибок {bad}')
+    return 1 if bad else 0
+
+
+def cmd_leak_driver(hs):
+    """leak --hs {h}: детектор L (r2_core.leak_check) на дизайнах дыма (3 тикера, шаги 1–3): все ноги кластера 2 и варианты. -> 0/1."""
+    RC = _core()
+    A, harj = RC.load_d0(); SH_HARJ['harj'] = harj
+    A3 = A[A.ticker.isin(DYM_TK)].reset_index(drop=True)
+    RC.share(A3=A3, harj=harj)
+    ok = True
+    for h in hs:
+        tasks = [dict(name=nm, design=des, h=h, cost=1) for nm, des in DYM_DESIGNS.items()]
+        res = RC.run_pool(_dym_leak_task, tasks, 2, label=f'детектор L h={h}')
+        for r in res:
+            ok &= bool(r['ok'] and r['result'].ok.all())
+        (LDIR / 'leak').mkdir(parents=True, exist_ok=True)
+        pd.concat([r['result'] for r in res if r['ok']], ignore_index=True).to_csv(LDIR / 'leak' / f'leak_L_h{h}.csv', index=False)
+    RC.log(f'детектор L {list(hs)}: {"OK" if ok else "ПРОВАЛ"}')
+    return 0 if ok else 1
+
+
+def dym_driver(hs=(5, 22, 1), workers=2):
+    """Дым через r2_driver (до ворот C): эконометрические дизайны драйвера (driver_v1/econ_h{h}), чьи цепочки — L или L → L3;
+    Runner боевой (подпроцессы run/leak по контракту r2_S_driver.yaml), 3 тикера (R2_TICKERS), шаги 1–3, seed 42, кэш — свой корень
+    (R2_CACHE), блок сдвига — свой файл. Проверка: итоговый ряд дизайна (r2_driver.final_series) есть, годы ≤ 2021."""
+    import r2_driver as DR
+    base = LDIR / 'dym_driver'; root = base / time.strftime('cache_%Y%m%d_%H%M%S'); root.mkdir(parents=True, exist_ok=True)
+    os.environ.update(R2_CACHE=str(root), R2_TICKERS=','.join(DYM_TK), R2_BLOCK_FILE=str(base / 'blok_sdvig.csv'))
+    runner = DR.Runner(smoke=False)
+    rows = []
+    for h in hs:
+        ds = [d for d in DR.read_designs(f'econ_h{h}') if set(DR.route(d)) <= {'L', 'L3'}]
+        t0 = time.time()
+        okL, whyL = runner.run('L', ds, h, [42], list(DYM_STEPS), workers, tag='dymL')
+        d3 = [d for d in ds if 'L3' in DR.route(d)]
+        ok3, why3 = runner.run('L3', d3, h, [42], list(DYM_STEPS), workers, tag='dymL') if (d3 and okL) else (okL, whyL)
+        for d in ds:
+            V = DR.final_series(d, h, [42], root=root, steps=list(DYM_STEPS))
+            ymax = max((int(v['year'].max()) for v in V.values()), default=None)
+            rows.append(dict(h=h, design=d['design'], cep='>'.join(DR.route(d)), variantov=len(V), god_max=ymax,
+                             ok=bool(V) and ymax is not None and ymax <= 2021))
+        rows.append(dict(h=h, design='ИТОГ', cep=f'L: {okL} {whyL}; L3: {ok3} {why3}', variantov=len(ds), god_max=None,
+                         ok=bool(okL and ok3), sek=round(time.time() - t0)))
+        print(rows[-1], flush=True)
+    R = pd.DataFrame(rows); R.to_csv(base / 'dym_driver_L.csv', index=False)
+    print(f'дым через драйвер: дизайнов {int((R.design != "ИТОГ").sum())}, без итогового ряда {int(((R.design != "ИТОГ") & ~R.ok).sum())}, '
+          f'этапы OK: {bool(R[R.design == "ИТОГ"].ok.all())}')
+    return bool(R.ok.all())
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['zamer', 'det', 'leak', 'dym', 'kontrol', 'sverka_F', 'schet', 'spisok'])
+    ap.add_argument('mode', choices=['run', 'leak', 'leak_E', 'zamer', 'det', 'dym', 'dym_driver', 'kontrol', 'sverka_F', 'schet', 'spisok'])
     ap.add_argument('--names', nargs='*', default=None)
     ap.add_argument('--hs', type=int, nargs='*', default=list(HS))
     ap.add_argument('--workers', type=int, default=2)
+    ap.add_argument('--designs'); ap.add_argument('--h', type=int)
+    ap.add_argument('--seeds', type=int, nargs='*', default=[42]); ap.add_argument('--steps', type=int, nargs='*', default=list(STEPS))
     a = ap.parse_args()
+    if a.mode == 'run':
+        sys.exit(cmd_run(a.designs, a.h, a.seeds, a.steps, a.workers))
+    if a.mode == 'leak':
+        sys.exit(cmd_leak_driver(tuple(a.hs if a.h is None else [a.h])))
+    if a.mode == 'dym_driver':
+        sys.exit(0 if dym_driver(tuple(a.hs), min(a.workers, 10)) else 1)
     if a.mode == 'zamer':
         zamer()
     elif a.mode == 'det':
@@ -1510,7 +1616,7 @@ def main():
         print({h: len(allD[h]) for h in a.hs})
     elif a.mode == 'schet':
         schet(tuple(a.hs), a.workers)
-    else:
+    else:  # leak_E — детектор четырёх версий Э (прежний режим leak)
         sys.exit(0 if leak(tuple(a.hs), min(a.workers, 2)) else 1)
 
 
