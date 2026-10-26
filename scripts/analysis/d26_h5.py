@@ -16,7 +16,7 @@ import d26_lib as L
 
 R, OUT = L.R, L.OUT
 SEEDS = (42, 43, 44)
-WORKERS = 6  # не больше 6 процессов (поручение)
+WORKERS = 4  # не больше 4 процессов (поручение свежему агенту А)
 
 
 def now():
@@ -235,23 +235,68 @@ def load_bc(which):
     """Д26.1 (агент Б) и Д26.3 (агент В): {seed: кадр} из их файлов, когда появятся. Формат уточняется по факту (см. журнал)."""
     out = {}
     if 'D26_1' in which:  # агент Б: формат tune_L2 (data/regen/D26_1_{xgb,lgbm}_h5[_seeds4344]_val.parquet); рецепт — среднее ln XGB и ln LGBM
-        out['D26_1'] = {s: corrected(r, 'sm') for s, r in d261_raw().items()}
+        out['D26_1'] = {s: corrected(r, 'sm') for s, r in d261_raw(os.environ.get('D261', 'D26_1')).items()}  # D261 — вариант агента Б
     if 'D26_3' in which:
         for s, r in d263_raw().items():
             out.setdefault('D26_3', {})[s] = corrected(r, D263_CODE)
     return out
 
 
-D263_CODE = None  # уточняется по файлам агента В (поправка по лидам внутри — без Б0.1)
+# Д26.3 (агент В, d26_3.py): ŷ₅ = mean_j exp(ŷ_j), ŷ_j — hyb₁ лида j (среднее ln XGB и ln LGBM), лиды 1..5; варианты var = b (точки D22_h1
+# без подбора) | a (переподбор по лиду); поправка S1 — одна s² sm на агрегат (D263_CODE = 'sm'), S2 — s² sm по лиду до агрегирования
+# (уже поправлено -> D263_CODE = None). Источник: лиды 2..5 — data/regen/D26_3/D26_3{var}_L{j}_{xgb,lgbm}_val.parquet, лид 1 — D22_h1
+# (как d26_3.lead_val). Выбор варианта: переменная окружения D263 = '{var}' или '{var}p' (p — S2), по умолчанию 'b'.
+D263_VAR = os.environ.get('D263', 'b')
+D263_CODE = None if D263_VAR.endswith('p') else 'sm'
 
 
-def d261_raw():
-    xs, ls = seed_frames('D26_1', 'xgb'), seed_frames('D26_1', 'lgbm')
+def d261_raw(prefix='D26_1'):
+    xs, ls = seed_frames(prefix, 'xgb'), seed_frames(prefix, 'lgbm')
     return {s: lnmean(xs[s], ls[s]) for s in SEEDS}
 
 
-def d263_raw():
-    raise FileNotFoundError('файлы Д26.3 агента В ещё не появились')
+def b_frames(spec):
+    """Ряды агента Б: 'D26_1{var}' (data/regen/D26_1{var}_{m}_h5[_seeds4344]_val.parquet) или 'D26_2:{boost}'
+    (data/regen/D26_2/{boost}_{m}_h5[_seeds4344]_val.parquet). -> ({seed: ln-среднее XGB и LGBM}, {seed: [XGB, LGBM]})."""
+    if spec.startswith('D26_2:'):
+        b = spec.split(':', 1)[1]
+        fr = {m: seed_frames(None, m, single_name=f'D26_2/{b}_{m}_h5_val.parquet', seeds_name=f'D26_2/{b}_{m}_h5_seeds4344_val.parquet')
+              for m in ('xgb', 'lgbm')}
+    else:
+        fr = {m: seed_frames(spec, m) for m in ('xgb', 'lgbm')}
+    return {s: lnmean(fr['xgb'][s], fr['lgbm'][s]) for s in SEEDS}, {s: [fr['xgb'][s], fr['lgbm'][s]] for s in SEEDS}
+
+
+def d263_lead(var, m, j):
+    if j == 1 and var in ('a', 'b'):
+        a = pd.read_parquet(R / f'D22_h1_{m}_h1_val.parquet').assign(seed=42)
+        b = pd.read_parquet(R / f'D22_h1_{m}_h1_seeds4344_val.parquet')
+        d = pd.concat([a, b], ignore_index=True)
+    else:
+        d = pd.read_parquet(R / 'D26_3' / f'D26_3{var}_L{j}_{m}_val.parquet')
+    d = L.dev_only(d[d.seed.isin(SEEDS)])
+    return d[['date', 'ticker', 'year', 'step', 'seed', 'rv_actual', 'rv_pred']].drop_duplicates(['date', 'ticker', 'step', 'seed'])
+
+
+def d263_raw(variant=None):
+    """{seed: ряд Д26.3 h=5 (шаги 1–6)}; S2 — поправка s² sm по лиду (s² шага t−1) до агрегирования."""
+    variant = variant or D263_VAR
+    var, perlead = variant.rstrip('p'), variant.endswith('p')
+    k = ['date', 'ticker', 'step', 'seed']
+    parts = []
+    for j in (1, 2, 3, 4, 5):
+        x, l = d263_lead(var, 'xgb', j), d263_lead(var, 'lgbm', j)
+        d = x.merge(l[k + ['rv_pred']], on=k, suffixes=('', '_l'), validate='one_to_one')
+        d['rv_pred'] = np.exp((np.log(d.rv_pred) + np.log(d.rv_pred_l)) / 2)
+        d = d.drop(columns='rv_pred_l')
+        if perlead:
+            d = pd.concat([g.assign(rv_pred=g.rv_pred * g.step.map(L.bias_factors(g, 'sm'))) for _, g in d.groupby('seed')])
+        parts.append(d.assign(lead=j))
+    W = pd.concat(parts, ignore_index=True)
+    kk = ['date', 'ticker', 'year', 'step', 'seed']
+    agg = W.groupby(kk, as_index=False).agg(rv_actual=('rv_actual', 'mean'), rv_pred=('rv_pred', 'mean'), n=('lead', 'nunique'))
+    agg = agg[agg.n == 5].drop(columns='n')
+    return {s: g.drop(columns='seed').reset_index(drop=True) for s, g in agg.groupby('seed')}
 
 
 def d265(which, tag):
@@ -310,6 +355,7 @@ def entry_table(items):
 #  c — QLIKE-калибровка уровня: ŷ ← ŷ_base + c_h, c_h = argmin QLIKE на OOS шага t−1 (ŷ_base шага t−1 — своя OOS-поправка).
 CORR = ('base', 'a5tk', 'a10tk', 'a5mk', 'a10mk', 'b', 'c')
 _ST = {}
+PLANT = {'on': False}  # детектор: подложенная утечка — параметры поправки шага t берутся и по самому шагу t (a, b, c)
 
 
 def state_frame():
@@ -362,6 +408,8 @@ def apply_corr(df, kind, mean_type=False):
         for st in sorted(d.step.unique()):
             vy = 2015 + st
             tr = (d.step < st).values & (d.tend_year < vy).values
+            if PLANT['on']:
+                tr = (d.step <= st).values
             if tr.sum() < 100:
                 continue
             kap = float(x[tr] @ y[tr] / (x[tr] @ x[tr]))
@@ -376,6 +424,8 @@ def apply_corr(df, kind, mean_type=False):
         for st in sorted(d.step.unique()):
             ms = (d.step == st).values
             tr = (d.step >= max(1, st - 3)).values & (d.step <= st - 1).values if st > 1 else ms
+            if PLANT['on']:
+                tr = (d.step >= max(1, st - 3)).values & (d.step <= st).values
             em = e[tr] - e[tr].mean()
             beta = np.linalg.lstsq(Z[tr], em ** 2, rcond=None)[0]
             s2bar = float(np.var(e[tr]))
@@ -391,7 +441,7 @@ def apply_corr(df, kind, mean_type=False):
         for st in sorted(d.step.unique()):
             if st == 1:
                 continue
-            pr = (d.step == st - 1).values
+            pr = (d.step == (st if PLANT['on'] else st - 1)).values
             c = _qmin(d.rv_actual.values[pr], d.rv_pred.values[pr])
             ms = (d.step == st).values
             p[ms] = np.clip(d.rv_pred.values[ms] + c, 1e-9, None)
@@ -421,7 +471,7 @@ def corr_designs(extra=()):
     return D
 
 
-def corr(extra=()):
+def corr(extra=(), tag=''):
     H = harj_raw()
     E = {k: L.years(apply_corr(H, k), 'raw') for k in CORR}
     rows = [dict(design='HAR-J (эталон)', corr=k, seed='—', **{str(y): E[k][y] for y in range(2017, 2022)}) for k in CORR]
@@ -434,7 +484,7 @@ def corr(extra=()):
         print(f'{now()} {nm} готов', flush=True)
     T = pd.DataFrame(rows)
     T['m1720'] = T[[str(y) for y in range(2017, 2021)]].mean(axis=1)
-    T.to_csv(OUT / 'corr_long.csv', index=False)
+    T.to_csv(OUT / f'corr_long{tag}.csv', index=False)
     # сводка: среднее по seed, условие входа (парно с D12_h5 с той же поправкой и с D12_h5 без доп. поправки; рядом 0,2159)
     d12b = T[(T.design == 'D12_h5') & (T['corr'] == 'base')].set_index('seed').m1720
     out = []
@@ -451,7 +501,7 @@ def corr(extra=()):
                         rel_D12base=eB['rel'], d_D12base=eB['d_mean'], two_s_D12base=eB['two_sigma'], pass_D12base=eB['pass3'] and eB['pass2s'],
                         rel_fixed=eF['rel'], pass_fixed=eF['pass3'] and eF['pass2s']))
     O = pd.DataFrame(out)
-    O.to_csv(OUT / 'corr_summary.csv', index=False)
+    O.to_csv(OUT / f'corr_summary{tag}.csv', index=False)
     E2 = pd.DataFrame([dict(corr=k, **{str(y): E[k][y] for y in range(2017, 2022)}) for k in CORR])
     pd.set_option('display.width', 300)
     print(E2.round(4).to_string())
@@ -497,25 +547,78 @@ def leak():
     pd.DataFrame(rows).to_csv(OUT / 'leak_d26_A.csv', index=False)
 
 
+def leak_corr(extra=()):
+    """Детектор «будущее не влияет» для поправок 09:55 (a — Д23.1, b — s² по состоянию, c — c_h; base — Б0.1 sm):
+    цели (rv_actual) строк шагов ≥ k заменены шумом (×exp(N(0,1))) -> прогнозы шага k после поправки побайтно равны.
+    Подложенная утечка (PLANT): параметры поправки шага t оцениваются и по самому шагу t -> должно быть расхождение.
+    Ряды: эталон HAR-J (сырой), D12_h5 seed 42 (среднее XGB+LGBM), G5Xopt seed 42 (тип среднего) и extra [(имя, кадр, тип среднего)]."""
+    rng = np.random.default_rng(20261026)
+    xs, ls = seed_frames('D12_h5', 'xgb'), seed_frames('D12_h5', 'lgbm')
+    series = [('HAR-J', harj_raw(), False), ('D12_h5 s42', combine([xs[42], ls[42]], 'mean'), False),
+              ('G5Xopt s42', seed_frames('D17_1_h5_G5Xopt', 'lgbm')[42], True)] + list(extra)
+    rows = []
+    for nm, df, mt in series:
+        df = L.dev_only(df)[['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']].reset_index(drop=True)
+        for planted in (False, True):
+            PLANT['on'] = planted
+            for kind in (('base',) if not planted else ()) + ('a5tk', 'a10mk', 'b', 'c'):
+                for k in (3, 5):
+                    pert = df.copy()
+                    m = (pert.step >= k).values
+                    pert.loc[m, 'rv_actual'] = pert.loc[m, 'rv_actual'].values * np.exp(rng.normal(0, 1, m.sum()))
+                    p0, p1 = apply_corr(df, kind, mt), apply_corr(pert, kind, mt)
+                    a0, a1 = p0[p0.step == k], p1[p1.step == k]
+                    assert len(a0) == len(a1) and (a0.date.values == a1.date.values).all()
+                    dd = float(np.max(np.abs(np.log(a0.rv_pred.values) - np.log(a1.rv_pred.values))))
+                    rows.append(dict(series=nm, corr=kind, leak_planted=planted, step=k, max_abs_dln=dd, ok=(dd == 0.0) != planted))
+                    print(now(), rows[-1], flush=True)
+        PLANT['on'] = False
+    T = pd.DataFrame(rows)
+    T.to_csv(OUT / 'leak_corr_d26_A.csv', index=False)
+    print('все проверки пройдены' if T.ok.all() else 'ЕСТЬ НАРУШЕНИЯ', flush=True)
+    return T
+
+
 def main():
+    if '--leak-corr' in sys.argv:
+        ex = []
+        if 'D26_1' in sys.argv:
+            ex.append(('Д26.1 s42', d261_raw()[42], False))
+        if 'D26_3' in sys.argv:
+            ex.append(('Д26.3 s42', d263_raw()[42], D263_CODE is None))
+        for a in sys.argv:
+            if a.startswith('D26_2:'):
+                ex.append((a.split(':', 1)[1] + ' s42', b_frames(a)[0][42], True))
+        return leak_corr(ex)
     if '--leak' in sys.argv:
         return leak()
     if '--corr' in sys.argv:
         extra = []
-        if 'D26_1' in sys.argv:
-            xs, ls = seed_frames('D26_1', 'xgb'), seed_frames('D26_1', 'lgbm')
-            raw = d261_raw()
-            extra.append(('D26_1', (False, {s: (raw[s], [xs[s], ls[s]]) for s in SEEDS})))
-        if 'D26_3' in sys.argv:
-            raw = d263_raw()
-            extra.append(('D26_3', (D263_CODE is None, {s: (raw[s], []) for s in SEEDS})))
-        return corr(extra)
+        for a in sys.argv[sys.argv.index('--corr') + 1:]:
+            if a.startswith('D26_1'):  # Д26.1 агента Б (b_frames): сырой ряд, поправка ряда — sm; компоненты — XGB и LGBM
+                raw, comps = b_frames(a)
+                extra.append((a, (False, {s: (raw[s], comps[s]) for s in SEEDS})))
+            elif a.startswith('D26_2:'):  # Д26.2 агента Б: одна модель в обоих слотах, поправка уже внутри (cj / mix) -> тип «среднего», без компонент
+                raw, _ = b_frames(a)
+                extra.append((a.split(':', 1)[1], (True, {s: (raw[s], []) for s in SEEDS})))
+            elif a.startswith('D26_3'):  # 'D26_3' — вариант D263; компоненты c2/c3 — лиды не подаются (ряд одной модели)
+                raw = d263_raw()
+                extra.append((f'D26_3{D263_VAR}', (D263_CODE is None, {s: (raw[s], []) for s in SEEDS})))
+        tag = os.environ.get('CORR_TAG', '')
+        return corr(extra, tag)
     if '--entry' in sys.argv:
-        return entry_table([('Д16.1 = Д26.4a (V9 на HAR-X)', 'seeds_Д16.1_V9_на_HAR-X_точки_D12_h5_по_seed.csv', None),
-                            ('Д26.4b (D12_h5, нога HAR-X в гибриде)', 'd26_4_seeds.csv', None),
-                            ('G5Xopt по seed', 'seeds_D17_1_h5_G5Xopt_по_seed.csv', None),
-                            ('Д26.5 промежуточный: среднее {D12_h5, G5Xopt, Д16.1}', 'd26_5_interim_seeds.csv', 'single|V0_XGB|bez|L0'),
-                            ('Д26.5 промежуточный: медиана {D12_h5, G5Xopt, Д16.1}', 'd26_5_interim_seeds.csv', 'single|V0_LGB|bez|L0')])
+        items = [('Д16.1 = Д26.4a (V9 на HAR-X)', 'seeds_Д16.1_V9_на_HAR-X_точки_D12_h5_по_seed.csv', None),
+                 ('Д26.4b (D12_h5, нога HAR-X в гибриде)', 'd26_4_seeds.csv', None),
+                 ('G5Xopt по seed', 'seeds_D17_1_h5_G5Xopt_по_seed.csv', None),
+                 ('Д26.5 промежуточный: среднее {D12_h5, G5Xopt, Д16.1}', 'd26_5_interim_seeds.csv', 'single|V0_XGB|bez|L0'),
+                 ('Д26.5 промежуточный: медиана {D12_h5, G5Xopt, Д16.1}', 'd26_5_interim_seeds.csv', 'single|V0_LGB|bez|L0'),
+                 ('Д26.5 {D12_h5, Д26.1}: среднее', 'd26_5_b_seeds.csv', 'single|V0_XGB|bez|L0')]
+        for tg, lab in (('_full', 'Д26.3 S2'), ('_full_S1', 'Д26.3 S1'), ('_full2', 'Д26.3 S2, Д26.1 лучший'), ('_full2_S1', 'Д26.3 S1, Д26.1 лучший')):
+            if (OUT / f'd26_5{tg}_seeds.csv').exists():
+                items += [(f'Д26.5 {{D12_h5, Д26.1, {lab}}}: среднее', f'd26_5{tg}_seeds.csv', 'single|V0_XGB|bez|L0'),
+                          (f'Д26.5 {{D12_h5, Д26.1, {lab}}}: медиана', f'd26_5{tg}_seeds.csv', 'single|V0_LGB|bez|L0'),
+                          (f'Д26.5 {{D12_h5, Д26.1, {lab}}}: лучший по правилу', f'd26_5{tg}_seeds.csv', None)]
+        return entry_table(items)
     if '--gib-harx' in sys.argv:
         return gib_harx()
     ap = argparse.ArgumentParser()
