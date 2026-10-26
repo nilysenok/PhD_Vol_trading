@@ -10,7 +10,8 @@
 - выбор среди прошедших: максимум средней t; при Δt ≤ 0,2 — больший средний выигрыш (в % к средней потере E); при Δt ≤ 0,2 и разнице
   выигрыша ≤ 1 п. п. — более простой дизайн (сложность по schema_v2, r2_loyo.slozhnost = r2_core.complexity);
 - мощность (кластер 20): по пулу 5 отложенных лет — среднее d̄ и долгосрочная дисперсия NW на день; на N_test днях 2022–2026
-  ожидаемая t = d̄ / √(σ²_LR / N_test), P(p < 0,05) = Φ(t − z_0,95) (одностороннее); P < 70% — пометка «не хуже».
+  ожидаемая t = d̄ / √(σ²_LR / N_test), P(p < 0,05) = Φ(t − z_0,95) (одностороннее); решение владельца 16:45 (вместо 0,70): P ≥ 0,8 — «значимый»,
+  0,5 ≤ P < 0,8 — «не хуже, ожидание на границе», P < 0,5 — на h остаётся нога (финал = эконометрическая компонента, V0); itog_E.
 Читаются только val 2017–2021 (ряды подаются кадрами; r2_loyo.read_val / r2_core.load_series). N_test — календарь будних дней, тест не читается.
 
 python3 scripts/analysis/r2_gates.py --selftest
@@ -150,8 +151,28 @@ def moshchnost(d, h, n_test=None):
     t_exp = float(d.mean() / np.sqrt(v_day / n_test)) if v_day > 0 else (0.0 if d.mean() == 0 else float(np.inf * np.sign(d.mean())))
     z = stats.norm.ppf(1 - G['alpha'])
     p = float(stats.norm.cdf(t_exp - z))
-    return dict(n_test=n_test, d_mean=float(d.mean()), sigma2_LR=float(v_day), t_ozhid=t_exp, P_p_lt_005=p,
-                pometka='не хуже' if p < G['moshchnost_min'] else 'лучше')
+    kat = kategoriya_moshchnosti(p)
+    return dict(n_test=n_test, d_mean=float(d.mean()), sigma2_LR=float(v_day), t_ozhid=t_exp, P_p_lt_005=p, **kat)
+
+
+def kategoriya_moshchnosti(p):
+    """Решение владельца 16:45 (ворота E, кластер 20): P ≥ 0,8 — «значимый»; 0,5 ≤ P < 0,8 — «не хуже, ожидание на границе»;
+    P < 0,5 — на h остаётся нога (финал = эконометрическая компонента, V0). -> {pometka, kategoriya, deystvie}."""
+    pr = G['moshchnost_porogi']
+    if p >= pr['znachimyy']:
+        return dict(pometka='значимый', kategoriya='znachimyy', deystvie='na_otkrytie')
+    if p >= pr['granica']:
+        return dict(pometka='не хуже, ожидание на границе', kategoriya='granica', deystvie='na_otkrytie')
+    return dict(pometka='остаётся нога (V0)', kategoriya='noga', deystvie='final_V0')
+
+
+def itog_E(pobeditel, moshch, noga_v0=None):
+    """Итог ворот E с учётом мощности победителя: при P < 0,5 на h остаётся нога (V0-кандидат победителя — его эконометрическая
+    компонента, noga_v0), иначе победитель идёт на открытие с формулировкой категории. -> dict для gate_E."""
+    k = kategoriya_moshchnosti(moshch['P_p_lt_005'])
+    final = pobeditel if k['deystvie'] == 'na_otkrytie' else (noga_v0 or 'noga (V0)')
+    return dict(pobeditel_otbora=pobeditel, final=final, P_p_lt_005=moshch['P_p_lt_005'], t_ozhid=moshch['t_ozhid'],
+                n_test=moshch['n_test'], **k)
 
 
 def vybor(R, slozhnost):
@@ -228,17 +249,24 @@ def selftest():
         assert (rk['konc'] > 0.40) == bolshe and rk['vhod']['konc'] != bolshe, (bolshe, rk['konc'])
     dd_ = pd.Series([1.0, -2.0, 0.5]); ee_ = pd.Series([3.0, 1.0, 2.0])
     assert koncentraciya(dd_, ee_) == np.inf  # Σ d ≤ 0 — вход не пройден
-    # 4. мощность: t_ож растёт как √N; P = Φ(t − 1,645); маленький эффект -> «не хуже»
+    # 4. мощность: t_ож растёт как √N; P = Φ(t − 1,645); категории владельца 16:45
     d = rng.normal(0.01, 0.2, 1250)
     m1, m4 = moshchnost(d, 1, 250), moshchnost(d, 1, 1000)
     assert abs(m4['t_ozhid'] / m1['t_ozhid'] - 2) < 1e-9 and abs(m1['P_p_lt_005'] - stats.norm.cdf(m1['t_ozhid'] - stats.norm.ppf(0.95))) < 1e-12
-    assert moshchnost(rng.normal(0.001, 0.2, 1250), 1, 1000)['pometka'] == 'не хуже'
-    assert moshchnost(rng.normal(0.05, 0.2, 1250), 1, 1000)['pometka'] == 'лучше'
+    # пороги владельца 16:45: ≥ 0,8 — значимый; [0,5; 0,8) — граница; < 0,5 — нога (V0)
+    assert moshchnost(rng.normal(0.001, 0.2, 1250), 1, 1000)['kategoriya'] == 'noga'
+    assert moshchnost(rng.normal(0.05, 0.2, 1250), 1, 1000)['kategoriya'] == 'znachimyy'
+    for p_, k_ in ((0.95, 'znachimyy'), (0.8, 'znachimyy'), (0.79, 'granica'), (0.5, 'granica'), (0.49, 'noga'), (0.0, 'noga')):
+        assert kategoriya_moshchnosti(p_)['kategoriya'] == k_, (p_, k_)
+    it = itog_E('D1', dict(P_p_lt_005=0.3, t_ozhid=1.1, n_test=1084), noga_v0='HARX_s2')
+    assert it['final'] == 'HARX_s2' and it['deystvie'] == 'final_V0'
+    it = itog_E('D1', dict(P_p_lt_005=0.6, t_ozhid=1.9, n_test=1084))
+    assert it['final'] == 'D1' and it['pometka'] == 'не хуже, ожидание на границе'
     assert (n_test_dney(1), n_test_dney(5), n_test_dney(22)) == (1088, 1084, 1067) and 1020 < n_test_dney() < 1100
     assert moshchnost(d, 22)['n_test'] == 1067
     # 5. выбор: макс. t̄; Δt̄ ≤ 0,2 -> больший выигрыш; Δt̄ ≤ 0,2 и разница выигрыша ≤ 1% потери E -> проще
     mk = lambda t, g_, ok=True: dict(t_mean=t, vyigrysh_pct=g_, vhod=dict(proshyol=ok, net=''), hit=0.6, n_tikerov_vyigrysh=15, konc=0.1,
-                                    moshchnost=dict(t_ozhid=3, P_p_lt_005=0.9, pometka='лучше'))
+                                    moshchnost=dict(t_ozhid=3, P_p_lt_005=0.9, pometka='значимый'))
     w, _ = vybor({'A': mk(3.0, 5.0), 'B': mk(2.9, 7.0), 'C': mk(2.5, 9.0)}, {'A': 3, 'B': 3, 'C': 1})
     assert w == 'B'
     w, _ = vybor({'A': mk(3.0, 5.0), 'B': mk(2.9, 5.5), 'C': mk(2.85, 5.2)}, {'A': 3, 'B': 4, 'C': 1})
