@@ -86,6 +86,19 @@
     Native-остановка (R1) по построению видит val-год. Поэтому для неё срез — 1 января следующего года, а `leak_check` ядра применяется к qlike_total.
     Свою ошибку пишу: в 16:21 я по ошибке набрал команду `sed -i.bak` с аргументом /dev/null. Файлы не менялись, но команда запрещена.
 
+34. 16:45 — ≡ Детектор ядра `r2_core.leak_check` на коде ролей (`R2/B/leak_core_B.csv`): 84 из 84 OK.
+    - Охват: 7 дизайнов qlike_total — feature, residual both_avg, offset, cross_fit, monthly, residual_std, scale_boost — × h ∈ {1, 22} × 6 срезов.
+    - Середина года: Δ до среза = 0, после — от 0,05; подлог пойман (от 0,06).
+    - 31.12, эмбарго: Δ = 0.
+35. 16:47 — признаки F v3 (PR #176, `features_r2_v3.parquet`, SHA 977a87d3…): берутся по `r2_F_features.yaml`, SHA сверяется. Дым повторён: 54 дизайна и `run_phase`, 9 рядов, сдвиг OK.
+
+## Состояние для продолжения (B)
+- Для ядра (S/O):
+  - `r2_roli.core_fn` — фазы B, C, E;
+  - `r2_resid_grid.core_fn` — фаза D, точки — `SHARED['B_grid_points']`;
+  - в SHARED нужны: A (load_d0 + `r2_roli.load_groups`), B_groups, leg_provider и leg_refit_provider (L), B_half.
+- ❓ для S — `r2_dataset_cache.py`; для L — `leg_provider` (lnall ноги дизайна) и `leg_refit_provider` (cross_fit).
+
 ## Состояние для продолжения (Б1)
 - Когда ноги Э появятся: `python3 scripts/analysis/r2_roli_h1.py roli --workers 5`. Скрипт берёт все `R2/cache/E/*_h1_lnall.parquet` плюс встроенные HARJ_l2 и HARX_d17 и пропускает готовое. На каждую ногу `leak_roli --leg <нога>`. Оценка: ≈ 23 ноги × 30 обучений × 4 с / 5 воркеров ≈ 10 мин.
 - Ряды: `R2/cache/B1/<нога>__<роль>_<xgb|lgbm|mean>_h1_s42_val.parquet`, без поправки s². Б0.1 к итогу, кроме gamma, ставит движок О.
