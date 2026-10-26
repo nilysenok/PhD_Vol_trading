@@ -377,6 +377,9 @@ def cache_key() -> str:
     h.update(MAIN_YAML.read_bytes())
     for lab, (p, _, _) in SOURCES.items():
         h.update(lab.encode() + hashlib.sha1(Path(p).read_bytes()).digest())
+    from fastbt import data as fd          # аудит FA2b-Н1: A и C строятся по барам и корп. событиям
+    for p in (fd.OHLCV, fd.CORP):
+        h.update(hashlib.sha1(Path(p).read_bytes()).digest())
     if SCOPE != "dev":
         h.update(f"{SCOPE}|{VAL_START}|{VAL_END}|{CUT.date()}".encode())
     return h.hexdigest()[:10]
