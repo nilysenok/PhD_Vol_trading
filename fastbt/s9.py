@@ -489,7 +489,9 @@ class Engine:
         return float(np.mean(vals))
 
     def gate_stats(self, g: np.ndarray) -> dict:
-        """Доля закрытых баров 2018–2021 и переключений в год (в среднем по парам)."""
+        """Доля закрытых баров 2018–2021 (от всех пар-дней, closed_dev), отсев от позиций A
+        (closed_A — доля позиций-дней A ≠ 0, закрытых затвором: 1 − средний вес по этим дням;
+        аудит FA, Н3) и переключений в год (в среднем по парам)."""
         closed = 1.0 - g
         ch = np.r_[0.0, np.abs(np.diff(g))] > 1e-9
         ch[self.first] = False
@@ -497,7 +499,9 @@ class Engine:
         npair = pid.max() + 1
         cl = np.bincount(pid, closed, npair) / np.maximum(np.bincount(pid, None, npair), 1)
         sw = np.bincount(pid, ch.astype(float), npair) / len(YEARS)
-        return dict(closed_dev=float(cl.mean()), switches_y=float(sw.mean()),
+        inA = self.A_row != 0
+        closed_A = float(closed[inA].mean()) if inA.any() else float("nan")
+        return dict(closed_dev=float(cl.mean()), closed_A=closed_A, switches_y=float(sw.mean()),
                     mean_weight=float(g.mean()))
 
 

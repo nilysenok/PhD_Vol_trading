@@ -18,7 +18,17 @@ def _from_all(ep, x):
     return r
 
 
-MUTATIONS = {"otsev_all_signals": lambda mp: mp.setattr(ef, "summarize", _from_all)}
+_orig_gs = s9.Engine.gate_stats
+
+
+def _gate_all_days(self, g):
+    r = _orig_gs(self, g)
+    r["closed_A"] = r["closed_dev"]
+    return r
+
+
+MUTATIONS = {"otsev_all_signals": lambda mp: mp.setattr(ef, "summarize", _from_all),
+             "otsev_gate_all_days": lambda mp: mp.setattr(s9.Engine, "gate_stats", _gate_all_days)}
 
 N = 7
 A1 = [1, 1, 0, -1, -1, 0, 1]          # 3 сигнала: [0,1] +, [3,4] −, [6] +
@@ -68,9 +78,8 @@ def _engine(a_rows):
     return e
 
 
-@pytest.mark.xfail(strict=True, reason="НАЙДЕНО Н3: в таблицах С9 доля закрытых — от всех пар-дней "
-                   "(closed_dev), доли от позиций-дней A нет; исправление — PR otsev_A")
 def test_gate_dropout_from_A_positions():
+    """Н3 исправлено: closed_A — от позиций-дней A, closed_dev — от всех пар-дней."""
     a = [0, 1, 1, 1, 0, 0, -1, -1]
     g = [0, 1, 0, 1, 0, 1, 0, 1]          # закрыто 4 из 8 баров; из 5 дней в позиции A — 2
     st = s9.Engine.gate_stats(_engine(a), np.asarray(g, float))
