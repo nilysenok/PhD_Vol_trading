@@ -1,0 +1,94 @@
+# R2, агент E: ансамбли и смесь экспертов (протокол v3 docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, раздел 6, строка «E»;
+# схема models/designs/r2/schema_v1.yaml, ключи ens.* (кластеры 7, 8) и leg.moe* (кластер 13)). Записан до первого прогона R2.
+agent: E
+script: scripts/analysis/r2_ens.py
+schema: models/designs/r2/schema_v1.yaml
+core: scripts/analysis/r2_core.py      # агент S; если модуля нет — локальные хэш, проверка сдвига и детектор r2_ens (↺ в журнале)
+data: data/regen                       # корень; на сервере — переменная окружения R2_DATA
+features: data/regen/features_pit_v3.parquet   # читается фильтром date < 2022-01-01 (assert)
+steps: [1, 2, 3, 4, 5, 6]              # val 2016–2021; метрики только шагов 2–6 (2017–2021); шаги 7–10 не строятся
+max_year: 2021
+
+# ------------------------------------------------------------------ кластер 7
+ens:
+  agg:                                 # агрегирование компонент seed × lib
+    mean: среднее уровней rv_pred (как both_avg первого раунда)
+    median: медиана уровней по seed × lib
+  ec:                                  # Д23.1 (scripts/analysis/d23_ec.py): ln ŷ_h += κ_h·ē_m
+    source_h1: {1: self, 5: F_d0_h1, 22: F_d0_h1}   # ряд h=1, чьи ошибки дают ē; на h=1 — сам ряд дизайна
+    e: "e(s) = ln RV_{s+1} − ln ŷ¹(s); известна после закрытия s+1"
+    ebar: "ē_m(t) = среднее e(t−1..t−m) по тикеру (d23_ec.ebar_from_e, без изменений); нет истории — 0"
+    kappa: "МНК без константы по OOS-строкам годов 2016..vy−1 с концом цели < 1 янв. vy; < 51 строки — κ = 0 (как Д23.1)"
+    m: {m5: 5, m10: 10}
+  range_guard:
+    rule: "ln ŷ обрезается в [min, max] ln цели тикера на обучении шага (годы < vy, эмбарго h: конец цели < 1 янв. vy)"
+  uncert_shrink:
+    rule: "ln ŷ = ln ŷ_ноги + w·(ln ŷ_анс − ln ŷ_ноги), w = 1/(1 + Var_seed/τ); Var_seed — дисперсия ln ŷ по seed × lib в строке"
+    tau: [0.001, 0.003, 0.01, 0.03, 0.1]   # список = выбор внутри складки (r2_loyo, п. 2.1); в ряду варианта — метка tau=…
+    need: "≥ 2 компонент; при одной Var = 0 и w = 1 (ряд = ансамбль)"
+
+# ------------------------------------------------------------------ кластер 8
+  seeds: {1: [42], 3: [42, 43, 44], 10: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]}
+  lib_agg:
+    avg: "агрегирование по lib вместе с seed (ens.agg)"
+    best_by_LOYO: "два варианта lib=lightgbm, lib=xgboost; выбор внутри складки (r2_loyo)"
+  window_ens:
+    windows: [expanding, rolling3y, rolling5y]   # ноги переобучаются на трёх окнах (эмбарго h), уровни усредняются
+    legs: "HARJ и HARX (S1–S5, МНК) — локальный подгонщик r2_ens; иные ноги — модуль L (❓ для L)"
+  leg_ens:
+    equal: среднее уровней ног
+    median: медиана уровней ног
+    qlike_shrunk_05: {lam: 0.5}
+    qlike_shrunk_075: {lam: 0.75}
+    rule: "w = λ·(1/K) + (1−λ)·w*, w* — минимум QLIKE на симплексе по прошлым OOS (шаги < t, конец цели < 1 янв. vy); шаг 1 — равные"
+    forbidden: "λ = 0 (веса без усадки) — ошибка валидации"
+  ticker_bag:
+    n_bags: 10
+    drop: 1                              # 16 из 17 тикеров; выбрасываемые тикеры — без повторов, rng(20261026 + h)
+    rule: "нога (пул) переобучается 10 раз без одного тикера, прогноз на всех 17, уровни усредняются"
+  stack:
+    nested_oos: "ln y = c + Σ b_k ln ŷ_k, b ≥ 0 (NNLS), подгонка только на OOS шагов < t с концом цели < 1 янв. vy; шаг 1 — равные веса"
+
+# ------------------------------------------------------------------ кластер 13 (ключи leg.moe*)
+moe:
+  label: "режим строки t — по реализованной средней RV за [t+1, t+h] (цель h): z = ln y − медиана ln y тикера на обучении шага;
+          k2 — z > 0; k3 — терцили z на обучении"
+  experts: "HAR-X (МНК, слагаемые leg.regressors) на подвыборке режима с усадкой к общему: ln ŷ_r = (1−κ)·ln ŷ_all + κ·ln ŷ_r^sub"
+  kappa_shrink: 0.5
+  gate:
+    logit: "LogisticRegression(C=1, lbfgs) на стандартизованных [ln HAR-J, слагаемые]"
+    boost: "LGBMClassifier(n_estimators=200, num_leaves=15, learning_rate=0.05, min_child_samples=50, seed дизайна)"
+  calib:
+    isotonic: "IsotonicRegression по прошлым OOS привратника (шаги < t, конец цели < 1 янв. vy), по классу, затем нормировка; шаг 1 — без"
+  mix: "мягкая: ŷ = Σ p_r·ŷ_r (уровни); moe_hard = 0.7: при max p_r ≥ 0,7 — эксперт argmax"
+  auc: "AUC привратника на отложенном годе каждой складки 2017–2021 (k3 — макро one-vs-rest) → moe_auc_h{h}.csv"
+
+# ------------------------------------------------------------------ входы (ряды L, B, M; формат val: date, ticker, year, step, rv_actual, rv_pred)
+inputs:
+  # До появления кэша ядра (S) по хэшу — ряды R2/cache; шаблон {h}, {seed}, {lib}
+  F_d0: R2/cache/VYR/F_d0_h{h}_s{seed}_val.parquet                 # финал R1 на ногах d0 (ВЫР-1)
+  leg_HARJ: R2/cache/E/HARJ_emb_d0_h{h}_sdet_val.parquet           # ноги прежнего Э (теперь L), версия emb_d0
+  leg_HEAVY: R2/cache/E/HEAVY_emb_d0_h{h}_sdet_val.parquet
+  leg_HARX: R2/cache/E/HARX_ols_emb_d0_h{h}_sdet_val.parquet
+  boost_h1: {xgboost: 'R2/cache/B1/D22_h1_xgb_single_h1_s{seed}_val.parquet'}
+  boost_h5: {xgboost: 'R2/cache/B2/F5_D12_h5_xgb_h5_s{seed}_val.parquet', lightgbm: 'R2/cache/B2/F5_D12_h5_lgbm_h5_s{seed}_val.parquet'}
+
+# ------------------------------------------------------------------ выход
+out:
+  cache: "R2/cache/<sha256[:16]>/E_<вариант>_h{h}_s{seed|ens}_val.parquet (хэш — канонический yaml дизайна, шапка схемы)"
+  index: R2/cache/INDEX_Eens.csv
+  dym: R2/E/dym/                         # дым на Маке (не кэш)
+  sdvig: R2/E/sdvig_E.csv                # проверка сдвига (п. 2.6) по каждому ряду; блок — также R2/O/blok_sdvig.csv
+  leak: R2/E/leak_E.csv
+
+# ------------------------------------------------------------------ дым (Мак) и детектор
+dym:
+  tickers: [SBER, LKOH, AFLT]
+  steps: [1, 2, 3]
+  seed: 42
+  h: [1, 5, 22]
+leak:
+  cuts_mid: ['2017-06-30', '2018-06-29']
+  mult: [0.5, 2.0]
+  rng: 20261026
+  rule: "без утечки max|Δ| на строках ≤ среза = 0; подлог (сдвиг на день вперёд / текущий шаг в весах) пойман: max|Δ| > 0"
