@@ -13,9 +13,10 @@ status: ждёт «да» владельца
 # val 2022–2025 из test_locked (только part = val, метка R2-guard-s2). zamorozka (раздел 8 протокола) — справочный режим.
 s2_pravilo: posledovatelno
 s2_etalon: {est: sm, kappa: 0.5, embargo: "on"}   # эталон (б) d0 и F_h(d0): Б0.1 sm, как ВЫР-1, плюс эмбарго
-gate_E_sha:             # sha256 R2/O/gate_E_h{h}.yaml (26.10: h=5 — 21:06:06, h=22 — 20:47:28; pobeditel F_h(d0))
-  5: e9d5c381b5657e93fa24978e386aeab8af650f4431c771be0887a95037e1b92e
-  22: f40c81468ed7da048b9bcc476bdfab37d9f058db18d08405a32307f5d5f3ae23
+gate_E_sha:             # sha256 R2/O/gate_E_h{h}.yaml (исправленная основа E: h=5 — 21:17:12, h=22 — 21:16:52; pobeditel F_h(d0);
+                        # E8 драйвера — gate_E8_h{5,22}.yaml: тоже F_h(d0), SHA — FINAL_DESIGN_round2, поле 4)
+  5: 17a4c64cb6bc60ba906e97bc85a7189aa16f3d5b1cd437a37f5061f163c39ff7
+  22: d95552ddd5c0a7a0943e19f1c95236a00dec51d107eab3d9348e515f93792f53
 gate_D_sha:             # h без gate_E: ворота D без лучшего дизайна (luchshiy: null) — на h остаётся F_h(d0) (STOP 21:06)
   1: 44b964b675a0edb26734e7441061b55fe8e37236baebbc5845985cbd51d390ea
 h: {}                   # победителей R2 нет (вариант 1)
