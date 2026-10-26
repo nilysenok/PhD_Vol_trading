@@ -16,7 +16,10 @@ QLIKE / RMSE / MAE по h и годам; DM тремя способами про
 (2022–2026 основной, 2025 – 01/02.2026 отдельно, 2017–2026 справочно) и table_3_dm_vs_F_test_r2.csv (справочно — против F_h).
 Сверка: ячейки эталонов (строки без гибрида) в таблицах R2 должны побайтно совпасть с таблицами первого теста; расхождение — СТОП
 (файл STOP_R2.txt, код выхода 3). Замок: <src>/OPENED_R2.json пишется ДО чтения теста; если он есть — отказ (одно открытие).
-Правило закрытия биржи (FD §13), «обе версии»: агенту О раздел 13 читать запрещено — версия правила подключается дирижёром (❓, --close-rule)."""
+Правило закрытия биржи (текст дирижёра 26.10; раздел 13 FD агент О не читал), «обе версии»: --close-rule obe (по умолчанию) пишет
+основную версию без правила (_test_r2) и рядом версию с правилом (_test_r2_zakrytie) — исключены точки отсчёта, окно цели которых
+задевает остановку торгов 28.02–23.03.2022 (ровно h точек на тикер). Сверка эталонов версии с правилом — с таблицами первого теста
+под тегом --first-close-tag."""
 import argparse, hashlib, json, subprocess, sys, tempfile
 from pathlib import Path
 import numpy as np, pandas as pd
@@ -33,6 +36,25 @@ TABLES = REPO / 'docs/tables'
 KEY = ['date', 'ticker', 'step']
 R2_COLS = ['date', 'ticker', 'year', 'step', 'rv_pred', 'design']
 PERIODY = {'2022–2026 (основной)': (2022, 2026), '2025 – 01/02.2026': (2025, 2026), '2017–2026 (справочно)': (2017, 2026)}
+# Правило закрытия биржи (текст дирижёра 26.10 для R2; раздел 13 FD агенту О не читать): из оценки исключаются точки отсчёта t, окно цели
+# [t+1, t+h] которых содержит хотя бы один день остановки торгов MOEX 28.02–23.03.2022. В данных дней остановки нет (LSRG, MTLR, OGKB
+# открылись 28.03, строк за 24–25.03 у них нет), поэтому исключаются ровно h точек на тикер: последние h торговых дней до 25.02.2022
+# включительно. Основная версия — без правила; с правилом — рядом, проверка устойчивости (решение владельца 10:20).
+HALT = (pd.Timestamp('2022-02-28'), pd.Timestamp('2022-03-23'))
+TAG, TAG_Z = 'test_r2', 'test_r2_zakrytie'
+
+
+def zakrytie(df, h):
+    """Маска исключаемых строк (True — исключить): на тикер последние h торговых дат < HALT[0] (т. е. <= 25.02.2022) и строки внутри
+    остановки (в данных их быть не должно — тогда assert). Дата строки — точка отсчёта t."""
+    d = pd.to_datetime(df.date)
+    inside = d.between(*HALT)
+    assert not inside.any(), f'h={h}: {int(inside.sum())} строк внутри остановки торгов 28.02–23.03.2022'
+    pre = d < HALT[0]
+    last = df[pre].assign(_d=d[pre]).groupby('ticker')._d.transform(lambda s: s.rank(method='first', ascending=False) <= h)
+    m = pd.Series(False, index=df.index)
+    m.loc[last.index] = last.astype(bool)
+    return m.values
 
 
 class Stop(Exception):
@@ -125,7 +147,10 @@ def sverka(first_dir, r2_dir, hs, tag_first='test', tag_r2='test_r2'):
     return bad, n
 
 
-def run_r2(src, frozen, first_tables, out_tables, feat, B, lock=True, need_fd=True):
+def run_r2(src, frozen, first_tables, out_tables, feat, B, lock=True, need_fd=True, close='obe', first_tag='test', first_tag_close=None):
+    """close: 'bez' — только основная версия; 'pravilo' — только с правилом закрытия биржи; 'obe' — обе (по умолчанию).
+    Таблицы: _test_r2 (основная) и _test_r2_zakrytie (с правилом). first_tag_close — тег таблиц первого теста с правилом для сверки
+    эталонов (None — сверка этой версии не делается, сообщение в выводе)."""
     src, frozen, first_tables, out_tables = map(Path, (src, frozen, first_tables, out_tables))
     if need_fd and not (REPO / 'docs/otchety/FINAL_DESIGN_round2.md').exists():
         raise Stop('нет docs/otchety/FINAL_DESIGN_round2.md — открытие только после него и «да» владельца')
@@ -136,28 +161,45 @@ def run_r2(src, frozen, first_tables, out_tables, feat, B, lock=True, need_fd=Tr
     if lock:
         if lk.exists():
             raise Stop(f'{lk} уже есть: второе открытие было ({lk.read_text()[:200]})')
-        lk.write_text(json.dumps(dict(time=now(), h=hs, src={f.name: sha(f) for f in sorted(src.glob('final_r2_h*_test.parquet'))},
+        lk.write_text(json.dumps(dict(time=now(), h=hs, close=close, src={f.name: sha(f) for f in sorted(src.glob('final_r2_h*_test.parquet'))},
                                       code=sha(__file__)), ensure_ascii=False, indent=1))
     frames = {h: merge_h(src, frozen, h) for h in hs}
-    mdir = Path(tempfile.mkdtemp(prefix='r2_merged_'))
-    for h, m in frames.items():
-        m.to_parquet(mdir / f'final_h{h}_test.parquet', index=False)
-    hs0, mods0 = FTST.HS, dict(FT.MODS)
-    try:
-        FTST.HS = hs  # только h с победителем R2
-        FT.MODS['Гибридная раунда 1'] = 'hyb_r1'  # MCS (и MZ) — на наборе {замороженные + R2 + гибрид раунда 1}
-        FTST.run(mdir, out_tables, tag='test_r2', feat=feat, B=B)
-    finally:
-        FTST.HS = hs0
-        FT.MODS.clear(); FT.MODS.update(mods0)
-    periody(frames).to_csv(out_tables / 'table_3_periody_test_r2.csv', index=False)
-    dm_vs_F(frames).to_csv(out_tables / 'table_3_dm_vs_F_test_r2.csv', index=False)
-    bad, n = sverka(first_tables, out_tables, hs)
-    if bad:
-        (out_tables / 'STOP_R2.txt').write_text('\n'.join(bad) + '\n')
-        raise Stop('эталоны не совпали с первым тестом:\n' + '\n'.join(bad[:10]))
-    print(f'сверка эталонов с первым тестом: {n} ячеек, расхождений нет; h = {hs}', flush=True)
-    return hs
+    versions = {'bez': (TAG, frames, first_tag)}
+    if close in ('obe', 'pravilo'):
+        fz = {}
+        for h, m in frames.items():
+            ex = zakrytie(m, h)
+            fz[h] = m[~ex].reset_index(drop=True)
+            print(f'правило закрытия биржи, h={h}: исключено {int(ex.sum())} строк ({m[ex].ticker.nunique()} тикеров × {h})', flush=True)
+        versions['pravilo'] = (TAG_Z, fz, first_tag_close)
+        if close == 'pravilo':
+            versions.pop('bez')
+    res = {}
+    for ver, (tag, fr, ftag) in versions.items():
+        mdir = Path(tempfile.mkdtemp(prefix=f'r2_merged_{ver}_'))
+        for h, m in fr.items():
+            m.to_parquet(mdir / f'final_h{h}_test.parquet', index=False)
+        hs0, mods0 = FTST.HS, dict(FT.MODS)
+        try:
+            FTST.HS = hs  # только h с победителем R2
+            FT.MODS['Гибридная раунда 1'] = 'hyb_r1'  # MCS (и MZ) — на наборе {замороженные + R2 + гибрид раунда 1}
+            FTST.run(mdir, out_tables, tag=tag, feat=feat, B=B)
+        finally:
+            FTST.HS = hs0
+            FT.MODS.clear(); FT.MODS.update(mods0)
+        periody(fr).to_csv(out_tables / f'table_3_periody_{tag}.csv', index=False)
+        dm_vs_F(fr).to_csv(out_tables / f'table_3_dm_vs_F_{tag}.csv', index=False)
+        if ftag is None:
+            print(f'{ver}: сверка эталонов не делалась — не задан тег таблиц первого теста для этой версии (--first-close-tag)', flush=True)
+            res[ver] = None
+            continue
+        bad, n = sverka(first_tables, out_tables, hs, tag_first=ftag, tag_r2=tag)
+        if bad:
+            (out_tables / 'STOP_R2.txt').write_text(f'версия {ver}\n' + '\n'.join(bad) + '\n')
+            raise Stop(f'версия {ver}: эталоны не совпали с первым тестом:\n' + '\n'.join(bad[:10]))
+        print(f'{ver}: сверка эталонов с первым тестом ({ftag}): {n} ячеек, расхождений нет; h = {hs}', flush=True)
+        res[ver] = n
+    return hs, res
 
 
 # ---------------------------------------------------------------- самопроверка (синтетика; тест не читается)
@@ -168,21 +210,56 @@ def selftest():
     fz, t1, src = tmp / 'final3', tmp / 'tables1', tmp / 'R2final'
     for d in (fz, src):
         d.mkdir()
+    fzz = tmp / 'final3_zakrytie'
+    fzz.mkdir()
     for h in FTST.HS:
         g = FS.make(rng, start='2017-01-03', end='2026-02-27')
+        g = g[~g.date.between(*HALT)].reset_index(drop=True)  # как в данных: дней остановки торгов нет
         g['step'] = g.year - 2016
         g.drop(columns='rv_m').assign(design='r1').to_parquet(fz / f'final_h{h}_test.parquet', index=False)
+        # правило закрытия биржи: ровно h точек на тикер — последние h торговых дней до 25.02.2022 включительно
+        ex = zakrytie(g, h)
+        exd = g[ex].groupby('ticker').date.apply(lambda s: sorted(s))
+        want = sorted(g[g.date <= '2022-02-25'].date.unique())[-h:]
+        assert ex.sum() == h * g.ticker.nunique() and all(list(v) == want for v in exd), h
+        g[~ex].drop(columns='rv_m').assign(design='r1').to_parquet(fzz / f'final_h{h}_test.parquet', index=False)
+    try:  # строки внутри остановки — не тихо: assert
+        zakrytie(FS.make(rng, start='2022-02-01', end='2022-03-31', nt=2), 5)
+        raise AssertionError('строки внутри остановки не пойманы')
+    except AssertionError as e:
+        assert 'внутри остановки' in str(e), e
     feat = pd.concat([FS.make(rng, start='2014-01-02', end='2016-12-30'), g])[['date', 'ticker', 'rv_m']]
-    FTST.run(fz, t1, tag='test', feat=feat, B=300)  # «первый тест» на синтетике
+    FTST.run(fz, t1, tag='test', feat=feat, B=300)  # «первый тест» на синтетике: основная версия
+    FTST.run(fzz, t1, tag='test_zakrytie', feat=feat, B=300)  # и версия с правилом закрытия биржи
     for h in (5, 22):  # победитель R2 только на h=5 и 22; h=1 — остаётся F_h
         x = pd.read_parquet(fz / f'final_h{h}_test.parquet')
         x['rv_pred'] = x.rv_pred * np.exp(rng.normal(0, 0.1, len(x)))
         x[R2_COLS].assign(design='r2').to_parquet(src / f'final_r2_h{h}_test.parquet', index=False)
-    hs = run_r2(src, fz, t1, tmp / 'tables2', feat, B=300, need_fd=False)
-    assert hs == (5, 22)
+
+    def copy_src(name):
+        d = tmp / name
+        d.mkdir()
+        for f in src.glob('final_r2_h*_test.parquet'):
+            (d / f.name).write_bytes(f.read_bytes())
+        return d
+    srcb, srcp = copy_src('R2_bez'), copy_src('R2_pravilo')
+    hs, res = run_r2(src, fz, t1, tmp / 'tables2', feat, B=300, need_fd=False, first_tag_close='test_zakrytie')
+    assert hs == (5, 22) and res['bez'] > 0 and res['pravilo'] > 0, res  # обе версии сверены с «первым тестом»
     t2 = tmp / 'tables2'
-    for n in ('3_2', '3_7', '3_9', '3_mcs', '3_mz', '3_periody', '3_dm_vs_F'):
-        assert (t2 / f'table_{n}_test_r2.csv').exists(), n
+    for tag in (TAG, TAG_Z):
+        for n in ('3_2', '3_7', '3_9', '3_mcs', '3_mz', '3_periody', '3_dm_vs_F'):
+            assert (t2 / f'table_{n}_{tag}.csv').exists(), (n, tag)
+    pa = pd.read_csv(t2 / f'table_3_final_po_godam_{TAG}.csv')
+    pz = pd.read_csv(t2 / f'table_3_final_po_godam_{TAG_Z}.csv')
+    k = ['h', 'Модель', 'Год']
+    mm = pa.merge(pz, on=k, suffixes=('_a', '_z'))
+    y22 = mm[mm['Год'] == '2022']
+    oth = mm[~mm['Год'].isin(['2022', 'все годы (пул)'])]
+    assert (y22.QLIKE_a != y22.QLIKE_z).any() and (oth.QLIKE_a == oth.QLIKE_z).all(), 'правило меняет только 2022 (и пул)'
+    _, rb = run_r2(srcb, fz, t1, tmp / 'tables_b', feat, B=100, need_fd=False, close='bez')
+    assert set(rb) == {'bez'} and not list((tmp / 'tables_b').glob(f'*_{TAG_Z}.csv'))
+    _, rp = run_r2(srcp, fz, t1, tmp / 'tables_p', feat, B=100, need_fd=False, close='pravilo', first_tag_close='test_zakrytie')
+    assert set(rp) == {'pravilo'} and rp['pravilo'] > 0 and not (tmp / 'tables_p' / f'table_3_2_{TAG}.csv').exists()
     p = pd.read_csv(t2 / 'table_3_periody_test_r2.csv')
     assert set(p.Период) == set(PERIODY) and set(p.h) == {5, 22}
     mc = pd.read_csv(t2 / 'table_3_mcs_test_r2.csv', sep=';', decimal=',')
@@ -238,7 +315,8 @@ def selftest():
             raise AssertionError('открытие без FINAL_DESIGN_round2 не остановлено')
         except Stop as e:
             assert 'FINAL_DESIGN_round2' in str(e)
-    print('selftest final_test_r2: OK (таблицы _test_r2, сверка эталонов, замок, rv_actual, неполный файл, СТОП при расхождении):', tmp)
+    print('selftest final_test_r2: OK (обе версии правила закрытия биржи: h точек на тикер, сверка эталонов каждой версии, флаг bez/pravilo/obe; '
+          'замок, rv_actual, неполный файл, СТОП при расхождении):', tmp)
 
 
 def main():
@@ -248,19 +326,21 @@ def main():
     ap.add_argument('--src', default=str(MAIN / 'data/regen/test_locked/R2/final'))
     ap.add_argument('--features', default=str(MAIN / 'data/regen/features_pit_v2.parquet'), help='как final_test.py: RV_m для терцилей')
     ap.add_argument('--mcs-b', type=int, default=10000)
-    ap.add_argument('--close-rule', default=None, help='версия правила закрытия биржи (FD §13) — подключает дирижёр (❓)')
+    ap.add_argument('--close-rule', choices=['obe', 'bez', 'pravilo'], default='obe',
+                    help='правило закрытия биржи: obe — основная (без правила) и с правилом рядом (по умолчанию); bez / pravilo — одна версия')
+    ap.add_argument('--first-close-tag', default=None,
+                    help='тег таблиц первого теста с правилом закрытия (table_3_*_<тег>.csv) для сверки эталонов версии с правилом; '
+                         'не задан — эта версия не сверяется (сообщение в выводе)')
     a = ap.parse_args()
     if a.selftest:
         return selftest()
     if a.scope != 'test':
         sys.exit('нужен --scope test (или --selftest)')
-    if a.close_rule is not None:
-        sys.exit('СТОП: --close-rule не реализован — агенту О раздел 13 FD закрыт; версию правила задаёт дирижёр')
     feat = pd.read_parquet(a.features, columns=['date', 'ticker', 'rv_m'])
     feat['date'] = pd.to_datetime(feat['date'])
     src = Path(a.src if Path(a.src).is_absolute() else MAIN / a.src)
     try:
-        run_r2(src, FROZEN, TABLES, TABLES, feat, a.mcs_b)
+        run_r2(src, FROZEN, TABLES, TABLES, feat, a.mcs_b, close=a.close_rule, first_tag_close=a.first_close_tag)
     except Stop as e:
         print('СТОП:', e, flush=True)
         sys.exit(3)
