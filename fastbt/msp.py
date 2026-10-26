@@ -64,7 +64,8 @@ def portfolio(pos: pd.DataFrame, rate: pd.Series, comm: float, agg: str = "pairs
     MSP_{A,C,D}_inst.csv (trading_ret и exposure совпадают до 1e-16);
     agg="ticker" — как stage5_msp.py: среднее по стратегиям внутри тикера, затем EW.
     cap_share — доля номинала, занятая капиталом (1 — спот; 0,2 — сценарий с маржой 20%):
-    под ставку идёт 1 − cap_share·экспозиция."""
+    под ставку идёт 1 − cap_share·экспозиция.
+    Последняя строка каждой пары (конец окна) платит комиссию выхода |pos| (Н5), кроме печатей v1."""
     if agg == "pairs":
         g = pos.rename(columns={"daily_gross_return": "gross"})[
             ["date", "ticker", "strategy", "position", "gross"]]
@@ -75,9 +76,16 @@ def portfolio(pos: pd.DataFrame, rate: pd.Series, comm: float, agg: str = "pairs
         keys = ["ticker"]
     g = g.sort_values(keys + ["date"])
     dp = g.groupby(keys)["position"].diff().fillna(g["position"])
-    g["net"] = g["gross"] - dp.abs() * comm
+    sides = dp.abs()
+    if rate.attrs.get("cal") != "back":
+        # Ъ 26.10, 23:50 (аудит FA2a, Н5): позиция, открытая на последнем баре окна, закрыта по
+        # close первого бара после окна — платит комиссию выхода. Печати v1 (ставка «back») —
+        # прежнее соглашение спецификации п. 8 (без выхода на конце)
+        last = ~g.duplicated(keys, keep="last")
+        sides = sides + g["position"].abs().where(last, 0.0)
+    g["net"] = g["gross"] - sides * comm
     g["abs_pos"] = g["position"].abs()
-    g["turn"] = dp.abs()
+    g["turn"] = sides
     port = g.groupby("date").agg(r=("net", "mean"), exposure=("abs_pos", "mean"),
                                  turnover=("turn", "mean")).sort_index()
     kr = rate.reindex(rate.index.union(port.index)).sort_index().ffill().bfill()

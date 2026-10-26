@@ -555,22 +555,27 @@ class Engine:
         comm = COMM if comm is None else comm      # v2: COMM задаётся --comm (Ъ 22:45: 0,04%)
         dp = np.diff(pos, prepend=0.0)
         dp[self.first] = pos[self.first]
+        # Ъ 26.10, 23:50 (аудит FA2a, Н5): позиция, открытая на последнем баре окна пары, закрыта
+        # по close первого бара после окна (доходность последней строки) — платит комиссию выхода
+        last = np.r_[self.first[1:], True]
         di = self.r["date"]
         nd = len(self.dates)
         if wgt is None:
-            net = pos * self.lr_row - np.abs(dp) * comm
+            sides = np.abs(dp) + np.where(last, np.abs(pos), 0.0)
+            net = pos * self.lr_row - sides * comm
             r = np.bincount(di, net, nd) / self.cnt
             gross = np.bincount(di, pos * self.lr_row, nd) / self.cnt
             exp_ = np.bincount(di, np.abs(pos), nd) / self.cnt
-            turn = np.bincount(di, np.abs(dp), nd) / self.cnt
+            turn = np.bincount(di, sides, nd) / self.cnt
         else:
             eff = pos * wgt
             de = np.diff(eff, prepend=0.0)
             de[self.first] = eff[self.first]
-            r = np.bincount(di, eff * self.lr_row - np.abs(de) * comm, nd)
+            sides = np.abs(de) + np.where(last, np.abs(eff), 0.0)
+            r = np.bincount(di, eff * self.lr_row - sides * comm, nd)
             gross = np.bincount(di, eff * self.lr_row, nd)
             exp_ = np.bincount(di, np.abs(eff), nd)
-            turn = np.bincount(di, np.abs(de), nd)
+            turn = np.bincount(di, sides, nd)
         return self._finish(r, gross, exp_, turn, cap)
 
     def _finish(self, r, gross, exp_, turn, cap):

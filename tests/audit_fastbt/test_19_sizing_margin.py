@@ -92,7 +92,8 @@ def _pos():
 
 def _hand(share, comm=0.0):
     exp_ = np.array([0.5, 1.0, 0.5, 0.5])
-    turn = np.array([[1, 0, 1, 0], [0, 1, 0, 2]], float)        # |Δpos| по парам
+    # |Δpos| по парам; у BBB на конце окна ещё выход 1 (Н5)
+    turn = np.array([[1, 0, 1, 0], [0, 1, 0, 3]], float)
     gross = np.array([[1, 1, 0, 0], [0, -1, -1, 1]], float) * 0.01
     r = (gross - turn * comm).mean(axis=0)
     rf = RATE / 365
