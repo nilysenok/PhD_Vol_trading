@@ -3,11 +3,23 @@
 //! Цена в узле сетки τ — close последнего бара с begin < τ (бар закрыт к τ, previous-tick). Узлы сдвига k: τ = 09:50 + k + 5j мин.
 //! Ряд цен дня: close последнего бара прошлого дня (ночная доходность, как сквозной сдвиг rv::daily) → узлы сетки → close
 //! последнего бара дня. RV_k = Σ ln²(p_i / p_{i−1}); RV = среднее RV_k по k = 0..4. Используется только как обучающая цель.
-//! Статус: модуль готов и проверен тестами; выгрузка 1-минутных баров не выполнена (оценка объёма — d25_6.py), к CLI не подключён.
+//! Запуск: bin `rv5sub_daily` (src/bin/rv5sub_daily.rs) — сырьё data/regen/D25/bars1m/{T}_{Y}.csv (выгрузка d25_6.py download).
+//! Окно W0950 совпадает с rv1850::W0950 (проверка — тест window_matches_rv1850 в основном крейте).
 #![allow(dead_code)]
 use crate::model::{minute_of_day, Bar};
-use crate::rv1850::{cut, Win};
 use std::collections::BTreeMap;
+
+/// Окно сессии в минутах от полуночи, [from_min; to_min) — копия rv1850::Win, чтобы модуль подключался и к bin без rv1850.
+#[derive(Clone, Copy)]
+pub struct Win {
+    pub from_min: i64,
+    pub to_min: i64,
+}
+pub const W0950: Win = Win { from_min: 9 * 60 + 50, to_min: 18 * 60 + 50 };
+
+fn cut(bars: &[Bar], w: Win) -> Vec<Bar> {
+    bars.iter().filter(|b| (w.from_min..w.to_min).contains(&minute_of_day(b.ts))).copied().collect()
+}
 
 pub const STEP: i64 = 5;
 pub const NSUB: i64 = 5;
@@ -56,7 +68,7 @@ fn rv_offset(day: &[Bar], prev_close: Option<f64>, w: Win, k: i64) -> (f64, usiz
 
 /// bars — 1-минутные бары одного тикера, отсортированы по времени без дублей (весь ряд; окно режется здесь).
 pub fn daily_sub(bars: &[Bar], w: Win) -> BTreeMap<i64, DaySub> {
-    let b = cut(bars, w, None);
+    let b = cut(bars, w);
     let mut by_day: BTreeMap<i64, Vec<Bar>> = BTreeMap::new();
     for x in b {
         by_day.entry(x.day()).or_default().push(x);
@@ -80,10 +92,14 @@ pub fn daily_sub(bars: &[Bar], w: Win) -> BTreeMap<i64, DaySub> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rv1850::W0950;
 
     fn bar(day: i64, min: i64, close: f64) -> Bar {
         Bar { ts: day * crate::model::MS_DAY + min * 60_000, open: close, high: close, low: close, close, volume: 1, value: close }
+    }
+
+    #[test]
+    fn window_matches_rv1850() {
+        assert_eq!((W0950.from_min, W0950.to_min), (crate::rv1850::W0950.from_min, crate::rv1850::W0950.to_min));
     }
 
     #[test]
