@@ -27,9 +27,14 @@
 подлог «вход d := d+1» пойман; граница года — эмбарго привратника regime (без эмбарго — протекает: положительный контроль).
 Вложенный выбор LOYO по построению смотрит на другие годы T — это гиперпараметр внутри складки (протокол v3 § 2.1), не g_t.
 
+Боевой счёт — контракт драйвера S (PR #184): ключи schema_v2 k16.* / k18.* / k20.*, r2_core.run_phase (module = G, DONE_G_h{h}_s{seed});
+входы — ряды цепочки в каталоге дизайна (нога L + предыдущий модуль chain_order); по ряду на точку сетки и seed (варианты для O).
+
 python3 scripts/analysis/r2_gate_abstain.py selftest
-python3 scripts/analysis/r2_gate_abstain.py dym                        # Мак: 3 тикера × шаги 1–3 × seed 42 × h 1, 5, 22
-python3 scripts/analysis/r2_gate_abstain.py run --h 5 [--dizayn <yaml|hash>] [--noga <ряд>] [--korr <ряд> …] [--root <кэш>]"""
+python3 scripts/analysis/r2_gate_abstain.py dym        # Мак: 3 тикера × шаги 1–3 × seed 42 × h 1, 5, 22; + контракт run_batch (9 дизайнов v2 × h)
+python3 scripts/analysis/r2_gate_abstain.py run --designs <yaml> --h 5 --seeds 42 43 44 --steps 1 2 3 4 5 6 --workers 10 [--phase E]
+python3 scripts/analysis/r2_gate_abstain.py run --dizayn <yaml> --h 5      # один дизайн (seed — по рядам каталога)
+python3 scripts/analysis/r2_gate_abstain.py leak [--designs <yaml>] --h 5"""
 import os
 for _k in ('OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'VECLIB_MAXIMUM_THREADS'):
     os.environ.setdefault(_k, '1')
@@ -545,38 +550,273 @@ def dym():
     return ok
 
 
-def run(a):
-    """Боевой счёт (фаза E): дизайн-кандидат → ряды G в его каталоге кэша. Входы — из yaml (vhod) или аргументов."""
+# ================================================================ боевой счёт по контракту драйвера S (PR #184, docs/server_r2.md § 10)
+# Ключи дизайна — schema_v2: k16.gate (off|conf_seed|regime|shock_fresh|halt|soft), k16.tau/k/q (сетки), k16.measure, k16.regime_calib;
+# k18.lam_to_ref (off|on), k18.lam (сетка); k20.sign_delta (off|znak|dolya), k20.delta (сетка), k20.base (noga|etalon).
+# Цепочка L → … → E → G пишет в один каталог дизайна: G читает ногу (modul L) и ряды предыдущего модуля цепочки по r2_core.load_series,
+# пишет по ряду на каждую точку сетки (варианты для r2_gates.ocenka: вложенный выбор по t делает O) и на каждый seed; params.csv —
+# справочно собственный вложенный выбор G (тем же правилом). Порядок: k20 (коррекция := δ·s) → k16 (g_t·коррекция, halt) → k18 (усадка).
+SDRV = yaml.safe_load((REPO / 'models' / 'designs' / 'r2' / 'r2_S_driver.yaml').read_text()) \
+    if (REPO / 'models' / 'designs' / 'r2' / 'r2_S_driver.yaml').exists() else {}
+CHAIN = list(SDRV.get('chain_order') or ['L', 'P', 'R', 'B', 'BG', 'M', 'L3', 'E', 'G'])
+LIB_RE = r'(?:^|_)(xgb|lgbm|xgboost|lightgbm)(?=_|$)'
+
+
+def _ls(v):
+    return list(v) if isinstance(v, (list, tuple)) else [v]
+
+
+def _onoff(v):
+    return {False: 'off', True: 'on'}.get(v, v) if isinstance(v, bool) else str(v)
+
+
+def g_keys(full):
+    """Ключи G дизайна (schema_v2) -> dict; None, если все группы выключены."""
+    g = lambda k: C.get(full, k)
+    K = dict(gate=_onoff(g('k16.gate')), tau=_ls(g('k16.tau')), k=_ls(g('k16.k')), q=_ls(g('k16.q')), measure=str(g('k16.measure')),
+             regime_calib=str(g('k16.regime_calib')), lam_to_ref=_onoff(g('k18.lam_to_ref')), lam=_ls(g('k18.lam')),
+             sign_delta=_onoff(g('k20.sign_delta')), delta=_ls(g('k20.delta')), base=str(g('k20.base')))
+    if K['gate'] == 'off' and K['lam_to_ref'] == 'off' and K['sign_delta'] == 'off':
+        return None
+    return K
+
+
+def design_variants(K, F, A, M, h, steps):
+    """-> [(tag, параметры, fn(c) -> ln ŷ, g | None)] — декартово произведение сеток включённых групп."""
+    import itertools
     import r2_ens as E
-    v = CFG['vhod']
-    dizayn = a.dizayn or v['dizayn']
-    noga = a.noga or v['noga']['ryad']; korr = a.korr or v['korr']['ryad']
-    assert dizayn and noga and korr, 'нужны vhod.dizayn, vhod.noga.ryad, vhod.korr.ryad'
-    if isinstance(dizayn, str) and Path(dizayn).exists():
-        dizayn = C.validate(dizayn)
+    hg = halt_for(F, A, h)
+    leg = F['leg']
+    p16 = [('', {}, np.ones(len(leg)))]
+    if K['gate'] == 'conf_seed':
+        p16 = [(f'tau={t}', dict(tau=t), g_conf(F, float(t))) for t in K['tau']]
+    elif K['gate'] == 'soft':
+        p16 = [(f'tau={t}', dict(tau=t), g_soft(F, t)) for t in E.TAUS]
+    elif K['gate'] == 'shock_fresh':
+        mrv = market_rv(A)
+        p16 = [(f'k={k}__q={q}', dict(k=k, q=q), g_shock(F, shock_flags(mrv, k, q, int(CFG['k16']['shock_fresh']['okno']), K['measure'])))
+               for k in K['k'] for q in K['q']]
+    elif K['gate'] == 'regime':
+        RP = regime_P(M, h, steps, CFG['k16']['regime']['gate'], K['regime_calib'])
+        p16 = [('P_spokoyno', dict(regime_calib=K['regime_calib']), g_regime(F, RP))]
+    p16 = [(t, p, g * hg) for t, p, g in p16]  # halt — свойство модели G (в val g_halt ≡ 1)
+    p20 = [('', {}, None)]
+    if K['sign_delta'] != 'off':
+        base = leg if K['base'] == 'noga' else np.log(np.clip(F['base'][CFG['etalon']['ref']].values, 1e-12, None))
+        p20 = [(f'{K["sign_delta"]}_delta={d}', dict(sign_delta=K['sign_delta'], delta=d, base=K['base']), (base, float(d)))
+               for d in K['delta']]
+    p18 = [('', {}, None)]
+    if K['lam_to_ref'] == 'on':
+        har = np.log(np.clip(F['base'][CFG['k18']['har']].values, 1e-12, None))
+        p18 = [(f'lam={l}', dict(lam=l), (har, float(l))) for l in K['lam']]
+    out = []
+    for (t16, a16, g), (t20, a20, b20), (t18, a18, b18) in itertools.product(p16, p20, p18):
+        def fn(c, g=g, b20=b20, b18=b18):
+            if b20 is not None:
+                s = np.sign(c) if K['sign_delta'] == 'znak' else 2 * F['ppos'] - 1
+                c = b20[0] + b20[1] * s - leg
+            lnp = leg + g * c
+            if b18 is not None:
+                lnp = b18[0] + b18[1] * (lnp - b18[0])
+            return lnp
+        tag = '__'.join(x for x in (K['gate'] if K['gate'] != 'off' else '', t16, t20, t18) if x) or 'base'
+        out.append((tag, {**a16, **a20, **a18}, fn, g))
+    return out
+
+
+def chain_inputs(full, h, steps, root=None):
+    """Ряды цепочки в каталоге дизайна: нога (modul L) и ряды предыдущего модуля (последний перед G в chain_order).
+    -> (leg, {вариант предыдущего модуля: (компоненты, meta)}, модуль)."""
+    import re
+    sha = C.design_hash(full)
+    S = C.load_series(sha, h=h, steps=steps, root=root)
+    if S.empty:
+        raise FileNotFoundError(f'G: в каталоге {sha[:16]} нет рядов h={h}')
+    mods = [m for m in CHAIN if m in set(S.modul) and m not in ('G', 'L')]
+    if not mods:
+        raise FileNotFoundError(f'G: нет рядов предыдущего модуля цепочки (есть {sorted(set(S.modul))}) — коррекции нет')
+    prev = mods[-1]
+    Lr = S[S.modul == 'L']
+    want = CFG['vhod']['noga'].get('ryad')
+    names = sorted(Lr.ryad.unique())
+    P = S[S.modul == prev]
+    groups = {}
+    for (ry, sd), g in P.groupby(['ryad', 'seed'], sort=True):
+        pv = re.sub(LIB_RE, '', ry) or ry
+        groups.setdefault(pv, ([], []))
+        groups[pv][0].append(_val_only(g, ry)[KEY + ['rv_pred']]); groups[pv][1].append((ry, str(sd)))
+    if want:
+        lname = want
+    elif len(names) == 1:
+        lname = names[0]
+    else:  # несколько ног: та, чьё имя входит в имя ряда предыдущего модуля (самое длинное совпадение)
+        hit = sorted([n for n in names if any(n in pv for pv in groups)], key=len)
+        if not hit:
+            raise ValueError(f'G: ног несколько {names}, сопоставить с {sorted(groups)} нельзя — задайте vhod.noga.ryad')
+        lname = hit[-1]
+    if not names:
+        raise FileNotFoundError(f'G: нет ноги (modul L) в каталоге {sha[:16]}')
+    L = Lr[Lr.ryad == lname]
+    L = _val_only(L[L.seed == sorted(L.seed.unique())[0]], lname)
+    return L[KEY + ['year', 'rv_pred']], groups, prev
+
+
+def fn_G(design, seed, steps):
+    """Функция фазы для r2_core.run_phase: -> {ряд: DataFrame}. Данные — r2_core.SHARED: A, harj, G_M (r2_ens.prep), G_root."""
+    full = C.validate(design); h = int(full['h'])
+    K = g_keys(full)
+    A, M, root = C.SHARED['A'], C.SHARED['G_M'], C.SHARED.get('G_root')
+    tick = C.SHARED.get('G_tickers')
+    leg, groups, prev = chain_inputs(full, h, steps, root)
+    eta = load_etalon(h, tick, steps)
+    out, prows = {}, []
+    for pv, (comps, meta) in groups.items():
+        F = assemble(leg, comps, meta, eta, list(steps), CFG['vhod']['agg'])
+        c = F['cs'].get(str(seed), F['cbar'])
+        var = design_variants(K, F, A, M, h, list(steps))
+        for tag, par, fn, g in var:
+            nm = f'G_{tag}' if len(groups) == 1 else f'G_{pv}__{tag}'
+            b = F['base']
+            out[nm] = pd.DataFrame({'date': b.date.values, 'ticker': b.ticker.values, 'year': b.year.values, 'step': b.step.values,
+                                    'rv_actual': b.rv_actual.values, 'rv_pred': np.exp(fn(c))})
+        if str(seed) == min(F['cs'], key=lambda s: (len(s), s)) or str(seed) not in F['cs']:  # params.csv — один раз на дизайн
+            vs = [(t, p, (lambda cc, fn=fn: fn(cc)), g) for t, p, fn, g in var]
+            ch, P = nested(F, vs, h, CFG['etalon']['ref'], CFG['vybor']['rezhim'])
+            prows.append(P.assign(ryad=(f'G_*' if len(groups) == 1 else f'G_{pv}__*'), h=h, vhod_modul=prev, panel_t=PANEL_T_SRC))
+    if prows:
+        write_params(C.cache_dir(full, root=root), pd.concat(prows, ignore_index=True))
+    return out
+
+
+def load_designs(p):
+    Y = yaml.safe_load(Path(p).read_text())
+    return Y['designs'] if isinstance(Y, dict) and 'designs' in Y else (Y if isinstance(Y, list) else [Y])
+
+
+def run_batch(designs, h, seeds, steps, workers=None, phase='E', root=None, check_gate=True, block_file=None, tickers=None):
+    """Контракт драйвера: дизайны (список dict / yaml) -> r2_core.run_phase (ворота, кэш, запись, сдвиг, DONE_G_h{h}_s{seed}).
+    Дизайны без включённых ключей 16/18/20 пропускаются с записью в журнал."""
+    import r2_ens as E
     A, harj = C.load_d0(); C.check_d0(A)
-    M = E.prep(A, harj)
-    steps = list(range(1, MAXY - 2015 + 1))
-    sha = dizayn if isinstance(dizayn, str) else C.design_hash(dizayn)
-    for h in a.h:
-        leg, comps, meta = load_inputs(sha, h, noga, korr, seeds=v['korr']['seeds'], steps=steps, root=a.root,
-                                       noga_hash=v['noga'].get('hash'), modul=v['korr'].get('modul'))
-        F = assemble(leg, comps, meta, load_etalon(h, steps=steps), CFG['steps_out'], v['agg'])
-        s, _ = run_h(dizayn, h, F, A, M, steps, root=a.root)
-        print(s.round(4).to_string(index=False))
+    assert A.date.dt.year.max() <= MAXY
+    C.share(A=A, harj=harj, G_M=E.prep(A, harj), G_root=root, G_tickers=tickers)
+    ok = []
+    for d in (load_designs(designs) if isinstance(designs, (str, Path)) else designs):
+        full = C.validate({**d, 'h': h})
+        if g_keys(full) is None:
+            C.log(f'G: не применим (k16/k18/k20 выключены): {full.get("design")}')
+            continue
+        ok.append(full)
+    return C.run_phase(phase, h, ok, fn_G, seeds=tuple(seeds), steps=tuple(steps), workers=workers, module=MODUL, root=root,
+                       block_file=block_file, check_gate=check_gate)
+
+
+def seeds_in_dir(full, h, root=None):
+    S = C.read_index(root)
+    S = S[(S['hash'].astype(str) == C.design_hash(full)[:16]) & (S['modul'] != MODUL) & (S['modul'] != 'L')]
+    s = sorted({int(x) for x in S['seed'].astype(str) if x.isdigit()})
+    return s or [42]
+
+
+def leak_cmd(h_list, designs=None):
+    """Детектор по контракту (`leak --designs --h`): входы дыма, все семейства при фиксированных параметрах (ряды G не зависят от
+    дизайна-носителя: g_t считается одинаково). Код возврата ≠ 0 — провал."""
+    import r2_ens as E
+    dc = CFG['dym']; tick, steps = list(dc['tickers']), list(dc['steps'])
+    steps_out = [s for s in steps if s in CFG['steps_out']]
+    A, harj = C.load_d0(); C.check_d0(A)
+    src = C.REGEN / 'R2' / 'cache'
+    LK = []
+    for h in h_list:
+        rd = lambda p: _val_only(pd.read_parquet(src / p), p)
+        L = rd(dc['noga'].format(h=h)); L = L[L.step.isin(steps) & L.ticker.isin(tick)]
+        comps = [rd(p) for p in dc['korr'][h]]
+        comps = [c[c.step.isin(steps) & c.ticker.isin(tick)][KEY + ['rv_pred']] for c in comps]
+        meta = [('xgb' if 'xgb' in p else 'lgbm', str(dc['seed'])) for p in dc['korr'][h]]
+        LK.append(leak(h, L[KEY + ['year', 'rv_pred']], comps, meta, load_etalon(h, tick, steps), A, harj, steps, steps_out))
+    LK = pd.concat(LK)
+    OUT.mkdir(parents=True, exist_ok=True)
+    LK.to_csv(OUT / 'leak_G.csv', index=False)
+    print(LK[~LK.ok].to_string(index=False) if (~LK.ok).any() else f'детектор G: {len(LK)} строк, все OK')
+    return bool(LK.ok.all())
+
+
+def dym_batch(A_done=None):
+    """Дым контракта: дизайны schema_v2 (по одному на ворота/группу) × h; входы цепочки (L — нога, B — гибриды xgb/lgbm) пишутся
+    в кэш дыма под хэш каждого дизайна; run_batch с 3 воркерами, без ворот; проверки — ряды G по вариантам, DONE, params.csv, повтор."""
+    dc = CFG['dym']; tick, steps, seed = list(dc['tickers']), list(dc['steps']), int(dc['seed'])
+    D = OUT / 'dym_batch'; root = D / 'cache'; D.mkdir(parents=True, exist_ok=True)
+    src = C.REGEN / 'R2' / 'cache'
+    G_DES = [{'k16': {'gate': 'conf_seed'}}, {'k16': {'gate': 'regime'}}, {'k16': {'gate': 'shock_fresh', 'k': [3, 5]}},
+             {'k16': {'gate': 'soft'}}, {'k16': {'gate': 'halt'}}, {'k18': {'lam_to_ref': 'on'}},
+             {'k20': {'sign_delta': 'znak'}}, {'k20': {'sign_delta': 'dolya', 'base': 'etalon'}},
+             {'k16': {'gate': 'conf_seed', 'tau': [0.5, 1.0]}, 'k18': {'lam_to_ref': 'on', 'lam': [0.5, 1.0]}}]
+    rows = []
+    for h in dc['hs']:
+        des = []
+        for i, gk in enumerate(G_DES):
+            d = C.validate({'design': f'dymG_{i}', 'h': h, 'boost': {'role': 'residual'}, **gk})
+            rd = lambda p: _val_only(pd.read_parquet(src / p), p)
+            L = rd(dc['noga'].format(h=h))
+            C.write_series(d, 'noga_dym', L[L.step.isin(steps) & L.ticker.isin(tick)], h, None, module='L', root=root)
+            for p in dc['korr'][h]:
+                x = rd(p); lib = 'xgb' if 'xgb' in p else 'lgbm'
+                C.write_series(d, f'gib_{lib}', x[x.step.isin(steps) & x.ticker.isin(tick)], h, seed, module='B', root=root)
+            des.append(d)
+        des.append(C.validate({'design': 'dymG_bez', 'h': h}))  # без ключей G — пропуск
+        f = D / f'designs_h{h}.yaml'
+        f.write_text(yaml.safe_dump(dict(designs=des), allow_unicode=True, sort_keys=False))
+        T = run_batch(str(f), h, [seed], steps, workers=3, root=root, check_gate=False, block_file=D / 'blok_sdvig.csv', tickers=tick)
+        T2 = run_batch(str(f), h, [seed], steps, workers=3, root=root, check_gate=False, block_file=D / 'blok_sdvig.csv', tickers=tick)
+        for i, d in enumerate(des[:-1]):
+            sha = C.design_hash(d)
+            Ls = C.load_series(sha, h=h, modul=MODUL, root=root)
+            K = g_keys(C.validate(d))
+            nexp = (len(K['tau']) if K['gate'] == 'conf_seed' else len(__import__('r2_ens').TAUS) if K['gate'] == 'soft'
+                    else len(K['k']) * len(K['q']) if K['gate'] == 'shock_fresh' else 1) \
+                * (len(K['delta']) if K['sign_delta'] != 'off' else 1) * (len(K['lam']) if K['lam_to_ref'] == 'on' else 1)
+            pc = C.cache_dir(d, root=root) / 'params.csv'
+            rows.append(dict(h=h, design=d['design'], hash=sha[:16], ryadov=Ls.ryad.nunique(), ozhidalos=nexp,
+                             shagi=','.join(map(str, sorted(Ls.step.unique()))) if len(Ls) else '',
+                             done=C.done_path(d, MODUL, h, seed, root).exists(), params=pc.exists(),
+                             sdvig_ok=bool(T[T.hash == sha[:16]].sdvig_ok.all()) if len(T) else False,
+                             ok=bool(Ls.ryad.nunique() == nexp and C.done_path(d, MODUL, h, seed, root).exists() and pc.exists()
+                                     and len(T) and T[T.hash == sha[:16]].sdvig_ok.all())))
+        rows.append(dict(h=h, design='povtor', ryadov=len(T2), ozhidalos=0, ok=bool(len(T2) == 0)))  # готовое пропущено (DONE_G)
+        rows.append(dict(h=h, design='dymG_bez', ryadov=0, ozhidalos=0,
+                         ok=not C.done_path(des[-1], MODUL, h, seed, root).exists()))
+    R = pd.DataFrame(rows)
+    R.to_csv(D / 'svodka_batch.csv', index=False)
+    print(R.to_string(index=False))
+    return bool(R.ok.all())
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', choices=['selftest', 'dym', 'run'])
+    ap.add_argument('cmd', choices=['selftest', 'dym', 'run', 'leak'])
+    ap.add_argument('--designs', help='yaml со списком designs (контракт драйвера S)')
+    ap.add_argument('--dizayn', help='один дизайн (прежняя строка драйвера: per_design)')
     ap.add_argument('--h', type=int, nargs='+', default=[1, 5, 22])
-    ap.add_argument('--dizayn'); ap.add_argument('--noga'); ap.add_argument('--korr', nargs='+'); ap.add_argument('--root')
+    ap.add_argument('--seeds', type=int, nargs='+')
+    ap.add_argument('--steps', type=int, nargs='+', default=list(range(1, MAXY - 2015 + 1)))
+    ap.add_argument('--workers', type=int)
+    ap.add_argument('--phase', default='E')
+    ap.add_argument('--root')
     a = ap.parse_args()
     if a.cmd == 'selftest':
         sys.exit(0 if selftest() else 1)
     if a.cmd == 'dym':
-        sys.exit(0 if dym() else 1)
-    run(a)
+        sys.exit(0 if (dym() and dym_batch()) else 1)
+    if a.cmd == 'leak':
+        sys.exit(0 if leak_cmd(a.h, a.designs) else 1)
+    src = a.designs or a.dizayn
+    assert src, 'run: нужен --designs <yaml> (или --dizayn <yaml>)'
+    for h in a.h:
+        seeds = a.seeds or seeds_in_dir(C.validate({**load_designs(src)[0], 'h': h}), h, a.root)
+        T = run_batch(src, h, seeds, a.steps, a.workers, a.phase, a.root)
+        print(T.to_string(index=False))
+        if len(T) and ((T.ryad == 'ОШИБКА').any() or (T.sdvig_ok == False).any()):  # noqa: E712
+            sys.exit(1)
 
 
 if __name__ == '__main__':
