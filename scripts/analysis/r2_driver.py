@@ -437,6 +437,8 @@ def cmd_ryady_E(a):
     h — параллельно, воркеров на h = --workers. Отчёт — R2/report/E_2010_varianty.md (что построено, исполнитель, DONE)."""
     hs = a.h or [5, 22]
     runner = Runner(False)
+    if os.environ.get('R2_TICKERS'):  # дым: тикеры L (R2_TICKERS) = тикеры B, BG, R (--tickers)
+        RUN_EXTRA.update({m: '--tickers ' + os.environ['R2_TICKERS'].replace(',', ' ') for m in ('B', 'BG', 'R')})
     import r2_dataset_cache as DS
     log(f'место на томах кэша (ГБ): {DS.proverka_mesta()}')
     plan = {h: designs_E_2010(h) for h in hs}
@@ -655,6 +657,18 @@ class Runner:
         snyaty, fails = set(), []
         for m in CFG['chain_order']:
             ds = [d for d in by.get(m, []) if d['design'] not in snyaty]
+            if m == 'L3' and ds:  # дирижёр 20:05: L3 калибрует ряды предыдущего звена — без его DONE дизайн неприменим (R: RVI_anchor + refit)
+                keep = []
+                for d in ds:
+                    ch = route(d)
+                    prev = ch[-2] if len(ch) > 1 else 'L'
+                    if self.done_missing(prev, [d], h, seeds) and not self.smoke:
+                        NEPR.setdefault((h, d['design']), []).append(f'неприменим: нет DONE_{prev} — L3 не запускается')
+                    else:
+                        keep.append(d)
+                if len(keep) < len(ds):
+                    log(f'цепочка h={h}: L3 без рядов предыдущего звена — пропущено {len(ds) - len(keep)} (неприменимо, код 0)')
+                ds = keep
             if ds:
                 self.last_net = []
                 ok, why = self.run(m, ds, h, seeds, steps, workers, (extra or {}).get(m, ''), tag)
@@ -663,20 +677,6 @@ class Runner:
                         return False, why
                     fails.append(why)
                     snyaty |= {d['design'] for d in ds}
-                    continue
-                # дирижёр 20:05: звено без DONE ни по одному seed — дизайн неприменим к модулю (R: RVI_anchor с refit/rls_lambda);
-                # дальше по цепочке он не идёт (L3 не ищет ряды, которых нет), пометка — в NEPR и логе
-                miss = {}
-                for x in getattr(self, 'last_net', []) or []:
-                    nm, _, s = x.rpartition('/s')
-                    miss.setdefault(nm, set()).add(s)
-                bez = {nm for nm, ss in miss.items() if len(ss) >= len(seeds)}
-                for d in ds:
-                    if d['design'] in bez:
-                        snyaty.add(d['design'])
-                        NEPR.setdefault((h, d['design']), []).append(f'неприменим к модулю {m} (нет DONE_{m})')
-                if bez:
-                    log(f'цепочка h={h}: {len(bez)} дизайнов без DONE_{m} — сняты с последующих звеньев: {sorted(bez)[:3]}')
         return not fails, '; '.join(fails)
 
 
