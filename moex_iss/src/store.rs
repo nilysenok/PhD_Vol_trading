@@ -69,7 +69,7 @@ pub fn read_bars(path: &Path) -> Result<Vec<Bar>> {
     Ok(out)
 }
 
-fn write(path: &Path, schema: Schema, cols: Vec<ArrayRef>) -> Result<()> {
+pub(crate) fn write(path: &Path, schema: Schema, cols: Vec<ArrayRef>) -> Result<()> {
     if let Some(p) = path.parent() {
         std::fs::create_dir_all(p)?;
     }

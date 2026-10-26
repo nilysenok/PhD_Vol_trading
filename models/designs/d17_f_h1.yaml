@@ -1,0 +1,28 @@
+# Д17 агент F, h=1: рычаги Д17.2 (RRV), Д17.5 (винзоризация цели) на финалисте Д8.12.
+# Модуль scripts/analysis/d17_f.py, оценка scripts/analysis/d17_f_eval.py. Без переподбора: точка финалиста по шагам.
+name: d17_f_h1
+horizon: 1
+data:
+  features: data/regen/features_pit_v3.parquet
+  rrv: data/regen/features_pit_v3_rrv.parquet
+  target: rv_target_h1
+train:
+  protocol: l2_lib.fit (ES на val-годе шага, patience 30, max_bin 255, бины окна шага 1 для шагов >= 2)
+  steps: [1, 2, 3, 4, 5, 6]
+  seeds: [42, 43, 44]
+  exclude_features: data/regen/Bv2b_excluded_features.csv
+selection:
+  oos: шаги 2-5 (val 2017-2020), Б0.1 вне выборки
+  check: шаг 6 (2021)
+  criteria: c1-c3 на 2016-2021
+  threshold: ">= 1% к base по среднему 3 seed, знак во всех 3 seed, 2021 не хуже > 2%"
+  confirm_and_test: не открываются (тестовые части шага не считаются)
+variants: [base, rrv_pk, rrv_gk, tgt_pk, wins]
+designs:
+  d812:
+    cfg: '{"harf": true}'
+    points: data/regen/Bv2b_selected_h1.csv (ранг 1 шага; параметры — Bv2b_grid_*)
+    models: [xgb]
+    leg: seeds3   # у финалиста top5; здесь — среднее трёх seed точки ранга 1
+    b01: sm
+output: data/regen/D17F_h1_{design}_{variant}_{model}_val.parquet
