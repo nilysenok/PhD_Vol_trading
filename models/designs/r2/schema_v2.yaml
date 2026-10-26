@@ -19,6 +19,11 @@ boost:                                        # дополнение групп�
                default: none, cluster: 4,
                note: "точка LHS-60 фазы D (boost.grid = resid_small_v1; список — driver_v1/D_lhs60.yaml); у разных точек — разный хэш и кэш"}
 
+calib:                                        # дополнение группы v1 (листья v1 не меняются); L, PR #195; дирижёр 26.10, 17:35
+  s2_embargo: {values: [on, off], default: on, cluster: 3,
+               note: "эмбарго в оценке s² и всех параметров калибровки шага t (строки, чьё окно цели заходит в val-год vy, исключаются;
+                      находка R, PR #194). on — умолчание R2 (в канон не пишется, хэши прежние); off — только контроль (R1 / ВЫР-1)"}
+
 k16:                                          # кластер 16 — воздержание: ŷ = нога · exp(g_t · c_t), g_t ∈ [0, 1] известно в момент t
   default: "сетки tau, k, q — целиком, выбор вложенно по t на обучающих годах складки (r2_G_abstain.yaml)"
   gate: {values: [off, conf_seed, regime, shock_fresh, halt, soft], default: off, cluster: 16,

@@ -458,8 +458,15 @@ def final_series(design, h, seeds, root=None, steps=None):
 
 # ================================================================ ворота (O): адаптеры
 def etalon(h):
+    """Эталон ворот — В2 с эмбарго s² (дирижёр 17:35: ETA_b_d0_s2emb, L PR #195; r2_S_driver.yaml etalon_vorot); нет файла — r2_gates.etalon_df."""
     import r2_gates as RG
-    E = RG.etalon_df(h)
+    import r2_loyo as O
+    f = C.REGEN / CFG['etalon_vorot']['etalon'].format(h=h) if CFG.get('etalon_vorot') else None
+    if f is not None and f.exists():
+        e = O.read_val(f)
+        E = e[['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']]
+    else:
+        E = RG.etalon_df(h)
     if SMOKE_FLAG['on']:
         E = E[E.ticker.isin(SMOKE_TICKERS) & (E.step <= max(SMOKE_STEPS))]
     return E
@@ -562,16 +569,40 @@ def gate_D(h, cells, runner, root, workers):
         _set(base, 'boost.grid', 'resid_small_v1')
         _set(base, 'boost.early_stop', 'qlike_total')
 
+        def vybrat(V, gody):
+            return list(V.values())[0] if len(V) == 1 else min(V.values(), key=lambda x: -RG.t_skladok(x, E, h, gody)['t_mean'])
+
         def ryad(tochka, seeds, gody, base=base):
             steps = list(range(1, max(gody) - 2015 + 1)) if not SMOKE_FLAG['on'] else list(SMOKE_STEPS)
             d = point_design(base, tochka)
-            ok, why = runner.chain([d], h, list(seeds), steps, workers, f'D_{cname}_{tochka}', extra={'BG': f'--point {tochka}'})
+            if any(runner.done_missing(m, [d], h, list(seeds)) for m in route(d)) or runner.smoke:  # готовое (предвыборка) — без запуска
+                ok, why = runner.chain([d], h, list(seeds), steps, workers, f'D_{cname}_{tochka}', extra={'BG': f'--point {tochka}'})
+                if not ok:
+                    raise RuntimeError(why)
+            return vybrat(final_series(d, h, seeds, root), gody)
+
+        tochki = [p['tochka'] for p in P]
+        if not runner.smoke:  # предвыборка пакетом (пул модуля), а не по точке: ступени 1–2 (seed 42) и запросы ступени 3
+            s_all = list(range(1, max(C.DEV_YEARS) - 2015 + 1)) if not SMOKE_FLAG['on'] else list(SMOKE_STEPS)
+            WD = CFG['workers'].get('D_pre', workers)
+            ok, why = runner.chain([point_design(base, t) for t in tochki], h, [42], s_all, WD, f'D_{cname}_pre42')
             if not ok:
                 raise RuntimeError(why)
-            V = final_series(d, h, seeds, root)
-            return list(V.values())[0] if len(V) == 1 else min(V.values(), key=lambda x: -RG.t_skladok(x, E, h, gody)['t_mean'])
+            req = []
 
-        zhivye, trace = RH.otsechenie([p['tochka'] for p in P], ryad, E, h)
+            def probe(t, seeds, gody, base=base):  # пробный проход по рядам s42: решения ступеней 1–2 те же, что в настоящем
+                req.append((t, tuple(seeds)))
+                return vybrat(final_series(point_design(base, t), h, [42], root), gody)
+            RH.otsechenie(list(tochki), probe, E, h)
+            nuzhno = {}
+            for t, ss in req:
+                if tuple(s for s in ss if s != 42):
+                    nuzhno.setdefault(tuple(s for s in ss if s != 42), set()).add(t)
+            for ss, ts in nuzhno.items():
+                ok, why = runner.chain([point_design(base, t) for t in sorted(ts)], h, list(ss), s_all, WD, f'D_{cname}_pre')
+                if not ok:
+                    raise RuntimeError(why)
+        zhivye, trace = RH.otsechenie(tochki, ryad, E, h)
         if not SMOKE_FLAG['on']:
             RH.zapisat(h, cname, zhivye, trace)
         else:
@@ -598,13 +629,18 @@ def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1):
     seeds = CFG['E']['seeds_final'] if not SMOKE_FLAG['on'] else [42]
     R, S = ocenka_units(units, h, seeds, root)
     sig = {}
+    Fe = None  # F_h(d0) с эмбарго s² (дирижёр 17:35: F_d0_s2emb); нет файлов — ряды r2_O_loyo.yaml F_h_d0
+    if not SMOKE_FLAG['on'] and CFG.get('etalon_vorot'):
+        import r2_loyo as O
+        fs = {s: C.REGEN / CFG['etalon_vorot']['F'].format(h=h, seed=s) for s in seeds}
+        Fe = {s: O.series([f]) for s, f in fs.items()} if all(f.exists() for f in fs.values()) else None
     for u in R:
         if SMOKE_FLAG['on']:  # дым: 3 тикера × 1 seed — 2σ не считается; механика: первый по t «прошёл»
             continue
         if u in v0_units:
-            sig[u] = RG.sigma2_F(odin_ryad(final_series(units[u], h, [42], root)), h)
+            sig[u] = RG.sigma2_F(odin_ryad(final_series(units[u], h, [42], root)), h, seeds=seeds, F=Fe)
         else:
-            sig[u] = RG.sigma2_F({s: odin_ryad(final_series(units[u], h, [s], root)) for s in seeds}, h)
+            sig[u] = RG.sigma2_F({s: odin_ryad(final_series(units[u], h, [s], root)) for s in seeds}, h, seeds=seeds, F=Fe)
     if SMOKE_FLAG['on'] and R:
         top = max((u for u in R if u not in v0_units), key=lambda u: R[u]['t_mean'], default=None)
         sig = {u: dict(passed=(u == top), d_mean=np.nan, sigma=np.nan, thr=np.nan, pometka='дым: 2σ не считается') for u in R}

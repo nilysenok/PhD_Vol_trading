@@ -5,9 +5,11 @@
 features: {file: R2/features/features_r2_v3.parquet, sha256: 977a87d31f0474c5f4d113aa524f040fe3fe1a5f290da1c27c22ff1878af7a72}  # F, PR #176
 hs: [5, 22, 1]                     # параллельные конвейеры (v4 § 0 п. 6: h = 5 и h = 22; h = 1 — только группы признаков в B)
 workers_total: 10                  # v4 § 0 п. 4
-workers: {main: 3, econ: 1}        # на конвейер h: основной поток и эконометрика (3 × (3 + 1) = 12 > 10 — пул r2_core ограничит)
+workers: {main: 3, econ: 1, D_pre: 3}   # на конвейер h: основной поток, эконометрика, предвыборка D пакетом (17:35)
 steps: [1, 2, 3, 4, 5, 6]          # шаг 1 — начальная оценка s²/весов, складки — шаги 2–6 (v4 § 1)
-poll_s: 60                         # ожидание ворот/модулей другого агента
+# эталон и F_h(d0) ворот — версии с эмбарго s² (L PR #195, дирижёр 17:35); нет файла — ряды r2_O_loyo.yaml (etalon, F_h_d0)
+etalon_vorot: {etalon: "R2/cache/VYR/ETA_b_d0_s2emb_h{h}_sdet_val.parquet", F: "R2/cache/VYR/F_d0_s2emb_h{h}_s{seed}_val.parquet"}
+poll_s: 60                        # ожидание ворот/модулей другого агента
 designs_dir: models/designs/r2/driver_v1
 report_dir: R2/report              # от data/regen
 state_dir: R2/S/driver
