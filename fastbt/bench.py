@@ -26,9 +26,12 @@ def _close(path) -> pd.Series:
 def _frame(rate: pd.Series) -> pd.DataFrame:
     m, b = _close(MCFTR), _close(RGBITR)
     df = pd.DataFrame({"m": m, "b": b}).dropna()
-    df["rm"] = np.log(df["m"]).diff()
-    df["rb"] = np.log(df["b"]).diff()
-    df["cd"] = pd.Series(df.index, index=df.index).diff().dt.days
+    # доходность и дни ставки вперёд, d→d_next, как у МСП (r[d] = d→d+1, кэш за [d, d_next)):
+    # экспозиция, выбранная на закрытии d, умножается на доходность d→d+1 (аудит FA, H3, 26.10)
+    df["rm"] = np.log(df["m"]).diff().shift(-1)
+    df["rb"] = np.log(df["b"]).diff().shift(-1)
+    d = pd.Series(df.index, index=df.index)
+    df["cd"] = (d.shift(-1) - d).dt.days
     kr = rate.reindex(rate.index.union(df.index)).sort_index().ffill().bfill().reindex(df.index)
     df["rf_cd"] = kr.values / 365.0 * df["cd"]
     return df.dropna()
