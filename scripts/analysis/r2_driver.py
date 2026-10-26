@@ -477,7 +477,8 @@ def ocenka_units(units, h, seeds, root):
             best = max(V, key=lambda v: RG.t_skladok(V[v], E, h, SMOKE_FOLDS)['t_mean'])
             r = RG.t_skladok(V[best], E, h, SMOKE_FOLDS)
             R[u] = dict(t_mean=r['t_mean'], vyigrysh_pct=r['vyigrysh_pct'], vhod=dict(proshyol=True, net=''), hit=np.nan,
-                        n_tikerov_vyigrysh=np.nan, konc=np.nan, moshchnost=dict(t_ozhid=np.nan, P_p_lt_005=np.nan, pometka='дым'))
+                        n_tikerov_vyigrysh=np.nan, konc=np.nan,
+                        moshchnost=dict(n_test=np.nan, d_mean=np.nan, sigma2_LR=np.nan, t_ozhid=np.nan, P_p_lt_005=np.nan, pometka='дым'))
         else:
             R[u] = RG.ocenka(V, E, h)
     return R, S
@@ -526,15 +527,8 @@ def gate_C(h, designs, root):
     import r2_gates as RG
     units = {d['design']: d for d in designs}
     R, S = ocenka_units(units, h, CFG['C']['seeds'], root)
-    w, T = (RG.vybor(R, S) if not SMOKE_FLAG['on'] else _vybor_smoke(R, S))
-    boost = T[~T.unit.str.endswith('_V0')].sort_values('t_mean', ascending=False)
-    boost = boost[boost.proshyol] if 'proshyol' in boost else boost
-    two = list(boost.unit.head(2))
-    v0 = [u for u in T.unit if u.endswith('_V0') and bool(T.set_index('unit').loc[u].get('proshyol', True))]
-    T['faktor_neprimenim'] = [', '.join(NEPR.get((h, u), [])) for u in T.unit]
-    return write_gate('C', h, dict(yacheyki=two, v0_finalisty=v0, pobeditel_vybora=w, tablica=T.to_dict('records'),
-                                   faktor_neprimenim={u: NEPR[(h, u)] for u in units if (h, u) in NEPR},
-                                   dizainy={u: units[u] for u in two + v0}))
+    # v4 § 4 — ворота O (PR #193): ячейки D, V0-финалисты, число дизайнов; payload — без изменений в write_gate
+    return write_gate('C', h, RG.gate_C_v4(R, S, units, {u: NEPR[(h, u)] for u in units if (h, u) in NEPR}))
 
 
 def _vybor_smoke(R, S):
@@ -583,53 +577,82 @@ def gate_D(h, cells, runner, root, workers):
         best_cells[cname] = dict(zhivye=zhivye, base=base)
     units = {f'{c}_{t}': point_design(v['base'], t) for c, v in best_cells.items() for t in v['zhivye']}
     R, S = ocenka_units(units, h, CFG['D']['seeds'] if not SMOKE_FLAG['on'] else [42], root)
-    w, T = (RG.vybor(R, S) if not SMOKE_FLAG['on'] else _vybor_smoke(R, S))
-    return write_gate('D', h, dict(luchshiy=w, dizayn=units.get(w), zhivye={c: v['zhivye'] for c, v in best_cells.items()},
-                                   tablica=T.to_dict('records')))
+    zhivye = {c: [f'{c}_{t}' for t in v['zhivye']] for c, v in best_cells.items()}
+    # v4 § 5 — ворота O (PR #193): 8 → 1 на ячейку, лучший уровня; число точек на входе — для числа дизайнов
+    return write_gate('D', h, RG.gate_D_v4(R, S, units, zhivye, {c: len(P) for c in best_cells}))
 
 
-def gate_E(h, units, root, v0_units):
-    """Финалисты (до 3 по выбору + V0) -> 10 seed LightGBM + XGBoost (запуск выше) -> 2σ против F_h(d0) (r2_loyo.sigma2) -> победитель."""
+def odin_ryad(V):
+    """Итоговый ряд дизайна одним кадром: единственный вариант; при нескольких — первый по имени (сетку выбирает модуль)."""
+    return V[sorted(V)[0]] if V else None
+
+
+def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1):
+    """v4 § 2, § 6 — ворота O (PR #193): ocenka на 10 seed (вход заново) -> 2σ r2_gates.sigma2_F парно с F_h(d0) (V0 — один ряд) ->
+    r2_gates.gate_E_v4 (финалисты, победитель, мощность, itog_E по порогам владельца 16:45, нога _noga, лестница и абляции).
+    Правило «остаётся нога» при P < 0,5 (дирижёр 17:10): V0 с той же ногой, что у победителя (нога + калибровка). Нет такого ряда —
+    драйвер ставит «нога + калибровка» победителя в очередь (L + L3, run_phase) и только при невозможности оставляет F_h(d0)."""
     import r2_gates as RG
     seeds = CFG['E']['seeds_final'] if not SMOKE_FLAG['on'] else [42]
     R, S = ocenka_units(units, h, seeds, root)
-    w, T = (RG.vybor(R, S) if not SMOKE_FLAG['on'] else _vybor_smoke(R, S))
-    fin = list(T[T.get('proshyol', True) == True].sort_values('t_mean', ascending=False).unit.head(CFG['E']['finalists_k'])) + \
-        [u for u in v0_units if u in R]
     sig = {}
-    pob = None
-    if not SMOKE_FLAG['on']:
-        import r2_loyo as O
-        F = {s: O.q_steps(O.series([O.R / O.CFG['F_h_d0']['file'].format(h=h, seed=s)]), 'bez') for s in seeds}
-        refq = {s: float(np.mean([F[s][st] for st in O.T])) for s in seeds}
-        for u in fin:
-            qs = {}
-            for s in seeds:
-                V = final_series(units[u], h, [s], root)
-                qq = O.q_steps(list(V.values())[0], 'bez')
-                qs[s] = float(np.mean([qq[st] for st in O.T]))
-            sig[u] = O.sigma2(qs, refq, seeds)
-        pob = next((u for u in fin if sig[u]['passed']), None)
-        mosh = R[pob]['moshchnost'] if pob else None
-    else:
-        pob, mosh = (fin[0] if fin else None), None
-    # пороги мощности владельца 16:45 — функции O (r2_gates.kategoriya_moshchnosti / itog_E): P ≥ 0,8 — «значимый»;
-    # 0,5 ≤ P < 0,8 — «не хуже, ожидание на границе»; P < 0,5 — на h остаётся нога (V0 — эконометрическая компонента победителя)
-    if pob and mosh and mosh.get('P_p_lt_005') == mosh.get('P_p_lt_005'):  # не NaN (на дыме мощность не считается)
-        itog = RG.itog_E(pob, mosh, noga_v0=noga_v0(units, pob, v0_units))
-    else:
-        itog = dict(pobeditel_otbora=pob or 'F_h(d0)', final=pob or 'F_h(d0)', P_p_lt_005=None, kategoriya=None,
-                    pometka='дым: мощность не считается (3 тикера, 2 складки)' if SMOKE_FLAG['on'] else 'нет победителя — F_h(d0)')
-    return write_gate('E', h, dict(finalisty=fin, sigma2=sig, pobeditel=pob or 'F_h(d0)', moshchnost=mosh, itog_moshchnosti=itog,
-                                   design_sha=C.design_hash(units[pob]) if pob else None, dizayn=units.get(pob) if pob else None,
-                                   tablica=T.to_dict('records')))
+    for u in R:
+        if SMOKE_FLAG['on']:  # дым: 3 тикера × 1 seed — 2σ не считается; механика: первый по t «прошёл»
+            continue
+        if u in v0_units:
+            sig[u] = RG.sigma2_F(odin_ryad(final_series(units[u], h, [42], root)), h)
+        else:
+            sig[u] = RG.sigma2_F({s: odin_ryad(final_series(units[u], h, [s], root)) for s in seeds}, h)
+    if SMOKE_FLAG['on'] and R:
+        top = max((u for u in R if u not in v0_units), key=lambda u: R[u]['t_mean'], default=None)
+        sig = {u: dict(passed=(u == top), d_mean=np.nan, sigma=np.nan, thr=np.nan, pometka='дым: 2σ не считается') for u in R}
+    g = RG.gate_E_v4(R, S, units, sig, h, list(v0_units), lestnica=not SMOKE_FLAG['on'],
+                     out_dir=(SMOKE_O / f'gate_E_h{h}_dizainy') if SMOKE_FLAG['on'] else None)
+    pb = g['pobeditel']
+    it = pb.get('itog') or {}
+    noga = pb.get('noga') or {}
+    if it.get('deystvie') == 'final_V0' and (not noga.get('unit') or noga.get('nuzhen_schet')):
+        nd, why = noga_v_ochered(units.get(pb['pobeditel_otbora']), noga, h, runner, steps, workers, root)
+        if nd is not None:
+            pb.update(pobeditel=nd['design'], V0=True)
+            g.update(design_sha=C.design_hash(nd), dizayn=nd)
+            noga.update(unit=nd['design'], design_sha=C.design_hash(nd), nuzhen_schet=False, poschitan=True,
+                        istochnik=f'нога + калибровка победителя ({">".join(route(nd))}) — посчитана драйвером; у O: {noga.get("istochnik", "")}')
+            it['final'] = nd['design']
+        else:
+            pb['pobeditel'], it['final'] = 'F_h(d0)', 'F_h(d0)'
+            noga['pometka'] = f'нога + калибровка не посчитана ({why}) — на h остаётся F_h(d0)'
+        pb['noga'], pb['itog'] = noga, it
+    return write_gate('E', h, g)
 
 
-def noga_v0(units, pob, v0_units):
-    """Нога для P < 0,5: V0-кандидат с той же ногой (leg.type), что у победителя; иначе первый V0; иначе F_h(d0)."""
-    lt = C.get(C.validate(units[pob]), 'leg.type')
-    same = [u for u in v0_units if u in units and C.get(C.validate(units[u]), 'leg.type') == lt]
-    return (same or [u for u in v0_units if u in units] or ['F_h(d0)'])[0]
+def noga_dizain(pob_design, noga):
+    """«Нога + калибровка» победителя: дизайн из ступени лестницы O (design_yaml), иначе leg.* + calib.* победителя, роль none."""
+    if noga.get('design_yaml') and Path(noga['design_yaml']).exists():
+        d = yaml.safe_load(Path(noga['design_yaml']).read_text())
+    else:
+        d = {'h': pob_design['h'], 'leg': copy.deepcopy(pob_design.get('leg') or {}), 'calib': copy.deepcopy(pob_design.get('calib') or {})}
+        for k in ('inputs',):
+            if k in pob_design:
+                d[k] = copy.deepcopy(pob_design[k])
+    d['design'] = f'noga_{pob_design.get("design", "pob")}'
+    d.setdefault('boost', {})['role'] = 'none'
+    C.validate(d)
+    return d
+
+
+def noga_v_ochered(pob_design, noga, h, runner, steps, workers, root):
+    """Очередь расчёта ноги (L + L3 по маршруту дизайна, seed 42, шаги конвейера). -> (дизайн | None, причина)."""
+    if pob_design is None or runner is None:
+        return None, 'нет дизайна победителя или исполнителя'
+    try:
+        nd = noga_dizain(pob_design, noga)
+    except Exception as e:  # noqa: BLE001 — схема не приняла: F_h(d0)
+        return None, f'дизайн ноги не прошёл схему: {e}'
+    ok, why = runner.chain([nd], h, [42], steps, workers, 'Enoga')
+    V = final_series(nd, h, [42], root) if ok else {}
+    log(f'ворота E h={h}: нога {nd["design"]} ({">".join(route(nd))}) — {"посчитана" if V else why or "нет ряда"}')
+    return (nd, '') if V else (None, why or 'нет итогового ряда')
 
 
 # ================================================================ отчёт владельцу
@@ -646,17 +669,28 @@ def report(phase, hs, smoke=False):
         g = yaml.safe_load(f.read_text())
         L += [f'## h = {h}', '']
         for k, v in g.items():
-            if k in ('tablica', 'dizainy', 'dizayn', 'faktory', 'inputs', 'sigma2', 'itog_moshchnosti', 'moshchnost'):
+            if k in ('tablica', 'dizainy', 'dizayn', 'faktory', 'inputs', 'sigma2', 'moshchnost', 'pobeditel', 'finalisty', 'lestnica',
+                     'ablyacii', 'lozhnye', 'chislo'):
                 continue
             L.append(f'- **{k}**: {v}')
         if phase == 'E':
-            it = g.get('itog_moshchnosti') or {}
-            fmt = lambda x: '—' if x is None else f'{x:.2f}'
+            pb = g.get('pobeditel') if isinstance(g.get('pobeditel'), dict) else {}
+            it, noga = pb.get('itog') or {}, pb.get('noga') or {}
+            fmt = lambda x: '—' if x is None or x != x else f'{x:.2f}'
             L += ['', '**Мощность (кластер 20; пороги владельца 16:45)**: P ≥ 0,8 — «значимый»; 0,5 ≤ P < 0,8 — «не хуже, ожидание на '
-                  'границе»; P < 0,5 — на h остаётся нога (V0).', '',
-                  '| победитель отбора | E[t] | P(p < 0,05) | категория | финал на открытие |', '|---|---|---|---|---|',
-                  '| ' + ' | '.join([str(it.get('pobeditel_otbora', '—')), fmt(it.get('t_ozhid')), fmt(it.get('P_p_lt_005')),
-                                    str(it.get('pometka', '—')), str(it.get('final', '—'))]) + ' |']
+                  'границе»; P < 0,5 — на h остаётся нога: V0 с той же ногой, что у победителя (нога + калибровка); нет такого ряда — '
+                  'драйвер считает его (L + L3); не удалось — F_h(d0).', '',
+                  '| победитель отбора | E[t] | P(p < 0,05) | категория | гипотеза | финал на открытие |', '|---|---|---|---|---|---|',
+                  '| ' + ' | '.join([str(pb.get('pobeditel_otbora', '—')), fmt(it.get('t_ozhid')), fmt(it.get('P_p_lt_005')),
+                                    str(it.get('pometka', '—')), str(it.get('gipoteza', '—')), str(pb.get('pobeditel', '—'))]) + ' |']
+            if noga:
+                L += ['', f'- **нога**: {noga.get("unit")} — {noga.get("istochnik", "")}'
+                      + (f'; {noga["pometka"]}' if noga.get('pometka') else '') + ('; посчитана драйвером' if noga.get('poschitan') else '')]
+            if g.get('finalisty'):
+                T = pd.DataFrame(g['finalisty'])
+                cols = [c for c in ('unit', 'tip', 'poryadok', 't_mean', 'vyigrysh_pct', 'vhod', 'P_moshchnost', 's2_passed') if c in T]
+                L += ['', '**финалисты**', '', '| ' + ' | '.join(cols) + ' |', '|' + '---|' * len(cols)]
+                L += ['| ' + ' | '.join(f'{x:.4g}' if isinstance(x, float) else str(x) for x in r) + ' |' for r in T[cols].values]
         for k in ('faktory', 'tablica'):
             if g.get(k):
                 T = pd.DataFrame(g[k])
@@ -774,7 +808,7 @@ def pipeline(h, runner, smoke=False, once=False):
             save_state(h, st, smoke)
             return st
         units = fin | v0
-    stage('gate_E', lambda: gate_E(h, units, root, list(v0)))
+    stage('gate_E', lambda: gate_E(h, units, root, list(v0), runner, steps, W))
     report('E', CFG['hs'] if not smoke else SMOKE_HS, smoke)
     st['zhdyot'] = 'СТОП: перед открытием теста (фаза F — агент A, «да» владельца)'
     save_state(h, st, smoke)
@@ -930,8 +964,15 @@ def cmd_smoke(a):
        not (pd.read_csv(SMOKE_DIR / 'blok_sdvig.csv').ok == False).any())  # noqa: E712 — «плоский профиль» пишется с ok = True
     ok('режим R2: запись ≥ 2022 отклоняется', C._raises(lambda: C.check_no_future(pd.DataFrame({'date': ['2022-01-03'], 'year': [2022]}), 'driver_smoke')))
     gE = [yaml.safe_load(gate_path('E', h, True).read_text()) for h in SMOKE_HS]
-    ok('ворота E: итог мощности (пороги владельца 16:45, r2_gates.itog_E) в gate_E и в gate_E.md',
-       all('itog_moshchnosti' in g for g in gE) and 'пороги владельца 16:45' in (SMOKE_REPORT / 'gate_E.md').read_text(encoding='utf-8'))
+    ok('ворота C/D/E — r2_gates.gate_C_v4 / gate_D_v4 / gate_E_v4 (O, PR #193): payload v4',
+       all('chislo' in yaml.safe_load(gate_path(p, h, True).read_text()) for p in 'CD' for h in SMOKE_HS)
+       and all('lozhnye' in g and isinstance(g.get('pobeditel'), dict) for g in gE))
+    ok('ворота E: итог мощности (пороги владельца 16:45, itog_E) в gate_E и gate_E.md; P < 0,5 без V0 той же ноги — нога + калибровка '
+       'посчитана драйвером (L + L3) или F_h(d0) с пометкой',
+       all(g['pobeditel'].get('itog') for g in gE) and 'пороги владельца 16:45' in (SMOKE_REPORT / 'gate_E.md').read_text(encoding='utf-8')
+       and all(g['pobeditel']['pobeditel'] == 'F_h(d0)' or g['pobeditel'].get('V0') or g['pobeditel']['itog'].get('deystvie') == 'na_otkrytie'
+               for g in gE),
+       str({h: (g['pobeditel']['pobeditel'], (g['pobeditel'].get('noga') or {}).get('istochnik')) for h, g in zip(SMOKE_HS, gE)}))
     import r2_gates as RG
     kat = {p: RG.kategoriya_moshchnosti(p)['kategoriya'] for p in (0.85, 0.8, 0.6, 0.5, 0.3)}
     ok(f'категории мощности O: {kat}', kat == {0.85: 'znachimyy', 0.8: 'znachimyy', 0.6: 'granica', 0.5: 'granica', 0.3: 'noga'})
