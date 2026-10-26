@@ -6,7 +6,9 @@
 | 5 | 0,2274 | 0,3321 | 0,3309 | 0,4008 | 0,3782 |
 | 22 | 0,2177 | 0,4560 | 0,4331 | 0,5680 | 0,4781 |
 
-Разработочный набор готов полностью (04:55). Прогоны NN для закрытых шагов 7–10 ещё идут (подбор шагов 6–9 → переобучение 7–10); метрики по ним не считаются.
+Всё досчитано к 08:12: разработочный набор — к 04:55, закрытые шаги 7–10 NN — к 08:12.
+- Подбор: 918 исследований, 27 540 испытаний. Переобучения: 3 060.
+- Прогнозы шагов 7–10 и тестовые лежат в `data/regen/test_locked/ref_nn_garch/` без метрик. При досчёте закрытых шагов прогнозы разработочного набора не изменились (метрики совпали побайтно).
 - Детектор утечек: GARCH/GJR — 42 из 42.
 - NN — 41 из 42: «будущее не влияет» побайтно; перемешанная цель у GRU h=1 упала из-за шума на хвосте IRAO (разбор ниже). Самопроверка с внедрённой утечкой — 4 из 4 при 20 эпохах.
 - Честный GRU намного хуже справочного GRU 25.10 (0,305 / 0,227 / 0,237). Главная причина — число эпох: раньше ранняя остановка шла по году оценки, теперь берётся с шага t−1.
@@ -191,7 +193,7 @@
   - (7) эталон — HAR-J с поправкой sm из Д24c.
 
 ## Версии
-Python 3.9.6, torch 2.8.0 (CPU, 1 поток на процесс), optuna 4.7.0, arch 7.2.0, numpy 2.0.2, pandas 2.3.3, scipy 1.13.1. Подбор — 5 воркеров. Всего процессов не больше 6.
+Python 3.9.6, torch 2.8.0 (CPU, 1 поток на процесс), optuna 4.7.0, arch 7.2.0, numpy 2.0.2, pandas 2.3.3, scipy 1.13.1. Подбор — 5 воркеров, с 04:02 ещё 1 для закрытых шагов. Всего процессов счёта не больше 6. Время: подбор и переобучение разработочного набора — 02:38–04:53, закрытые шаги — до 08:12. GARCH/GJR — 6 с.
 
 ## Файлы и воспроизведение
 ```
@@ -205,8 +207,8 @@ python3 -W ignore tests/leak_selfcheck_ref.py --models ref_garch,gru,lstm
 - Закрытые, без метрик — `data/regen/test_locked/ref_nn_garch/`: `REF_{m}_h{h}_valconfirm.parquet` (шаги 7–10) и `REF_{m}_h{h}_test.parquet` (ty шагов 1–10).
 - Логи — `data/run/ref_*.log`.
 
-## Хэши SHA-256 (срез 03:50)
-База — `kanon-v22-pereschet` @ `00474ac`. Прогон NN идёт на коде `ref_nn_sv.py` с хэшем, указанным ниже.
+## Хэши SHA-256 (итог, 08:15)
+База — `kanon-v22-pereschet` @ `00474ac`. Весь прогон NN (02:38–08:12) шёл на коде `ref_nn_sv.py` с хэшем, указанным ниже. Части NN (`nn_parts/`, 4 896 файлов: 918 исследований с испытаниями и 3 060 переобучений) поштучно не хэшируются.
 
 Входы (`data/regen/`):
 
@@ -221,17 +223,51 @@ python3 -W ignore tests/leak_selfcheck_ref.py --models ref_garch,gru,lstm
 
 | файл | SHA-256 |
 |---|---|
+| `REF_LSTM_h1_val.parquet` | `69517b3eb8204aea4e3e33a67c9b4e24e8f052d733c7e411fcd44631b7cbc29c` |
+| `REF_LSTM_h5_val.parquet` | `b28ebc52f5e2efe6689bfcfc7654fe7a74ab43ba87b9e934a03cc246748562ee` |
+| `REF_LSTM_h22_val.parquet` | `be01240494e145d0b0ca0f0b7bba9a7b0bf4e053a87f758fb0d62bc1b545a09a` |
+| `REF_GRU_h1_val.parquet` | `381776f02546e67e4b5df073a7811a6fb12de4fbd027667f50e6fe21c0299d3c` |
+| `REF_GRU_h5_val.parquet` | `9c838725493c74f67033bf748208fd07e249f6471fd364f4910c8f611c14c7cc` |
+| `REF_GRU_h22_val.parquet` | `1635f7736670d6b1ef5b9d93cb71ff9af020dd52f0b15f1cadc41c9afe0e324b` |
+| `REF_nn_s2_dev.csv` | `e759433e2a1c129ccf638d15988bf5a121a00f9e1f53c94e9664c9d9d2669c85` |
 | `REF_GJR_h1_val.parquet` | `64ff096ee9be3c498c9b2f9b1e69c7ab58b64cc0ba744e7e8ba645ccca1a064e` |
 | `REF_GJR_h5_val.parquet` | `61b04c08fb9fbe9248f014a8726b88b81c8f56a14cd38693fd834ca51450b993` |
 | `REF_GJR_h22_val.parquet` | `00723d42c7e379af65dd37d70723f4d9b42a3f3f9b1d8cbcfa8520a23f3b1290` |
 | `REF_GARCH_h1_val.parquet` | `f233417ceaf9689d5afa70e88c6f7ded514546d8e1b003586eb06fe4d38a14ff` |
 | `REF_GARCH_h5_val.parquet` | `dd3b618fbd20416e8034811ebe4a51901c24e0a3224ecf887922ab7fa0b5d6fd` |
 | `REF_GARCH_h22_val.parquet` | `9850dd464c7f842cfdcca727b8f2ab86d4d8012f58f0cc6a4db32b101949ab9a` |
-| `REF_metrics_dev.csv` | `9cee1f319d8d9bceadd8b7548e25a367d78af515f62c4d0126e3a9fbe67e799c` |
+| `REF_metrics_dev.csv` | `2acad6efdb732566e941f6198c6c5fdf3f1ffc0ea3f17540c70b5f9be839e034` |
 | `REF_garch_params.csv` | `c4807a5af9a3a7ad98c7ca7d4d060e87d715f85064ffb5d0d894858013612502` |
 | `REF_garch_cal_dev.csv` | `3cf712e5ef91dba45d56ff42d9c680b23876876bfa21f1652716fb44b74f0243` |
 
-Закрытые прогнозы GARCH/GJR (`data/regen/test_locked/ref_nn_garch/`, метрик нет): 12 файлов `REF_{GARCH,GJR}_h{1,5,22}_{valconfirm,test}.parquet`. Хэши — в финальной версии вместе с NN.
+Закрытые прогнозы (`data/regen/test_locked/ref_nn_garch/`, метрик нет; valconfirm — годы оценки шагов 7–10, test — ty шагов 1–10):
+
+| файл | SHA-256 |
+|---|---|
+| `REF_LSTM_h1_valconfirm.parquet` | `571e8a5f67b6ba8128421f1532b9964ddec9b1b58fc61debcea30b0cffeef1de` |
+| `REF_LSTM_h1_test.parquet` | `ae726e37ec98ad2547bc9d4f67f98dc69eff06ad6e484103d864614a9bb57e0d` |
+| `REF_LSTM_h5_valconfirm.parquet` | `891097a3bffccfcb46088a7d3d5b4d7e2409ec15264a6512a92f32959fdfd3a1` |
+| `REF_LSTM_h5_test.parquet` | `f349ad30f6e0f56b7e71b427d687db9e05cbf2d4d65939c03aa5a58a14a9ec6e` |
+| `REF_LSTM_h22_valconfirm.parquet` | `457140fe200fad859cdd9142e5ce7ac627bcc90cb8dc5064fb0d46d5d94c5e3f` |
+| `REF_LSTM_h22_test.parquet` | `0a4e35a5da578519f0bb3d3ffbbaa03da2dd9423c56d7f6efeb5b46afbbaff3c` |
+| `REF_GRU_h1_valconfirm.parquet` | `bb0bc3844cf48b3ee11cecef5159683fa0a7ef94d1b77ca5574f418ab7d5a285` |
+| `REF_GRU_h1_test.parquet` | `5f5443d7f4f05e21874118a8f6f3bc6a2f4a3be08442d23a9a696fab0328d2a3` |
+| `REF_GRU_h5_valconfirm.parquet` | `047cce9d2bb6aa9e47fb2077fd21e27ecd87e25fe35ead9f3972e064c4cc9f0c` |
+| `REF_GRU_h5_test.parquet` | `02bf4ff2badcad5ef01d8b5198910f2c116371b38e00ac86c340e1172c293370` |
+| `REF_GRU_h22_valconfirm.parquet` | `19b6ecb18d8e009ed1b35e5f4ead4d8cecaa9f8cc44a10f5956a176ff7656df3` |
+| `REF_GRU_h22_test.parquet` | `a330b1183a95fb4dc7bb3c59fa76eb5307099804248dbf852ab8dfe0bf576924` |
+| `REF_GJR_h1_valconfirm.parquet` | `205ae9aaa80e5af058504512be61c604a6f5cf466db7460f3c0064da659929b1` |
+| `REF_GJR_h1_test.parquet` | `714678801fd872bf8563295af10f24562d0639b0bf142ff21083ef3a6c3fe59f` |
+| `REF_GJR_h5_valconfirm.parquet` | `d26c65c824fc267d9a623520ee321135b200c67260ff034af6f90dd081f0dc8d` |
+| `REF_GJR_h5_test.parquet` | `f2a486533ab7d48d48b242c3c62ccb005094d707bbb2b054a5fc7638efa3ae8b` |
+| `REF_GJR_h22_valconfirm.parquet` | `2ad68fb480f3b4d555b70c788557e29e5917e1daa6b77436cd8e9365e149922a` |
+| `REF_GJR_h22_test.parquet` | `b435823e167ddfc6d16bb3b81890b3b321ece952f9b7096563c8d2c0f78588be` |
+| `REF_GARCH_h1_valconfirm.parquet` | `46cf72756f54a780cdc46fa8973aef82598474f053a66eabce5f1fde0d7eca98` |
+| `REF_GARCH_h1_test.parquet` | `db4e7b93ac65227a99a8553535690cce8b7e173f05320297fa2cef52f9d56d9d` |
+| `REF_GARCH_h5_valconfirm.parquet` | `9afe5b1fb1c046f7145f0960016f8957ce392380e6d8b2d30dc74214d2672455` |
+| `REF_GARCH_h5_test.parquet` | `cb039e04ea69a5b01ee14ab3526ed400a9053b4baa89a8ec35e21b2df9be4c00` |
+| `REF_GARCH_h22_valconfirm.parquet` | `85bd4428c7fd8138d31a42e4b74af9a09a9fb7b29d21ee8b1677f6512ad97d91` |
+| `REF_GARCH_h22_test.parquet` | `e5a8691ec20a507226b2754733174ecc71598646664a9a5d4fe5ea5972044831` |
 
 Код:
 
@@ -241,7 +277,8 @@ python3 -W ignore tests/leak_selfcheck_ref.py --models ref_garch,gru,lstm
 | `scripts/analysis/ref_nn_sv.sh` | `3d6c19fea000fbc269a0ad6c41b6be6745a7ea75ab467f79318b5943d144a2a3` |
 | `scripts/analysis/ref_garch_cal.py` | `ac1076917f6b7b18ca66ed0e4e2b5a524fa25444afab3b3ca6a96c6b07b53a4f` |
 | `scripts/analysis/ref_nn_garch_metrics.py` | `4880f56ea78ba3c5f99fe3e451eefff03f0d2114630f98711789c4bfc7f50a38` |
-| `tests/leak/models_ref.py` | `afb91aded5c927be3643741555943827a50793db3a43893f04b53bcad11df4ae` |
+| `tests/leak/models_ref.py` | `900da7222c63349b10d438e8d7bdc8a36ef871c2bf0c78988159cd7991a8c7cf` |
 | `tests/leak/registry.py` | `3680c030ef6a865cc0539f0ca32f3fafb916b777a90bf480023fc946618b46c0` |
 | `tests/leak_selfcheck_ref.py` | `3d0de9e260554d8c56ca5dfe15b732cbcbea1bd268c32360526de08be8bc3b9b` |
+| `tests/leak_permute_seeds_ref.py` | `c969c3f13fa4d748c103921e05ed326be7b1fea659f86af8de09bcd941cf9c5f` |
 | `scripts/analysis/harx.py` (не менялся) | `ea134d16c6c1f642ddae01569c17da462107070ad7e620022421a9b583d78e41` |
