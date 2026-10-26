@@ -85,6 +85,18 @@ def read_designs(name):
     return yaml.safe_load(designs_file(name).read_text())['designs']
 
 
+def zamer(m, h, tag, n_designs, n_seeds, n_steps, workers, sek, rc, bez_done):
+    """Замер запуска модуля -> R2/S/driver/zamery.csv (основа оценки времени боевого счёта)."""
+    f = STATE / 'zamery.csv'
+    f.parent.mkdir(parents=True, exist_ok=True)
+    new = not f.exists()
+    with LOCK, open(f, 'a', encoding='utf-8') as fh:
+        if new:
+            fh.write('vremya,modul,h,tag,dizaynov,seeds,shagov,workers,tikery,sek,rc,bez_done\n')
+        fh.write(f'{time.strftime("%F %T")},{m},{h},{tag},{n_designs},{n_seeds},{n_steps},{workers},'
+                 f'{os.environ.get("R2_TICKERS", "17").replace(",", "+")},{sek:.1f},{rc},{bez_done}\n')
+
+
 # ================================================================ generate: все yaml B–E до счёта
 def _set(d, dotted, v):
     a = d
@@ -379,25 +391,49 @@ class Runner:
                 if subprocess.run(cmd, cwd=REPO).returncode != 0:
                     return False, f'модуль {m}: ошибка на дизайне {d.get("design")}'
             return True, ''
-        faza = 'B' if tag in ('econ', 'B') else tag[:1]  # ворота run_phase модуля: B/эконометрика — план; C/D/E — ворота предыдущей фазы
+        faza = 'B' if tag in ('econ', 'B') or tag.startswith('dym') else tag[:1]  # B/эконометрика — план; C/D/E — ворота пред. фазы
         cmd = [sys.executable, str(HERE / spec['file'])] + spec['run'].format(
             designs=dfile, h=h, seeds=' '.join(map(str, seeds)), steps=' '.join(map(str, steps)), workers=workers, extra=extra,
             faza=faza).split()
+        t0 = time.time()
         rc = subprocess.run(cmd, cwd=REPO).returncode
-        return rc == 0, '' if rc == 0 else f'модуль {m}: код {rc}'
+        net = self.done_missing(m, designs, h, seeds)
+        zamer(m, h, tag, len(designs), len(seeds), len(steps), workers, time.time() - t0, rc, len(net))
+        if rc != 0:
+            return False, f'модуль {m}: код {rc}'
+        if designs and len(net) == len(designs) * len(seeds):  # ни одной отметки DONE — модуль ничего не посчитал (P, M: код 0 и при ошибках)
+            return False, f'модуль {m}: код 0, но нет ни одной отметки DONE_{m}_h{h} ({len(net)} задач)'
+        if net:
+            log(f'модуль {m} h={h}: без DONE {len(net)} из {len(designs) * len(seeds)} (неприменимые или ошибка задачи): {net[:3]}')
+        return True, ''
 
-    def chain(self, designs, h, seeds, steps, workers, tag, extra=None):
-        """Дизайны по цепочкам модулей: группами по модулю в порядке chain_order."""
+    @staticmethod
+    def done_missing(m, designs, h, seeds):
+        """Задачи (дизайн, seed) без отметки DONE_<m>_h{h}_s{seed} в кэше (корень — R2_CACHE)."""
+        out = []
+        for d in designs:
+            full = C.validate({**d, 'h': h})
+            out += [f'{full.get("design")}/s{s}' for s in seeds if not C.done_path(full, m, h, s).exists()]
+        return out
+
+    def chain(self, designs, h, seeds, steps, workers, tag, extra=None, partial=False):
+        """Дизайны по цепочкам модулей: группами по модулю в порядке chain_order. partial=True (эконометрика): модуль, который не
+        готов или упал, снимает только дизайны со своим звеном, остальные цепочки идут дальше (M, L3 не ждут R)."""
         by = {}
         for d in designs:
             for m in route(d):
                 by.setdefault(m, []).append(d)
+        snyaty, fails = set(), []
         for m in CFG['chain_order']:
-            if m in by:
-                ok, why = self.run(m, by[m], h, seeds, steps, workers, (extra or {}).get(m, ''), tag)
+            ds = [d for d in by.get(m, []) if d['design'] not in snyaty]
+            if ds:
+                ok, why = self.run(m, ds, h, seeds, steps, workers, (extra or {}).get(m, ''), tag)
                 if not ok:
-                    return False, why
-        return True, ''
+                    if not partial:
+                        return False, why
+                    fails.append(why)
+                    snyaty |= {d['design'] for d in ds}
+        return not fails, '; '.join(fails)
 
 
 def final_series(design, h, seeds, root=None, steps=None):
@@ -576,9 +612,23 @@ def gate_E(h, units, root, v0_units):
         mosh = R[pob]['moshchnost'] if pob else None
     else:
         pob, mosh = (fin[0] if fin else None), None
-    return write_gate('E', h, dict(finalisty=fin, sigma2=sig, pobeditel=pob or 'F_h(d0)', moshchnost=mosh,
+    # пороги мощности владельца 16:45 — функции O (r2_gates.kategoriya_moshchnosti / itog_E): P ≥ 0,8 — «значимый»;
+    # 0,5 ≤ P < 0,8 — «не хуже, ожидание на границе»; P < 0,5 — на h остаётся нога (V0 — эконометрическая компонента победителя)
+    if pob and mosh and mosh.get('P_p_lt_005') == mosh.get('P_p_lt_005'):  # не NaN (на дыме мощность не считается)
+        itog = RG.itog_E(pob, mosh, noga_v0=noga_v0(units, pob, v0_units))
+    else:
+        itog = dict(pobeditel_otbora=pob or 'F_h(d0)', final=pob or 'F_h(d0)', P_p_lt_005=None, kategoriya=None,
+                    pometka='дым: мощность не считается (3 тикера, 2 складки)' if SMOKE_FLAG['on'] else 'нет победителя — F_h(d0)')
+    return write_gate('E', h, dict(finalisty=fin, sigma2=sig, pobeditel=pob or 'F_h(d0)', moshchnost=mosh, itog_moshchnosti=itog,
                                    design_sha=C.design_hash(units[pob]) if pob else None, dizayn=units.get(pob) if pob else None,
                                    tablica=T.to_dict('records')))
+
+
+def noga_v0(units, pob, v0_units):
+    """Нога для P < 0,5: V0-кандидат с той же ногой (leg.type), что у победителя; иначе первый V0; иначе F_h(d0)."""
+    lt = C.get(C.validate(units[pob]), 'leg.type')
+    same = [u for u in v0_units if u in units and C.get(C.validate(units[u]), 'leg.type') == lt]
+    return (same or [u for u in v0_units if u in units] or ['F_h(d0)'])[0]
 
 
 # ================================================================ отчёт владельцу
@@ -595,9 +645,17 @@ def report(phase, hs, smoke=False):
         g = yaml.safe_load(f.read_text())
         L += [f'## h = {h}', '']
         for k, v in g.items():
-            if k in ('tablica', 'dizainy', 'dizayn', 'faktory', 'inputs', 'sigma2'):
+            if k in ('tablica', 'dizainy', 'dizayn', 'faktory', 'inputs', 'sigma2', 'itog_moshchnosti', 'moshchnost'):
                 continue
             L.append(f'- **{k}**: {v}')
+        if phase == 'E':
+            it = g.get('itog_moshchnosti') or {}
+            fmt = lambda x: '—' if x is None else f'{x:.2f}'
+            L += ['', '**Мощность (кластер 20; пороги владельца 16:45)**: P ≥ 0,8 — «значимый»; 0,5 ≤ P < 0,8 — «не хуже, ожидание на '
+                  'границе»; P < 0,5 — на h остаётся нога (V0).', '',
+                  '| победитель отбора | E[t] | P(p < 0,05) | категория | финал на открытие |', '|---|---|---|---|---|',
+                  '| ' + ' | '.join([str(it.get('pobeditel_otbora', '—')), fmt(it.get('t_ozhid')), fmt(it.get('P_p_lt_005')),
+                                    str(it.get('pometka', '—')), str(it.get('final', '—'))]) + ' |']
         for k in ('faktory', 'tablica'):
             if g.get(k):
                 T = pd.DataFrame(g[k])
@@ -644,9 +702,18 @@ def pipeline(h, runner, smoke=False, once=False):
         save_state(h, st, smoke)
         return r
 
+    def chain(*a, **kw):  # нет модуля другого агента -> ждать (опрос poll_s), кроме дыма и --once
+        while True:
+            ok, why = runner.chain(*a, **kw)
+            if ok or smoke or once or 'ждёт модуль' not in why:
+                return ok, why
+            st['zhdyot'] = why
+            save_state(h, st, smoke)
+            time.sleep(CFG['poll_s'])
+
     # B
     B = read_designs(f'B_h{h}')
-    ok, why = stage('B_schet', lambda: runner.chain(B, h, CFG['B']['seeds'], steps, W, f'B', extra={'B': f'--row-frac {CFG["B"]["row_frac"]} --row-seed {CFG["B"]["row_seed"]}'}))
+    ok, why = stage('B_schet', lambda: chain(B, h, CFG['B']['seeds'], steps, W, f'B', extra={'B': f'--row-frac {CFG["B"]["row_frac"]} --row-seed {CFG["B"]["row_seed"]}'}))
     if not ok:
         st['zhdyot'] = why
         save_state(h, st, smoke)
@@ -659,7 +726,7 @@ def pipeline(h, runner, smoke=False, once=False):
     Cd = apply_gate_B(read_designs(f'C_h{h}_shablon'), gB, h)
     if smoke:
         Cd = Cd[:4] + [d for d in Cd if d['design'].endswith('_V0')]
-    ok, why = stage('C_schet', lambda: runner.chain(Cd, h, CFG['C']['seeds'], steps, W, 'C'))
+    ok, why = stage('C_schet', lambda: chain(Cd, h, CFG['C']['seeds'], steps, W, 'C'))
     if not ok:
         st['zhdyot'] = why
         save_state(h, st, smoke)
@@ -683,7 +750,10 @@ def pipeline(h, runner, smoke=False, once=False):
     Ed = designs_E(best, CFG['E']['ofat'])
     if smoke:
         Ed = Ed[:4]
-    ok, why = stage('E_schet', lambda: runner.chain(Ed, h, [42], steps, W, 'E'))
+    ok, why = stage('E_schet', lambda: chain(Ed, h, [42], steps, W, 'E', partial=True))  # надстройки независимы (OFAT)
+    if not ok:
+        st['E_schet_oshibki'] = why  # упавшие надстройки — без ряда, в ворота E не попадут (ocenka_units пропускает)
+        log(f'конвейер h={h}: E — часть надстроек без ряда: {why[:300]}')
     v0 = {u: gC['dizainy'][u] for u in gC.get('v0_finalisty', [])}
     units = {d['design']: d for d in Ed} | {gD['luchshiy']: best} | v0
     if not smoke:  # финалисты: 10 seed, LightGBM + XGBoost — после выбора по 1 seed; ворота E — на 10 seed
@@ -697,7 +767,11 @@ def pipeline(h, runner, smoke=False, once=False):
             _set(d, 'boost.lib', CFG['E']['lib_final'])
             _set(d, 'ens.seeds', 10)
             fin[u] = d
-        ok, why = stage('E_finalisty_10seed', lambda: runner.chain(list(fin.values()), h, CFG['E']['seeds_final'], steps, W, 'Efin'))
+        ok, why = stage('E_finalisty_10seed', lambda: chain(list(fin.values()), h, CFG['E']['seeds_final'], steps, W, 'Efin'))
+        if not ok:
+            st['zhdyot'] = f'финалисты 10 seed: {why}'
+            save_state(h, st, smoke)
+            return st
         units = fin | v0
     stage('gate_E', lambda: gate_E(h, units, root, list(v0)))
     report('E', CFG['hs'] if not smoke else SMOKE_HS, smoke)
@@ -706,13 +780,20 @@ def pipeline(h, runner, smoke=False, once=False):
     return st
 
 
-def econ(h, runner, smoke=False):
-    """Эконометрика сразу (кластеры 2, 3, 6, 14, 15), не ждёт бустинга."""
+def econ(h, runner, smoke=False, once=False):
+    """Эконометрика сразу (кластеры 2, 3, 6, 14, 15), не ждёт бустинга. Цепочки независимы (partial): нет модуля R — ждут только
+    дизайны с R; в боевом режиме (не once) повтор каждые poll_s, пока ждёт модуль (готовое модули пропускают по DONE)."""
     t0 = time.strftime('%F %T')
     ds = read_designs(f'econ_h{h}')
     if smoke:
-        ds = ds[:6] + [d for d in ds if 'mh.persist' in d['design']][:2]
-    ok, why = runner.chain(ds, h, [42], list(SMOKE_STEPS) if smoke else CFG['steps'], CFG['workers']['econ'], 'econ')
+        ds = ds[:6] + [d for d in ds if 'mh.persist' in d['design']][:2] + \
+            [d for d in ds if {'P', 'L3'} & set(route(d)) and 'R' not in route(d)][:2]
+    while True:
+        ok, why = runner.chain(ds, h, [42], list(SMOKE_STEPS) if smoke else CFG['steps'], CFG['workers']['econ'], 'econ', partial=True)
+        if ok or smoke or once or 'ждёт модуль' not in why:
+            break
+        ydump(dict(h=h, start=t0, zhdyot=why), STATE / 'run' / f'econ_h{h}.json')
+        time.sleep(CFG['poll_s'])
     r = dict(h=h, start=t0, end=time.strftime('%F %T'), ok=ok, prichina=why, dizaynov=len(ds))
     ydump(r, STATE / ('smoke' if smoke else 'run') / f'econ_h{h}.json')
     return r
@@ -736,7 +817,7 @@ def cmd_run(a, smoke=False):
     res, econ_res = {}, {}
     th = []
     for h in hs:  # эконометрика — сразу, параллельно с B
-        t = threading.Thread(target=lambda h=h: econ_res.__setitem__(h, econ(h, runner, smoke)), name=f'econ_h{h}')
+        t = threading.Thread(target=lambda h=h: econ_res.__setitem__(h, econ(h, runner, smoke, getattr(a, 'once', False))), name=f'econ_h{h}')
         t.start()
         th.append(t)
     def guarded(h):
@@ -847,8 +928,17 @@ def cmd_smoke(a):
     ok('проверка сдвига: блоков нет (HAR-J d0)', not (SMOKE_DIR / 'blok_sdvig.csv').exists() or
        not (pd.read_csv(SMOKE_DIR / 'blok_sdvig.csv').ok == False).any())  # noqa: E712 — «плоский профиль» пишется с ok = True
     ok('режим R2: запись ≥ 2022 отклоняется', C._raises(lambda: C.check_no_future(pd.DataFrame({'date': ['2022-01-03'], 'year': [2022]}), 'driver_smoke')))
+    gE = [yaml.safe_load(gate_path('E', h, True).read_text()) for h in SMOKE_HS]
+    ok('ворота E: итог мощности (пороги владельца 16:45, r2_gates.itog_E) в gate_E и в gate_E.md',
+       all('itog_moshchnosti' in g for g in gE) and 'пороги владельца 16:45' in (SMOKE_REPORT / 'gate_E.md').read_text(encoding='utf-8'))
+    import r2_gates as RG
+    kat = {p: RG.kategoriya_moshchnosti(p)['kategoriya'] for p in (0.85, 0.8, 0.6, 0.5, 0.3)}
+    ok(f'категории мощности O: {kat}', kat == {0.85: 'znachimyy', 0.8: 'znachimyy', 0.6: 'granica', 0.5: 'granica', 0.3: 'noga'})
+    ok('сдвиг: симметричный ε = 0,01 через r2_loyo.sdvig_ok (MIDAS h=22: 3 тик. 0,0113 — блок, 17 тик. 0,0082 — проходит)',
+       C.SDVIG_EPS == 0.01 and not _ok_midas(3) and _ok_midas(17))
     K = contract_check()
-    ok(f'контракт подключённых модулей (опции шаблона есть в argparse модуля): {K}', all(v == 'OK' or v.endswith('ждёт') for v in K.values()) and K.get('E') == 'OK' and K.get('G') == 'OK')
+    ok(f'контракт подключённых модулей (опции шаблона есть в argparse модуля): {K}',
+       all(v == 'OK' or v.endswith('ждёт') for v in K.values()) and all(K.get(m) == 'OK' for m in ('L', 'L3', 'P', 'M', 'E', 'G')))
     T = pd.DataFrame(rows)
     T.to_csv(SMOKE_DIR / 'smoke_driver.csv', index=False)
     with pd.option_context('display.max_colwidth', 120, 'display.width', 220):
@@ -856,6 +946,14 @@ def cmd_smoke(a):
     log(f'дым r2_driver: {"ВСЕ OK" if T.ok.all() else "ЕСТЬ ОШИБКИ"} за {time.time() - t0:.0f} с (конвейеры {time.time() - t1:.0f} с) '
         f'-> {SMOKE_DIR / "smoke_driver.csv"}')
     return 0 if T.ok.all() else 1
+
+
+def _ok_midas(n):
+    """Корреляции MIDAS_RV h=22 (1e838122…, R2/O/blok_sdvig.csv и дым L 16:54) -> решение r2_loyo.sdvig_ok при K = {0}, ε = 0,01."""
+    import r2_loyo as O
+    c = {3: (0.5790372348271617, 0.5949948789579242, 0.5836911193048814, 0.40939562440936667),
+         17: (0.6933499441472393, 0.7031082384239836, 0.694905312380682, 0.5571923500985687)}[n]
+    return O.sdvig_ok(-1, (0,), corr=dict(zip((-2, -1, 0, 1), c)), eps=C.SDVIG_EPS)[0]
 
 
 def contract_check():

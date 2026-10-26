@@ -94,14 +94,17 @@ E:
 # {designs} {h} {seeds} {steps} {workers} {extra} подставляет драйвер; модуль пишет ряды через r2_core.run_phase (module = ключ ниже)
 modules:
 # yaml — yaml модуля: из него драйвер читает неприменимые факторы (`neprimenimye_faktory`; у P — раздел `applicable`)
-# Модуль без подкоманды run по этому контракту считается неготовым: этап ждёт и пишет причину (на 26.10, 16:50 — L r2_nogi
-# (режим schet --names), L3 r2_calib (dym/kontrol), B r2_roli, BG r2_resid_grid, R r2_refit — ❓ авторам: подкоманда run по контракту).
+# Модуль без подкоманды run по этому контракту считается неготовым: этап ждёт и пишет причину. На 26.10, 17:15: L, L3 (PR #189),
+# P, M, E, G — run есть; B r2_roli, BG r2_resid_grid (PR #185), R r2_refit — файлов нет, ждут.
+# {faza} — фаза run_phase модуля: B (и эконометрика) — SHA плана; C/D/E — ворота предыдущей фазы. P и M без --phase брали бы
+# свой умолчательный C / E и эконометрика ждала бы gate_B / gate_D — поэтому фаза передаётся явно (17:15).
+# После запуска драйвер сверяет DONE_<модуль>_h{h}_s{seed} по дизайнам: P и M выходят с кодом 0 и при ошибках задач.
   L:  {file: r2_nogi.py,         yaml: r2_L_nogi.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --hs {h}"}
-  P:  {file: r2_panel.py,        yaml: r2_P_panel.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
+  P:  {file: r2_panel.py,        yaml: r2_P_panel.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --designs {designs}"}
   R:  {file: r2_refit.py,        yaml: r2_R_refit.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
   B:  {file: r2_roli.py,         yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
   BG: {file: r2_resid_grid.py,   yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
-  M:  {file: r2_mh.py,           yaml: r2_M_mh.yaml,      run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
+  M:  {file: r2_mh.py,           yaml: r2_M_mh.yaml,      run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --designs {designs}"}
   L3: {file: r2_calib.py,        yaml: r2_L_calib.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
   E:  {file: r2_ens.py,          yaml: r2_E_ens.yaml,     run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --faza {faza}", leak: "leak --h {h}"}   # пакет (E, PR #187)
   G:  {file: r2_gate_abstain.py, yaml: r2_G_abstain.yaml, run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --h {h} --designs {designs}"}   # пакет (G, PR #188)
