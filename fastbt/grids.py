@@ -47,9 +47,8 @@ C_RANGE_BANDS = [(0.3, 0.7), (0.25, 0.75), (0.2, 0.8), (0.35, 0.65), (0.15, 0.85
                  (0.4, 0.6), (0.1, 0.9)]
 C_RANGE_BANDS_V41 = C_RANGE_BANDS + [(0.45, 0.55)]
 C_LOOKBACKS = [126, 252, 504]
-# ранг σ в масках C: False — pandas rolling(L).rank(pct) с текущим днём (c22a4b3, ворота);
-# True — доля s[t−L..t−1] строго меньше s_t, без текущего дня (s9_stats.past_rank; аудит FA, Н1)
-C_RANK_PAST = False
+# ранг σ в масках C — всегда доля s[t−L..t−1] строго меньше s_t, без текущего дня
+# (s9_stats.past_rank; аудит FA, Н1; ручки нет — Ъ ~23:20; печати v1 c22a4b3 — docs/otchety/arhiv_do_audita/)
 C_HORIZONS = ["h1", "h5", "h22"]
 C_DIRECTION = ["OFF", "rise", "fall"]
 C_TERM_FILTER = [False, True]
