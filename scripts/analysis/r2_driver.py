@@ -358,16 +358,77 @@ def designs_faktory_E(best, letters, h=None):
 
 
 # ---------------------------------------------------------------- уровень E по блоку владельца 20:10 (E1–E7 поверх финала R1 d0 и ноги)
-def baza_R1(h):
-    """Основа уровня E (владелец 20:10): финал R1 на данных по день d — прогон плана r01 (все факторы на уровне −1, D12) на ВСЕХ строках,
-    LightGBM, 1 seed (финалисты потом — 10 seed, обе библиотеки), и его нога (HAR-J, роль none). -> (финал, нога)."""
+def baza_r01(h):
+    """Прежняя основа (до 21:00): прогон плана r01 (D12) на всех строках, LightGBM, 1 seed — переобучение бустинга в R2. Не равна F_R1_d0
+    (h=22: +35,8% QLIKE; h=5: +4,5%); осталась только как основа E1 (формула M её не читает — хэши E1 прежние)."""
     b = copy.deepcopy(yaml.safe_load((FACTOR_V1 / f'h{h}.yaml').read_text())['dizainy'][0])
     b['design'] = f'E_h{h}_F_R1_d0'
     _set(b, 'boost.lib', CFG['B']['lib'])
     _set(b, 'ens.seeds', 1)
     _set(b, 'boost.early_stop', 'qlike_total')
-    noga = dict(design=f'E_h{h}_F_R1_noga', h=h, leg=copy.deepcopy(b.get('leg') or {'type': 'HARJ'}), features=['G0'])
+    return b
+
+
+R1_SRC = 'R2/cache/VYR/F_d0_h{h}_s{seed}_val.parquet'  # финал R1 на d0 (ВЫР-1); F_d0_s2emb = он же с поправкой s² с эмбарго (L, PR #195)
+
+
+def baza_R1(h):
+    """Основа уровня E — ровно финал R1 на данных по день d с калибровкой (F_d0_s2emb; закон владельца 21:00) и нога HAR-J d0.
+    Основа: нога HAR-J (L) + звено R1 (сырой финал R1 из ВЫР-1, r1_raw) + L3 (поправка s² дизайна: sm, эмбарго) = F_d0_s2emb до 1e-9
+    (osnova_check; иначе E не запускается). Вход inputs.F_R1 — в хэше; бустинг R2 в основе не обучается. -> (основа, нога)."""
+    noga = dict(design=f'E_h{h}_F_R1_noga', h=h, leg={'type': 'HARJ'}, features=['G0'])
+    b = C.with_inputs(dict(noga, design=f'E_h{h}_F_R1_d0'), {'F_R1': {'file': R1_SRC.replace('{h}', str(h))}})
+    b['design'] = f'E_h{h}_F_R1_d0'
     return b, noga
+
+
+def r1_raw(h, seed):
+    """Сырой финал R1 на d0 (до поправки s²) — тем же правилом, что L строит F_d0_s2emb (r2_calib.etalon_emb): h = 1, 5 — F_d0 / Fv шага
+    (vyr/vyr1/factors_f{h}.csv); h = 22 — F_22 = эталон (б): HAR-J d0 ВЫР-1 (har_raw). Только val шагов ≤ 6 (≤ 2021). -> кадр COLS."""
+    key = ['date', 'ticker', 'step']
+    F0 = pd.read_parquet(C.REGEN / R1_SRC.format(h=h, seed=seed))
+    assert F0.step.max() <= 6 and F0.year.max() <= 2021
+    if h == 22:
+        E = pd.read_parquet(C.REGEN / 'vyr' / f'etalon_d0_h{h}_val.parquet')
+        raw = F0[key].merge(E[key + ['har_raw']], on=key, how='left').har_raw.values
+    else:
+        Fa = pd.read_csv(C.REGEN / 'vyr' / 'vyr1' / f'factors_f{h}.csv').drop_duplicates(['h', 'seed', 'step'], keep='last')
+        fv = Fa[(Fa.h == h) & (Fa.seed == seed)].set_index('step').Fv
+        raw = F0.rv_pred.values / F0.step.map(fv).values
+    assert np.isfinite(raw).all() and (raw > 0).all()
+    return F0[['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']].assign(rv_pred=raw)
+
+
+def _fn_R1(design, seed, steps):
+    df = r1_raw(int(design['h']), int(seed))
+    return {'R1': df[df.step.isin(list(steps))].reset_index(drop=True)}
+
+
+def osnova_check(h, root=None):
+    """Закон владельца 21:00: QLIKE основы E (итог L3 дизайна baza_R1, seed 42) = опорной строке F_R1_d0 (F_d0_s2emb, seed 42) по каждой
+    складке 2017–2021, |Δ| < 1e-9; строки те же. Иначе — RuntimeError (E не запускается). -> {год: Δ}."""
+    import ftp_stats as FS
+    import r2_gates as RG
+    import r2_loyo as O
+    b, _ = baza_R1(h)
+    V = final_series(b, h, [42], root)
+    if not V:
+        raise RuntimeError(f'основа E h={h}: нет итогового ряда {b["design"]} ({C.design_hash(b)[:16]}) — E не запускается')
+    x = odin_ryad(V)
+    F = O.series([C.REGEN / RG.GV4['opora']['file'].format(h=h, seed=RG.GV4['opora']['seed'])])
+    if E8_DYM['tickers']:
+        F = F[F.ticker.isin(E8_DYM['tickers'])]
+    out = {}
+    for y in C.DEV_YEARS:
+        a, f = x[(x.year == y) & (x.rv_actual > 1e-12)], F[(F.year == y) & (F.rv_actual > 1e-12)]
+        if len(a) != len(f):
+            raise RuntimeError(f'основа E h={h}, {y}: строк {len(a)} ≠ опора {len(f)} — E не запускается')
+        out[int(y)] = float(np.mean(FS.qloss(a.rv_actual.values, a.rv_pred.values)) - np.mean(FS.qloss(f.rv_actual.values, f.rv_pred.values)))
+    bad = {y: d for y, d in out.items() if not abs(d) < 1e-9}
+    if bad:
+        raise RuntimeError(f'основа E h={h} ≠ F_R1_d0: Δ QLIKE {bad} — E не запускается (закон владельца 21:00)')
+    log(f'основа E h={h} = F_R1_d0: max |Δ QLIKE| по складкам {max(abs(d) for d in out.values()):.2e}')
+    return out
 
 
 def hyb_inputs(h):
@@ -392,7 +453,8 @@ def designs_E_2010(h):
     """Варианты уровня E (владелец 20:10) поверх основы baza_R1: -> [(вариант, исполнитель, дизайн | None, примечание)]."""
     b, noga = baza_R1(h)
     hy = hyb_inputs(h)
-    out = [('E0 финал R1 d0', 'L>B>L3', b, ''), ('E0 нога финала', 'L>L3', noga, '')]
+    out = [('E0 финал R1 d0 (= опора F_R1_d0, закон 21:00)', 'L>R1>L3', b, 'osnova_check: |Δ QLIKE| < 1e-9 по складкам'),
+           ('E0 нога финала', 'L>L3', noga, 'HAR-J d0')]
 
     def v(tag, mod, base, kv, note='', inputs=False, name=None):
         d = copy.deepcopy(base)
@@ -408,28 +470,29 @@ def designs_E_2010(h):
             out.append((tag, mod, None, f'не принят схемой: {str(e).splitlines()[-1].strip()}'))
         return d
 
-    e1 = [v('E1 разложение hyb₁', 'M', b, {'mh.scheme': 'decomp', 'mh.decomp_k': 1}, '(hyb₁ + (h−1)·HAR₂₋h)/h', True, f'E_h{h}_E1_k1')]
+    # E1 — формула M по hyb₁ (hyb₅) и HAR, основу не читает: дизайн на прежней основе r01 (хэш и готовые ряды прежние; сверено с прямым
+    # счётом M на h=22: +0,48% против +0,36%)
+    b_old = baza_r01(h)
+    v('E1 разложение hyb₁', 'M', b_old, {'mh.scheme': 'decomp', 'mh.decomp_k': 1}, '(hyb₁ + (h−1)·HAR₂₋h)/h', True, f'E_h{h}_E1_k1')
     if h == 22:
-        e1.append(v('E1 разложение hyb₅', 'M', b, {'mh.scheme': 'decomp', 'mh.decomp_k': 5}, '(hyb₅ + 17·HAR₆₋₂₂)/22', True, f'E_h{h}_E1_k5'))
-    e2 = v('E2 forward HAR', 'M', b, {'mh.persist': 'OLS'}, 'hyb₁ вместо RV_d' + ('; ❓ M: hyb₅ вместо RV_w — нет в коде' if h == 22 else ''),
-           True, f'E_h{h}_E2')
+        v('E1 разложение hyb₅', 'M', b_old, {'mh.scheme': 'decomp', 'mh.decomp_k': 5}, '(hyb₅ + 17·HAR₆₋₂₂)/22', True, f'E_h{h}_E1_k5')
+    sn = 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает бустинг r01, а не надстраивается над готовым рядом)'
+    out.append(('E2 forward HAR', 'M', None, f'{sn}; E2 — прямым счётом M (r2_mh e_level, PR #215)'))
+    out.append(('E7 прямой + итерированный HAR', 'M', None, f'{sn}; E7 — прямым счётом M (r2_mh e_level, PR #215)'))
     # E3 (E, PR #218): объединение ног L+s² без подбора весов — ens.leg_union (гибрид не используется, основа — нога, роль none -> V0);
     # ноги — ряды L3 дизайнов econ_h{h} (HAR-X — каждый вариант сетки, выбор O)
     v('E3 равные веса ног', 'E', noga, {'ens.leg_union': 'harj_harx'}, '½ HAR-J+s² + ½ HAR-X+s²', name=f'E_h{h}_E3')
     v('E3 по ⅓ с RVI', 'E', noga, {'ens.leg_union': 'harj_harx_rvi'}, '⅓ HAR-J+s² + ⅓ HAR-X+s² + ⅓ RVI-anchor+s²', name=f'E_h{h}_E3rvi')
     v('E4 AveW HAR-X', 'E', dict(noga, leg=dict(type='HARX')), {'ens.window_ens': 'on'}, 'окна: расширяющееся, 5 лет, 3 года',
       name=f'E_h{h}_E4')
-    v('E5 воздержание shock_fresh', 'G', b, {'k16.gate': 'shock_fresh'}, 'k ∈ {3, 5, 10} — вложенно по t; halt — только при сборке (A)',
-      name=f'E_h{h}_E5')
+    v('E5 воздержание shock_fresh', 'G', b, {'k16.gate': 'shock_fresh'},
+      'над F_R1_d0 (L > R1 > G > L3); k ∈ {3, 5, 10} — вложенно по t; halt — только при сборке (A)', name=f'E_h{h}_E5')
     # E6 (P, PR #216) — вторым проходом поверх готовых рядов E1–E4: `r2_driver.py e6` (designs_E6, маршрут [P, L3])
-    v('E7 Хьюбер', 'L', b, {'leg.robust': 'Huber'}, '❓ M: «среднее прямого и итерированного HAR» — нет в коде', name=f'E_h{h}_E7')
     for f in CFG['E'].get('faktory_na_E_20_15', {}).get(h, []):
-        for d in designs_faktory_E(b, [f], h):
-            out.append((f'фактор {f} (ворота B, околопороговый)', ','.join(route(d)[1:-1]) or 'L', d, ''))
-    for kv, mod in (({'leg.struct': 'tau_midas'}, 'M'), ({'leg.struct': 'tau_boost'}, 'M'), ({'leg.struct': 'tau_rvi'}, 'M'),
-                    ({'leg.struct_split': 'bv_plus_jump'}, 'M'), ({'leg.moe': 'k2'}, 'E'), ({'leg.moe': 'k3'}, 'E')):
-        k, x = next(iter(kv.items()))
-        v(f'кл. 11–13 {k}={x}', mod, b, kv, 'в E, если модуль ставит DONE (дым); иначе — «не прошёл дым»', name=f'E_h{h}_{k.split(".")[-1]}_{x}')
+        out.append((f'фактор {f} (ворота B, околопороговый)', 'B', None, f'{sn}; ❓ дирижёру: факторы — свойство бустинга'))
+    for k, x in (('leg.struct', 'tau_midas'), ('leg.struct', 'tau_boost'), ('leg.struct', 'tau_rvi'), ('leg.struct_split', 'bv_plus_jump'),
+                 ('leg.moe', 'k2'), ('leg.moe', 'k3')):
+        out.append((f'кл. 11–13 {k}={x}', 'M' if 'struct' in k else 'E', None, sn))
     return out
 
 
@@ -450,10 +513,18 @@ def cmd_ryady_E(a):
                                                          for t, m, d, n in plan[h]]))
     if a.only_generate:
         return 0
-    res = {}
+    res, osnova = {}, {}
 
     def go(h):
         ds = read_designs(f'E_2010_h{h}')
+        b0 = baza_R1(h)[0]
+        ok0 = runner.chain([b0], h, [42], CFG['steps'], a.workers, 'E')
+        try:  # закон владельца 21:00: основа = F_R1_d0 (|Δ QLIKE| < 1e-9 по складкам), иначе надстройки E не считаются
+            osnova[h] = osnova_check(h)
+        except RuntimeError as e:
+            res[h] = (False, f'{e} (основа: {ok0})')
+            log(f'ряды E h={h}: {e}')
+            return
         res[h] = runner.chain(ds, h, [42], CFG['steps'], a.workers, 'E', partial=True)
     th = [threading.Thread(target=go, args=(h,), name=f'E_h{h}') for h in hs]
     for t in th:
@@ -461,9 +532,11 @@ def cmd_ryady_E(a):
     for t in th:
         t.join()
     L = [f'# Уровень E — варианты блока владельца 20:10 ({time.strftime("%F %T")})', '',
-         'Основа — финал R1 на данных по день d (прогон r01 плана, все строки) и его нога; seed 42; отбор — ворота E (панельная t, LOYO).', '']
+         'Основа — ровно финал R1 на данных по день d с калибровкой (F_d0_s2emb; закон владельца 21:00: L > R1 > L3, сверка с опорной '
+         'строкой |Δ QLIKE| < 1e-9 по складкам) и нога HAR-J d0; seed 42; отбор — ворота E (панельная t, LOYO).', '']
     for h in hs:
-        L += [f'## h = {h}', '', f'- цепочки: {res[h]}', '', '| вариант | исполнитель | дизайн | ряд L3 | примечание |', '|---|---|---|---|---|']
+        L += [f'## h = {h}', '', f'- основа = F_R1_d0, Δ QLIKE по складкам: {osnova.get(h, "НЕ СОВПАЛА — E не считался")}',
+              f'- цепочки: {res[h]}', '', '| вариант | исполнитель | дизайн | ряд L3 | примечание |', '|---|---|---|---|---|']
         for t, m, d, n in plan[h]:
             ok_ = bool(d is not None and final_series(d, h, [42])) if d is not None else False
             L.append(f'| {t} | {m} | {(d or {}).get("design", "—")} | {"есть" if ok_ else "нет"} | '
@@ -472,7 +545,7 @@ def cmd_ryady_E(a):
     REPORT.mkdir(parents=True, exist_ok=True)
     (REPORT / 'E_2010_varianty.md').write_text('\n'.join(L), encoding='utf-8')
     log(f'ряды E: {res} -> {REPORT / "E_2010_varianty.md"}')
-    return 0
+    return 0 if all(h in osnova for h in hs) else 1  # основа не совпала с F_R1_d0 — выход с ошибкой
 
 
 E6_BAZY = ('E1_k1', 'E1_k5', 'E2', 'E3', 'E3rvi', 'E4')  # владелец 20:10: E6 = усадка P поверх каждого из E1–E4
@@ -515,6 +588,11 @@ def cmd_e6(a):
     res, gotovo = {}, {}
 
     def go(h):
+        try:
+            osnova_check(h)  # закон 21:00: основа E = F_R1_d0, иначе E (и E6) не запускается
+        except RuntimeError as e:
+            res[h], gotovo[h] = (False, str(e)), {}
+            return
         ok_ = [(x, d) for x, d in plan[h] if final_series(x, h, [42])]
         gotovo[h] = {x['design']: bool(final_series(x, h, [42])) for x, _ in plan[h]}
         res[h] = runner.chain([d for _, d in ok_], h, [42], CFG['steps'], a.workers, 'E', partial=True) if ok_ else (False, 'нет готовых баз')
@@ -611,6 +689,9 @@ def route(design):
         need.add('E')
     if g('k16.gate') != 'off' or g('k18.lam_to_ref') != 'off' or g('k20.sign_delta') != 'off':  # schema_v2: кластеры 16, 18, 20
         need.add('G')
+    if 'F_R1' in (f.get('inputs') or {}):  # основа E = готовый финал R1 (закон 21:00): звено R1 вместо бустинга R2
+        need -= {'B', 'BG'}
+        need.add('R1')
     return [m for m in CFG['chain_order'] if m in need]
 
 
@@ -641,6 +722,10 @@ class Runner:
     def run(self, m, designs, h, seeds, steps, workers, extra='', tag=''):
         """-> (ok, причина). Дизайны пишутся во временный yaml этапа; модуль сам пропускает готовое (DONE_<модуль>)."""
         dfile = ydump(dict(designs=designs), STATE / ('smoke' if self.smoke else 'run') / f'{tag}_{m}_h{h}.yaml')
+        if m == 'R1':  # звено драйвера: сырой финал R1 (ВЫР-1) в каталог дизайна, run_phase (сдвиг, DONE_R1); L3 калибрует его
+            T = C.run_phase('E', h, designs, _fn_R1, seeds, steps, workers=1, module='R1', check_gate=False)
+            bad = T[T.ryad == 'ОШИБКА'] if len(T) and 'ryad' in T else T.iloc[0:0]
+            return (not len(bad)), (f'R1: ошибок {len(bad)}' if len(bad) else '')
         if not self.smoke and not self.ready(m):
             return False, f'ждёт модуль {m} ({CFG["modules"][m]["file"]})'
         if not self.leak(m, dfile, h):
@@ -1392,6 +1477,7 @@ def cmd_e8(a):
         if not gf.exists() and not a.dym:
             log(f'E8 h={h}: нет {gf} — E8 ждёт ворот E')
             continue
+        osnova_check(h)  # закон 21:00: основа E = F_R1_d0 (|Δ QLIKE| < 1e-9 по складкам), иначе RuntimeError — E8 не считается
         src = e8_istochnik(h, gf if gf.exists() else None, a.unit)
         u8, R8, S8, sig8, d8, info = e8_h(h, src, A)
         units = dict(src['finalisty'])
@@ -1568,14 +1654,21 @@ def pipeline(h, runner, smoke=False, once=False):
         Ef = designs_faktory_E(best, fE, h)
         st['faktory_na_E'] = dict(faktory=fE, variantov=len(Ef))
         Ed = Ed + [d for d in Ef if d['design'] not in {x['design'] for x in Ed}]
+    osn = None
+    if E2010:  # закон владельца 21:00: основа E = F_R1_d0 до 1e-9 по складкам, иначе E не запускается (RuntimeError -> состояние h)
+        b0 = baza_R1(h)[0]
+        stage('E_osnova', lambda: chain([b0], h, [42], steps, W, 'E'))
+        st['osnova_E'] = osnova_check(h, root)
+        osn = b0['design']
     Ed = Ed + [d for d in E2010 if d['design'] not in {x['design'] for x in Ed}]
     ok, why = stage('E_schet', lambda: chain(Ed, h, [42], steps, W, 'E', partial=True))  # надстройки независимы (OFAT)
     if not ok:
         st['E_schet_oshibki'] = why  # упавшие надстройки — без ряда, в ворота E не попадут (ocenka_units пропускает)
         log(f'конвейер h={h}: E — часть надстроек без ряда: {why[:300]}')
     v0 = {u: gC['dizainy'][u] for u in gC.get('v0_finalisty', [])}
-    v0 |= {d['design']: d for d in E2010 if str(C.get(C.validate(d), 'boost.role')) == 'none'}  # нога финала R1 и E4 — V0
-    units = {d['design']: d for d in Ed} | ({gD['luchshiy']: best} if best is not None else {}) | v0
+    # нога финала R1, E3, E4 — V0; надстройки над F_R1 (звено R1: E5 и т. п.) — не V0; сама основа = опорная строка (не кандидат)
+    v0 |= {d['design']: d for d in E2010 if str(C.get(C.validate(d), 'boost.role')) == 'none' and 'R1' not in route(d)}
+    units = {d['design']: d for d in Ed if d['design'] != osn} | ({gD['luchshiy']: best} if best is not None else {}) | v0
     T1 = None
     if not smoke:  # финалисты: 10 seed, LightGBM + XGBoost — после выбора по 1 seed; ворота E — на 10 seed
         import r2_gates as RG

@@ -3,14 +3,14 @@ h: 22
 osnova: финал R1 d0 (r01, все строки) и нога
 blok: владелец 20:10
 varianty:
-- variant: E0 финал R1 d0
-  modul: L>B>L3
+- variant: E0 финал R1 d0 (= опора F_R1_d0, закон 21:00)
+  modul: L>R1>L3
   design: E_h22_F_R1_d0
-  primechanie: ''
+  primechanie: 'osnova_check: |Δ QLIKE| < 1e-9 по складкам'
 - variant: E0 нога финала
   modul: L>L3
   design: E_h22_F_R1_noga
-  primechanie: ''
+  primechanie: HAR-J d0
 - variant: E1 разложение hyb₁
   modul: M
   design: E_h22_E1_k1
@@ -21,8 +21,16 @@ varianty:
   primechanie: (hyb₅ + 17·HAR₆₋₂₂)/22
 - variant: E2 forward HAR
   modul: M
-  design: E_h22_E2
-  primechanie: 'hyb₁ вместо RV_d; ❓ M: hyb₅ вместо RV_w — нет в коде'
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом); E2 — прямым счётом M (r2_mh
+    e_level, PR #215)'
+- variant: E7 прямой + итерированный HAR
+  modul: M
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом); E7 — прямым счётом M (r2_mh
+    e_level, PR #215)'
 - variant: E3 равные веса ног
   modul: E
   design: E_h22_E3
@@ -38,63 +46,212 @@ varianty:
 - variant: E5 воздержание shock_fresh
   modul: G
   design: E_h22_E5
-  primechanie: k ∈ {3, 5, 10} — вложенно по t; halt — только при сборке (A)
-- variant: E7 Хьюбер
-  modul: L
-  design: E_h22_E7
-  primechanie: '❓ M: «среднее прямого и итерированного HAR» — нет в коде'
+  primechanie: над F_R1_d0 (L > R1 > G > L3); k ∈ {3, 5, 10} — вложенно по t; halt
+    — только при сборке (A)
 - variant: фактор M (ворота B, околопороговый)
-  modul: B,M
-  design: E_E_h22_F_R1_d0_faktorM
-  primechanie: ''
+  modul: B
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом); ❓ дирижёру: факторы — свойство
+    бустинга'
 - variant: фактор L (ворота B, околопороговый)
   modul: B
-  design: E_E_h22_F_R1_d0_faktorL
-  primechanie: ''
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом); ❓ дирижёру: факторы — свойство
+    бустинга'
 - variant: фактор K (ворота B, околопороговый)
   modul: B
-  design: E_E_h22_F_R1_d0_faktorK
-  primechanie: ''
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом); ❓ дирижёру: факторы — свойство
+    бустинга'
 - variant: кл. 11–13 leg.struct=tau_midas
   modul: M
-  design: E_h22_struct_tau_midas
-  primechanie: в E, если модуль ставит DONE (дым); иначе — «не прошёл дым»
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом)'
 - variant: кл. 11–13 leg.struct=tau_boost
   modul: M
-  design: E_h22_struct_tau_boost
-  primechanie: в E, если модуль ставит DONE (дым); иначе — «не прошёл дым»
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом)'
 - variant: кл. 11–13 leg.struct=tau_rvi
   modul: M
-  design: E_h22_struct_tau_rvi
-  primechanie: в E, если модуль ставит DONE (дым); иначе — «не прошёл дым»
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом)'
 - variant: кл. 11–13 leg.struct_split=bv_plus_jump
   modul: M
-  design: E_h22_struct_split_bv_plus_jump
-  primechanie: в E, если модуль ставит DONE (дым); иначе — «не прошёл дым»
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом)'
 - variant: кл. 11–13 leg.moe=k2
   modul: E
-  design: E_h22_moe_k2
-  primechanie: в E, если модуль ставит DONE (дым); иначе — «не прошёл дым»
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом)'
 - variant: кл. 11–13 leg.moe=k3
   modul: E
-  design: E_h22_moe_k3
-  primechanie: в E, если модуль ставит DONE (дым); иначе — «не прошёл дым»
-n: 19
+  design: null
+  primechanie: 'снято (владелец 21:00: основа E — ровно F_R1_d0; вариант переобучает
+    бустинг r01, а не надстраивается над готовым рядом)'
+n: 8
 designs:
 - design: E_h22_F_R1_d0
   h: 22
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
   leg:
     type: HARJ
+    regressors: none
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
   boost:
-    role: residual
+    role: none
+    resid_source: in_sample
     lib: lightgbm
     grid: current
-    early_stop: qlike_total
+    early_stop: native
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 1
+    grid_point: none
   features:
   - G0
-  - G1
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: false
   ens:
     seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+    leg_union: false
+    leg_w: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ref: etalon
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    F_R1:
+      file: R2/cache/VYR/F_d0_h22_s{seed}_val.parquet
 - design: E_h22_F_R1_noga
   h: 22
   leg:
@@ -423,167 +580,6 @@ designs:
       col: har_corr
     base_5:
       file: R2/cache/VYR/F_d0_s2emb_h5_s{seed}_val.parquet
-- design: E_h22_E2
-  h: 22
-  seed: 42
-  data:
-    info_set: d
-    embargo: h
-    train_halt: keep
-    target: ln_mean
-    recency_halflife: inf
-    history_start: 2014
-    winsor: none
-    train_target_estimator: RV10
-    window: expanding
-  leg:
-    type: HARJ
-    regressors: none
-    enet:
-      lambda:
-      - 0.01
-      - 0.1
-      - 1
-      alpha:
-      - 0
-      - 0.5
-      - 1
-    pooled_kappa: 1
-    regime_count: 2
-    robust: OLS
-    struct: single
-    struct_split: rv_whole
-    tau_window: 22
-    tau_extend: const
-    moe: false
-    moe_gate: logit
-    moe_calib: none
-    moe_hard: false
-    panel: false
-    panel_beta_window: 252
-    panel_market: RV_IMOEX
-    refit: yearly
-    rls_lambda: 1
-    estimator: log_ols_calib
-  boost:
-    role: residual
-    resid_source: in_sample
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-    monotone: false
-    objective: l2_log
-    clip_sigma: false
-    shrink: 1
-    linear_tree: false
-    prob: false
-    prob_dist: empirical
-    prob_window: all
-    boost_refit: yearly
-    row_frac: 1
-    grid_point: none
-  features:
-  - G0
-  - G1
-  calib:
-    s2_est: sm
-    kappa: 0.5
-    s2_state: const
-    c_qlike: false
-    mz: false
-    update: step
-    order: s2_state_kappa>c_qlike>mz
-    s2_embargo: true
-  mh:
-    scheme: direct
-    decomp_k: null
-    iterated_k: null
-    persist: OLS
-    slope: false
-    reconcile: false
-  ens:
-    seeds: 1
-    agg: mean
-    lib_agg: best_by_LOYO
-    leg_ens: single
-    window_ens: false
-    ticker_bag: false
-    stack: false
-    uncert_shrink: false
-    ec: false
-    range_guard: false
-    leg_union: false
-    leg_w: false
-  selection:
-    loyo_folds:
-    - 2017
-    - 2018
-    - 2019
-    - 2020
-    - 2021
-    entry:
-      wins_min: 3
-      etalon: HARJ_s2_d0_sm
-      c3_all_folds: true
-      c124: as_R1
-    sigma:
-      mult: 2
-      seeds: 10
-      rule: D24_3
-      paired_with: F_h_d0
-      'True': finalists
-    complexity_penalty:
-      rank_delta: 1
-      qlike_rel: 0.01
-  guards:
-    info_set_shift_check: true
-    leak_detector: true
-    read_after_2021: forbidden
-  k16:
-    gate: false
-    tau:
-    - 0.25
-    - 0.5
-    - 1
-    - 2
-    - 4
-    k:
-    - 3
-    - 5
-    - 10
-    q:
-    - 0.9
-    - 0.95
-    - 0.99
-    measure: uroven
-    regime_calib: none
-  k18:
-    lam_to_ref: false
-    lam:
-    - 0.25
-    - 0.5
-    - 0.75
-    - 1
-    ref: etalon
-    ticker_choice: false
-  k20:
-    sign_delta: false
-    delta:
-    - 0.1
-    - 0.2
-    - 0.3
-    base: noga
-    reweight_abs_d: false
-  schema: v2
-  inputs:
-    base_1:
-      file: R2/cache/VYR/F_d0_s2emb_h1_s{seed}_val.parquet
-    leg_1:
-      ryad: HAR-J+s² d0 = E_1 (нога₁)
-      file: vyr/etalon_d0_h1_val.parquet
-      col: har_corr
-    base_5:
-      file: R2/cache/VYR/F_d0_s2emb_h5_s{seed}_val.parquet
 - design: E_h22_E3
   h: 22
   leg:
@@ -610,37 +606,6 @@ designs:
     window_ens: 'on'
 - design: E_h22_E5
   h: 22
-  leg:
-    type: HARJ
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  ens:
-    seeds: 1
-  k16:
-    gate: shock_fresh
-- design: E_h22_E7
-  h: 22
-  leg:
-    type: HARJ
-    robust: Huber
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  ens:
-    seeds: 1
-- design: E_E_h22_F_R1_d0_faktorM
-  h: 22
   seed: 42
   data:
     info_set: d
@@ -682,11 +647,11 @@ designs:
     rls_lambda: 1
     estimator: log_ols_calib
   boost:
-    role: residual
+    role: none
     resid_source: in_sample
     lib: lightgbm
     grid: current
-    early_stop: qlike_total
+    early_stop: native
     monotone: false
     objective: l2_log
     clip_sigma: false
@@ -700,7 +665,6 @@ designs:
     grid_point: none
   features:
   - G0
-  - G1
   calib:
     s2_est: sm
     kappa: 0.5
@@ -714,7 +678,7 @@ designs:
     scheme: direct
     decomp_k: null
     iterated_k: null
-    persist: qlike
+    persist: false
     slope: false
     reconcile: false
   ens:
@@ -756,7 +720,7 @@ designs:
     leak_detector: true
     read_after_2021: forbidden
   k16:
-    gate: false
+    gate: shock_fresh
     tau:
     - 0.25
     - 0.5
@@ -792,139 +756,12 @@ designs:
     reweight_abs_d: false
   schema: v2
   inputs:
-    base_1:
-      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
-      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
-    leg_1:
-      ryad: HAR-J+s² d0 = E_1 (нога₁)
-      file: vyr/etalon_d0_h1_val.parquet
-      col: har_corr
-- design: E_E_h22_F_R1_d0_faktorL
-  h: 22
-  leg:
-    type: HARJ
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  - G8
-  - G9
-  ens:
-    seeds: 1
-- design: E_E_h22_F_R1_d0_faktorK
-  h: 22
-  leg:
-    type: HARJ
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  - G5
-  - G6
-  ens:
-    seeds: 1
-- design: E_h22_struct_tau_midas
-  h: 22
-  leg:
-    type: HARJ
-    struct: tau_midas
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  ens:
-    seeds: 1
-- design: E_h22_struct_tau_boost
-  h: 22
-  leg:
-    type: HARJ
-    struct: tau_boost
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  ens:
-    seeds: 1
-- design: E_h22_struct_tau_rvi
-  h: 22
-  leg:
-    type: HARJ
-    struct: tau_rvi
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  ens:
-    seeds: 1
-- design: E_h22_struct_split_bv_plus_jump
-  h: 22
-  leg:
-    type: HARJ
-    struct_split: bv_plus_jump
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  ens:
-    seeds: 1
-- design: E_h22_moe_k2
-  h: 22
-  leg:
-    type: HARJ
-    moe: k2
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  ens:
-    seeds: 1
-- design: E_h22_moe_k3
-  h: 22
-  leg:
-    type: HARJ
-    moe: k3
-  boost:
-    role: residual
-    lib: lightgbm
-    grid: current
-    early_stop: qlike_total
-  features:
-  - G0
-  - G1
-  ens:
-    seeds: 1
+    F_R1:
+      file: R2/cache/VYR/F_d0_h22_s{seed}_val.parquet
 index:
 - design: E_h22_F_R1_d0
-  design_sha: 3a06e9bc25e30517cd37e312a61ed9e524507949782fa0fdce4df2cc110bb53a
-  slozhnost: 3
+  design_sha: 2678749c57534acff6300885edd52d8d8c931228481d5caff6234c5561acfed9
+  slozhnost: 0
 - design: E_h22_F_R1_noga
   design_sha: 302a3f1a11c1aeac896f8365ac5a4f55893aaf3cec4af39d9b241787b2737564
   slozhnost: 0
@@ -934,9 +771,6 @@ index:
 - design: E_h22_E1_k5
   design_sha: db9ad5f351a87d40ffa760c2f5ac0a3fb68260ccd915f1681256685904613189
   slozhnost: 5
-- design: E_h22_E2
-  design_sha: 51ab944516ea6a4a8946b45e85dbfa747d489779edede23304e6064c231fdc45
-  slozhnost: 4
 - design: E_h22_E3
   design_sha: 4a8be37e4aaffd7bf2020a442eaae82b7de7884aec55b058964dbfcb1b0877bd
   slozhnost: 1
@@ -947,35 +781,5 @@ index:
   design_sha: 61257af2e1052f5db22a8e6aea83e6132cdb4bb9a25e2f0caece5270c7c39e01
   slozhnost: 2
 - design: E_h22_E5
-  design_sha: e88ba2622740a1a63b1e89f9739ba61c5c3ba31ffef7d05d25b57de22c4b4d1b
-  slozhnost: 4
-- design: E_h22_E7
-  design_sha: cda8fdc55fac8e11434e71c2f5250563dcc0c949a8538f3732879538aae52e3f
-  slozhnost: 4
-- design: E_E_h22_F_R1_d0_faktorM
-  design_sha: f25ce865f8fdbce84ae27488324b67e09269305b4098face8672ae3629f0d703
-  slozhnost: 4
-- design: E_E_h22_F_R1_d0_faktorL
-  design_sha: 570913159c818cbf65f71341eb3ea8614e9360cfc4cdc62f06d6839cfed33f25
-  slozhnost: 5
-- design: E_E_h22_F_R1_d0_faktorK
-  design_sha: 314091e94072d8a7060b325c2029e22e3ee93ff44239be3b3a1a695682025ac2
-  slozhnost: 5
-- design: E_h22_struct_tau_midas
-  design_sha: 023dbba8f1a310f02d72c3836f0cc700e86ace6785b0519dca8a193fc7baca28
-  slozhnost: 4
-- design: E_h22_struct_tau_boost
-  design_sha: f639053dc85999a7c944d25c834a986ca3551476f40181b609b7ff219f61c814
-  slozhnost: 4
-- design: E_h22_struct_tau_rvi
-  design_sha: 023f22f6517458786f0dea794f17b771f06878f369d25cd925c2bfc69bfe4898
-  slozhnost: 4
-- design: E_h22_struct_split_bv_plus_jump
-  design_sha: a2d96b85c9590f5d8aab17be601d6ce28227f771a51ce8a9019d7c085503e091
-  slozhnost: 4
-- design: E_h22_moe_k2
-  design_sha: 0dd75ac014d67223391867c391dff49dd7360e0cfd0acbaa06f52abfdeb4fb41
-  slozhnost: 4
-- design: E_h22_moe_k3
-  design_sha: c480c4c9e677404ca9e1c80333307062c670b1e87d03d8ae2a763f659ca2b275
-  slozhnost: 4
+  design_sha: 08744c0c4d9a9da62f53fa74a964b02e1054300fcab02794812617d22a633c19
+  slozhnost: 1

@@ -124,4 +124,6 @@ modules:
   L3: {file: r2_calib.py,        yaml: r2_L_calib.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
   E:  {file: r2_ens.py,          yaml: r2_E_ens.yaml,     run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --faza {faza}", leak: "leak --h {h}"}   # пакет (E, PR #187)
   G:  {file: r2_gate_abstain.py, yaml: r2_G_abstain.yaml, run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --h {h} --designs {designs}"}   # пакет (G, PR #188)
-chain_order: [L, P, R, B, BG, M, E, G, L3]   # цепочка модулей дизайна; итог — ряды L3 (дирижёр 19:10: L3 всегда, последним; калибровка s² дизайна)
+chain_order: [L, R1, P, R, B, BG, M, E, G, L3]   # цепочка модулей дизайна; итог — ряды L3 (дирижёр 19:10: L3 всегда, последним; калибровка s² дизайна)
+# R1 — звено драйвера (не модуль): сырой финал R1 на d0 из ВЫР-1 (R2/cache/VYR/F_d0_h{h}), у дизайнов с inputs.F_R1 — основа уровня E
+# (закон владельца 21:00: основа E — ровно F_d0_s2emb; L3 даёт его до 1e-9, r2_driver.osnova_check); бустинг R2 в такой цепочке не обучается
