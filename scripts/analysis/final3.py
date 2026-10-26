@@ -72,6 +72,10 @@ R2 = [
          seen={'seeds3|V0_XGB|B-smrob|L0': 'не прошёл', 'single|minimax|B-smrob|L0.25|log': 'не прошёл', 'single|step|B-smrob|L0.5': 'не прошёл'}),
 ]
 HARJ_HOST = {1: 'D12_h1_A_d812', 5: 'D12_h5', 22: 'D12_h22'}  # HAR-J с поправкой берётся из гибрида этого кандидата (HAR-J общий)
+NOTES = {  # пометки, принятые до открытия (план, ночное умолчание 03:06); попадают в рейтинг, пометку финалиста и черновик FINAL
+    'D16_5_h22': 'по 10 seed (Д24.3) выигрыш у D15_h22 не подтверждён: −1,85%, t = −1,94 при пороге −2',
+}
+D16_5_SLOT = 'LGBM-слот — D16_5_h22; по 10 seed (Д24.3) гибрид не пересчитывался'
 R3_PREFIX = ('D14', 'D16', 'D17', 'D18', 'D19', 'D2', 'HARX')  # решение 01:35: + Д18-Д22; Д23-Д24 (в т. ч. Д24.6) — префикс D2
 F = lambda x, n=4: '—' if x is None or (isinstance(x, float) and not np.isfinite(x)) else f'{x:.{n}f}'.replace('.', ',')
 P = lambda x: '—' if x is None or not np.isfinite(x) else f'{100 * x:+.1f}%'.replace('.', ',')
@@ -169,8 +173,12 @@ def has_s10(c):
                (c['step10_lock'] / f"{c['gboost']}_{m}_h{c['h']}_s10_test.parquet").exists() for m in ('xgb', 'lgbm'))
 
 
+WARN = []
+
+
 def pool(a):
     O = out_dir(a)
+    WARN.clear()
     C = []
     for r in R2:
         c = dict(r, krug=2, gboost=r['boost'], regen=R, legs=LEGS2, odin=False, test_dir=R / 'test_locked' / r['boost'],
@@ -212,6 +220,18 @@ def pool(a):
                 legs = [lg for lg in LEGS2 if all((regen / f'{b}_{m}_h{h}{SFX[lg]}_val.parquet').exists() for m in ('xgb', 'lgbm'))] \
                     if not odin else (['single'] if (regen / f'{b}_h{h}_val.parquet').exists() else [])
             osn = osnova_of(b, y)
+            for k in ('semeystvo', 'opisanie', 'test_dir', 'rychag'):
+                if not y.get(k):
+                    WARN.append(f'{y["_file"].name}: нет ключа {k}')
+            if not regen.exists():
+                WARN.append(f'{y["_file"].name}: каталог regen не найден: {regen}')
+            for k in ('step10_dir', 'step10_lock'):
+                if y.get(k) and not rpath(y.get(k), R).exists():
+                    WARN.append(f'{y["_file"].name}: {k} не найден: {y.get(k)}')
+            unknown = set(y) - {'boost', 'h', 'semeystvo', 'rychag', 'opisanie', 'regen', 'legs', 'odinochnaya', 'chistyy', 'osnova', 'test_dir',
+                                'step10_dir', 'step10_lock', 'wrap_dir', 'features_har', 'n_variantov', 'harx', 'trees', 'god2021', 'kod', '_file'}
+            if unknown:
+                WARN.append(f'{y["_file"].name}: незнакомые ключи (не используются): {", ".join(sorted(map(str, unknown)))}')
             c = dict(boost=b, gboost=b, h=h, krug=3, fam=str(y.get('semeystvo') or y.get('rychag') or b), chistyy=bool(y.get('chistyy', False)),
                      opisanie=str(y.get('opisanie', '')), rychag=str(y.get('rychag', '')), regen=regen, legs=legs, odin=odin,
                      test_dir=rpath(y.get('test_dir'), R / 'test_locked' / b), step10_dir=rpath(y.get('step10_dir'), R / 'final3' / 'step10'),
@@ -226,6 +246,17 @@ def pool(a):
             C.append(dict(boost=b, gboost=b, h=h, krug=3, fam='—', regen=fv['regen'], legs=sorted(fv['legs'], key=LEGS2.index), odin=fv['odin'],
                           yaml='—', dopusk=False, prichina='одиночная модель — не V0-кандидат (решение 01:12)' if fv['odin'] else 'нет yaml', seen={},
                           osnova=osnova_of(b, {})))
+    # пометки (ночное умолчание 03:06): D16_5_h22 по 10 seed не подтверждён; гибриды с D16_5 в LGBM-слоте по 10 seed не пересчитывались
+    for c in C:
+        nt = [NOTES[c['boost']]] if c['boost'] in NOTES else []
+        if c.get('krug') == 3 and c['boost'] != 'D16_5_h22' and c.get('yaml', '—') != '—' and c.get('h') == 22:
+            try:
+                txt = Path(c['yaml']).read_text()
+            except Exception:
+                txt = ''
+            if 'D16_5' in txt or 'Д16.5' in txt:
+                nt.append(D16_5_SLOT)
+        c['pometka'] = '; '.join(nt)
     # допуск в пул и «видел подтверждающий»
     r2 = {c['boost']: c for c in C if c.get('krug') == 2}
     for c in C:
@@ -235,6 +266,14 @@ def pool(a):
         if 'test_dir' in c and c['dopusk']:
             c['test'] = has_test(c)
             c['s10'] = has_s10(c)
+            if c.get('krug') == 3:
+                miss = [lg for lg in (c['legs'] or []) if not all((c['regen'] / f"{c['gboost']}_{m}_h{c['h']}{SFX[lg]}_val.parquet").exists() for m in ('xgb', 'lgbm'))]
+                if miss:
+                    WARN.append(f"{c['boost']} h={c['h']}: нет val-файлов ног {miss}")
+                if not c['test']:
+                    WARN.append(f"{c['boost']} h={c['h']}: нет тестовых прогнозов шагов 1-9 в {c['test_dir']} — финалистом быть не может")
+                if not c['s10']:
+                    WARN.append(f"{c['boost']} h={c['h']}: нет файлов шага 10 — финал собирался бы только по шагам 1-9 (↺)")
         st = sorted(set(c.get('seen', {}).values()))
         if st:
             c['videl'] = 'не прошёл' if any(s.startswith('не прошёл') for s in st) else 'прошёл'
@@ -243,8 +282,9 @@ def pool(a):
             c['videl'] = ('не прошёл' if any(v.startswith('не') for v in ob['seen'].values()) else 'прошёл') + f' (основа {c["osnova"]})'
         else:
             c['videl'] = 'нет'
-    pd.DataFrame([{k: (str(v) if isinstance(v, (Path, dict, list, set)) else v) for k, v in c.items()} for c in C]).to_csv(O / 'pool.csv', index=False) \
-        if O.mkdir(parents=True, exist_ok=True) is None else None
+    O.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame([{k: (str(v) if isinstance(v, (Path, dict, list, set)) else v) for k, v in c.items()} for c in C]).to_csv(O / 'pool.csv', index=False)
+    (O / 'warnings.txt').write_text('\n'.join(dict.fromkeys(WARN)) + '\n')
     return C
 
 
@@ -289,7 +329,9 @@ def gibrid(a, C):
     for c in C:
         if c['krug'] == 3 and c['dopusk']:
             dv = c['gib_dir'] / f"designs_val_{c['gboost']}_h{c['h']}.csv"
-            if dv.exists() and not a.force:
+            vf = [c['regen'] / f"{c['gboost']}_{m}_h{c['h']}{SFX[lg]}_val.parquet" for m in ('xgb', 'lgbm') for lg in c['legs']]
+            newest = max([f.stat().st_mtime for f in vf if f.exists()] + [Path(c['yaml']).stat().st_mtime if Path(c['yaml']).exists() else 0])
+            if dv.exists() and not a.force and dv.stat().st_mtime > newest:
                 continue
             jobs.append((gibrid_cmd(c, c['gib_dir'], O / f"gibrid_devlog_{c['gboost']}_h{c['h']}.md"), env_of(c), O / 'logs' / f"gibrid_{c['gboost']}_h{c['h']}.log"))
     print(f'гибрид третьего круга: {len(jobs)} кандидатов', flush=True)
@@ -309,7 +351,7 @@ def designs(c):
     if c.get('harj'):
         D = D[D.design.str.match(r'^single\|V0_HAR\|B-[a-z]+\|L0$')]
     else:
-        D = D[~D.design.str.contains(r'\|V0_HAR\|')]
+        D = D[~D.design.str.contains(r'\|V0_(?:HAR|HCJ)\|')]  # HAR-J и HAR-CJ — общие эконометрические модели, не вклад кандидата
     return D[D.step.isin(CRIT)]
 
 
@@ -383,7 +425,7 @@ def select(a, C):
             seen = c.get('seen', {})
             rows.append(dict(h=h, cand=c['boost'], gboost=c['gboost'], krug=c['krug'], fam=c['fam'], chistyy=c.get('chistyy', False),
                              design=b.design, **{k: b[k] for k in S.columns if k != 'design'}, videl=c['videl'],
-                             videl_design=seen.get(b.design, ''), test=c.get('test', False), s10=c.get('s10', False)))
+                             videl_design=seen.get(b.design, ''), test=c.get('test', False), s10=c.get('s10', False), pometka=c.get('pometka', '')))
         if not rows:
             continue
         E = order(pd.DataFrame(rows), h)
@@ -421,6 +463,8 @@ def select(a, C):
             if r.videl.startswith('прошёл'):
                 E.loc[i, 'fin_note'] = (E.loc[i, 'fin_note'] + '; ' if E.loc[i, 'fin_note'] else '') + \
                     'уже прошёл подтверждающий во втором круге — повторная проверка неинформативна' + ('' if r.videl_design else ' (во втором круге проверялся другой дизайн кандидата)')
+        for i in E.index[(E.finalist > 0) & (E.pometka.fillna('') != '')]:
+            E.loc[i, 'fin_note'] = (E.loc[i, 'fin_note'] + '; ' if E.loc[i, 'fin_note'] else '') + E.loc[i, 'pometka']
         E['rank'] = range(1, len(E) + 1)
         E.to_csv(O / f'ranking_h{h}.csv', index=False)
         allE.append(E)
@@ -432,7 +476,8 @@ def select(a, C):
                '|' + '---|' * 13]
         for r in E.itertuples():
             md.append(f'| {r.rank} | {r.cand} | {r.krug} | {r.fam} | {r.design.replace("|", "/")} | {r.failed or "—"} | {F(r.mean_1720)} | {F(r.q2021)} | '
-                      f'{F(r.mean_1721)} | {F(r.har_1720)} | {r.videl} | {r.ne_dopushchen or "—"} | {r.finalist or "—"}{" (" + r.fin_note + ")" if r.fin_note else ""} |')
+                      f'{F(r.mean_1721)} | {F(r.har_1720)} | {r.videl} | {r.ne_dopushchen or "—"}{" [" + r.pometka + "]" if isinstance(r.pometka, str) and r.pometka else ""} | '
+                      f'{r.finalist or "—"}{" (" + r.fin_note + ")" if r.fin_note else ""} |')
     A = pd.concat(allE, ignore_index=True)
     FN = pd.concat(FIN, ignore_index=True)
     FN.to_csv(O / 'finalists.csv', index=False)
@@ -870,14 +915,21 @@ def report(a, C):
           f'**итого {R2_TOTAL[0] + n3} дизайн×h и {R2_TOTAL[1] + nv} вариантов бустинга.**']
     L += [f'  - `{k}`: {v}' for k, v in sorted(per.items())]
     L += ['- **Подтверждающий набор использовался трижды, не более трёх кандидатов на горизонт за раз.** Все случаи просмотра:',
-          f'  - **Итого: {3 if lk else 2} открытия подтверждающего набора и 5 случайных (частичных) просмотров** — круг 1: 1 открытие + 5 частичных просмотров; '
-          f'круг 2: 1 открытие; круг 3: {"1 открытие" if lk else "не открывался"}.',
+          f'  - **Итого: {3 if lk else 2} открытия подтверждающего набора и 6 случайных просмотров** — круг 1: 1 открытие + 5 частичных просмотров; '
+          f'круг 2: 1 открытие; круг 3: {"1 открытие" if lk else "открытия ещё не было"} + 1 случайный просмотр (Д24.2).',
           '  1. Первый круг (25.10, 19:55): одно открытие — 30 проверенных дизайнов (финалисты и следующие по рейтингу на h=22); до него 5 случаев частичного '
           'просмотра (таблица — `2026-10-25_final_assembly.md`).',
           '  2. Второй круг (26.10, 00:27): одно открытие, 3 финалиста на h (9 дизайнов), список зафиксирован до открытия (`dev_log.md` № 48).',
           f'  3. Третий круг ({lk.get("time", "не открывался")}): одно открытие, {len(FN)} финалистов (≤ 3 на h), список в `dev_log.md` ({lg.get("time", "—")}) до открытия.',
+          '  4. Случайный просмотр круга 3 (шестой случайный): Д24.2 (агент Д24a), отвергнутый дизайн, 26.10 02:27 — в `D24_2_selected.csv` попал val-QLIKE '
+          'шагов 7–9; значения стёрты, код исправлен; на отбор не влиял (дизайн отвергнут по разработочному набору, в пул не подавался).',
+          '  - Отчёты круга 3 (`docs/otchety/2026-10-26_*.md`, `dev_log_d24.md`) перепроверены сборкой на признания такого рода: других случаев не найдено '
+          '(шаги 7–9 у агентов — точка шага 6 без оценки).',
           '  - Проверка сборки: во всех designs_val кандидатов пула метрики шагов 7–9 пусты (assert в final3.py); правило читает только шаги 2–6.',
           '- Цели (21:40) и правило третьего круга (00:55) объявлены по ходу разработки; уточнение дирижёра о видевших подтверждающий — до открытия.']
+    L += ['', '### Пометки к кандидатам (ночное умолчание 03:06, до открытия)', '']
+    pm = [(c['boost'], c['h'], c['pometka']) for c in C if c.get('pometka')]
+    L += [f'- {b} (h={h}): {t}.' for b, h, t in pm] or ['- нет']
     # 8. отброшенное
     L += ['', '## 8. Отброшено (разработочный набор, OOS)', '', '| h | кандидат | круг | лучший дизайн | нарушено | 2017–2020 | 2021 | причина |', '|---|---|---|---|---|---|---|---|']
     fin_set = set(zip(FC.h, FC.cand))
@@ -895,7 +947,8 @@ def report(a, C):
     dev = ['Рейтинг третьего круга — по 2017–2020, критерии — по 2017–2021 (OOS): val 2016 в метрику не входит (шаг 1 даёт s² для шага 2).',
            'Кандидаты второго круга не пересчитывались: их designs_val (final2/gibrid) переранжированы по правилу третьего круга; у D12_h22 лучший дизайн мог смениться.',
            'HAR-X без бустинга (Д16.4) в пул не входит: решение владельца 01:12 (HAR-X — только нога гибрида) отменяет «Д16.4 — кандидат» из блока 00:55.',
-           'HAR-J с поправкой исключён из финалистов по правилу дирижёра (не прошёл подтверждающий в первом круге на v2), но остаётся фолбэком h=22.']
+           'HAR-J с поправкой исключён из финалистов по правилу дирижёра (не прошёл подтверждающий в первом круге на v2), но остаётся фолбэком h=22.',
+           'V0_HCJ (HAR-CJ) исключён из пространства дизайнов кандидата, как V0_HAR: это общая эконометрическая модель, одинаковая у всех кандидатов, а не их вклад (исправление найдено сухой проверкой 03:14, до открытия: на h=22 четыре кандидата были представлены HAR-CJ).']
     if B is not None and (~B.step10.astype(bool)).any():
         dev.append('Шаг 10 не собран для: ' + ', '.join(f'h={r.h} {r.cand}' for r in B[~B.step10.astype(bool)].itertuples()) + ' (нет файлов шага 10 или дизайн не V0/L0).')
     if (FN.fin_note.fillna('').str.contains('добор')).any():
