@@ -49,9 +49,13 @@ def core_fn(design, seed, steps):
     h = int(d['h'])
     out = {}
     for pt in S.get('B_grid_points', range(1, 62)):
-        ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=S['leg_provider'](d, h), _lhs_point=int(pt))
+        leg = S['leg_provider'](d, h)
+        leg = leg['base'] if isinstance(leg, dict) else leg
+        ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=leg, _lhs_point=int(pt), _afp=S.get('B_afp'))   # кэш наборов — как r2_roli
         if d['boost']['resid_source'] == 'cross_fit':
-            ctx['leg_refit'] = S['leg_refit_provider'](d, h, S['A'])
+            ctx['leg_refit'] = S['leg_refit_provider'](d, h, S['A'], None)
+            ctx['_refit_id'] = B.hashlib.sha256(B.json.dumps(dict(leg=d.get('leg'), tag='base', est='r2_nogi.fit_predict'), sort_keys=True,
+                                                             default=str).encode()).hexdigest()[:32]
         out[f'B_{d["boost"]["role"]}_p{int(pt):02d}'] = B.build(d, ctx, steps=steps)
     return out
 
