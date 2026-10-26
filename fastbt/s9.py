@@ -32,7 +32,7 @@ from fastbt.cache import MAIN
 ROOT = Path(__file__).resolve().parent.parent
 REGEN = MAIN / "data" / "regen"
 OUT = MAIN / "data" / "fastbt" / "s9"
-TABLES = ROOT / "docs" / "tables" / "strat_dev"
+TABLES = Path(os.environ.get("S9_TABLES", ROOT / "docs" / "tables" / "strat_dev"))
 MAIN_YAML = ROOT / "fastbt" / "designs" / "final" / "main.yaml"
 YEARS = (2018, 2019, 2020, 2021)
 VAL_START = 2017
@@ -51,12 +51,26 @@ SOURCES = {   # метка: (файл, столбец, горизонт)
     "seed44_h1": (OUT / "sigma_seed44_h1.parquet", "sigma_pred_h1", "h1"),
 }
 RVI = OUT / "rvi_1850.parquet"
+# σ_pred гибрида h=1: final2 — финал второго круга (Д8.12, ночной С9); final3 — финал третьего
+# круга D22_h1. Выбор — флаг --sigma-h1; у final3 имена таблиц, кэша и журнала с суффиксом _final3.
+SIGMA_H1 = {"final2": REGEN / "sigma_pred_h1_final2.parquet",
+            "final3": REGEN / "sigma_pred_h1_final3.parquet"}
+SUFFIX = ""
+
+
+def use_sigma_h1(name: str, suffix: str | None = None) -> None:
+    global SUFFIX
+    SOURCES["hyb_h1"] = (SIGMA_H1[name], "sigma_pred_h1", "h1")
+    SUFFIX = ("" if name == "final2" else f"_{name}") if suffix is None else suffix
 
 
 def to_csv(df: pd.DataFrame, name: str) -> Path:
     TABLES.mkdir(parents=True, exist_ok=True)
+    if SUFFIX:
+        name = name.replace(".csv", f"{SUFFIX}.csv")
     p = TABLES / name
-    df.to_csv(p, sep=";", decimal=",", index=False, float_format="%.4f")
+    df.to_csv(p, sep=";", decimal=",", index=False, float_format="%.4f",
+              encoding="utf-8-sig" if SUFFIX else "utf-8")      # новые таблицы — с BOM
     return p
 
 
@@ -189,7 +203,7 @@ def build_cache(workers: int = 2) -> Path:
         pool.join()
     p = OUT / f"cache_{cache_key()}.pkl"
     p.write_bytes(pickle.dumps(res, protocol=4))
-    (OUT / "cache_latest.txt").write_text(p.name)
+    (OUT / f"cache_latest{SUFFIX}.txt").write_text(p.name)
     print(f"кэш → {p} ({time.time() - t0:.0f} с)")
     return p
 
@@ -850,7 +864,7 @@ class S9:
 
 
 def load_cache() -> dict:
-    name = (OUT / "cache_latest.txt").read_text().strip()
+    name = (OUT / f"cache_latest{SUFFIX}.txt").read_text().strip()
     return pickle.loads((OUT / name).read_bytes())
 
 
@@ -939,7 +953,9 @@ def run_all_experiments(reps: int) -> None:
     to_csv(s9.run_t2(tp), "s9_T2_podperiody.csv")
     # seed σ: C основного дизайна, C1/C2 семьи, лучший D и B на h=1
     seed_rows = []
-    for sd in ("hyb_h1", "seed42_h1", "seed43_h1", "seed44_h1"):
+    # seed 42/43/44 — реализации финалиста второго круга (D12_h1); к σ_pred final3 (D22_h1)
+    # они не относятся, поэтому на final3 таблица seed не считается
+    for sd in (("hyb_h1", "seed42_h1", "seed43_h1", "seed44_h1") if not SUFFIX else ()):
         dd, dpp = (dfd, dports) if sd == "hyb_h1" else s9.run_d((sd,))
         cc_, cpp = (dfc, cports) if sd == "hyb_h1" else s9.run_c((sd,))
         bb, bpp = (dfb, bports) if sd == "hyb_h1" else s9.run_b((sd,))
@@ -952,9 +968,11 @@ def run_all_experiments(reps: int) -> None:
             r["d_vs_A"], r["p_vs_A"] = s9.boot(p, s9.A)
             r.update(c8(m, s9.mA))
             seed_rows.append(r)
-    to_csv(pd.DataFrame(seed_rows), "s9_seed_sigma.csv")
+    if seed_rows:
+        to_csv(pd.DataFrame(seed_rows), "s9_seed_sigma.csv")
     log.append(f"готово за {time.time() - t0:.0f} с")
-    (OUT / "run_log.json").write_text(json.dumps(dict(log=log, choice=choice, reps=reps),
+    (OUT / f"run_log{SUFFIX}.json").write_text(json.dumps(dict(log=log, choice=choice, reps=reps,
+                                                          sigma_h1=str(SOURCES["hyb_h1"][0])),
                                                  ensure_ascii=False, indent=1))
     print("\n".join(log))
 
@@ -965,9 +983,13 @@ def main(argv=None):
     p.add_argument("--workers", type=int, default=2)
     p.add_argument("--boot-reps", type=int, default=1000)
     p.add_argument("--scope", choices=["dev", "test"], default="dev")
+    p.add_argument("--sigma-h1", choices=sorted(SIGMA_H1), default="final2",
+                   help="σ_pred гибрида h=1 (final3 — финал третьего круга D22_h1)")
+    p.add_argument("--suffix", default=None, help="суффикс таблиц/кэша (по умолчанию от --sigma-h1)")
     a = p.parse_args(argv)
     from fastbt import dev
     dev.check_scope(a.scope)
+    use_sigma_h1(a.sigma_h1, a.suffix)
     if a.scope != "dev":
         sys.exit("С9 считается только на разработке (--scope dev)")
     if a.stage == "sources":
