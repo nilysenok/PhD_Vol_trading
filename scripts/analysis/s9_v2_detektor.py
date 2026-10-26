@@ -1,6 +1,7 @@
 """Детектор утечек на позициях С9 v2: σ после t → шум; позиции A·g всех точек D/B/C на барах ≤ t
 обязаны совпасть побайтно; самопроверка σ_t := σ_{t+1} обязана упасть. Запуск из worktree:
-PYTHONPATH=. python3 -W ignore <этот файл> <out.csv>"""
+PYTHONPATH=. python3 -W ignore <этот файл> <out.csv> [--c8v2]
+--c8v2 (К, Ъ 27.10 00:10): плюс точки p50/p60 сетки C (setka_C.yaml: dop.rassh)."""
 import sys
 
 import numpy as np
@@ -8,6 +9,9 @@ import pandas as pd
 
 from fastbt import s9
 
+C8V2 = "--c8v2" in sys.argv[2:]
+if C8V2:
+    s9.POMETKA = s9.POMETKA_C8V2
 s9.use_v2()
 s9.load_c_dop()
 eng = s9.Engine(s9.load_cache())
@@ -48,6 +52,9 @@ def positions(src, S):
             out[f"B:cap{cap:g}_band{int(band*100)}"] = eng.A_row * eng.g_row(x.b_weights(src, cap, band))
     p1, p2 = x.c_points(src)
     fams = [("C1", p1), ("C2", p2)] + s9.c_dop_gates(S, RVW_CUR[0], eng.n_t, s9.C_DOP)
+    if C8V2:                               # К, Ъ 27.10 00:10: точки p50/p60 (setka_C.yaml: dop.rassh)
+        fams += [(f"{f} p50/p60", pts) for f, pts in s9.c_dop_gates(
+            S, None, eng.n_t, dict(min_periods=s9.C_DOP["min_periods"], semi=s9.C_DOP["rassh"]))]
     for fam, pts in fams:
         for lab, G in pts:
             out[f"C:{fam}:{lab}"] = eng.A_row * eng.g_row(G)

@@ -125,6 +125,15 @@ TEST_C = ("C1:W504_p70", "hyb_h5")
 # fastbt/designs/s9/setka_C.yaml, раздел dop; включаются флагом run --c-dop. None — сетка как была.
 C_DOP_YAML = ROOT / "fastbt" / "designs" / "s9" / "setka_C.yaml"
 C_DOP = None
+# Ъ 27.10, 00:10 (агент К): флаг run --c8v2 — сетка C + p50/p60 (setka_C.yaml: dop.rassh, без семей
+# «выбор по валидации»), контроли без прогноза к1/к2 в каждой строке C (fastbt.fast_kontrol) и правило
+# С8 v2 = С8 И Шарп > Шарп к1 И p к к2 < 0,05; выбор — среди прошедших (rank_c8_v2). False — как было.
+C8V2 = False
+C8V2_ALPHA = 0.05
+POMETKA_C8V2 = "после аудита; сетка и контроли добавлены после просмотра разработки"
+# таблицы, которых расширение и выбор C не касаются (пометка прежняя — побайтная сверка)
+C8V2_NE_ZATR = ("s9_D_zatvor.csv", "s9_B_targetirovanie.csv", "s9_D_zatvor_harj.csv",
+                "s9_P1_vesa_tikerov.csv", "s9_P3_fko.csv")
 
 
 def set_scope(scope: str, val_start: int | None = None) -> None:
@@ -205,7 +214,8 @@ def to_csv(df: pd.DataFrame, name: str) -> Path:
     TABLES.mkdir(parents=True, exist_ok=True)
     if V2:
         df = df.copy()
-        df.insert(0, "pometka", POMETKA)
+        # --c8v2: таблицы, на которые влияют сетка C и выбор C, — с пометкой Ъ 27.10, 00:10
+        df.insert(0, "pometka", POMETKA_C8V2 if (C8V2 and name not in C8V2_NE_ZATR) else POMETKA)
     if SUFFIX:
         name = name.replace(".csv", f"{SUFFIX}.csv")
     p = TABLES / name
@@ -722,6 +732,24 @@ def rank_c8(df: pd.DataFrame) -> pd.DataFrame:
                           ascending=[False, False, False, False])
 
 
+def rank_c8_v2(df: pd.DataFrame) -> pd.DataFrame:
+    """Ъ 27.10, 00:10: сначала прошедшие С8 v2, среди них — прежний порядок rank_c8."""
+    return df.sort_values(["passed_v2", "passed", "positive", "n_met", "mean_delta"],
+                          ascending=[False, False, False, False, False])
+
+
+def set_c8v2(scope: str = "dev", sigma_set: str = "v2", c_dop=True) -> None:
+    """Включает --c8v2 (Ъ 27.10, 00:10): только разработка, σ v2 и новые точки C (--c-dop)."""
+    global C8V2
+    if scope != "dev" or sigma_set != "v2" or not c_dop:
+        raise SystemExit("--c8v2 — только --scope dev --sigma-set v2 --c-dop")
+    C8V2 = True
+
+
+def _rank_c(df: pd.DataFrame) -> pd.DataFrame:
+    return rank_c8_v2(df) if C8V2 else rank_c8(df)
+
+
 # ======================= эксперименты =======================
 
 class S9:
@@ -979,6 +1007,8 @@ class S9:
                      **m, sharpe_margin=metrics(self.Cm[src])["sharpe"])
             self.delta(r, "vs_A", self.C[src], self.A)
             r.update(c8(m, self.mA))
+            if C8V2:
+                self.kontrol(r, self.C_rows[src])
             rows.append(r)
             ports[("Cref", src)] = (self.C[src], self.C_rows[src])
             pts1, pts2 = self.c_points(src)
@@ -986,13 +1016,22 @@ class S9:
             if C_DOP is not None:          # Ъ 22:30: новые точки; C* — не на самой наивной σ
                 rv = None if src.startswith("naive") else e.rvw()
                 fams += c_dop_gates(e.sigma(src), rv, e.n_t, C_DOP)
-            for fam, pts in fams:
+            if C8V2:                       # Ъ 27.10, 00:10: p50/p60 — точки без семьи (rassh)
+                fams += [(f, pts, "rassh") for f, pts in
+                         c_dop_gates(e.sigma(src), None, e.n_t,
+                                     dict(min_periods=C_DOP["min_periods"], semi=C_DOP["rassh"]))]
+            for item in fams:
+                fam, pts = item[0], item[1]
                 for lab, G in pts:
                     g = e.g_row(G)
                     r, p = self.row(e.A_row * g, fam, lab, h, src,
                                     dict(calib_closed=e.calib_closed(G)), g, cref)
+                    if C8V2:
+                        self.kontrol(r, e.A_row * g)
                     rows.append(r)
                     ports[(f"{fam}:{lab}", src)] = (p, e.A_row * g)
+                if len(item) > 2:          # расширение: семья «выбор по валидации» не строится
+                    continue
                 stack = np.stack([G for _, G in pts])
                 kind = "mask" if fam in ("C1", "C*1") else "scale"
                 g, cnt = e.select(stack, kind, None, cat=True)
@@ -1000,9 +1039,46 @@ class S9:
                                sorted(cnt.items(), key=lambda kv: -kv[1])[:4])
                 r, p = self.row(e.A_row * g, f"{fam} (выбор по валидации)", "семья", h, src,
                                 dict(choice=ch), g, cref)
+                if C8V2:
+                    self.kontrol(r, e.A_row * g)
                 rows.append(r)
                 ports[(f"{fam} семья", src)] = (p, e.A_row * g)
         return pd.DataFrame(rows), ports
+
+    def kontrol(self, r: dict, pos: np.ndarray) -> None:
+        """Ъ 27.10, 00:10: контроли без прогноза (fastbt.fast_kontrol) и С8 v2 для строки C."""
+        from fastbt import fast_kontrol as fk
+        if getattr(self, "_k", None) is None or self._k.comm != COMM:
+            self._k = fk.Kontrol(self.e, COMM)
+        k = self._k
+        c = k.k1_const(pos)
+        m1 = metrics(self.e.port(self.e.A_row * c))
+        r["c_k1"], r["sharpe_k1"] = c, m1["sharpe"]
+        r["d_vs_k1"] = r["sharpe"] - m1["sharpe"]
+        if np.any(pos[self.e.A_row == 0] != 0):
+            # C u02: позиция — не A × затвор (фильтр оборота после маски) — к2 не определён,
+            # С8 v2 точка не проходит
+            r["sharpe_k2_med"] = r["sharpe_k2_q95"] = r["p_vs_k2"] = np.nan
+            r["n_perm_k2"] = 0
+            r["k2_primechanie"] = (f"к2 не определён: позиция ≠ A × затвор ({int(np.sum(pos[self.e.A_row == 0] != 0))} "
+                                   "строк с позицией при A = 0); С8 v2 не проходит")
+            r["passed_v2"] = False
+            return
+        fk.check_share(k.gate_act(pos), k.P, k.groups)
+        sh = k.k2_sharpes(pos)
+        r["sharpe_k2_med"] = float(np.median(sh))
+        r["sharpe_k2_q95"] = float(np.quantile(sh, 0.95))
+        r["p_vs_k2"] = fk.p_perm(r["sharpe"], sh)
+        r["n_perm_k2"] = len(sh)
+        r["passed_v2"] = bool(r["passed"] and r["sharpe"] > m1["sharpe"]
+                              and r["p_vs_k2"] < C8V2_ALPHA)
+        # справочно (не в правиле): к2 без комиссии у точки и у перестановок — случайная маска
+        # переключается чаще, чем режимный затвор, и платит больше комиссии
+        if getattr(self, "_k0", None) is None:
+            self._k0 = fk.Kontrol(self.e, 0.0)
+        sh0 = self._k0.k2_sharpes(pos)
+        r["sharpe_gross"] = sharpe(self.e.port(pos)["excess_gross"].values)
+        r["p_vs_k2_bez_komissii"] = fk.p_perm(r["sharpe_gross"], sh0)
 
     # ---------- C3: точность прогноза → результат ----------
     def run_c3(self, c_ports, srcs=("hyb_h1", "harj_h1", "naive_h1")):
@@ -1223,7 +1299,7 @@ def run_all_experiments(reps: int) -> None:
         to_csv(h2.assign(rol="H2 внутри выбранной точки C: без выбора"), "s9_H2_vybrannaya_C.csv")
         if SUFFIX == "_v2":                # Ъ 23:10, п. 1–2: только основная комиссия 0,04%
             to_csv(h2_luchshiy_v2(s9, dfc, cports, k["C"]), "s9_H2_luchshiy_s_luchshim.csv")
-            to_csv(ustoychivost_v2(dfc), "s9_C_ustoychivost.csv")
+            to_csv(ustoychivost_c8v2(dfc) if C8V2 else ustoychivost_v2(dfc), "s9_C_ustoychivost.csv")
     print(log[-1], flush=True)
     dfp2, p2 = s9.run_p2(sel)
     to_csv(dfp2, "s9_P2_multistrategiya.csv")
@@ -1306,7 +1382,7 @@ def select_keys(dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) -> dict
     best_b = rank_c8(bsp).iloc[0]
     best_b1 = rank_c8(bsp[bsp["h"] == "h1"]).iloc[0]
     cc = dfc[dfc["sigma"].isin(["hyb_h1", "hyb_h5"])]
-    best_c = rank_c8(cc).iloc[0]
+    best_c = _rank_c(cc).iloc[0]           # --c8v2: правило С8 v2 (Ъ 27.10, 00:10)
     ckey_name = ("Cref" if best_c["family"].startswith("C основного") else
                  (_key_of(best_c) if best_c["point"] == "семья"
                   else f"{best_c['family']}:{best_c['point']}"))
@@ -1332,28 +1408,43 @@ def vybor_v2(s9: "S9", dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) 
             "C": dfc[dfc["sigma"].isin(["hyb_h1", "hyb_h5"])]}
     grid = {"D": int(dfd["sharpe"].notna().sum()), "B": len(cand["B"]), "C": len(cand["C"])}
     rows = [dict(approach="A", design="main.yaml:A (эталон С8)", sigma="—", **s9.mA)]
-    for ap, c in cand.items():
+    items = list(cand.items())
+    if C8V2:                               # Ъ 27.10, 00:10: прежний выбор C — справочно, рядом
+        items.append(("C (прежнее правило С8, без к1/к2 — справочно)", cand["C"]))
+    for ap, c in items:
         c = c.copy()
         c["p_holm"] = _holm(c["p_vs_A"].values)
         c["p_bonf"] = np.minimum(1.0, c["p_vs_A"] * len(c))
-        best = rank_c8(c).iloc[0]
+        v2 = C8V2 and ap == "C"
+        best = (rank_c8_v2(c) if v2 else rank_c8(c)).iloc[0]
         r = dict(approach=ap, design=f"{best['family']}:{best['point']}", sigma=best["sigma"],
-                 h=best["h"], n_kandidatov=len(c), n_tochek_setki=grid[ap],
+                 h=best["h"], n_kandidatov=len(c), n_tochek_setki=grid[ap if ap in grid else "C"],
                  n_proshli_C8=int(c["passed"].sum()))
+        if C8V2 and ap.startswith("C"):
+            r["n_proshli_C8_v2"] = int(c["passed_v2"].astype(bool).sum())
         for col in ("sharpe", "sortino", "calmar", "mdd_excess_pct", "exposure_pct", "turnover_y",
                     "sharpe_net", "turnover_y", *[str(y) for y in YEARS], "worst", "win", "c_years",
                     "c_worst", "c_period", "passed", "positive", "n_met", "mean_delta", "d_vs_A",
-                    "p_vs_A", "p_vs_A_iid", "p_holm", "p_bonf"):
+                    "p_vs_A", "p_vs_A_iid", "p_holm", "p_bonf", *K_COLS):
             if col in best.index:
                 r[col] = best[col]
         if ap == "B":
             r["sharpe"] = best["sharpe_net"]
         r["fakt"] = ("прошёл С8" if best["passed"] else "лучший по С8, С8 не прошёл") + \
                     ("; положительный период" if best["positive"] else "; положительного периода нет")
+        if v2:
+            r["fakt"] = ("прошёл С8 v2 (С8, Шарп > к1, p к к2 < 0,05); выбор среди прошедших"
+                         if best["passed_v2"] else "С8 v2 не прошла ни одна точка; лучший по С8") + \
+                        ("; положительный период" if best["positive"] else "; положительного периода нет")
         if ap == "D":
             r["proverka_RVI"] = D_RVI
         rows.append(r)
     return pd.DataFrame(rows)
+
+
+# Ъ 27.10, 00:10: столбцы контролей без прогноза (S9.kontrol)
+K_COLS = ("c_k1", "sharpe_k1", "d_vs_k1", "sharpe_k2_med", "sharpe_k2_q95", "p_vs_k2", "n_perm_k2",
+          "passed_v2", "sharpe_gross", "p_vs_k2_bez_komissii")
 
 
 def _ckey(row) -> str:
@@ -1383,7 +1474,7 @@ def h2_luchshiy_v2(s9: "S9", dfc: pd.DataFrame, cports: dict, ckey: tuple) -> pd
     for nm, srcs in H2_GROUPS:
         c = dfc[dfc["sigma"].isin(srcs) & fixed].copy()
         c["p_holm"] = _holm(c["p_vs_A"].values)
-        best = rank_c8(c).iloc[0]
+        best = _rank_c(c).iloc[0]          # --c8v2: С8 v2 (Ъ 27.10, 00:10)
         key = (_ckey(best), best["sigma"])
         sel[nm] = (f"{best['family']}:{best['point']} на {best['sigma']}", cports[key][0])
         r = dict(rol="выбор по С8 отдельно для σ (только фиксированные точки)", sigma_nabor=nm,
@@ -1393,6 +1484,9 @@ def h2_luchshiy_v2(s9: "S9", dfc: pd.DataFrame, cports: dict, ckey: tuple) -> pd
                  isklyucheny="C основного дизайна (u02); C1/C2/C2W/C*1/C*2 (выбор по валидации): семья")
         r.update({col: best[col] for col in _C8_COLS if col in best.index})
         r["p_holm"] = best["p_holm"]
+        if C8V2:
+            r.update({col: best[col] for col in K_COLS if col in best.index})
+            r["n_proshli_C8_v2"] = int(c["passed_v2"].astype(bool).sum())
         r["fakt"] = ("прошёл С8" if best["passed"] else "лучший по С8, С8 не прошёл") + \
                     ("; положительный период" if best["positive"] else "; положительного периода нет")
         if nm == "наивная":
@@ -1487,6 +1581,94 @@ def ustoychivost_v2(dfc: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _porog_key(p) -> tuple:
+    return tuple(int(x) for x in str(p).split("/")) if p != "—" else (999,)
+
+
+def ustoychivost_c8v2(dfc: pd.DataFrame) -> pd.DataFrame:
+    """Ъ 27.10, 00:10 (--c8v2): устойчивость выбора C по правилу С8 v2 на сетке с p50/p60.
+    (а) C1 W504 p70 h=5 (точка первого FINAL); (б) точки, прошедшие С8 v2, с |Шарп − Шарп выбранной|
+    ≤ 0,1 (выбранная — первой); (в) соседи выбранной по окну (тот же порог) и по порогу (то же окно)
+    той же семьи и σ — все, с к1/к2. Вывод (правило объявлено до счёта, обобщение прежнего на
+    двусторонних соседей): плато — все ближайшие соседи (по одному с каждой стороны на каждой оси)
+    в пределах 0,1 и прошли С8 v2; пик — ни один сосед; иначе — частичное плато."""
+    c = dfc[dfc["sigma"].isin(["hyb_h1", "hyb_h5"])].copy()
+    c["p_holm"] = _holm(c["p_vs_A"].values)
+    best = rank_c8_v2(c).iloc[0]
+    sh0 = float(best["sharpe"])
+    pv2 = c["passed_v2"].astype(bool)
+    cols = ("win", "passed", "passed_v2", "d_vs_A", "p_vs_A", "p_vs_A_iid", "p_holm", *K_COLS)
+    rows = []
+    fam, pt, sg = C_FINAL1
+    a = c[(c["family"] == fam) & (c["point"] == pt) & (c["sigma"] == sg)]
+    if len(a) != 1:
+        raise SystemExit(f"устойчивость: строк {C_FINAL1} — {len(a)}")
+    r = dict(rol="(а) точка первого FINAL: C1 W504 p70 h=5 на гибриде (новые σ, 0,04%)")
+    r.update({k: v for k, v in a.iloc[0].items() if k != "pometka"})
+    r["p_holm"] = a.iloc[0]["p_holm"]
+    r["d_k_vybrannoy"] = float(a.iloc[0]["sharpe"]) - sh0
+    r["okno"], r["porog"] = _okno_porog(pt)
+    rows.append(r)
+
+    def short(x, rol, **kw):
+        w, p = _okno_porog(x["point"])
+        d = dict(rol=rol, family=x["family"], point=x["point"], sigma=x["sigma"], h=x["h"], okno=w,
+                 porog=p, sharpe=x["sharpe"], d_k_vybrannoy=x["sharpe"] - sh0)
+        d.update({k: x[k] for k in cols if k in x.index})
+        d.update(kw)
+        return d
+    near = c[pv2 & ((c["sharpe"] - sh0).abs() <= USTOY_TOL + 1e-12)].copy()
+    near["_sel"] = (near["family"] == best["family"]) & (near["point"] == best["point"]) & \
+                   (near["sigma"] == best["sigma"])
+    near = near.sort_values(["_sel", "sharpe"], ascending=[False, False])
+    for _, x in near.iterrows():
+        rows.append(short(x, "(б) выбранная" if x["_sel"] else
+                          f"(б) прошла С8 v2, Шарп в пределах {TOL_S} от выбранной"))
+    near_c8 = int((c["passed"].astype(bool) & ((c["sharpe"] - sh0).abs() <= USTOY_TOL + 1e-12)).sum()) - \
+        int(bool(best["passed"]))
+    w0, p0 = _okno_porog(best["point"])
+    same = c[(c["family"] == best["family"]) & (c["sigma"] == best["sigma"])].copy()
+    same["okno"], same["porog"] = zip(*same["point"].map(_okno_porog))
+    by_w = same[(same["porog"] == p0) & (same["okno"] != w0)].sort_values("okno")
+    by_p = same[(same["okno"] == w0) & (same["porog"] != p0)].copy()
+    keys = [_porog_key(v) for v in by_p["porog"]]
+    by_p = by_p.iloc[sorted(range(len(keys)), key=lambda i: keys[i])]
+    imm = set()
+    lo_w, hi_w = by_w[by_w["okno"] < w0], by_w[by_w["okno"] > w0]
+    if len(lo_w):
+        imm.add(lo_w.index[-1])
+    if len(hi_w):
+        imm.add(hi_w.index[0])
+    k0 = _porog_key(p0)
+    lo_p = [i for i, v in zip(by_p.index, by_p["porog"]) if _porog_key(v) < k0]
+    hi_p = [i for i, v in zip(by_p.index, by_p["porog"]) if _porog_key(v) > k0]
+    if lo_p:
+        imm.add(lo_p[-1])
+    if hi_p:
+        imm.add(hi_p[0])
+    nb = pd.concat([by_w.assign(os_="окно"), by_p.assign(os_="порог")])
+    ok = nb["passed_v2"].astype(bool) & ((nb["sharpe"] - sh0).abs() <= USTOY_TOL + 1e-12)
+    for (i, x), o in zip(nb.iterrows(), ok):
+        rows.append(short(x, f"(в) сосед по оси «{x['os_']}»" + (" — ближайший" if i in imm else ""),
+                          v_predelah_0_1=bool(abs(x["sharpe"] - sh0) <= USTOY_TOL + 1e-12),
+                          v_predelah_0_1_i_C8_v2=bool(o)))
+    imm_ok = [bool(o) for (i, _), o in zip(nb.iterrows(), ok) if i in imm]
+    n_w, n_p = int(ok[nb["os_"] == "окно"].sum()), int(ok[nb["os_"] == "порог"].sum())
+    verdict = ("плато" if imm_ok and all(imm_ok) else "пик" if int(ok.sum()) == 0 else "частичное плато")
+    n_near = int((~near["_sel"]).sum())
+    rows.append(dict(rol="(в) вывод", family=best["family"], point=best["point"], sigma=best["sigma"],
+                     h=best["h"], okno=w0, porog=p0, sharpe=sh0, passed_v2=bool(best["passed_v2"]),
+                     n_C8_v2_v_predelah=n_near, n_C8_v_predelah=near_c8, n_kandidatov=len(c) - 1,
+                     n_proshli_C8_v2=int(pv2.sum()), n_proshli_C8=int(c["passed"].astype(bool).sum()),
+                     vyvod=(f"{verdict}: соседей {best['family']} {best['point']} {best['h']} в пределах "
+                            f"{TOL_S} и с С8 v2 — по окну {n_w} из {len(by_w)}, по порогу {n_p} из "
+                            f"{len(by_p)}; ближайших в пределах и с С8 v2 — {sum(imm_ok)} из {len(imm_ok)}; "
+                            f"всего точек С8 v2 в пределах {TOL_S} — {n_near} из {len(c) - 1}"
+                            + "".join(f"; {x['family']} {x['point']} {x['h']} ({x['sharpe']:.3f})"
+                                      for _, x in near[~near["_sel"]].iterrows()))))
+    return pd.DataFrame(rows)
+
+
 def sravnenie_komissiy(v04: pd.DataFrame, v05: pd.DataFrame) -> pd.DataFrame:
     """Ъ 22:45/22:55: совпал бы выбор С8 на 0,05% с выбором на 0,04% (по подходам); отбор не меняет."""
     rows = []
@@ -1558,9 +1740,14 @@ def main(argv=None):
                         "2021); в разработке всегда 2017…Y−1")
     p.add_argument("--c-dop", nargs="?", const=str(C_DOP_YAML), default=None,
                    help="новые точки сетки C (Ъ 22:30) из yaml, раздел dop; без флага — как было")
+    p.add_argument("--c8v2", action="store_true",
+                   help="Ъ 27.10, 00:10: сетка C + p50/p60 (setka_C.yaml: dop.rassh), контроли к1/к2, "
+                        "правило С8 v2; только с --sigma-set v2 и --c-dop")
     a = p.parse_args(argv)
     from fastbt import dev
     dev.check_scope(a.scope)               # замок: test без FINAL_DESIGN_strategies.md — отказ
+    if a.c8v2:
+        set_c8v2(a.scope, a.sigma_set, a.c_dop)
     if a.c_dop:
         if a.scope != "dev":               # √RV_w из ch4_dev — только ≤ 2021: на тесте C* был бы = A
             raise SystemExit("--c-dop только для --scope dev (нет √RV_w на тест)")
