@@ -310,7 +310,7 @@ def fn_v0(design, seed, steps):
         Vc, T = calibrate(design, V, S)
         out[N.series_name(tag, 'v0')] = Vc
         par += calib_params(tag, T)
-    N.write_params(design, h, par, kind='v0')  # params.csv: <ряд>:b_*, … и <ряд>:calib_s2, calib_kappa, calib_c, calib_mz_a/b, …
+    N.write_params(design, h, par, kind='v0')  # params_L.csv (V0-ячейка L): <ряд>:b_*, … и <ряд>:calib_s2, calib_kappa, calib_c, calib_mz_a/b, …
     return out
 
 
@@ -325,7 +325,7 @@ def _state_M():
 
 def fn_v0_panel(design, seed, steps):
     """Модуль для r2_core.run_phase: сырой ряд агента P (r2_panel.phase_fn, leg.panel ≠ off) × общий слой калибровки L (calib.*, boost.prob).
-    Ряды — <ряд P>__cal; параметры калибровки — params.csv (param = <ряд P>__cal:calib_*). Данные P — SHARED['A'] из r2_panel.load_A()."""
+    Ряды — <ряд P>__cal; параметры калибровки — params_L3.csv (param = <ряд P>__cal:calib_*). Данные P — SHARED['A'] из r2_panel.load_A()."""
     import r2_panel as RP
     h = int(design['h'])
     S = state_frame(_state_M(), h)
@@ -339,12 +339,13 @@ def fn_v0_panel(design, seed, steps):
 
 
 def _write_cal_params(design, h, rows):
-    """rows: (ряд, шаг, параметр, значение) -> params.csv (формат D) через r2_nogi.write_params (ряд — как есть)."""
+    """rows: (ряд, шаг, параметр, значение) -> params_L3.csv (r2_core.params_path(design, 'L3'), формат D) через
+    r2_nogi.write_params (ряд — как есть). Калибровка — модуль L3 драйвера."""
     by = {}
     for r, s, n, v in rows:
         by.setdefault(r, []).append(('base', s, n, v))
     for r, rr in by.items():
-        N.write_params(design, h, rr, kind=r)
+        N.write_params(design, h, rr, kind=r, module='L3')
 
 
 def calib_params(tag, T):
@@ -648,7 +649,7 @@ def _prev_module(design):
 
 def fn_cal(design, seed, steps):
     """L3 в цепочке драйвера: ряды предыдущего модуля цепочки (L, P, R, B, BG, M — по r2_driver.route) этого дизайна и seed из кэша
-    (r2_core.load_series) × калибровка дизайна (calib.*, boost.prob = scale_har). Ряды — <ряд>__cal; параметры — params.csv."""
+    (r2_core.load_series) × калибровка дизайна (calib.*, boost.prob = scale_har). Ряды — <ряд>__cal; параметры — params_L3.csv."""
     import r2_core as RC
     h = int(design['h'])
     prev = _prev_module(design)

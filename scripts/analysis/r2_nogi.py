@@ -1229,13 +1229,14 @@ def series_name(tag, kind='leg'):
     return kind if tag == 'base' else f'{kind}__{tag}'
 
 
-def write_params(design, h, rows, kind='leg', root=None):
-    """Параметры по шагам в формате D: R2/cache/<hash>/params.csv — design_sha, h, step, param, value. param = <ряд>:<имя>.
+def write_params(design, h, rows, kind='leg', root=None, module='L'):
+    """Параметры по шагам в формате D: r2_core.params_path(design, module) = R2/cache/<hash>/params_<модуль>.csv (L — ноги, L3 —
+    калибровка; общий params.csv не пишется, PR #201) — design_sha, h, step, param, value. param = <ряд>:<имя>.
     Запись под flock: строки с теми же (h, step, param) заменяются (повтор задачи идемпотентен)."""
     import fcntl
     RC = _core()
     root = RC.SHARED.get('L_root') if root is None else root
-    p = RC.cache_dir(design, root=root) / 'params.csv'
+    p = RC.params_path(design, module, root=root)
     sha = RC.design_hash(design)
     new = pd.DataFrame([dict(design_sha=sha, h=int(h), step=int(s), param=f'{series_name(tag, kind)}:{n}', value=float(v))
                         for tag, s, n, v in rows if v is not None and np.isfinite(float(v))],
@@ -1268,7 +1269,7 @@ def is_P(full):
 
 def fn_leg(design, seed, steps):
     """Модуль для r2_core.run_phase: {ряд: V} по всем вариантам сетки ноги (seed не влияет). Данные — r2_core.SHARED['M'] (mat_from).
-    Параметры по шагам — write_params (params.csv каталога дизайна)."""
+    Параметры по шагам — write_params (params_L.csv каталога дизайна)."""
     RC = _core()
     M = RC.SHARED['M']
     h = int(design['h'])
@@ -1305,7 +1306,7 @@ def designs_L(h):
 
 def schet(hs=HS, workers=10):
     """Боевой счёт ног кластера 2 (решение 16:25: эконометрика — сразу): 17 тикеров × шаги 1–6, кэш r2_core (хэш дизайна), shift_check,
-    params.csv, lnall для ролей. Список дизайнов — models/designs/r2/r2_L_designs_v1.yaml (коммит до счёта)."""
+    params_L.csv, lnall для ролей. Список дизайнов — models/designs/r2/r2_L_designs_v1.yaml (коммит до счёта)."""
     import yaml
     RC = _core()
     A, harj = RC.load_d0(); RC.check_d0(A)
@@ -1407,11 +1408,11 @@ def dym(hs=HS, names=None, workers=2):
             t = RC.run_phase('A', h, designs, fn_leg, seeds=(42,), steps=DYM_STEPS, workers=workers, module='L', root=root,
                              block_file=blok, check_gate=False)
             t['h'] = h; T.append(t)
-        # params.csv (формат D) — по одному на дизайн
+        # params_L.csv (формат D) — по одному на дизайн
         P = []
         for h in hs:
             for nm, des in sel.items():
-                p = RC.cache_dir(RC.validate(dict(des, h=h, design=f'L_dym_{nm}')), root=root) / 'params.csv'
+                p = RC.params_path(RC.validate(dict(des, h=h, design=f'L_dym_{nm}')), 'L', root=root)
                 if p.exists():
                     q = pd.read_csv(p); P.append(dict(dizayn=nm, h=h, strok=len(q), shagov=q.step.nunique(), parametrov=q.param.nunique(),
                                                      kolonki=','.join(q.columns)))
@@ -1557,6 +1558,7 @@ def dym_driver(hs=(5, 22, 1), workers=2):
     import r2_driver as DR
     base = LDIR / 'dym_driver'; root = base / time.strftime('cache_%Y%m%d_%H%M%S'); root.mkdir(parents=True, exist_ok=True)
     os.environ.update(R2_CACHE=str(root), R2_TICKERS=','.join(DYM_TK), R2_BLOCK_FILE=str(base / 'blok_sdvig.csv'))
+    _core().CACHE_ROOT = root  # r2_core уже импортирован: R2_CACHE читается при импорте, а проверка DONE драйвера — в этом процессе
     runner = DR.Runner(smoke=False)
     rows = []
     for h in hs:
