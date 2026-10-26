@@ -73,10 +73,24 @@ def panel_of(d):
     return 'off' if is_off(p) else p
 
 
+OVERLAY_PANELS = ('factor_shrink_025', 'factor_shrink_05', 'factor_shrink_state')
+
+
+def is_overlay(d):
+    """E6 (блок владельца 20:10): дизайн с входом inputs.base = {design_sha, series} — усадка поверх готового ряда из кэша."""
+    return isinstance(d.get('inputs'), dict) and 'base' in d['inputs']
+
+
 # ================================================================ применимость
 def check(d):
     """d — полный дизайн (C.validate). NotApplicable — ключи, которые модуль P не реализует (у них свои модули)."""
     d = C.validate(d)
+    if is_overlay(d):  # E6: усадка поверх готового ряда — прочие ключи описывают базовый ряд, не P
+        if panel_of(d) not in OVERLAY_PANELS:
+            raise NotApplicable(f'надстройка (inputs.base): leg.panel={panel_of(d)} — нужна усадка {OVERLAY_PANELS}')
+        if not d['inputs']['base'].get('design_sha') or not d['inputs']['base'].get('series'):
+            raise NotApplicable('надстройка: inputs.base = {design_sha, series}')
+        return d
     leg, boost, data = d['leg'], d['boost'], d['data']
     dflt = C.validate({'h': int(d['h'])})
     bad = []
@@ -430,10 +444,125 @@ def _boost_fit(Fz, n_trees, seed):
 
 
 # ================================================================ дизайн -> ряды
-def run_design(design, Dt, seed=42, steps=STEPS, want_all=False):
+def _wsh(pan, Dt, rho, cut):
+    """w усадки по строкам: константа или w(ρ̄_d) с Ê по датам < cut."""
+    if pan == 'factor_shrink_state':
+        hist = Dt.mk.loc[Dt.dates[Dt.dates < cut], G5_COLS[0]].dropna().values
+        ecdf = np.searchsorted(np.sort(hist), rho, side='right') / max(len(hist), 1)
+        return np.where(np.isfinite(rho) & (len(hist) > 0), W_LO + (W_HI - W_LO) * ecdf, 0.5 * (W_LO + W_HI))
+    return np.full(len(rho), SHRINK_W.get(pan, 0.0))
+
+
+OVL_COL = 'ovl_base__'  # детектор: базовый ряд — столбец матрицы (шум после среза и подлог d+1 его тоже касаются)
+
+
+def load_base(d, seed, steps, tickers=None, root=None):
+    """Базовый ряд надстройки E6 из кэша: r2_core.load_series(design_sha, ryad=series), иначе — все ряды модуля series.
+    seed — свой, иначе 'det'. -> {ряд базы: кадр date, ticker, year, step, rv_actual?, rv_pred}."""
+    sp = d['inputs']['base']
+    h = int(d['h'])
+    X = C.load_series(sp['design_sha'], ryad=sp['series'], h=h, steps=list(steps), root=root)
+    if X.empty:
+        X = C.load_series(sp['design_sha'], modul=sp['series'], h=h, steps=list(steps), root=root)
+    if X.empty:
+        raise FileNotFoundError(f'E6: нет ряда {sp["series"]} дизайна {sp["design_sha"][:16]} (h={h}, шаги {list(steps)})')
+    have = set(X['seed'].astype(str))
+    pick = str(seed) if str(seed) in have else ('det' if 'det' in have else None)
+    if pick is None:
+        raise FileNotFoundError(f'E6: у базы {sp["design_sha"][:16]} нет seed {seed} и det (есть {sorted(have)})')
+    X = X[X['seed'].astype(str) == pick]
+    if tickers:
+        X = X[X['ticker'].isin(list(tickers))]
+    X = X.assign(date=pd.to_datetime(X['date']))
+    assert X['date'].dt.year.max() <= C.MAX_YEAR
+    return {str(r): g.drop(columns=[c for c in ('ryad', 'h', 'seed', 'part', 'modul', 'hash') if c in g]).reset_index(drop=True)
+            for r, g in X.groupby('ryad')}
+
+
+def run_overlay(d, Dt, seed, steps, want_all=False, base=None, root=None):
+    """E6: ln ŷ = (1 − w)·ln F_base + w·(α̃^(h) + β̃·F_mkt) на строках готового ряда F_base (без ноги B); F_mkt — HAR рынка
+    (yaml overlay.market_leg), α̃^(h) = α̃_d + ū^h (κ = leg.pooled_kappa, первая точка списка), w — по leg.panel.
+    base — {ряд: кадр} (иначе load_base; у детектора — из столбцов OVL_COL матрицы). -> как run_design."""
+    h, leg, data = int(d['h']), d['leg'], d['data']
+    pan = panel_of(d)
+    which, W = leg['panel_market'], int(_scal(leg['panel_beta_window']))
+    kap = float(_scal(leg['pooled_kappa']))
+    A = Dt.A
+    tk = A['ticker'].values
+    tcol = f'rv_target_h{h}'
+    lnY = np.log(A[tcol].values + EPS)
+    F = Dt.market(which)
+    ab = Dt.ab(which, W)
+    al, be = ab['alpha'], ab['beta']
+    tu = lnY - al - be * Dt.at(F[f'ym{h}'].values)
+    tend_m = pd.to_datetime(F[f'tend{h}'])
+    rho = Dt.at(Dt.mk[G5_COLS[0]].values)
+    mleg = dict(leg, type=CFG['overlay']['market_leg'], regressors='none')
+    if base is None:
+        cols = [c for c in A.columns if c.startswith(OVL_COL)]
+        if cols:  # детектор: база в матрице
+            base = {}
+            for c in cols:
+                m = A[c].notna().values & Dt.out
+                base[c[len(OVL_COL):]] = pd.DataFrame({'date': A['date'].values[m], 'ticker': A['ticker'].values[m],
+                                                       'year': A['year'].values[m], 'step': A['year'].values[m] - 2015,
+                                                       'rv_pred': A[c].values[m]})
+        else:
+            base = load_base(d, seed, steps, Dt.tickers, root)
+    pos = pd.Series(np.arange(len(A)), index=pd.MultiIndex.from_arrays([A['date'], A['ticker']]))
+    names = {r: (MODULE if len(base) == 1 else f'{MODULE}__{r}') for r in base}
+    accV, accW, par = {n: [] for n in names.values()}, {n: [] for n in names.values()}, []
+    for k in steps:
+        C.assert_dev_step(k)
+        vy = C.step_years(k)[0]
+        cut = pd.Timestamp(f'{vy}-01-01')
+        mkt_ok = Dt.at((tend_m < cut).fillna(False).values.astype(float)) > 0.5
+        tr = C.train_mask(A, h, vy) & Dt.out & np.isfinite(lnY) & mkt_ok & np.isfinite(tu)
+        w_fac = _w_recency(A['date'].values[tr], cut, data)
+        m0 = float(np.average(tu[tr], weights=w_fac)) if tr.any() else np.nan
+        cu = np.full(len(A), m0)
+        for t in Dt.tickers:
+            mi = tr & (tk == t)
+            if kap > 0 and mi.sum() >= MIN_TK:
+                cu[tk == t] = (1 - kap) * m0 + kap * float(np.average(tu[mi], weights=None if w_fac is None else w_fac[mi[tr]]))
+        mp = []
+        fm, _ = mkt_forecast(Dt, which, h, mleg, 0.0, 0.0, cut, data, mp, '')
+        sysl = al + cu + be * Dt.at(fm)  # α̃^(h) + β̃·F_mkt по всем строкам
+        wsh = _wsh(pan, Dt, rho, cut)
+        q = [('ovl_u_mean_pool', m0), ('ovl_kappa', kap), ('ovl_n_train', float(tr.sum()))] + [(f'ovl_{a}', v) for a, v in mp]
+        for r, B in base.items():
+            nm = names[r]
+            Bk = B[B['step'] == k]
+            rows = pos.reindex(pd.MultiIndex.from_arrays([pd.to_datetime(Bk['date']), Bk['ticker']])).values
+            okr = np.isfinite(rows)
+            ri = np.where(okr, rows, 0).astype(int)
+            s = np.where(okr, sysl[ri], np.nan)
+            w = np.where(okr, wsh[ri], 0.0)
+            lnb = np.log(Bk['rv_pred'].values.astype(float))
+            ln = np.where(np.isfinite(s), (1 - w) * lnb + w * s, lnb)
+            ra = Bk['rv_actual'].values if 'rv_actual' in Bk else np.where(okr, A[tcol].values[ri], np.nan)
+            accV[nm].append(pd.DataFrame({'date': pd.to_datetime(Bk['date']).values, 'ticker': Bk['ticker'].astype(str).values, 'year': vy,
+                                          'step': k, 'rv_actual': ra, 'rv_pred': np.clip(np.exp(ln), EPS, None)}))
+            par += [(nm, k, a, v) for a, v in q + [('ovl_w_mean_val', float(np.mean(w[okr])) if okr.any() else np.nan),
+                                                    ('ovl_beta_med_val', float(np.nanmedian(be[ri[okr]])) if okr.any() else np.nan),
+                                                    ('ovl_n_bez_panel_val', float((~np.isfinite(s)).sum()))]]
+            if want_all:
+                allr = (A['year'].values <= vy) & Dt.out & np.isfinite(sysl)
+                accW[nm].append(pd.DataFrame({'date': A['date'].values[allr], 'ticker': A['ticker'].values[allr], 'step': k,
+                                              'rv_pred': np.exp(sysl[allr])}))
+    outV = {nm: pd.concat(v, ignore_index=True).sort_values(KEY).reset_index(drop=True)[COLS] for nm, v in accV.items()}
+    for nm, V in outV.items():
+        assert V['year'].max() <= C.MAX_YEAR and np.isfinite(V['rv_pred']).all(), f'{nm}: ≥ 2022 или нечисловой прогноз'
+    outW = {nm: (pd.concat(v, ignore_index=True) if want_all else None) for nm, v in accW.items()}
+    return outV, outW, par
+
+
+def run_design(design, Dt, seed=42, steps=STEPS, want_all=False, base=None, root=None):
     """-> ({ряд: V}, {ряд: W (date, ticker, step, rv_pred на строках year ≤ vy) | None}, [(ряд, шаг, параметр, значение)]).
-    Строки — тикеры Dt.tickers; разложение и рынок — по всей матрице Dt."""
+    Строки — тикеры Dt.tickers; разложение и рынок — по всей матрице Dt. Дизайн с inputs.base — надстройка E6 (run_overlay)."""
     d = check(design)
+    if is_overlay(d):
+        return run_overlay(d, Dt, seed, steps, want_all, base, root)
     h, leg, data, boost = int(d['h']), d['leg'], d['data'], d['boost']
     pan = panel_of(d)
     which, W = leg['panel_market'], int(leg['panel_beta_window'])
@@ -609,7 +738,7 @@ def phase_fn(design, seed, steps):
     SHARED['P_root'] — корень кэша (необязательно)."""
     S = C.SHARED
     Dt = S.get('P_data') or Data(S['A'])
-    V, _, par = run_design(design, Dt, seed, tuple(steps))
+    V, _, par = run_design(design, Dt, seed, tuple(steps), root=S.get('P_root'))
     write_params(design, int(design['h']), par, root=S.get('P_root'))
     return V
 
@@ -657,7 +786,19 @@ def leak_build(design, seed, steps, tickers):
     return build
 
 
-def leak_design(design, A, seed, steps, tickers, cuts, name):
+def with_base_cols(A, base):
+    """Матрица + базовый ряд E6 столбцами OVL_COL<ряд> (по date, ticker): шум детектора после среза и подлог d+1 касаются и базы."""
+    A = A.copy()
+    A['date'] = pd.to_datetime(A['date'])
+    for r, B in base.items():
+        b = B[['date', 'ticker', 'rv_pred']].rename(columns={'rv_pred': OVL_COL + r})
+        A = A.merge(b.assign(date=pd.to_datetime(b['date'])), on=['date', 'ticker'], how='left')
+    return A
+
+
+def leak_design(design, A, seed, steps, tickers, cuts, name, root=None):
+    if is_overlay(C.validate(design)):
+        A = with_base_cols(A, load_base(C.validate(design), seed, steps, tickers, root))
     return C.leak_check(leak_build(design, seed, steps, tickers), A, f'P:{name}', cuts=cuts)
 
 
@@ -703,6 +844,12 @@ def selftest():
     d = C.validate({'h': 5, 'leg': {'panel': 'factor', 'type': 'HARX', 'regressors': ['S1', 'S2', 'S3', 'S4']}})  # сетка S-наборов (PR #199)
     assert applicable(d)[0] and len(C.variants(d, keys=grid_keys_P(d))) == 36
     assert leak_point(d)['leg']['regressors'] == 'S4' and not C.grid_keys(leak_point(d))
+    # E6: надстройка — ключи базы (mh, бустинг) не мешают; без усадки (factor) — неприменимо
+    e6 = {'h': 5, 'leg': {'panel': 'factor_shrink_05'}, 'mh': {'persist': 'OLS'}, 'boost': {'role': 'residual', 'early_stop': 'qlike_total'}}
+    inp = {'base': {'design_sha': '0' * 64, 'series': 'L3'}}
+    assert applicable(C.with_inputs(e6, inp))[0] and not applicable(e6)[0]
+    assert not applicable(C.with_inputs({**e6, 'leg': {'panel': 'factor'}}, inp))[0]
+    assert C.design_hash(C.with_inputs(e6, inp)) != C.design_hash(C.with_inputs(e6, {'base': {'design_sha': '1' * 64, 'series': 'L3'}}))
     # 5) взвешенная эластичная сеть с равными весами = harx.fit_en
     H, Z = rng.normal(size=(300, 3)), rng.normal(size=(300, 2))
     yy = H @ [0.3, 0.2, 0.1] + Z @ [0.5, 0.0] + rng.normal(0, 0.1, 300)
@@ -756,6 +903,30 @@ def dym():
                                  sha_design=sha[:16], slozhnost=C.complexity(des)))
                 log(f'h={h} {nm} {sn}: строк {len(v)}, детектор {"OK" if summ[-1]["leak_ok"] else "ОШИБКА"}, '
                     f'сдвиг argmax={sc["argmax"]} {"OK" if sc["ok"] else "БЛОК"}, {t1:.1f} с')
+        # E6: надстройка поверх готового ряда из кэша (база — HAR-J d0 ядра, записана во временный кэш дыма)
+        oroot = out / 'ovl_cache'
+        bdes = C.validate({'design': f'P_ovl_baza_h{h}', 'h': h, 'leg': {'type': 'HARJ'}})
+        Vb = C._smoke_series(Dt.A, harj, h, steps)
+        C.write_series(bdes, 'HARJ_d0', Vb[Vb.ticker.isin(tick)], h, 'det', module='L', root=oroot)
+        for pan in OVERLAY_PANELS[1:]:
+            nm = f'P_E6_{pan}'
+            des = C.with_inputs({'design': nm, 'h': h, 'seed': seed, 'leg': {'panel': pan}},
+                                {'base': {'design_sha': C.design_hash(bdes), 'series': 'HARJ_d0'}})
+            V, _, par = run_design(des, Dt, seed, steps, root=oroot)
+            R = leak_design(des, A, seed, steps, tick, cuts, nm, root=oroot)
+            leak_rows += [dict(h=h, design=nm, **r) for r in R.to_dict('records')]
+            v = V['P']
+            sc = C.shift_check(v, A, h, f'P:{nm}', des, block_file=blk)
+            sdvig.append(dict(h=h, design=nm, ryad='P', **{k: x for k, x in sc.items() if k.startswith('corr') or k in ('argmax', 'ok')}))
+            bb = v.merge(Vb[KEY + ['rv_pred']], on=KEY, suffixes=('', '_baza'))
+            dl = np.log(bb.rv_pred / bb.rv_pred_baza)
+            same_rows = len(bb) == len(v) == int(Vb.ticker.isin(tick).sum())
+            par_rows += [dict(design=nm, design_sha=C.design_hash(des), h=h, step=s, param=f'{sn}:{a}', value=x) for sn, s, a, x in par]
+            summ.append(dict(h=h, design=nm, ryad='P', status='ok', rows=len(v), years=f'{v.year.min()}-{v.year.max()}',
+                             dln_vs_harj_mean=float(dl.mean()), dln_vs_harj_sd=float(dl.std()), leak_ok=bool(R.ok.all() and same_rows),
+                             shift_ok=sc['ok'], shift_argmax=sc['argmax'], sha_design=C.design_hash(des)[:16], note='E6 поверх HAR-J d0 (кэш)'))
+            log(f'h={h} {nm}: строк {len(v)} (= база: {same_rows}), Δln к базе {dl.mean():+.3f} ± {dl.std():.3f}, детектор '
+                f'{"OK" if R.ok.all() else "ОШИБКА"}, сдвиг argmax={sc["argmax"]}')
         # положительный контроль сдвига: тот же дизайн на матрице с подлогом «вход d := d+1» должен блокироваться
         des = C.validate({'design': D['designs'][0]['name'], 'h': h, 'seed': seed, 'leg': D['designs'][0]['leg']})
         Vp, _, _ = run_design(des, Data(C.plant_frame(A), tick), seed, steps)

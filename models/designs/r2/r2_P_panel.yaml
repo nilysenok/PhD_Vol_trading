@@ -72,6 +72,19 @@ panel:
   w_lo: 0.25
   w_hi: 0.5
 
+# ---- E6 (блок владельца 20:10, дирижёр 20:3x): усадка поверх готового итогового ряда, без ноги B
+overlay:
+  input: "inputs.base = {design_sha, series} (r2_core.with_inputs; в хэш входит идентичность входа): ряд series дизайна design_sha из кэша
+          (r2_core.load_series; series — имя ряда, иначе — модуль, все его ряды); seed — свой, иначе det"
+  formula: "ln ŷ = (1 − w)·ln F_base + w·(α̃^(h) + β̃·F_mkt) на строках F_base; α̃, β̃ — разложение P по день d (leg.panel_market,
+            leg.panel_beta_window), α̃^(h) = α̃_d + ū^h (κ = leg.pooled_kappa, первая точка), w — по leg.panel (shrink_025 / 05 / state)"
+  market_leg: HARJ                        # F_mkt надстройки — HAR рынка (без Z и сеток): один ряд на базу
+  panels: [factor_shrink_025, factor_shrink_05, factor_shrink_state]
+  other_keys: "прочие ключи дизайна описывают базу (её цепочку); P их не читает"
+  missing: "строки базы без α̃/β̃/F_mkt — база без изменений (ovl_n_bez_panel_val)"
+  output: "ряд P (одна база) или P__<ряд базы>; params_P.csv — ovl_*"
+  leak: "база — столбцы матрицы: шум после среза и подлог «d := d+1» её касаются; part = all — α̃^(h) + β̃·F_mkt модели шага"
+
 # ---- применимость (иначе — NotApplicable до счёта; дизайн не считается и не пишется)
 applicable:
   leg.type: [HARJ, HARX, RVI_anchor, factor]
