@@ -273,6 +273,14 @@ def install_role_wrapper(L):
                 v = d[['date', 'ticker']].merge(bb, on=['date', 'ticker'], how='left')['base_ln'].values if bb is not None else np.full(len(d), np.nan)
                 if k == 'te':
                     v = np.where(np.isnan(v), 0.0, v)
+                if k == 'tr' and np.isnan(v).any():
+                    # у HEAVY нет прогноза на первую дату матрицы (2014-06-09, фильтру нужен лаг): эти строки обучения берут HAR-J
+                    # (l2_lib.har_ln — значение, которое стояло бы без подмены; правило d17_1.ext_base). Не больше одной даты.
+                    na = np.isnan(v)
+                    assert pd.to_datetime(d['date'].values[na]).nunique() == 1 and d['date'].values[na][0] == d['date'].min(), (RS['leg'], step)
+                    orig = D['X'][k][:, -1].astype(np.float64) if cfg.get('harf') else D['off'][k]
+                    v = np.where(na, orig, v)
+                    RS.setdefault('fill', {})[(RS['leg'], step)] = int(na.sum())
                 assert not np.isnan(v).any(), (RS['leg'], step, k)
                 if cfg.get('harf'):
                     assert D['names'][-1] == 'har_ln'
@@ -393,7 +401,8 @@ def close_role(leg, role):
     for m, df in fr.items():
         p = fpath(ryad_role(leg, role, m), 42)
         put(df, p)
-        index_add(p, ryad_role(leg, role, m), 42, df, f'роль {role}, нога {leg}, модель {m}, точки {spec["points"]}, seed 42; без поправки s²')
+        index_add(p, ryad_role(leg, role, m), 42, df, f'роль {role}, нога {leg}, модель {m}, точки {spec["points"]}, seed 42; без поправки s²'
+                  + ('; у ноги нет прогноза на 2014-06-09 — эта дата обучения с HAR-J (17 строк на шаг)' if leg.startswith('HEAVY') else ''))
     log(f'роль {role} × нога {leg}: записано {", ".join(fr)}')
 
 
