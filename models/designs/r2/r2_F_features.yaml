@@ -2,8 +2,9 @@
 # Информационное множество d0: строка (d, ticker) — данные по день d включительно; RV_d до 18:50; без shift(1).
 # Ключи — features_pit_v3h (ISS_start); history_start = 2014 -> строки date >= 2014-06-09.
 agent: F
-version: features_r2_v1
-combined: {file: data/regen/R2/features/features_r2_v1.parquet, sha256: 5b1ab095ab8d048c99b0e89519cda90805a94d8b2c2e7831664569f75f8c12cd}
+version: features_r2_v2
+removed_v2: [g4_jbig_n22, g7_ln_amihud_w, g7_ln_amihud_m]  # блок O (PR #167), разбор — stage razbor
+combined: {file: data/regen/R2/features/features_r2_v2.parquet, sha256: cd78deb7fd38585a68fda06c38602d895821d8d40922adefa3b27ccad12288ca}
 key: [date, ticker]
 history_start: {"2014": "date >= 2014-06-09 (ключи v3)", ISS_start: "все строки (v3h, с 2011-12-08)"}
 groups:
@@ -25,9 +26,9 @@ groups:
     columns: [g3_gap_on, g3_ln_gap2, g3_lasthour, g3_rrv_pk_d, g3_rrv_pk_w, g3_rrv_pk_m, g3_rrv_gk_d, g3_rrv_gk_w, g3_rrv_gk_m]
   G4:
     file: data/regen/R2/feat/G4.parquet
-    sha256: bff05f67117176ab4d18ea7d70c3d8d00b5a2f7d3bfd861d96e17e1fd78392d6
+    sha256: b259fb05fa1a3bcf529782f4410d9bb48bf5dfa27198846f9561c1b3c677e711
     note: "скачки: ln BV, J/RV, число дней J>0 и J/RV≥0,25 за 5/22, дней с последнего, сумма J за 22 — окна включают день d"
-    columns: [g4_ln_bv, g4_jshare, g4_jx_n5, g4_jx_n22, g4_jx_since, g4_jbig_n5, g4_jbig_n22, g4_jbig_since, g4_jx_sum22, g4_ln_jx_sum22]
+    columns: [g4_ln_bv, g4_jshare, g4_jx_n5, g4_jx_n22, g4_jx_since, g4_jbig_n5, g4_jbig_since, g4_jx_sum22, g4_ln_jx_sum22]
   G5:
     file: data/regen/R2/feat/G5.parquet
     sha256: f0028b32a1bae4b228c893decc10aa189b7902a6fab6bbe4ca008d687c8ab947
@@ -40,9 +41,9 @@ groups:
     columns: [g6_usd_ln_rv_d, g6_usd_ln_rv_w, g6_usd_ln_rv_m, g6_br_ln_rv_d, g6_br_ln_rv_w, g6_br_ln_rv_m]
   G7:
     file: data/regen/R2/feat/G7.parquet
-    sha256: 0ae5e47ded1785fbf48e2c5713bbc29747f71486f12c58f692ae7670e5df6103
+    sha256: 26f00fb38d80f8bf28cc4e6c8d20e8760ba078df624afb52ddada7970f4e2948
     note: "ликвидность: ln объёма, ln оборота, оборот к среднему 22, Amihud d/w/m (крейт)"
-    columns: [g7_ln_volume, g7_ln_value, g7_ln_value_rel22, g7_amihud, g7_ln_amihud_d, g7_ln_amihud_w, g7_ln_amihud_m]
+    columns: [g7_ln_volume, g7_ln_value, g7_ln_value_rel22, g7_amihud, g7_ln_amihud_d]
   G8:
     file: data/regen/R2/feat/G8.parquet
     sha256: 117d52c8b3fa35d012825c52ae805fc3d06d8d967b1cca9dcd6b0c73fa65c286
