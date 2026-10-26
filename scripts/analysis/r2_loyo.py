@@ -10,7 +10,7 @@ variant, step ∈ T), столбцы как у designs_val gibrid_v17: q_hyb, q_
   выбранному на T (❓ 1, умолчание). c1, c3 — против E_h; c2 — против одиночных той же s²; c4 — скачок весов ≤ 0,3 и скачок параметра
   калибровки ≤ 50%. Флаги — gibrid_designs.flags (импорт, без изменений; GIBRID_SAME_SLOT=1).
 - п. 2.3: ранги q_u(Y) среди прошедших вход и F_h(d0) (средний при равенстве); R̄ = среднее по 5 складкам; рядом q/E, q/F, σ по годам.
-- п. 2.4: штраф за сложность — из «неотличимых» (R̄ − R̄* ≤ 1 или средний q ≤ 1,01·q*) берётся наименьшая сложность c(u) (schema_v1).
+- п. 2.4: штраф за сложность — из «неотличимых» (R̄ − R̄* ≤ 1 или средний q ≤ 1,01·q*) берётся наименьшая сложность c(u) (schema_v2 = v1 + кластеры 16, 18, 20).
 - п. 2.5: финалисты (до 3 после штрафа + V0-кандидаты, прошедшие вход), 2σ к F_h(d0) по 10 seed (Д24.3), победитель.
 - п. 2.6: сдвиг информационного множества — Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2,−1,0,+1}, медиана по тикерам; argmax ≠ 0 — блок,
   запись в R2/O/blok_sdvig.csv.
@@ -265,7 +265,24 @@ def loyo(tab, F_unit, mode=None, blok=()):
 
 
 # ---------------------------------------------------------------- сложность и штраф (п. 2.4)
-SCHEMA = yaml.safe_load((REPO / CFG['schema']).read_text())
+def _merge(a, b):
+    """Глубокое слияние схемы: b дополняет a (группы — по ключам; листья b — новые)."""
+    out = dict(a)
+    for k, v in b.items():
+        out[k] = _merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) and 'values' not in v else v
+    return out
+
+
+def load_schema(path):
+    """Схема с `extends` (v2 = v1 + кластеры 16, 18, 20, boost.grid_point; S, PR #184): листья базы без изменений, новые — сверху."""
+    raw = yaml.safe_load(Path(path).read_text())
+    if raw.get('extends'):
+        base = load_schema(Path(path).parent / raw['extends'])
+        raw = _merge(base, {k: v for k, v in raw.items() if k != 'extends'})
+    return raw
+
+
+SCHEMA = load_schema(REPO / CFG['schema'])
 NE_SCHITAT = ('design', 'h', 'seed', 'schema', 'ens.seeds', 'selection', 'guards')  # не ключи дизайна или фиксированы протоколом
 
 
@@ -334,8 +351,10 @@ def validate(design):
 
 
 def otlichnye_klyuchi(design):
-    """Ключи дизайна, отличные от default (то, что считает сложность): fixed, ens.seeds и сетка leg.enet по умолчанию — не в счёт."""
-    out = []
+    """Ключи дизайна, отличные от default (то, что считает сложность): fixed, ens.seeds и сетка leg.enet по умолчанию — не в счёт.
+    Сетки групп схемы v2 (k16/k18/k20: группа с метаполем default, листья без default — tau, k, q, lam, delta): список значений — выбор
+    внутри складки, не в счёт; одиночное значение — один раз на группу (как leg.enet и r2_core.complexity). Ключи v2 по умолчанию off."""
+    out, grids = [], []
     for p, v in _flat(design).items():
         if any(p == x or p.startswith(x + '.') for x in NE_SCHITAT) or p not in SPECS:
             continue
@@ -348,13 +367,17 @@ def otlichnye_klyuchi(design):
         elif p == 'leg.enet':
             if isinstance(v, dict) and not all(isinstance(x, list) for x in v.values()):
                 out.append(p)
+        elif 'default' not in s and 'values' in s:  # лист сетки группы v2
+            g = p.rsplit('.', 1)[0]
+            if not isinstance(v, list) and g not in grids:
+                grids.append(g)
         elif 'default' in s and _n(v) != _n(s['default']):
             out.append(p)
-    return out
+    return out + [g + '.*' for g in grids]
 
 
 def slozhnost(design):
-    """c(u), п. 2.4: число ключей со значением не равным default (schema_v1); группы признаков сверх G0 — по одной; fixed — не в счёт;
+    """c(u), п. 2.4: число ключей со значением не равным default (schema_v2; ключи v2 по умолчанию off); группы признаков сверх G0 — по одной; fixed — не в счёт;
     список значений у ключа с default-сеткой (leg.enet) — не в счёт (выбор внутри складки)."""
     return sum(len(set(_flat(design)['features']) - {'G0'}) if p == 'features' else 1 for p in otlichnye_klyuchi(design))
 
@@ -691,7 +714,7 @@ def _zapisat_dizain(d, path):
 def lestnica_ablyacii(win, h, out_dir):
     """Лестница (кластер 10): HAR-J (эталон (а)) → +s² (эталон (б) = E_h) → +HAR-X → +калибровка → +бустинг → +согласование → финал;
     ступени 3–6 — дизайны: ключи победителя по группам LESTNICA накопительно, остальное default; финал — победитель.
-    Абляции: финал минус каждый кластер — ключи этого кластера (schema_v1, поле cluster) возвращаются к default.
+    Абляции: финал минус каждый кластер — ключи этого кластера (schema_v2, поле cluster; сетка группы v2 — к «вся сетка») возвращаются к default.
     Дизайны пишутся в out_dir (<имя>.yaml), у каждого design_sha (r2_core), cache_dir, шаблон рядов."""
     import copy
     e = CFG['etalon']
@@ -718,7 +741,8 @@ def lestnica_ablyacii(win, h, out_dir):
     L.append(fin)
     kl = {}
     for p in otlichnye_klyuchi(win):  # те же ключи, что считает сложность (п. 2.4): ens.seeds, fixed и сетка enet — не абляции
-        kl.setdefault(int(SPECS[p]['cluster']), []).append(p)
+        leaf = p if not p.endswith('.*') else next(q for q in SPECS if q.startswith(p[:-1]) and 'cluster' in SPECS[q])
+        kl.setdefault(int(SPECS[leaf]['cluster']), []).append(p)
     A = []
     for c in sorted(kl):
         d = copy.deepcopy(win)
@@ -726,6 +750,11 @@ def lestnica_ablyacii(win, h, out_dir):
             a, *b = p.split('.')
             if not b:
                 d.pop(a, None)
+            elif b[0] == '*':  # сетка группы v2 — вернуть к «вся сетка»: убрать её листья без default
+                for q in [q for q in SPECS if q.startswith(a + '.') and 'default' not in SPECS[q]]:
+                    d.get(a, {}).pop(q.split('.', 1)[1], None)
+                if a in d and not d[a]:
+                    d.pop(a)
             else:
                 d.get(a, {}).pop(b[0], None)
                 if a in d and not d[a]:
@@ -1074,6 +1103,21 @@ def selftest():
         raise AssertionError('значение вне схемы не поймано')
     except ValueError:
         pass
+    # схема v2 (кластеры 16, 18, 20): ключи принимаются; по умолчанию off — не в счёт; переключатель on — +1; сетка списком — 0,
+    # одиночное значение сетки — +1 на группу; значение вне списка — отказ; сравнение с r2_core.complexity
+    import r2_core as C
+    v2a = {**base1, 'k16': {'gate': 'off'}, 'k18': {'lam_to_ref': 'off'}, 'k20': {'sign_delta': 'off'}}
+    v2b = {**base1, 'k18': {'lam_to_ref': 'on', 'lam': [0.25, 0.5, 0.75, 1.0]}}
+    v2c = {**base1, 'k18': {'lam_to_ref': 'on', 'lam': 0.5}, 'k16': {'gate': 'shock_fresh', 'k': [3, 5, 10], 'q': 0.95},
+           'boost': {**base1['boost'], 'grid_point': 'p07'}}
+    for dz, c_ in ((v2a, 5), (v2b, 6), (v2c, 10)):
+        assert validate(dz) and slozhnost(dz) == c_ == C.complexity(dz), (dz, slozhnost(dz), C.complexity(dz))
+    for bad in ({**base1, 'k20': {'delta': 0.15}}, {**base1, 'k16': {'gate': 'vse'}}):
+        try:
+            validate(bad)
+            raise AssertionError('значение вне схемы v2 не поймано')
+        except ValueError:
+            pass
     # 2σ, финалисты, победитель
     assert sigma2(0.20, 0.21)['passed'] and not sigma2(0.21, 0.21)['passed']
     ref = {s: 0.25 + 0.001 * (s - 46) for s in SEEDS}
@@ -1216,7 +1260,7 @@ def selftest():
     except AssertionError as e:
         assert 'd−1' in str(e)
     print('selftest r2_loyo: OK (v3: вложенный выбор по c3, вход (а)–(в) с c1/c2/c4 на T и калибровкой, ранги среди прошедших, '
-          'штраф за сложность, сложность и валидация по schema_v1, финалисты, 2σ, победитель, ложные победители, сдвиг −1/+1 пойман; '
+          'штраф за сложность, сложность и валидация по schema_v2 (= r2_core.complexity), финалисты, 2σ, победитель, ложные победители, сдвиг −1/+1 пойман; '
           'нет утечки отложенного года; v2 справочно; чтение шагов ≤ 6, OOS s², median-агрегат, HAR-CJ)')
 
 
