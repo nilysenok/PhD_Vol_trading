@@ -768,7 +768,7 @@ def phase_fn(design, seed, steps):
             res[f'M_{ry}'] = out
             metas.append((ry if len(bases) > 1 else '', meta))
     cd = C.cache_dir(design, root=root)
-    write_params(design, h, seed, metas, cd / PARAMS_FILE)
+    write_params(design, h, seed, metas, C.params_path(design, MODULE, root=root))  # r2_core (PR #201): <кэш>/<hash16>/params_M.csv
 
     def ident(p):
         p = Path(p) if not isinstance(p, str) else p
