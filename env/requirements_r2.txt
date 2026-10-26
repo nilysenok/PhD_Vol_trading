@@ -1,0 +1,42 @@
+# Окружение второго раунда гибрида (R2) на сервере.
+# Версии — как на Маке, где считался первый раунд (docs/otchety/FINAL_DESIGN.md, раздел 6 «Поля дизайна»):
+#   Python 3.9.6, lightgbm 4.6.0, xgboost 2.1.4, numpy 2.0.2, pandas 2.3.3, optuna 4.7.0, scipy 1.13.1, scikit-learn 1.6.1.
+# Остальное — то, что импортируют scripts/analysis/r2_*.py и их зависимости (d24_1, d17_1, l2_lib, harx, gibrid_*, garch_sv, tune_L2):
+#   statsmodels (l2_lib), arch (garch_sv, HEAVY), pyarrow (parquet), PyYAML (yaml-спецификации), и транзитивные зависимости.
+# Версии транзитивных — из `pip freeze` Мака 26.10.2026.
+# Не закреплено намеренно: greenlet (SQLAlchemy ставит его только на Linux x86_64/aarch64, на Маке arm64 его нет).
+# xgboost 2.1.4 под Linux x86_64 тянет nvidia-nccl-cu12 (~200 МБ, для счёта на CPU не используется) — это нормально.
+# Установка: env/setup_server.sh (pip install --only-binary=:all: -r env/requirements_r2.txt).
+
+# --- ядро (FINAL_DESIGN §6)
+numpy==2.0.2
+pandas==2.3.3
+scipy==1.13.1
+scikit-learn==1.6.1
+lightgbm==4.6.0
+xgboost==2.1.4
+optuna==4.7.0
+
+# --- импортируют скрипты R2
+statsmodels==0.14.6
+arch==7.2.0
+pyarrow==21.0.0
+PyYAML==6.0.3
+
+# --- транзитивные (как на Маке)
+joblib==1.5.3
+threadpoolctl==3.6.0
+patsy==1.0.2
+packaging==26.0
+python-dateutil==2.9.0.post0
+pytz==2025.2
+tzdata==2025.3
+six==1.15.0
+alembic==1.16.5
+SQLAlchemy==2.0.46
+Mako==1.3.10
+MarkupSafe==3.0.3
+colorlog==6.10.1
+tqdm==4.67.3
+typing_extensions==4.15.0
+tomli==2.4.0
