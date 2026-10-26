@@ -365,7 +365,8 @@ class Fit:
         return _dc().ds_key(**ck, lib=self.m, lab=_ah(lab), w=_ah(w), init=_ah(off if self.bm else None), cats=list(self.cats),
                             max_bin=MAX_BIN)
 
-    def train(self, X, y, off, w, ref, Xv=None, yv=None, offv=None, nmax=NMAX, es=True, ytr_lab=None, init=None, ck=None, stop=None):
+    def train(self, X, y, off, w, ref, Xv=None, yv=None, offv=None, nmax=NMAX, es=True, ytr_lab=None, init=None, ck=None, stop=None,
+              yv_lab=None, pat=PAT):
         """ck — части ключа кэша наборов (fit_step); None — набор строится здесь (как R1). ref может быть функцией (ленивые бины шага 1).
         stop(n) -> bool — колбэк после n-го дерева (es = False): self.b — обучаемая модель; True — обучение прекращается (es_search)."""
         lab = self.labels(y, off) if ytr_lab is None else ytr_lab
@@ -380,8 +381,9 @@ class Fit:
                 dtr = xgb.QuantileDMatrix(X, lab, weight=w, base_margin=off if self.bm else None, max_bin=MAX_BIN, ref=ref, **kw)
             prm = _xprm(self.p, self.obj, self.seed, self.mono, lab, self.bm)
             if es:
-                dva = xgb.QuantileDMatrix(Xv, self.labels(yv, offv), base_margin=offv if self.bm else None, ref=dtr, max_bin=MAX_BIN, **kw)
-                b = xgb.train(prm, dtr, nmax, evals=[(dva, 'val')], early_stopping_rounds=PAT, verbose_eval=False)
+                dva = xgb.QuantileDMatrix(Xv, self.labels(yv, offv) if yv_lab is None else yv_lab, base_margin=offv if self.bm else None,
+                                          ref=dtr, max_bin=MAX_BIN, **kw)
+                b = xgb.train(prm, dtr, nmax, evals=[(dva, 'val')], early_stopping_rounds=pat, verbose_eval=False)
                 self.n = int(b.best_iteration) + 1
             else:
                 cbs = None
@@ -410,9 +412,9 @@ class Fit:
                               categorical_feature=self.cats or 'auto', free_raw_data=False)
         prm = _lprm(self.p, self.obj, self.seed, self.mono)
         if es:
-            dva = lgb.Dataset(Xv, self.labels(yv, offv), init_score=offv if self.bm else None, reference=dtr,
+            dva = lgb.Dataset(Xv, self.labels(yv, offv) if yv_lab is None else yv_lab, init_score=offv if self.bm else None, reference=dtr,
                               categorical_feature=self.cats or 'auto', free_raw_data=False)
-            b = lgb.train(prm, dtr, nmax, valid_sets=[dva], callbacks=[lgb.early_stopping(PAT, verbose=False)])
+            b = lgb.train(prm, dtr, nmax, valid_sets=[dva], callbacks=[lgb.early_stopping(pat, verbose=False)])
             self.n = int(b.best_iteration)
         else:
             cbs = None
@@ -488,6 +490,21 @@ def es_qlike_total(fit, Xi, yi, offi, wi, ref, Xf, yf, offf, nmax, pat, ck=None)
 
 
 # ---------------------------------------------------------------- одна модель шага (одна lib)
+ES_NMAX = 300   # решение дирижёра 26.10 ~17:45: во всех фазах B–E ≤ 300 деревьев, patience 30, остановка — на внутренней складке
+
+
+def es_policy(ctx, d, role):
+    """Ранняя остановка (решение дирижёра 26.10 ~17:45, протокол v4): НИКОГДА не на годе оценки — независимо от boost.early_stop
+    дизайна (yaml драйвера). Внутренняя складка — год vy−1 с эмбарго h; ≤ 300 деревьев, patience 30. Метрика:
+      'target'      — скрининг (подвыборка строк фазы B: --row-frac) и роль feature (V0 бустинг не обучает): нативная метрика цели;
+      'qlike_total' — остаточный ученик (residual, residual_std, offset) вне скрининга: QLIKE итога ln ноги + f.
+    'native_r1' — только контроль движка с R1 (ctx['_r1'], cmd_control): остановка на val-году, как в первом раунде."""
+    if ctx.get('_r1') and d['boost']['early_stop'] == 'native':
+        return 'native_r1'
+    screening = ctx.get('_rowmask') is not None or bool(ctx.get('_half'))
+    return 'target' if (screening or role == 'feature') else 'qlike_total'
+
+
 def objective_of(d, role):
     if role == 'offset':
         return 'gamma'
@@ -564,7 +581,8 @@ def fit_step(ctx, d, role, m, step, obj=None, label_fn=None):
     ck = None if ck0 is None else dict(ck0, rows=_ah(tr), legv=_ah(legtr), part='final')
     fit = Fit(m, p, obj if not isinstance(obj, tuple) else obj, seed, mono, cats, has_off)
     nmax = int(YB['lhs']['nmax']) if use_lhs else NMAX
-    if d['boost']['early_stop'] == 'native':
+    es_mode = es_policy(ctx, d, role)
+    if es_mode == 'native_r1':   # только контроль движка с R1 (ctx['_r1']): остановка на val-году, как в первом раунде
         if lab is not None:
             labva = (np.log(yva + 1e-10) - legva) / sgva if sgva is not None else None
             if labva is None:
@@ -573,8 +591,13 @@ def fit_step(ctx, d, role, m, step, obj=None, label_fn=None):
                 fit = _train_std(fit, Xtr, lab, w, ref() if callable(ref) else ref, Xva, labva, nmax)
         else:
             fit.train(Xtr, ytr, offtr, w, ref, Xva, yva, offva, nmax=nmax, ck=ck)
-    else:  # qlike_total: внутренняя складка vy−1, затем обучение на годах < vy с найденным числом деревьев
+    else:  # внутренняя складка vy−1 (решение дирижёра 26.10 ~17:45), затем обучение на годах < vy с найденным числом деревьев
         ti, fi, _ = split(ctx, d, step, before=vy - 1)
+        # год остановки < года оценки: строки складки — год vy−1, окна их целей кончаются до 1 января vy (эмбарго h)
+        assert len(fi) and int(A['year'].values[fi].max()) == vy - 1 < vy, ('ранняя остановка не на внутренней складке', step, vy)
+        import r2_core as C
+        assert (pd.to_datetime(C._tend(A, h).values[fi]) < pd.Timestamp(f'{vy}-01-01')).all(), ('окно цели складки заходит в год оценки', vy)
+        assert not np.intersect1d(fi, va).size and not np.intersect1d(ti, va).size
         # нога шага t−1 (обучена на годах < vy−1): внутри выборки на обучении складки, OOS на годе vy−1; на шаге 1 (складка 2015,
         # вне метрик) шага 0 нет — нога шага 1 внутри выборки
         li = leg_train(ctx, d, step - 1, ti) if step > 1 else leg_train(ctx, d, step, ti)
@@ -588,9 +611,21 @@ def fit_step(ctx, d, role, m, step, obj=None, label_fn=None):
         if role == 'offset':
             s2i = float(np.var(np.log(np.clip(yi, 1e-10, None)) - li))
             oi, of = oi + s2i / 2, of + s2i / 2
-        nm = int(YB['lhs']['nmax']) if use_lhs else 300
+        nm = int(YB['lhs']['nmax']) if use_lhs else ES_NMAX
+        pat = int(YB['lhs']['patience'])
         cki = None if ck0 is None else dict(ck0, rows=_ah(ti), legv=_ah(li), part='inner')
-        if role == 'residual_std' and obj != 'gamma':
+        if es_mode == 'target':   # по цели: нативная метрика objective на складке (метка — в пространстве обучения), patience 30
+            fi_fit = Fit(m, p, obj, seed, mono, cats, has_off)
+            wi = weights(ctx, d, ti)
+            if role == 'residual_std' and obj != 'gamma':
+                sgi, sgf = sigma_t(ctx, step, ti, fi, li, lf, h)
+                labi, labf = (np.log(yi + 1e-10) - li) / sgi, (np.log(yf + 1e-10) - lf) / sgf
+                fi_fit.train(Xi, yi, np.zeros(len(ti)), wi, ref, Xf, yf, np.zeros(len(fi)), nmax=nm, ytr_lab=labi, yv_lab=labf, ck=cki,
+                             pat=pat)
+            else:
+                fi_fit.train(Xi, yi, oi, wi, ref, Xf, yf, of, nmax=nm, ck=cki, pat=pat)
+            n = max(1, int(fi_fit.n))
+        elif role == 'residual_std' and obj != 'gamma':
             sgi, sgf = sigma_t(ctx, step, ti, fi, li, lf, h)
             labi = (np.log(yi + 1e-10) - li) / sgi
             fi_fit = Fit(m, p, obj, seed, mono, cats, has_off)
@@ -1317,6 +1352,7 @@ def cmd_drv_smoke(a):
         # настройки фазы B — как в r2_driver (--row-frac 0.5 --row-seed 20261026), плюс --tickers дыма в {extra}
         import r2_driver as DRV
         os.environ['R2_CACHE'] = str(root)
+        DRV.C.CACHE_ROOT = root   # r2_core читает R2_CACHE при импорте; проверка DONE драйвера (PR #196) — в корне дыма
         run_ = DRV.Runner(smoke=False)
         xB = f'--row-frac {DRV.CFG["B"]["row_frac"]} --row-seed {DRV.CFG["B"]["row_seed"]} --tickers ' + ' '.join(tk)
         for m, ds, ex, seeds in (('B', [d], xB, DRV.CFG['B']['seeds']), ('BG', [gd, g61], '--tickers ' + ' '.join(tk), DRV.CFG['D']['seeds'])):
