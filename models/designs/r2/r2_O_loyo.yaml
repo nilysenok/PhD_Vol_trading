@@ -53,7 +53,7 @@ F_h:
 proverka_r1:
   kandidaty: final3/kandidaty          # *.yaml (boost, h)
   gibrid_dirs: [final3/gibrid, final3_dry/gibrid]   # designs_val_<boost>_h<h>.csv; final3_dry — только для D25 (после открытия, справочно)
-  isklyuchit_designs: '\|V0_(?:HAR|HCJ)\|'          # как final3.designs: HAR-J и HAR-CJ — не вклад кандидата
+  isklyuchit_designs: '\|V0_(?:HAR|HCJ)\|'          # как final3.designs: HAR-J и HAR-CJ — не вклад кандидата; V0_HCJ к тому же по d−1 (PR #154)
   out: R2/O/proverka_r1
   sigma_demo:                           # 2σ на сохранённых seed 42–51 (val шагов 1–6): D12_h5
     h: 5
@@ -68,6 +68,11 @@ proverka_r1:
     harj_designs_val: final2/gibrid/D12_h5/designs_val_D12_h5_h5.csv   # HAR-J по s² — строки single|V0_HAR|B-<s²>|L0
 
 s2_codes: [bez, ord, rob, sm, smrob]
+
+# HAR-CJ (дирижёр 26.10, аудит справочных PR #154): из справочных день d не видит только HAR-CJ; ячейка V0_HCJ gibrid_v17 строится по d−1 —
+# в отборе R2 не используется (исключена в proverka, assert в series_tab). Если HAR-CJ нужен — только d0 с эмбарго из этого каталога.
+# V0, NN, GARCH, HEAVY, RG день d видят — как есть.
+harcj_d0: vyr/ref_harcj_d0/REF_HARCJ_d0_h{h}_val.parquet
 
 # ---- уровень 1 (после Э, Б1, Б2): спецификация ячеек — R2/O/spec_level1_h{h}.csv
 # колонки: unit (h|нога|роль), role (V0|priznak|ostatok|ofset), leg, variant, files (через ';' — среднее по RV), s2, n_rych
