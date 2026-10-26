@@ -2,7 +2,8 @@
 
 Шаги: среднее позиции и валовой доходности по имеющимся стратегиям на (дата, тикер) →
 комиссия от |Δ средней позиции| на тикере → EW по тикерам → свободный капитал под ставку:
-total = r + max(0, 1−exp)·rf·cal_days − max(0, exp−1)·(key+0,02)/365, excess = total − rf·cal_days.
+total = r + max(0, 1−exp)·rf·cal_days − max(0, exp−1)·(key+0,02)/365·cal_days,
+excess = total − rf·cal_days.
 cal_days — дни [d, d_next) периода позиции d→d+1 (аудит FA, Н2); у восстановленной ставки
 печати (ворота) — прежние (d_prev, d].
 Шарп = mean(excess)/std(excess, ddof=1)·√252 (печать; fix_sharpe — то же «везде»).
@@ -86,7 +87,9 @@ def portfolio(pos: pd.DataFrame, rate: pd.Series, comm: float, agg: str = "pairs
     exp_ = port["exposure"].values
     used = cap_share * exp_
     port["fdr"] = np.maximum(0.0, 1.0 - used) * rf * cal
-    port["margin"] = np.maximum(0.0, used - 1.0) * (kr.values + 0.02) / 365.0
+    # плата за плечо — за те же календарные дни, что и ставка (аудит FA2a, Н4; в воротах не
+    # срабатывает: экспозиция ≤ 1)
+    port["margin"] = np.maximum(0.0, used - 1.0) * (kr.values + 0.02) / 365.0 * cal
     port["total"] = port["r"] + port["fdr"] - port["margin"]
     port["excess"] = port["total"] - rf * cal
     port["cal_days"] = cal

@@ -33,6 +33,11 @@ MUTATIONS = {
     "margin_share_ignored": lambda mp: mp.setattr(msp, "portfolio", _share_ignored(msp.portfolio)),
     "margin_cost_dropped": lambda mp: mp.setattr(s9.Engine, "_finish", mutant(
         s9.Engine._finish, [("total = r + fdr - mg", "total = r + fdr", 1)])),
+    # Н4 вернули: плата за плечо за один день
+    "margin_one_day": lambda mp: (
+        mp.setattr(s9.Engine, "_finish", mutant(s9.Engine._finish, [
+            ("/ 365.0 * self.cal", "/ 365.0", 1)])),
+        mp.setattr(msp, "portfolio", mutant(msp.portfolio, [("/ 365.0 * cal", "/ 365.0", 1)]))),
 }
 
 
@@ -145,9 +150,8 @@ def test_leverage_financing_weekday():
     assert np.allclose(pm["total"], (1 - 0.32) * RATE / 365)
 
 
-@pytest.mark.xfail(strict=True, reason="Н4: плата за плечо начисляется за 1 день, а не за "
-                                       "календарные дни [d, d_next), как ставка на свободный капитал")
 def test_leverage_financing_calendar_days():
+    """Н4 (исправлено): плата за плечо — за календарные дни [d, d_next), как ставка."""
     d = pd.to_datetime(["2021-03-04", "2021-03-05", "2021-03-09"])            # чт, пт → вт
     e = _engine(d, RATE)
     p = s9.Engine.port(e, np.ones(3), 0.0, 1.0, np.full(3, 1.6))
