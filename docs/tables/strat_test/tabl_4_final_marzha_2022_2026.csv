@@ -1,4 +1,4 @@
-scenario;approach;window;sharpe_excess;excess_pct_year;total_pct_year;capital_in_positions_pct;note;d_sharpe_vs_A;p_sharpe;d_ce_g3_pct;p_ce_g3;d_ce_g5_pct;p_ce_g5;d_ce_g10_pct;p_ce_g10
+﻿scenario;approach;window;sharpe_excess;excess_pct_year;total_pct_year;capital_in_positions_pct;note;d_sharpe_vs_A;p_sharpe;d_ce_g3_pct;p_ce_g3;d_ce_g5_pct;p_ce_g5;d_ce_g10_pct;p_ce_g10
 спот: капитал = 100% номинала;A;2022–2026;-0,4203;-1,1954;12,4049;14,3460;;;;;;;;;
 спот: капитал = 100% номинала;B;2022–2026;0,1868;0,3140;13,9143;6,4299;;0,6070;0,0636;1,5851;0,0554;1,6343;0,0489;1,7532;0,0353
 спот: капитал = 100% номинала;C;2022–2026;-0,8265;-1,4537;12,1466;7,7099;;-0,4062;0,9186;-0,1853;0,5821;-0,1384;0,5581;-0,0270;0,5021
