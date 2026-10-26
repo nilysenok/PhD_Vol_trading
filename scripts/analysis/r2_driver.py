@@ -334,7 +334,7 @@ def route(design):
         need.add('R')
     if g('boost.grid') == 'resid_small_v1':  # точки LHS — только BG (r2_roli.cmd_run такие дизайны пропускает, PR #185)
         need.add('BG')
-    elif g('boost.role') != 'none':
+    elif g('boost.role') != 'none' and g('boost.boost_refit') == 'yearly':  # boost_refit ≠ yearly — бустинг у R, итог — ряд R (PR #194)
         need.add('B')
     if any(g(k) not in ('off', 'False', 'direct', 'None') for k in ('mh.scheme', 'mh.persist', 'mh.slope', 'mh.reconcile')) \
             or g('leg.struct') != 'single':
@@ -811,6 +811,24 @@ def pipeline(h, runner, smoke=False, once=False):
             st['zhdyot'] = f'финалисты 10 seed: {why}'
             save_state(h, st, smoke)
             return st
+        # boost_refit = monthly — последним и только для финалистов (дирижёр 17:28); упавший вариант в ворота не идёт
+        ml = CFG['E'].get('monthly_last')
+        if ml:
+            mon = {}
+            for u, d in fin.items():
+                dm = copy.deepcopy(d)
+                _set(dm, ml['key'], ml['value'])
+                dm['design'] = f'{d.get("design", u)}_{ml["key"]}={ml["value"]}'
+                try:
+                    C.validate(dm)
+                    mon[f'{u}_{ml["value"]}'] = _maybe_inputs(dm)
+                except C.DesignError as e:
+                    log(f'конвейер h={h}: {ml["value"]} для {u} не принят схемой: {e}')
+            okm, whym = stage('E_finalisty_monthly', lambda: chain(list(mon.values()), h, CFG['E']['seeds_final'], steps, W, 'Efin',
+                                                                   partial=True))
+            if not okm:
+                st['E_monthly_oshibki'] = whym
+            fin |= {u: d for u, d in mon.items() if final_series(d, h, [CFG['E']['seeds_final'][0]], root)}
         units = fin | v0
     stage('gate_E', lambda: gate_E(h, units, root, list(v0), runner, steps, W))
     report('E', CFG['hs'] if not smoke else SMOKE_HS, smoke)
@@ -826,7 +844,8 @@ def econ(h, runner, smoke=False, once=False):
     ds = read_designs(f'econ_h{h}')
     if smoke:
         ds = ds[:6] + [d for d in ds if 'mh.persist' in d['design']][:2] + \
-            [d for d in ds if {'P', 'L3'} & set(route(d)) and 'R' not in route(d)][:2]
+            [d for d in ds if {'P', 'L3'} & set(route(d)) and 'R' not in route(d)][:2] + \
+            [d for d in ds if 'R' in route(d) and 'monthly' not in d['design']][:2]
     while True:
         ok, why = runner.chain(ds, h, [42], list(SMOKE_STEPS) if smoke else CFG['steps'], CFG['workers']['econ'], 'econ', partial=True)
         if ok or smoke or once or 'ждёт модуль' not in why:
@@ -984,7 +1003,7 @@ def cmd_smoke(a):
        C.SDVIG_EPS == 0.01 and not _ok_midas(3) and _ok_midas(17))
     K = contract_check()
     ok(f'контракт подключённых модулей (опции шаблона есть в argparse модуля): {K}',
-       all(v == 'OK' or v.endswith('ждёт') for v in K.values()) and all(K.get(m) == 'OK' for m in ('L', 'L3', 'P', 'M', 'E', 'G')))
+       all(v == 'OK' or v.endswith('ждёт') for v in K.values()) and all(K.get(m) == 'OK' for m in CFG['modules']))
     T = pd.DataFrame(rows)
     T.to_csv(SMOKE_DIR / 'smoke_driver.csv', index=False)
     with pd.option_context('display.max_colwidth', 120, 'display.width', 220):
@@ -1013,7 +1032,7 @@ def cmd_smoke_real(a):
     os.environ.update(R2_CACHE=str(SMOKE_ROOT), R2_TICKERS=','.join(SMOKE_TICKERS), R2_BLOCK_FILE=str(base / 'blok_sdvig.csv'))
     C.CACHE_ROOT = SMOKE_ROOT
     SMOKE_FLAG.update(on=True, real=True)
-    RUN_EXTRA.update({m: '--tickers ' + ' '.join(SMOKE_TICKERS) for m in ('B', 'BG')})
+    RUN_EXTRA.update({m: '--tickers ' + ' '.join(SMOKE_TICKERS) for m in ('B', 'BG', 'R')})
     if not (DDIR / 'B_h5.yaml').exists():
         cmd_generate()
     runner = Runner(False)

@@ -55,6 +55,9 @@ E:
   seeds_final: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
   lib_final: both_avg
   finalists_k: 3
+  # дирижёр 26.10, 17:28: boost_refit = monthly — последним в очереди и только для финалистов уровня E (вариант каждого финалиста
+  # с boost.boost_refit = monthly, 10 seed, считается после финалистов; в ворота E входит как отдельный кандидат)
+  monthly_last: {key: boost.boost_refit, value: monthly}
   # ключи схемы v1 (по одному изменению к лучшему дизайну D)
   ofat:
     calib.s2_est: [smrob, sm_pooled, sm_by_ticker, sm_roll1y, sm_roll2y, sm_ewma097]
@@ -79,7 +82,7 @@ E:
     leg.panel: [factor, factor_shrink_025, factor_shrink_05, factor_shrink_state]
     leg.refit: [quarterly, monthly]
     leg.rls_lambda: [0.995, 0.99]
-    boost.boost_refit: [quarterly_warm, monthly]
+    boost.boost_refit: [quarterly_warm]           # monthly — см. monthly_last (дирижёр 17:28: медленный, ~12 мин на h в дыме)
     k16.gate: [conf_seed, regime, shock_fresh, soft]       # schema_v2 (кластер 16; halt — только при сборке A)
     k18.lam_to_ref: [on]                                    # 18: λ — сетка внутри складки
     k20.sign_delta: [znak, dolya]                           # 20: δ — сетка внутри складки
@@ -101,7 +104,7 @@ modules:
 # После запуска драйвер сверяет DONE_<модуль>_h{h}_s{seed} по дизайнам: P и M выходят с кодом 0 и при ошибках задач.
   L:  {file: r2_nogi.py,         yaml: r2_L_nogi.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --hs {h}"}
   P:  {file: r2_panel.py,        yaml: r2_P_panel.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --designs {designs}"}
-  R:  {file: r2_refit.py,        yaml: r2_R_refit.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
+  R:  {file: r2_refit.py,        yaml: r2_R_refit.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza} {extra}", leak: "leak --designs {designs} --h {h}"}   # PR #194; boost_refit ≠ yearly — итог R (B пропускает), L3 берёт R_raw
   B:  {file: r2_roli.py,         yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
   BG: {file: r2_resid_grid.py,   yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
   M:  {file: r2_mh.py,           yaml: r2_M_mh.yaml,      run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --designs {designs}"}
