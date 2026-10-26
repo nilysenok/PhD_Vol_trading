@@ -7,8 +7,8 @@
 
 Кластер 16 — ŷ = нога · exp(g_t · c), g_t ∈ [0, 1] по данным ≤ t:
   conf_seed    g = 1{SD_j(c_j) < τ·|c̄|}                                  τ — сетка, выбор вложенно
-  regime       g = P(спокойно на горизонте h) — привратник кластера 13 (r2_ens._gate на матрице r2_ens.prep; обучение — шаг k с
-               эмбарго h, r2_core.train_mask; метка — ln y_h ниже медианы тикера на обучении); по желанию изотонная калибровка
+  regime       g = p0 = P(спокойно на горизонте h) из r2_ens.moe_proba агента E (импорт — один источник вероятностей привратника
+               кластера 13: обучение шага с эмбарго h, метка — ln y_h ниже медианы тикера); по желанию изотонная калибровка E
   shock_fresh  g = 0 в первые k торговых дней после дня s со скачком RV рынка (среднее rv_d d0 по всем тикерам) выше q-квантиля
                прошлых W дней (день s — первый); k, q — сетка
   halt         g = 0, если окно цели [d+1, d+h] пересекает остановку торгов 28.02–23.03.2022 — свойство модели, умножается на g
@@ -209,42 +209,17 @@ def halt_for(F, A, h):
     return halt_g(b['date'].values, te, h)
 
 
-# --- regime: привратник кластера 13 (r2_ens._gate / prep / _z), P(спокойно)
+# --- regime: P(спокойно) = p0 из r2_ens.moe_proba (агент E); слагаемые привратника — рыночные S3
 REG_TERMS = ['ln_rvi2', 'ln_rvm_imoex', 'lhar_1', 'lhar_5', 'lhar_22', 'pc1']
 
 
-def regime_model_P(M, h, k, gate='logit', seed=42, emb=True):
-    """Привратник шага k: обучение — r2_core.train_mask (годы < vy, эмбарго h); -> P(спокойно) на всех строках M."""
+def regime_P(M, h, steps, gate='logit', kalibr='none', seed=42, plant=False):
+    """-> DataFrame(date, ticker, step, g): g = p0 = P(спокойно) из r2_ens.moe_proba агента E (импорт — один источник вероятностей
+    привратника кластера 13: обучение шага с эмбарго h, калибровка по OOS шагов < k). plant — подлог E «обучение видит val-год»."""
     import r2_ens as E
-    A = M['A']; vy = 2015 + k; t = f'rv_target_h{h}'
-    lny = np.log(A[t].values + 1e-10)
-    tr = C.train_mask(A, h, vy, emb=emb) & A[t].notna().values
-    G = np.column_stack([M['H'], E._z(M, REG_TERMS, tr)])
-    med = pd.Series(lny[tr]).groupby(A.ticker.values[tr]).median()
-    lab = (lny - A.ticker.map(med).values >= 0).astype(int)  # 0 — спокойно (ниже медианы тикера)
-    clf = E._gate(gate, seed).fit(G[tr], lab[tr])
-    return clf.predict_proba(G)[:, 0], lab
-
-
-def regime_P(M, h, steps, gate='logit', kalibr='none', seed=42):
-    """-> DataFrame(date, ticker, step, g): P(спокойно) модели шага k на строках val-года шага; изотонная — по OOS шагов < k (конец цели < vy)."""
-    from sklearn.isotonic import IsotonicRegression
-    A = M['A']; t = f'rv_target_h{h}'
-    out, past = [], []
-    for k in sorted(steps):
-        vy = 2015 + k
-        P, lab = regime_model_P(M, h, k, gate, seed)
-        va = (A.year.values == vy)
-        Pc = P.copy()
-        if kalibr == 'isotonic' and past:
-            pp = pd.concat(past, ignore_index=True)
-            pp = pp[pp.fd < np.datetime64(f'{vy}-01-01')]
-            if len(pp) > 50:
-                Pc = IsotonicRegression(y_min=0, y_max=1, out_of_bounds='clip').fit(pp.p.values, (pp.lab.values == 0) * 1.0).predict(P)
-        has = va & A[t].notna().values
-        past.append(pd.DataFrame({'p': P[has], 'lab': lab[has], 'fd': pd.to_datetime(A[f'_tend{h}']).values[has]}))
-        out.append(pd.DataFrame({'date': A.date.values[va], 'ticker': A.ticker.values[va].astype(str), 'step': k, 'g': Pc[va]}))
-    return pd.concat(out, ignore_index=True)
+    P = E.moe_proba(M, h, REG_TERMS, mode='k2', gate=gate, calib=kalibr, seed=seed, steps=tuple(sorted(steps)), plant=plant)
+    P = P.assign(date=pd.to_datetime(P['date']), ticker=P['ticker'].astype(str))
+    return P[KEY].assign(g=P['p0'].values.astype(float))
 
 
 def g_regime(F, RP):
@@ -447,18 +422,22 @@ def leak(h, leg, comps, meta, eta, A, harj, steps_all, steps_out, cuts=None, see
             gsr = r.endswith('#g')
             rows.append(dict(h=h, ryad=r, srez=str(cut.date()), kmax=kmax, strok_do=n, max_dln_do=past, max_dln_posle=fut,
                              podlog_max_dln_do=pp, ok=bool(past == 0.0 and n > 0 and (gsr or (fut > 0 and pp > 0)))))
-    # граница года: эмбарго привратника regime (P модели шага vy на всех строках ≤ 31.12 предыдущего года)
+    # граница года: эмбарго привратника regime (r2_ens.moe_proba). Возмущаются только цели, чьё окно заходит за 31.12 (и все цели
+    # после); признаки не трогаются. P модели шага vy = год + 1 не меняется; с подлогом E «обучение видит val-год» — меняется.
+    M0 = E.prep(A, harj)
     for ye in CFG['leak']['cuts_year_end']:
         cut = pd.Timestamp(ye); k = cut.year + 1 - 2015
-        Ap = C.perturb_frame(A, cut, seed + 99)
-        for emb in (True, False):
-            p0, _ = regime_model_P(E.prep(A, harj), h, k, emb=emb)
-            p1, _ = regime_model_P(E.prep(Ap, harj), h, k, emb=emb)
-            m = (pd.to_datetime(A.date) <= cut).values
-            d = float(np.abs(p0[m] - p1[m]).max())
-            rows.append(dict(h=h, ryad=f'G16_regime#emb={emb}', srez=str(cut.date()), kmax=k, strok_do=int(m.sum()), max_dln_do=d,
+        rng = np.random.default_rng(seed + 99)
+        Ap = A.copy(); tc = f'rv_target_h{h}'
+        cross = ((pd.to_datetime(Ap.date) > cut) | ~(pd.to_datetime(Ap[f'_tend{h}']) <= cut)).values
+        Ap.loc[cross, tc] = Ap.loc[cross, tc].values * rng.uniform(0.5, 2.0, int(cross.sum()))
+        Mp = E.prep(Ap, harj)
+        for plant in (False, True):
+            p0, p1 = regime_P(M0, h, [k], plant=plant), regime_P(Mp, h, [k], plant=plant)
+            d = float(np.abs(p0.g.values - p1.g.values).max())
+            rows.append(dict(h=h, ryad=f'G16_regime#emb={not plant}', srez=str(cut.date()), kmax=k, strok_do=len(p0), max_dln_do=d,
                              max_dln_posle=np.nan, podlog_max_dln_do=np.nan,
-                             ok=bool(d == 0.0) if emb else bool(d > 0)))  # без эмбарго должно протекать (положительный контроль)
+                             ok=bool(d > 0) if plant else bool(d == 0.0)))  # без эмбарго должно протекать (положительный контроль)
     return pd.DataFrame(rows)
 
 
