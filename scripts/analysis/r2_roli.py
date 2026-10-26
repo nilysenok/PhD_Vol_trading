@@ -61,6 +61,37 @@ def log(*a):
     print(time.strftime('%F %T'), *a, flush=True)
 
 
+# ---------------------------------------------------------------- кэш наборов (r2_dataset_cache агента S; владелец 16:25, п. 4)
+# Включается, только если в ctx есть '_afp' (отпечаток матрицы A, считается в родителе до fork — prepare_run) и, для cross_fit,
+# '_refit_id' (оценщик ноги). Ключ = ds_key(шаг, признаки, h, цель) + SHA содержимого: строки обучения, ln ноги, метка, веса,
+# init_score, бины шага 1 (reference). Детекторы (leak) портят A — у них '_afp' нет, кэш выключен. R2_B_DSCACHE=0 — выключить.
+DS_ON = os.environ.get('R2_B_DSCACHE', '1') != '0'
+_REFM = {}
+
+
+def _ah(a):
+    """SHA содержимого массива (dtype, форма, байты); None -> None."""
+    if a is None:
+        return None
+    a = np.ascontiguousarray(a)
+    return hashlib.sha256(f'{a.dtype.str}{a.shape}'.encode() + a.tobytes()).hexdigest()[:32]
+
+
+def a_fingerprint(A):
+    """Отпечаток матрицы A (все столбцы и строки) — в родителе до fork."""
+    hv = pd.util.hash_pandas_object(A, index=False).values
+    return hashlib.sha256(json.dumps([str(c) for c in A.columns]).encode() + hv.tobytes()).hexdigest()[:32]
+
+
+def leg_fingerprint(leg):
+    return _ah(pd.util.hash_pandas_object(leg[['date', 'ticker', 'step', 'part', 'base_ln']], index=False).values)
+
+
+def _dc():
+    import r2_dataset_cache as DC
+    return DC
+
+
 def tcol(h):
     return 'rv_target_h1' if h == 1 else f'rv_target_mean_h{h}'
 
@@ -236,7 +267,8 @@ def leg_refit_harj_ols(ctx):
 
 
 # ---------------------------------------------------------------- признаки, веса, цель
-def design_X(ctx, d, role, m, step, idx, legv):
+def design_names(ctx, d, role, m, step):
+    """-> (столбцы A, имена признаков модели с leg_ln)."""
     h = ctx['h']
     ex = excluded(h, role, m, step) if d['boost']['grid'] == 'current' or m == 'xgb' else set()
     if 'groups' in ctx:  # признаки по design.features: G0 (база v3 в версии d0) + группы F G1–G10
@@ -244,11 +276,15 @@ def design_X(ctx, d, role, m, step, idx, legv):
     else:
         fc = ctx['feat_cols']
     keep = [c for c in fc if c not in ex]
+    names = list(keep) + (['leg_ln'] if role == 'feature' or YB['points'][h][role]['leg_feature'] else [])
+    return keep, names
+
+
+def design_X(ctx, d, role, m, step, idx, legv):
+    keep, names = design_names(ctx, d, role, m, step)
     X = ctx['A'].iloc[idx][keep].values.astype(np.float64)
-    names = list(keep)
-    if role == 'feature' or YB['points'][h][role]['leg_feature']:
+    if names[-1:] == ['leg_ln']:
         X = np.column_stack([X, legv])
-        names.append('leg_ln')
     X = np.nan_to_num(X, nan=0, posinf=0, neginf=0).astype(np.float32)
     mono = [1 if (d['boost']['monotone'] == 'on' and role == 'feature' and n in set(YB['monotone_plus'])) else 0 for n in names]
     cats = [i for i, n in enumerate(names) if n.startswith('cat_')]
@@ -325,24 +361,53 @@ class Fit:
             return np.clip(y, 1e-8, None)
         return np.log(y + 1e-10) - off
 
-    def train(self, X, y, off, w, ref, Xv=None, yv=None, offv=None, nmax=NMAX, es=True, ytr_lab=None, init=None):
+    def _key(self, ck, lab, w, off):
+        return _dc().ds_key(**ck, lib=self.m, lab=_ah(lab), w=_ah(w), init=_ah(off if self.bm else None), cats=list(self.cats),
+                            max_bin=MAX_BIN)
+
+    def train(self, X, y, off, w, ref, Xv=None, yv=None, offv=None, nmax=NMAX, es=True, ytr_lab=None, init=None, ck=None, stop=None):
+        """ck — части ключа кэша наборов (fit_step); None — набор строится здесь (как R1). ref может быть функцией (ленивые бины шага 1).
+        stop(n) -> bool — колбэк после n-го дерева (es = False): self.b — обучаемая модель; True — обучение прекращается (es_search)."""
         lab = self.labels(y, off) if ytr_lab is None else ytr_lab
+        if ck is None and callable(ref):
+            ref = ref()
         if self.m == 'xgb':
             kw = dict(feature_types=self._ft(X), enable_categorical=bool(self.cats))
-            dtr = xgb.QuantileDMatrix(X, lab, weight=w, base_margin=off if self.bm else None, max_bin=MAX_BIN, ref=ref, **kw)
+            if ck is not None:
+                dtr = _dc().xgb_qdm(self._key(ck, lab, w, off), lambda: dict(X=X, y=lab, weight=w, base_margin=off if self.bm else None),
+                                    ref=ref() if callable(ref) else ref, max_bin=MAX_BIN, **kw)
+            else:
+                dtr = xgb.QuantileDMatrix(X, lab, weight=w, base_margin=off if self.bm else None, max_bin=MAX_BIN, ref=ref, **kw)
             prm = _xprm(self.p, self.obj, self.seed, self.mono, lab, self.bm)
             if es:
                 dva = xgb.QuantileDMatrix(Xv, self.labels(yv, offv), base_margin=offv if self.bm else None, ref=dtr, max_bin=MAX_BIN, **kw)
                 b = xgb.train(prm, dtr, nmax, evals=[(dva, 'val')], early_stopping_rounds=PAT, verbose_eval=False)
                 self.n = int(b.best_iteration) + 1
             else:
-                b = xgb.train(prm, dtr, nmax, verbose_eval=False, xgb_model=init)
+                cbs = None
+                if stop is not None:
+                    fit = self
+
+                    class _Stop(xgb.callback.TrainingCallback):
+                        def after_iteration(self, model, epoch, evals_log):
+                            fit.b = model
+                            return bool(stop(epoch + 1))
+                    cbs = [_Stop()]
+                b = xgb.train(prm, dtr, nmax, verbose_eval=False, xgb_model=init, callbacks=cbs)
                 self.n = int(b.num_boosted_rounds())
             self.b = b
             return self
         dprm = {'max_bin': MAX_BIN, 'feature_pre_filter': False, 'verbosity': -1}
-        dtr = lgb.Dataset(X, lab, weight=w, init_score=off if self.bm else None, reference=ref, params=dprm,
-                          categorical_feature=self.cats or 'auto', free_raw_data=False)
+        if ck is not None:
+            dtr = _dc().lgb_dataset(self._key(ck, lab, w, off),
+                                    lambda: dict(X=X, y=lab, weight=w, init_score=off if self.bm else None,
+                                                 reference=ref() if callable(ref) else ref, categorical_feature=self.cats or 'auto'),
+                                    params=dprm)
+            if self.bm:   # init_score из save_binary не восстанавливается (контроль kesh, offset) — ставится явно
+                dtr.set_init_score(off)
+        else:
+            dtr = lgb.Dataset(X, lab, weight=w, init_score=off if self.bm else None, reference=ref, params=dprm,
+                              categorical_feature=self.cats or 'auto', free_raw_data=False)
         prm = _lprm(self.p, self.obj, self.seed, self.mono)
         if es:
             dva = lgb.Dataset(Xv, self.labels(yv, offv), init_score=offv if self.bm else None, reference=dtr,
@@ -350,7 +415,14 @@ class Fit:
             b = lgb.train(prm, dtr, nmax, valid_sets=[dva], callbacks=[lgb.early_stopping(PAT, verbose=False)])
             self.n = int(b.best_iteration)
         else:
-            b = lgb.train(prm, dtr, nmax, init_model=init)
+            cbs = None
+            if stop is not None:
+                def _cb(env):
+                    self.b = env.model
+                    if stop(env.iteration - env.begin_iteration + 1):
+                        raise lgb.callback.EarlyStopException(env.iteration, [])
+                cbs = [_cb]
+            b = lgb.train(prm, dtr, nmax, init_model=init, callbacks=cbs)
             self.n = int(b.current_iteration())
         self.b = b
         return self
@@ -382,19 +454,37 @@ def profile_q(y, p):
     return qlike(y[m], c * p[m])
 
 
-def es_qlike_total(fit, Xi, yi, offi, wi, ref, Xf, yf, offf, nmax, pat):
-    """Внутренняя складка: обучение nmax деревьев, число деревьев — по profile-QLIKE итога exp(raw + off) на складке, patience pat."""
-    fit.train(Xi, yi, offi, wi, ref, nmax=nmax, es=False)
-    best, bn, since = np.inf, 1, 0
-    for n in range(1, fit.n + 1):
-        q = profile_q(yf, np.exp(fit.raw(Xf, offf, n)))
-        if q < best - 1e-12:
-            best, bn, since = q, n, 0
+ES_CB = os.environ.get('R2_B_ES_CB', '1') != '0'
+
+
+def es_search(fit, train_call, qfun, pat):
+    """Число деревьев по QLIKE итога на внутренней складке, patience pat. ES_CB (по умолчанию): обучение останавливается колбэком на
+    том же n, на котором прежний цикл по готовой модели из nmax деревьев прервался бы, — деревья 1..n не зависят от того, сколько
+    обучается после, поэтому n и ряды те же (контроль kesh: режим medl = прежний путь), но без лишних деревьев сверх best + pat.
+    R2_B_ES_CB=0 — прежний путь."""
+    st = dict(best=np.inf, bn=1, since=0)
+
+    def step(n):
+        q = qfun(n)
+        if q < st['best'] - 1e-12:
+            st.update(best=q, bn=n, since=0)
         else:
-            since += 1
-            if since >= pat:
+            st['since'] += 1
+        return st['since'] >= pat
+    if ES_CB:
+        train_call(step)
+    else:
+        train_call(None)
+        for n in range(1, fit.n + 1):
+            if step(n):
                 break
-    return bn
+    return st['bn']
+
+
+def es_qlike_total(fit, Xi, yi, offi, wi, ref, Xf, yf, offf, nmax, pat, ck=None):
+    """Внутренняя складка: обучение ≤ nmax деревьев, число деревьев — по profile-QLIKE итога exp(raw + off) на складке, patience pat."""
+    return es_search(fit, lambda stop: fit.train(Xi, yi, offi, wi, ref, nmax=nmax, es=False, ck=ck, stop=stop),
+                     lambda n: profile_q(yf, np.exp(fit.raw(Xf, offf, n))), pat)
 
 
 # ---------------------------------------------------------------- одна модель шага (одна lib)
@@ -441,25 +531,48 @@ def fit_step(ctx, d, role, m, step, obj=None, label_fn=None):
         tk = A['ticker'].values[tr]
         lab = np.clip(ln, pd.Series(tk).map(q[0.01]).values, pd.Series(tk).map(q[0.99]).values) - offtr
     w = weights(ctx, d, tr)
+    # кэш наборов: части ключа, общие для наборов шага (см. DS_ON)
+    rs = d['boost']['resid_source']
+    ck0 = None
+    if DS_ON and ctx.get('_afp') and (rs == 'in_sample' or ctx.get('_refit_id')):
+        if '_legfp' not in ctx:
+            ctx['_legfp'] = leg_fingerprint(ctx['leg'])
+        ck0 = dict(step=step, features=names, h=h, target=f'{_tc(ctx)}|{role}|{obj}', A=ctx['_afp'], leg=ctx['_legfp'],
+                   resid_source=rs, refit=ctx.get('_refit_id') if rs == 'cross_fit' else None, ref=None)
     # бины окна шага 1 (R1) — для шагов >= 2
     ref = None
     if step > 1:
         tr1, _, _ = split(dict(ctx, _half=False), d, 1)   # бины — по полному окну шага 1 (как make_ref при подборе на 50%)
-        l1 = leg_ln(ctx, 1, tr1, 'tr') if d['boost']['resid_source'] == 'in_sample' else cross_fit(ctx, 1, tr1, h)
-        o1 = ~np.isnan(l1)
-        X1 = design_X(ctx, d, role, m, 2, tr1[o1], l1[o1])[0]   # признаки как на шагах >= 2 (исключения шага 2)
-        ref = ref_bins(m, X1, np.zeros(int(o1.sum())), cats)
+
+        def mkref():
+            l1 = leg_ln(ctx, 1, tr1, 'tr') if rs == 'in_sample' else cross_fit(ctx, 1, tr1, h)
+            o1 = ~np.isnan(l1)
+            X1 = design_X(ctx, d, role, m, 2, tr1[o1], l1[o1])[0]   # признаки как на шагах >= 2 (исключения шага 2)
+            return ref_bins(m, X1, np.zeros(int(o1.sum())), cats)
+        if ck0 is None:
+            ref = mkref()
+        else:
+            # бины шага 1 определяются строками шага 1, ногой (и оценщиком cross_fit) и именами признаков шага 2
+            ck0['ref'] = dict(rows1=_ah(tr1), names2=design_names(ctx, d, role, m, 2)[1], lib=m)
+            if m == 'lgbm':
+                ref = mkref        # LightGBM: бины лежат в бинарном наборе — reference строится только при промахе кэша
+            else:                  # XGBoost: QuantileDMatrix требует ref всегда — память процесса по ключу бинов
+                rk = json.dumps(dict(ck0['ref'], A=ck0['A'], leg=ck0['leg'], rs=rs, refit=ck0['refit'], h=h, role=role), sort_keys=True)
+                if rk not in _REFM:
+                    _REFM[rk] = mkref()
+                ref = _REFM[rk]
+    ck = None if ck0 is None else dict(ck0, rows=_ah(tr), legv=_ah(legtr), part='final')
     fit = Fit(m, p, obj if not isinstance(obj, tuple) else obj, seed, mono, cats, has_off)
     nmax = int(YB['lhs']['nmax']) if use_lhs else NMAX
     if d['boost']['early_stop'] == 'native':
         if lab is not None:
             labva = (np.log(yva + 1e-10) - legva) / sgva if sgva is not None else None
             if labva is None:
-                fit.train(Xtr, ytr, offtr, w, ref, Xva, yva, offva, nmax=nmax, ytr_lab=lab)
+                fit.train(Xtr, ytr, offtr, w, ref, Xva, yva, offva, nmax=nmax, ytr_lab=lab, ck=ck)
             else:  # residual_std: ES на val-годе по стандартизованной цели
-                fit = _train_std(fit, Xtr, lab, w, ref, Xva, labva, nmax)
+                fit = _train_std(fit, Xtr, lab, w, ref() if callable(ref) else ref, Xva, labva, nmax)
         else:
-            fit.train(Xtr, ytr, offtr, w, ref, Xva, yva, offva, nmax=nmax)
+            fit.train(Xtr, ytr, offtr, w, ref, Xva, yva, offva, nmax=nmax, ck=ck)
     else:  # qlike_total: внутренняя складка vy−1, затем обучение на годах < vy с найденным числом деревьев
         ti, fi, _ = split(ctx, d, step, before=vy - 1)
         # нога шага t−1 (обучена на годах < vy−1): внутри выборки на обучении складки, OOS на годе vy−1; на шаге 1 (складка 2015,
@@ -476,16 +589,19 @@ def fit_step(ctx, d, role, m, step, obj=None, label_fn=None):
             s2i = float(np.var(np.log(np.clip(yi, 1e-10, None)) - li))
             oi, of = oi + s2i / 2, of + s2i / 2
         nm = int(YB['lhs']['nmax']) if use_lhs else 300
+        cki = None if ck0 is None else dict(ck0, rows=_ah(ti), legv=_ah(li), part='inner')
         if role == 'residual_std' and obj != 'gamma':
             sgi, sgf = sigma_t(ctx, step, ti, fi, li, lf, h)
             labi = (np.log(yi + 1e-10) - li) / sgi
             fi_fit = Fit(m, p, obj, seed, mono, cats, has_off)
-            fi_fit.train(Xi, yi, np.zeros(len(ti)), weights(ctx, d, ti), ref, nmax=nm, es=False, ytr_lab=labi)
-            n = _best_n_std(fi_fit, Xf, yf, lf, sgf, int(YB['lhs']['patience']))
+            wi, zf = weights(ctx, d, ti), np.zeros(len(Xf))
+            n = es_search(fi_fit, lambda stop: fi_fit.train(Xi, yi, np.zeros(len(ti)), wi, ref, nmax=nm, es=False, ytr_lab=labi, ck=cki,
+                                                            stop=stop),
+                          lambda k: profile_q(yf, np.exp(lf + sgf * fi_fit.raw(Xf, zf, k))), int(YB['lhs']['patience']))
         else:
             fi_fit = Fit(m, p, obj, seed, mono, cats, has_off)
-            n = es_qlike_total(fi_fit, Xi, yi, oi, weights(ctx, d, ti), ref, Xf, yf, of, nm, int(YB['lhs']['patience']))
-        fit.train(Xtr, ytr, offtr, w, ref, nmax=n, es=False, ytr_lab=lab)
+            n = es_qlike_total(fi_fit, Xi, yi, oi, weights(ctx, d, ti), ref, Xf, yf, of, nm, int(YB['lhs']['patience']), ck=cki)
+        fit.train(Xtr, ytr, offtr, w, ref, nmax=n, es=False, ytr_lab=lab, ck=ck)
     # прогноз val (yearly) или по подпериодам (boost_refit)
     if d['boost']['boost_refit'] == 'yearly':
         r = fit.raw(Xva, offva if sgva is None else np.zeros(len(va)))
@@ -529,19 +645,6 @@ def _train_std(fit, Xtr, lab, w, ref, Xva, labva, nmax):
         fit.n = int(fit.b.best_iteration)
     del z
     return fit
-
-
-def _best_n_std(fit, Xf, yf, lf, sgf, pat):
-    best, bn, since = np.inf, 1, 0
-    for n in range(1, fit.n + 1):
-        q = profile_q(yf, np.exp(lf + sgf * fit.raw(Xf, np.zeros(len(Xf)), n)))
-        if q < best - 1e-12:
-            best, bn, since = q, n, 0
-        else:
-            since += 1
-            if since >= pat:
-                break
-    return bn
 
 
 # ---------------------------------------------------------------- кластер 15: boost_refit внутри val-года
@@ -670,7 +773,7 @@ def build(design, ctx, steps=range(1, 7)):
 # ---------------------------------------------------------------- дым / контроль / детекторы
 def load_groups(A, h):
     """G0 — признаки features_pit_v3 (config feature_cols + l2_lib.build_features) на матрице d0 ядра; G1–G10 — файл F
-    (features_r2_v1.parquet, колонки групп — r2_F_features.yaml). -> (A с признаками, {группа: колонки})."""
+    (features_r2_v3.parquet — файл и SHA из r2_F_features.yaml combined, колонки групп — оттуда же). -> (A с признаками, {группа: колонки})."""
     import l2_lib as L
     cfg = json.load(open(R / 'features_pit_v3.config.json'))
     FC = [c for c in cfg['feature_cols'] if c in A.columns]
@@ -682,7 +785,7 @@ def load_groups(A, h):
         if g != 'G0':
             groups[g] = list(spec['columns'])
             cols += groups[g]
-    fp = ROOT / FY['combined']['file']   # features_r2_v2 (PR #170): файл и SHA — из yaml F
+    fp = ROOT / FY['combined']['file']   # features_r2_v3 (PR #176): файл и SHA — из yaml F
     if '_fsha' not in _EXC:
         import r2_core as C
         _EXC['_fsha'] = C.sha_file(fp)
@@ -717,18 +820,23 @@ def core_fn(design, seed, steps):
     ❓ (для S) бинарные Dataset / QuantileDMatrix из r2_dataset_cache.py: модуля в базе нет; до него Dataset строится в воркере."""
     import r2_core as C
     S = C.SHARED
-    d = dict(C.validate(design), seed=int(seed))
+    d0 = C.validate(design)
+    d = dict(d0, seed=int(seed))
     h = int(d['h'])
-    legs = S['leg_provider'](d, h)
+    legs = S['leg_provider'](d0, h)   # каталог дизайна (run_phase: cache_dir дизайна как есть) — seed задачи в хэш не подставляется
     if not isinstance(legs, dict):
         legs = {'base': legs}
     out = {}
     for tag, leg in legs.items():   # варианты ноги (сетка L внутри складки) -> ряды B / B__<тег>
-        ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=leg, _half=bool(S.get('B_half', False)), _rowmask=S.get('B_rowmask'))
+        ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=leg, _half=bool(S.get('B_half', False)), _rowmask=S.get('B_rowmask'),
+                   _afp=S.get('B_afp'))
         if S.get('B_lhs_point') is not None:
             ctx['_lhs_point'] = S['B_lhs_point']
         if d['boost']['resid_source'] == 'cross_fit':
             ctx['leg_refit'] = S['leg_refit_provider'](d, h, S['A'], None if tag == 'base' else tag)
+            # оценщик cross_fit (r2_nogi.fit_predict) задан разделом leg дизайна и тегом варианта — в ключ бинов шага 1
+            ctx['_refit_id'] = hashlib.sha256(json.dumps(dict(leg=d.get('leg'), tag=tag, est='r2_nogi.fit_predict'), sort_keys=True,
+                                                         default=str).encode()).hexdigest()[:32]
         nm = S.get('B_series', 'B') + ('' if tag == 'base' else f'__{tag}') + ('_half' if ctx['_half'] else '')
         out[nm] = build(d, ctx, steps=steps)
     return out
@@ -775,8 +883,13 @@ def prepare_run(h, row_frac=None, row_seed=None, tickers=None):
     rm = None
     if row_frac is not None and float(row_frac) < 1:
         rm = np.random.default_rng(int(row_seed)).random(len(A)) < float(row_frac)
+    afp = None
+    if DS_ON:   # кэш наборов: отпечаток A в родителе до fork; ключ различает данные и тикеры (дым на 3 тикерах ≠ боевой счёт)
+        afp = a_fingerprint(A)
+        _dc().features_r2_sha()
     C.share(A=A, M=M, harj=harj, B_groups=groups, leg_provider=leg_from_cache, leg_refit_provider=leg_refit_L, B_rowmask=rm,
-            B_series='B' if rm is None else f'B_rf{int(round(float(row_frac) * 100))}')
+            B_series='B' if rm is None else f'B_rf{int(round(float(row_frac) * 100))}', B_afp=afp)
+    log(f'B prepare_run: строк {len(A)}, кэш наборов {"вкл, корень " + str(_dc().cache_root()) if afp else "выкл"}')
     return A
 
 
@@ -1165,7 +1278,7 @@ def cmd_drv_smoke(a):
     (подпроцесс, --row-frac 0.5 --row-seed 20261026) и `leak --designs`; точка LHS p01 и p61 -> `r2_resid_grid.py run`.
     3 тикера × шаги 1–3 × seed 42; кэш — R2/B/driver_smoke_cache (R2_CACHE), не боевой."""
     import subprocess
-    root = R / 'R2' / 'B' / 'driver_smoke_cache'
+    root = R / 'R2' / 'B' / f'driver_smoke_cache_{time.strftime("%m%d_%H%M")}'   # свежий каталог: DONE прошлых дымов не пропускают счёт
     env = dict(os.environ, R2_CACHE=str(root))
     me, grid = [sys.executable, '-W', 'ignore', str(Path(__file__).resolve())], [sys.executable, '-W', 'ignore', str(HERE / 'r2_resid_grid.py')]
     tk = YB['smoke']['tickers']
@@ -1186,18 +1299,102 @@ def cmd_drv_smoke(a):
         fg = root / f'D_h{h}.yaml'
         fg.write_text(yaml.safe_dump(dict(designs=[gd, g61]), allow_unicode=True, sort_keys=False))
         for cmd in (me + ['drv_legs', '--designs', str(f), '--steps'] + st,
-                    me + ['drv_legs', '--designs', str(fg), '--steps'] + st,
-                    me + ['run', '--designs', str(f), '--h', str(h), '--seeds', '42', '--steps'] + st + ['--workers', '2', '--row-frac', '0.5',
-                                                                                                     '--row-seed', '20261026', '--tickers'] + tk,
-                    grid + ['run', '--designs', str(fg), '--h', str(h), '--seeds', '42', '--steps'] + st + ['--workers', '2', '--tickers'] + tk,
-                    me + ['leak', '--designs', str(f), '--h', str(h)]):
+                    me + ['drv_legs', '--designs', str(fg), '--steps'] + st):
             t0 = time.time()
             rc = subprocess.run(cmd, env=env, cwd=str(REPO)).returncode
             out.append(dict(h=h, cmd=' '.join(cmd[3:6]), rc=rc, sec=round(time.time() - t0, 1)))
             log(f'дым драйвера h={h}: {" ".join(cmd[3:5])} -> код {rc}, {time.time() - t0:.0f} с')
+        if a.subprocess:
+            for cmd in (me + ['run', '--designs', str(f), '--h', str(h), '--seeds', '42', '--steps'] + st + ['--workers', '2', '--row-frac', '0.5',
+                                                                                                         '--row-seed', '20261026', '--tickers'] + tk,
+                        grid + ['run', '--designs', str(fg), '--h', str(h), '--seeds', '42', '--steps'] + st + ['--workers', '2', '--tickers'] + tk,
+                        me + ['leak', '--designs', str(f), '--h', str(h)]):
+                t0 = time.time()
+                rc = subprocess.run(cmd, env=env, cwd=str(REPO)).returncode
+                out.append(dict(h=h, cmd=' '.join(cmd[3:6]), rc=rc, sec=round(time.time() - t0, 1)))
+            continue
+        # через r2_driver.Runner (боевой режим: подпроцесс по шаблону r2_S_driver.yaml modules.B / BG, детектор leak до run);
+        # настройки фазы B — как в r2_driver (--row-frac 0.5 --row-seed 20261026), плюс --tickers дыма в {extra}
+        import r2_driver as DRV
+        os.environ['R2_CACHE'] = str(root)
+        run_ = DRV.Runner(smoke=False)
+        xB = f'--row-frac {DRV.CFG["B"]["row_frac"]} --row-seed {DRV.CFG["B"]["row_seed"]} --tickers ' + ' '.join(tk)
+        for m, ds, ex, seeds in (('B', [d], xB, DRV.CFG['B']['seeds']), ('BG', [gd, g61], '--tickers ' + ' '.join(tk), DRV.CFG['D']['seeds'])):
+            t0 = time.time()
+            ok, why = run_.run(m, ds, h, seeds, [int(s) for s in st], 3, ex, tag='dymB')
+            out.append(dict(h=h, cmd=f'r2_driver.Runner {m} seeds {seeds}', rc=0 if ok else 1, sec=round(time.time() - t0, 1), why=why))
+            log(f'дым драйвера (Runner) h={h} {m}: {"OK" if ok else why}, {time.time() - t0:.0f} с')
     T = pd.DataFrame(out)
     T.to_csv(R / 'R2' / 'B' / 'driver_smoke_B.csv', index=False)
     assert (T.rc == 0).all(), 'дым драйвера: ошибка'
+
+
+KESH_DESIGNS = [
+    ('residual', {'lib': 'lightgbm'}),                                                              # native ES, валид. набор от кэша
+    ('residual', {'grid': 'resid_small_v1', 'early_stop': 'qlike_total', 'lib': 'lightgbm'}),      # фаза D (точка 7)
+    ('offset', {'lib': 'lightgbm', 'early_stop': 'qlike_total'}),                                   # gamma, init_score в бинарнике
+    ('feature', {'lib': 'both_avg'}),                                                               # LGB + XGB (финалисты)
+    ('residual', {'lib': 'xgboost', 'early_stop': 'qlike_total'}),                                  # XGB QuantileDMatrix, внутр. складка
+    ('residual', {'resid_source': 'cross_fit', 'early_stop': 'qlike_total'}),                       # cross_fit: бины шага 1 лениво
+    ('residual_std', {'early_stop': 'qlike_total'}),
+    ('residual', {'boost_refit': 'monthly'}),                                                       # кэш + переобучение без кэша
+    ('residual', {'early_stop': 'qlike_total', '_data': {'recency_halflife': '4y', 'winsor': 'p1_99_by_ticker'}}),  # веса, winsor
+    ('offset', {'lib': 'both_avg'}),                                                                # gamma: init_score / base_margin
+]
+
+
+def cmd_kesh(a):
+    """Контроль кэша наборов (r2_dataset_cache, S): ряды без кэша = с кэшем (холодный — построение, тёплый — чтение бинарника /
+    массивов XGB с диска), побайтно; seed 43 на тёплом кэше = seed 43 без кэша (набор общий для seed). Замер — время одного
+    обучения (шаг × библиотека) без кэша и с тёплым кэшем. Корень — отдельный каталог на /Volumes/RAMcache (не смешивается с боем)."""
+    DC = _dc()
+    os.environ['R2_DS_CACHE'] = str((DC.RAM if DC.RAM.is_dir() else DC.SSD) / f'r2_ds_Bkesh_{time.strftime("%H%M%S")}')
+    log(f'kesh: корень {DC.cache_root()}')
+    rows = []
+    for h in a.hs:
+        ctx0 = d0_ctx(h, tickers=False if a.all else None)
+        afp = a_fingerprint(ctx0['A'])
+        for i, (role, bk) in enumerate(a.designs and [KESH_DESIGNS[j] for j in a.designs] or KESH_DESIGNS):
+            res, sec = {}, {}
+            global ES_CB
+            for mode, seed in (('medl', 42), ('bez', 42), ('holod', 42), ('teplo', 42), ('bez', 43), ('teplo', 43)):
+                ES_CB = mode != 'medl'     # medl — прежний путь (R1/B до 26.10): без кэша, nmax деревьев и цикл по готовой модели
+                ctx = {k: v for k, v in ctx0.items() if not k.startswith('_')}
+                ctx['_lhs_point'] = 7
+                if mode not in ('bez', 'medl'):
+                    ctx['_afp'], ctx['_refit_id'] = afp, 'harj_ols'
+                if mode == 'teplo':
+                    DC._XQ.clear(); _REFM.clear()   # тёплый — из файлов кэша, не из памяти процесса
+                st0 = DC.stats()
+                t0 = time.time()
+                dz = mk(role, bk, h, seed, 'kesh')
+                if '_data' in bk:
+                    dz['data'] = dict(bk['_data'])
+                o = build(dz, ctx, steps=a.steps)
+                sec[(mode, seed)] = time.time() - t0
+                res[(mode, seed)] = o
+                st = {k: v - st0[k] for k, v in DC.stats().items()}
+                log(f'kesh h={h} {role} {bk} {mode} s{seed}: {sec[(mode, seed)]:.2f} с, {json.dumps(st)}')
+            eq = lambda x, y: bool(np.array_equal(res[x].rv_pred.values, res[y].rv_pred.values) and res[x][KEY].equals(res[y][KEY]))
+            libs = 2 if bk.get('lib') == 'both_avg' else 1
+            nfit = len(a.steps) * libs * (2 if bk.get('early_stop') == 'qlike_total' else 1)
+            rows.append(dict(h=h, role=role, keys=json.dumps(bk), strok=len(res[('bez', 42)]),
+                             ravno_medl=eq(('medl', 42), ('bez', 42)), sek_medl=round(sec[('medl', 42)], 2),
+                             ravno_holod=eq(('bez', 42), ('holod', 42)), ravno_teplo=eq(('bez', 42), ('teplo', 42)),
+                             ravno_teplo_s43=eq(('bez', 43), ('teplo', 43)), raznye_seed=not eq(('bez', 42), ('bez', 43)),
+                             obuch=nfit, sek_bez=round(sec[('bez', 42)], 2), sek_holod=round(sec[('holod', 42)], 2),
+                             sek_teplo=round(sec[('teplo', 42)], 2), sek_obuch_bez=round(sec[('bez', 42)] / nfit, 3),
+                             sek_obuch_teplo=round(sec[('teplo', 42)] / nfit, 3)))
+    T = pd.DataFrame(rows)
+    p = R / 'R2' / 'B' / f'kesh_B{"_all" if a.all else ""}.csv'
+    p.parent.mkdir(parents=True, exist_ok=True)
+    T.to_csv(p, index=False)
+    with pd.option_context('display.width', 250, 'display.max_colwidth', 60):
+        print(T.to_string(index=False))
+    ok = bool((T.ravno_medl & T.ravno_holod & T.ravno_teplo & T.ravno_teplo_s43).all())
+    log(f'kesh: {"ВСЕ РАВНЫ ПОБАЙТНО" if ok else "РАСХОЖДЕНИЕ"} -> {p}')
+    if not ok:
+        raise SystemExit(1)
 
 
 def main():
@@ -1210,13 +1407,17 @@ def main():
     p.add_argument('--workers', type=int, default=None); p.add_argument('--row-frac', dest='row_frac', type=float, default=None)
     p.add_argument('--row-seed', dest='row_seed', type=int, default=20261026); p.add_argument('--tickers', nargs='*', default=None)
     p = sp.add_parser('drv_legs'); p.add_argument('--designs', required=True); p.add_argument('--steps', type=int, nargs='+', default=[1, 2, 3])
-    sp.add_parser('drv_smoke')
+    p = sp.add_parser('drv_smoke'); p.add_argument('--subprocess', action='store_true', help='прежний дым (прямые подпроцессы, без Runner)')
     sp.add_parser('control'); sp.add_parser('leak_leg'); sp.add_parser('leak_xfit'); sp.add_parser('shift'); sp.add_parser('core_smoke')
+    p = sp.add_parser('kesh'); p.add_argument('--hs', type=int, nargs='+', default=[5, 22, 1])
+    p.add_argument('--steps', type=int, nargs='+', default=[1, 2, 3]); p.add_argument('--all', action='store_true')
+    p.add_argument('--designs', type=int, nargs='*', default=None)
     a = ap.parse_args()
     if a.cmd == 'leak' and a.designs:
         return cmd_leak_designs(a)
     {'smoke': cmd_smoke, 'control': cmd_control, 'leak': cmd_leak, 'leak_leg': cmd_leak_leg, 'leak_xfit': cmd_leak_xfit,
-     'shift': cmd_shift, 'core_smoke': cmd_core_smoke, 'run': cmd_run, 'drv_legs': cmd_drv_legs, 'drv_smoke': cmd_drv_smoke}[a.cmd](a)
+     'shift': cmd_shift, 'core_smoke': cmd_core_smoke, 'run': cmd_run, 'drv_legs': cmd_drv_legs, 'drv_smoke': cmd_drv_smoke,
+     'kesh': cmd_kesh}[a.cmd](a)
 
 
 if __name__ == '__main__':
