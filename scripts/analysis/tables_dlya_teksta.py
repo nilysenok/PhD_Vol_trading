@@ -395,11 +395,104 @@ def t_pril():
     return T
 
 
+# ---------- табл. 3.4 «Сравнение моделей» (поручение владельца 10:35) ----------
+IST3 = 'dlya_teksta/istochnik_sravnenie_test.csv'
+REFDIR = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/test_locked/ref_nn_garch')
+REF_SHA = {  # docs/otchety/2026-10-26_ref_nn_garch.md, «Хэши SHA-256 (итог, 08:15)»
+    ('LSTM', 1): 'ae726e37ec98ad2547bc9d4f67f98dc69eff06ad6e484103d864614a9bb57e0d', ('LSTM', 5): 'f349ad30f6e0f56b7e71b427d687db9e05cbf2d4d65939c03aa5a58a14a9ec6e',
+    ('LSTM', 22): '0a4e35a5da578519f0bb3d3ffbbaa03da2dd9423c56d7f6efeb5b46afbbaff3c', ('GRU', 1): '5f5443d7f4f05e21874118a8f6f3bc6a2f4a3be08442d23a9a696fab0328d2a3',
+    ('GRU', 5): '02bf4ff2badcad5ef01d8b5198910f2c116371b38e00ac86c340e1172c293370', ('GRU', 22): 'a330b1183a95fb4dc7bb3c59fa76eb5307099804248dbf852ab8dfe0bf576924',
+    ('GJR', 1): '714678801fd872bf8563295af10f24562d0639b0bf142ff21083ef3a6c3fe59f', ('GJR', 5): 'f2a486533ab7d48d48b242c3c62ccb005094d707bbb2b054a5fc7638efa3ae8b',
+    ('GJR', 22): 'b435823e167ddfc6d16bb3b81890b3b321ece952f9b7096563c8d2c0f78588be', ('GARCH', 1): 'db4e7b93ac65227a99a8553535690cce8b7e173f05320297fa2cef52f9d56d9d',
+    ('GARCH', 5): 'cb039e04ea69a5b01ee14ab3526ed400a9053b4baa89a8ec35e21b2df9be4c00', ('GARCH', 22): 'e5a8691ec20a507226b2754733174ecc71598646664a9a5d4fe5ea5972044831'}
+SRAV = {'Финальная (гибридная)': ('rv_pred', 'QLIKE Финальная'), 'HAR-J с поправкой (эталон)': ('har_corr', 'QLIKE HAR-J (б)'),
+        'HAR-J как в диссертации': ('har_raw', 'QLIKE HAR-J (а)'), 'LightGBM одиночный с поправкой': ('lgb_corr', 'QLIKE Лучшая одиночная бустинга'),
+        'XGBoost одиночный с поправкой': ('xgb_corr', None), 'GRU': ('ref_GRU', None), 'LSTM': ('ref_LSTM', None),
+        'GJR-GARCH с калибровкой': ('ref_GJR', None), 'GARCH(1,1) с калибровкой': ('ref_GARCH', None)}
+BL34 = [Blk('2022–2026¹', 'kontrol', 'b'), Blk('2022–2026¹ с правилом⁴ (устойчивость)', 'kontrol', 's'),
+        Blk('2017–2026²', 'vse', 'b'), Blk('2017–2026² с правилом⁴ (устойчивость)', 'vse', 's')]
+SPRAV = ('Справочные модели (GRU, LSTM, GARCH, GJR) открыты на тесте для отчёта по поручению владельца 10:35 и в выборе финала не участвовали; '
+         'срез после единственного запуска теста.')
+
+
+def srez3(D):
+    """QLIKE строк табл. 3.4 «Сравнение моделей» на строках финального теста (фильтр и сортировка test_dop.load); справочные модели
+    присоединяются по (дата, тикер) без досчёта: нет прогноза — строка не входит в QLIKE модели, покрытие пишется."""
+    import hashlib
+    ex, nchk = isklyuchit(D)
+    po = pd.read_csv(TABLES / 'table_3_final_po_godam_test_raw.csv')
+    rows = []
+    for h, base in D.items():
+        base = base.copy()
+        for m in ('GRU', 'LSTM', 'GJR', 'GARCH'):
+            f = REFDIR / f'REF_{m}_h{h}_test.parquet'
+            assert hashlib.sha256(f.read_bytes()).hexdigest() == REF_SHA[(m, h)], f'{f.name}: SHA-256 не совпал с отчётом ref_nn_garch'
+            r = pd.read_parquet(f, columns=['date', 'ticker', 'rv_actual', 'rv_pred'])
+            r['date'] = pd.to_datetime(r['date'])
+            j = base[['date', 'ticker', 'rv_actual']].merge(r, how='left', on=['date', 'ticker'], suffixes=('', '_ref'), validate='1:1')
+            ok = j.rv_actual_ref.notna()
+            assert np.allclose(j.rv_actual[ok], j.rv_actual_ref[ok], rtol=1e-9, atol=0), f'{m} h={h}: rv_actual не совпал'
+            base[f'ref_{m}'] = j.rv_pred.where(j.rv_pred > 0).values
+            nchk += 1
+        for rk, rname in RULE.items():
+            DR = (base[~ex[h]] if rk == 's' else base).reset_index(drop=True)
+            for tag in ('kontrol', 'vse'):
+                a, b = YEARS[tag]
+                P = DR[DR.year.between(a, b)]
+                sv = f'table_3_{tag}_svodka_test_{rname}.csv'
+                for name, (c, scol) in SRAV.items():
+                    v = P[c].notna()
+                    q = FT._q(P[v], c) if v.any() else np.nan
+                    if scol:  # финал, эталоны, LightGBM с поправкой — те же числа, что в сохранённых сводках
+                        assert v.all() and round(q, 4) == num(src(sv, {'h': str(h)}, scol)) and len(P) == int(src(sv, {'h': str(h)}, 'n')), f'{sv} h={h} {name}'
+                        nchk += 1
+                    if c == 'xgb_corr' and tag == 'vse' and rk == 'b':
+                        assert np.isclose(q, po[(po.h == h) & (po['Модель'] == 'XGBoost с поправкой') & (po['Год'] == 'все годы (пул)')].QLIKE.iloc[0], rtol=1e-12)
+                        nchk += 1
+                    miss = P[~v].groupby('year').size()
+                    rows.append({'Период': tag, 'правило': rname, 'h': h, 'Модель': name, 'столбец прогноза': c, 'строк периода': len(P),
+                                 'строк с прогнозом': int(v.sum()), 'покрытие, %': round(100 * v.mean(), 2), 'QLIKE пул': q,
+                                 'нет прогноза (год: строк)': ', '.join(f'{y}: {k}' for y, k in miss.items())})
+    write_df(pd.DataFrame(rows), IST3)
+    print(f'срез 3.4 «Сравнение моделей»: {len(rows)} строк -> {IST3}; контроль: {nchk} сравнений OK')
+    return nchk
+
+
+def pokrytie():
+    """Покрытие справочных моделей по IST3 (без правила) — текст для примечания и README."""
+    out = []
+    for m in ('GRU', 'LSTM', 'GJR-GARCH с калибровкой', 'GARCH(1,1) с калибровкой'):
+        part = []
+        for h in HS:
+            for tag, lab in (('kontrol', '2022–2026'), ('vse', '2017–2026')):
+                r = [x for x in rows_of(IST3) if x['Модель'] == m and x['h'] == str(h) and x['Период'] == tag and x['правило'] == RULE['b']][0]
+                gap = f', нет: {r["нет прогноза (год: строк)"]}' if r['нет прогноза (год: строк)'] else ''
+                part.append(f'H = {h}, {lab}: {r["строк с прогнозом"]} из {r["строк периода"]}{gap}')
+        out.append(f'{m} — ' + '; '.join(part))
+    full = all(x['покрытие, %'] in ('100', '100,0') for x in rows_of(IST3))
+    return ('Покрытие справочных моделей (строк финального теста с прогнозом): ' + ('полное — прогнозы есть для всех строк обоих периодов при всех H, '
+            'включая шаг 10 (01–02.2026).' if full else ' | '.join(out) + '. Пропуски не досчитывались: QLIKE модели — по строкам с прогнозом.'))
+
+
+def t34n():
+    T = Tab('3_4', ['Модель'] + [f'{b.label}, H = {h}' for b in BL34 for h in HS])
+    for name, (c, scol) in SRAV.items():
+        T.start(name)
+        for b in BL34:
+            for h in HS:
+                if scol:
+                    T.cell(f'table_3_{b.tag}_svodka_test_{RULE[b.rule]}.csv', {'h': str(h)}, scol, 'q4')
+                else:
+                    T.cell(IST3, {'Период': b.tag, 'правило': RULE[b.rule], 'h': str(h), 'Модель': name}, 'QLIKE пул', 'q4')
+        T.end()
+    return T
+
+
 def build(v):
-    tabs = [t_models(v, '3_4', ('XGBoost', 'LightGBM', 'HAR-J'), 'pool'), t35(v),
+    tabs = [t_models(v, '3_4' if v == 1 else '3_4_v_prezhn', ('XGBoost', 'LightGBM', 'HAR-J'), 'pool'), t35(v),
             t_models(v, '3_6', ('Гибридная', 'LightGBM', 'XGBoost', 'HAR-J', 'HAR-J с поправкой'), 'pool'),
             t_models(v, '3_7', ('HAR-J', 'HAR-J с поправкой', 'XGBoost', 'LightGBM', 'Гибридная'), 'years'), t38(v), t39(v)]
-    return tabs + ([t_pril()] if v == 2 else [])
+    return ([t34n()] if v == 2 else []) + tabs + ([t_pril()] if v == 2 else [])
 
 
 # ---------- примечания и источники ----------
@@ -422,8 +515,18 @@ SRC_39 = {1: '2022–2026: table_3_kontrol_dm_test.csv; 2025 – 01.2026: table_
 
 
 def foot(v, name):
+    if v == 2 and name == '3_4':
+        return (f'{SPRAV} QLIKE по всем парам (дата, тикер) периода финального теста (фильтр rv_actual > 1e-12), без выбора. «Финальная» — финальный дизайн '
+                '(rv_pred): H = 1 — D22_h1, H = 5 — D12_h5, H = 22 — HAR-J с поправкой. «LightGBM / XGBoost одиночный с поправкой» — ноги финального дизайна '
+                '× F (lgb_corr, xgb_corr; те же ряды, что «LightGBM» и «XGBoost» табл. 3.5–3.7, но с поправкой); при H = 1 и 5 «XGBoost с поправкой» '
+                'совпадает с финалом. LightGBM с поправкой — «лучшая одиночная бустинга», зафиксированная до теста. GRU и LSTM — ансамбль трёх seed с '
+                'поправкой Б0.1; GJR-GARCH и GARCH(1,1) — калибровка a·σ²·F (OLS по логарифмам по тикеру на годе шага t−1); основной rv_pred '
+                'справочных прогнозов, объявленный в отчёте 2026-10-26_ref_nn_garch до теста. ' + pokrytie(),
+                'финал, HAR-J с поправкой, HAR-J как в диссертации, LightGBM с поправкой — table_3_{kontrol,vse}_svodka_test_{bez_zakrytiya,s_zakrytiem}.csv; '
+                'XGBoost с поправкой и справочные — dlya_teksta/istochnik_sravnenie_test.csv (из сохранённых прогнозов test_locked/final3 и test_locked/ref_nn_garch).')
     F = {
         '3_4': ('QLIKE по всем парам (дата, тикер) периода. ' + X_NOTE, SRC_POOL[v]),
+        '3_4_v_prezhn': ('Прежняя табл. 3.4 (до поручения 10:35). QLIKE по всем парам (дата, тикер) периода. ' + X_NOTE, SRC_POOL[v]),
         '3_5': ('QLIKE при H = 1, пул; Δ = QLIKE строки / QLIKE XGBoost (HAR-J) − 1, целые % по значениям таблицы. LSTM и GRU в финальный тест '
                 '(test_locked/final3) не входят — н/д. ' + X_NOTE, SRC_POOL[v]),
         '3_6': ('QLIKE по всем парам (дата, тикер) периода. «Гибридная» — финальный дизайн (rv_pred): H = 1 — D22_h1, H = 5 — D12_h5, '
@@ -441,7 +544,8 @@ def foot(v, name):
 
 
 TITLE = {
-    '3_4': 'Таблица 3.4. QLIKE моделей бустинга и HAR-J (контрольный период 2022–2026; справочно 2017–2026 и 2025 – 01.2026)',
+    '3_4': 'Таблица 3.4. Сравнение моделей: QLIKE на контрольном периоде 2022–2026 и на 2017–2026',
+    '3_4_v_prezhn': 'Прежняя таблица 3.4. QLIKE моделей бустинга и HAR-J (контрольный период 2022–2026; справочно 2017–2026 и 2025 – 01.2026)',
     '3_5': 'Таблица 3.5. QLIKE при H = 1: бустинг и HAR-J; рекуррентные сети в финальный тест не входят',
     '3_6': 'Таблица 3.6. Сводное сравнение моделей (контрольный период 2022–2026; справочно 2017–2026 и 2025 – 01.2026)',
     '3_7': 'Таблица 3.7. Среднее годовых QLIKE моделей (2022–2026; справочно 2017–2026 и 2025 – 01.2026)',
@@ -530,6 +634,8 @@ def readme(rep, nchk):
          'Порядок блоков: 2022–2026 · 2022–2026 с правилом · 2017–2026 · 2017–2026 с правилом · 2025 – 01.2026 (правило там ничего не меняет, блок один). '
          '**Правило сформулировано после первого прогона теста** (поручение 09:55), когда результаты теста были известны. '
          'В 3.8 добавлены тикеры с выигрышем и знаковый тест по тикерам — только иллюстрация: тикеры коррелированы.',
+         f'- **Табл. 3.4 «Сравнение моделей» (поручение владельца 10:35) — `table_3_4.csv`.** {SPRAV} Прежняя табл. 3.4 '
+         '(бустинг без поправки и HAR-J) переименована в `table_3_4_v_prezhn.csv`, числа не менялись.',
          '- **Версия 1 — `v1/table_3_{4..9}.csv`** (PR #118): без правила, блоки 2022–2026 · 2017–2026 · 2025 – 01.2026. Числа совпадают с блоками «без правила» версии 2.',
          '',
          '## Периоды и правило',
@@ -556,7 +662,13 @@ def readme(rep, nchk):
          '`<tag>` — `kontrol` (2022–2026), `vse` (2017–2026), `neotkr` (2025 – 01.2026); `<R>` — `s_zakrytiem` (с правилом) или `bez_zakrytiya` (без правила).',
          '']
     S2 = {
-        '3_4': [('Модель', 'XGBoost, LightGBM, HAR-J — как в диссертации'),
+        '3_4': [('Модель', 'финал, HAR-J с поправкой (эталон), HAR-J как в диссертации, LightGBM и XGBoost одиночные с поправкой, GRU, LSTM, '
+                 'GJR-GARCH и GARCH(1,1) с калибровкой — по поручению владельца 10:35, без выбора'),
+                ('блоки', '2022–2026 · 2022–2026 с правилом · 2017–2026 · 2017–2026 с правилом; H = 1/5/22'),
+                ('финал, HAR-J (б), HAR-J (а), LightGBM с поправкой', '`table_3_<tag>_svodka_test_<R>.csv`: «QLIKE Финальная», «QLIKE HAR-J (б)», '
+                 '«QLIKE HAR-J (а)», «QLIKE Лучшая одиночная бустинга»'),
+                ('XGBoost с поправкой, GRU, LSTM, GJR, GARCH', '`dlya_teksta/istochnik_sravnenie_test.csv`, «QLIKE пул» (там же покрытие по строкам и годам)')],
+        '3_4_v_prezhn': [('Модель', 'XGBoost, LightGBM, HAR-J — как в диссертации (прежняя табл. 3.4, файл `table_3_4.csv` до поручения 10:35)'),
                 ('<блок>, H = 1/5/22: HAR-J', '`table_3_<tag>_svodka_test_<R>.csv`, «QLIKE HAR-J (а)»'),
                 ('<блок>, H = 1/5/22: XGBoost, LightGBM', '`dlya_teksta/istochnik_srez_zakrytie_test.csv`, «QLIKE пул»')],
         '3_5': [('Модель', 'XGBoost, LightGBM, HAR-J; LSTM, GRU — н/д (в тесте final3 нет)'),
@@ -576,7 +688,7 @@ def readme(rep, nchk):
         '3_pril_zakrytie': [('все колонки', '`table_3_zakrytie_isklyucheno.csv` (`test_dop2.py`, PR #120): исключено точек, первая и последняя исключённая t по H; '
                              'последний торговый день до и первый после закрытия')],
     }
-    for name in ('3_4', '3_5', '3_6', '3_7', '3_8', '3_9', '3_pril_zakrytie'):
+    for name in ('3_4', '3_4_v_prezhn', '3_5', '3_6', '3_7', '3_8', '3_9', '3_pril_zakrytie'):
         L += [f'### `table_{name}.csv` — {TITLE[name]}', '', '| колонка | источник |', '|---|---|']
         L += [f'| {a} | {b} |' for a, b in S2[name]]
         L += ['', f'Примечание: {foot(2, name)[0]}', '']
@@ -596,7 +708,13 @@ def readme(rep, nchk):
           'Точки правила — ровно строки `table_3_zakrytie_isklyucheno.csv` (тикер, t от первой до последней исключённой; число точек сверено по каждому тикеру и итогу). '
           'В таблицы идут XGBoost и LightGBM (3.4–3.6) и средние годовых (3.7); остальные строки — для контроля.',
           '',
-          f'Контроль расчёта (v1: {nchk[1]}, v2: {nchk[2]} сравнений, все OK): годовые QLIKE = `table_3_final_po_godam_test`; пул и среднее годовых 2017–2026 = '
+          '`istochnik_sravnenie_test.csv` (табл. 3.4 «Сравнение моделей»): QLIKE пул и покрытие девяти строк × 2022–2026 / 2017–2026 × обе версии × H. '
+          'Справочные — `/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/test_locked/ref_nn_garch/REF_{GRU,LSTM,GJR,GARCH}_h{1,5,22}_test.parquet` '
+          '(SHA-256 сверен с `docs/otchety/2026-10-26_ref_nn_garch.md`), столбец rv_pred; присоединены к строкам финального теста по (дата, тикер), '
+          'rv_actual совпал. Нет прогноза — строка не входит в QLIKE модели, покрытие указано, ничего не досчитывалось. ' + pokrytie(),
+          '',
+          f'Контроль расчёта (v1: {nchk[1]}, v2: {nchk[2]}, табл. 3.4: {nchk[3]} сравнений, все OK): для табл. 3.4 QLIKE финала, обоих HAR-J и LightGBM '
+          'с поправкой и n обеих версий = `table_3_<tag>_svodka_test_<R>.csv`, XGBoost с поправкой 2017–2026 = `table_3_final_po_godam_test`. Годовые QLIKE = `table_3_final_po_godam_test`; пул и среднее годовых 2017–2026 = '
           '`table_3_final_po_godam_test` и `table_3_7_test`; QLIKE финала, HAR-J (а), (б), лучшей одиночной и n обеих версий = `table_3_<tag>_svodka_test_<R>.csv` '
           'и `table_3_kontrol_svodka_test.csv`; без правила = срез v1; на 2025 – 01.2026 с правилом = без правила.',
           '',
@@ -634,6 +752,7 @@ def main():
             nchk[1] = srez1(D)
         if 2 in vs:
             nchk[2] = srez2(D)
+            nchk[3] = srez3(D)
     rep = {}
     for v in vs:
         tabs = build(v)
