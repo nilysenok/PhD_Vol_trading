@@ -63,6 +63,8 @@ moe:
     isotonic: "IsotonicRegression по прошлым OOS привратника (шаги < t, конец цели < 1 янв. vy), по классу, затем нормировка; шаг 1 — без"
   mix: "мягкая: ŷ = Σ p_r·ŷ_r (уровни); moe_hard = 0.7: при max p_r ≥ 0,7 — эксперт argmax"
   auc: "AUC привратника на отложенном годе каждой складки 2017–2021 (k3 — макро one-vs-rest) → moe_auc_h{h}.csv"
+  proba: "публичная r2_ens.moe_proba(M, h, terms, mode, gate, calib, seed, steps, tickers) -> date, ticker, year, step, p0..p{K−1}
+          (калиброванные), p*_raw, lab (−1 — цели нет); те же вероятности, что смешивает moe (общий _moe_steps); импортирует G"
 
 # ------------------------------------------------------------------ входы (ряды L, B, M; формат val: date, ticker, year, step, rv_actual, rv_pred)
 inputs:
