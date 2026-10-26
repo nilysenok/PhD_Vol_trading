@@ -312,7 +312,9 @@ def test_final_test_pseudotest(tmp_path):
 
 @pytest.mark.skipif(os.environ.get("S9_REPRO") == "0", reason="S9_REPRO=0")
 def test_dev_reproduces_final3_tables(tmp_path):
-    """После перевода vpred на final3_full (код главы 3) разработка воспроизводит 10 из 10 таблиц."""
+    """Разработка воспроизводит 10 из 10 эталонных таблиц `docs/tables/strat_dev/s9_*_final3.csv`.
+    Эталоны пересчитаны после аудита FA Н1–Н3 (Ъ 23:15) на σ final3_full, комиссия 0,05%;
+    прежние (до аудита) — docs/otchety/arhiv_do_audita/ (SHA256.txt)."""
     if not (s9.REGEN / "sigma_pred_h1_final3_full.parquet").exists():
         pytest.skip("нет общих данных")
     env = dict(os.environ, S9_TABLES=str(tmp_path),
