@@ -1,0 +1,154 @@
+# R2, агент R: кластер 15 — адаптивное обновление и оценивание под критерий.
+# Протокол v3 — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md (разделы 1, 2.6, 4, 6, 10); схема — models/designs/r2/schema_v1.yaml.
+# Записан до счёта. Модуль ничего не выбирает и метрик не считает: выбор — агент O (r2_loyo), боевой счёт — r2_driver.py агента S.
+agent: R
+script: scripts/analysis/r2_refit.py
+core: scripts/analysis/r2_core.py           # агент S: validate, design_hash, cache_dir, write_series, load_d0, perturb_frame, plant_frame,
+                                            # shift_check, run_phase
+calib_layer: scripts/analysis/r2_calib.py   # агент L (PR #183): calibrate(design, V, S) -> (Vc, stab), S = state_frame(r2_nogi.mat_from(A));
+                                            # если слоя нет — свой слой только для calib.* = default (ниже)
+schema: models/designs/r2/schema_v2.yaml     # r2_core (v2 = v1 + кластеры 16, 18, 20; ключи кластера 15 — из v1 без изменений)
+keys: [leg.refit, leg.rls_lambda, leg.estimator, boost.boost_refit, calib.update]
+# Контракт драйвера S (PR #184, r2_S_driver.yaml modules.R):
+#   run  --designs <yaml> --h --seeds --steps --workers   -> r2_core.run_phase (module = R, DONE_R_h{h}_s{seed}); ворота ведёт драйвер
+#                                                           (--check-gate — сверка ворот здесь); неприменимые дизайны пропускаются с записью в лог
+#   leak --designs <yaml> --h                             -> детектор по одному дизайну на сигнатуру механики R (3 тикера dym, шаги 1–6,
+#                                                           срезы guards.leak); код 1 — провал; таблица — data/regen/R2/R/leak/
+# Режим R2: прогнозы только val 2016–2021 (r2_core.check_no_future перед записью; шаги 7–10 — assert_dev_step).
+# В цепочке драйвера (L, P, R, B, BG, M, L3, E, G) ключи mh.*, ens.*, k16/k18/k20 модуль R не исполняет (их модули — дальше по цепочке).
+neprimenimye_faktory: [B, C, D, E]          # data.history_start = ISS_start (нужна матрица v3h); boost.resid_source = cross_fit,
+                                            # boost.monotone, boost.clip_sigma — у остаточного ученика R не реализованы (при role = none фиктивны)
+features: "r2_core.load_d0 (features_pit_v3 в версии d0 через r2_nogi.load(d0=True), строки <= 2021); эмбарго — по концу цели (_tend{h})"
+max_step: 6                                 # val шагов 1–6 (2016–2021); шаги 7–10 и тест не строятся, test_locked/ не читается
+out:
+  series: "R2/cache/<sha256[:16]>/R[__<вариант>]_h{h}_s{seed}_val.parquet — итог (нога [+ остаточный бустинг] + калибровка; для O s2 = bez);
+           R_raw[__<вариант>]_h{h}_s{seed}_val.parquet — до калибровки (сырой)"
+  params: "R2/cache/<sha256[:16]>/params.csv — design_sha, h, step, param, value, seed; строки модуля — param с префиксом 'R.'
+           (запись под flock; заменяются только свои строки (h, seed, R.*))"
+  dym: data/regen/R2/R/dym                  # дым на Маке — не кэш боевого счёта, в выбор не идёт
+  blok_sdvig: data/regen/R2/O/blok_sdvig.csv  # п. 2.6 через r2_core.shift_check; дым — dym/blok_sdvig_dym.csv
+
+# ---------------------------------------------------------------- нога (общая часть)
+leg:
+  types:
+    HARJ: "HAR-J d0 (harj-столбцы r2_core.load_d0: rv_d, rv_w, rv_m, jump, jump_annualized, jump_lag1/5/22), ln(clip 1e-10), clean (nan -> 0);
+           МНК на ln(rv_target_h + 1e-10) — как r2_nogi.fam_harj / r2_core._harj_ln; leg.regressors = none"
+    HARX: "HAR-J + слагаемые набора leg.regressors (harx.TERMS, как черновик L): HAR-J без штрафа, слагаемые — стандартизация по обучению
+           (взвешенная) и эластичная сеть (Фриш–Во, как harx.fit_en); пропуски слагаемых — (взвешенным) средним обучения"
+  s_terms:
+    S1: [ln_rvi2]
+    S2: [ln_rvi2, ln_rvm_imoex]
+    S3: [ln_rvi2, ln_rvm_imoex, lhar_1, lhar_5, lhar_22, pc1]
+    S4: [ln_rvi2, ln_rvm_imoex, lhar_1, lhar_5, lhar_22, pc1, harq, ln_rsv_pos, ln_rsv_neg]
+    S5: [ln_rvi2, ln_rvm_imoex, lhar_1, lhar_5, lhar_22, pc1, harq, ln_rsv_pos, ln_rsv_neg, ln_rv66, ln_rv132]
+  enet: "leg.enet.lambda — сила штрафа α sklearn, leg.enet.alpha — l1_ratio (0 — гребневая, решение в закрытой форме);
+         координатный спуск на взвешенной матрице Грама, tol 1e-12; список = вариант (свой ряд R__l<λ>_a<α>), выбор — O (п. 2.1)"
+  y: "ln(rv_target_h + 1e-10) (как R1); строки с целью"
+  not_applicable: "иные leg.type, HARJ с regressors ≠ none, HARX без regressors, leg.robust = Huber, struct/moe/panel ≠ default,
+                   data.target ≠ ln_mean, data.train_target_estimator ≠ RV10, data.history_start = ISS_start (нужна матрица v3h)"
+  data_keys: "recency_halflife — веса 0,5^(возраст в годах / T½) (умножаются на веса RLS); window = rolling3y — строки с датой ≥ c − 3 года;
+              winsor = p1_99_by_ticker — обрезка ln цели обучения по квантилям 1/99 тикера (на каждой точке переоценки)"
+
+# ---------------------------------------------------------------- кластер 15
+refit:                                      # leg.refit: точки переоценки c внутри val-года vy шага k
+  yearly: ["01-01"]
+  quarterly: ["01-01", "04-01", "07-01", "10-01"]
+  monthly: ["01-01", "02-01", "03-01", "04-01", "05-01", "06-01", "07-01", "08-01", "09-01", "10-01", "11-01", "12-01"]
+  train_rows: "дата < c, цель есть, конец окна цели (дата строки t+h тикера, r2_core._tend{h}) < c — эмбарго h по концу цели;
+               при c = 1 янв. vy это ровно r2_core.train_mask(A, h, vy)"
+  predict_rows: "строки val-года vy с датой в [c_i, c_{i+1}); коэффициенты на дату t — только из строк, чьи цели известны строго до t"
+  guard: "в каждой точке: max(конец цели обучения) < c ≤ дата прогноза (assert); min разрыв в днях — params R.guard.min_gap_days"
+
+rls:                                        # leg.rls_lambda
+  rule: "λ < 1 — RLS с забыванием в точной форме: на КАЖДЫЙ торговый день t val-года коэффициенты = взвешенный МНК (эл. сеть) по строкам
+         с концом цели < t, вес λ^(возраст в торговых днях: номер дня t − номер дня строки); = рекурсивный RLS с диффузным стартом"
+  lambda_1: "λ = 1 — без забывания; точки переоценки задаёт leg.refit"
+  combo: "λ < 1 только с leg.refit = yearly (ежедневное обновление уже включает любую частоту); иначе — не применим"
+  hx: "HAR и HAR-X: обе ноги (HARJ, HARX S1–S5)"
+
+estimator:                                  # leg.estimator
+  log_ols_calib: "МНК (эл. сеть) в логах + слой калибровки L по ключам calib.* (порядок calib.order)"
+  qmle_level:
+    rule: "QMLE в уровнях: E[RV̄_h | x] = exp(x'β); гамма-потеря Σ w·(y·e^{−x'β} + x'β) (= QLIKE по уровню, совместима с критерием);
+           Ньютон (IRLS) по стандартизованным регрессорам, старт — ln-МНК со сдвигом константы, тёплый старт с прошлой точки переоценки;
+           без штрафа (leg.enet не действует: один ряд); калибровка не применяется (ряд уже несмещён в уровнях)"
+    loss: gamma                             # зафиксировано до счёта; poisson — только selftest (сравнение)
+    newton: {max_iter: 100, tol_step: 1.0e-10, halving: 30}
+    not_applicable: "calib.* ≠ default (включая update = daily) — калибровки у qmle_level нет"
+
+boost:                                      # boost.boost_refit — только при boost.role = residual (остаточный ученик V9 на ноге этого дизайна)
+  roles: [none, residual]
+  lib: lightgbm
+  target: "ln(y + 1e-10) − ln ноги (модель ноги, действующая в точке c; resid_source = in_sample)"
+  features: "G0 = feature_cols features_pit_v3.config.json ∩ матрица d0 (числовые, без rv_target*); G1–G10 — файлы r2_F_features.yaml"
+  params: {objective: regression, num_leaves: 15, max_depth: -1, min_data_in_leaf: 100, learning_rate: 0.03, lambda_l2: 1.0,
+           feature_fraction: 0.7, bagging_fraction: 0.8, bagging_freq: 1, max_bin: 255, num_threads: 1, force_col_wise: true,
+           deterministic: true, verbosity: -1}
+  n_trees: 300                              # без ранней остановки: год валидации — только для оценки
+  boost_refit:
+    yearly: "одна модель на 1 янв. vy (строки train_rows(c))"
+    quarterly_warm: "1 янв. — n_trees; 1 апр./1 июл./1 окт. — тёплый старт lgb.train(init_model = модель прошлого квартала) на train_rows(c),
+                     +warm_add деревьев, lr тот же"
+    monthly: "заново с нуля на 1-е число каждого месяца, n_trees"
+  warm_add: 75
+  seed: "seed дизайна (seed, bagging_seed, feature_fraction_seed — из него)"
+  not_applicable: "role ∉ {none, residual}; при residual: lib ≠ lightgbm, resid_source ≠ in_sample, grid ≠ current, early_stop ≠ native
+                   (здесь не используется: деревьев фиксированное число), monotone/clip_sigma/prob/shrink/objective ≠ default;
+                   boost_refit ≠ yearly при role = none"
+
+calib:                                      # calib.update (кластер 15) — у слоя L
+  update:
+    step: "параметры шага t — по OOS-строкам шагов < t (Б0.1 R1: s² sm — окно шагов t−3..t−1, шаг 1 — без поправки)"
+    daily: "параметры дня d — по OOS-строкам, чьё окно цели кончилось до d (конец цели < d), включая разрешённые строки текущего года;
+            окно s² — 3 года от d (sm)"
+  fallback: "если r2_calib L не импортируется или не работает: свой слой только для calib.* = default (sm, κ = 0,5, const, off, off) в режимах
+             step/daily — по определению черновика L (≥ 30 строк окна, s² = Var(ln(y + 1e-10) − ln ŷ), ŷ·exp(κ·s²)); иные calib.* — не применим"
+  state: "для слоя L: lnrvi2 = harx ln_rvi2; vov = СКО ln RV тикера за 22 дня (≥ 11); I2 = RVI > медианы 252 прошлых дней (≥ 126); tend"
+  finding: "режим step (Б0.1) берёт строки шага t−1, чьё окно цели заходит в год vy (декабрь vy−1, до h−1 дней января): детектор видит это
+            на январском срезе у итога R при h ≥ 5; нога и бустинг (R_raw) на этом срезе Δ = 0. Режим daily — без этого (конец цели < d)"
+
+# ---------------------------------------------------------------- проверки (обязательны: протокол п. 2.6, «детектор как Д26»)
+guards:
+  leak:
+    tol: 0.0                                # строки ≤ среза, шаги с vy ≤ год среза: max |Δ ln| = 0 точно
+    perturb: "r2_core.perturb_frame: входы с датой > среза × U(0,5; 2) и цели, чьё окно заходит за срез"
+    cuts_mid: ["2018-06-29", "2020-03-02", "2021-06-30"]
+    refit_points: ["2019-01-01", "2019-04-01", "2020-07-01", "2021-03-01", "2021-10-01"]   # срез = первый торговый день ≥ точки
+    plants:
+      look1: "r2_core.plant_frame (входы дня d := d+1) после шума — должен ловиться"
+      lookahead: "слой (нога / бустинг / калибровка) обучается на строках с датой < следующей точки переоценки, без эмбарго — должен ловиться"
+      noemb: "слой обучается на строках с датой < c без условия на конец цели — ловится при h ≥ 5 (при h = 1 это не утечка: цель
+              строки d−1 известна в день d); срез — первый торговый день ≥ последней точки переоценки слоя ≤ plant_point"
+    plant_point: "2018-07-01"
+  shift: "r2_core.shift_check каждого ряда (R и R_raw): Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2,−1,0,+1}, 2017–2021, правило O"
+  control: "дизайн по умолчанию (HARJ, yearly, λ = 1, log_ols_calib, step) — R_raw = r2_core._harj_ln (дым) и = R2/cache/E/HARJ_emb_d0
+            (17 тикеров); R = HARJ_emb_d0 × V0_F (sm) L; допуск 1e-8 по ln"
+
+# ---------------------------------------------------------------- дым (Мак): 3 тикера × шаги 1–3 × seed 42 × h ∈ {1, 5, 22}
+dym:
+  tickers: [SBER, LKOH, AFLT]
+  steps: [1, 2, 3]
+  seed: 42
+  h: [1, 5, 22]
+  cuts_mid: ["2017-06-30", "2018-06-29"]
+  refit_points: ["2017-04-01", "2018-01-01", "2018-03-01", "2018-10-01"]
+  designs:
+    - {name: base}
+    - {name: q, leg: {refit: quarterly}}
+    - {name: m, leg: {refit: monthly}}
+    - {name: rls995, leg: {rls_lambda: 0.995}}
+    - {name: rls99, leg: {rls_lambda: 0.99}}
+    - {name: harx_s1_rls99, leg: {type: HARX, regressors: S1, rls_lambda: 0.99, enet: {lambda: 0.01, alpha: 0.5}}}
+    - {name: harx_s3_m, leg: {type: HARX, regressors: S3, refit: monthly, enet: {lambda: 0.01, alpha: 0}}}
+    - {name: harx_s4_grid, leg: {type: HARX, regressors: S4, enet: {lambda: [0.01, 0.1], alpha: [0.5, 1]}}}
+    - {name: qmle, leg: {estimator: qmle_level}}
+    - {name: qmle_m, leg: {estimator: qmle_level, refit: monthly}}
+    - {name: harx_s3_qmle_rls995, leg: {type: HARX, regressors: S3, estimator: qmle_level, rls_lambda: 0.995}}
+    - {name: cal_daily, calib: {update: daily}}
+    - {name: m_cal_daily, leg: {refit: monthly}, calib: {update: daily}}
+    - {name: boost_y, boost: {role: residual}}
+    - {name: boost_qw, boost: {role: residual, boost_refit: quarterly_warm}}
+    - {name: boost_m, boost: {role: residual, boost_refit: monthly}}
+    - {name: na_rls_q, leg: {rls_lambda: 0.99, refit: quarterly}}      # не применим: λ < 1 только с yearly
+    - {name: na_qmle_daily, leg: {estimator: qmle_level}, calib: {update: daily}}   # не применим: у qmle калибровки нет
+    - {name: na_boost_refit_none, boost: {boost_refit: monthly}}        # не применим: boost_refit без бустинга
