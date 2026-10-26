@@ -5,9 +5,19 @@ agent: R
 script: scripts/analysis/r2_refit.py
 core: scripts/analysis/r2_core.py           # агент S: validate, design_hash, cache_dir, write_series, load_d0, perturb_frame, plant_frame,
                                             # shift_check, run_phase
-calib_layer: scripts/analysis/r2_calib.py   # агент L: calibrate(design, V, S) -> (Vc, stab); пока L не в базе — свой слой «по умолчанию» (ниже)
-schema: models/designs/r2/schema_v1.yaml
+calib_layer: scripts/analysis/r2_calib.py   # агент L (PR #183): calibrate(design, V, S) -> (Vc, stab), S = state_frame(r2_nogi.mat_from(A));
+                                            # если слоя нет — свой слой только для calib.* = default (ниже)
+schema: models/designs/r2/schema_v2.yaml     # r2_core (v2 = v1 + кластеры 16, 18, 20; ключи кластера 15 — из v1 без изменений)
 keys: [leg.refit, leg.rls_lambda, leg.estimator, boost.boost_refit, calib.update]
+# Контракт драйвера S (PR #184, r2_S_driver.yaml modules.R):
+#   run  --designs <yaml> --h --seeds --steps --workers   -> r2_core.run_phase (module = R, DONE_R_h{h}_s{seed}); ворота ведёт драйвер
+#                                                           (--check-gate — сверка ворот здесь); неприменимые дизайны пропускаются с записью в лог
+#   leak --designs <yaml> --h                             -> детектор по одному дизайну на сигнатуру механики R (3 тикера dym, шаги 1–6,
+#                                                           срезы guards.leak); код 1 — провал; таблица — data/regen/R2/R/leak/
+# Режим R2: прогнозы только val 2016–2021 (r2_core.check_no_future перед записью; шаги 7–10 — assert_dev_step).
+# В цепочке драйвера (L, P, R, B, BG, M, L3, E, G) ключи mh.*, ens.*, k16/k18/k20 модуль R не исполняет (их модули — дальше по цепочке).
+neprimenimye_faktory: [B, C, D, E]          # data.history_start = ISS_start (нужна матрица v3h); boost.resid_source = cross_fit,
+                                            # boost.monotone, boost.clip_sigma — у остаточного ученика R не реализованы (при role = none фиктивны)
 features: "r2_core.load_d0 (features_pit_v3 в версии d0 через r2_nogi.load(d0=True), строки <= 2021); эмбарго — по концу цели (_tend{h})"
 max_step: 6                                 # val шагов 1–6 (2016–2021); шаги 7–10 и тест не строятся, test_locked/ не читается
 out:

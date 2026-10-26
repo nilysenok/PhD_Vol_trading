@@ -84,9 +84,7 @@ def check(design):
               'leg.pooled_kappa', 'data.target', 'data.train_target_estimator', 'data.history_start'):
         if isinstance(C.get(d, k), list) or not _is_default(d, k):
             bad.append(f'{k} ≠ default')
-    for k in ('mh.scheme', 'mh.decomp_k', 'mh.iterated_k', 'mh.persist', 'mh.slope', 'mh.reconcile'):
-        if not _is_default(d, k):
-            bad.append(f'{k} ≠ default (модуль M)')
+    # mh.*, ens.*, k16/k18/k20 — модули дальше по цепочке драйвера (M, E, G): ряд R для них — вход, здесь не действуют
     for k in ('leg.refit', 'leg.rls_lambda', 'leg.estimator', 'boost.boost_refit', 'calib.update', 'data.recency_halflife',
               'data.window', 'data.winsor', 'boost.role'):
         if isinstance(C.get(d, k), list):
@@ -105,13 +103,15 @@ def check(design):
         if b['lib'] != 'lightgbm':
             bad.append('boost.lib ≠ lightgbm')
         for k in ('boost.resid_source', 'boost.grid', 'boost.early_stop', 'boost.monotone', 'boost.objective', 'boost.clip_sigma',
-                  'boost.shrink', 'boost.prob'):
+                  'boost.shrink', 'boost.prob', 'boost.grid_point'):
             if not _is_default(d, k):
                 bad.append(f'{k} ≠ default')
         for g in d['features']:
             if g != 'G0' and not _group_file(g)[0].exists():
                 bad.append(f'нет файла группы {g}')
-    cal_default = all(_is_default(d, f'calib.{k}') for k in ('s2_est', 'kappa', 's2_state', 'c_qlike', 'mz'))
+    cal_default = all(_is_default(d, f'calib.{k}') for k in ('s2_est', 'kappa', 's2_state', 'c_qlike', 'mz')) and _is_default(d, 'boost.prob')
+    if b['prob'] in ('scale_boost', 'quantile5'):
+        bad.append(f'boost.prob = {b["prob"]} — бустинг, модуль B')
     if leg['estimator'] == 'qmle_level' and not (cal_default and cal['update'] == 'step'):
         bad.append('qmle_level: калибровки нет — calib.* должны быть default')
     if leg['estimator'] == 'log_ols_calib' and not cal_default and calib_layer() != 'L':
@@ -184,7 +184,9 @@ class Ctx:
         return self._F[key]
 
     def S(self):
-        """Состояние для слоя калибровки L (как r2_nogi.mat_L черновика L + state_frame)."""
+        """Состояние для слоя калибровки L: r2_calib.state_frame(r2_nogi.mat_from(A)) — по этой же (возможно, испорченной детектором) матрице."""
+        if self._S is None and calib_layer() == 'L':
+            self._S = _LAYER['mod'].state_frame(_LAYER['N'].mat_from(self.A, self.harj), self.h)
         if self._S is None:
             A = self.A
             rvp = A['rv'].where(A['rv'] > 0).groupby(A['ticker']).ffill().fillna(A['rv']).clip(lower=1e-10)
@@ -522,15 +524,14 @@ _LAYER = {}
 
 
 def calib_layer():
-    """'L' — r2_calib.calibrate агента L работает; 'R' — свой слой для calib.* = default."""
+    """'L' — слой агента L есть (r2_calib.calibrate, state_frame; r2_nogi.mat_from); 'R' — свой слой для calib.* = default."""
     if 'v' not in _LAYER:
         try:
             import r2_calib as LC
-            d = pd.DataFrame({'date': pd.to_datetime(['2017-01-03'] * 40), 'ticker': [f't{i}' for i in range(40)], 'year': 2017, 'step': 2,
-                              'rv_actual': 1e-4, 'rv_pred': 1e-4})
-            s = d[['date', 'ticker']].assign(lnrvi2=0.0, vov=0.0, I2=0.0, tend=pd.Timestamp('2017-01-04'))
-            LC.calibrate({'h': 1}, d, s)
-            _LAYER['v'], _LAYER['mod'] = 'L', LC
+            import r2_nogi as LN
+            for f in (LC.calibrate, LC.state_frame, LN.mat_from):
+                assert callable(f)
+            _LAYER['v'], _LAYER['mod'], _LAYER['N'] = 'L', LC, LN
         except Exception as e:  # noqa: BLE001 — слоя L нет в базе или API другой: свой слой только для default
             _LAYER['v'], _LAYER['err'] = 'R', f'{type(e).__name__}: {e}'
     return _LAYER['v']
@@ -633,8 +634,9 @@ def run_one(design, A, harj, seed, steps, ctx=None):
     keep = set(steps)
     for t in tags:
         Vr = pd.concat(raw[t], ignore_index=True)
-        assert int(pd.to_datetime(Vr.date).dt.year.max()) <= C.MAX_YEAR
+        C.check_no_future(Vr, f'R_raw {t}')   # режим R2: прогнозов ≥ 2022 нет (отказ ядра, строка в R2/S/otkaz_2022.csv)
         Vc, stab, layer = calibrate(d, Vr, ctx, spec)
+        C.check_no_future(Vc, f'R {t}')
         prows.append((min(steps), f'R.calib.{t}.layer_L', float(layer == 'L')))
         if stab is not None:
             for r in stab.to_dict('records'):
@@ -850,7 +852,7 @@ def selftest():
     # 6) применимость
     for bad in ({'h': 5, 'leg': {'rls_lambda': 0.99, 'refit': 'monthly'}}, {'h': 5, 'boost': {'boost_refit': 'monthly'}},
                 {'h': 5, 'leg': {'estimator': 'qmle_level'}, 'calib': {'update': 'daily'}}, {'h': 5, 'leg': {'type': 'HEAVY'}},
-                {'h': 5, 'leg': {'type': 'HARX'}}, {'h': 5, 'boost': {'role': 'feature'}}, {'h': 5, 'mh': {'persist': 'OLS'}},
+                {'h': 5, 'leg': {'type': 'HARX'}}, {'h': 5, 'boost': {'role': 'feature'}}, {'h': 5, 'data': {'history_start': 'ISS_start'}},
                 {'h': 5, 'boost': {'role': 'residual', 'lib': 'both_avg'}}, {'h': 5, 'leg': {'refit': ['yearly', 'monthly']}}):
         try:
             check(bad)
@@ -881,10 +883,43 @@ def control(steps=tuple(range(1, MAXSTEP + 1))):
         dy = float(np.abs(m.rv_actual / m.rv_actual_r - 1).max())
         mc = out['R'].merge(ref.assign(rv_pred=ref.rv_pred * ref.step.map(F)), on=KEY, suffixes=('', '_r'))
         dc = float(np.abs(np.log(mc.rv_pred / mc.rv_pred_r)).max())
-        ok = len(m) == len(ref) == len(out['R_raw']) and dr <= 1e-8 and dc <= 1e-8 and dy < 1e-12
-        rows.append(dict(h=h, strok=len(m), max_dln_raw=dr, max_dln_calib=dc, max_rel_y=dy, sloy=calib_layer(), ok=bool(ok)))
-        log(f'контроль h={h}: R_raw {dr:.1e}, R {dc:.1e}, цель {dy:.1e}', 'OK' if ok else 'ОШИБКА')
+        # свой слой (default) = слой L в обоих режимах calib.update
+        ctx = Ctx(A, harj, h)
+        dfb = {}
+        for upd in ('step', 'daily'):
+            Vl = run_one({'h': h, 'calib': {'update': upd}}, A, harj, 42, steps, ctx=ctx)[0]['R'] if upd == 'daily' else out['R']
+            fb = calib_fallback(out['R_raw'], ctx, upd)[0].merge(Vl, on=KEY, suffixes=('', '_l'))
+            dfb[upd] = float(np.abs(np.log(fb.rv_pred / fb.rv_pred_l)).max())
+        ok = len(m) == len(ref) == len(out['R_raw']) and dr <= 1e-8 and dc <= 1e-8 and dy < 1e-12 and max(dfb.values()) <= 1e-10
+        rows.append(dict(h=h, strok=len(m), max_dln_raw=dr, max_dln_calib=dc, max_rel_y=dy, sloy=calib_layer(),
+                         fallback_vs_L_step=dfb['step'], fallback_vs_L_daily=dfb['daily'], ok=bool(ok)))
+        log(f'контроль h={h}: R_raw {dr:.1e}, R {dc:.1e}, цель {dy:.1e}; свой слой = L: step {dfb["step"]:.1e}, daily {dfb["daily"]:.1e}',
+            'OK' if ok else 'ОШИБКА')
     return pd.DataFrame(rows)
+
+
+def _dym_task(t):
+    """Один контур дыма (воркер пула): детектор, сдвиг каждого ряда, ряды в dym/, params."""
+    S = C.SHARED
+    A, harj, h, nm, des, seed, steps = S['A'], S['harj'], t['h'], t['nm'], t['des'], t['seed'], t['steps']
+    D = CFG['dym']
+    t0 = time.time()
+    base, prows, lr = leak_bench(des, A, harj, seed, steps, D['cuts_mid'], D['refit_points'], CFG['guards']['leak']['plant_point'])
+    shok, sd = [], []
+    for rn, V in base.items():
+        sc = C.shift_check(V, A, h, f'R:{nm}:{rn}', des, block_file=S['dym_bf'])
+        shok.append(sc['ok'])
+        sd.append(dict(h=h, design=nm, ryad=rn, **{k: v for k, v in sc.items() if k.startswith('corr') or k in ('argmax', 'ok', 'n_strok')}))
+        V.to_parquet(S['dym_out'] / f'{nm}__{rn}_h{h}_s{seed}_val.parquet', index=False)
+    main = 'R' if 'R' in base else sorted(x for x in base if x.startswith('R__'))[0]
+    rr = base[main].merge(S['dym_ref'][h][KEY + ['rv_pred']], on=KEY, suffixes=('', '_b'))
+    rr = np.log(rr.rv_pred / rr.rv_pred_b)
+    P = params_frame(des, h, seed, prows).assign(design=nm)
+    s = dict(h=h, design=nm, status='ok', ryadov=len(base), strok=len(base[main]), dln_vs_base_mean=float(rr.mean()),
+             dln_vs_base_sd=float(rr.std()), leak_ok=all(r['ok'] for r in lr), n_leak=len(lr),
+             ogovorok=sum(bool(r.get('ogovorka')) for r in lr), shift_ok=all(shok), n_params=len(P),
+             sec=round(time.time() - t0, 1), sha_design=C.design_hash(des)[:16], slozhnost=C.complexity(des))
+    return s, [dict(h=h, design=nm, **r) for r in lr], sd, P
 
 
 def dym():
@@ -904,37 +939,31 @@ def dym():
         ctl = pd.concat([ctl, pd.DataFrame([dict(h=h, strok=len(m), max_dln_raw=dl, sloy='dym_core', ok=bool(len(m) == len(ref) and dl <= 1e-8))])])
     ctl.to_csv(out / 'kontrol.csv', index=False)
     summ, leak_rows, sdvig, par = [], [], [], []
+    C.share(A=A, harj=harj, dym_ref={h: run_one({'h': h}, A, harj, seed, steps)[0]['R'] for h in D['h']}, dym_out=out, dym_bf=bf)
+    tasks = []
     for h in D['h']:
-        ref = run_one({'h': h}, A, harj, seed, steps)[0]['R']
         for spec in D['designs']:
             nm = spec['name']
             des = C.validate({'design': nm, 'h': h, 'seed': seed, **{k: v for k, v in spec.items() if k != 'name'}})
-            t0 = time.time()
             try:
-                check(des)
+                sp = check(des)
             except NotApplicable as e:
                 summ.append(dict(h=h, design=nm, status='ne_primenim', note=str(e)))
                 continue
-            base, prows, lr = leak_bench(des, A, harj, seed, steps, D['cuts_mid'], D['refit_points'], CFG['guards']['leak']['plant_point'])
-            shok = []
-            for rn, V in base.items():
-                sc = C.shift_check(V, A, h, f'R:{nm}:{rn}', des, block_file=bf)
-                shok.append(sc['ok'])
-                sdvig.append(dict(h=h, design=nm, ryad=rn, **{k: v for k, v in sc.items() if k.startswith('corr') or k in ('argmax', 'ok', 'n_strok')}))
-                V.to_parquet(out / f'{nm}__{rn}_h{h}_s{seed}_val.parquet', index=False)
-            main = 'R' if 'R' in base else sorted(x for x in base if x.startswith('R__'))[0]
-            rr =base[main].merge(ref[KEY + ['rv_pred']], on=KEY, suffixes=('', '_b'))
-            rr = np.log(rr.rv_pred / rr.rv_pred_b)
-            leak_rows += [dict(h=h, design=nm, **r) for r in lr]
-            P = params_frame(des, h, seed, prows).assign(design=nm)
-            par.append(P)
-            summ.append(dict(h=h, design=nm, status='ok', ryadov=len(base), strok=len(base[main]), dln_vs_base_mean=float(rr.mean()),
-                             dln_vs_base_sd=float(rr.std()), leak_ok=all(r['ok'] for r in lr), n_leak=len(lr),
-                             ogovorok=sum(bool(r.get('ogovorka')) for r in lr), shift_ok=all(shok), n_params=len(P),
-                             sec=round(time.time() - t0, 1), sha_design=C.design_hash(des)[:16], slozhnost=C.complexity(des)))
-            log(f'h={h} {nm}: рядов {len(base)}, детектор {"OK" if summ[-1]["leak_ok"] else "ОШИБКА"} ({len(lr)}), '
-                f'сдвиг {"OK" if summ[-1]["shift_ok"] else "БЛОК"}, {summ[-1]["sec"]} с')
-    S = pd.DataFrame(summ)
+            cost = {'monthly': 12, 'quarterly_warm': 5, 'yearly': 3}[sp['boost_refit']] * (10 if sp['role'] == 'residual' else 1)
+            tasks.append(dict(h=h, nm=nm, des=des, seed=seed, steps=steps, cost=cost + (2 if sp['lam'] != 1 else 0)))
+    for r in C.run_pool(_dym_task, tasks, workers=min(12, os.cpu_count() or 4), label='дым R'):
+        if not r['ok']:
+            summ.append(dict(h=r['task']['h'], design=r['task']['nm'], status='oshibka', note=r['error'].strip().splitlines()[-1]))
+            continue
+        s, lr, sd, P = r['result']
+        summ.append(s)
+        leak_rows += lr
+        sdvig += sd
+        par.append(P)
+        log(f'h={s["h"]} {s["design"]}: рядов {s["ryadov"]}, детектор {"OK" if s["leak_ok"] else "ОШИБКА"} ({s["n_leak"]}), '
+            f'сдвиг {"OK" if s["shift_ok"] else "БЛОК"}, {s["sec"]} с')
+    S = pd.DataFrame(summ).sort_values(['h', 'design']).reset_index(drop=True)
     S.to_csv(out / 'dym_summary.csv', index=False)
     pd.DataFrame(leak_rows).to_csv(out / 'leak.csv', index=False)
     pd.DataFrame(sdvig).to_csv(out / 'sdvig.csv', index=False)
@@ -956,17 +985,41 @@ def dym():
     return S
 
 
-def leak_cmd(designs, steps, tickers, seed):
+def _signature(spec):
+    """Что в дизайне меняет механику R (детектору достаточно одного дизайна на сигнатуру)."""
+    return (spec['h'], spec['type'], spec['regs'], spec['refit'], spec['lam'], spec['est'], spec['role'], spec['boost_refit'],
+            spec['update'], spec['cal_default'], tuple(spec['features']) if spec['role'] == 'residual' else (), tuple(sorted(spec['data'].items())))
+
+
+def leak_cmd(designs, steps, tickers, seed, h=None):
+    """Детектор по контракту драйвера (`leak --designs … --h …`): по одному дизайну на сигнатуру механики R; срезы и подлоги —
+    guards.leak yaml (срезы 2018–2021, шаги 1–6). Тикеры — dym.tickers (3), `--tickers ALL` — вся панель. Код 1 — провал."""
     G = CFG['guards']['leak']
-    A, harj = C.load_d0(tickers)
-    rows = []
+    tk = None if tickers == ['ALL'] else tuple(tickers or CFG['dym']['tickers'])
+    A, harj = C.load_d0(tk)
+    rows, seen = [], set()
     for d in designs:
-        des = C.validate({**d, 'seed': seed})
+        des = C.validate({**d, 'seed': seed, **({'h': h} if h else {})})
+        try:
+            sg = _signature(check(des))
+        except NotApplicable as e:
+            log(f'детектор: не применим {des.get("design")} — {e}')
+            continue
+        if sg in seen:
+            continue
+        seen.add(sg)
+        t0 = time.time()
         _, _, lr = leak_bench(des, A, harj, seed, steps, G['cuts_mid'], G['refit_points'], G['plant_point'])
         rows += [dict(design=des.get('design'), h=int(des['h']), **r) for r in lr]
+        log(f'детектор {des.get("design")} h={des["h"]}: {"OK" if all(r["ok"] for r in lr) else "ОШИБКА"} ({len(lr)}, {time.time() - t0:.0f} с)')
     R = pd.DataFrame(rows)
-    print(R.to_string(index=False))
-    assert R.ok.all(), 'детектор: ОШИБКА'
+    out = C.REGEN / 'R2' / 'R' / 'leak'
+    out.mkdir(parents=True, exist_ok=True)
+    f = out / f'leak_h{h or "all"}_{time.strftime("%Y%m%d_%H%M%S")}.csv'
+    R.to_csv(f, index=False)
+    ok = bool(len(R) == 0 or R.ok.all())
+    log(f'детектор R: сигнатур {len(seen)}, проверок {len(R)}, {"OK" if ok else "ОШИБКА"} -> {f}')
+    return ok
 
 
 def main():
@@ -979,6 +1032,7 @@ def main():
     ap.add_argument('--tickers', nargs='*', default=None)
     ap.add_argument('--workers', type=int, default=None)
     ap.add_argument('--phase', default='C')
+    ap.add_argument('--check-gate', action='store_true', help='сверять ворота предыдущей фазы (по умолчанию ворота ведёт драйвер S)')
     a = ap.parse_args()
     if a.mode == 'selftest':
         selftest()
@@ -988,10 +1042,11 @@ def main():
     elif a.mode == 'dym':
         dym()
     elif a.mode == 'run':
-        T = run(load_designs(a.designs), a.h, a.seeds, a.steps, a.workers, a.phase)
-        print(T.to_string(index=False))
+        T = run(load_designs(a.designs), a.h, a.seeds, a.steps, a.workers, a.phase, check_gate=a.check_gate)
+        print(T.to_string(index=False) if len(T) else 'задач нет (готовое пропущено или неприменимо)')
+        sys.exit(1 if len(T) and 'ryad' in T and (T.ryad == 'ОШИБКА').any() else 0)
     else:
-        leak_cmd(load_designs(a.designs), a.steps, a.tickers, a.seeds[0])
+        sys.exit(0 if leak_cmd(load_designs(a.designs), a.steps, a.tickers, a.seeds[0], a.h) else 1)
 
 
 if __name__ == '__main__':
