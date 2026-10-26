@@ -1,0 +1,55 @@
+# R2, агент Б1 (бывш. А1): роли бустинга на h=1 и F_1 по seed. Протокол v2 docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, строка «Б1».
+# Гиперпараметры бустинга — текущие (сохранённые точки первого раунда), не переподбираются. Счёт — val шагов 1–6; тест не считается (раздел «Тестовая часть»).
+agent: B1
+h: 1
+steps: [1, 2, 3, 4, 5, 6]
+workers: 5
+control_tol: 1.0e-7          # max |Δ ln rv_pred| с сохранённым рядом первого раунда
+paths:
+  cache: data/regen/R2/cache/B1
+  index: data/regen/R2/cache/INDEX_B1.csv
+
+# F_1 = D22_h1 top5 / V0_XGB / B-sm / L0 (FD §0 п. 10, §1) на seed 42–51 (42 — контроль, 43–51 — для 2σ)
+F1:
+  boost: D22_h1
+  matrix: features_pit_v3_rrv.parquet
+  cfg: {harf: true, wins: true}
+  mech: "d22_h1.patch(): ln HAR-X⁺ шага как признак har_ln (D22/HXP_lnall), календарь окна h=1, RRV, гэп, винзоризация цели 1/99"
+  points: "tune_L2: D22_h1_grid.csv; top5 шага — D22_h1_xgb_h1_top5_val.parquet (point, rank 1–5)"
+  btag: D22_h1
+  model: xgb
+  seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+  top5_seed_rule: "top5 с seed s — пять точек top5 шага, каждая обучена с seed s; нога — среднее RV пяти"
+  code: sm                   # val шага t: прогноз × exp(s²/2), s² = var остатков ln на val шагов t−3..t−1 (gibrid_bias.correct, F_oos); шаг 1 — 1,0
+  saved: {single: D22_h1_xgb_h1_val.parquet, top5: D22_h1_xgb_h1_top5_val.parquet, s4344: D22_h1_xgb_h1_seeds4344_val.parquet}
+  control: {design_file: final3/designs_rank_D22_h1_h1.csv, design: "top5|V0_XGB|B-sm|L0", mean_1720: 0.2857237110986891, q2021: 0.2291744344713429}
+  leak_step: 3
+
+# Роли уровня 1 (h=1, seed 42, val шагов 1–6): таблица «роль -> точки» (протокол v2, «Данные, окно, общая механика»), записана до счёта ролей.
+# Механизм — как в первом раунде: подмена в l2_lib.step_data (и в make_ref) — признак har_ln / смещение off берутся из ln-прогноза ноги шага
+# (обучение — внутри выборки, как HAR-J в Д8.12/V9 и HAR-X в d17_1_harx_base). Матрица features_pit_v3, точка шага — rank 1 (single).
+roles_matrix: features_pit_v3.parquet
+roles:
+  priznak:
+    points: bv2b             # D12_h1_A_d812 = ЛГК B v2b (Bv2b_selected_h1, точка шага)
+    cfg: {harf: true}        # ln ноги — признак har_ln (последний столбец), смещения нет
+    models: [xgb, lgbm]
+    control: {leg: HARJ_l2, file: "D12_h1_A_d812_{m}_h1_val.parquet"}
+  ostatok:
+    points: bv2b             # D12_h1_B_b0.25 = те же точки ЛГК B v2b (у всех кандидатов Д12 h=1 точки общие)
+    cfg: {v9: true}          # цель ln RV − ln ноги, ln ŷ = ln ноги + f (V9, β = 1 — по определению роли в протоколе; ❓ β = 0,25 как у D12_h1_B_b0.25)
+    models: [xgb, lgbm]
+    control: {leg: HARJ_l2, file: "D12_h1_B_b1_{m}_h1_val.parquet"}
+  gamma:
+    points: "optuna:D17_1_h1_G1Xopt"   # G1Xopt (optuna-30, Д17.1): D17_1_h1_G1Xopt_selected_h1.csv (точка шага)
+    cfg: {obj: gamma, v9: true, b01: true}   # init_score = ln ноги + s²/2 (s² — остатки ln ноги на обучающем окне), метка ≥ 1e-8, без поправки на выходе
+    models: [lgbm]
+    control: {leg: HARX_d17, file: "D17_1_h1_G1Xopt_lgbm_h1_val.parquet"}
+mean_variant: true           # ряд «среднее XGB+LGB» (уровень RV) для ролей признак и остаток
+# Ноги: ln-прогнозы шага на всех строках окна (обучение — внутри выборки, val, тест шага) в формате D17/harx_base_h1.parquet:
+#   колонки date, ticker, step, part ∈ {tr, va, te}, base_ln; шаги 1–6 (te может отсутствовать — тогда 0, тест не используется).
+legs_builtin:
+  HARJ_l2: "HAR-J МНК l2_lib.har_ln (без подмены) — контроль с первым раундом"
+  HARX_d17: "data/regen/D17/harx_base_h1.parquet — HAR-X с внутренней валидацией (d17_1_harx_base.py) — контроль G1Xopt"
+legs_dir: data/regen/R2/cache/E   # ноги агента Э: <нога>_h1_lnall.parquet (формат выше)
+leak_role_step: 3
