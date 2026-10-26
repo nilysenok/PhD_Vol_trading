@@ -5,9 +5,11 @@
 features: {file: R2/features/features_r2_v3.parquet, sha256: 977a87d31f0474c5f4d113aa524f040fe3fe1a5f290da1c27c22ff1878af7a72}  # F, PR #176
 hs: [5, 22, 1]                     # параллельные конвейеры (v4 § 0 п. 6: h = 5 и h = 22; h = 1 — только группы признаков в B)
 workers_total: 10                  # v4 § 0 п. 4
-workers: {main: 3, econ: 1}        # на конвейер h: основной поток и эконометрика (3 × (3 + 1) = 12 > 10 — пул r2_core ограничит)
+workers: {main: 3, econ: 1, D_pre: 3}   # на конвейер h: основной поток, эконометрика, предвыборка D пакетом (17:35)
 steps: [1, 2, 3, 4, 5, 6]          # шаг 1 — начальная оценка s²/весов, складки — шаги 2–6 (v4 § 1)
-poll_s: 60                         # ожидание ворот/модулей другого агента
+# эталон и F_h(d0) ворот — версии с эмбарго s² (L PR #195, дирижёр 17:35); нет файла — ряды r2_O_loyo.yaml (etalon, F_h_d0)
+etalon_vorot: {etalon: "R2/cache/VYR/ETA_b_d0_s2emb_h{h}_sdet_val.parquet", F: "R2/cache/VYR/F_d0_s2emb_h{h}_s{seed}_val.parquet"}
+poll_s: 60                        # ожидание ворот/модулей другого агента
 designs_dir: models/designs/r2/driver_v1
 report_dir: R2/report              # от data/regen
 state_dir: R2/S/driver
@@ -55,6 +57,9 @@ E:
   seeds_final: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
   lib_final: both_avg
   finalists_k: 3
+  # дирижёр 26.10, 17:28: boost_refit = monthly — последним в очереди и только для финалистов уровня E (вариант каждого финалиста
+  # с boost.boost_refit = monthly, 10 seed, считается после финалистов; в ворота E входит как отдельный кандидат)
+  monthly_last: {key: boost.boost_refit, value: monthly}
   # ключи схемы v1 (по одному изменению к лучшему дизайну D)
   ofat:
     calib.s2_est: [smrob, sm_pooled, sm_by_ticker, sm_roll1y, sm_roll2y, sm_ewma097]
@@ -79,7 +84,7 @@ E:
     leg.panel: [factor, factor_shrink_025, factor_shrink_05, factor_shrink_state]
     leg.refit: [quarterly, monthly]
     leg.rls_lambda: [0.995, 0.99]
-    boost.boost_refit: [quarterly_warm, monthly]
+    boost.boost_refit: [quarterly_warm]           # monthly — см. monthly_last (дирижёр 17:28: медленный, ~12 мин на h в дыме)
     k16.gate: [conf_seed, regime, shock_fresh, soft]       # schema_v2 (кластер 16; halt — только при сборке A)
     k18.lam_to_ref: [on]                                    # 18: λ — сетка внутри складки
     k20.sign_delta: [znak, dolya]                           # 20: δ — сетка внутри складки
@@ -94,14 +99,17 @@ E:
 # {designs} {h} {seeds} {steps} {workers} {extra} подставляет драйвер; модуль пишет ряды через r2_core.run_phase (module = ключ ниже)
 modules:
 # yaml — yaml модуля: из него драйвер читает неприменимые факторы (`neprimenimye_faktory`; у P — раздел `applicable`)
-# Модуль без подкоманды run по этому контракту считается неготовым: этап ждёт и пишет причину (на 26.10, 16:50 — L r2_nogi
-# (режим schet --names), L3 r2_calib (dym/kontrol), B r2_roli, BG r2_resid_grid, R r2_refit — ❓ авторам: подкоманда run по контракту).
+# Модуль без подкоманды run по этому контракту считается неготовым: этап ждёт и пишет причину. На 26.10, 17:15: L, L3 (PR #189),
+# P, M, E, G — run есть; B r2_roli, BG r2_resid_grid (PR #185), R r2_refit — файлов нет, ждут.
+# {faza} — фаза run_phase модуля: B (и эконометрика) — SHA плана; C/D/E — ворота предыдущей фазы. P и M без --phase брали бы
+# свой умолчательный C / E и эконометрика ждала бы gate_B / gate_D — поэтому фаза передаётся явно (17:15).
+# После запуска драйвер сверяет DONE_<модуль>_h{h}_s{seed} по дизайнам: P и M выходят с кодом 0 и при ошибках задач.
   L:  {file: r2_nogi.py,         yaml: r2_L_nogi.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --hs {h}"}
-  P:  {file: r2_panel.py,        yaml: r2_P_panel.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
-  R:  {file: r2_refit.py,        yaml: r2_R_refit.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
+  P:  {file: r2_panel.py,        yaml: r2_P_panel.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --designs {designs}"}
+  R:  {file: r2_refit.py,        yaml: r2_R_refit.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza} {extra}", leak: "leak --designs {designs} --h {h}"}   # PR #194; boost_refit ≠ yearly — итог R (B пропускает), L3 берёт R_raw
   B:  {file: r2_roli.py,         yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
   BG: {file: r2_resid_grid.py,   yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
-  M:  {file: r2_mh.py,           yaml: r2_M_mh.yaml,      run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
+  M:  {file: r2_mh.py,           yaml: r2_M_mh.yaml,      run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --designs {designs}"}
   L3: {file: r2_calib.py,        yaml: r2_L_calib.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
   E:  {file: r2_ens.py,          yaml: r2_E_ens.yaml,     run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --faza {faza}", leak: "leak --h {h}"}   # пакет (E, PR #187)
   G:  {file: r2_gate_abstain.py, yaml: r2_G_abstain.yaml, run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --h {h} --designs {designs}"}   # пакет (G, PR #188)

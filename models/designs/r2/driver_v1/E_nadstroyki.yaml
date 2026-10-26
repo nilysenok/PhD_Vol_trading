@@ -72,7 +72,6 @@ ofat:
   - 0.99
   boost.boost_refit:
   - quarterly_warm
-  - monthly
   k16.gate:
   - conf_seed
   - regime

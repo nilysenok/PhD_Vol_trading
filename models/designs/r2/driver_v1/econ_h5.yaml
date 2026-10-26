@@ -430,6 +430,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -588,6 +589,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -746,6 +748,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -904,6 +907,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -1073,6 +1077,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -1382,6 +1387,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -1536,6 +1542,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -1690,6 +1697,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -1844,6 +1852,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -2004,6 +2013,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -2313,6 +2323,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -2467,6 +2478,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -2621,6 +2633,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -2775,6 +2788,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
@@ -2935,6 +2949,7 @@ designs:
     mz: false
     update: step
     order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
   mh:
     scheme: direct
     decomp_k: null
