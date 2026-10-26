@@ -29,10 +29,12 @@ ROOT = Path(__file__).resolve().parents[2]
 MAIN = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')
 HS = (1, 5, 22)
 YEAR_ONE = 2019
-MODELS = {'Гибридная': 'rv_pred', 'HAR-J': 'har_raw', 'HAR-J с поправкой': 'har_corr', 'XGBoost': 'xgb_raw', 'LightGBM': 'lgb_raw',
+ETALON_NAME, ETALON = 'HAR-J с поправкой', 'har_corr'  # ЕДИНЫЙ эталон DM, MCS, H1 (поручение владельца 04:30): HAR-J с поправкой, s² по правилу
+# третьего круга (final3.etalon: sm на h=1/5/22); final3.py build пишет в har_corr HAR-J именно с этой s². Меняется только здесь.
+MODELS = {'Гибридная': 'rv_pred', 'HAR-J': 'har_raw', ETALON_NAME: ETALON, 'XGBoost': 'xgb_raw', 'LightGBM': 'lgb_raw',
           'XGBoost с поправкой': 'xgb_corr', 'LightGBM с поправкой': 'lgb_corr'}
-REFS = {'HAR-J как в диссертации': 'har_raw', 'HAR-J с поправкой': 'har_corr'}
-CHAIN = (('HAR-J', 'har_raw'), ('HAR-J с поправкой', 'har_corr'), ('HAR-X с поправкой', 'harx_corr'), ('Гибридная (финал)', 'rv_pred'))  # приложение
+REFS = {'HAR-J как в диссертации': 'har_raw', ETALON_NAME: ETALON}
+CHAIN = (('HAR-J', 'har_raw'), (ETALON_NAME, ETALON), ('HAR-X с поправкой', 'harx_corr'), ('Гибридная (финал)', 'rv_pred'))  # приложение
 
 
 def metrics(y, p):
@@ -98,20 +100,21 @@ def run(src, tables, tag='test', feat=None, B=10000):
         sfx = '' if metric == 'QLIKE' else '_' + metric.lower()
         T['3_4' + sfx] = pd.DataFrame([{'Модель': m, **{f'H = {h}': one(m, h, metric) for h in HS}} for m in ('XGBoost', 'LightGBM', 'HAR-J')])
         T['3_6' + sfx] = pd.DataFrame([{'Модель': m, **{f'H = {h}': one(m, h, metric) for h in HS}}
-                                       for m in ('Гибридная', 'LightGBM', 'XGBoost', 'HAR-J', 'HAR-J с поправкой')])
+                                       for m in ('Гибридная', 'LightGBM', 'XGBoost', 'HAR-J', ETALON_NAME)])
         T['3_7' + sfx] = pd.DataFrame([{'Модель': m, **{f'H = {h}': fmt(avg(m, h, metric), metric) for h in HS}}
-                                       for m in ('HAR-J', 'HAR-J с поправкой', 'XGBoost', 'LightGBM', 'Гибридная')])
+                                       for m in ('HAR-J', ETALON_NAME, 'XGBoost', 'LightGBM', 'Гибридная')])
     D = pd.DataFrame(DM)
-    main = D[(D.эталон == 'HAR-J с поправкой') & D.способ.str.startswith('основной')]
+    main = D[(D.эталон == ETALON_NAME) & D.способ.str.startswith('основной')]
     T['3_8'] = pd.DataFrame([{'H': r.H, 't-стат.': round(r.t, 2), 'p-value': pfmt(r.p_one_H1)} for r in main.itertuples()])
     T['3_9'] = D.assign(t=D.t.round(2), p_two=D.p_two.map(pfmt), p_one_H1=D.p_one_H1.map(pfmt),
-                        H1_принята_5pct=[(e == 'HAR-J с поправкой' and s.startswith('основной') and p < 0.05) for e, s, p in zip(D.эталон, D.способ, D.p_one_H1)])
+                        H1_принята_5pct=[(e == ETALON_NAME and s.startswith('основной') and p < 0.05) for e, s, p in zip(D.эталон, D.способ, D.p_one_H1)])
     T['3_final_po_godam'] = pd.DataFrame(rows)
     T['3_raskladka'] = pd.DataFrame(chain)
     tables.mkdir(parents=True, exist_ok=True)
     for n, df in T.items():
         df.to_csv(tables / f'table_{n}_{tag}.csv', index=False)
         print('записано', tables / f'table_{n}_{tag}.csv', len(df), 'строк')
+    FT.set_etalon(ETALON)  # протокол (MZ, тикеры, подпериоды, терцили, MCS, охват) — тот же эталон
     FT.write(FT.protocol(frames, B), tables, tag)  # протокол владельца 25.10 20:40 (ftp_tables.py)
     return T
 

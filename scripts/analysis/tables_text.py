@@ -10,7 +10,8 @@ from tables_text_lib import R, OTCH, YEARS, fmt, pct, write_table
 import tables_text_rychagi as RY
 
 Y = [str(y) for y in YEARS]
-CODE16 = {1: 'sm', 5: 'sm', 22: 'smrob'}  # s² HAR-J с поправкой по правилу (Д16, final2)
+_ET = R / 'final3' / 'etalon.csv'  # единый эталон (поручение владельца 04:30): s² HAR-J с поправкой по правилу третьего круга
+CODE16 = dict(zip(pd.read_csv(_ET).h, pd.read_csv(_ET).code)) if _ET.exists() else {1: 'sm', 5: 'sm', 22: 'sm'}
 DM_Y = ['DM t ' + y for y in Y]
 
 

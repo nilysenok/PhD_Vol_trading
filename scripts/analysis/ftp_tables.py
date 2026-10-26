@@ -9,6 +9,14 @@ MODS = {'Финальная': 'rv_pred', 'HAR-J (а)': 'har_raw', 'HAR-J (б)': 
 PERIODS = {'2017-2019': (2017, 2019), '2020-2021': (2020, 2021), '2022': (2022, 2022), '2023-2025': (2023, 2025)}
 TERC = {0: 'низкая', 1: 'средняя', 2: 'высокая'}
 REFS = {'HAR-J (а)': 'har_raw', 'HAR-J (б)': 'har_corr'}
+ETALON = 'har_corr'  # HAR-J (б) — единый эталон; задаётся в final_test.ETALON через set_etalon()
+
+
+def set_etalon(col):
+    global ETALON
+    ETALON = col
+    MODS['HAR-J (б)'] = col
+    REFS['HAR-J (б)'] = col
 
 
 def pf(p):
@@ -55,8 +63,8 @@ def tickers_table(D, alpha=0.05):
     for h, df in D.items():
         sub = []
         for tk, g in df.groupby('ticker'):
-            qf, qb = _q(g, 'rv_pred'), _q(g, 'har_corr')
-            d = S.qloss(g.rv_actual.values, g.har_corr.values) - S.qloss(g.rv_actual.values, g.rv_pred.values)
+            qf, qb = _q(g, 'rv_pred'), _q(g, ETALON)
+            d = S.qloss(g.rv_actual.values, g[ETALON].values) - S.qloss(g.rv_actual.values, g.rv_pred.values)
             r = S.dm_series(S.daily(g.date.values, d), h)
             sub.append({'h': h, 'Тикер': tk, 'QLIKE финальной': round(qf, 4), 'QLIKE HAR-J (б)': round(qb, 4), 'финальная лучше': int(qf < qb),
                         'DM t': round(r['t'], 2), 'p (финальная лучше)': pf(r['p_one']), 'значимо лучше': int(r['p_one'] < alpha), 'значимо хуже': int(r['p_one'] > 1 - alpha)})
@@ -98,7 +106,7 @@ def encompassing_table(D):
         dts = df.date.values
         for scale in ('RV', 'ln RV'):
             f = (lambda x: x) if scale == 'RV' else np.log
-            ef, eb = f(df.rv_actual.values) - f(df.rv_pred.values), f(df.rv_actual.values) - f(df.har_corr.values)
+            ef, eb = f(df.rv_actual.values) - f(df.rv_pred.values), f(df.rv_actual.values) - f(df[ETALON].values)
             for nm, (a, b) in {'финальная охватывает HAR-J (б)': (ef, eb), 'HAR-J (б) охватывает финальную': (eb, ef)}.items():
                 r = S.hln(a, b, dts, h)
                 rows.append({'h': h, 'Шкала': scale, 'H0': nm, 'вес второго прогноза λ': round(r['lam'], 3), 't (HLN)': round(r['t'], 2),
