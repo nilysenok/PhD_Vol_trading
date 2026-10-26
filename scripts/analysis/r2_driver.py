@@ -582,6 +582,10 @@ class Runner:
         if rc != 0 and designs and not net:  # все DONE на месте (повтор: «задач 0») — код ≠ 0 из-за пустой сводки модуля (E 18:36)
             log(f'модуль {m} h={h}: код {rc}, но все {len(designs) * len(seeds)} отметок DONE_{m} есть — этап пройден (❓ автору: код 0 при 0 задач)')
             return True, ''
+        if rc != 0 and designs and len(net) < len(designs) * len(seeds):  # часть задач упала — остальные с DONE идут дальше
+            self.upali = {x.rpartition('/s')[0] for x in net}
+            log(f'модуль {m} h={h}: код {rc}, без DONE {len(net)} из {len(designs) * len(seeds)} — упавшие сняты с цепочки: {sorted(self.upali)[:3]}')
+            return True, ''
         if rc != 0:
             return False, f'модуль {m}: код {rc}'
         if designs and len(net) == len(designs) * len(seeds):  # ни одной отметки DONE — модуль ничего не посчитал (P, M: код 0 и при ошибках)
@@ -670,13 +674,19 @@ class Runner:
                     log(f'цепочка h={h}: L3 без рядов предыдущего звена — пропущено {len(ds) - len(keep)} (неприменимо, код 0)')
                 ds = keep
             if ds:
-                self.last_net = []
+                self.last_net, self.upali = [], set()
                 ok, why = self.run(m, ds, h, seeds, steps, workers, (extra or {}).get(m, ''), tag)
                 if not ok:
                     if not partial:
                         return False, why
                     fails.append(why)
                     snyaty |= {d['design'] for d in ds}
+                elif self.upali:  # модуль упал на части дизайнов (код ≠ 0): дальше идут только посчитанные
+                    if not partial:  # план (скрининг B, ячейки C, точки D) нужен целиком
+                        return False, f'модуль {m}: ошибка у {len(self.upali)} дизайнов: {sorted(self.upali)[:3]}'
+                    snyaty |= self.upali
+                    for nm in self.upali:
+                        NEPR.setdefault((h, nm), []).append(f'модуль {m}: ошибка задачи (нет DONE_{m})')
         return not fails, '; '.join(fails)
 
 
@@ -799,12 +809,51 @@ def gate_B(h, designs, root):
                                    pravilo='h = 5, 22 — r2_factor.effects (O); h = 1 — лучший прогон 2³ по t (❓ O)'))
 
 
+def F_emb(h, seeds=None):
+    """F_h(d0) с эмбарго s² по seed (r2_S_driver.yaml etalon_vorot.F); нет всех файлов — None (O возьмёт свои)."""
+    if not CFG.get('etalon_vorot'):
+        return None
+    import r2_loyo as O
+    seeds = list(seeds or CFG['E']['seeds_final'])
+    fs = {s: C.REGEN / CFG['etalon_vorot']['F'].format(h=h, seed=s) for s in seeds}
+    return {s: O.series([f]) for s, f in fs.items()} if all(f.exists() for f in fs.values()) else None
+
+
+def opora(h):
+    """Опорная строка «финал R1 на данных по день d» (F_R1_d0, владелец 20:05) — r2_gates.opora_ocenka (O, PR #210). Дым — None."""
+    if SMOKE_FLAG['on']:
+        return None
+    import r2_gates as RG
+    return RG.opora_ocenka(h, etalon(h), F=F_emb(h))
+
+
+def barier_L3(units, h, seeds, root=None):
+    """Владелец 20:15: ворота пишутся только после завершения ВСЕХ модулей ячейки, включая L3. Assert: у каждой оценённой ячейки есть
+    DONE_L3 по всем seed и он записан раньше ворот. -> {n, posledniy_DONE_L3, zapis_vorot}."""
+    mod = 'smoke_L3' if SMOKE_FLAG['on'] and not SMOKE_FLAG.get('real') else 'L3'
+    t_last, net = 0.0, []
+    for u, d in units.items():
+        for s in seeds:
+            p = C.done_path(C.validate({**d, 'h': h}), mod, h, s, root)
+            if not p.exists():
+                net.append(f'{u}/s{s}')
+            else:
+                t_last = max(t_last, p.stat().st_mtime)
+    t_now = time.time()
+    assert not net, f'ворота h={h}: нет DONE_{mod} у {len(net)} ячеек (калибровка не завершена): {net[:5]}'
+    assert t_last <= t_now, f'ворота h={h}: DONE_L3 позже записи ворот'
+    return dict(n=len(units), posledniy_DONE_L3=time.strftime('%F %T', time.localtime(t_last)) if t_last else None,
+                zapis_vorot=time.strftime('%F %T', time.localtime(t_now)))
+
+
 def gate_C(h, designs, root):
     import r2_gates as RG
     units = {d['design']: d for d in designs}
     R, S = ocenka_units(units, h, CFG['C']['seeds'], root)
     # v4 § 4 — ворота O (PR #193): ячейки D, V0-финалисты, число дизайнов; payload — без изменений в write_gate
-    return write_gate('C', h, RG.gate_C_v4(R, S, units, {u: NEPR[(h, u)] for u in units if (h, u) in NEPR}))
+    bar = barier_L3({u: units[u] for u in R}, h, CFG['C']['seeds'], root)
+    g = RG.gate_C_v4(R, S, units, {u: NEPR[(h, u)] for u in units if (h, u) in NEPR}, opora=opora(h))
+    return write_gate('C', h, dict(g, barier_L3=bar))
 
 
 def _vybor_smoke(R, S):
@@ -879,7 +928,9 @@ def gate_D(h, cells, runner, root, workers):
     R, S = ocenka_units(units, h, CFG['D']['seeds'] if not SMOKE_FLAG['on'] else [42], root)
     zhivye = {c: [f'{c}_{t}' for t in v['zhivye']] for c, v in best_cells.items()}
     # v4 § 5 — ворота O (PR #193): 8 → 1 на ячейку, лучший уровня; число точек на входе — для числа дизайнов
-    return write_gate('D', h, RG.gate_D_v4(R, S, units, zhivye, {c: len(P) for c in best_cells}))
+    bar = barier_L3({u: units[u] for u in R}, h, CFG['D']['seeds'] if not SMOKE_FLAG['on'] else [42], root)
+    g = RG.gate_D_v4(R, S, units, zhivye, {c: len(P) for c in best_cells}, opora=opora(h))
+    return write_gate('D', h, dict(g, barier_L3=bar))
 
 
 def odin_ryad(V):
@@ -887,7 +938,7 @@ def odin_ryad(V):
     return V[sorted(V)[0]] if V else None
 
 
-def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1):
+def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1, tab1=None):
     """v4 § 2, § 6 — ворота O (PR #193): ocenka на 10 seed (вход заново) -> 2σ r2_gates.sigma2_F парно с F_h(d0) (V0 — один ряд) ->
     r2_gates.gate_E_v4 (финалисты, победитель, мощность, itog_E по порогам владельца 16:45, нога _noga, лестница и абляции).
     Правило «остаётся нога» при P < 0,5 (дирижёр 17:10): V0 с той же ногой, что у победителя (нога + калибровка). Нет такого ряда —
@@ -896,11 +947,8 @@ def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1):
     seeds = CFG['E']['seeds_final'] if not SMOKE_FLAG['on'] else [42]
     R, S = ocenka_units(units, h, seeds, root)
     sig = {}
-    Fe = None  # F_h(d0) с эмбарго s² (дирижёр 17:35: F_d0_s2emb); нет файлов — ряды r2_O_loyo.yaml F_h_d0
-    if not SMOKE_FLAG['on'] and CFG.get('etalon_vorot'):
-        import r2_loyo as O
-        fs = {s: C.REGEN / CFG['etalon_vorot']['F'].format(h=h, seed=s) for s in seeds}
-        Fe = {s: O.series([f]) for s, f in fs.items()} if all(f.exists() for f in fs.values()) else None
+    Fe = None if SMOKE_FLAG['on'] else F_emb(h, seeds)  # F_h(d0) с эмбарго s² (дирижёр 17:35); нет файлов — ряды O
+    bar = barier_L3({u: units[u] for u in R if u not in v0_units}, h, seeds, root) if R else None
     for u in R:
         if SMOKE_FLAG['on']:  # дым: 3 тикера × 1 seed — 2σ не считается; механика: первый по t «прошёл»
             continue
@@ -912,7 +960,10 @@ def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1):
         top = max((u for u in R if u not in v0_units), key=lambda u: R[u]['t_mean'], default=None)
         sig = {u: dict(passed=(u == top), d_mean=np.nan, sigma=np.nan, thr=np.nan, pometka='дым: 2σ не считается') for u in R}
     g = RG.gate_E_v4(R, S, units, sig, h, list(v0_units), lestnica=not SMOKE_FLAG['on'],
-                     out_dir=(SMOKE_O / f'gate_E_h{h}_dizainy') if SMOKE_FLAG['on'] else None)
+                     out_dir=(SMOKE_O / f'gate_E_h{h}_dizainy') if SMOKE_FLAG['on'] else None, opora=opora(h))
+    g['barier_L3'] = bar
+    if tab1:
+        g['tablica_E_1seed'] = tab1
     pb = g['pobeditel']
     it = pb.get('itog') or {}
     noga = pb.get('noga') or {}
@@ -977,7 +1028,7 @@ def report(phase, hs, smoke=False):
         L += [f'## h = {h}', '']
         for k, v in g.items():
             if k in ('tablica', 'dizainy', 'dizayn', 'faktory', 'inputs', 'sigma2', 'moshchnost', 'pobeditel', 'finalisty', 'lestnica',
-                     'ablyacii', 'lozhnye', 'chislo'):
+                     'ablyacii', 'lozhnye', 'chislo', 'opora', 'tablica_E_1seed'):
                 continue
             L.append(f'- **{k}**: {v}')
         if phase == 'E':
@@ -1002,7 +1053,11 @@ def report(phase, hs, smoke=False):
             fe = faktory_na_E(g)
             L.append(f'- **на уровень E** (владелец 18:35: e_bar ≤ {(g.get("porog") or {}).get("e_bar_max", -0.005)}, полоса через 0; '
                      f'вариант поверх финалиста h): {fe or "нет"}')
-        for k in ('faktory', 'tablica'):
+        if g.get('opora'):
+            op = g['opora']
+            L.append(f'- **опорная строка {op.get("unit", "F_R1_d0")}** ({op.get("podpis", "финал R1 на данных по день d")}): '
+                     f't̄ = {op.get("t_mean")}, выигрыш {op.get("vyigrysh_pct")}% — в выборе не участвует (последняя строка таблицы)')
+        for k in ('faktory', 'tablica', 'tablica_E_1seed'):
             if g.get(k):
                 T = pd.DataFrame(g[k])
                 if phase == 'B' and k == 'faktory' and 'faktor' in T:
@@ -1094,28 +1149,40 @@ def pipeline(h, runner, smoke=False, once=False):
     gD = yaml.safe_load(gate_path('D', h, smoke).read_text())
     # E
     best = gD.get('dizayn')
-    if best is None:
+    # владелец 20:15/20:10: на h = 5, 22 уровень E — ВСЕГДА, основа — финал R1 d0 и его нога (E_2010_h{h}: E1–E7, факторы, кл. 11–13)
+    E2010 = []
+    if h in (5, 22) and not smoke:
+        if not designs_file(f'E_2010_h{h}').exists():
+            write_designs(f'E_2010_h{h}', [x[2] for x in designs_E_2010(h) if x[2] is not None], dict(faza='E', h=h))
+        E2010 = read_designs(f'E_2010_h{h}')
+    if best is None and not E2010:
         st['zhdyot'] = 'gate_D без лучшего дизайна — на h остаётся F_h(d0)'
         save_state(h, st, smoke)
         return st
-    Ed = designs_E(best, CFG['E']['ofat'])
-    if smoke:
-        Ed = Ed[:4]
-    # решение владельца 18:35: околопороговые факторы B (e_bar ≤ −0,005, полоса через 0) — явные варианты поверх лучшего h
-    fE = faktory_na_E(gB)
-    Ef = designs_faktory_E(best, fE, h)
-    st['faktory_na_E'] = dict(faktory=fE, variantov=len(Ef))
-    Ed = Ed + [d for d in Ef if d['design'] not in {x['design'] for x in Ed}]
+    Ed = []
+    if best is not None:
+        Ed = designs_E(best, CFG['E']['ofat'])
+        if smoke:
+            Ed = Ed[:4]
+        # решение владельца 18:35: околопороговые факторы B (e_bar ≤ −0,005, полоса через 0) — явные варианты поверх лучшего h
+        fE = faktory_na_E(gB)
+        Ef = designs_faktory_E(best, fE, h)
+        st['faktory_na_E'] = dict(faktory=fE, variantov=len(Ef))
+        Ed = Ed + [d for d in Ef if d['design'] not in {x['design'] for x in Ed}]
+    Ed = Ed + [d for d in E2010 if d['design'] not in {x['design'] for x in Ed}]
     ok, why = stage('E_schet', lambda: chain(Ed, h, [42], steps, W, 'E', partial=True))  # надстройки независимы (OFAT)
     if not ok:
         st['E_schet_oshibki'] = why  # упавшие надстройки — без ряда, в ворота E не попадут (ocenka_units пропускает)
         log(f'конвейер h={h}: E — часть надстроек без ряда: {why[:300]}')
     v0 = {u: gC['dizainy'][u] for u in gC.get('v0_finalisty', [])}
-    units = {d['design']: d for d in Ed} | {gD['luchshiy']: best} | v0
+    v0 |= {d['design']: d for d in E2010 if str(C.get(C.validate(d), 'boost.role')) == 'none'}  # нога финала R1 и E4 — V0
+    units = {d['design']: d for d in Ed} | ({gD['luchshiy']: best} if best is not None else {}) | v0
+    T1 = None
     if not smoke:  # финалисты: 10 seed, LightGBM + XGBoost — после выбора по 1 seed; ворота E — на 10 seed
         import r2_gates as RG
-        R, S = ocenka_units(units, h, [42], root)
+        R, S = ocenka_units({u: d for u, d in units.items() if u not in v0}, h, [42], root)
         _, T = RG.vybor(R, S)
+        T1 = T.to_dict('records')  # таблица уровня E по 1 seed (все варианты) — в gate_E и отчёт
         top = list(T[T.proshyol].sort_values('t_mean', ascending=False).unit.head(CFG['E']['finalists_k']))
         fin = {}
         for u in top:
@@ -1129,7 +1196,7 @@ def pipeline(h, runner, smoke=False, once=False):
             save_state(h, st, smoke)
             return st
         units = fin | v0
-    stage('gate_E', lambda: gate_E(h, units, root, list(v0), runner, steps, W))
+    stage('gate_E', lambda: gate_E(h, units, root, list(v0), runner, steps, W, tab1=T1))
     report('E', CFG['hs'] if not smoke else SMOKE_HS, smoke)
     if not smoke:  # дирижёр 17:50: boost_refit = monthly — НЕ в финалистах и не в воротах; только seed 42, для приложения, последним
         prilozhenie_monthly(h, fin, runner, steps, W, root, st, chain, stage)
