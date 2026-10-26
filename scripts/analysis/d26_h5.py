@@ -586,15 +586,21 @@ def main():
             ex.append(('Д26.1 s42', d261_raw()[42], False))
         if 'D26_3' in sys.argv:
             ex.append(('Д26.3 s42', d263_raw()[42], D263_CODE is None))
+        for a in sys.argv:
+            if a.startswith('D26_2:'):
+                ex.append((a.split(':', 1)[1] + ' s42', b_frames(a)[0][42], True))
         return leak_corr(ex)
     if '--leak' in sys.argv:
         return leak()
     if '--corr' in sys.argv:
         extra = []
         for a in sys.argv[sys.argv.index('--corr') + 1:]:
-            if a.startswith('D26_1') or a.startswith('D26_2:'):  # ряды агента Б (b_frames); поправка ряда — sm (тип не «среднего»)
+            if a.startswith('D26_1'):  # Д26.1 агента Б (b_frames): сырой ряд, поправка ряда — sm; компоненты — XGB и LGBM
                 raw, comps = b_frames(a)
                 extra.append((a, (False, {s: (raw[s], comps[s]) for s in SEEDS})))
+            elif a.startswith('D26_2:'):  # Д26.2 агента Б: одна модель в обоих слотах, поправка уже внутри (cj / mix) -> тип «среднего», без компонент
+                raw, _ = b_frames(a)
+                extra.append((a.split(':', 1)[1], (True, {s: (raw[s], []) for s in SEEDS})))
             elif a.startswith('D26_3'):  # 'D26_3' — вариант D263; компоненты c2/c3 — лиды не подаются (ряд одной модели)
                 raw = d263_raw()
                 extra.append((f'D26_3{D263_VAR}', (D263_CODE is None, {s: (raw[s], []) for s in SEEDS})))
