@@ -23,8 +23,9 @@ class Pipeline:
 def models(name):
     from .models_p1 import P1
     from .models_har import HarJ, Gibrid
+    from .models_ref import RefNN, RefGarch  # справочные модели ночного приоритета 2 (26.10)
     return {'p1': P1, 'harj': HarJ, 'gibrid': lambda: Gibrid('h'), 'gibrid_v7lag1': lambda: Gibrid(1),
-            'pipeline': Pipeline}[name]()
+            'pipeline': Pipeline, 'lstm': lambda: RefNN('LSTM'), 'gru': lambda: RefNN('GRU'), 'ref_garch': RefGarch}[name]()
 
 
 def strategies(name):
