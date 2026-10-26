@@ -53,8 +53,11 @@ SOURCES = {   # метка: (файл, столбец, горизонт)
 RVI = OUT / "rvi_1850.parquet"
 # σ_pred гибрида h=1: final2 — финал второго круга (Д8.12, ночной С9); final3 — финал третьего
 # круга D22_h1. Выбор — флаг --sigma-h1; у final3 имена таблиц, кэша и журнала с суффиксом _final3.
+# FINAL — тот же D22_h1, собранный как final2 (sigma_pred_h1_v2.py --tag D22_h1 --step10), на весь
+# период стратегий; на 2017–2021 побитно равен final3.
 SIGMA_H1 = {"final2": REGEN / "sigma_pred_h1_final2.parquet",
-            "final3": REGEN / "sigma_pred_h1_final3.parquet"}
+            "final3": REGEN / "sigma_pred_h1_final3.parquet",
+            "FINAL": REGEN / "sigma_pred_h1_FINAL.parquet"}
 SUFFIX = ""
 
 
