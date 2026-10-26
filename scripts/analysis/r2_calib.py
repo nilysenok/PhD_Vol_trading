@@ -356,11 +356,12 @@ DYM = {
 }
 
 
-def dym(hs=N.HS, names=None):
+def dym(hs=N.HS, names=None, designs=None, tag='dym'):
     """Дым: нога HARJ (d0, эмбарго) на 3 тикерах, шаги 1–3, h; каждая калибровка: детектор (срезы 2017-06-30 и 2017-12-31, подлог —
-    окно с самим шагом t / неразрешёнными строками), проверка сдвига, таблица стабильности."""
+    окно с самим шагом t / неразрешёнными строками), проверка сдвига, таблица стабильности. designs — {имя: дизайн} вместо DYM (детектор
+    драйвера: калибровки из файла дизайнов)."""
     import r2_core as RC
-    out = N.LDIR / 'dym'; out.mkdir(parents=True, exist_ok=True)
+    out = N.LDIR / tag; out.mkdir(parents=True, exist_ok=True)
     if (out / 'blok_sdvig_dym_calib.csv').exists():
         (out / 'blok_sdvig_dym_calib.csv').unlink()
     rng = np.random.default_rng(20261026)
@@ -370,7 +371,7 @@ def dym(hs=N.HS, names=None):
         S = state_frame(M, h)
         V = N.run_leg({'h': h}, M=M, steps=N.DYM_STEPS)['base'][0]
         pert = {c: _perturb_V(V, S, pd.Timestamp(c), rng) for c in ('2017-06-30', '2017-12-31')}
-        for nm, des in DYM.items():
+        for nm, des in (designs or DYM).items():
             if names and nm not in names:
                 continue
             t0 = time.time()
@@ -407,12 +408,78 @@ def dym(hs=N.HS, names=None):
     print(f'дым калибровки: строк {len(R)}, не OK {int((~R.ok).sum())}'); return R
 
 
+# ---------------------------------------------------------------- контракт драйвера S (r2_driver.py, модуль L3)
+def _prev_module(design):
+    import r2_driver as DR
+    ch = DR.route(design)
+    i = ch.index('L3') if 'L3' in ch else len(ch)
+    return ch[i - 1] if i > 0 else 'L'
+
+
+def fn_cal(design, seed, steps):
+    """L3 в цепочке драйвера: ряды предыдущего модуля цепочки (L, P, R, B, BG, M — по r2_driver.route) этого дизайна и seed из кэша
+    (r2_core.load_series) × калибровка дизайна (calib.*, boost.prob = scale_har). Ряды — <ряд>__cal; параметры — params.csv."""
+    import r2_core as RC
+    h = int(design['h'])
+    prev = _prev_module(design)
+    L = RC.load_series(design, modul=prev, seed=seed, h=h, steps=list(steps))
+    if L.empty:
+        L = RC.load_series(design, modul=prev, seed='det', h=h, steps=list(steps))
+    if L.empty:
+        raise FileNotFoundError(f'L3: нет рядов модуля {prev} для {design.get("design")} h={h} seed={seed}')
+    S = state_frame(_state_M(), h)
+    out, par = {}, []
+    for ryad, g in L.groupby('ryad'):
+        Vc, T = calibrate(design, g[COLS].copy(), S)
+        out[f'{ryad}__cal'] = Vc
+        par += [(f'{ryad}__cal', s, n, v) for _, s, n, v in calib_params('base', T)]
+    _write_cal_params(design, h, par)
+    return out
+
+
+def cmd_run(designs, h, seeds, steps, workers):
+    """run --designs <yaml> --h --seeds --steps --workers: калибровка (модуль 'L3') рядов предыдущего модуля цепочки в кэш по хэшу;
+    шаги 1–6 (режим R2). -> 0 / 1."""
+    import r2_core as RC
+    D = N.read_designs_file(designs, h)
+    RC.share(M=None)
+    _state_M()
+    T = RC.run_phase('L3', h, D, fn_cal, seeds=tuple(seeds), steps=tuple(steps), workers=workers, module='L3', check_gate=False,
+                     block_file=os.environ.get('R2_BLOCK_FILE'))
+    bad = int((T.get('ryad') == 'ОШИБКА').sum()) if len(T) else 0
+    RC.log(f'L3 run h={h}: дизайнов {len(D)}, рядов {len(T) - bad}, ошибок {bad}')
+    return 1 if bad else 0
+
+
+def cmd_leak(designs, h):
+    """leak --designs <yaml> --h: детектор калибровки для всех различных настроек calib.* / boost.prob дизайнов файла
+    (нога HARJ, 3 тикера, шаги 1–3; порча ряда после среза, подлог — окно с самим шагом). -> 0 / 1."""
+    import r2_core as RC
+    D = N.read_designs_file(designs, h)
+    cfg = {}
+    for d in D:
+        f = N._onoff(d)
+        key = repr(sorted(f['calib'].items())) + repr((f['boost']['prob'], f['boost']['prob_dist'], f['boost']['prob_window']))
+        cfg.setdefault(key, {'calib': {k: v for k, v in f['calib'].items() if k != 'order'},
+                             'boost': {k: f['boost'][k] for k in ('prob', 'prob_dist', 'prob_window')}})
+    designs_ = {f'cfg{i:02d}': c for i, c in enumerate(cfg.values())}
+    R = dym((h,), designs=designs_, tag='leak')
+    return 0 if bool(R.leak_ok.all()) else 1
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['dym', 'kontrol'])
+    ap.add_argument('mode', choices=['run', 'leak', 'dym', 'kontrol'])
     ap.add_argument('--hs', type=int, nargs='*', default=list(N.HS))
     ap.add_argument('--names', nargs='*', default=None)
+    ap.add_argument('--designs'); ap.add_argument('--h', type=int)
+    ap.add_argument('--seeds', type=int, nargs='*', default=[42]); ap.add_argument('--steps', type=int, nargs='*', default=list(N.STEPS))
+    ap.add_argument('--workers', type=int, default=2)
     a = ap.parse_args()
+    if a.mode == 'run':
+        sys.exit(cmd_run(a.designs, a.h, a.seeds, a.steps, a.workers))
+    if a.mode == 'leak':
+        sys.exit(cmd_leak(a.designs, a.h))
     if a.mode == 'dym':
         dym(tuple(a.hs), a.names)
     else:
