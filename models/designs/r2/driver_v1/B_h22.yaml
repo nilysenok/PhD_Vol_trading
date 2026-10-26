@@ -77,6 +77,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -135,7 +136,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -201,6 +236,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -259,7 +295,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -325,6 +395,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -383,7 +454,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -449,6 +554,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -509,7 +615,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -596,6 +736,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -652,7 +793,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -718,6 +893,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -774,7 +950,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -840,6 +1050,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -896,7 +1107,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -983,6 +1228,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -1039,7 +1285,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -1105,6 +1385,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -1165,7 +1446,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -1250,6 +1565,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -1308,7 +1624,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -1374,6 +1724,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -1432,7 +1783,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -1498,6 +1883,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -1552,7 +1938,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -1618,6 +2038,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -1674,7 +2095,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -1740,6 +2195,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -1800,7 +2256,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -1887,6 +2377,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -1943,7 +2434,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -2009,6 +2534,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -2067,7 +2593,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -2133,6 +2693,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -2187,7 +2748,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -2253,6 +2848,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -2311,7 +2907,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -2402,6 +3032,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -2460,7 +3091,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -2526,6 +3191,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -2584,7 +3250,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -2650,6 +3350,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -2704,7 +3405,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -2793,6 +3528,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -2849,7 +3585,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -2915,6 +3685,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -2971,7 +3742,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -3062,6 +3867,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -3118,7 +3924,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -3205,6 +4045,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -3259,7 +4100,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -3325,6 +4200,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -3383,7 +4259,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -3449,6 +4359,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -3507,7 +4418,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -3573,6 +4518,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -3629,7 +4575,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -3721,6 +4701,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -3777,7 +4758,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -3843,6 +4858,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -3899,7 +4915,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -3965,6 +5015,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -4021,7 +5072,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -4107,6 +5192,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -4167,7 +5253,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -4233,6 +5353,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -4289,7 +5410,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -4376,6 +5531,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -4434,7 +5590,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -4500,6 +5690,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -4554,7 +5745,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -4620,6 +5845,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -4678,7 +5904,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -4744,6 +6004,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -4804,7 +6065,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -4870,6 +6165,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -4926,7 +6222,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -5014,6 +6344,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -5070,7 +6401,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -5136,6 +6501,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -5190,7 +6556,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -5256,6 +6656,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -5314,7 +6715,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -5380,6 +6815,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -5438,7 +6874,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -5528,6 +6998,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -5586,7 +7057,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -5652,6 +7157,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -5710,7 +7216,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -5776,6 +7316,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -5834,7 +7375,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -5920,6 +7495,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -5976,7 +7552,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -6042,6 +7652,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -6098,7 +7709,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
@@ -6188,6 +7833,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    grid_point: none
   features:
   - G0
   - G1
@@ -6248,7 +7894,41 @@ designs:
     info_set_shift_check: true
     leak_detector: true
     read_after_2021: forbidden
-  schema: v1
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
   inputs:
     base_1:
       ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)

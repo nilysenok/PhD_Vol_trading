@@ -90,7 +90,7 @@ sys.path.insert(0, str(HERE))
 
 MAC_ROOT = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')  # на сервере — ссылка на копию проекта (env/setup_server.sh)
 REGEN = MAC_ROOT / 'data' / 'regen'
-SCHEMA_PATH = REPO / 'models' / 'designs' / 'r2' / 'schema_v1.yaml'
+SCHEMA_PATH = REPO / 'models' / 'designs' / 'r2' / 'schema_v2.yaml'  # v2 = v1 + кластеры 16, 18, 20; хэши дизайнов v1 не меняются
 CFG_PATH = REPO / 'models' / 'designs' / 'r2' / 'r2_S_server.yaml'
 PLAN_PATH = REPO / 'models' / 'designs' / 'r2' / 'factor_plan_v1.csv'
 PLAN_SHA = '31b2897751e5d81c776bcd11041dd2d7c2a5ba59b48d438102bbebcdcea3c9b8'
@@ -229,11 +229,19 @@ class Leaf:
 
 class Schema:
     def __init__(self, raw, path=None):
+        """`extends: <файл>` — версия поверх предыдущей: её листья берутся без изменений (since = версия базы), новые — since = эта версия;
+        переопределять листья базы нельзя. base_version — версия, которая остаётся в каноне, пока новые ключи равны default."""
         self.raw, self.path = raw, path
         self.version = str(raw.get('schema', ''))
         self.leaves = {}
+        self.base_version = self.version
+        if raw.get('extends'):
+            base = load_schema(Path(path).parent / raw['extends'])
+            self.leaves.update(base.leaves)
+            self.base_version = base.base_version
+        self._since = self.version
         for k, node in raw.items():
-            if k == 'schema':
+            if k in ('schema', 'extends'):
                 continue
             self._walk((k,), node, False)
 
@@ -243,7 +251,11 @@ class Schema:
         is_leaf = 'values' in node or isinstance(node.get('type'), str) or (node.get('fixed') and not any(
             isinstance(v, dict) and 'values' in v for v in node.values()))
         if is_leaf:
-            self.leaves[path] = Leaf(path, node, parent_default)
+            if path in self.leaves:
+                raise DesignError(f'схема {self.version}: лист {".".join(path)} уже есть в базовой версии — переопределять нельзя')
+            L = Leaf(path, node, parent_default)
+            L.since = self._since
+            self.leaves[path] = L
             return
         for k, v in node.items():
             if k in _META and not isinstance(v, dict):  # `leg.type` — лист, а не метаполе
@@ -412,17 +424,49 @@ def with_inputs(design, inputs):
     return d
 
 
-def canonical(design):
-    """Канонический yaml: полный дизайн без `design`, с `schema`; числа — десятичные строки (шапка schema_v1.yaml, пп. 1–5)."""
-    full = validate(design)
+def canonical(design, schema=None):
+    """Канонический yaml: полный дизайн без `design`, с `schema`; числа — десятичные строки (шапка schema_v1.yaml, пп. 1–5).
+    schema — путь/объект схемы (по умолчанию — текущая, v2); для сверки инвариантности хэшей v1."""
+    S = schema if isinstance(schema, Schema) else load_schema(schema or SCHEMA_PATH)
+    full = validate(design, S)
     full.pop('design', None)
-    if 'inputs' in full:  # внешние входы (base_1, leg_1 …) — в хэш входят их идентичность и SHA содержимого
-        full['inputs'] = inputs_identity(full['inputs'])
+    inputs = full.pop('inputs', None)
+    # ключи версий новее базовой (v2: кластеры 16, 18, 20) в канон не пишутся, пока равны default; тогда и `schema` — базовая (v1),
+    # и хэш дизайна v1 не меняется
+    flat = _flatten(full)
+    newer = False
+    for p, L in S.leaves.items():
+        if getattr(L, 'since', S.base_version) != S.base_version and p in flat:
+            if _norm(flat[p]) == L.ndefault:
+                del flat[p]
+            else:
+                newer = True
+    flat[('schema',)] = S.version if newer else S.base_version
+    full = _drop_empty(_nest(flat))
+    if inputs:  # внешние входы (base_1, leg_1 …) — в хэш входят их идентичность и SHA содержимого
+        full['inputs'] = inputs_identity(inputs)
     return yaml.safe_dump(_norm(full), sort_keys=True, allow_unicode=True, default_flow_style=False)
 
 
-def design_hash(design):
-    return sha_bytes(canonical(design).encode('utf-8'))
+def _drop_empty(d):
+    return {k: _drop_empty(v) if isinstance(v, dict) else v for k, v in d.items() if not (isinstance(v, dict) and not v)}
+
+
+def design_hash(design, schema=None):
+    return sha_bytes(canonical(design, schema).encode('utf-8'))
+
+
+SCHEMA_V1_PATH = REPO / 'models' / 'designs' / 'r2' / 'schema_v1.yaml'
+
+
+def check_v2_invariance(designs):
+    """Хэш каждого дизайна v1 по схеме v2 = хэш по схеме v1 (новые ключи по умолчанию в канон не пишутся). -> (n, расхождения)."""
+    bad = []
+    for d in designs:
+        a, b = design_hash(d, SCHEMA_V1_PATH), design_hash(d)
+        if a != b:
+            bad.append((d.get('design'), a[:16], b[:16]))
+    return len(designs), bad
 
 
 def get(design, dotted):
@@ -777,8 +821,9 @@ def shift_check(V, A, h, name, design=None, block_file=None, K=None):
     rv = rv[rv['date'].dt.year <= MAX_YEAR]
     s = O.sdvig(V[['date', 'ticker', 'rv_pred']], rv, K=tuple(K))
     r = dict(ryad=name, h=int(h), hash=(design_hash(design)[:16] if design is not None else ''), **s, vremya=time.strftime('%F %T'))
+    # O (PR #178): каждый проверенный ряд — через r2_loyo.sdvig_zapis (пишет блоки и «плоский профиль»; допуск ε — у O)
+    O.sdvig_zapis(r, block_file or (O_DIR / 'blok_sdvig.csv'))
     if not r['ok']:
-        O.blok_zapis([{k: v for k, v in r.items() if k not in ('blok', 'vremya')}], block_file or (O_DIR / 'blok_sdvig.csv'))
         log(f'БЛОК сдвига: {name} h={h} argmax={r["argmax"]} K={r["posledniy_izvestnyy_den"]} {r["prichina"]}')
     return r
 
@@ -1204,6 +1249,17 @@ def check_o(verbose=True):
                 mism.append((L.dotted, x, mine, theirs))
     rows.append(dict(h='все', proverka='нормализация = r2_loyo._n', rasxozhdeniy=len(mism), ok=not mism))
     ok &= not mism
+    # schema_v2: хэши дизайнов v1 не меняются (factor_v1 3 × 64 и driver_v1 без ключей v2)
+    allD = [d for h in HS for d in yaml.safe_load(open(FACTOR_DIR / f'h{h}.yaml'))['dizainy']]
+    ddir = REPO / 'models' / 'designs' / 'r2' / 'driver_v1'
+    for f in sorted(ddir.glob('*.yaml')) if ddir.exists() else []:
+        Y = yaml.safe_load(open(f))
+        allD += [d for d in (Y.get('designs') or []) if not any(k in str(d) for k in ('grid_point', 'k16', 'k18', 'k20'))]
+    n, bad = check_v2_invariance(allD)
+    rows.append(dict(h='все', proverka=f'schema_v2: хэш v1 = хэш v2 у {n} дизайнов (factor_v1 + driver_v1)', rasxozhdeniy=len(bad), ok=not bad))
+    ok &= not bad
+    for x in bad[:5]:
+        print('  хэш v1 ≠ v2:', x)
     if verbose:
         print(pd.DataFrame(rows).to_string(index=False))
         for x in mism[:10]:

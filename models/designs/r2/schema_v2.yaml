@@ -1,0 +1,43 @@
+# Единая схема дизайна R2, версия 2 (протокол v4, кластеры 16–20; агент S по просьбе G, PR #177). Записана до счёта.
+#
+# v2 = v1 (models/designs/r2/schema_v1.yaml, без изменений: `extends`) + новые переключатели кластеров 16, 18, 20.
+# Кластеры 14 (leg.panel, panel_beta_window, panel_market) и 15 (leg.refit, rls_lambda, estimator, calib.update, boost.boost_refit)
+# в v1 уже есть и здесь не меняются; новые ключи P/R добавляются следующей версией, когда их yaml будут в репозитории.
+#
+# Правило хэша (r2_core.canonical): ключи v2 по умолчанию выключены и в канонический yaml не пишутся, пока равны default;
+# если ни один ключ v2 не отличается от default, в каноне остаётся `schema: v1` — хэши всех дизайнов v1 не меняются
+# (проверка: r2_core.py check-o — 3 × 64 дизайна factor_v1, и дизайны driver_v1). Иначе в каноне `schema: v2` и ключи v2.
+# Формат записи — как в v1. Группа с метаполем default и листьями без своего default — сетка внутри складки (как leg.enet).
+
+schema: v2
+extends: schema_v1.yaml
+
+boost:                                        # дополнение группы v1 (листья v1 не меняются)
+  grid_point: {values: [none, p01, p02, p03, p04, p05, p06, p07, p08, p09, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20,
+                        p21, p22, p23, p24, p25, p26, p27, p28, p29, p30, p31, p32, p33, p34, p35, p36, p37, p38, p39, p40,
+                        p41, p42, p43, p44, p45, p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60, p61_tekushchaya],
+               default: none, cluster: 4,
+               note: "точка LHS-60 фазы D (boost.grid = resid_small_v1; список — driver_v1/D_lhs60.yaml); у разных точек — разный хэш и кэш"}
+
+k16:                                          # кластер 16 — воздержание: ŷ = нога · exp(g_t · c_t), g_t ∈ [0, 1] известно в момент t
+  default: "сетки tau, k, q — целиком, выбор вложенно по t на обучающих годах складки (r2_G_abstain.yaml)"
+  gate: {values: [off, conf_seed, regime, shock_fresh, halt, soft], default: off, cluster: 16,
+         note: "halt — только при сборке A (даты ≥ 2022), в отборе не действует"}
+  tau: {values: [0.25, 0.5, 1.0, 2.0, 4.0], cluster: 16, note: "conf_seed: g = 1{SD_seed×lib(c) < τ·|c̄|}"}
+  k: {values: [3, 5, 10], cluster: 16, note: "shock_fresh: g = 0 в первые k дней после скачка RV рынка"}
+  q: {values: [0.9, 0.95, 0.99], cluster: 16, note: "shock_fresh: порог — q-квантиль RV рынка за прошлые 250 дней"}
+  measure: {values: [uroven, prirost], default: uroven, cluster: 16}
+  regime_calib: {values: [none, isotonic], default: none, cluster: 16}
+
+k18:                                          # кластер 18 — постоянство: усадка к эталону
+  default: "сетка λ — целиком, выбор по t"
+  lam_to_ref: {values: [off, on], default: off, cluster: 18, note: "ln ŷ = ln HAR + λ·(ln ŷ_канд − ln HAR)"}
+  lam: {values: [0.25, 0.5, 0.75, 1.0], cluster: 18}
+  ticker_choice: {values: [off, on], default: off, cluster: 18, prio: Б, note: "по тикерам «гибрид или нога»"}
+
+k20:                                          # кластер 20 — ограниченная коррекция «знак × δ» (Д19.3)
+  default: "сетка δ — целиком, выбор по t"
+  sign_delta: {values: [off, znak, dolya], default: off, cluster: 20, note: "ln ŷ = ln база + δ·s_t"}
+  delta: {values: [0.1, 0.2, 0.3], cluster: 20}
+  base: {values: [noga, etalon], default: noga, cluster: 20}
+  reweight_abs_d: {values: [off, on], default: off, cluster: 20, prio: Б, note: "перевзвешивание по |d|"}

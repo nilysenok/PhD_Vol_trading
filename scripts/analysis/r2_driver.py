@@ -457,6 +457,14 @@ def _vybor_smoke(R, S):
     return T.unit.iloc[0], T
 
 
+def point_design(base, tochka):
+    """Дизайн точки LHS: boost.grid_point (schema_v2) — у каждой точки свой хэш и каталог кэша."""
+    d = copy.deepcopy(base)
+    d['design'] = f'{base.get("design")}_{tochka}'
+    _set(d, 'boost.grid_point', tochka)
+    return d
+
+
 def gate_D(h, cells, runner, root, workers):
     """Ячейки C × LHS-60 -> r2_halving.otsechenie (O) с ряд-функцией драйвера -> 8 выживших -> r2_gates (вход, выбор)."""
     import r2_halving as RH
@@ -474,7 +482,7 @@ def gate_D(h, cells, runner, root, workers):
 
         def ryad(tochka, seeds, gody, base=base):
             steps = list(range(1, max(gody) - 2015 + 1)) if not SMOKE_FLAG['on'] else list(SMOKE_STEPS)
-            d = dict(copy.deepcopy(base), design=f'{base.get("design")}_{tochka}')
+            d = point_design(base, tochka)
             ok, why = runner.chain([d], h, list(seeds), steps, workers, f'D_{cname}_{tochka}', extra={'BG': f'--point {tochka}'})
             if not ok:
                 raise RuntimeError(why)
@@ -487,7 +495,7 @@ def gate_D(h, cells, runner, root, workers):
         else:
             trace.to_csv(SMOKE_O / f'halving_{cname}_h{h}.csv', index=False)
         best_cells[cname] = dict(zhivye=zhivye, base=base)
-    units = {f'{c}_{t}': dict(copy.deepcopy(v['base']), design=f'{v["base"].get("design")}_{t}') for c, v in best_cells.items() for t in v['zhivye']}
+    units = {f'{c}_{t}': point_design(v['base'], t) for c, v in best_cells.items() for t in v['zhivye']}
     R, S = ocenka_units(units, h, CFG['D']['seeds'] if not SMOKE_FLAG['on'] else [42], root)
     w, T = (RG.vybor(R, S) if not SMOKE_FLAG['on'] else _vybor_smoke(R, S))
     return write_gate('D', h, dict(luchshiy=w, dizayn=units.get(w), zhivye={c: v['zhivye'] for c, v in best_cells.items()},
@@ -682,8 +690,17 @@ def cmd_run(a, smoke=False):
         t = threading.Thread(target=lambda h=h: econ_res.__setitem__(h, econ(h, runner, smoke)), name=f'econ_h{h}')
         t.start()
         th.append(t)
+    def guarded(h):
+        try:
+            res[h] = pipeline(h, runner, smoke, getattr(a, 'once', False))
+        except Exception as e:  # noqa: BLE001 — ошибка конвейера h не роняет другие h; причина — в состоянии и отчёте
+            import traceback
+            res[h] = dict(h=h, zhdyot=f'ОШИБКА: {type(e).__name__}: {e}', trace=traceback.format_exc())
+            save_state(h, res[h], smoke)
+            log(f'конвейер h={h}: ошибка {e}')
+
     for h in hs:  # конвейеры h — параллельно
-        t = threading.Thread(target=lambda h=h: res.__setitem__(h, pipeline(h, runner, smoke, getattr(a, 'once', False))), name=f'h{h}')
+        t = threading.Thread(target=guarded, args=(h,), name=f'h{h}')
         t.start()
         th.append(t)
     for t in th:
@@ -715,13 +732,14 @@ def _smoke_data():
 
 def _smoke_fn(design, seed, steps):
     """Дымовой модуль: HAR-J d0 + эмбарго (r2_core) — механика драйвера, не модель."""
-    return {'smoke': C._smoke_series(C.SHARED['A'], C.SHARED['harj'], int(design['h']), steps)}
+    return {f'smoke_{C.SHARED["_smoke_m"]}': C._smoke_series(C.SHARED['A'], C.SHARED['harj'], int(design['h']), steps)}
 
 
 def smoke_module(m, designs, h, seeds, steps, workers):
     A, harj = _smoke_data()
     C.share(A=A, harj=harj)
     with LOCK:  # run_phase держит fn в общем SHARED: дымовые вызовы из потоков — по одному
+        C.share(_smoke_m=m)  # у каждого модуля цепочки — свой ряд (иначе модули затирают файл друг друга)
         C.run_phase('S', h, designs, _smoke_fn, seeds=tuple(seeds), steps=tuple(steps), workers=1, module=f'smoke_{m}',
                     root=SMOKE_ROOT, block_file=SMOKE_DIR / 'blok_sdvig.csv', check_gate=False)
     STATE.joinpath('smoke').mkdir(parents=True, exist_ok=True)
@@ -761,8 +779,9 @@ def cmd_smoke(a):
     Z = pd.read_csv(STATE / 'smoke' / 'zapuski.csv', names=['t', 'm', 'h', 'n', 'thread'])
     ok('конвейеры h = 5, 22, 1 дошли до остановки перед открытием', all('СТОП' in str(res.get(h, {}).get('zhdyot')) for h in SMOKE_HS),
        str({h: res.get(h, {}).get('zhdyot') for h in SMOKE_HS}))
-    ok('эконометрика стартовала сразу, параллельно с B', all(econ_res[h]['ok'] for h in SMOKE_HS) and
-       min(pd.to_datetime([econ_res[h]['start'] for h in SMOKE_HS])) <= pd.to_datetime(min(res[h]['etapy']['B_schet']['end'] for h in SMOKE_HS)),
+    b_end = [res.get(h, {}).get('etapy', {}).get('B_schet', {}).get('end') for h in SMOKE_HS]
+    ok('эконометрика стартовала сразу, параллельно с B', all(econ_res.get(h, {}).get('ok') for h in SMOKE_HS) and all(b_end) and
+       min(pd.to_datetime([econ_res[h]['start'] for h in SMOKE_HS])) <= pd.to_datetime(min(b_end)),
        f'потоки: {sorted(Z.thread.unique())}')
     ok('ворота B, C, D, E на всех h; отчёты gate_{B,C,D,E}.md', all(gate_path(p, h, True).exists() for p in 'BCDE' for h in SMOKE_HS)
        and all((SMOKE_REPORT / f'gate_{p}.md').exists() for p in 'BCDE'))
