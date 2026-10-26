@@ -12,8 +12,8 @@ python3 -m fastbt.s9 run [--boot-reps 1000]  — надстройки D/B/C, п�
 C (u02) основного дизайна на том же σ. Все окна, перцентили, медианы — только прошлые бары (сдвиг
 на 1). Сетки — docs/otchety/dev_log_strategies.md, строка «С9 … сетки объявлены до запуска».
 
---scope test — тот же код на 2022–03.02.2026 (σ до TEST_CUT, валидация с --val-start, по
-умолчанию 2017, как в разработке; σ_pred h=1 по умолчанию final3). Замок тот же, что у fastbt.dev
+--scope test — тот же код на 2022–03.02.2026 (σ до TEST_CUT; окна валидации/калибровки
+заморожены на 2018–2021 — на тесте выбора нет; σ_pred h=1 по умолчанию final3_full). Замок тот же, что у fastbt.dev
 и fastbt.final_test: без docs/otchety/FINAL_DESIGN_strategies.md — отказ (fastbt.dev.TestLocked)
 до чтения любых данных. Выбор B/C/D по С8 не повторяется: ключи берутся из таблиц разработки
 (docs/tables/strat_dev/s9_*<суффикс>.csv). C (владелец 26.10, 10:00): основная строка — одна
@@ -46,6 +46,7 @@ TABLES = Path(os.environ.get("S9_TABLES", ROOT / "docs" / "tables" / "strat_dev"
 MAIN_YAML = ROOT / "fastbt" / "designs" / "final" / "main.yaml"
 YEARS = (2018, 2019, 2020, 2021)
 VAL_START = 2017
+VAL_END = 0                               # 0 — окно валидации до Y−1 (разработка)
 COMM = 0.0005
 CUT = pd.Timestamp("2021-12-31")          # тест 2022–2026 закрыт: σ после этой даты не читается
 SIDS = ("S1", "S2", "S3", "S4", "S5", "S6")
@@ -78,19 +79,24 @@ T2_CUT, T2_LABELS = "2020-03-01", ("2018–2021", "до 1.03.2020", "с 1.03.202
 # тест: σ_pred h=1/h=5 и HAR-J — до 03.02.2026; 2026 — неполный год (январь)
 TEST_YEARS = (2022, 2023, 2024, 2025, 2026)
 TEST_CUT = pd.Timestamp("2026-02-03")
+# владелец 26.10, 10:05, п. 10/13 (толкование дирижёра 10:11): на тесте выбора нет — окна валидации
+# и калибровки заморожены на разработке 2018–2021 (2017 — прогрев), пустых окон нет
+TEST_VAL_START, TEST_VAL_END = 2018, 2021
 TEST_TABLES = Path(os.environ.get("S9_TABLES", ROOT / "docs" / "tables" / "strat_test"))
 # владелец 26.10, 10:00: на тест из сетки C — одна точка C1 W504 p70 на h=5 (выбрана по С8 на разработке)
 TEST_C = ("C1:W504_p70", "hyb_h5")
 
 
-def set_scope(scope: str, val_start: int = VAL_START) -> None:
-    """Переключает годы, срез σ, источники и папку таблиц. test — только при снятом замке."""
-    global SCOPE, YEARS, VAL_START, CUT, RVI, TABLES, T2_CUT, T2_LABELS
+def set_scope(scope: str, val_start: int | None = None) -> None:
+    """Переключает годы, срез σ, источники и папку таблиц. test — только при снятом замке.
+    Окно валидации/калибровки в тесте заморожено: TEST_VAL_START…TEST_VAL_END (2018–2021)."""
+    global SCOPE, YEARS, VAL_START, VAL_END, CUT, RVI, TABLES, T2_CUT, T2_LABELS
     if scope == "dev":
         return
     from fastbt import dev
     dev.check_scope(scope)                 # без FINAL_DESIGN_strategies.md — TestLocked
-    SCOPE, YEARS, VAL_START, CUT = scope, TEST_YEARS, val_start, TEST_CUT
+    SCOPE, YEARS, CUT = scope, TEST_YEARS, TEST_CUT
+    VAL_START, VAL_END = val_start or TEST_VAL_START, TEST_VAL_END
     SOURCES["naive_h1"] = (OUT / "sigma_naive_rvw_test.parquet", "sigma_pred_h1", "h1")
     for s in (42, 43, 44):                 # seed-σ — реализации D12_h1 на 2017–2021
         SOURCES.pop(f"seed{s}_h1", None)
@@ -198,8 +204,8 @@ def _job(args):
     cfg = dev.make_config(d, SCOPE)
     cfg5 = dev.make_config({**d, "horizons": ["h5"]}, SCOPE)
     if SCOPE != "dev":
-        cfg = dataclasses.replace(cfg, val_start=VAL_START)
-        cfg5 = dataclasses.replace(cfg5, val_start=VAL_START)
+        cfg = dataclasses.replace(cfg, val_start=VAL_START, val_end=VAL_END)
+        cfg5 = dataclasses.replace(cfg5, val_start=VAL_START, val_end=VAL_END)
     dsg.apply(cfg.design)
     td = load_ticker(ticker, cfg.corp_actions)
     sig = {lab: (h, align(td.dates, df)) for lab, (h, df) in srcs.items()}
@@ -236,7 +242,7 @@ def cache_key() -> str:
     for lab, (p, _, _) in SOURCES.items():
         h.update(lab.encode() + hashlib.sha1(Path(p).read_bytes()).digest())
     if SCOPE != "dev":
-        h.update(f"{SCOPE}|{VAL_START}|{CUT.date()}".encode())
+        h.update(f"{SCOPE}|{VAL_START}|{VAL_END}|{CUT.date()}".encode())
     return h.hexdigest()[:10]
 
 
@@ -287,7 +293,10 @@ class Engine:
             c = cache[t]
             dates = c["dates"]
             for Y in YEARS:
-                self.vwin[(ti, Y)] = (year_bounds(dates, VAL_START)[0], year_bounds(dates, Y)[0])
+                ye = Y if not VAL_END else min(Y, VAL_END + 1)
+                self.vwin[(ti, Y)] = (year_bounds(dates, VAL_START)[0], year_bounds(dates, ye)[0])
+                if self.vwin[(ti, Y)][1] <= self.vwin[(ti, Y)][0]:
+                    raise ValueError(f"пустое окно валидации {VAL_START}…{ye - 1} для {t} {Y}")
             for sid in SIDS:
                 pid = len(self.pairs)
                 self.pairs.append((t, sid))
@@ -1131,8 +1140,9 @@ def main(argv=None):
                    help="σ_pred гибрида h=1 (final3 — финал третьего круга D22_h1); "
                         "по умолчанию dev — final2, test — final3")
     p.add_argument("--suffix", default=None, help="суффикс таблиц/кэша (по умолчанию от --sigma-h1)")
-    p.add_argument("--val-start", type=int, default=VAL_START,
-                   help="начало валидации B/C/D в тесте (в разработке всегда 2017)")
+    p.add_argument("--val-start", type=int, default=None,
+                   help="начало замороженного окна валидации в тесте (по умолчанию 2018; конец — "
+                        "2021); в разработке всегда 2017…Y−1")
     a = p.parse_args(argv)
     from fastbt import dev
     dev.check_scope(a.scope)               # замок: test без FINAL_DESIGN_strategies.md — отказ

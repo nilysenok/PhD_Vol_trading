@@ -33,6 +33,10 @@ class Config:
     val_start: int = 2020
     approaches: str = "ABCD"          # начало валидации B/C/D (год; в маске [1] — со следующего)
     design: tuple = ()                # варианты дизайна B/C/D (fastbt.design); () — как в коде
+    # последний год окон валидации/калибровки (0 — до Y−1, расширяющееся окно, как в разработке).
+    # Тест главы 4 (владелец 26.10, 10:05, п. 10/13): дизайны зафиксированы на разработке, на тесте
+    # выбора нет — окна B/C/D и фильтра оборота заморожены на 2018–2021 (val_start=2018, val_end=2021)
+    val_end: int = 0
 
     @staticmethod
     def gate() -> "Config":
@@ -42,6 +46,19 @@ class Config:
     def bound(self) -> int:
         """Индекс в _year_bounds для концов окон: [1] — старая утечка, [0] — без неё."""
         return 1 if self.mask_old else 0
+
+    def cal_end_year(self, Y: int) -> int:
+        """Год, с 1 января которого кончается окно калибровки для тестового года Y."""
+        return Y if not self.val_end else min(Y, self.val_end + 1)
+
+    def val_bounds(self, dates, Y: int) -> tuple:
+        """(vs, ve) окна валидации B/C/D для года Y; при val_end пустое окно — ошибка."""
+        from fastbt.data import year_bounds
+        b = self.bound()
+        vs, ve = year_bounds(dates, self.val_start)[b], year_bounds(dates, self.cal_end_year(Y))[b]
+        if self.val_end and ve <= vs:
+            raise ValueError(f"пустое окно валидации {self.val_start}…{self.val_end} для {Y}")
+        return vs, ve
 
     def to_dict(self) -> dict:
         return asdict(self)

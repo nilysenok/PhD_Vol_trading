@@ -4,8 +4,8 @@ python3 -m fastbt.dev --design <yaml> [--scope dev|test] [--boot-reps 1000] [--w
 python3 -m fastbt.dev --smoke [--data-root DIR]       (1 тикер × 1 стратегия, для leak_detector)
 
 dev  — walk-forward 2017–2021, маска [0]: A 2017–2021, B/C/D 2018–2021 (валидация с 2017).
-test — 2022–2026; без docs/otchety/FINAL_DESIGN_strategies.md падает (замок контрольного
-периода). Каждый запуск дописывает строку в docs/otchety/dev_log_strategies.md.
+test — 2022–2026, окна калибровки B/C/D и фильтра оборота заморожены на 2018–2021 (val_end);
+без docs/otchety/FINAL_DESIGN_strategies.md падает (замок контрольного периода). Каждый запуск дописывает строку в docs/otchety/dev_log_strategies.md.
 Ключи yaml: любые поля Config (fix_*, comm, msp_comm), tickers, sids, vpred (путь к σ_pred).
 """
 from __future__ import annotations
@@ -25,8 +25,11 @@ FINAL = ROOT / "docs" / "otchety" / "FINAL_DESIGN_strategies.md"
 LOG = ROOT / "docs" / "otchety" / "dev_log_strategies.md"
 SCOPES = {"dev": dict(years_a=tuple(range(2017, 2022)), years_bcd=tuple(range(2018, 2022)),
                       val_start=2017),
+          # тест (владелец 26.10, 10:05, п. 10/13; толкование дирижёра 10:11): дизайны зафиксированы
+          # на разработке, на тесте выбора нет — окна валидации/калибровки B/C/D и фильтра оборота
+          # заморожены на 2018–2021 (2017 — прогрев); метрики — 2022–2026
           "test": dict(years_a=tuple(range(2022, 2027)), years_bcd=tuple(range(2022, 2027)),
-                       val_start=2020)}
+                       val_start=2018, val_end=2021)}
 
 
 class TestLocked(SystemExit):

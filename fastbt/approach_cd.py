@@ -84,7 +84,7 @@ def run_c(u, cfg, a_res):
             ys, ye = year_bounds(u.dates, Y)[0], year_bounds(u.dates, Y + 1)[0]
             apos = np.zeros(u.n)
             apos[ys:ye] = ens[ys:ye]               # V41:1446-1478: A только тестового года
-        vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
+        vs, ve = cfg.val_bounds(u.dates, Y)
         sh, ex, tp = _eval(apos, rows, u.lr, vs, ve, cfg.comm)
         sh, ex, tp = sh[idx], ex[idx], tp[idx]
         bi = -1
@@ -108,7 +108,7 @@ def run_d(u, cfg, a_res):
         if Y not in a_res:
             continue
         apos = a_res[Y][1]
-        vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
+        vs, ve = cfg.val_bounds(u.dates, Y)
         sh, _, _ = _eval(apos, rows, u.lr, vs, ve, cfg.comm)
         sh = sh[idx]
         # доля закрытых дней окна калибровки (все бары окна); D_MIN_CLOSED — ограничение отбора
@@ -177,7 +177,7 @@ def run_d_cont(u, cfg, a_res):
         if Y not in a_res:
             continue
         apos = a_res[Y][1]
-        vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
+        vs, ve = cfg.val_bounds(u.dates, Y)
         sh = np.zeros(len(rows))
         scaled_eval(apos, rows, u.lr, vs, ve, cfg.comm, sh)
         bi = _first_best(sh)

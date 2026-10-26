@@ -49,9 +49,9 @@ def apply(res: dict, u, cfg, kind: str):
     for Y, v in res.items():
         pos = v[1]
         if kind == "A":
-            s, e = WARMUP, year_bounds(u.dates, Y)[b]
+            s, e = WARMUP, year_bounds(u.dates, cfg.cal_end_year(Y))[b]
         else:
-            s, e = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
+            s, e = cfg.val_bounds(u.dates, Y)
         best, bp, bpos = -np.inf, None, pos
         for h in grids.TF_HOLD:
             for nb in grids.TF_REENTRY:

@@ -15,6 +15,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -89,9 +90,10 @@ def test_dev_scope_unchanged(fresh_s9):
 
 
 def test_unlocked_switches_scope(unlocked, fresh_s9):
-    s9.set_scope("test", 2017)
+    s9.set_scope("test")
     s9.use_sigma_h1("final3")
-    assert s9.YEARS == (2022, 2023, 2024, 2025, 2026) and s9.VAL_START == 2017
+    assert s9.YEARS == (2022, 2023, 2024, 2025, 2026)
+    assert (s9.VAL_START, s9.VAL_END) == (2018, 2021)      # окно заморожено на разработке
     assert s9.CUT == pd.Timestamp("2026-02-03")
     assert s9.SUFFIX == "_final3_test"
     assert not any(k.startswith("seed") for k in s9.SOURCES)
@@ -154,8 +156,12 @@ from fastbt import dev, s9
 tmp = Path(sys.argv[1])
 (tmp / "FINAL_DESIGN_strategies.md").write_text("смоук\\n")
 dev.FINAL = tmp / "FINAL_DESIGN_strategies.md"          # замок снят только в этом процессе
-dev.SCOPES["test"] = dev.SCOPES["dev"]                    # ни одного года ≥ 2022
+frozen = sys.argv[2] == "frozen"
+# ни одного года ≥ 2022. expanding — окна как в разработке (сверка с ней);
+# frozen — «псевдотест»: окна калибровки заморожены на 2017 (аналог 2018–2021 для теста 2022–2026)
+dev.SCOPES["test"] = dict(dev.SCOPES["dev"], val_end=2017 if frozen else 0)
 s9.TEST_YEARS, s9.TEST_CUT = s9.YEARS, s9.CUT
+s9.TEST_VAL_START, s9.TEST_VAL_END = 2017, (2017 if frozen else 0)
 s9.OUT, s9.TEST_TABLES = tmp, tmp
 for st in (["sources"], ["cache", "--workers", "1"], ["run", "--boot-reps", "300"]):
     s9.main(st + ["--scope", "test"])                       # σ по умолчанию — final3_full
@@ -178,7 +184,7 @@ def test_test_path_on_dev_years(tmp_path):
     if not (s9.REGEN / "sigma_pred_h1_final3_full.parquet").exists():
         pytest.skip("нет общих данных")
     env = dict(os.environ, NUMBA_CACHE_DIR=str(s9.MAIN / "data" / "fastbt" / "numba_cache"))
-    r = subprocess.run([sys.executable, "-W", "ignore", "-c", SMOKE, str(tmp_path)],
+    r = subprocess.run([sys.executable, "-W", "ignore", "-c", SMOKE, str(tmp_path), "expanding"],
                        cwd=ROOT, env=env, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr[-2000:]
     assert "(из разработки)" in r.stdout
@@ -207,6 +213,101 @@ def test_test_path_on_dev_years(tmp_path):
     assert "p_vs_A_iid" in osn.columns
     for f in ("sigma_naive_rvw_test.parquet", "rvi_1850_test.parquet"):
         assert pd.read_parquet(tmp_path / f)["date"].max() <= pd.Timestamp("2021-12-31")
+
+
+@pytest.mark.skipif(os.environ.get("S9_REPRO") == "0", reason="S9_REPRO=0")
+def test_s9_pseudotest_frozen_windows(tmp_path):
+    """Псевдотест С9 на 2018–2021: окна калибровки заморожены (2017), пустых окон нет, вывод
+    теста полный; результаты отличаются от расширяющихся окон (заморозка действует)."""
+    if not (s9.REGEN / "sigma_pred_h1_final3_full.parquet").exists():
+        pytest.skip("нет общих данных")
+    env = dict(os.environ, NUMBA_CACHE_DIR=str(s9.MAIN / "data" / "fastbt" / "numba_cache"))
+    r = subprocess.run([sys.executable, "-W", "ignore", "-c", SMOKE, str(tmp_path), "frozen"],
+                       cwd=ROOT, env=env, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    rd = lambda p: pd.read_csv(p, sep=";", decimal=",", encoding="utf-8-sig")
+    osn = rd(tmp_path / "s9_osnovnye_final3_test.csv")
+    assert list(osn.approach) == ["A", "A без фильтра", "B", "C", "D"]
+    assert osn["sharpe"].notna().all() and osn["p_vs_A"].iloc[2:].between(0, 1).all()
+    assert len(rd(tmp_path / "s9_C_osnovnaya_final3_test.csv")) == 1
+    ref = rd(ROOT / "docs" / "tables" / "strat_dev" / "s9_D_zatvor_final3.csv")
+    assert not rd(tmp_path / "s9_D_zatvor_final3_test.csv")["sharpe"].equals(ref["sharpe"])
+
+
+def test_config_val_bounds():
+    """Config.val_end: 0 — окно до Y−1 (разработка, как прежде); 2021 — заморожено; пустое — ошибка."""
+    from fastbt.config import Config
+    from fastbt.data import year_bounds
+    d = pd.bdate_range("2014-06-01", "2026-02-03").values.astype("datetime64[ns]")
+    c0 = Config(val_start=2017)
+    assert c0.val_bounds(d, 2020) == (year_bounds(d, 2017)[0], year_bounds(d, 2020)[0])
+    c1 = Config(val_start=2018, val_end=2021)
+    for Y in (2022, 2024, 2026):
+        assert c1.val_bounds(d, Y) == (year_bounds(d, 2018)[0], year_bounds(d, 2022)[0])
+        assert c1.cal_end_year(Y) == 2022
+    with pytest.raises(ValueError):
+        Config(val_start=2022, val_end=2021).val_bounds(d, 2022)
+    from fastbt import dev
+    t = dev.make_config({}, "test")
+    assert (t.val_start, t.val_end, t.years_a[0], t.years_bcd[0]) == (2018, 2021, 2022, 2022)
+    assert dev.make_config({}, "dev").val_end == 0
+
+
+def test_chapter4_a_locked(locked):
+    from fastbt import chapter4_a
+    with pytest.raises(dev.TestLocked):
+        chapter4_a.main(["--workers", "1"])
+    assert chapter4_a.YEARS_A == (2022, 2023, 2024, 2025, 2026)
+    assert "2020–2026" not in chapter4_a.WINDOWS
+
+
+def test_final_test_locked(locked):
+    from fastbt import final_test
+    with pytest.raises(dev.TestLocked):
+        final_test.main(["--main", "x.yaml", "--harj-vpred", "y.parquet"])
+    assert list(final_test.windows("test")) == ["2022–2026", "2025–01.2026"]
+
+
+def test_ce_boot_block_and_iid_unchanged():
+    """ce_boot: block=1 — прежний IID (тот же ГСЧ); block=5 — круговой блочный."""
+    from fastbt.final_test import ce, ce_boot
+    rng = np.random.RandomState(3)
+    a, b = rng.normal(3e-4, 0.01, 600), rng.normal(1e-4, 0.01, 600)
+    obs, pv, lo, hi = ce_boot(a, b, 5, 400)
+    r = np.random.RandomState(42)
+    idx = r.randint(0, 600, (400, 600))
+    d = (ce(a[idx], 5) - ce(b[idx], 5)) * 252 * 100
+    assert pv == float(np.mean(d <= 0))
+    o5, p5, _, _ = ce_boot(a, b, 5, 400, block=5)
+    assert o5 == obs and 0 <= p5 <= 1 and p5 != pv
+
+
+FT_PSEUDO = """
+import sys
+from pathlib import Path
+from fastbt import cache, dev, final_test
+tmp = Path(sys.argv[1])
+cache.MAIN = tmp                                           # позиции псевдотеста — во временную папку
+dev.SCOPES["dev"] = dict(years_a=tuple(range(2017, 2022)), years_bcd=tuple(range(2018, 2022)),
+                         val_start=2017, val_end=2017)     # окна заморожены, ни одного года ≥ 2022
+final_test.main(["--main", sys.argv[2], "--harj-vpred", sys.argv[3], "--scope", "dev",
+                 "--boot-reps", "200", "--workers", "3"])
+"""
+
+
+@pytest.mark.skipif(os.environ.get("S9_REPRO") == "0", reason="S9_REPRO=0")
+def test_final_test_pseudotest(tmp_path):
+    """Движок final_test на 2018–2021 с замороженными окнами: ЛВ основной + IID рядом, без ошибок."""
+    harj = s9.REGEN / "sigma_pred_h1_harj_final2.parquet"
+    if not harj.exists():
+        pytest.skip("нет общих данных")
+    env = dict(os.environ, NUMBA_CACHE_DIR=str(s9.MAIN / "data" / "fastbt" / "numba_cache"))
+    r = subprocess.run([sys.executable, "-W", "ignore", "-c", FT_PSEUDO, str(tmp_path),
+                        str(ROOT / "fastbt" / "designs" / "final" / "main.yaml"), str(harj)],
+                       cwd=ROOT, env=env, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-3000:]
+    assert "p_iid" in r.stdout and "p_ce_g3_iid" in r.stdout
+    assert (tmp_path / "data" / "fastbt" / "final_dev_main.parquet").exists()
 
 
 @pytest.mark.skipif(os.environ.get("S9_REPRO") == "0", reason="S9_REPRO=0")

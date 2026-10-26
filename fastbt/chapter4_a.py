@@ -1,6 +1,7 @@
 """Глава 4, подход A — честный пересчёт (С2): маска [0], комиссия 0,05%, корпоративные
 события, ставка ЦБ по решениям, Шарп mean(excess)/std(excess); МСП-A, бенчмарки, H3,
-статистика отсева фазы 1. Тестовые годы A — 2020–2026 (как в методе).
+статистика отсева фазы 1. Тестовые годы A — 2022–2026 (владелец 26.10, 10:05; прежние 2020–2026
+убраны), окна 2022–2026 и 2025–01.2026; H3 — p Ледуа–Вольфа (блок 5), IID справочно. Замок теста.
 
 python3 -m fastbt.chapter4_a [--workers 10] [--boot-reps 1000] [--smoke] [--leak-mask-old]
 
@@ -21,6 +22,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -29,11 +31,14 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-TABLES = ROOT / "docs" / "tables"
-WINDOWS = {"2020–2026": ("2020-01-01", "2026-12-31"),
-           "2022–2025": ("2022-01-01", "2025-12-31"),
-           "2022–2026": ("2022-01-01", "2026-12-31")}
-H3_WINDOWS = ("2022–2025", "2022–2026")   # индексы MCFTR/RGBITR в data/ — с 03.01.2022
+TABLES = Path(os.environ.get("CH4_TABLES", ROOT / "docs" / "tables"))   # тест: docs/tables/strat_test
+# владелец 26.10, 10:05, п. 9/10 (толкование дирижёра 10:11): A — на тех же 2022–2026, что и B/C/D;
+# основное окно 2022–2026, отдельно 2025–01.2026; 2020–2026 из таблиц убрано
+YEARS_A = tuple(range(2022, 2027))
+WINDOWS = {"2022–2026": ("2022-01-01", "2026-12-31"),
+           "2025–01.2026": ("2025-01-01", "2026-12-31")}
+H3_WINDOWS = ("2022–2026", "2025–01.2026")   # индексы MCFTR/RGBITR в data/ — с 03.01.2022
+LW_BLOCK = 5            # п. 12: основной p в H3 — Ледуа–Вольф, блок 5; IID — p_boot_iid
 ALPHA = 0.05
 
 
@@ -80,7 +85,10 @@ def main(argv=None):
     from fastbt.config import Config
     from fastbt.data import TICKERS
     from fastbt.pipeline import run_all
-    cfg = Config(approaches="A")
+    from fastbt import dev
+    if not a.smoke:
+        dev.check_scope("test")          # годы A — 2022–2026: тот же замок, что у final_test
+    cfg = Config(approaches="A", years_a=YEARS_A)
     if a.leak_mask_old:
         cfg = dataclasses.replace(cfg, mask_old=True)
     sfx = "_mask1" if a.leak_mask_old else ""
@@ -90,11 +98,11 @@ def main(argv=None):
     t_run = time.time() - t0
     rate = msp.rate_cbr()
     pa = pos[pos["approach"] == "A"]
-    port_all = msp.portfolio(pa, rate, cfg.msp_comm)                       # 2020–2026
-    port22 = msp.portfolio(pa[pa["test_year"] >= 2022], rate, cfg.msp_comm)  # как печать
+    port_all = msp.portfolio(pa, rate, cfg.msp_comm)                       # 2022–2026
+    port22 = port_all
     rows = []
     for wname, (s, e) in WINDOWS.items():
-        src = port_all if wname.startswith("2020") else port22
+        src = port_all
         m = msp.metrics(src.loc[s:e])
         m.update(window=wname, turnover_pct=float(src.loc[s:e, "turnover"].mean() * 100))
         rows.append(m)
@@ -126,7 +134,8 @@ def main(argv=None):
             pos.to_parquet(MAIN / "data" / "fastbt" / "a_mask1.parquet", index=False)
         print(f"позиции {t_run:.0f} с, всего {time.time() - t0:.0f} с")
         return 0
-    t_h3 = pd.concat([bench.h3_table(port22, rate, a.boot_reps, *WINDOWS[w]).assign(window=w)
+    t_h3 = pd.concat([bench.h3_table(port22, rate, a.boot_reps, *WINDOWS[w], lw_block=LW_BLOCK)
+                      .assign(window=w)
                       for w in H3_WINDOWS], ignore_index=True)
     t_h3["h3_accept"] = np.where(t_h3["p_boot"].isna(), "",
                                  np.where((t_h3["d_sharpe_msp_minus"] > 0)
@@ -144,7 +153,7 @@ def main(argv=None):
             "# Таблицы главы 4, подход A (fastbt, маска [0])\n\n"
             "Каждая таблица ниже воспроизводится командой из корня репозитория:\n\n"
             f"- `tabl_4_msp_a.csv` — МСП-A по окнам: `{cmd}`\n"
-            f"- `tabl_4_msp_a_po_godam.csv` — МСП-A по тестовым годам 2020–2026: `{cmd}`\n"
+            f"- `tabl_4_msp_a_po_godam.csv` — МСП-A по тестовым годам 2022–2026: `{cmd}`\n"
             f"- `tabl_4_9_h3.csv` — H3, бенчмарки MCFTR/RGBITR: `{cmd}`\n"
             f"- `tabl_4_otsev_a.csv` — отсев фазы 1: `{cmd}`\n"
             f"- `tabl_4_msp_a_po_godam_mask1.csv`, `tabl_4_msp_a_mask1.csv`, `tabl_4_a_utechka.csv`"
