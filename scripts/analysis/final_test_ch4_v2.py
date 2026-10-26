@@ -27,8 +27,10 @@ models/designs/ch4_v2/ch4_v2_sborka.yaml. Первое открытие тест
         7) таблицы → docs/tables/strat_test_v2/, ряды → data/fastbt/test_v2/; замок дописывается (status «завершено», SHA выходов).
 
 Считаются только дизайны spec.dizayny (по одному на подход) + A и таблица H2 внутри выбранной точки spec.h2.dizayn
-(гибрид / HAR-J (б) / наивная — одной таблицей, без выбора). Комиссия 0,05 % за сторону; 0,06 % — строки чувствительности
-(без p). Все строки — «до аудита», пока FA не закрыл аудит (столбец pometka; правило пересчёта — FINAL v2, раздел 6).
+(гибрид / HAR-J (б) / наивная — одной таблицей, без выбора). Комиссия (владелец 22:45): основная 0,04 % за сторону «всё
+включено» — фактический тариф Т-Банка «Инвестор»; чувствительность — 0,035 / 0,05 / 0,06 % (без p). «Ставка комиссии изменена
+с 0,05 % (FINAL_DESIGN_strategies v1) на 0,04 % до второго открытия, по фактическому тарифу, не по результатам разработки.»
+Семьи С9 «выбор по валидации» — ключ tochki (+ otsev), Engine.select на замороженном окне. Все строки — «до аудита», пока FA не закрыл аудит (столбец pometka; правило пересчёта — FINAL v2, раздел 6).
 
 Семьи (встроенная математика = fastbt.s9 / fastbt.s9_stats; дизайн может указать kod: '<файл>.py:<функция>' построителя раунда —
 тогда вызывается он, SHA сверяется):
@@ -452,6 +454,14 @@ def fam_gate(e, d: dict, S_of):
         Se = _per_ticker(e, S, lambda s: ema(s, int(d['span'])))
         R = _rank(e, Se, d['W'], d.get('razgon'))
         return np.where(R > float(d['p']), 0.0, 1.0)
+    if fam == 'D5':
+        chg = np.full(S.shape, np.nan)
+        chg[:, 5:] = S[:, 5:] / S[:, :-5] - 1.0
+        return np.where(chg > float(d['x']), 0.0, 1.0)
+    if fam == 'D6':                                       # σ_pred / RVI 18:50 (лаг 0 или 1), ранг в окне W
+        RV = e.rvi(int(d.get('lag', 0)))
+        R = _rank(e, S * np.sqrt(252) * 100 / RV, d.get('W', 252), d.get('razgon'))
+        return np.where(R > float(d['p']), 0.0, 1.0)
     if fam == 'Dcont':
         med = _per_ticker(e, S, lambda s: past_median(s, int(d['W'])))
         w = np.minimum(float(d['cap']), (med / S) ** float(d['gamma']))
@@ -508,8 +518,24 @@ class Raschet:
             base = self.pos[d.get('baza', 'A')][0]
             self.pos[key] = (base, p1_weights(e, self.S_of(d.get('sigma', 'hyb_h1'))))
             return
+        if d.get('tochki'):
+            self.pos[key] = (e.A_row * self.semya_po_validatsii(d), None)
+            return
         G = external_gate(e, d, self.S_of, self.root) if d.get('kod') else fam_gate(e, d, self.S_of)
         self.pos[key] = (e.A_row * e.g_row(G), None)
+
+    def semya_po_validatsii(self, d: dict) -> np.ndarray:
+        """Семья С9 «выбор по валидации»: точки tochki одной семьи, на пару-год — первый лучший Шарп A·g на ЗАМОРОЖЕННОМ окне
+        (Engine.select, окна s9.VAL_START…VAL_END); otsev — отсев по доле закрытых баров окна (как D в С9)."""
+        e = self.e
+        base = {k: v for k, v in d.items() if k not in ('tochki', 'otsev', 'klyuch')}
+        Gs = [fam_gate(e, dict(base, **t), self.S_of) for t in d['tochki']]
+        stack = np.stack(Gs)
+        kind = 'mask' if np.isin(stack[~np.isnan(stack)], (0.0, 1.0)).all() else 'scale'
+        g, cnt = e.select(stack, kind, tuple(d['otsev']) if d.get('otsev') else None, cat=stack.ndim == 4)
+        self.vybor = getattr(self, 'vybor', {})
+        self.vybor[str(d.get('klyuch') or d['semya'])] = {i: int(v) for i, v in cnt.items()}
+        return g
 
     def port(self, eng, key, comm):
         pos, w = self.pos[key]
@@ -553,8 +579,9 @@ def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, ro
     engines = {'bez': e, 's_pravilom': ez}
     rows = []
     keys = ['A'] + order + [f'dop:{k}' for k in dop]
+    comms = [comm] + [c for c in comm_ch if abs(c - comm) > 1e-12]
     for pr, eng in engines.items():
-        for cm in (comm, comm_ch):
+        for cm in comms:
             ports = {k: R.port(eng, k, cm) for k in keys}
             for ok, (lo, hi) in okna.items():
                 mA, qA = metrics_okno(ports['A'], lo, hi)
@@ -563,6 +590,7 @@ def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, ro
                     d = diz.get(k) or dop.get(k.replace('dop:', '')) or {}
                     r = dict(podhod=k, dizayn=opis(d) if d else 'main.yaml:A (ансамбль + фильтр оборота)',
                              okno=ok, pravilo=pr, komissiya_pct=cm * 100,
+                             komissiya_rol='основная' if cm == comm else 'чувствительность (без p)',
                              rol='справочно (псевдотест, не в тест)' if k.startswith('dop:') else
                              ('эталон' if k == 'A' else 'один дизайн на подход'))
                     r.update(m)
@@ -622,7 +650,14 @@ def leak_check(R: Raschet, diz: dict, dop: dict) -> list:
     rng = np.random.RandomState(20261026)
     out = []
     base = {lab: e.sigma(lab).copy() for lab in e.sig}
+    items = []
     for k, d in list(diz.items()) + [(f'dop:{k}', v) for k, v in dop.items()]:
+        if d.get('tochki'):            # семья: каждая точка отдельно (выбор по валидации — на прошлом окне, причинен)
+            b0 = {a: b for a, b in d.items() if a not in ('tochki', 'otsev')}
+            items += [(f'{k}[{i}]', dict(b0, **t)) for i, t in enumerate(d['tochki'])]
+        else:
+            items.append((k, d))
+    for k, d in items:
         if d['semya'] in ('P1', 'P2') or d.get('kod'):
             continue
         G0 = fam_gate(e, d, R.S_of)
@@ -681,7 +716,10 @@ def selftest(P: Puti, reps: int) -> int:
         net_let_2022=bool(e.dates.max() <= DEV_CUT),
         zamok_ne_tronut=Path(P.lock).exists() == lock_before,
         po_odnomu_na_podhod=sorted(diz) == sorted(PODHODY),
-        stroki=len(tab) == len(['A'] + list(diz) + list(dop)) * 2 * 2 * 2,
+        stroki=len(tab) == len(['A'] + list(diz) + list(dop)) * 2 * 2 * (1 + len(tst['komissiya_chuvstv'])),
+        komissiya_osnovnaya_004=abs(float(tst['komissiya']) - 0.0004) < 1e-12 and
+        sorted(tab['komissiya_pct'].round(4).unique().tolist()) == [0.035, 0.04, 0.05, 0.06] and
+        bool(tab.loc[tab.komissiya_pct.round(4) != 0.04, 'p_lw_vs_A'].isna().all()),
         h2=len(h2t) == 2 * 2 and all(f'p_lw_{a}' in h2t for a in ('hyb−harj_b', 'hyb−naive', 'harj_b−naive')),
         p_v_0_1=bool(tab['p_lw_vs_A'].dropna().between(0, 1).all()),
         pravilo_srabotalo=len(hit) > 0 and bool((tab[tab.pravilo == 's_pravilom']['sharpe'].values
