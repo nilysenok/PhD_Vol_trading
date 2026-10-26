@@ -303,6 +303,52 @@ def dm_neperekr(df, ref, shag=SHAG22):
     return FT.S.dm_series(FT.S.daily(g.date.values, d), 1), int(g.date.nunique())
 
 
+DM5_PER = {'kontrol': ('2022–2026 (контрольный)', 2022, 2026, ''),
+           'vse': ('2017–2026', 2017, 2026, 'годы 2017–2021 участвовали в отборе — не независимая оценка')}
+
+
+def holm(p):
+    """Поправка Холма (FWER) для односторонних p. -> скорректированные p в исходном порядке."""
+    p = np.asarray(p, float)
+    o = np.argsort(p)
+    adj = np.minimum(1.0, np.maximum.accumulate((len(p) - np.arange(len(p))) * p[o]))
+    out = np.empty_like(adj)
+    out[o] = adj
+    return out
+
+
+def dm5(fr, rlab):
+    """DM пятью способами (решение владельца 21:40) против HAR-J (б) и (а) по h и периодам:
+    (1) номинальный на пуле без HAC; (2) NW на пуле, лаг h−1; (3) основной панельный — дневной ряд средней по тикерам, NW лаг h−1
+    (1–3 — final_test.dm, как в первом отчёте); дополнительно (4) DM по тикерам (дневной ряд тикера, NW лаг h−1) с поправкой Холма;
+    (5) DM по непересекающимся точкам отсчёта (первая торговая дата периода и каждая h-я, средняя по тикерам, без NW)."""
+    rows = []
+    for h, df0 in fr.items():
+        for tag, (label, a, b, ogov) in DM5_PER.items():
+            df = df0[df0.year.between(a, b)].sort_values(['date', 'ticker']).reset_index(drop=True)
+            for rn, rc in FT.REFS.items():
+                base = dict(h=h, Период=label, правило=rlab, эталон=rn, оговорка=ogov)
+                with np.errstate(invalid='ignore', divide='ignore'):
+                    for r in FTST.dm(df, rc, h):
+                        rows.append({**base, **r, 'тикеров значимо лучше (Холм 5%)': np.nan, 'тикеров': np.nan})
+                    P, T = [], []
+                    for _, g in df.groupby('ticker'):
+                        d = FT.S.qloss(g.rv_actual.values, g[rc].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values)
+                        x = FT.S.dm_series(FT.S.daily(g.date.values, d), h)
+                        P.append(x['p_one']); T.append(x['t'])
+                    ph = holm(P)
+                    rows.append({**base, 'способ': 'по тикерам, NW лаг h−1, поправка Холма', 'n': len(P), 't': float(np.median(T)),
+                                 'p_two': np.nan, 'p_one_H1': float(ph.min()), 'mean_d': np.nan,
+                                 'тикеров значимо лучше (Холм 5%)': int((ph < 0.05).sum()), 'тикеров': len(P)})
+                    r5, nd = dm_neperekr(df, rc, shag=h)
+                    rows.append({**base, 'способ': f'непересекающиеся точки (каждая {h}-я торговая дата), без NW', 'n': nd, 't': r5['t'],
+                                 'p_two': float(2 * min(r5['p_one'], 1 - r5['p_one'])), 'p_one_H1': r5['p_one'], 'mean_d': r5['mean_d'],
+                                 'тикеров значимо лучше (Холм 5%)': np.nan, 'тикеров': np.nan})
+    D = pd.DataFrame(rows)
+    return D.assign(t=D.t.round(2), p_two=D.p_two.map(lambda v: FT.pf(v) if v == v else v), p_one_H1=D.p_one_H1.map(lambda v: FT.pf(v) if v == v else v),
+                    пометка='(1)–(3) — как в первом отчёте; (4), (5) — дополнительно (решение владельца 21:40); для (4) t — медиана по тикерам, p — минимальный по Холму')
+
+
 def vtorichnye22(fr, B, rlab):
     """h=22: основной — панельный DM (дневной ряд средней по тикерам, NW лаг 21) против HAR-J (б) на 2022–2026; вторичные — DM на
     2017–2026 тем же способом, MCS, DM по неперекрывающимся месячным точкам (каждая 22-я торговая дата, без NW). -> таблица."""
@@ -423,6 +469,7 @@ def run_r2(src, locked, first_tables, out_tables, feat, B, lock=True, need_fd=Tr
         dm_vs_F(fr, r2_hs).to_csv(out_tables / f'table_3_dm_vs_F_{tag}.csv', index=False)
         with r2_env(hs, out_tables):
             vtorichnye22(fr, B, TD2.RULE[RULES[ver]]).to_csv(out_tables / f'table_3_h22_vtorichnye_{tag}.csv', index=False)
+            dm5(fr, TD2.RULE[RULES[ver]]).to_csv(out_tables / f'table_3_dm5_{tag}.csv', index=False)
         bad, n = [], 0
         if ftag3:
             b3, n3 = sverka(first_tables, out_tables, hs, tag_first=ftag3, tag_r2=tag)
@@ -585,6 +632,32 @@ def selftest():
         assert (t2 / f'table_3_h22_vtorichnye_{TAG_Z}.csv').exists()
         vz = pd.read_csv(t2 / f'table_3_h22_vtorichnye_{TAG_Z}.csv')
         assert set(vz.pravilo) == {TD2.RULE['s_zakrytiem']} and (vz.t.dropna() != v.t.dropna()).any()
+        # 3e. DM пятью способами: (1)–(3) = таблица 3.9 (final_test.dm) на 2017–2026; (4) по тикерам с Холмом; (5) непересекающиеся точки
+        d5 = pd.read_csv(t2 / f'table_3_dm5_{TAG}.csv')
+        assert (t2 / f'table_3_dm5_{TAG_Z}.csv').exists()
+        g5 = d5.groupby(['h', 'Период', 'эталон']).size()
+        assert (g5 == 5).all() and len(g5) == 3 * 2 * 2, g5
+        t39 = pd.read_csv(t2 / f'table_3_9_{TAG}.csv')
+        for h in (1, 5, 22):
+            a = d5[(d5.h == h) & (d5['Период'] == '2017–2026') & (d5['эталон'] == 'HAR-J (б)')].set_index('способ').t
+            b = t39[(t39.H == h) & (t39['эталон'] == FTST.ETALON_NAME)].set_index('способ').t
+            for s in b.index:
+                assert (np.isnan(a[s]) and np.isnan(b[s])) or abs(a[s] - b[s]) < 1e-9, (h, s, a[s], b[s])
+        K5 = frame_d0(src, lkd, 5)
+        K5 = K5[K5.year.between(2022, 2026)]
+        pp = []
+        for _, g in K5.groupby('ticker'):
+            d = FT.S.qloss(g.rv_actual.values, g[FTST.ETALON].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values)
+            pp.append(FT.S.dm_series(FT.S.daily(g.date.values, d), 5)['p_one'])
+        ps = np.sort(pp); hm = np.maximum.accumulate(np.minimum(1, (len(ps) - np.arange(len(ps))) * ps))
+        r4 = d5[(d5.h == 5) & d5['Период'].str.startswith('2022') & (d5['эталон'] == 'HAR-J (б)') & d5['способ'].str.startswith('по тикерам')]
+        assert r4['тикеров'].iloc[0] == 17 and r4['тикеров значимо лучше (Холм 5%)'].iloc[0] == int((hm < 0.05).sum())
+        u5 = np.sort(K5.date.unique())
+        g = K5[K5.date.isin(u5[::5])]
+        s = pd.Series(FT.S.qloss(g.rv_actual.values, g[FTST.ETALON].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values),
+                      index=g.date.values).groupby(level=0).mean()
+        r5 = d5[(d5.h == 5) & d5['Период'].str.startswith('2022') & (d5['эталон'] == 'HAR-J (б)') & d5['способ'].str.startswith('непересек')]
+        assert r5.n.iloc[0] == len(s) and abs(r5.t.iloc[0] - round(s.mean() / np.sqrt(s.var(ddof=0) / len(s)), 2)) < 1e-9
         fpg = pd.read_csv(t2 / f'table_3_final_po_godam_{TAG}.csv')
         f1 = pd.read_csv(t1 / 'table_3_final_po_godam_test_raw.csv')
         a = fpg[(fpg['Модель'] == 'Гибридная') & (fpg.h == 5)].QLIKE.values
