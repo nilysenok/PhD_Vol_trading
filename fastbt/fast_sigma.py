@@ -99,6 +99,12 @@ def ema(s, span):
     return r.copy()
 
 
+def past_median_short(s, W: int) -> np.ndarray:
+    """Медиана s[t−W..t−1] (сдвиг на 1) для короткого окна: нужны все W значений (без NaN)."""
+    import pandas as pd
+    return pd.Series(np.asarray(s, np.float64)).shift(1).rolling(W, min_periods=W).median().values
+
+
 def minp(W: int) -> int:
     from fastbt.s9_stats import minp as m
     return m(W)
@@ -138,8 +144,11 @@ def precompute(eng, labels) -> dict:
             M = np.full((T, N), np.nan)
             for i in range(T):
                 n = n_t[i]
-                m = o["past_median"](S[i, :n], W)
-                _MEMO[("med", _dig(S[i, :n]), int(W))] = m
+                if W >= 50:                  # окна С9 (min max(50, W/5)) — тем же past_median
+                    m = o["past_median"](S[i, :n], W)
+                    _MEMO[("med", _dig(S[i, :n]), int(W))] = m
+                else:                        # короткое окно (22): полное прошлое окно
+                    m = past_median_short(S[i, :n], W)
                 M[i, :n] = m
             f[f"med{W}"] = M
         rel = S / f[f"med{REL_MED_W}"]
