@@ -80,7 +80,10 @@ E:
     leg.refit: [quarterly, monthly]
     leg.rls_lambda: [0.995, 0.99]
     boost.boost_refit: [quarterly_warm, monthly]
-  # кластеры 16, 18, 20 (v4 § 6) — ключей в schema_v1 нет: модуль G получает их параметром запуска (❓ schema_v2 — у архитектора)
+    k16.gate: [conf_seed, regime, shock_fresh, soft]       # schema_v2 (кластер 16; halt — только при сборке A)
+    k18.lam_to_ref: [on]                                    # 18: λ — сетка внутри складки
+    k20.sign_delta: [znak, dolya]                           # 20: δ — сетка внутри складки
+  # кластеры 16, 18, 20 — справочно параметры модуля G (теперь ключи schema_v2 выше)
   vne_skhemy:
     abstain: [conf_seed, regime, shock_fresh, uncert_shrink]       # 16; halt — только при сборке (даты ≥ 2022)
     abstain_k: [3, 5, 10]
@@ -90,13 +93,16 @@ E:
 # ---- модули: команда запуска (контракт S: --designs <yaml со списком designs> --h --seeds --steps --workers) и детектор
 # {designs} {h} {seeds} {steps} {workers} {extra} подставляет драйвер; модуль пишет ряды через r2_core.run_phase (module = ключ ниже)
 modules:
-  L:  {file: r2_nogi.py,         run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
-  P:  {file: r2_panel.py,        run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
-  R:  {file: r2_refit.py,        run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
-  B:  {file: r2_roli.py,         run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
-  BG: {file: r2_resid_grid.py,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
-  M:  {file: r2_mh.py,           run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
-  L3: {file: r2_calib.py,        run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
-  E:  {file: r2_ens.py,          run: "run --design {design} --h {h}", per_design: true, leak: "leak --h {h}"}
-  G:  {file: r2_gate_abstain.py, run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
+# yaml — yaml модуля: из него драйвер читает неприменимые факторы (`neprimenimye_faktory`; у P — раздел `applicable`)
+# Модуль без подкоманды run по этому контракту считается неготовым: этап ждёт и пишет причину (на 26.10, 16:50 — L r2_nogi
+# (режим schet --names), L3 r2_calib (dym/kontrol), B r2_roli, BG r2_resid_grid, R r2_refit — ❓ авторам: подкоманда run по контракту).
+  L:  {file: r2_nogi.py,         yaml: r2_L_nogi.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --hs {h}"}
+  P:  {file: r2_panel.py,        yaml: r2_P_panel.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
+  R:  {file: r2_refit.py,        yaml: r2_R_refit.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
+  B:  {file: r2_roli.py,         yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
+  BG: {file: r2_resid_grid.py,   yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
+  M:  {file: r2_mh.py,           yaml: r2_M_mh.yaml,      run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
+  L3: {file: r2_calib.py,        yaml: r2_L_calib.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
+  E:  {file: r2_ens.py,          yaml: r2_E_ens.yaml,     run: "run --design {design} --h {h}", per_design: true, leak: "leak --h {h}"}
+  G:  {file: r2_gate_abstain.py, yaml: r2_G_abstain.yaml, run: "run --dizayn {design} --h {h}", per_design: true, leak: "dym"}
 chain_order: [L, P, R, B, BG, M, L3, E, G]   # цепочка модулей дизайна; итог дизайна — ряды последнего модуля цепочки

@@ -73,6 +73,16 @@ ofat:
   boost.boost_refit:
   - quarterly_warm
   - monthly
+  k16.gate:
+  - conf_seed
+  - regime
+  - shock_fresh
+  - soft
+  k18.lam_to_ref:
+  - true
+  k20.sign_delta:
+  - znak
+  - dolya
 vne_skhemy:
   abstain:
   - conf_seed

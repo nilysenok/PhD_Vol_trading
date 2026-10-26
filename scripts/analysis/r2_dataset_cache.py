@@ -290,6 +290,8 @@ def smoke(a):
     ok(f'корень кэша: {root} ({"RAM-диск" if str(root).startswith(str(RAM)) else "локальный SSD"})', root.exists())
     ok('ключ различает шаг, h, признаки, цель', len({_sm_key(5, 1), _sm_key(5, 2), _sm_key(22, 1), _sm_key(5, 1, {'target': 'x'}),
                                                     ds_key(step=1, features=C.SHARED['cols'][:-1], h=5, target='ln rv_target_h5')}) == 5)
+    ok(f'в ключе — SHA {FEATURES_R2.name} (PR #176) = {FEATURES_R2_SHA[:12]}… и подвыборка строк',
+       features_r2_sha() == FEATURES_R2_SHA and _sm_key(5, 1) != _sm_key(5, 1, {'row_frac': 0.5, 'row_seed': 20261026}))
     # 0) смыть наборы дыма (повторный дым должен строить заново)
     for h in C.HS:
         for k in SM_STEPS:

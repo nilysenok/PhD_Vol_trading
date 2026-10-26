@@ -234,19 +234,62 @@ def gate_path(phase, h, smoke=False):
     return (SMOKE_O if smoke else C.O_DIR) / f'gate_{phase}_h{h}.yaml'
 
 
-def apply_gate_B(designs, gate):
-    """Включённые в B факторы (+1) переносятся в ячейки C (ключи — r2_factor.FAKTORY)."""
+NEPR = {}  # (h, имя дизайна) -> [факторы B, неприменимые в цепочке модулей ячейки] — пометка в таблицах ворот
+
+
+def _module_yaml(m):
+    f = CFG['modules'][m].get('yaml')
+    p = REPO / 'models' / 'designs' / 'r2' / f if f else None
+    return yaml.safe_load(p.read_text()) if p and p.exists() else {}
+
+
+def factor_unsupported(m, f):
+    """Правило дирижёра: модуль объявляет неприменимые факторы в своём yaml — `neprimenimye_faktory` (буквы A–O, ключи схемы или
+    группы признаков); у P (PR #181) — разделом `applicable` (features, data_supported, boost_residual_only_default, mh)."""
+    import r2_factor as RF
+    Y = _module_yaml(m)
+    key, _, plus = RF.FAKTORY[f]
+    if 'neprimenimye_faktory' in Y:
+        L = set(map(str, Y['neprimenimye_faktory']))
+        groups = plus if key == 'features' else []
+        return f in L or key in L or key.split('.')[0] in L or any(g in L for g in groups)
+    A = Y.get('applicable')
+    if not A:
+        return False
+    if key == 'features':
+        return bool(A.get('features')) and any(g not in A['features'] for g in plus)
+    a, b = key.split('.')
+    if a == 'data':
+        return b not in (A.get('data_supported') or [])
+    if a == 'boost':
+        return b in (A.get('boost_residual_only_default') or [])
+    if a == 'mh':
+        return 'mh' in A
+    return False  # calib.*, ens.* — на ряд модуля не влияют (их применяет следующий модуль цепочки)
+
+
+def apply_gate_B(designs, gate, h=None):
+    """Включённые в B факторы (+1) переносятся в ячейки C (ключи — r2_factor.FAKTORY). Если фактор неприменим хотя бы к одному модулю
+    цепочки ячейки (объявлено в yaml модуля) — у этой ячейки он остаётся off, ячейка не выбрасывается, в таблице ворот — пометка."""
     import r2_factor as RF
     on = gate.get('vklyucheny') or []
     out = []
     for d in designs:
         d = copy.deepcopy(d)
+        chain = route(d)
+        nepr = []
         for f in on:
+            bad = [m for m in chain if factor_unsupported(m, f)]
+            if bad:
+                nepr.append(f'{f} ({",".join(bad)})')
+                continue
             key, _, plus = RF.FAKTORY[f]
             if key == 'features':
                 d['features'] = list(d.get('features', ['G0'])) + [g for g in plus if g not in d.get('features', ['G0'])]
             else:
                 _set(d, key, plus)
+        if nepr:
+            NEPR[(h, d.get('design'))] = nepr
         out.append(_maybe_inputs(d))
     return out
 
@@ -270,7 +313,7 @@ def designs_E(best, ofat):
 def route(design):
     """Цепочка модулей дизайна по ключам схемы (r2_S_driver.yaml chain_order)."""
     f = C.validate(design)
-    g = lambda k: str(C.get(f, k))
+    g = lambda k: 'off' if C.get(f, k) is False else str(C.get(f, k))  # off/on схемы — bool (YAML 1.1)
     need = {'L'}
     if g('leg.panel') != 'off':
         need.add('P')
@@ -289,6 +332,8 @@ def route(design):
     ens = f['ens']
     if any(str(ens[k]) not in ('False', 'off', 'mean', 'single', 'best_by_LOYO') for k in ens if k != 'seeds') or g('leg.moe') not in ('off', 'False'):
         need.add('E')
+    if g('k16.gate') != 'off' or g('k18.lam_to_ref') != 'off' or g('k20.sign_delta') != 'off':  # schema_v2: кластеры 16, 18, 20
+        need.add('G')
     return [m for m in CFG['chain_order'] if m in need]
 
 
@@ -447,7 +492,9 @@ def gate_C(h, designs, root):
     boost = boost[boost.proshyol] if 'proshyol' in boost else boost
     two = list(boost.unit.head(2))
     v0 = [u for u in T.unit if u.endswith('_V0') and bool(T.set_index('unit').loc[u].get('proshyol', True))]
+    T['faktor_neprimenim'] = [', '.join(NEPR.get((h, u), [])) for u in T.unit]
     return write_gate('C', h, dict(yacheyki=two, v0_finalisty=v0, pobeditel_vybora=w, tablica=T.to_dict('records'),
+                                   faktor_neprimenim={u: NEPR[(h, u)] for u in units if (h, u) in NEPR},
                                    dizainy={u: units[u] for u in two + v0}))
 
 
@@ -607,7 +654,7 @@ def pipeline(h, runner, smoke=False, once=False):
     report('B', CFG['hs'] if not smoke else SMOKE_HS, smoke)
     gB = yaml.safe_load(gate_path('B', h, smoke).read_text())
     # C
-    Cd = apply_gate_B(read_designs(f'C_h{h}_shablon'), gB)
+    Cd = apply_gate_B(read_designs(f'C_h{h}_shablon'), gB, h)
     if smoke:
         Cd = Cd[:4] + [d for d in Cd if d['design'].endswith('_V0')]
     ok, why = stage('C_schet', lambda: runner.chain(Cd, h, CFG['C']['seeds'], steps, W, 'C'))
@@ -787,7 +834,16 @@ def cmd_smoke(a):
        and all((SMOKE_REPORT / f'gate_{p}.md').exists() for p in 'BCDE'))
     ok('D: отсечение r2_halving (O) на дымовых ступенях; трасса', all((SMOKE_O / f'halving_{c}_h{h}.csv').exists()
                                                                      for h in SMOKE_HS for c in yaml.safe_load(gate_path('C', h, True).read_text())['yacheyki']))
-    ok('проверка сдвига: блоков нет (HAR-J d0)', not (SMOKE_DIR / 'blok_sdvig.csv').exists())
+    # правило дирижёра: фактор B, неприменимый к модулю цепочки (yaml модуля), у ячейки остаётся off, ячейка не выбрасывается, пометка
+    cell = dict(design='C_h5_panel_residual', h=5, leg=dict(type='HARJ', panel='factor'), boost=dict(role='residual'), features=['G0', 'G1'])
+    out = apply_gate_B([cell], dict(vklyucheny=['C', 'E', 'K', 'A']), 5)
+    f0 = C.validate(out[0])
+    ok('неприменимый фактор (P): C, E — off с пометкой, K (G5+G6) — off, A — включён; ячейка осталась',
+       len(out) == 1 and str(C.get(f0, 'boost.resid_source')) == 'in_sample' and C.get(f0, 'boost.clip_sigma') is False
+       and 'G5' not in f0['features'] and str(C.get(f0, 'data.recency_halflife')) == '4y' and len(NEPR.get((5, cell['design']), [])) == 3,
+       str(NEPR.get((5, cell['design']))))
+    ok('проверка сдвига: блоков нет (HAR-J d0)', not (SMOKE_DIR / 'blok_sdvig.csv').exists() or
+       not (pd.read_csv(SMOKE_DIR / 'blok_sdvig.csv').ok == False).any())  # noqa: E712 — «плоский профиль» пишется с ok = True
     ok('режим R2: запись ≥ 2022 отклоняется', C._raises(lambda: C.check_no_future(pd.DataFrame({'date': ['2022-01-03'], 'year': [2022]}), 'driver_smoke')))
     T = pd.DataFrame(rows)
     T.to_csv(SMOKE_DIR / 'smoke_driver.csv', index=False)

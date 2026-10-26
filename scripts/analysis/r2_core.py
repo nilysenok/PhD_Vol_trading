@@ -502,8 +502,14 @@ def grid_keys(design):
     """Ключи-скаляры, заданные списком (сетка внутри складки), и grid-листы, отличные от одиночного значения."""
     S = load_schema()
     flat = _flatten(validate(design))
+
+    def group_on(p):  # сетки групп новых версий (k16/k18/k20) действуют, только если переключатель группы не default
+        sib = [q for q, M in S.leaves.items() if q[:-1] == p[:-1] and M.kind == 'scalar']
+        return any(_norm(flat[q]) != S.leaves[q].ndefault for q in sib)
+
     return {L.dotted: flat[p] for p, L in S.leaves.items()
-            if isinstance(flat.get(p), list) and (L.kind == 'grid' or (L.kind == 'scalar' and not L.fixed)) and len(flat[p]) > 1}
+            if isinstance(flat.get(p), list) and (L.kind == 'grid' or (L.kind == 'scalar' and not L.fixed)) and len(flat[p]) > 1
+            and not (getattr(L, 'since', S.base_version) != S.base_version and L.kind == 'grid' and not group_on(p))}
 
 
 def variants(design, keys=None):
@@ -581,6 +587,11 @@ def write_series(design, name, df, h, seed, part='val', module='core', root=None
     if not np.isfinite(p).all() or (p <= 0).any():
         raise ValueError(f'{name}: rv_pred должен быть конечным и > 0')
     path = series_path(design, name, h, seed, part, root)
+    own = path.with_name(path.name + '.owner')  # один ряд — один модуль: чужой модуль не затирает файл (цепочка L -> B -> M -> E)
+    if own.exists() and own.read_text().strip() != module:
+        raise PermissionError(f'{path.name}: ряд уже записан модулем {own.read_text().strip()} — модуль {module} должен писать под своим именем')
+    if not own.exists():
+        _atomic_write(own, module.encode())
     buf = io.BytesIO()
     df.sort_values(KEY).reset_index(drop=True).to_parquet(buf, index=False)
     b = buf.getvalue()
