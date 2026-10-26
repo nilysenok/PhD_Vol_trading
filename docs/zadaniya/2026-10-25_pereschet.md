@@ -116,6 +116,22 @@
     - PR #124 (10:05): закрыты п.6 (σ_pred final3_full, SHA 5bed7be9…, побитно равен final3), п.7 (vpred во всех трёх конфигах, 10/10 таблиц), п.8 (`--scope test` у С9 с замком, одна точка C, LW-бутстрап в С9). Не закрыто: п.12 в `fastbt/final_test.py` (бутстрап IID) и п.10.
     - PR #129 (10:23): п.10 и п.12 закрыты. В `fastbt/final_test.py` основной бутстрап — LW с блоком 5 и 10 000 повторов, IID рядом. Окна B/C/D и фильтра оборота заморожены на 2018–2021. Метрики — 2022–2026 и 2025–01.2026. A — 2022–2026 с замком. Проверки: 10/10 таблиц, 70 тестов, утечки 9/9, замки срабатывают, псевдотест 2018–2021 пройден. Найдено и снимается до запуска: в `scripts/ch4_test_run.sh` была строка `git checkout origin/figures-final -- scripts/analysis/`, она перезаписала бы код. Обучение ансамбля A по годам — метод, а не выбор на тесте (умолчание дирижёра).
     - Ъ Владелец 26.10, 10:30: удаление `git checkout` из скрипта запуска подтверждено; скрипт целиком — в план. Ансамбль A по годам: веса для года Y — только из данных ≤ Y−1 (как в главе 3); если иначе — заморозить на 2018–2021. Строка об этом — в FINAL_strategies. После этого — переименование и один запуск.
+    - Исполнено 10:30 (PR #129, 86b504c): веса A для года Y — только из данных ≤ Y−1, проверено тестом `tests/test_a_weights_future.py`; заморозка не нужна. Проверки: 10/10 таблиц, 77 тестов, утечки 9/9, замок. SHA-256 черновика — 8a68dd87…109787. Скрипт запуска `scripts/ch4_test_run.sh` целиком (git-операций нет; `--leak-mask-old` пишет в отдельные файлы `_mask1`):
+      ```
+      set -euo pipefail
+      R=$(cd "$(dirname "$0")/.." && pwd); M=/Users/nilysenok/Desktop/Старое/PhD_Vol_trading
+      HARJ=$M/data/regen/sigma_pred_h1_harj_final2.parquet; cd $R
+      [[ -f docs/otchety/FINAL_DESIGN_strategies.md ]] || exit 1; [[ -f $HARJ ]] || exit 1
+      export NUMBA_CACHE_DIR=$M/data/fastbt/numba_cache CH4_TABLES=$R/docs/tables/strat_test S9_TABLES=$R/docs/tables/strat_test
+      mkdir -p $CH4_TABLES; exec > >(tee $R/docs/otchety/ch4_test_run.log) 2>&1
+      python3 -m fastbt.final_test --main fastbt/designs/final/main.yaml --extra d_binary=fastbt/designs/final/d_binary.yaml d_cont=fastbt/designs/final/d_cont.yaml --harj-vpred $HARJ --val-start 2018 --boot-reps 10000 --workers 10
+      python3 -m fastbt.s9 sources --scope test --val-start 2018 --boot-reps 10000
+      python3 -m fastbt.s9 cache --scope test --val-start 2018 --boot-reps 10000 --workers 3
+      python3 -m fastbt.s9 run --scope test --val-start 2018 --boot-reps 10000
+      python3 -m fastbt.chapter4_a --workers 10 --boot-reps 10000
+      python3 -m fastbt.chapter4_a --workers 10 --boot-reps 10000 --leak-mask-old
+      python3 -m fastbt.decomp
+      ```
     - Толкование дирижёра п.10: дизайны фиксированы по С8 на 2018–2021, на тесте выбора нет и окно валидации внутри теста не нужно. Метрики теста — 2022–2026, отдельно 2025–01.2026. A — на 2022–2026, а 2020–2026 только справочно. Если для фиксированных дизайнов нужно окно (пороги, калибровка) — 2018–2021.
   - Исполнено 09:40 → PR #115: черновик FINAL_strategies, 18 пунктов. Новое: Δ к A бутстрапом Ледуа–Вольфа с блоком 5 (p у C1 W504 p70 0,043 вместо 0,006); поправка на выбор по 26 точкам C — p 0,081.
   - Исполнено 09:50 (+ решения 10:00, 10:05) → PR #124: σ_pred h=1 final3_full кодом главы 3 (SHA `5bed7be9…`, = final3 побитно); `vpred` в трёх yaml переведён; С9 `--scope test` за замком (одна точка C1 W504 p70 h=5 + чувствительность, ЛВ блок 5 основной); dev — 10 из 10 таблиц побайтно; 64 теста, утечки 9/9. Открыто: ЛВ в `final_test` (файл мне запрещён), ❓ п. 10 «2020 → 2022» (окно валидации, умолчание 2017). Тест не запускался.
