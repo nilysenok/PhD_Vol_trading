@@ -70,16 +70,23 @@ def _metrics(fr: pd.DataFrame) -> dict:
     return m
 
 
-def h3_table(port: pd.DataFrame, rate: pd.Series, reps: int, start, end) -> pd.DataFrame:
-    """МСП-A (port из msp.portfolio) против бенчмарков на общих днях окна [start, end]."""
+def h3_table(port: pd.DataFrame, rate: pd.Series, reps: int, start, end,
+             lw_block: int = 0) -> pd.DataFrame:
+    """МСП-A (port из msp.portfolio) против бенчмарков на общих днях окна [start, end].
+    lw_block > 0 (тест главы 4, владелец 26.10, 10:05, п. 12): p_boot — Ледуа–Вольф с этим блоком,
+    IID — в p_boot_iid; по умолчанию — IID, как прежде."""
     p = port.loc[start:end]
     rows = [dict(portfolio="МСП-A (fastbt)", **msp.metrics(p))]
     for name, fr in bench_series(rate, port["exposure"]).items():
         fr = fr.loc[start:end]
         j = p.index.intersection(fr.index)
-        obs, pv, lo, hi = boot_delta(p.loc[j, "excess"].values, fr.loc[j, "excess"].values, reps)
+        xa, xb = p.loc[j, "excess"].values, fr.loc[j, "excess"].values
+        obs, pv, lo, hi = boot_delta(xa, xb, reps)
         m = _metrics(fr.loc[j])
         m.update(portfolio=name, d_sharpe_msp_minus=obs, p_boot=pv, ci_lo=lo, ci_hi=hi,
                  common_days=len(j))
+        if lw_block:
+            from fastbt.s9_stats import lw_sharpe_diff
+            m.update(p_boot=lw_sharpe_diff(xa, xb, reps, lw_block)[2], p_boot_iid=pv)
         rows.append(m)
     return pd.DataFrame(rows)

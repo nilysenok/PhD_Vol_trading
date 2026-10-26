@@ -6,6 +6,8 @@
 # ключ vpred в fastbt/designs/final/*.yaml); HAR-J (h=1) final2 — data/regen/sigma_pred_h1_harj_final2.parquet
 # (= √har_corr того же файла побитно); надстройки С9 — python3 -m fastbt.s9 sources|cache|run --scope test
 # (σ по умолчанию final3_full, бутстрап — --boot-reps 10000);
+# решения владельца 10:05: метрики 2022–2026 (+ 2025–01.2026), окна калибровки заморожены на 2018–2021
+# (--val-start 2018, val_end 2021), основной p — Ледуа–Вольф, блок 5, IID — справочно; A — 2022–2026;
 # скрипт рисунков из ветки figures-final.
 set -e
 R=$(cd "$(dirname "$0")/.." && pwd)
@@ -19,10 +21,10 @@ L=$M/data/run/ch4_test_$(date +%Y%m%d_%H%M%S).log
 {
 python3 -m fastbt.final_test --main fastbt/designs/final/main.yaml \
   --extra d_binary=fastbt/designs/final/d_binary.yaml d_cont=fastbt/designs/final/d_cont.yaml \
-  --harj-vpred $HARJ --boot-reps 10000 --workers 10 --val-start 2017
+  --harj-vpred $HARJ --boot-reps 10000 --workers 10 --val-start 2018
 python3 -m fastbt.s9 sources --scope test
-python3 -m fastbt.s9 cache --scope test --workers 3 --val-start 2017
-python3 -m fastbt.s9 run --scope test --boot-reps 10000 --val-start 2017
+python3 -m fastbt.s9 cache --scope test --workers 3 --val-start 2018
+python3 -m fastbt.s9 run --scope test --boot-reps 10000 --val-start 2018
 python3 -m fastbt.chapter4_a --workers 10 --boot-reps 10000
 python3 -m fastbt.chapter4_a --workers 10 --boot-reps 10000 --leak-mask-old
 python3 -m fastbt.decomp

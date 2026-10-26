@@ -97,10 +97,10 @@ def run_b(u, cfg, a_res):
         if Y not in a_res:
             continue
         top, _ = a_res[Y]
-        vs, ve = year_bounds(u.dates, cfg.val_start)[b], year_bounds(u.dates, Y)[b]
+        vs, ve = cfg.val_bounds(u.dates, Y)
         if ve <= vs:
             continue
-        lim = year_bounds(u.dates, Y)[0] if cfg.fix_b_median else u.n
+        lim = year_bounds(u.dates, cfg.cal_end_year(Y))[0] if cfg.fix_b_median else u.n
         med3 = np.array([_median(s[:lim]) for s in sig3])
         e0 = eg[top[0][2]]
         ep = np.array([e0["consec_entry"], e0["min_hold"], e0["cooldown_bars"],
