@@ -24,6 +24,8 @@ Y = yaml.safe_load(open(YAML))
 CMD = sys.argv[1] if len(sys.argv) > 1 else ''
 if CMD in ('f1', 'leak'):
     os.environ['L2_FEAT'] = str(R / Y['F1']['matrix'])
+elif CMD in ('roli', 'leak_roli'):
+    os.environ['L2_FEAT'] = str(R / Y['roles_matrix'])
 sys.path.insert(0, str(HERE))
 import numpy as np, pandas as pd
 
@@ -146,7 +148,7 @@ def job_f1(t):
     s, seed = t
     v = fit_unit(s, seed, G['P'][s])
     put(v, raw_f1(seed, s))
-    return s, seed, float(v.sec.sum())
+    return s, seed, float(v.groupby('rank').sec.first().sum())
 
 
 def control_f1(seed, V):
@@ -232,6 +234,244 @@ def cmd_f1(a):
     log(f'F_1: готово, seed {sorted(closed)}, стена {(time.time() - t0) / 60:.1f} мин')
 
 
+# ---------------------------------------------------------------- роли уровня 1: признак / остаток / офсет gamma (seed 42, точка шага)
+RS = {}      # текущая (роль, нога) в процессе-воркере
+_BASE = {}
+
+
+def leg_file(leg):
+    if leg == 'HARX_d17':
+        return R / 'D17' / 'harx_base_h1.parquet'
+    return ROOT / Y['legs_dir'] / f'{leg}_h{H}_lnall.parquet'
+
+
+def base_of(leg):
+    """{(шаг, part): DataFrame(date, ticker, base_ln)} — ln-прогноз ноги шага на строках окна; HARJ_l2 -> None (l2_lib.har_ln без подмены)."""
+    if leg == 'HARJ_l2':
+        return None
+    if leg not in _BASE:
+        b = pd.read_parquet(leg_file(leg), columns=['date', 'ticker', 'step', 'part', 'base_ln'])
+        b = b[b.step.isin(STEPS)].copy()
+        b['date'] = b['date'].astype(RS['date_dtype'])
+        assert not b.duplicated(['date', 'ticker', 'step', 'part']).any(), leg
+        _BASE[leg] = {(int(s), p): g[['date', 'ticker', 'base_ln']] for (s, p), g in b.groupby(['step', 'part'])}
+    return _BASE[leg]
+
+
+def install_role_wrapper(L):
+    """Подмена l2_lib.step_data в процессе (так же действует в make_ref — бины окна шага 1 видят тот же признак):
+    признак (harf) — столбец har_ln := ln ноги; остаток / gamma (v9) — смещение off := ln ноги; b01 — off += s²/2 по остаткам ln ноги на
+    обучающем окне (как d17_1.step_data); gamma — метка ≥ 1e-8. Строки обучения и val без прогноза ноги — ошибка; тест шага не используется (0)."""
+    sd0 = L.step_data
+
+    def step_data(A, cols, h, step, model, cfg, base_tag, **kw):
+        D = sd0(A, cols, h, step, model, cfg, base_tag, **kw)
+        B = base_of(RS['leg'])
+        if B is not None:
+            for k, d in D['parts'].items():
+                bb = B.get((step, k))
+                v = d[['date', 'ticker']].merge(bb, on=['date', 'ticker'], how='left')['base_ln'].values if bb is not None else np.full(len(d), np.nan)
+                if k == 'te':
+                    v = np.where(np.isnan(v), 0.0, v)
+                assert not np.isnan(v).any(), (RS['leg'], step, k)
+                if cfg.get('harf'):
+                    assert D['names'][-1] == 'har_ln'
+                    D['X'][k][:, -1] = v.astype(np.float32)
+                if cfg.get('v9'):
+                    D['off'][k] = v
+        D['s2'] = np.nan
+        if cfg.get('b01'):
+            s2 = float(np.var(np.log(np.clip(D['y']['tr'], 1e-10, None)) - D['off']['tr']))
+            D['off'] = {k: v + s2 / 2 for k, v in D['off'].items()}
+            D['s2'] = s2
+        if cfg.get('obj') == 'gamma':
+            D['y'] = {k: np.clip(v, 1e-8, None) for k, v in D['y'].items()}
+        return D
+    L.step_data = step_data
+
+
+def role_points(spec, m):
+    if spec['points'] == 'bv2b':
+        import d12_h1 as D1
+        grid = D1.grid()
+        S = pd.read_csv(R / 'Bv2b_selected_h1.csv')
+        return {s: grid[(m, int(S[(S.model == m) & (S.step == s)].point.iloc[0]))] for s in STEPS}
+    kind, tag = spec['points'].split(':')
+    assert kind == 'optuna'
+    from tune_L2 import SPACEB
+    S = pd.read_csv(R / f'{tag}_selected_h{H}.csv')
+    out = {}
+    for s in STEPS:
+        r = S[(S.model == m) & (S.step == s)].iloc[0]
+        out[s] = {k: (int(r[k]) if sc in ('int', 'logint') else float(r[k])) for k, _, _, sc in SPACEB[m]}
+    return out
+
+
+def setup_roli():
+    t0 = time.time()
+    import l2_lib as L
+    assert Path(L.FEAT).name == Y['roles_matrix']
+    install_role_wrapper(L)
+    A, FC = L.load_base()
+    RS.update(L=L, A=A, date_dtype=A['date'].dtype, cols={}, P={})
+    for role, spec in Y['roles'].items():
+        RS['cols'][role] = L.build_features(A, FC, H, spec['cfg'])[1]
+        for m in spec['models']:
+            RS['P'][(role, m)] = role_points(spec, m)
+    RS['A'] = L.build_features(A, FC, H, {})[0]
+    assert all(c in RS['A'] for cs in RS['cols'].values() for c in cs)
+    log(f'роли: матрица {Path(L.FEAT).name}, строк {len(A)}, признаков ' + ', '.join(f'{r} {len(c)}' for r, c in RS['cols'].items())
+        + f'; настройка {time.time() - t0:.0f} с')
+
+
+_RREF = {}
+
+
+def fit_role(leg, role, m, s):
+    L = RS['L']
+    spec = Y['roles'][role]
+    cfg = spec['cfg']
+    RS['leg'] = leg
+    D = L.step_data(RS['A'], RS['cols'][role], H, s, m, cfg, 'Bv2b')
+    ref = None
+    if s > 1:
+        k = (leg, role, m)
+        if k not in _RREF:
+            if len(_RREF) >= 6:
+                _RREF.clear()
+            _RREF[k] = L.make_ref(m, RS['A'], RS['cols'][role], H, cfg, 'Bv2b')
+        ref = _RREF[k]
+    t0 = time.time()
+    pv, _pt, bi, _, _ = L.fit(m, RS['P'][(role, m)][s], D, cfg, seed=42, ref=ref)  # тестовый прогноз не сохраняется
+    d = D['parts']['va']
+    return pd.DataFrame({'date': d['date'].values, 'ticker': d['ticker'].values, 'year': D['vy'], 'step': s, 'rv_actual': d[L.tcol(H)].values,
+                         'rv_pred': np.clip(np.exp(pv), 1e-10, None), 'trees': bi, 's2_b01': D['s2'], 'sec': time.time() - t0})
+
+
+def raw_role(leg, role, m, s):
+    return CACHE / '_raw' / 'roli' / f'{leg}__{role}_{m}_st{s:02d}.parquet'
+
+
+def job_role(t):
+    leg, role, m, s = t
+    v = fit_role(leg, role, m, s)
+    put(v, raw_role(leg, role, m, s))
+    return leg, role, m, s, float(v.sec.iloc[0])
+
+
+def ryad_role(leg, role, m):
+    return f'{leg}__{role}_{m}'
+
+
+def close_role(leg, role):
+    spec = Y['roles'][role]
+    fr = {}
+    for m in spec['models']:
+        V = pd.concat([pd.read_parquet(raw_role(leg, role, m, s)) for s in STEPS], ignore_index=True).sort_values(['step', 'date', 'ticker'])
+        fr[m] = V[COLS].reset_index(drop=True)
+        c = spec.get('control', {})
+        if c.get('leg') == leg:
+            S = pd.read_parquet(R / c['file'].format(m=m))
+            S = S[S.step.isin(STEPS)]
+            S = S[S.seed == 42] if 'seed' in S else S
+            S = S[S['rank'] == 1] if 'rank' in S else S
+            mm = fr[m][KEY + ['rv_pred']].merge(S[KEY + ['rv_pred']], on=KEY, how='outer', suffixes=('', '_saved'), indicator=True)
+            b = mm[mm._merge == 'both']
+            d = float(np.abs(np.log(b.rv_pred) - np.log(b.rv_pred_saved)).max()) if len(b) else np.inf
+            ok = bool(len(b) == len(mm) and d <= TOL)
+            append_csv(CACHE / 'control_B1.csv', [dict(ryad=ryad_role(leg, role, m), seed=42, kind='role', saved=c['file'].format(m=m), rows=len(mm),
+                                                       matched=len(b), max_abs_dln=d, ok=ok, time=time.strftime('%F %T'))])
+            log(f'контроль {ryad_role(leg, role, m)}: строк {len(b)}/{len(mm)}, max|Δ ln| = {d:.2e} {"OK" if ok else "ПРОВАЛ"}')
+            if not ok:
+                STOP.write_text(f'{time.strftime("%F %T")} контроль роли не пройден: {leg} {role} {m} {d}\n')
+                raise SystemExit(f'СТОП: {ryad_role(leg, role, m)} не повторяет первый раунд')
+    if Y.get('mean_variant') and len(fr) == 2:
+        a, b = fr['xgb'], fr['lgbm']
+        mm = a.merge(b[KEY + ['rv_pred']], on=KEY, suffixes=('_x', '_l'), validate='one_to_one')
+        assert len(mm) == len(a) == len(b)
+        fr['mean'] = mm.assign(rv_pred=(mm.rv_pred_x + mm.rv_pred_l) / 2)[COLS]
+    for m, df in fr.items():
+        p = fpath(ryad_role(leg, role, m), 42)
+        put(df, p)
+        index_add(p, ryad_role(leg, role, m), 42, df, f'роль {role}, нога {leg}, модель {m}, точки {spec["points"]}, seed 42; без поправки s²')
+    log(f'роль {role} × нога {leg}: записано {", ".join(fr)}')
+
+
+def legs_available():
+    d = ROOT / Y['legs_dir']
+    return sorted(p.name[:-len(f'_h{H}_lnall.parquet')] for p in d.glob(f'*_h{H}_lnall.parquet')) if d.exists() else []
+
+
+def cmd_roli(a):
+    import multiprocessing as mp
+    if STOP.exists():
+        raise SystemExit(f'СТОП-файл {STOP}: {STOP.read_text()}')
+    legs = a.legs or (['HARJ_l2', 'HARX_d17'] + legs_available())
+    roles = a.roles or list(Y['roles'])
+    setup_roli()
+    for leg in legs:
+        if leg not in ('HARJ_l2',):
+            assert leg_file(leg).exists(), leg_file(leg)
+    units = [(leg, role) for leg in legs for role in roles]
+    tasks = [(leg, role, m, s) for leg, role in units for m in Y['roles'][role]['models'] for s in sorted(STEPS, reverse=True)
+             if not raw_role(leg, role, m, s).exists()]
+    closed = {u for u in units if all(fpath(ryad_role(u[0], u[1], m), 42).exists() for m in Y['roles'][u[1]]['models'])}
+    ready = lambda u: all(raw_role(u[0], u[1], m, s).exists() for m in Y['roles'][u[1]]['models'] for s in STEPS)
+    for u in units:
+        if u not in closed and ready(u):
+            close_role(*u); closed.add(u)
+    log(f'роли: ног {len(legs)}, ролей {len(roles)}, задач {len(tasks)}, воркеров {a.workers}')
+    t0, n = time.time(), 0
+    if tasks:
+        with mp.get_context('fork').Pool(a.workers) as P:
+            for leg, role, m, s, sec in P.imap_unordered(job_role, tasks, chunksize=1):
+                n += 1
+                el = time.time() - t0
+                if n % 10 == 0 or n == len(tasks):
+                    log(f'{n}/{len(tasks)} (последняя: {leg} {role} {m} шаг {s}, {sec:.0f} с), прошло {el / 60:.1f} мин, осталось ~{el / n * (len(tasks) - n) / 60:.0f} мин')
+                u = (leg, role)
+                if u not in closed and ready(u):
+                    close_role(*u); closed.add(u)
+    log(f'роли: готово, единиц {len(closed)}/{len(units)}, стена {(time.time() - t0) / 60:.1f} мин')
+
+
+def cmd_leak_roli(a):
+    """Детектор на коде ролей: шум в матрице и в ln-прогнозе ноги с даты t0; t0 = 1 января тестового года шага -> val равны, t0 = 1 января val-года -> изменились."""
+    setup_roli()
+    L = RS['L']
+    s = int(Y['leak_role_step'])
+    ty = L.TEST_YEARS[s - 1]
+    leg = a.leg
+    A0 = RS['A']
+    rows = []
+    for role in Y['roles']:
+        m = Y['roles'][role]['models'][0]
+        _BASE.clear(); _RREF.clear()
+        base = fit_role(leg, role, m, s)
+        for t0, must in ((f'{ty}-01-01', 'равны'), (f'{ty - 1}-01-01', 'изменились')):
+            RS['A'] = corrupt(A0, t0)
+            _BASE.clear(); _RREF.clear()
+            B = base_of(leg)
+            if B is not None:
+                rng = np.random.default_rng(11)
+                for k, g in B.items():
+                    msk = (pd.to_datetime(g['date']) >= pd.Timestamp(t0)).values
+                    g = g.copy()
+                    g.loc[msk, 'base_ln'] = g.loc[msk, 'base_ln'].values + rng.normal(size=int(msk.sum()))
+                    B[k] = g
+            v = fit_role(leg, role, m, s)
+            RS['A'] = A0
+            _BASE.clear(); _RREF.clear()
+            d = float(np.abs(np.log(v.rv_pred.values) - np.log(base.rv_pred.values)).max()) if len(v) == len(base) else np.inf
+            ok = bool(d == 0.0) if must == 'равны' else bool(d > 0)
+            rows.append(dict(ryad=ryad_role(leg, role, m), step=s, noise_from=t0, expect=must, max_abs_dln=d, ok=ok, time=time.strftime('%F %T')))
+            log(f'leak {ryad_role(leg, role, m)} шаг {s}: шум с {t0} -> max|Δ ln| val = {d:.3g} (ожидается: {must}) {"OK" if ok else "ПРОВАЛ"}')
+    append_csv(CACHE / 'leak_B1.csv', rows)
+    if not all(r['ok'] for r in rows):
+        STOP.write_text(f'{time.strftime("%F %T")} детектор ролей: провал {leg}\n')
+        raise SystemExit('СТОП: детектор ролей не пройден')
+
+
 # ---------------------------------------------------------------- детектор «будущее не влияет»
 def corrupt(A, t0, seed=7):
     """Всё с даты t0 включительно: числовые столбцы × exp(N(0,1)), цели перемешаны (как d24_1.corrupt)."""
@@ -272,9 +512,12 @@ def main():
     sp = ap.add_subparsers(dest='cmd', required=True)
     p = sp.add_parser('f1'); p.add_argument('--workers', type=int, default=int(Y['workers'])); p.add_argument('--seeds', type=int, nargs='*')
     sp.add_parser('leak')
+    p = sp.add_parser('roli'); p.add_argument('--workers', type=int, default=int(Y['workers'])); p.add_argument('--legs', nargs='*')
+    p.add_argument('--roles', nargs='*')
+    p = sp.add_parser('leak_roli'); p.add_argument('--leg', default='HARX_d17')
     a = ap.parse_args()
     CACHE.mkdir(parents=True, exist_ok=True)
-    {'f1': cmd_f1, 'leak': cmd_leak}[a.cmd](a)
+    {'f1': cmd_f1, 'leak': cmd_leak, 'roli': cmd_roli, 'leak_roli': cmd_leak_roli}[a.cmd](a)
 
 
 if __name__ == '__main__':

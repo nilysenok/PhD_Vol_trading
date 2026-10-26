@@ -25,8 +25,31 @@ F1:
   control: {design_file: final3/designs_rank_D22_h1_h1.csv, design: "top5|V0_XGB|B-sm|L0", mean_1720: 0.2857237110986891, q2021: 0.2291744344713429}
   leak_step: 3
 
-# Роли уровня 1 (h=1, seed 42): таблица «роль -> точки» (протокол v2, «Данные, окно, общая механика»); заполняется до счёта ролей
+# Роли уровня 1 (h=1, seed 42, val шагов 1–6): таблица «роль -> точки» (протокол v2, «Данные, окно, общая механика»), записана до счёта ролей.
+# Механизм — как в первом раунде: подмена в l2_lib.step_data (и в make_ref) — признак har_ln / смещение off берутся из ln-прогноза ноги шага
+# (обучение — внутри выборки, как HAR-J в Д8.12/V9 и HAR-X в d17_1_harx_base). Матрица features_pit_v3, точка шага — rank 1 (single).
+roles_matrix: features_pit_v3.parquet
 roles:
-  priznak: {points: "D12_h1_A_d812 (ЛГК B v2b: Bv2b_selected_h1, rank 1)", cfg: {harf: true}, models: [xgb, lgbm], btag: Bv2b}
-  ostatok: {points: "D12_h1_B_b0.25 (ЛГК B v2b, точки те же, что у B v2b)", cfg: {v9: true}, models: [xgb, lgbm], btag: Bv2b}
-  gamma: {points: "G1Xopt — нет в первом раунде; по протоколу — точки V0 Bv3 h=1 (Bv3_selected_h1, LGBM)", models: [lgbm]}
+  priznak:
+    points: bv2b             # D12_h1_A_d812 = ЛГК B v2b (Bv2b_selected_h1, точка шага)
+    cfg: {harf: true}        # ln ноги — признак har_ln (последний столбец), смещения нет
+    models: [xgb, lgbm]
+    control: {leg: HARJ_l2, file: "D12_h1_A_d812_{m}_h1_val.parquet"}
+  ostatok:
+    points: bv2b             # D12_h1_B_b0.25 = те же точки ЛГК B v2b (у всех кандидатов Д12 h=1 точки общие)
+    cfg: {v9: true}          # цель ln RV − ln ноги, ln ŷ = ln ноги + f (V9, β = 1 — по определению роли в протоколе; ❓ β = 0,25 как у D12_h1_B_b0.25)
+    models: [xgb, lgbm]
+    control: {leg: HARJ_l2, file: "D12_h1_B_b1_{m}_h1_val.parquet"}
+  gamma:
+    points: "optuna:D17_1_h1_G1Xopt"   # G1Xopt (optuna-30, Д17.1): D17_1_h1_G1Xopt_selected_h1.csv (точка шага)
+    cfg: {obj: gamma, v9: true, b01: true}   # init_score = ln ноги + s²/2 (s² — остатки ln ноги на обучающем окне), метка ≥ 1e-8, без поправки на выходе
+    models: [lgbm]
+    control: {leg: HARX_d17, file: "D17_1_h1_G1Xopt_lgbm_h1_val.parquet"}
+mean_variant: true           # ряд «среднее XGB+LGB» (уровень RV) для ролей признак и остаток
+# Ноги: ln-прогнозы шага на всех строках окна (обучение — внутри выборки, val, тест шага) в формате D17/harx_base_h1.parquet:
+#   колонки date, ticker, step, part ∈ {tr, va, te}, base_ln; шаги 1–6 (te может отсутствовать — тогда 0, тест не используется).
+legs_builtin:
+  HARJ_l2: "HAR-J МНК l2_lib.har_ln (без подмены) — контроль с первым раундом"
+  HARX_d17: "data/regen/D17/harx_base_h1.parquet — HAR-X с внутренней валидацией (d17_1_harx_base.py) — контроль G1Xopt"
+legs_dir: data/regen/R2/cache/E   # ноги агента Э: <нога>_h1_lnall.parquet (формат выше)
+leak_role_step: 3
