@@ -475,20 +475,16 @@ def _mean_seeds(boost, m, seeds, part):
 def f1_series(seed):
     """F_1 seed s: нога D22_h1 xgb top5 seed s × exp(s²_sm/2) (gibrid_bias: val шага t — s² по val шагов t−3..t−1, шаг 1 — 1,0;
     тест шага t — по val шагов t−2..t; final2_build для шага 10). Остатки — строки rv_actual > 1e-12.
-    -> (val шагов 1–6, *_test: val 7–10 + тест 1–10). Ветка test-build: метрики не считаются."""
+    -> (val шагов 1–6, None): тестовую сборку гибридов А1 не делает (дирижёр 13:00)."""
     spec = Y['derived']['F1']
     v = pd.read_parquet(fpath(spec['leg'], seed, 'val'))
-    t = pd.read_parquet(fpath(spec['leg'], seed, 'test'))
-    allv = pd.concat([v.assign(part='val'), t[t.part == 'val']], ignore_index=True)
-    ok = allv[allv.rv_actual > 1e-12]
+    ok = v[v.rv_actual > 1e-12]
     E = {int(st): np.log(g.rv_actual.values + 1e-10) - np.log(g.rv_pred.values) for st, g in ok.groupby('step')}
-    assert sorted(E) == list(STEPS) and spec['code'] == 'sm'
+    assert sorted(E) == [s for s in STEPS if s <= 6] and spec['code'] == 'sm'
     s2 = lambda st: float(np.var(np.concatenate([E[j] for j in range(max(1, st - 2), st + 1)])))
-    Fv = {st: (1.0 if st == 1 else float(np.exp(s2(st - 1) / 2))) for st in STEPS}
-    Ft = {st: float(np.exp(s2(st) / 2)) for st in STEPS}
+    Fv = {st: (1.0 if st == 1 else float(np.exp(s2(st - 1) / 2))) for st in E}
     vv = v.assign(rv_pred=v.rv_pred.values * v.step.map(Fv).values)
-    tt = t.assign(rv_pred=t.rv_pred.values * np.where(t.part == 'val', t.step.map(Fv), t.step.map(Ft)))
-    return vv[COLS], tt[COLS + ['part']]
+    return vv[COLS], None  # дирижёр 13:00: тестовую сборку гибридов А1 не делает — F_1 только val шагов 1–6
 
 
 def q_dev(df):
@@ -513,7 +509,7 @@ def cmd_derive(a):
                 rows.append(f'{boost} {m} {kind}')
     spec = Y['derived']['F1']
     for sd in SEEDS:
-        if not (fpath(spec['leg'], sd, 'val').exists() and fpath(spec['leg'], sd, 'test').exists()):
+        if not fpath(spec['leg'], sd, 'val').exists():
             continue
         vv, tt = f1_series(sd)
         if sd == 42:  # контроль: QLIKE F_1 seed 42 = designs_val первого раунда (шаги 2–5 и 6)
@@ -525,10 +521,9 @@ def cmd_derive(a):
             if dd > 1e-9:
                 STOP.write_text(f'{time.strftime("%F %T")} контроль F_1 не пройден: {dd}\n')
                 raise SystemExit('СТОП: F_1 seed 42 не повторяет первый раунд')
-        for part, df in (('val', vv), ('test', tt)):
-            p = fpath('F1', sd, part)
-            put(df, p)
-            index_add(p, 'F1', sd, df)
+        p = fpath('F1', sd, 'val')
+        put(vv, p)
+        index_add(p, 'F1', sd, vv)
         rows.append(f'F1 s{sd}')
     n = sha_locked()
     log(f'derive: {len(rows)} рядов ({", ".join(rows)}); тестовых файлов {n}; индекс {INDEX}')

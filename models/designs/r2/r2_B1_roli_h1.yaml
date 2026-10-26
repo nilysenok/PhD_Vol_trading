@@ -1,0 +1,32 @@
+# R2, агент Б1 (бывш. А1): роли бустинга на h=1 и F_1 по seed. Протокол v2 docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, строка «Б1».
+# Гиперпараметры бустинга — текущие (сохранённые точки первого раунда), не переподбираются. Счёт — val шагов 1–6; тест не считается (раздел «Тестовая часть»).
+agent: B1
+h: 1
+steps: [1, 2, 3, 4, 5, 6]
+workers: 5
+control_tol: 1.0e-7          # max |Δ ln rv_pred| с сохранённым рядом первого раунда
+paths:
+  cache: data/regen/R2/cache/B1
+  index: data/regen/R2/cache/INDEX_B1.csv
+
+# F_1 = D22_h1 top5 / V0_XGB / B-sm / L0 (FD §0 п. 10, §1) на seed 42–51 (42 — контроль, 43–51 — для 2σ)
+F1:
+  boost: D22_h1
+  matrix: features_pit_v3_rrv.parquet
+  cfg: {harf: true, wins: true}
+  mech: "d22_h1.patch(): ln HAR-X⁺ шага как признак har_ln (D22/HXP_lnall), календарь окна h=1, RRV, гэп, винзоризация цели 1/99"
+  points: "tune_L2: D22_h1_grid.csv; top5 шага — D22_h1_xgb_h1_top5_val.parquet (point, rank 1–5)"
+  btag: D22_h1
+  model: xgb
+  seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+  top5_seed_rule: "top5 с seed s — пять точек top5 шага, каждая обучена с seed s; нога — среднее RV пяти"
+  code: sm                   # val шага t: прогноз × exp(s²/2), s² = var остатков ln на val шагов t−3..t−1 (gibrid_bias.correct, F_oos); шаг 1 — 1,0
+  saved: {single: D22_h1_xgb_h1_val.parquet, top5: D22_h1_xgb_h1_top5_val.parquet, s4344: D22_h1_xgb_h1_seeds4344_val.parquet}
+  control: {design_file: final3/designs_rank_D22_h1_h1.csv, design: "top5|V0_XGB|B-sm|L0", mean_1720: 0.2857237110986891, q2021: 0.2291744344713429}
+  leak_step: 3
+
+# Роли уровня 1 (h=1, seed 42): таблица «роль -> точки» (протокол v2, «Данные, окно, общая механика»); заполняется до счёта ролей
+roles:
+  priznak: {points: "D12_h1_A_d812 (ЛГК B v2b: Bv2b_selected_h1, rank 1)", cfg: {harf: true}, models: [xgb, lgbm], btag: Bv2b}
+  ostatok: {points: "D12_h1_B_b0.25 (ЛГК B v2b, точки те же, что у B v2b)", cfg: {v9: true}, models: [xgb, lgbm], btag: Bv2b}
+  gamma: {points: "G1Xopt — нет в первом раунде; по протоколу — точки V0 Bv3 h=1 (Bv3_selected_h1, LGBM)", models: [lgbm]}
