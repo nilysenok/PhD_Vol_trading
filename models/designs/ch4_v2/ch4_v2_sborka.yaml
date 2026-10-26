@@ -46,6 +46,14 @@ kod:
   fastbt/masks.py: ''
   fastbt/data.py: ''
   fastbt/designs/final/main.yaml: ''
+  fastbt/designs/s9/setka_C.yaml: ''
+  scripts/analysis/r2_features.py: ''
+  scripts/analysis/r2_loyo.py: ''
+  models/designs/r2/r2_O_loyo.yaml: ''
+# Весь код fastbt (*.py, *.yaml) одной SHA: python3 scripts/analysis/final_test_ch4_v2.py --sha-fastbt (данных не читает).
+# Код — не раньше ce57e41 (исправления аудита FA: #238 c_rank_past, #239 ставка за [d, d_next)); иначе отказ.
+fastbt_sha_vse: ''
+kod_ne_ranshe: ce57e41
 
 # Дизайны теста: по одному на подход; A — эталон, всегда. Пусто до «да».
 # Формат: {semya: C1|C2|Cmed|Cstar|D1|D2|D4|Dcont|B|P1|P2, sigma: hyb_h1|hyb_h5|harj_b_h1|harj_b_h5|naive, параметры семьи,
@@ -70,11 +78,15 @@ test:
   val: [2018, 2021]               # окна валидации/калибровки заморожены на разработке (как fastbt.s9 TEST_VAL_*)
   zakrytie: ['2022-02-28', '2022-03-23']   # остановка торгов MOEX; правило — столбец pravilo (без / с правилом, рядом)
   butstrap: {metod: LW, blok: 5, reps: 10000, seed: 42}   # fastbt.s9_stats.lw_sharpe_diff, как в разработке
-  # Владелец 26.10, 22:45: основная 0,04 % за сторону «всё включено» — фактический тариф Т-Банка «Инвестор» на дату
-  # (документ — ⟨ссылка, даст владелец⟩). «Ставка комиссии изменена с 0,05 % (FINAL_DESIGN_strategies v1) на 0,04 % до второго
-  # открытия, по фактическому тарифу, не по результатам разработки.» Чувствительность — 0,035 / 0,05 / 0,06 % (без p).
+  # Владелец 26.10, 22:45 / 22:55 (окончательно): основная 0,04 % за сторону, всё включено — тариф «Премиум» Т-Банка, биржевой
+  # сбор включён (⟨ссылка — владелец⟩). «Ставка комиссии изменена с 0,05 % (FINAL_DESIGN_strategies v1) на 0,04 % до второго
+  # открытия, по фактическому тарифу, не по результатам разработки.» Чувствительность (без p) — с подписями.
   komissiya: 0.0004
-  komissiya_chuvstv: [0.00035, 0.0005, 0.0006]
+  komissiya_podpis: основная — «Премиум» Т-Банка, всё включено
+  komissiya_chuvstv:
+    - {stavka: 0.00035, podpis: институциональный инвестор}
+    - {stavka: 0.0005, podpis: «Трейдер» Т-Банка}
+    - {stavka: 0.0006, podpis: консервативная}
 
 # Заглушки ТОЛЬКО для --selftest (псевдотест 2018–2021, окна заморожены на 2017). В тест не идут; это опорные точки прошлой
 # сетки и раунда 22:20, не выбор.
@@ -87,7 +99,9 @@ selftest_zaglushki:
     C1_W504: {semya: C1, sigma: hyb_h5, W: 504, p: 0.70, razgon: 252}             # разгон W504: растущее окно 252 → 504
     C2:      {semya: C2, sigma: hyb_h1, W: 252, p1: 0.70, p2: 0.90}
     Cmed:    {semya: Cmed, sigma: hyb_h1, W: 252, p: 0.80, med: 22}
-    Cstar:   {semya: Cstar, sigma: hyb_h1, W: 252, p: 0.80}
+    Cstar1:  {semya: 'C*1', sigma: hyb_h1, W: 252, p: 0.80}                       # C* — fastbt.s9.c_dop_gates (PR #240)
+    Cstar2:  {semya: 'C*2', sigma: hyb_h5, W: 504, p1: 0.70, p2: 0.90}
+    C2W:     {semya: C2W, sigma: hyb_h1, W: 126, p1: 0.80, p2: 0.90}
     D2:      {semya: D2, sigma: hyb_h1, W: 252, p: 0.80, g: 0.10}
     D4:      {semya: D4, sigma: hyb_h5, W: 252, p: 0.80, span: 5}
     Dcont:   {semya: Dcont, sigma: hyb_h1, W: 252, gamma: 1.0, cap: 1.5}

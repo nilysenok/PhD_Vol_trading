@@ -38,7 +38,9 @@ models/designs/ch4_v2/ch4_v2_sborka.yaml. Первое открытие тест
                        диапазон: 1−p ≤ R ≤ p), NaN — открыт; razgon — мин. число значений окна (W504: растущее окно 252 → 504, Ъ)
   C2  {W, p1, p2}      частичная экспозиция 1 → 0,5 → 0 по двум порогам
   Cmed {W, p, med}     то же на x = σ / медиана σ за med прошлых дней (реакция на всплеск, а не на уровень)
-  Cstar {W, p}         то же на x = σ_pred / наивная √RV (сигнал неожиданности)
+  C*1 {W, p} / C*2 {W, p1, p2} / C2W {W, p1, p2}  новые точки C раунда (Ъ 22:30, PR #240) — fastbt.s9.c_dop_gates
+                       по разделу dop fastbt/designs/s9/setka_C.yaml; C* — ранг σ_pred / √RV_w (наивная S0; в тесте строится
+                       в открытии и проходит проверку сдвига)
   D1 {W, p}            закрыт при R > p;  D2 {W, p, g} — гистерезис p−g / p;  D4 {W, p, span} — ранг EMA σ
   Dcont {W, gamma, cap} вес min(cap, (медиана W / σ)^γ)
   B  {cap, band, W}    вес min(cap, медиана W / σ), полоса бездействия band
@@ -156,6 +158,8 @@ def check_frozen(spec: dict) -> None:
     for p, s in (spec.get('kod') or {}).items():
         if not s:
             bad.append(f'нет SHA кода {p}')
+    if not spec.get('fastbt_sha_vse'):
+        bad.append('нет fastbt_sha_vse (SHA всего кода fastbt)')
     for k, d in diz.items():
         if (d or {}).get('kod') and not d.get('kod_sha256'):
             bad.append(f'{k}: kod без kod_sha256')
@@ -195,6 +199,10 @@ def verify_sha(spec: dict, P: Puti) -> dict:
         one(P.main / v['fayl'], v['sha256'], f'вход {k}')
     for p, s in (spec.get('kod') or {}).items():
         one(P.root / p, s, f'код {p}')
+    agg = fastbt_agg(P.root)
+    got['fastbt/**'] = agg
+    if agg != spec.get('fastbt_sha_vse'):
+        bad.append(f'код fastbt (все *.py, *.yaml): SHA {agg[:16]}… ≠ fastbt_sha_vse {str(spec.get("fastbt_sha_vse"))[:16]}…')
     for k, d in (spec.get('dizayny') or {}).items():
         if (d or {}).get('kod'):
             one(P.root / d['kod'].split(':')[0], d['kod_sha256'], f'построитель {k}')
@@ -214,13 +222,21 @@ def acquire_lock(P: Puti, info: dict) -> None:
         f.write(json.dumps(dict(info, status='начато', vremya=now()), ensure_ascii=False, indent=1))
 
 
-def finish_lock(P: Puti, extra: dict) -> None:
+def finish_lock(P: Puti, extra: dict, status: str = 'завершено') -> None:
     lk = Path(P.lock)
     d = json.loads(lk.read_text())
-    d.update(extra, status='завершено', vremya_konets=now())
+    d.update(extra, status=status, vremya_konets=now())
     os.chmod(lk, 0o644)
     lk.write_text(json.dumps(d, ensure_ascii=False, indent=1))
     os.chmod(lk, 0o444)
+
+
+def require_base(root, commit) -> None:
+    """Код — не раньше commit (исправления аудита FA #238, #239 — ce57e41)."""
+    r = subprocess.run(['git', '-C', str(root), 'merge-base', '--is-ancestor', str(commit), 'HEAD'],
+                       capture_output=True, text=True, timeout=20)
+    if r.returncode != 0:
+        raise Stop(f'код старше {commit} (нет исправлений аудита FA) — отказ')
 
 
 def precheck_test(P: Puti) -> tuple:
@@ -228,6 +244,7 @@ def precheck_test(P: Puti) -> tuple:
     spec = load_spec(P)
     check_frozen(spec)
     check_lock_free(P)
+    require_base(P.root, spec.get('kod_ne_ranshe') or 'ce57e41')
     return spec, verify_sha(spec, P)
 
 
@@ -362,6 +379,50 @@ def configure_s9(years, val, cut, sources: dict, rvi: Path) -> None:
     s9.SOURCES.clear()
     s9.SOURCES.update(sources)
     s9.RVI = rvi
+    s9.load_c_dop()                          # раздел dop setka_C.yaml (min_periods, сигналы C*); √RV_w — наивная этого режима
+    s9.C_DOP['rvw'] = dict(file=str(sources['naive'][0]), column=sources['naive'][1])
+
+
+# ======================= проверка сдвига σ (до счёта) =======================
+
+def shift_ts(df, col, k):
+    """σ_d := σ_{d+k} по строкам тикера (k = −1 — отставание, +1 — утечка) — контроли, как S0."""
+    d = df.sort_values(['ticker', 'date']).copy()
+    d[col] = d.groupby('ticker')[col].shift(-k)
+    return d.dropna(subset=[col]).reset_index(drop=True)
+
+
+def shift_check(sources: dict, feat: Path, lo, hi, eps=0.01) -> pd.DataFrame:
+    """Проверка сдвига каждого σ-ряда на [lo, hi] до счёта — правило S0 (ch4_dev_sigma.shift_row): профиль Спирмена
+    r2_features.shift_table (ln σ²_d с ln RV_{d+s}, s = −2…+1, медиана по тикерам), решение r2_loyo.sdvig_ok, K = {0}:
+    модельный ряд — по уровню (ε = 0,01), наивная (оконное среднее) — по приращению. Контроли −1 / +1 обязаны блокироваться.
+    r2_features.LAST_DEV — локальный override на hi (сам модуль не правится)."""
+    import r2_features as RF
+    import r2_loyo as O
+    RF.LAST_DEV = pd.Timestamp(hi)
+    rv = read_capped(feat, ['date', 'ticker', 'rv'], hi)
+    rows = []
+    for lab, (p, col, _) in sources.items():
+        d = read_capped(p, ['date', 'ticker', col], hi)
+        tip = 'okno' if lab == 'naive' else 'model'
+        for var, x in (('ryad', d), ('kontrol_-1', shift_ts(d, col, -1)), ('kontrol_+1', shift_ts(d, col, +1))):
+            x = x[x['date'] >= pd.Timestamp(lo)]
+            F = x[['date', 'ticker']].assign(ln_sigma2=np.log(x[col].astype(float).values ** 2))
+            pr = RF.shift_table(F, {'B': rv}, f'{lab}:{var}').iloc[0]
+            if tip == 'model':
+                am, corr = pr['argmax'], {s: pr[f'rho_{s}'] for s in (-2, -1, 0, 1)}
+                ok, why = O.sdvig_ok(None if am is None or am != am else int(am), (0,), corr, eps)
+            else:
+                am = pr['d_argmax']
+                ok, why = O.sdvig_ok(None if am is None or am != am else int(am), (0,))
+            rows.append(dict(ryad=lab, variant=var, tip=tip, period=f'{pd.Timestamp(lo).date()}…{pd.Timestamp(hi).date()}',
+                             argmax_uroven=pr['argmax'], argmax_prirascheniya=pr['d_argmax'],
+                             **{f'rho_k{s:+d}': pr[f'rho_{s}'] for s in (-2, -1, 0, 1)},
+                             **{f'rho_prir_k{s:+d}': pr[f'drho_{s}'] for s in (-2, -1, 0, 1)},
+                             ok=bool(ok), reshenie=why or ('по уровню' if tip == 'model' else 'по приращению')))
+    t = pd.DataFrame(rows)
+    t['proshel'] = np.where(t['variant'] == 'ryad', t['ok'], ~t['ok'])   # контроль «прошёл» = заблокирован
+    return t
 
 
 def closure_engine(e, lo, hi):
@@ -402,7 +463,8 @@ def _per_ticker(e, X, fn):
 
 def _rank(e, X, W, razgon=None):
     from fastbt.s9_stats import minp, past_rank
-    mp_ = int(razgon) if razgon else (252 if int(W) == 504 else minp(int(W)))   # W504: растущее окно 252 → 504 (Ъ)
+    # по умолчанию — как С9 «как были» (s9_stats.minp: max(50, W/5)); W504 с разгоном 252 → 504 (Ъ) — razgon: 252 в ключе дизайна
+    mp_ = int(razgon) if razgon else minp(int(W))
     return _per_ticker(e, X, lambda s: past_rank(s.copy(), int(W), mp_))
 
 
@@ -427,6 +489,29 @@ def _cat_partial(R, p1, p2):
     return G
 
 
+def c_dop_gate(e, d: dict, S, S_of):
+    """Новые точки C раунда (Ъ 22:30, PR #240) — тем же кодом, что разработка: fastbt.s9.c_dop_gates по разделу dop
+    fastbt/designs/s9/setka_C.yaml (min_periods, сигнал), одна точка: W и p (фильтр) или p1, p2 (частичная).
+    √RV_w — наивная S0 (S_of('naive'); в тесте — построена в открытии тем же кодом и прошла проверку сдвига)."""
+    from fastbt import s9
+    dop = s9.load_c_dop() if s9.C_DOP is None else s9.C_DOP
+    f = dict(dop['semi'][d['semya']])
+    W = int(d['W'])
+    f['okna'] = [W]
+    f.pop('filtr', None)
+    f.pop('chastichnaya', None)
+    if 'p' in d:
+        f['filtr'] = [round(float(d['p']) * 100)]
+    else:
+        f['chastichnaya'] = [[round(float(d['p1']) * 100), round(float(d['p2']) * 100)]]
+    spec = dict(min_periods=dop['min_periods'], semi={d['semya']: f})
+    RV = None if f['signal'] != 'sigma_over_rvw' else S_of('naive')
+    out = s9.c_dop_gates(S, RV, e.n_t, spec)
+    if not out or len(out[0][1]) != 1:
+        raise Stop(f'{d}: C dop — нет точки (C* на наивной σ не строится)')
+    return out[0][1][0][1]
+
+
 def fam_gate(e, d: dict, S_of):
     """Затвор/вес [тикер, бар] или [кат, тикер, бар] семьи дизайна d. S_of(метка) → σ [тикер, бар]."""
     from fastbt.masks import hyst_gate
@@ -441,8 +526,8 @@ def fam_gate(e, d: dict, S_of):
         mw = int(d.get('med', 22))    # медиана прошлых mw дней (сдвиг на 1); s9_stats.past_median требует W ≥ 50 — здесь min = mw
         med = _per_ticker(e, S, lambda s: pd.Series(s).shift(1).rolling(mw, min_periods=mw).median().values)
         return _cat_gate(_rank(e, S / med, d['W'], d.get('razgon')), float(d['p']))
-    if fam == 'Cstar':
-        return _cat_gate(_rank(e, S / S_of('naive'), d['W'], d.get('razgon')), float(d['p']))
+    if fam in ('C2W', 'C*1', 'C*2'):
+        return c_dop_gate(e, d, S, S_of)
     if fam == 'D1':
         R = _rank(e, S, d['W'], d.get('razgon'))
         return np.where(R > float(d['p']), 0.0, 1.0)
@@ -579,7 +664,14 @@ def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, ro
     engines = {'bez': e, 's_pravilom': ez}
     rows = []
     keys = ['A'] + order + [f'dop:{k}' for k in dop]
-    comms = [comm] + [c for c in comm_ch if abs(c - comm) > 1e-12]
+    main_c, main_podpis = comm if isinstance(comm, tuple) else (comm, 'основная')
+    comm = main_c
+    podpis = {main_c: main_podpis}
+    for c in comm_ch:                       # [{stavka, podpis}] (Ъ 22:55) или числа
+        s, pp = (float(c['stavka']), c['podpis']) if isinstance(c, dict) else (float(c), 'чувствительность')
+        if abs(s - main_c) > 1e-12:
+            podpis[s] = f'чувствительность (без p): {pp}'
+    comms = list(podpis)
     for pr, eng in engines.items():
         for cm in comms:
             ports = {k: R.port(eng, k, cm) for k in keys}
@@ -590,7 +682,7 @@ def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, ro
                     d = diz.get(k) or dop.get(k.replace('dop:', '')) or {}
                     r = dict(podhod=k, dizayn=opis(d) if d else 'main.yaml:A (ансамбль + фильтр оборота)',
                              okno=ok, pravilo=pr, komissiya_pct=cm * 100,
-                             komissiya_rol='основная' if cm == comm else 'чувствительность (без p)',
+                             komissiya_rol=podpis[cm],
                              rol='справочно (псевдотест, не в тест)' if k.startswith('dop:') else
                              ('эталон' if k == 'A' else 'один дизайн на подход'))
                     r.update(m)
@@ -628,12 +720,27 @@ def run_h2(R, engines, diz, h2, okna, comm, reps, pometka) -> pd.DataFrame:
                 if a in q and b in q:
                     dd, se, pv = lw(q[a][1]['excess'].values, q[b][1]['excess'].values, reps)
                     r[f'd_{a}−{b}'], r[f'se_lw_{a}−{b}'], r[f'p_lw_{a}−{b}'] = dd, se, pv
-            if d['semya'] == 'Cstar':
+            if str(d['semya']).startswith('C*'):
                 r['zamechanie'] = 'C*: на наивной σ_pred / √RV ≡ 1 — строка наивной вырождена'
             r['rol'] = 'H2: одной таблицей, без выбора'
             r['pometka'] = pometka
             rows.append(r)
     return pd.DataFrame(rows)
+
+
+def komissiya_main(tst: dict) -> tuple:
+    return float(tst['komissiya']), str(tst.get('komissiya_podpis') or 'основная')
+
+
+def fastbt_sha(root: Path) -> dict:
+    """SHA-256 всех файлов кода fastbt (*.py, *.yaml) — в замок; fastbt.cache.code_hash — в спецификацию (fastbt_code_hash)."""
+    return {str(p.relative_to(root)): sha(p) for p in sorted((Path(root) / 'fastbt').rglob('*'))
+            if p.suffix in ('.py', '.yaml') and '__pycache__' not in p.parts}
+
+
+def fastbt_agg(root: Path) -> str:
+    """Одна SHA-256 по всем файлам кода fastbt: sha256 строк «путь SHA» (печать: --sha-fastbt)."""
+    return hashlib.sha256('\n'.join(f'{k} {v}' for k, v in fastbt_sha(root).items()).encode()).hexdigest()
 
 
 def to_csv(df: pd.DataFrame, path: Path) -> Path:
@@ -682,6 +789,14 @@ def leak_check(R: Raschet, diz: dict, dop: dict) -> list:
 
 # ======================= режимы =======================
 
+def _ok(fn) -> bool:
+    try:
+        fn()
+        return True
+    except SystemExit:
+        return False
+
+
 def selftest(P: Puti, reps: int) -> int:
     from fastbt import s9
     t0 = time.time()
@@ -697,6 +812,8 @@ def selftest(P: Puti, reps: int) -> int:
     fd.VPRED = Path(os.environ['FASTBT_VPRED'])
     cap_fastbt_inputs(DEV_CUT)
     src, rvi = sources_dev(P, out)
+    sdv = shift_check(src, P.main / 'data' / 'regen' / 'features_pit_v3.parquet', '2018-01-01', DEV_CUT)
+    to_csv(sdv, out / 'selftest_sdvig.csv')
     configure_s9((2018, 2019, 2020, 2021), (2017, 2017), DEV_CUT, src, rvi)   # окна заморожены на 2017 (как тест — на 2018–2021)
     cache = build_A((), 1)                       # в процессе: срез ≤ 2021 действует и на A
     from fastbt.s9 import Engine
@@ -707,7 +824,7 @@ def selftest(P: Puti, reps: int) -> int:
     okna = {'2018–2021': ('2018-01-01', '2021-12-31'), '2020–2021': ('2020-01-01', '2021-12-31')}
     zakr = ('2020-03-28', '2020-03-29')          # псевдозакрытие (выходные): проверка механики правила
     tst = spec['test']
-    tab, h2t, hit, R = run_tables(e, diz, spec.get('h2') or {}, okna, zakr, tst['komissiya'], tst['komissiya_chuvstv'],
+    tab, h2t, hit, R = run_tables(e, diz, spec.get('h2') or {}, okna, zakr, komissiya_main(tst), tst['komissiya_chuvstv'],
                                   reps, P.root, 'псевдотест 2018–2021, заглушки; ' + POMETKA, dop)
     leaks = leak_check(R, diz, dop)
     to_csv(tab, out / 'selftest_podhody.csv')
@@ -725,6 +842,8 @@ def selftest(P: Puti, reps: int) -> int:
         pravilo_srabotalo=len(hit) > 0 and bool((tab[tab.pravilo == 's_pravilom']['sharpe'].values
                                                   != tab[tab.pravilo == 'bez']['sharpe'].values).any()),
         detektor=all(r['ok'] for r in leaks),
+        sdvig=bool(sdv['proshel'].all()) and len(sdv) == 3 * len(src),
+        kod_posle_ce57e41=_ok(lambda: require_base(P.root, spec.get('kod_ne_ranshe') or 'ce57e41')),
         A_sovpadaet_s_s9=None)
     # A той же математикой, что разработка S9 (Engine.port по позиции A) — Шарп по годам ≠ NaN
     mA = s9.metrics(e.port(e.A_row))
@@ -746,12 +865,22 @@ def run_test(P: Puti, workers: int, reps_override: int | None = None) -> int:
     reps = int(reps_override or tst['butstrap']['reps'])
     if reps != 10000 or int(tst['butstrap']['blok']) != 5:
         raise Stop('тест: бутстрап ЛВ блок 5, 10 000 (FINAL v2) — иначе отказ')
+    from fastbt.cache import code_hash
     acquire_lock(P, dict(skript=sha(__file__), spec=sha(P.spec), git=git_head(P.root), argv=sys.argv, sha=shas,
+                         fastbt=fastbt_sha(P.root), fastbt_code_hash=code_hash(),
                          dizayny=spec['dizayny'], h2=spec.get('h2')))
     from fastbt import s9
     s9.set_scope('test', int(tst['val'][0]))   # замок fastbt (FINAL_DESIGN_strategies.md) + годы 2022–2026
     out_d, out_t = Path(P.out_data_test), Path(P.out_tables_test)
     src, rvi = sources_test(spec, P, out_d)
+    # проверка сдвига каждого σ-ряда теста (в т. ч. наивной √RV_w для C*) — до любого счёта; не прошёл — отказ
+    sdv = shift_check(src, P.main / spec['vhody']['features']['fayl'], tst['okna']['2022–2026'][0], tst['srez'])
+    out_t.mkdir(parents=True, exist_ok=True)
+    p_sdv = to_csv(sdv, out_t / 'ch4_v2_sdvig_test.csv')
+    if not sdv['proshel'].all():
+        bad = sdv.loc[~sdv['proshel'], ['ryad', 'variant', 'reshenie']].to_dict('records')
+        finish_lock(P, dict(sdvig={str(p_sdv): sha(p_sdv)}, otkaz=bad), status='отказ: проверка сдвига не пройдена')
+        raise Stop(f'сдвиг σ теста: {bad} — в расчёты не допускается, счёт не начат')
     os.environ['FASTBT_VPRED'] = str(src['hyb_h1'][0])
     from fastbt import data as fd
     fd.VPRED = Path(os.environ['FASTBT_VPRED'])
@@ -761,7 +890,7 @@ def run_test(P: Puti, workers: int, reps_override: int | None = None) -> int:
     okna = {k: tuple(v) for k, v in tst['okna'].items()}
     pom = POMETKA if not spec.get('audit_zakryt') else 'после аудита'
     tab, h2t, hit, R = run_tables(e, spec['dizayny'], spec.get('h2') or {}, okna, tuple(tst['zakrytie']),
-                                  tst['komissiya'], tst['komissiya_chuvstv'], reps, P.root, pom)
+                                  komissiya_main(tst), tst['komissiya_chuvstv'], reps, P.root, pom)
     outs = [to_csv(tab, out_t / 'ch4_v2_podhody_test.csv'), to_csv(h2t, out_t / 'ch4_v2_h2_test.csv')]
     for k in R.pos:
         if not k.startswith('h2:'):
@@ -776,10 +905,15 @@ def main(argv=None) -> int:
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument('--selftest', action='store_true', help='псевдотест 2018–2021 на заглушках, без замка')
     g.add_argument('--scope', choices=['test'], help='одно открытие теста (только после «да»)')
+    g.add_argument('--sha-fastbt', action='store_true', help='печать SHA кода fastbt для заморозки (данных не читает)')
     ap.add_argument('--boot-reps', type=int, default=None)
     ap.add_argument('--workers', type=int, default=3)
     a = ap.parse_args(argv)
     P = Puti()
+    if a.sha_fastbt:
+        print(json.dumps(dict(fastbt_sha_vse=fastbt_agg(P.root), git=git_head(P.root), faily=fastbt_sha(P.root)),
+                         ensure_ascii=False, indent=1))
+        return 0
     if a.selftest:
         return selftest(P, a.boot_reps or 10000)
     return run_test(P, a.workers, a.boot_reps)

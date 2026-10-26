@@ -29,8 +29,10 @@ def _put(p: Path, data: bytes) -> Path:
 
 
 @pytest.fixture
-def fake(tmp_path):
-    """Поддельное окружение: замороженная спецификация с верными SHA поддельных файлов."""
+def fake(tmp_path, monkeypatch):
+    """Поддельное окружение: замороженная спецификация с верными SHA поддельных файлов (поддельная папка — не git:
+    проверка «код не раньше ce57e41» подменена, она проверяется отдельно на настоящем репозитории)."""
+    monkeypatch.setattr(F, 'require_base', lambda root, commit: None)
     root, main, locked = tmp_path / 'root', tmp_path / 'main', tmp_path / 'main' / 'data' / 'regen' / 'test_locked'
     real = yaml.safe_load((ROOT / 'models' / 'designs' / 'ch4_v2' / 'ch4_v2_sborka.yaml').read_text())
     spec = json.loads(json.dumps(real))
@@ -45,6 +47,8 @@ def fake(tmp_path):
         spec['vhody'][k]['sha256'] = _sha(f)
     for p in list(spec['kod']):
         spec['kod'][p] = _sha(_put(root / p, f'код {p}'.encode()))
+    _put(root / 'fastbt' / '_poddelnyy.py', 'поддельный fastbt'.encode())
+    spec['fastbt_sha_vse'] = F.fastbt_agg(root)
     spec['dizayny'] = {k: dict(v) for k, v in real['selftest_zaglushki'].items() if k in F.PODHODY}
     spec['status'] = 'zamorozheno'
     spec['da_vladeltsa'] = 'да (поддельное, тест)'
@@ -85,6 +89,7 @@ def test_real_spec_refuses_before_data(monkeypatch):
     (lambda s: s['dizayny'].update(C2={'semya': 'C2'}), 'лишние'),
     (lambda s: s['final_v2'].update(sha256=''), 'FINAL'),
     (lambda s: s['vhody']['bary'].update(sha256=''), 'bary'),
+    (lambda s: s.update(fastbt_sha_vse=''), 'fastbt_sha_vse'),
 ])
 def test_not_frozen(fake, mut, frag):
     P, spec = fake
@@ -99,7 +104,7 @@ def test_not_frozen(fake, mut, frag):
 def test_sha_ok_then_lock_once(fake):
     P, spec = fake
     s, shas = F.precheck_test(P)
-    assert len(shas) == 1 + 4 + 3 + len(spec['kod'])
+    assert len(shas) == 1 + 4 + 3 + len(spec['kod']) + 1
     F.acquire_lock(P, dict(proba=1))
     assert json.loads(P.lock.read_text())['status'] == 'начато'
     with pytest.raises(F.Stop) as ei:                 # второй запуск: замок есть
@@ -112,7 +117,14 @@ def test_sha_ok_then_lock_once(fake):
     assert d['status'] == 'завершено' and d['proba'] == 1
 
 
-@pytest.mark.parametrize('what', ['sigma', 'sobrano', 'final', 'features', 'kod'])
+def test_require_base_real_repo():
+    """Настоящий репозиторий: код не раньше ce57e41 (исправления FA #238, #239); несуществующий коммит — отказ."""
+    F.require_base(ROOT, 'ce57e41')
+    with pytest.raises(F.Stop):
+        F.require_base(ROOT, '0' * 40)
+
+
+@pytest.mark.parametrize('what', ['sigma', 'sobrano', 'final', 'features', 'kod', 'fastbt'])
 def test_sha_mismatch_refuses_without_lock(fake, what):
     P, spec = fake
     lab, v = next(iter(spec['vhody']['sigma_test'].items()))
@@ -124,6 +136,8 @@ def test_sha_mismatch_refuses_without_lock(fake, what):
         (P.root / spec['final_v2']['put']).write_text('FINAL v2 изменён после заморозки')
     elif what == 'features':
         (P.main / spec['vhody']['features']['fayl']).write_bytes(b'x')
+    elif what == 'fastbt':
+        (P.root / 'fastbt' / 'novyy.py').write_text('новый файл fastbt после заморозки')
     else:
         (P.root / next(iter(spec['kod']))).write_text('код изменён')
     with pytest.raises(F.Stop) as ei:
