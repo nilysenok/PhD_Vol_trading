@@ -25,6 +25,7 @@ designs:
     role: residual
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -88,6 +89,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -248,6 +250,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -408,6 +411,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -568,6 +572,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -692,6 +697,7 @@ designs:
     lib: lightgbm
     grid: current
     resid_source: cross_fit
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -762,6 +768,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -920,6 +927,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -1078,6 +1086,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -1197,6 +1206,7 @@ designs:
     role: residual
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -1268,6 +1278,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -1426,6 +1437,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -1550,6 +1562,7 @@ designs:
     lib: lightgbm
     grid: current
     resid_source: cross_fit
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -1618,6 +1631,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -1778,6 +1792,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -1938,6 +1953,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -2094,6 +2110,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -2252,6 +2269,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -2376,6 +2394,7 @@ designs:
     lib: lightgbm
     grid: current
     clip_sigma: 3
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -2446,6 +2465,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -2604,6 +2624,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -2764,6 +2785,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -2920,6 +2942,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -3043,6 +3066,7 @@ designs:
     grid: current
     resid_source: cross_fit
     clip_sigma: 3
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -3116,6 +3140,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -3276,6 +3301,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -3436,6 +3462,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -3554,6 +3581,7 @@ designs:
     lib: lightgbm
     grid: current
     clip_sigma: 3
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -3626,6 +3654,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -3784,6 +3813,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -3905,6 +3935,7 @@ designs:
     grid: current
     resid_source: cross_fit
     clip_sigma: 3
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -3978,6 +4009,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -4097,6 +4129,7 @@ designs:
     role: residual
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -4168,6 +4201,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -4324,6 +4358,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -4484,6 +4519,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -4644,6 +4680,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -4764,6 +4801,7 @@ designs:
     lib: lightgbm
     grid: current
     resid_source: cross_fit
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -4839,6 +4877,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -4997,6 +5036,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -5155,6 +5195,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -5274,6 +5315,7 @@ designs:
     role: residual
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -5344,6 +5386,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -5506,6 +5549,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -5626,6 +5670,7 @@ designs:
     lib: lightgbm
     grid: current
     resid_source: cross_fit
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -5696,6 +5741,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -5856,6 +5902,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -6012,6 +6059,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -6172,6 +6220,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -6334,6 +6383,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -6454,6 +6504,7 @@ designs:
     lib: lightgbm
     grid: current
     clip_sigma: 3
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -6525,6 +6576,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -6683,6 +6735,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -6839,6 +6892,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -6999,6 +7053,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -7122,6 +7177,7 @@ designs:
     grid: current
     resid_source: cross_fit
     clip_sigma: 3
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -7194,6 +7250,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -7354,6 +7411,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -7514,6 +7572,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -7636,6 +7695,7 @@ designs:
     lib: lightgbm
     grid: current
     clip_sigma: 3
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -7705,6 +7765,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -7863,6 +7924,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -7984,6 +8046,7 @@ designs:
     grid: current
     resid_source: cross_fit
     clip_sigma: 3
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -8056,6 +8119,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 0.5
     grid_point: none
   features:
   - G0
@@ -8163,194 +8227,194 @@ designs:
       col: har_corr
 index:
 - design: B_h5_r01 (точки D12_h5)
-  design_sha: 5e83b5f41f444eb04f5023f9b612bdc1840bae318f5d1934bb906a25dfcdbb0a
-  slozhnost: 5
+  design_sha: 22eb1e5435b090a952804eb5a874e3b4628ff05d216fac12a393d3aa92c06ddf
+  slozhnost: 6
 - design: B_h5_r02 (точки D12_h5)
-  design_sha: 03f408bc9d3271dd217cff71d749eb2d20104382517d15cecb6f19948538734c
-  slozhnost: 12
+  design_sha: 8aaa6efdf3ad857e8b9a9666c9d5290c049fb269b006cf5f80912c5513758849
+  slozhnost: 13
 - design: B_h5_r03 (точки D12_h5)
-  design_sha: 41cb2b02ec8639a416463228a10a868a8e19a14e1efb41a62b1e9266c7a96810
-  slozhnost: 12
+  design_sha: d463fa1341467e074553f3775fa79551a2d905f2f8d330134fedbf837a0952df
+  slozhnost: 13
 - design: B_h5_r04 (точки D12_h5)
-  design_sha: ced9c4f47b9df594b8f027dae6790d534fb6ef437393e55feb5fcbdcc35a86cd
-  slozhnost: 13
+  design_sha: b5b51aa688461e169fb732db4e3cc1a0209ca337776e7f57c312f0bbfdad70c8
+  slozhnost: 14
 - design: B_h5_r05 (точки D12_h5)
-  design_sha: 61d3cb84236cd67c155709874260ae4f4738c372834a30810ed35a74dd6f50d7
-  slozhnost: 16
-- design: B_h5_r06 (точки D12_h5)
-  design_sha: 6327201d3742bf5c2d3049216bddb7351e879f81b3d5e2a819e8642a5203892e
-  slozhnost: 11
-- design: B_h5_r07 (точки D12_h5)
-  design_sha: ee87f629b9e706bbba482d3ef857c36bb2e0ad52f503def74ecebcaa9e8b379b
-  slozhnost: 11
-- design: B_h5_r08 (точки D12_h5)
-  design_sha: 2e96d6d1574aa681b5a2ca81eff511999ed8dcac19581bdd53da2fe911afcca1
-  slozhnost: 12
-- design: B_h5_r09 (точки D12_h5)
-  design_sha: 82f36c6e596f537e20741209822a80318be23ba4c85e894f6e0a922cb60f19e9
-  slozhnost: 12
-- design: B_h5_r10 (точки D12_h5)
-  design_sha: 8cfc3e37c23202f840424a1463aca9c632596785fc8807fcbc20b5a25eee524a
-  slozhnost: 11
-- design: B_h5_r11 (точки D12_h5)
-  design_sha: 87a105fcef9eef7607b522ef2d832ca0d85f2396dcc776762767c1550c05e8d1
-  slozhnost: 11
-- design: B_h5_r12 (точки D12_h5)
-  design_sha: b2727ee43ae3a0b3810c9e87acfe228ae92195a69bd4472996bab4e8e5279133
-  slozhnost: 16
-- design: B_h5_r13 (точки D12_h5)
-  design_sha: 0d0fd40947dad1138c1edaec489901c493231c10bab706a94c3d8d7c8594c50c
-  slozhnost: 11
-- design: B_h5_r14 (точки D12_h5)
-  design_sha: e6d33ad1b0d68dd8dc560c8005f08b4f65b96917daae81b5fc18c51d7b27a8c5
-  slozhnost: 14
-- design: B_h5_r15 (точки D12_h5)
-  design_sha: 066c8ee2d5d45f5f4bee2ce2cb2264680c0f66dfbd3f2f88c62194fe84096aaa
-  slozhnost: 14
-- design: B_h5_r16 (точки D12_h5)
-  design_sha: 414145f71551a58210bb7093f03cb108f64fd62da0cbdd6c5d8b2cc300b26116
-  slozhnost: 11
-- design: B_h5_r17 (точки D12_h5)
-  design_sha: 92cb2a6b9f325648302ab45508e1e1942d57f7a5e79cdd4f5310573bb27c098c
-  slozhnost: 12
-- design: B_h5_r18 (точки D12_h5)
-  design_sha: df1cad70de2fbc5b73000f22c600b33a463d7c3d08d673b6f05fa55de44d8db0
+  design_sha: 06c3d9e60998d3ca2a241396c1aa45b03f67be12cf6b8a4fb85847db33fc0fc2
   slozhnost: 17
+- design: B_h5_r06 (точки D12_h5)
+  design_sha: b02637b25e6bf859a8c98eb000fe113997b3325b8625d32fa2f82465d3183eb4
+  slozhnost: 12
+- design: B_h5_r07 (точки D12_h5)
+  design_sha: 12f21d8214ea7abdb4c71ecf51a3ea0927e567a6ff24aab4559be2347825225f
+  slozhnost: 12
+- design: B_h5_r08 (точки D12_h5)
+  design_sha: 3a69792b2560eefba7d25b8893da676d30664777dd70c46a1be78053f9b81263
+  slozhnost: 13
+- design: B_h5_r09 (точки D12_h5)
+  design_sha: 0294f2cf462179815b13d5618b1f428c66ad5e090af3adfabe58a6a6bf276b97
+  slozhnost: 13
+- design: B_h5_r10 (точки D12_h5)
+  design_sha: f9d960e5ba7ed7727fb97d34db18bb4abd217980c71f57867cc8c404492399b7
+  slozhnost: 12
+- design: B_h5_r11 (точки D12_h5)
+  design_sha: 2c4e922a3e7431712903fbf9e70870dc93dca856cb31a41f4feaf15d09333695
+  slozhnost: 12
+- design: B_h5_r12 (точки D12_h5)
+  design_sha: 516d03bdc1f0768a9d91605d45760a88f8709f52e8b380006718a24708e3f97a
+  slozhnost: 17
+- design: B_h5_r13 (точки D12_h5)
+  design_sha: 1f2b360310a7a31db1af58b24112884d4525893ee6d3c2a320a4d03d03304254
+  slozhnost: 12
+- design: B_h5_r14 (точки D12_h5)
+  design_sha: 1ffac57c2a0bef2c80efd685d0d6d06990cdd49789faf28c929cee7c52eba6f7
+  slozhnost: 15
+- design: B_h5_r15 (точки D12_h5)
+  design_sha: c6c5244370d85d6e5c3c0814047746ded6cc662258b7c1f091ba3964b8d861c8
+  slozhnost: 15
+- design: B_h5_r16 (точки D12_h5)
+  design_sha: 2438c6095ec930bda2e3d54877b494d8fd8c1acf35c9e1b25c51a3bc6b57e632
+  slozhnost: 12
+- design: B_h5_r17 (точки D12_h5)
+  design_sha: 762813c039caf9db8e335ce3e43afe1c5254179791a8fa1a70dd8f244ce74cd3
+  slozhnost: 13
+- design: B_h5_r18 (точки D12_h5)
+  design_sha: 16cd408be8f4ac3a21d39d326371781f0695ebf5499cd72943cc83099bd1274f
+  slozhnost: 18
 - design: B_h5_r19 (точки D12_h5)
-  design_sha: 4f85446d539ff1287c3714bb9587fa90e1339f166009be3786760b5c7776409d
-  slozhnost: 11
+  design_sha: f6ae8ce331b96f5f8d68bf9809aaa6a3e346880e5e57fb5b6b8bd62d1667997c
+  slozhnost: 12
 - design: B_h5_r20 (точки D12_h5)
-  design_sha: cb07885cf57b712ba95873bcf6408c6eca76e2499e5228689530722854cd70c8
-  slozhnost: 14
+  design_sha: 9822d07db19872b1ec87195f7df5a56fdda070bf928670a92065fdcfd1b60909
+  slozhnost: 15
 - design: B_h5_r21 (точки D12_h5)
-  design_sha: 3d86321ba4d96e5cda5af66540d9cc608756dcd1dc0fb9109c6c35844a32ea25
-  slozhnost: 13
+  design_sha: ede103e25ddf5fbbf4fce53e49741b8a9b5edcbd2003c5896c768da98b1304aa
+  slozhnost: 14
 - design: B_h5_r22 (точки D12_h5)
-  design_sha: 9381a703a0a62be5fec694e45cfba8ea92a5db3fa517373035b518f6576fb76f
-  slozhnost: 10
+  design_sha: acca87d6bfd9de5b2596338cdbff026b1ec3d7db5bf6818933ef33a975ce94c2
+  slozhnost: 11
 - design: B_h5_r23 (точки D12_h5)
-  design_sha: 34fa2879ce0db775f11c5aa93d923997b69481014706f542b2f7c6375e18f7c4
-  slozhnost: 16
+  design_sha: 8c6ccb84546d97c66a2b2e1dd1abac590dd844a0c0d069cc256cfa9a79765d8a
+  slozhnost: 17
 - design: B_h5_r24 (точки D12_h5)
-  design_sha: 6197a76fddb12cbe8419cdcb883783271c56163ea359de5ac1ed63aada4803c4
-  slozhnost: 15
+  design_sha: 3b680d6ce83c4a8f692f34936c4cbb1472b76856af9203f170ed28afbaa05511
+  slozhnost: 16
 - design: B_h5_r25 (точки D12_h5)
-  design_sha: e72053323162f38796f6c4aad1d44ebb51643a6d68800a604ab01745ff1fee68
-  slozhnost: 11
+  design_sha: 47c6497b0e81fee600a27a717b1cd2cd47e5ab507101f7aaa10ca8fc382fc8ac
+  slozhnost: 12
 - design: B_h5_r26 (точки D12_h5)
-  design_sha: 970022ec15087953e656f41c4c4c718d8fb02b48b7dfb41eca34639f09ea8efe
-  slozhnost: 12
+  design_sha: 4bb160dbc8b76cbedc4e1afb6c4fe086372fb460f19d38d888afce3467a7c3e6
+  slozhnost: 13
 - design: B_h5_r27 (точки D12_h5)
-  design_sha: a453c9d1a711f945d2113724781536b70572d522be4c039d8ef646d0bba3fd10
-  slozhnost: 10
+  design_sha: 069a21daa118b0a2ca0edeac234c2e9e334c578fb93a08052943f0c994ea9d47
+  slozhnost: 11
 - design: B_h5_r28 (точки D12_h5)
-  design_sha: 5361c2c37cb80e634fc214fd4530db82ad116334c6e95920aabf0af816a72df4
-  slozhnost: 13
+  design_sha: 37bb436efc98f062870896a616c72459e710ea459d722c949242e06bd5fc121a
+  slozhnost: 14
 - design: B_h5_r29 (точки D12_h5)
-  design_sha: ffc6746cd662011f7c45cd9698743d15d5e119452069d352155f5a06aa5670be
-  slozhnost: 12
+  design_sha: 808a63d82e6b2cc146879e930179b28e9033c78beea9155c62efea78b2ffd581
+  slozhnost: 13
 - design: B_h5_r30 (точки D12_h5)
-  design_sha: a9528dfe147f9dc84afa09e6cdc626f09d4a9f05d93ef143e4920537b7058113
-  slozhnost: 13
+  design_sha: 69198ae5db872a7621e78c8fe38112869cd6a8ba9c86d90632cead98b966751f
+  slozhnost: 14
 - design: B_h5_r31 (точки D12_h5)
-  design_sha: 1e645700454b68041570e6c3339fd4119d549432bdb7470a956177e42c8a288f
-  slozhnost: 15
+  design_sha: 85a46ae7bc1c9692513977ebc8a03b35600422caec1915998e6982c88ddd49ca
+  slozhnost: 16
 - design: B_h5_r32 (точки D12_h5)
-  design_sha: f9b734d918c20c8e1c75d659f759b8f718efbaddaf41a1a4e6a209e812c50e0c
-  slozhnost: 14
+  design_sha: fd970efd03a5ae38684babf698afb2655e24bfc538642a1679055afd4d49554b
+  slozhnost: 15
 - design: B_h5_r33 (точки D12_h5)
-  design_sha: e89b3f4a98d556d2e85c4ffbb271ada08760c0543d85dd1a7247d793fa24844a
-  slozhnost: 12
+  design_sha: 7a975ce86bc176672498fb0d719ab31505a79e2b9ef1459d25d140b58e5e0f98
+  slozhnost: 13
 - design: B_h5_r34 (точки D12_h5)
-  design_sha: d564e174f1dc50e150a32e4689efbac3e0689f4f259927ed0287c79c78abd083
-  slozhnost: 11
+  design_sha: cc2b904f6417f9a5e62039e6519a307e5b60dfbbaf93e45acaa1c59cd643b2e5
+  slozhnost: 12
 - design: B_h5_r35 (точки D12_h5)
-  design_sha: 25a194237dedfe688d0e4dfa85a11a50423f88b30085b5c5b5e2168cb1896113
-  slozhnost: 13
+  design_sha: 874ffcb754a5c0efee25049875726e288eb3530d4bcc16bc1738bf3ad9b42e20
+  slozhnost: 14
 - design: B_h5_r36 (точки D12_h5)
-  design_sha: da1a57ade1d870d6042f266756288f7a9e6cdf7bda3ac185d968b41124df7323
-  slozhnost: 14
+  design_sha: 5d0beaaaa1e114de5e8c8dbafde3b26583a79eca4f6c4dc5122a4a4e0699dbc1
+  slozhnost: 15
 - design: B_h5_r37 (точки D12_h5)
-  design_sha: ffad8f3cc00605c665faf3dc68d99a665878b47c1d9af355a7c4bc1e7375790b
-  slozhnost: 13
+  design_sha: 3c515e6de2aed78b614e37d0041fad7d544437f59018f64ed840be8fb2131012
+  slozhnost: 14
 - design: B_h5_r38 (точки D12_h5)
-  design_sha: ba5021405b63c04ff146fc5021639f6ba6c883e3f84e7563e65843aaf532e25e
-  slozhnost: 16
+  design_sha: b6d11568a882b454d07b43cba3f01a5c380f5d33c9141dbc56a59d9a6df828b0
+  slozhnost: 17
 - design: B_h5_r39 (точки D12_h5)
-  design_sha: bb80907030f03aa11ab818e3c08395c2a4cd332450550386187430303bd92613
-  slozhnost: 14
+  design_sha: a99ee01b1e8c778bad22e2aecce03d655d32cbf0e4fa3c507bd84e17f68ba78f
+  slozhnost: 15
 - design: B_h5_r40 (точки D12_h5)
-  design_sha: 0ca516b014a56fd2e9a239a7049529b6bb63abee37ecdb62b61cafa1d9a6ca6a
-  slozhnost: 15
-- design: B_h5_r41 (точки D12_h5)
-  design_sha: 64b7d0be266ff07a662f33dae9c7f835e2d287c64899837e2447bfedc886463e
-  slozhnost: 11
-- design: B_h5_r42 (точки D12_h5)
-  design_sha: cd3156fb8316c5048b5663a4ee4339997689c3ac376079eacb836fd648747022
-  slozhnost: 10
-- design: B_h5_r43 (точки D12_h5)
-  design_sha: 71f8d2b01dc97a3ce0e60653da77b36b6dee2e088e41006fe0019fbfb670f220
+  design_sha: ac6263710c07ac22cdcc78e1ce55a4a0ce1613334820a50ff04b1b4128e553e6
   slozhnost: 16
+- design: B_h5_r41 (точки D12_h5)
+  design_sha: 73694fe122f2957080709c08775be99cb1867dbdd18a811a517a8b13f87791da
+  slozhnost: 12
+- design: B_h5_r42 (точки D12_h5)
+  design_sha: 58970777597cc7894be1fbf360b8783b1bceada959ddc146ff07198ba33e7378
+  slozhnost: 11
+- design: B_h5_r43 (точки D12_h5)
+  design_sha: c7ef658214f35466345250c7a34696592a0833231cba4c8ad11ab9f3f627834e
+  slozhnost: 17
 - design: B_h5_r44 (точки D12_h5)
-  design_sha: d472fa2a11df24a37a97e24220970218accde0af802860e54b1eae1e425d51ad
-  slozhnost: 13
+  design_sha: 42d44724337016234773662623563915bf0a21c38b8b8efd9fbeb2957690cb14
+  slozhnost: 14
 - design: B_h5_r45 (точки D12_h5)
-  design_sha: 0795b5d7c09ffba9e688f4f73f65c4ca887891894b5bf1fb1911800e11cc2ffb
-  slozhnost: 12
-- design: B_h5_r46 (точки D12_h5)
-  design_sha: 6f331680b94c1754823032ae8c2562e9b8ef229cc4f941bceb6e5b10aea58b9f
-  slozhnost: 15
-- design: B_h5_r47 (точки D12_h5)
-  design_sha: 8a8ed9268364dc50488e2f2122a34899fcd6bc616323f170ab02c6fa9d21fcea
-  slozhnost: 9
-- design: B_h5_r48 (точки D12_h5)
-  design_sha: 1c09cc52e8e4b7dffd0a78d862e622fb63468770d1c9eeda840d27db4f133f49
-  slozhnost: 14
-- design: B_h5_r49 (точки D12_h5)
-  design_sha: 16283c76bf44b40412ba8c7e6c7a38901849546a097e1b8c8badfbc53f4e51b9
-  slozhnost: 15
-- design: B_h5_r50 (точки D12_h5)
-  design_sha: 5e24c978cab78ac5c7ff73d7cd3285446e51966552046138e323370556443463
-  slozhnost: 12
-- design: B_h5_r51 (точки D12_h5)
-  design_sha: 37f24360c9cabb3bfda9dd253396bb92434c4df14337e264a615d92647afc5da
-  slozhnost: 12
-- design: B_h5_r52 (точки D12_h5)
-  design_sha: ad4757d87f13068c66e9e007aedc15f68b40f959ae9f60dd413db5f3f857fbe8
-  slozhnost: 15
-- design: B_h5_r53 (точки D12_h5)
-  design_sha: 94bb5bb1737e66c82c09188578b4131fa1fbd0197dd42b2bbcb52f6f8a49e249
-  slozhnost: 10
-- design: B_h5_r54 (точки D12_h5)
-  design_sha: 287384f269b6b8cc3569464514de180477b752a720033d33ae77111893e89921
-  slozhnost: 15
-- design: B_h5_r55 (точки D12_h5)
-  design_sha: 43e7d236566b55c9c211a3c17f5291ef02ccaffc511a8682abbedf629371e61d
-  slozhnost: 15
-- design: B_h5_r56 (точки D12_h5)
-  design_sha: 5b0a3452d1e4b8be38bfbd06a7a4f39f4e0ffeb7f2db7d59d0ad4341423982be
-  slozhnost: 14
-- design: B_h5_r57 (точки D12_h5)
-  design_sha: 8993fe596144abbaebc3789935b1c8406bcbd88f641b23aa3bdf549bca2c025c
-  slozhnost: 14
-- design: B_h5_r58 (точки D12_h5)
-  design_sha: f0d127bbb3186102c911f378fa8a174cd62eccdd3c4336d2a99d8ecaf65773c7
-  slozhnost: 15
-- design: B_h5_r59 (точки D12_h5)
-  design_sha: 7551d67510b8101c711fea4be777a27c4faa4084fe6aad11737796b0bdcdaa68
-  slozhnost: 15
-- design: B_h5_r60 (точки D12_h5)
-  design_sha: 9286b700e5e19eb0210538435b285b230aa12b224b24bb2a8f7bafca50155bd0
-  slozhnost: 10
-- design: B_h5_r61 (точки D12_h5)
-  design_sha: 785bccd3714adcb782221da95cf65c1a9cd02f5e46a84658149fb2afda0c1cdb
+  design_sha: 915678cd7788f86e937796a161f5be9b21c38f5e2cd476d423fa028d6c3eb782
   slozhnost: 13
+- design: B_h5_r46 (точки D12_h5)
+  design_sha: 5da26382e5c8970167bfdb3f2ff4bb3cd48ec651e58e184807cf1e7b9ba72ca8
+  slozhnost: 16
+- design: B_h5_r47 (точки D12_h5)
+  design_sha: 5c5cbca602dae59fef182667b32f15da68aafe47ac35b1edde30c343e84c1f40
+  slozhnost: 10
+- design: B_h5_r48 (точки D12_h5)
+  design_sha: c433fa22027659b8a6117646002922355add5dd1b7bb37f6a15039d0defaffd0
+  slozhnost: 15
+- design: B_h5_r49 (точки D12_h5)
+  design_sha: 0c95bd9ce9c053ade14c5d8fa7f75e7acdfdf64bd1e622a5cd3d0cd3a567f4b9
+  slozhnost: 16
+- design: B_h5_r50 (точки D12_h5)
+  design_sha: 348aae1b291dc4034b12857697fb90fe1adaa793d5323b4203266491ce73d1cf
+  slozhnost: 13
+- design: B_h5_r51 (точки D12_h5)
+  design_sha: 7eb9e889ccf874ebd7e09316816a530fe4faffef0c38a3846d52d9678e6ed651
+  slozhnost: 13
+- design: B_h5_r52 (точки D12_h5)
+  design_sha: 7a53d3109efa9c3009e31718e76e0ec7d7b0e86e8a7daca9bb4a596de8684817
+  slozhnost: 16
+- design: B_h5_r53 (точки D12_h5)
+  design_sha: 2aae627ffade7ef233d2309b31d99067d9c1bc95aa0cda8bebf1660b407b0f13
+  slozhnost: 11
+- design: B_h5_r54 (точки D12_h5)
+  design_sha: d01e8b0c96efc4df6028530ebd5beb2aa4554e543e7301cd916fb3d9ada09688
+  slozhnost: 16
+- design: B_h5_r55 (точки D12_h5)
+  design_sha: 25b6d8fd611d769328af805604a113276fce7431badf20ee2c03ca83bac83ce6
+  slozhnost: 16
+- design: B_h5_r56 (точки D12_h5)
+  design_sha: e2920f297d555d799d3942dc5a44b098d5fa74b5e36b21fd4e9bdbf076ae0eca
+  slozhnost: 15
+- design: B_h5_r57 (точки D12_h5)
+  design_sha: 92599ac22a81b1fa7c26a4066cf6407f19cd80d77a0667a2223024aae115dafa
+  slozhnost: 15
+- design: B_h5_r58 (точки D12_h5)
+  design_sha: 17ecd837e37c07b576d3aaa837a2db3924b4f554de808b1461cd79e1f76f9043
+  slozhnost: 16
+- design: B_h5_r59 (точки D12_h5)
+  design_sha: 7faaf7bbc644cd26e2df77d029edb96a2865041420663145e9187e603223893c
+  slozhnost: 16
+- design: B_h5_r60 (точки D12_h5)
+  design_sha: ebf487a90fb957f5e0ade2735d3bc083b5e4728a86933e295288365699350abd
+  slozhnost: 11
+- design: B_h5_r61 (точки D12_h5)
+  design_sha: 6443efb3162265702cecc093964a07ffe40cf088c7ef241db1149b187b520b8c
+  slozhnost: 14
 - design: B_h5_r62 (точки D12_h5)
-  design_sha: e1e462d9c7df9e624ad213fc5a89bec0f8ce10284e8ef572bd0edb6bf75913c4
-  slozhnost: 14
+  design_sha: c718aa3aff8b945d355f4b071817b614e0e2cbf28e631ec3f1261f7c65e17c73
+  slozhnost: 15
 - design: B_h5_r63 (точки D12_h5)
-  design_sha: 4f2eea896cd0da2a8cb826a3f1203d4e39210421d12cad295b29911f5735d706
-  slozhnost: 14
+  design_sha: 636b70c9f7db8e167d02ba5c27bdc1a9d780f95ab25ba55fb291685ff9efbc09
+  slozhnost: 15
 - design: B_h5_r64 (точки D12_h5)
-  design_sha: 5e3c52a9ee5418b98556553226255531add05a0e0952931506e21256f027ac7d
-  slozhnost: 21
+  design_sha: cb6b396d321ccd2037ff71143293be8536eba04a142b5810f289f65b9bf4bb5a
+  slozhnost: 22

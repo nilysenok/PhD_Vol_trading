@@ -438,6 +438,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -598,6 +599,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -758,6 +760,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -918,6 +921,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -1090,6 +1094,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -1394,6 +1399,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -1549,6 +1555,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -1704,6 +1711,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -1859,6 +1867,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -2020,6 +2029,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -2324,6 +2334,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -2479,6 +2490,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -2634,6 +2646,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -2789,6 +2802,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
@@ -2950,6 +2964,7 @@ designs:
     prob_dist: empirical
     prob_window: all
     boost_refit: yearly
+    row_frac: 1
     grid_point: none
   features:
   - G0
