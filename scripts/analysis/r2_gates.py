@@ -5,20 +5,21 @@
 Для дизайна u (варианты — значения-списки, выбор внутри складки по c3, как r2_loyo п. 2.1) и эталона В2 (HAR-J + s² sm, d0 = E_h):
 - складка Y: d_t = средняя по тикерам разность потерь QLIKE (E − u) за день t отложенного года Y; t_Y = dm_series(d_t, h).t;
 - вход: t_Y ≥ 1,0 не меньше чем в 3 складках из 5 и средняя t ≥ 1,5; hit rate (доля дней d_t > 0 по 5 отложенным годам) ≥ 55%;
-  выигрыш (средняя разность потерь тикера > 0) не меньше чем на 12 тикерах из 17; концентрация — на 2% дней с наибольшим d_t
-  приходится не больше 40% суммарного выигрыша Σ d_t; c3 на всех складках (r2_loyo.crit, против E_h);
+  выигрыш (средняя разность потерь тикера > 0) не меньше чем на 12 тикерах из 17; концентрация — на 2% самых турбулентных
+  дней (наибольшая потеря эталона, ❓ 2) приходится не больше 40% суммарного выигрыша Σ d_t; c3 на всех складках (r2_loyo.crit, против E_h);
 - выбор среди прошедших: максимум средней t; при Δt ≤ 0,2 — больший средний выигрыш (в % к средней потере E); при Δt ≤ 0,2 и разнице
   выигрыша ≤ 1 п. п. — более простой дизайн (сложность по schema_v2, r2_loyo.slozhnost = r2_core.complexity);
 - мощность (кластер 20): по пулу 5 отложенных лет — среднее d̄ и долгосрочная дисперсия NW на день; на N_test днях 2022–2026
   ожидаемая t = d̄ / √(σ²_LR / N_test), P(p < 0,05) = Φ(t − z_0,95) (одностороннее); решение владельца 16:45 (вместо 0,70): P ≥ 0,8 — «значимый»,
-  0,5 ≤ P < 0,8 — «не хуже, ожидание на границе», P < 0,5 — на h остаётся нога (финал = эконометрическая компонента, V0); itog_E.
+  0,5 ≤ P < 0,8 — «не хуже, ожидание на границе», P < 0,5 — на h остаётся нога (финал = эконометрическая компонента, V0); itog_E;
+- ворота C, D, E (v4 §§ 2, 4–6): gate_C_v4 / gate_D_v4 / gate_E_v4 — payload файла ворот (пишет драйвер S); 2σ по 10 seed — sigma2_F.
 Читаются только val 2017–2021 (ряды подаются кадрами; r2_loyo.read_val / r2_core.load_series). N_test — календарь будних дней, тест не читается.
 
 python3 scripts/analysis/r2_gates.py --selftest
 python3 scripts/analysis/r2_gates.py dym --h 1 5 22      # дым: F_h(d0) seed 42 против E_h на реальных val-рядах (3 тикера или все)"""
 import argparse, sys
 from pathlib import Path
-import numpy as np, pandas as pd
+import numpy as np, pandas as pd, yaml
 from scipy import stats
 
 HERE = Path(__file__).resolve().parent
@@ -195,6 +196,159 @@ def vybor(R, slozhnost):
     return w.unit, T
 
 
+# ---------------------------------------------------------------- ворота C, D, E (v4 §§ 2, 4–6): содержимое файла ворот
+# Функции возвращают payload; файл пишет драйвер S своим write_gate (= r2_loyo.write_gate вне дыма). Ключи, которые читает драйвер
+# (C: yacheyki, v0_finalisty, dizainy; D: luchshiy, dizayn; E: pobeditel, design_sha, dizayn, sigma2), сохранены.
+GV4 = O.CFG['gates_v4']
+
+
+def rol(d):
+    """boost.role дизайна (schema: none = V0)."""
+    return str(((d or {}).get('boost') or {}).get('role', 'none'))
+
+
+def noga_tip(d):
+    return str(((d or {}).get('leg') or {}).get('type', 'HARJ'))
+
+
+def poryadok(R, S, k=None):
+    """Порядок выбора кластера 17: vybor повторно (победитель снимается, выбор заново) среди прошедших вход. -> (список, таблица vybor
+    по всем с колонкой poryadok)."""
+    left, out = dict(R), []
+    while left and (k is None or len(out) < k):
+        w, _ = vybor(left, S)
+        if w is None:
+            break
+        out.append(w)
+        left.pop(w)
+    _, T = vybor(R, S) if R else (None, pd.DataFrame(columns=['unit']))
+    T['poryadok'] = [out.index(u) + 1 if u in out else np.nan for u in T.unit]
+    return out, T
+
+
+def chislo(R):
+    """(перебрано, прошли вход) — для r2_loyo.lozhnye (п. 2.7 + доля прошедших вход на уровне)."""
+    return len(R), int(sum(bool(r['vhod']['proshyol']) for r in R.values()))
+
+
+def gate_C_v4(R, S, dizainy, nepr=None, k=None):
+    """v4 § 4. R — {unit: ocenka} всех ячеек C (нога × роль, V0); dizainy — {unit: дизайн dict}; nepr — {unit: [факторы]} (неприменимые).
+    Ячейки D — первые k (2) с ролью ≠ none в порядке выбора; V0 (роль none, нога из gates_v4.v0_nogi), прошедшие вход, — в финалисты."""
+    k = k or GV4['k_C']
+    boost = {u: r for u, r in R.items() if rol(dizainy.get(u)) != 'none'}
+    v0 = {u: r for u, r in R.items() if rol(dizainy.get(u)) == 'none' and noga_tip(dizainy.get(u)) in GV4['v0_nogi']}
+    two, Tb = poryadok(boost, S, k)
+    v0p, _ = poryadok(v0, S)
+    _, T = vybor(R, S) if R else (None, pd.DataFrame(columns=['unit']))
+    T['rol'] = [rol(dizainy.get(u)) for u in T.unit]
+    T['noga'] = [noga_tip(dizainy.get(u)) for u in T.unit]
+    T['poryadok_yacheyki'] = T.unit.map(dict(zip(Tb.unit, Tb.poryadok)))
+    T['v0_finalist'] = T.unit.isin(v0p)
+    T['faktor_neprimenim'] = [', '.join((nepr or {}).get(u, [])) for u in T.unit]
+    N = {'C_boost': chislo(boost), 'C_V0': chislo(v0)}
+    return dict(yacheyki=two, v0_finalisty=v0p, pobeditel_vybora=two[0] if two else None, net_yacheek=not two,
+                pravilo='v4 § 4: вход кластера 17 + c3; порядок — макс. t̄, Δt̄ ≤ 0,2 → выигрыш, Δвыигрыш ≤ 1% → проще; роль ≠ none',
+                chislo=O.lozhnye(N, 0)['urovni'], tablica=T.to_dict('records'),
+                faktor_neprimenim={u: v for u, v in (nepr or {}).items() if u in R},
+                dizainy={u: dizainy[u] for u in two + v0p if u in dizainy})
+
+
+def gate_D_v4(R, S, dizainy, zhivye, n_tochek=None):
+    """v4 § 5, итог 8 → 1 на ячейку. R — {unit: ocenka} выживших точек (3 seed, все 5 складок); zhivye — {ячейка: [unit выживших]};
+    n_tochek — {ячейка: число точек LHS на входе} (для числа дизайнов). Лучшая на ячейку — выбор кластера 17 среди её выживших;
+    лучший уровня (luchshiy -> E) — выбор среди лучших ячеек. Никто не прошёл вход — luchshiy None (на h остаётся F_h(d0))."""
+    luch = {}
+    for c, us in zhivye.items():
+        w, _ = vybor({u: R[u] for u in us if u in R}, S) if any(u in R for u in us) else (None, None)
+        luch[c] = w
+    best = {u: R[u] for u in luch.values() if u}
+    w, _ = vybor(best, S) if best else (None, None)
+    _, T = vybor(R, S) if R else (None, pd.DataFrame(columns=['unit']))
+    T['yacheyka'] = T.unit.map({u: c for c, us in zhivye.items() for u in us})
+    T['luchshaya_v_yacheyke'] = T.unit.isin([u for u in luch.values() if u])
+    N = {f'D_{c}': (int((n_tochek or {}).get(c, len(us))), chislo({u: R[u] for u in us if u in R})[1]) for c, us in zhivye.items()}
+    return dict(luchshiy=w, dizayn=dizainy.get(w) if w else None, luchshie=luch, zhivye=zhivye,
+                pravilo='v4 § 5: 60 → 30 → 15 → 8 (r2_halving); 8 → 1 на ячейку и лучший уровня — вход и выбор кластера 17',
+                chislo=O.lozhnye(N, 0)['urovni'], tablica=T.to_dict('records'))
+
+
+def sigma2_F(cand, h, seeds=None, F=None):
+    """2σ (Д24.3) по 10 seed парно с F_h(d0): cand — {seed: кадр val итогового прогноза} или кадр (детерминированный ряд, V0);
+    F — {seed: кадр} (по умолчанию ряды ВЫР-1 R2/cache/VYR/F_d0_h{h}_s{seed}_val.parquet). Q̄_T — средний QLIKE шагов 2–6 (bez:
+    поправка уже в ряде). -> r2_loyo.sigma2."""
+    seeds = list(seeds or O.SEEDS)
+    fc = O.CFG['F_h_d0']
+    F = F or {s: O.series([O.R / fc['file'].format(h=h, seed=s)]) for s in seeds}
+    qF = {s: O.qbar_T(O.q_steps(F[s], fc['s2'])) for s in seeds}
+    qc = {s: O.qbar_T(O.q_steps(cand[s], 'bez')) for s in seeds} if isinstance(cand, dict) else O.qbar_T(O.q_steps(cand, 'bez'))
+    return O.sigma2(qc, qF, seeds)
+
+
+def _noga(pob, dizainy, v0_all, lestnica):
+    """Нога победителя для P < 0,5: сам V0; иначе V0 с той же ногой (leg целиком, затем тип); иначе ступень лестницы «нога + калибровка»."""
+    if pob in v0_all:
+        return dict(unit=pob, istochnik='V0 — победитель')
+    lg = (dizainy.get(pob) or {}).get('leg') or {}
+    for same in (lambda d: ((d or {}).get('leg') or {}) == lg, lambda d: noga_tip(d) == noga_tip(dizainy.get(pob))):
+        m = [u for u in v0_all if same(dizainy.get(u))]
+        if m:
+            return dict(unit=m[0], istochnik='V0 с той же ногой')
+    st = next((r for r in (lestnica or []) if r.get('stupen') == GV4['noga_lestnica']), None)
+    if st:
+        return dict(unit=f'noga_{pob}', istochnik=f'лестница {GV4["noga_lestnica"]}', design_sha=st['design_sha'],
+                    design_yaml=st['design_yaml'], nuzhen_schet=True)
+    return dict(unit=None, istochnik='нет V0 и лестницы — ❓ дирижёру (умолчание: F_h(d0))')
+
+
+def gate_E_v4(R, S, dizainy, sig, h, v0_units=(), N=None, k=None, lestnica=True, out_dir=None):
+    """v4 § 2, § 6. R — {unit: ocenka на 10 seed (LightGBM + XGBoost), вход заново}; sig — {unit: sigma2_F}; v0_units — V0 из ворот C.
+    Финалисты — первые k (3) не-V0 в порядке выбора + V0, прошедшие вход; победитель — первый финалист, прошедший 2σ (никто — F_h(d0)).
+    Мощность победителя (кластер 20) и itog_E (владелец 16:45): P < 0,5 — финал = нога (V0). В `pobeditel` — то, что идёт на открытие
+    (агент A собирает pobeditel.pobeditel), выбор отбора — pobeditel.pobeditel_otbora. Хэши финалистов, лестница и абляции — r2_loyo."""
+    k = k or GV4['k_E']
+    out_dir = Path(out_dir or O.OUT / f'gate_E_h{h}_dizainy')
+    v0_all = [u for u in v0_units]
+    top, _ = poryadok({u: r for u, r in R.items() if u not in v0_all}, S, k)
+    v0p, _ = poryadok({u: r for u, r in R.items() if u in v0_all}, S)
+    fin = top + v0p
+    pob = next((u for u in fin if (sig.get(u) or {}).get('passed')), None)
+    hs = {}
+    for u in fin:
+        if u in dizainy:
+            p = out_dir / f'finalist_{u}.yaml'
+            O._zapisat_dizain(dizainy[u], p)
+            hs[u] = O.dizain_hashi(p)
+    L = A = None
+    if pob and lestnica and pob in dizainy:
+        L, A = O.lestnica_ablyacii(dizainy[pob], h, out_dir)
+    if pob:
+        mosh = R[pob]['moshchnost']
+        noga = _noga(pob, dizainy, v0_all, L)
+        it = itog_E(pob, mosh, noga_v0=noga['unit'])
+        final = it['final'] if (it['deystvie'] == 'na_otkrytie' or noga['unit']) else 'F_h(d0)'
+        it['final'] = final
+        V0 = final != 'F_h(d0)' and (pob in v0_all or it['deystvie'] == 'final_V0')
+        it['gipoteza'] = GV4['gipoteza'][it['kategoriya']]
+    else:
+        mosh, noga, final, V0 = None, None, 'F_h(d0)', False
+        it = dict(pobeditel_otbora=None, final='F_h(d0)', kategoriya=None, pometka='2σ не прошёл никто — на h остаётся F_h(d0)')
+    fh = hs.get(final) or ({'design_sha': noga.get('design_sha'), 'design_yaml': noga.get('design_yaml')} if noga and final == noga['unit'] else {})
+    diz = dizainy.get(final) or (yaml.safe_load(Path(fh['design_yaml']).read_text()) if fh.get('design_yaml') else None)
+    rows = [dict(unit=u, tip='V0' if u in v0_all else 'top', poryadok=i + 1, t_mean=R[u]['t_mean'], vyigrysh_pct=R[u]['vyigrysh_pct'],
+                 slozhnost=S.get(u, 0), vhod=bool(R[u]['vhod']['proshyol']), P_moshchnost=R[u]['moshchnost']['P_p_lt_005'],
+                 **{a: b for a, b in hs.get(u, {}).items() if a != 'canonical_yaml'},
+                 **{f's2_{a}': b for a, b in (sig.get(u) or {}).items()}) for i, u in enumerate(fin)]
+    _, T = vybor(R, S) if R else (None, pd.DataFrame(columns=['unit']))
+    N = dict(N or {})
+    N['E_10seed'] = chislo(R)
+    return dict(finalisty=rows, sigma2={u: sig[u] for u in fin if u in sig},
+                pobeditel=dict(pobeditel=final, V0=bool(V0), pobeditel_otbora=pob or 'F_h(d0)', poryadok=fin, noga=noga, itog=it),
+                design_sha=fh.get('design_sha'), design_yaml=fh.get('design_yaml'), dizayn=diz,
+                moshchnost=mosh, lestnica=L, ablyacii=A, primechanie_Fd0=O.CFG['F_h_d0'].get('otstuplenie', ''),
+                lozhnye=O.lozhnye(N, len(fin)), tablica=T.to_dict('records'),
+                ogovorka_moshchnosti='расчёт мощности по LOYO оптимистичен: выбор на тех же складках (v4 § 2)')
+
+
 # ---------------------------------------------------------------- дым и самопроверка
 def dym(hs, tickers=None):
     """Реальные val-ряды: F_h(d0) seed 42 как «дизайн» против E_h (только 2017–2021)."""
@@ -208,6 +362,15 @@ def dym(hs, tickers=None):
               f'тикеров {r["n_tikerov_vyigrysh"]}/{r["n_tikerov"]}, конц. {r["konc"]:.2f}, c3 {r["c3_vse"]}, выигрыш {r["vyigrysh_pct"]:.2f}%, '
               f'вход {r["vhod"]["proshyol"]} ({r["vhod"]["net"] or "—"}); мощность: t_ож {r["moshchnost"]["t_ozhid"]:.2f}, '
               f'P {r["moshchnost"]["P_p_lt_005"]:.2f} -> {r["moshchnost"]["pometka"]}', flush=True)
+        # механика ворот E на реальных рядах (файл не пишется): 2σ к F_h(d0) по 10 seed; F против самого себя — d ≡ 0, не проходит
+        Fs = {s: O.series([O.R / O.CFG['F_h_d0']['file'].format(h=h, seed=s)]) for s in O.SEEDS}
+        if tickers:
+            Fs = {s: f[f.ticker.isin(tickers)] for s, f in Fs.items()}
+        sig = {'F_d0_s42': sigma2_F(Fs, h, F=Fs), 'E_h': sigma2_F(E, h, F=Fs)}
+        g = gate_E_v4({'F_d0_s42': r}, {'F_d0_s42': 0}, {}, sig, h)
+        print(f'  ворота E (механика): 2σ F против F: d̄ {sig["F_d0_s42"]["d_mean"]:.2g}, прошёл {sig["F_d0_s42"]["passed"]}; '
+              f'E_h против F_h(d0): d̄ {sig["E_h"]["d_mean"]:.4g}, порог {sig["E_h"]["thr"]:.3g}, прошёл {sig["E_h"]["passed"]}; '
+              f'финалисты {g["pobeditel"]["poryadok"]} -> {g["pobeditel"]["pobeditel"]}', flush=True)
 
 
 def _sint(rng, eff, n_t=17, noise=0.4, years=range(2016, 2022), drift=None):
@@ -285,8 +448,81 @@ def selftest():
     assert (r1['folds'].variant == 'v1').all()  # вложенный выбор по t на обучающих годах берёт лучший вариант
     F1 = r1['folds'].set_index('Y')
     assert abs(F1.t_obuch[2019] - np.mean([F1.t[y] for y in (2017, 2018, 2020, 2021)])) < 1e-12  # t обучения = t тех же лет
+    selftest_vorota(rng)
     print('selftest r2_gates: OK (v4: DM = код теста; вход кластера 17: t, hit, тикеры, концентрация по дням наибольшей потери эталона, c3; '
           'вложенный выбор по t на обучающих годах; выбор с Δt̄ и относительным выигрышем; мощность кластера 20; без утечки)')
+
+
+def selftest_vorota(rng):
+    """Ворота C, D, E v4 на синтетических результатах ocenka (вход, порядок выбора, роли, V0, 2σ, мощность, нога)."""
+    import tempfile
+    mk = lambda t, g_, ok=True, P=0.9: dict(t_mean=t, vyigrysh_pct=g_, vhod=dict(proshyol=ok, net='' if ok else 'konc'), hit=0.6,
+                                           n_tikerov_vyigrysh=15, konc=0.1,
+                                           moshchnost=dict(t_ozhid=3, P_p_lt_005=P, pometka='', n_test=1084))
+    dz = lambda name, leg, role, **kw: dict(design=name, h=5, leg=dict(type=leg), boost=dict(role=role), **kw)
+    # --- C: две ячейки с ролью ≠ none в порядке выбора; V0 только из v0_nogi и только прошедшие вход
+    D = {'HARX_res': dz('HARX_res', 'HARX', 'residual'), 'HARX_feat': dz('HARX_feat', 'HARX', 'feature'),
+         'HARJ_off': dz('HARJ_off', 'HARJ', 'offset'), 'HEAVY_res': dz('HEAVY_res', 'HEAVY', 'residual'),
+         'HARX_V0': dz('HARX_V0', 'HARX', 'none'), 'RVI_anchor_V0': dz('RVI_anchor_V0', 'RVI_anchor', 'none'),
+         'HEAVY_V0': dz('HEAVY_V0', 'HEAVY', 'none')}
+    R = {'HARX_res': mk(3.0, 5.0), 'HARX_feat': mk(2.9, 7.0), 'HARJ_off': mk(2.0, 9.0), 'HEAVY_res': mk(4.0, 9.0, ok=False),
+         'HARX_V0': mk(5.0, 9.0), 'RVI_anchor_V0': mk(1.0, 1.0, ok=False), 'HEAVY_V0': mk(2.0, 2.0)}
+    S = {u: (0 if rol(d) == 'none' else 2) for u, d in D.items()}
+    gC = gate_C_v4(R, S, D, nepr={'HARJ_off': ['J']})
+    assert gC['yacheyki'] == ['HARX_feat', 'HARX_res'], gC['yacheyki']  # V0 с t̄ 5 — не ячейка; HEAVY_res не прошёл вход
+    assert gC['v0_finalisty'] == ['HARX_V0'] and set(gC['dizainy']) == {'HARX_feat', 'HARX_res', 'HARX_V0'}
+    assert gC['chislo']['C_boost'] == dict(perebrano=4, proshli_vhod=3, dolya_vhoda=0.75) and gC['faktor_neprimenim'] == {'HARJ_off': ['J']}
+    assert gate_C_v4({'HEAVY_res': R['HEAVY_res']}, S, D)['net_yacheek']
+    # --- D: лучшая точка на ячейку и лучший уровня
+    RD = {'a_p1': mk(2.0, 3.0), 'a_p2': mk(2.5, 3.0), 'b_p1': mk(2.4, 6.0), 'b_p2': mk(9.0, 9.0, ok=False)}
+    DD = {u: dz(u, 'HARX', 'residual') for u in RD}
+    gD = gate_D_v4(RD, {u: 1 for u in RD}, DD, {'a': ['a_p1', 'a_p2'], 'b': ['b_p1', 'b_p2']}, {'a': 60, 'b': 60})
+    assert gD['luchshie'] == {'a': 'a_p2', 'b': 'b_p1'} and gD['luchshiy'] == 'b_p1' and gD['dizayn'] == DD['b_p1']  # Δt̄ 0,1 → выигрыш
+    assert gD['chislo']['D_b'] == dict(perebrano=60, proshli_vhod=1, dolya_vhoda=1 / 60)
+    assert gate_D_v4({'x': mk(3, 3, ok=False)}, {}, {'x': {}}, {'a': ['x']})['luchshiy'] is None
+    # --- 2σ к F_h(d0): парно по seed; детерминированный V0 — число
+    E, u = _sint(rng, 0.2, years=range(2016, 2022))
+    seeds = list(range(42, 52))
+    F = {s: E.assign(rv_pred=E.rv_pred * np.exp(rng.normal(0, 0.01, len(E)))) for s in seeds}
+    good = {s: u.assign(rv_pred=u.rv_pred * np.exp(rng.normal(0, 0.01, len(u)))) for s in seeds}
+    sg = sigma2_F(good, 5, seeds, F)
+    assert sg['passed'] and sg['n'] == 10 and sg['n_better'] == 10
+    assert not sigma2_F(F, 5, seeds, F)['passed'] and sigma2_F(u, 5, seeds, F)['passed']
+    # --- E: финалисты = top-3 по выбору + V0; победитель — первый, прошедший 2σ; мощность и нога
+    RE = {'E1': mk(3.0, 5.0, P=0.95), 'E2': mk(2.7, 4.0, P=0.6), 'E3': mk(2.0, 3.0, P=0.3), 'E4': mk(1.9, 2.0), 'E5': mk(5.0, 9.0, ok=False),
+          'HARX_V0': mk(1.6, 2.0, P=0.2)}
+    DE = {u: dz(u, 'HARX', 'residual', features=['G0', 'G1']) for u in RE if u != 'HARX_V0'} | {'HARX_V0': D['HARX_V0']}
+    SE = {u: 1 for u in RE}
+    yes, no = dict(passed=True, d_mean=-1e-3, sigma=1e-4, thr=-6e-5), dict(passed=False, d_mean=1e-3, sigma=1e-4, thr=-6e-5)
+    with tempfile.TemporaryDirectory() as td:
+        gE = gate_E_v4(RE, SE, DE, {'E1': yes, 'E2': yes, 'E3': yes, 'HARX_V0': yes}, 5, v0_units=['HARX_V0'], out_dir=td)
+        pb = gE['pobeditel']
+        assert pb['poryadok'] == ['E1', 'E2', 'E3', 'HARX_V0'] and pb['pobeditel'] == 'E1' and not pb['V0']
+        assert pb['itog']['kategoriya'] == 'znachimyy' and pb['itog']['gipoteza'] == 'лучше эталона'
+        assert gE['design_sha'] == gE['finalisty'][0]['design_sha'] and len(gE['design_sha']) == 64 and gE['lestnica'][-1]['stupen'] == 'финал'
+        assert gE['lozhnye']['urovni']['E_10seed'] == dict(perebrano=6, proshli_vhod=5, dolya_vhoda=5 / 6)
+        # E1 не прошёл 2σ -> E2 (P 0,6: граница, «не хуже»)
+        gE = gate_E_v4(RE, SE, DE, {'E1': no, 'E2': yes}, 5, v0_units=['HARX_V0'], out_dir=td, lestnica=False)
+        assert gE['pobeditel']['pobeditel'] == 'E2' and gE['pobeditel']['itog']['kategoriya'] == 'granica'
+        assert gE['pobeditel']['itog']['gipoteza'].startswith('не хуже')
+        # победитель E3 с P 0,3 -> финал = V0 с той же ногой (HARX_V0), V0 = true; design_sha — у ноги
+        gE = gate_E_v4(RE, SE, DE, {'E3': yes}, 5, v0_units=['HARX_V0'], out_dir=td)
+        pb = gE['pobeditel']
+        assert pb['pobeditel_otbora'] == 'E3' and pb['pobeditel'] == 'HARX_V0' and pb['V0'] and pb['itog']['deystvie'] == 'final_V0'
+        assert gE['design_sha'] == next(r for r in gE['finalisty'] if r['unit'] == 'HARX_V0')['design_sha'] and gE['dizayn'] == D['HARX_V0']
+        # без V0 той же ноги -> ступень лестницы «нога + калибровка», нужен счёт
+        gE = gate_E_v4({u: RE[u] for u in ('E1', 'E3')}, SE, DE, {'E3': yes}, 5, out_dir=td)
+        pb = gE['pobeditel']
+        assert pb['noga']['istochnik'].startswith('лестница') and pb['noga']['nuzhen_schet'] and pb['V0']
+        assert gE['design_sha'] == next(r for r in gE['lestnica'] if r['stupen'] == GV4['noga_lestnica'])['design_sha']
+        assert gE['dizayn']['leg']['type'] == 'HARX' and 'boost' not in gE['dizayn']
+        # никто не прошёл 2σ -> F_h(d0)
+        gE = gate_E_v4(RE, SE, DE, {}, 5, v0_units=['HARX_V0'], out_dir=td, lestnica=False)
+        assert gE['pobeditel']['pobeditel'] == 'F_h(d0)' and gE['design_sha'] is None and gE['moshchnost'] is None
+        # победил V0 сам (P 0,2): финал — он же
+        gE = gate_E_v4(RE, SE, DE, {'HARX_V0': yes}, 5, v0_units=['HARX_V0'], out_dir=td, lestnica=False)
+        assert gE['pobeditel']['pobeditel'] == 'HARX_V0' and gE['pobeditel']['V0']
+        O.json.dumps(gE, default=O._js)  # сериализуется для write_gate
 
 
 def main():

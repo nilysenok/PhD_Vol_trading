@@ -661,7 +661,8 @@ def _js(x):
 
 
 def gate_C(W, h, inputs=(), v0_units=()):
-    """Фаза C: две ячейки с ролью ≠ none (после штрафа); V0-кандидаты, прошедшие вход, — прямо в финалисты."""
+    """Протокол v3 (R̄), справочно; по v4 ворота C — r2_gates.gate_C_v4.
+    Фаза C: две ячейки с ролью ≠ none (после штрафа); V0-кандидаты, прошедшие вход, — прямо в финалисты."""
     two = vybor_shtraf(W[~W.unit.isin(v0_units)], roles=CFG['level']['boost_roles'], k=2)
     v0 = W[W.unit.isin(v0_units) & W.vhod]
     N = {'C': (int((~W.is_F).sum()), int((W.vhod & ~W.is_F).sum()))}
@@ -768,7 +769,8 @@ def lestnica_ablyacii(win, h, out_dir):
 
 
 def gate_E(W, h, sig, inputs=(), v0_units=(), N=None, dizainy=None, ryady=None):
-    """Фаза E: финалисты (до 3 + V0), 2σ к F_h(d0) по 10 seed (sig: {unit: sigma2}), победитель; число дизайнов и ложные победители.
+    """Протокол v3 (R̄), справочно; по v4 ворота E — r2_gates.gate_E_v4 (порядок выбора кластера 17, мощность, itog_E).
+    Фаза E: финалисты (до 3 + V0), 2σ к F_h(d0) по 10 seed (sig: {unit: sigma2}), победитель; число дизайнов и ложные победители.
     dizainy — {unit: путь к yaml дизайна}: у финалистов и победителя — design_sha (r2_core) и хэш полного yaml (сверка у агента A)."""
     dizainy = dizainy or {}
     fin = finalisty(W, v0_units=v0_units)
@@ -922,7 +924,8 @@ def run_level(L, h, v0_units=()):
 
 
 def gate_D(h, cells):
-    """Фаза D для каждой ячейки: 60 → 30 по val 2016 (шаг 1, вне T; мин. по вариантам), 30 → 15 → 8 по R̄ на 1 seed (files),
+    """Протокол v3, справочно; по v4 отсечение — r2_halving.otsechenie, ворота D — r2_gates.gate_D_v4.
+    Фаза D для каждой ячейки: 60 → 30 по val 2016 (шаг 1, вне T; мин. по вариантам), 30 → 15 → 8 по R̄ на 1 seed (files),
     8 → лучшая по R̄ на 3 seed (files3) со штрафом. spec — R2/O/spec_level2_h{h}.csv: столбец cell + столбцы уровня."""
     spec, ref, files = level_inputs(2, h)
     ft, Fn = F_d0_tab(h, ref)
