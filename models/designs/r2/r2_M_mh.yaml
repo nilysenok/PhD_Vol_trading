@@ -9,7 +9,10 @@ features: "r2_core.load_d0 (features_pit_v3 в версии d0 через r2_nog
 max_step: 6                                               # val шагов 1–6 (2016–2021); шаги 7–10 и тест — только после ворот E
 out:
   cache: "r2_core.cache_dir: data/regen/R2/cache/<sha256[:16]>/M_h{h}_s{seed}_val.parquet; нога кл. 11 — ещё M_h{h}_s{seed}_lnall.parquet
-          (part tr/va, emb_ok); M_h{h}_s{seed}_meta.csv (ρ, Σ, коэффициенты шагов), M_h{h}_s{seed}_vhody.csv (входы и SHA); индекс — _index/M_*.csv"
+          (part tr/va, emb_ok); params_M.csv (design_sha, h, step, param, value, seed: ρ, веса и Σ MinT, τ, коэффициенты шагов;
+          решение дирижёра 17:5x — свой файл модуля, чужие params_<модуль>.csv не читаются); M_h{h}_s{seed}_vhody.csv; индекс — _index/M_*.csv"
+  chain: "база ряда h — ряды последнего модуля цепочки до M (BG > B > R > P > L) в каталоге этого дизайна (r2_core.load_series),
+          выход — M_<имя входного ряда>; нет рядов в каталоге — inputs_default; base_1 / leg_1 — inputs дизайна (входят в хэш)"
   dym: data/regen/R2/M/dym                                # дым на Маке (3 тикера) — не кэш, в выбор не идёт
   blok_sdvig: data/regen/R2/O/blok_sdvig.csv              # п. 2.6 (r2_core.shift_check); дым — dym/blok_sdvig_dym.csv
 
