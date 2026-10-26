@@ -267,6 +267,7 @@ def vorota(W, unit, sig, test_ready=False):
              u3_luchshe_F=bool(r.gate3), n_better_F=int(r.n_better_F), u4_test=bool(test_ready),
              d_mean=sig['d_mean'] if sig else np.nan, sigma=sig['sigma'] if sig else np.nan, t=sig['t'] if sig else np.nan, R_bar=r.R_bar)
     g['proshyol'] = g['u1_vhod'] and g['u2_2sigma_Fd0'] and g['u3_luchshe_F'] and g['u4_test']
+    g['primechanie_Fd0'] = CFG['F_h_d0'].get('otstuplenie', '')  # отступление ВЫР-1 (эмбарго в бустинге F_h(d0) нет) — рядом с 2σ
     return g
 
 
