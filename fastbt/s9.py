@@ -390,9 +390,7 @@ class Engine:
         kr = rate.reindex(rate.index.union(self.dates)).sort_index().ffill().bfill()
         self.kr = kr.reindex(self.dates).values
         self.rf = self.kr / 365.0
-        cal = np.ones(len(self.dates))
-        cal[1:] = np.diff(self.dates.values).astype("timedelta64[D]").astype(float)
-        self.cal = cal
+        self.cal = msp.cal_days(self.dates)      # [d, d_next): период позиции d→d+1 (аудит FA, Н2)
         self.year_of = self.dates.year.values
         self.A_row = self.rows_from({(t, s): self.cache[t]["A"][s] for t, s in self.pairs})
         self.n_t = np.array([len(cache[t]["dates"]) for t in self.tickers])
