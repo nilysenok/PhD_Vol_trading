@@ -31,10 +31,12 @@ def run(path: Path, mutation: str | None) -> tuple[int, str]:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--md", help="записать таблицу в markdown-файл")
+    ap.add_argument("--only", default="test_*.py",
+                    help="маска модулей (FA2b: --only 'test_2[0-9]_*.py')")
     a = ap.parse_args(argv)
     sys.path[:0] = [str(HERE), str(ROOT), str(ROOT / "scripts" / "analysis")]
     rows, ok_all = [], True
-    for path in sorted(HERE.glob("test_*.py")):
+    for path in sorted(HERE.glob(a.only)):
         mod = importlib.import_module(path.stem)
         title = (mod.__doc__ or path.stem).strip().splitlines()[0]
         rc, last = run(path, None)
