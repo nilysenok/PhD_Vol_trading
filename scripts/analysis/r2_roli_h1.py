@@ -250,11 +250,13 @@ def base_of(leg):
     if leg == 'HARJ_l2':
         return None
     if leg not in _BASE:
-        b = pd.read_parquet(leg_file(leg), columns=['date', 'ticker', 'step', 'part', 'base_ln'])
-        b = b[b.step.isin(STEPS)].copy()
+        b = pd.read_parquet(leg_file(leg))
+        if 'emb_ok' not in b:
+            b['emb_ok'] = np.nan
+        b = b[b.step.isin(STEPS)][['date', 'ticker', 'step', 'part', 'base_ln', 'emb_ok']].copy()
         b['date'] = b['date'].astype(RS['date_dtype'])
         assert not b.duplicated(['date', 'ticker', 'step', 'part']).any(), leg
-        _BASE[leg] = {(int(s), p): g[['date', 'ticker', 'base_ln']] for (s, p), g in b.groupby(['step', 'part'])}
+        _BASE[leg] = {(int(s), p): g[['date', 'ticker', 'base_ln', 'emb_ok']] for (s, p), g in b.groupby(['step', 'part'])}
     return _BASE[leg]
 
 
@@ -267,6 +269,19 @@ def install_role_wrapper(L):
     def step_data(A, cols, h, step, model, cfg, base_tag, **kw):
         D = sd0(A, cols, h, step, model, cfg, base_tag, **kw)
         B = base_of(RS['leg'])
+        if RS.get('bemb'):
+            # эмбарго в обучении бустинга (решение дирижёра 26.10): строки обучения, у которых окно цели [t+1, t+h] заходит в val-год шага,
+            # исключаются — по флагу emb_ok ноги `_emb` (как в её обучении); строк без флага (первая дата у HEAVY) это не касается
+            tp = D['parts']['tr']
+            e = tp[['date', 'ticker']].merge(B[(step, 'tr')][['date', 'ticker', 'emb_ok']], on=['date', 'ticker'], how='left')['emb_ok']
+            drop = (e == False).values  # noqa: E712  (NaN — не исключается)
+            assert e.notna().sum() >= len(tp) - 17 and drop.sum() > 0, (RS['leg'], step)
+            keep = ~drop
+            D['parts']['tr'] = tp[keep]
+            D['X']['tr'], D['y']['tr'], D['ytr_ln'], D['off']['tr'] = D['X']['tr'][keep], D['y']['tr'][keep], D['ytr_ln'][keep], D['off']['tr'][keep]
+            if D['w'] is not None:
+                D['w'] = D['w'][keep]
+            RS.setdefault('emb_drop', {})[(RS['leg'], step)] = int(drop.sum())
         if B is not None:
             for k, d in D['parts'].items():
                 bb = B.get((step, k))
@@ -356,8 +371,12 @@ def fit_role(leg, role, m, s):
                          'rv_pred': np.clip(np.exp(pv), 1e-10, None), 'trees': bi, 's2_b01': D['s2'], 'sec': time.time() - t0})
 
 
+def _rl(role):
+    return role + ('_bemb' if RS.get('bemb') else '')
+
+
 def raw_role(leg, role, m, s):
-    return CACHE / '_raw' / 'roli' / f'{leg}__{role}_{m}_st{s:02d}.parquet'
+    return CACHE / '_raw' / 'roli' / f'{leg}__{_rl(role)}_{m}_st{s:02d}.parquet'
 
 
 def job_role(t):
@@ -368,7 +387,8 @@ def job_role(t):
 
 
 def ryad_role(leg, role, m):
-    return f'{leg}__{role}_{m}'
+    """<нога>__<роль>[_bemb]_<модель>; _bemb — бустинг роли обучен с эмбарго (основная версия: нога _emb_d0 + _bemb)."""
+    return f'{leg}__{_rl(role)}_{m}'
 
 
 def close_role(leg, role):
@@ -402,6 +422,7 @@ def close_role(leg, role):
         p = fpath(ryad_role(leg, role, m), 42)
         put(df, p)
         index_add(p, ryad_role(leg, role, m), 42, df, f'роль {role}, нога {leg}, модель {m}, точки {spec["points"]}, seed 42; без поправки s²'
+                  + ('; бустинг с эмбарго (emb_ok ноги), ОСНОВНАЯ' if RS.get('bemb') else '; бустинг без эмбарго (контроль)')
                   + ('; у ноги нет прогноза на 2014-06-09 — эта дата обучения с HAR-J (17 строк на шаг)' if leg.startswith('HEAVY') else ''))
     log(f'роль {role} × нога {leg}: записано {", ".join(fr)}')
 
@@ -415,7 +436,12 @@ def cmd_roli(a):
     import multiprocessing as mp
     if STOP.exists():
         raise SystemExit(f'СТОП-файл {STOP}: {STOP.read_text()}')
-    legs = a.legs or (['HARJ_l2', 'HARX_d17'] + legs_available())
+    RS['bemb'] = bool(a.bemb)
+    if a.bemb:  # основная версия (решение дирижёра 26.10): нога _emb_d0 + бустинг с эмбарго
+        legs = a.legs or [x for x in legs_available() if x.endswith(Y['main_suffix'])]
+        assert all(x.endswith(('_emb', '_emb_d0')) for x in legs), legs
+    else:
+        legs = a.legs or (['HARJ_l2', 'HARX_d17'] + legs_available())
     roles = a.roles or list(Y['roles'])
     setup_roli()
     for leg in legs:
@@ -446,6 +472,7 @@ def cmd_roli(a):
 
 def cmd_leak_roli(a):
     """Детектор на коде ролей: шум в матрице и в ln-прогнозе ноги с даты t0; t0 = 1 января тестового года шага -> val равны, t0 = 1 января val-года -> изменились."""
+    RS['bemb'] = bool(a.bemb)
     setup_roli()
     L = RS['L']
     s = int(Y['leak_role_step'])
@@ -522,8 +549,8 @@ def main():
     p = sp.add_parser('f1'); p.add_argument('--workers', type=int, default=int(Y['workers'])); p.add_argument('--seeds', type=int, nargs='*')
     sp.add_parser('leak')
     p = sp.add_parser('roli'); p.add_argument('--workers', type=int, default=int(Y['workers'])); p.add_argument('--legs', nargs='*')
-    p.add_argument('--roles', nargs='*')
-    p = sp.add_parser('leak_roli'); p.add_argument('--leg', default='HARX_d17')
+    p.add_argument('--roles', nargs='*'); p.add_argument('--bemb', action='store_true', help='бустинг роли с эмбарго (основная версия)')
+    p = sp.add_parser('leak_roli'); p.add_argument('--leg', default='HARX_d17'); p.add_argument('--bemb', action='store_true')
     a = ap.parse_args()
     CACHE.mkdir(parents=True, exist_ok=True)
     {'f1': cmd_f1, 'leak': cmd_leak, 'roli': cmd_roli, 'leak_roli': cmd_leak_roli}[a.cmd](a)
