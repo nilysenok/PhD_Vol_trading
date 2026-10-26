@@ -419,9 +419,32 @@ def rv_daily(tickers=None):
     return d.rename(columns={c['rv_col']: 'rv'})
 
 
-def sdvig(pred, rv, sdvigi=None):
+def K_dizaina(design=None, features=None):
+    """Множество последних известных дней ряда (п. 2.6): по группам признаков дизайна (yaml sdvig.izvestnyy_den_grupp; иначе {0})."""
+    fs = features if features is not None else ((design or {}).get('features') or ['G0'])
+    gr = CFG['sdvig'].get('izvestnyy_den_grupp', {})
+    return tuple(sorted({k for g in fs for k in gr.get(g, [0])} | {0}))
+
+
+def sdvig_ok(argmax, K=(0,)):
+    """Правило п. 2.6 с последним известным днём: ок, если min K ≤ argmax ≤ 0; +1 — заглядывание; < min K — отстаёт.
+    -> (ok, причина). При K = {0} — ровно «argmax = 0» протокола."""
+    if argmax is None:
+        return False, 'нет пар'
+    if argmax > 0:
+        return False, 'заглядывание (+1)'
+    if argmax < min(K):
+        return False, 'отстаёт (info_set < d0)'
+    return True, ''
+
+
+def K_str(K):
+    return str(K[0]) if len(K) == 1 else f'{min(K)}..{max(K)}'
+
+
+def sdvig(pred, rv, sdvigi=None, K=(0,)):
     """Спирмен ln ŷ_d с ln RV_{d+s} по тикерам (s — в торговых днях тикера), медиана по тикерам; пары с d+s > 2021-12-31 не берутся.
-    -> {corr_s: …, argmax, blok}. pred — date, ticker, rv_pred (val 2017–2021)."""
+    K — последние известные дни входов ряда. -> {corr_s…, argmax, ok, blok, prichina, posledniy_izvestnyy_den}."""
     sdvigi = sdvigi or CFG['sdvig']['sdvigi']
     p = pred[(pd.to_datetime(pred.date).dt.year >= 2017) & (pd.to_datetime(pred.date).dt.year <= 2021)]
     res = {s: [] for s in sdvigi}
@@ -438,19 +461,83 @@ def sdvig(pred, rv, sdvigi=None):
             if ok.sum() > 10:
                 res[s].append(pd.Series(ly[ok]).corr(pd.Series(lr[j[ok]]), method='spearman'))
     med = {s: float(np.nanmedian(v)) if v else np.nan for s, v in res.items()}
-    am = max(med, key=lambda s: -np.inf if np.isnan(med[s]) else med[s])
-    return dict(**{f'corr_{s:+d}': med[s] for s in sdvigi}, argmax=int(am), blok=bool(am != 0))
+    am = None if all(np.isnan(list(med.values()))) else int(max(med, key=lambda s: -np.inf if np.isnan(med[s]) else med[s]))
+    ok, why = sdvig_ok(am, K)
+    return dict(n_tikerov=int(p.ticker.nunique()), n_strok=int(len(p)), **{f'corr_s{s:+d}': med[s] for s in sdvigi}, argmax=am,
+                ok=ok, blok=not ok, prichina=why, posledniy_izvestnyy_den=K_str(K))
 
 
-def blok_zapis(rows):
-    """Строки заблокированных рядов -> R2/O/blok_sdvig.csv (дописываются)."""
+# формат blok_sdvig.csv — как r2_core.shift_check агента S, плюс поле «последний известный день» (дирижёр 26.10 после PR #163)
+BLOK_COLS = ['ryad', 'h', 'hash', 'n_tikerov', 'n_strok', 'corr_s-2', 'corr_s-1', 'corr_s+0', 'corr_s+1', 'argmax', 'ok', 'vremya', 'prichina',
+             'posledniy_izvestnyy_den']
+
+
+def blok_zapis(rows, f=None):
+    """Строки заблокированных рядов -> R2/O/blok_sdvig.csv (дописываются под блокировкой файла; если в файле нет нового столбца —
+    файл переписывается с объединённой шапкой, старые строки получают пустое поле)."""
+    import fcntl
     if not rows:
         return
-    f = R / CFG['sdvig']['out']
+    f = Path(f or (R / CFG['sdvig']['out']))
     f.parent.mkdir(parents=True, exist_ok=True)
-    df = pd.DataFrame(rows).assign(time=now())
-    df.to_csv(f, mode='a', header=not f.exists(), index=False)
+    df = pd.DataFrame(rows).assign(vremya=now())
+    with open(f, 'a+', encoding='utf-8') as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        fh.seek(0)
+        txt = fh.read()
+        old = pd.read_csv(f) if txt.strip() else pd.DataFrame(columns=BLOK_COLS)
+        cols = list(dict.fromkeys(BLOK_COLS + list(old.columns) + list(df.columns)))
+        allr = pd.concat([old, df], ignore_index=True).reindex(columns=cols)
+        fh.seek(0)
+        fh.truncate()
+        allr.to_csv(fh, index=False)
     print(f'БЛОК сдвига: {len(df)} рядов -> {f} (доклад дирижёру)', flush=True)
+
+
+def reshit_F(f_dir=None, zapis=True):
+    """Решение O по проверке сдвига агента F (PR #163) с последним известным днём. Случаи — группы (shift_check_groups.csv, кроме календаря)
+    и столбцы со статусом F «ФЛАГ» или с лагом публикации (yaml izvestnyy_den_stolbcy); профили и argmax — как у F (по |ρ|).
+    Столбец: уровень argmax = +1 — блок; уровень в [min K; 0] — ок; иначе (оконный уровень) решает приращение: +1 — блок, в [min K; 0] — ок,
+    левее — блок (отстаёт). -> R2/O/sdvig_F_resheniya.csv; блок — в blok_sdvig.csv (ryad = F:<столбец|группа>)."""
+    c = CFG['sdvig']
+    f_dir = Path(f_dir or REPO / 'docs/otchety/r2_F')
+    S = pd.read_csv(f_dir / 'shift_check.csv')
+    G = pd.read_csv(f_dir / 'shift_check_groups.csv')
+    kc = c.get('izvestnyy_den_stolbcy', {})
+    rows, blok = [], []
+    for r in S[(S.status == 'ФЛАГ') | S.col.isin(list(kc))].itertuples():
+        K = (int(kc.get(r.col, 0)),)
+        am, dam = int(r.argmax), int(r.d_argmax)
+        if am > 0:
+            v, why = 'блок', 'заглядывание (+1) по уровню'
+        elif sdvig_ok(am, K)[0]:
+            v, why = 'ок', 'по уровню'
+        elif dam > 0:
+            v, why = 'блок', 'заглядывание (+1) по приращению (уровень — окно)'
+        elif sdvig_ok(dam, K)[0]:
+            v, why = 'ок', 'по приращению (уровень — окно)'
+        else:
+            v, why = 'блок', 'отстаёт (info_set < d0)'
+        rows.append(dict(obekt=f'столбец {r.col}', gruppa=r.group, posledniy_izvestnyy_den=K_str(K), argmax=am, d_argmax=dam,
+                         status_F=r.status, reshenie=v, prichina=why))
+        if v == 'блок':
+            blok.append(dict(ryad=f'F:{r.col}', h=1, hash='', **{f'corr_s{s:+d}': S.loc[r.Index, f'rho_{s}'] for s in (-2, -1, 0, 1)},
+                             argmax=am, ok=False, prichina=f'{why}; d_argmax {dam}; детектор F чистый', posledniy_izvestnyy_den=K_str(K)))
+    for r in G[~G.deterministic].itertuples():
+        K = tuple(c.get('izvestnyy_den_grupp', {}).get(r.group, [0])) if r.group != 'G1_bez_PC' else (0,)
+        ok, why = sdvig_ok(int(r.argmax), K)
+        v = 'ок' if ok else 'блок'
+        rows.append(dict(obekt=f'группа {r.group}', gruppa=r.group, posledniy_izvestnyy_den=K_str(K), argmax=r.argmax, d_argmax=np.nan,
+                         status_F=r.verdict, reshenie=v, prichina=why))
+        if v == 'блок':
+            blok.append(dict(ryad=f'F:{r.group}', h=1, hash='', **{f'corr_s{s:+d}': G.loc[r.Index, f'rho_{s}'] for s in (-2, -1, 0, 1)},
+                             argmax=r.argmax, ok=False, prichina=why, posledniy_izvestnyy_den=K_str(K)))
+    out = pd.DataFrame(rows)
+    OUT.mkdir(parents=True, exist_ok=True)
+    out.to_csv(OUT / 'sdvig_F_resheniya.csv', index=False)
+    if zapis:
+        blok_zapis(blok)
+    return out
 
 
 # ---------------------------------------------------------------- число дизайнов и ложные победители (п. 2.7)
@@ -496,14 +583,39 @@ def gate_C(W, h, inputs=(), v0_units=()):
                                    chislo=lozhnye(N, 0)['urovni'], net_yacheek=len(two) == 0), inputs)
 
 
-def gate_E(W, h, sig, inputs=(), v0_units=(), N=None):
-    """Фаза E: финалисты (до 3 + V0), 2σ к F_h(d0) по 10 seed (sig: {unit: sigma2}), победитель; число дизайнов и ложные победители."""
+def dizain_hashi(path):
+    """Хэши дизайна для сборки (агент A, PR #165): design_sha — канонический хэш по правилу r2_core агента S (design_hash: полный yaml
+    с default, канонизация шапки schema_v1), cache_dir — его первые 16 знаков, canonical_yaml_sha256 — SHA-256 полного канонического yaml
+    (= design_sha), yaml_file_sha256 — SHA-256 файла дизайна как он лежит."""
+    import r2_core as C
+    d = yaml.safe_load(Path(path).read_text())
+    can = C.canonical(d)
+    ds = C.design_hash(d)
+    assert ds == hashlib.sha256(can.encode('utf-8')).hexdigest()
+    return dict(design_yaml=str(path), design_sha=ds, cache_dir=ds[:16], canonical_yaml_sha256=ds, yaml_file_sha256=sha(path),
+                canonical_yaml=can)
+
+
+def gate_E(W, h, sig, inputs=(), v0_units=(), N=None, dizainy=None):
+    """Фаза E: финалисты (до 3 + V0), 2σ к F_h(d0) по 10 seed (sig: {unit: sigma2}), победитель; число дизайнов и ложные победители.
+    dizainy — {unit: путь к yaml дизайна}: у финалистов и победителя — design_sha (r2_core) и хэш полного yaml (сверка у агента A)."""
+    dizainy = dizainy or {}
     fin = finalisty(W, v0_units=v0_units)
     pb = pobeditel(fin, sig)
+    hs = {u: dizain_hashi(p) for u, p in dizainy.items() if u in set(fin.unit) and p and Path(p).exists()}
     rows = [dict(unit=r.unit, tip=r.tip, R_bar=r.R_bar, mean_q=r.mean_q, slozhnost=r.slozhnost, vhod=bool(r.vhod),
+                 **{k: v for k, v in hs.get(r.unit, {}).items() if k != 'canonical_yaml'},
                  **{f's2_{k}': v for k, v in (sig.get(r.unit) or {}).items()}) for r in fin.itertuples()]
+    w = pb['pobeditel']
+    if w in hs:
+        pb.update(hs[w])
+    elif w != 'F_h(d0)':
+        raise ValueError(f'gate E: нет yaml дизайна победителя {w} — design_sha для сборки (агент A) не записан')
+    else:
+        pb.update(design_sha=None, primechanie='победителя нет: строка гибрида — F_h(d0) (замороженный ряд ВЫР-1)')
     return write_gate('E', h, dict(finalisty=rows, pobeditel=pb, primechanie_Fd0=CFG['F_h_d0'].get('otstuplenie', ''),
-                                   lozhnye=lozhnye(N or {'E': (int((~W.is_F).sum()), int((W.vhod & ~W.is_F).sum()))}, len(fin))), inputs)
+                                   lozhnye=lozhnye(N or {'E': (int((~W.is_F).sum()), int((W.vhod & ~W.is_F).sum()))}, len(fin))),
+                      list(inputs) + [hs[u]['design_yaml'] for u in hs])
 
 
 # ---------------------------------------------------------------- адаптер: ряды -> таблица шагов
@@ -542,15 +654,18 @@ def series_tab(spec, ref, h, files_col='files', blok_rows=None, rv=None):
         fs = getattr(r, files_col)
         harcj_guard(fs, f'{r.unit} / {r.variant}')
         agg = getattr(r, 'agg', 'mean') if isinstance(getattr(r, 'agg', None), str) else 'mean'
-        key = (fs, agg)
+        dz = getattr(r, 'design_yaml', None)
+        dzd = yaml.safe_load(Path(dz).read_text()) if isinstance(dz, str) and Path(dz).exists() else None
+        K = K_dizaina(dzd)  # последние известные дни входов (по группам признаков дизайна)
+        key = (fs, agg, K)
         if key not in cache:
             files = [x if Path(x).is_absolute() else R / x for x in str(fs).split(';')]
             s = series(files, agg=agg)
-            sd = sdvig(s, rv) if rv is not None else None
+            sd = sdvig(s, rv, K=K) if rv is not None else None
             cache[key] = (s, sd)
             if sd and sd['blok'] and blok_rows is not None:
-                blok_rows.append(dict(h=h, unit=r.unit, variant=r.variant, ryad=fs, **sd,
-                                      yaml_sha=sha(r.design_yaml) if isinstance(getattr(r, 'design_yaml', None), str) and Path(r.design_yaml).exists() else ''))
+                blok_rows.append(dict(ryad=f'{r.unit} / {r.variant}: {fs}', h=h, hash=sha(dz)[:16] if dzd is not None else '',
+                                      **{k: v for k, v in sd.items() if k != 'blok'}))
         s, sd = cache[key]
         if sd and sd['blok']:
             blok.add(r.unit)
@@ -558,8 +673,7 @@ def series_tab(spec, ref, h, files_col='files', blok_rows=None, rv=None):
         e = et(r.s2)
         Wt = pd.read_csv(r.weights).set_index('step') if isinstance(getattr(r, 'weights', None), str) and r.weights else None
         Cp = pd.read_csv(r.calib_param).set_index('step') if isinstance(getattr(r, 'calib_param', None), str) and r.calib_param else None
-        dz = getattr(r, 'design_yaml', None)
-        cx = slozhnost(yaml.safe_load(Path(dz).read_text())) if isinstance(dz, str) and Path(dz).exists() else int(getattr(r, 'slozhnost', 0) or 0)
+        cx = slozhnost(dzd) if dzd is not None else int(getattr(r, 'slozhnost', 0) or 0)
         scheme = ('V0_HAR' if r.leg in ('HAR-J', 'HARJ') else 'V0_LEG') if r.role in ('V0', 'none') else 'cell'
         lv = ref.get(f'leg_v0:{r.leg}')
         for st in T:
@@ -622,7 +736,9 @@ def run_level(L, h, v0_units=()):
                 v = Ws.set_index('unit').loc[u, 'sel_T'] or ts.groupby('variant').q_hyb.mean().idxmin()
                 per_seed[s] = qbar_T(ts[ts.variant == v].set_index('step').q_hyb.to_dict())
             sig[u] = sigma2(per_seed, fd)
-        print('gate E:', gate_E(W10, h, sig, files, v0_units), flush=True)
+        dz = {u: (R / p if not Path(p).is_absolute() else Path(p)) for u, p in
+              spec.groupby('unit').design_yaml.first().dropna().items()} if 'design_yaml' in spec else {}
+        print('gate E:', gate_E(W10, h, sig, files, v0_units, dizainy=dz), flush=True)
     return W
 
 
@@ -731,6 +847,7 @@ def proverka(hs):
 
 # ---------------------------------------------------------------- самопроверка на синтетике
 def selftest():
+    global OUT
     import tempfile
     rng = np.random.default_rng(7)
 
@@ -823,17 +940,43 @@ def selftest():
     assert abs(lz['skrining_lozhno_vklyuchennyh'] - 0.35) < 1e-12
     # сдвиг информационного множества: ряд по дню d — argmax 0; отстающий (d−1) и заглядывающий (d+1) — блок; пары после 2021 не берутся
     dts = pd.bdate_range('2016-12-01', '2021-12-31')
-    rvd = pd.concat([pd.DataFrame(dict(date=dts, ticker=tk, rv=np.exp(np.cumsum(rng.normal(0, 0.3, len(dts))) * 0.05 - 8)))
-                     for tk in ('SBER', 'LKOH', 'AFLT')])
+    def ar1(n, phi=0.6):
+        x = np.zeros(n)
+        e = rng.normal(0, 0.5, n)
+        for i in range(1, n):
+            x[i] = phi * x[i - 1] + e[i]
+        return x
+    rvd = pd.concat([pd.DataFrame(dict(date=dts, ticker=tk, rv=np.exp(ar1(len(dts)) - 8))) for tk in ('SBER', 'LKOH', 'AFLT')])
     def pred_from(s):
         out = []
         for tk, g in rvd.groupby('ticker'):
             g = g.sort_values('date').reset_index(drop=True)
-            p = g.rv.shift(-s) * np.exp(rng.normal(0, 0.3, len(g)))  # прогноз в строке d «знает» RV дня d + s
+            p = g.rv.shift(-s) * np.exp(rng.normal(0, 0.2, len(g)))  # прогноз в строке d «знает» RV дня d + s
             out.append(pd.DataFrame(dict(date=g.date, ticker=tk, rv_pred=p)).dropna())
         return pd.concat(out)
     s0, sl, sf = sdvig(pred_from(0), rvd), sdvig(pred_from(-1), rvd), sdvig(pred_from(1), rvd)
     assert s0['argmax'] == 0 and not s0['blok'] and sl['argmax'] == -1 and sl['blok'] and sf['argmax'] == 1 and sf['blok'], (s0, sl, sf)
+    # последний известный день: ряд с входом, опубликованным с лагом 1 (как PC по Yahoo), — при K = {−1, 0} не блок, при K = {0} — блок;
+    # заглядывание (+1) — блок при любом K
+    assert K_dizaina(features=['G0', 'G1']) == (-1, 0) and K_dizaina(features=['G0', 'G3']) == (0,)
+    sl1 = sdvig(pred_from(-1), rvd, K=(-1, 0))
+    assert not sl1['blok'] and sl1['posledniy_izvestnyy_den'] == '-1..0' and sdvig(pred_from(1), rvd, K=(-1, 0))['blok'], sl1
+    assert sdvig_ok(-2, (-1, 0)) == (False, 'отстаёт (info_set < d0)') and sdvig_ok(0, (0,))[0]
+    bf = Path(tempfile.mkdtemp()) / 'blok.csv'
+    pd.DataFrame([dict(ryad='core', h=1, argmax=-1, ok=False)]).to_csv(bf, index=False)  # строка ядра без нового поля
+    blok_zapis([dict(ryad='O', h=1, argmax=1, ok=False, posledniy_izvestnyy_den='0')], f=bf)
+    bb = pd.read_csv(bf)
+    assert list(bb.ryad) == ['core', 'O'] and 'posledniy_izvestnyy_den' in bb and bb.posledniy_izvestnyy_den.isna().iloc[0]
+    if (REPO / 'docs/otchety/r2_F/shift_check.csv').exists():  # решение по F — на его таблицах (запись во временный каталог)
+        out0_, OUT = OUT, Path(tempfile.mkdtemp())
+        try:
+            rf = reshit_F(zapis=False)
+        finally:
+            OUT = out0_
+        d = rf.set_index('obekt').reshenie
+        assert d['группа G1'] == 'ок' and d['столбец g1_pc1'] == 'ок' and d['столбец g1_pc2'] == 'ок' and d['столбец g1_pc3'] == 'ок'
+        assert (d[['столбец g7_ln_amihud_w', 'столбец g7_ln_amihud_m', 'столбец g4_jbig_n22']] == 'блок').all()
+        assert set(rf[rf.reshenie == 'блок'].obekt) == {'столбец g7_ln_amihud_w', 'столбец g7_ln_amihud_m', 'столбец g4_jbig_n22'}
     # чтение: шаги 7+ не загружаются; OOS s²; заморозка множителей; median-агрегат
     tmp = Path(tempfile.mkdtemp())
     dd = pd.DataFrame([(pd.Timestamp(f'{2015 + st}-06-01') + pd.Timedelta(days=i), 'T', 2015 + st, st, 1.0, np.exp(-0.1 * st))
@@ -851,13 +994,26 @@ def selftest():
     fs = [tmp / 'x_val.parquet', tmp / 'y_val.parquet', tmp / 'z_val.parquet']
     assert np.allclose(series(fs, agg='median').rv_pred, rd.rv_pred * 2) and np.allclose(series(fs).rv_pred, rd.rv_pred * 13 / 3)
     # гейты C и E (во временный каталог): yaml читается, решение и хэши входов на месте
-    global OUT
     out0, OUT = OUT, tmp / 'O'
     try:
         gc = yaml.safe_load(gate_C(W9.assign(role=W9.role.replace({'residual': 'residual'})), 1, [tmp / 'x_val.parquet'], v0_units=('B',)).read_text())
         assert gc['phase'] == 'C' and len(gc['yacheyki']) == 2 and gc['v0_v_finalisty'][0]['unit'] == 'B' and gc['inputs']
-        ge = yaml.safe_load(gate_E(W9, 1, {top1: sigma2(0.20, 0.21)}, [tmp / 'x_val.parquet'], v0_units=('B',)).read_text())
-        assert ge['pobeditel']['pobeditel'] == top1 and abs(ge['lozhnye']['p0'] - 0.0383) < 5e-4 and ge['code_sha256']
+        dzf = tmp / 'pobeditel.yaml'
+        dzf.write_text(yaml.safe_dump(dict(design='тест', **{k: v for k, v in base1.items()}), allow_unicode=True))
+        ge = yaml.safe_load(gate_E(W9, 1, {top1: sigma2(0.20, 0.21)}, [tmp / 'x_val.parquet'], v0_units=('B',),
+                                   dizainy={top1: dzf}).read_text())
+        import r2_core as C
+        pw = ge['pobeditel']
+        assert pw['pobeditel'] == top1 and abs(ge['lozhnye']['p0'] - 0.0383) < 5e-4 and ge['code_sha256']
+        assert pw['design_sha'] == C.design_hash(yaml.safe_load(dzf.read_text())) and pw['cache_dir'] == pw['design_sha'][:16]
+        assert pw['yaml_file_sha256'] == sha(dzf) and hashlib.sha256(pw['canonical_yaml'].encode()).hexdigest() == pw['design_sha']
+        assert str(dzf) in ge['inputs']
+        try:
+            gate_E(W9, 1, {top1: sigma2(0.20, 0.21)}, v0_units=('B',))
+            raise AssertionError('победитель без yaml дизайна не остановлен')
+        except ValueError as e:
+            assert 'design_sha' in str(e)
+        assert yaml.safe_load(gate_E(W9, 1, {}, v0_units=('B',)).read_text())['pobeditel']['design_sha'] is None  # F_h(d0)
     finally:
         OUT = out0
     # HAR-CJ по d−1 — отказ
@@ -874,7 +1030,7 @@ def selftest():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', nargs='?', choices=['proverka', 'level', 'gate-d'])
+    ap.add_argument('cmd', nargs='?', choices=['proverka', 'level', 'gate-d', 'sdvig-f'])
     ap.add_argument('--selftest', action='store_true')
     ap.add_argument('--h', type=int, nargs='*', default=[1, 5, 22])
     ap.add_argument('--level', type=int, default=1)
@@ -888,6 +1044,9 @@ def main():
     if a.cmd == 'level':
         for h in a.h:
             run_level(a.level, h, tuple(a.v0))
+        return
+    if a.cmd == 'sdvig-f':  # решение O по проверке сдвига агента F (PR #163) с последним известным днём
+        print(reshit_F().to_string(index=False), flush=True)
         return
     if a.cmd == 'gate-d':
         for h in a.h:
