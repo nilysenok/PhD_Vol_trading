@@ -872,9 +872,145 @@ def dym_batch(A_done=None):
     return bool(R.ok.all())
 
 
+# ================================================================ поручение владельца 21:00: E8 поверх E1 / E1b (h = 22), вне драйвера
+E8_RYADY = {'E1': ('3e8cf0c43a642d7a', 'M_E1'), 'E1b': ('c6d88471794d13c3', 'M_E1b')}
+E8_LAM = (0.0, 0.25, 0.5, 0.75, 1.0)
+E8_K = (0, 3, 5, 10)
+E8_Q = 0.95  # q порога скачка shock_fresh — середина сетки k16.q (владелец задал только k)
+
+
+def _e8_row(nm, r, s2=None):
+    m = r['moshchnost']
+    return dict(variant=nm, t_mean=r['t_mean'], skladok_t_ge_1=r['n_t_ge'], hit=r['hit'], tikery=f"{r['n_tikerov_vyigrysh']}/{r['n_tikerov']}",
+                konc=r['konc'], c3=r['c3_vse'], vyigrysh_pct=r['vyigrysh_pct'], P=m['P_p_lt_005'], t_ozhid=m['t_ozhid'],
+                vhod=r['vhod']['proshyol'], net=r['vhod']['net'],
+                s2_passed=(s2 or {}).get('passed'), s2_d=(s2 or {}).get('d_mean'), s2_thr=(s2 or {}).get('thr'),
+                folds=';'.join(f'{int(f.Y)}:{f.variant}:{f.t:.2f}:{"c3" if f.c3 else "-"}' for f in r['folds'].itertuples()))
+
+
+# h = 5 — решение владельца 21:05: E1 и альтернатива E2 (forward HAR: hyb₁ вместо RV_d, агент M, PR #220)
+E8_RYADY_H = {22: E8_RYADY, 5: {'E1': ('855ccbb0a71ff5f6', 'M_E1'), 'E2': ('140243b0a0942055', 'M_E2')}}
+
+
+def e8_e1(h=22, write=True, ryady=None, order=None):
+    """order: 'lam_k' (21:00, h = 22) — сетка λ, затем k поверх лучшего λ; 'k_lam' (21:05, h = 5) — сначала воздержание
+    (halt, k ∈ {3, 5, 10} при λ = 1), затем λ поверх лучшего k."""
+    """ŷ = нога + λ·(E1 − нога) в ln (нога — эталон В2 ETA_b_d0_s2emb), λ ∈ E8_LAM; затем воздержание shock_fresh k ∈ E8_K поверх
+    лучшего λ (правило выбора O: r2_gates.vybor; если вход не прошёл никто — максимум t̄). Оценка — r2_gates.ocenka (панельная t,
+    вход кластера 17, c3, мощность; вложенный итог — ocenka по всем вариантам: λ складки Y — по остальным 4); 2σ — r2_gates.sigma2_F
+    по 10 seed парно с F_h(d0) s2emb. Метрики — на среднем по 10 seed. Ряды (по seed) — в кэш дизайна E1 / E1b, modul = G."""
+    import r2_driver as DR
+    import r2_gates as RG
+    A, harj = C.load_d0(); C.check_d0(A)
+    assert A.date.dt.year.max() <= MAXY
+    E = DR.etalon(h)
+    assert E.date.max() < pd.Timestamp('2022-01-01')
+    Fe = DR.F_emb(h)
+    seeds = list(SDRV['E']['seeds_final'])
+    mrv = market_rv(A)
+    gk = {k: (shock_flags(mrv, k, E8_Q, int(CFG['k16']['shock_fresh']['okno']), 'uroven') if k > 0 else None) for k in E8_K}
+    OUTd = OUT / 'E8_E1'; OUTd.mkdir(parents=True, exist_ok=True)
+    tabs, sv = [], []
+    ryady = ryady or E8_RYADY_H[h]
+    order = order or ('k_lam' if h == 5 else 'lam_k')
+    for nm, (hsh, ryad) in ryady.items():
+        full = design_of(hsh)
+        S = C.load_series(hsh, ryad=ryad, h=h, steps=list(range(1, 7)))
+        S = _val_only(S, ryad)
+        Lg = E[KEY + ['year', 'rv_actual', 'rv_pred']].rename(columns={'rv_pred': 'leg'})
+        per = {}
+        for s in seeds:
+            x = S[S.seed.astype(str) == str(s)][KEY + ['rv_pred']].merge(Lg, on=KEY)
+            per[s] = x.sort_values(KEY).reset_index(drop=True)
+        base = per[seeds[0]][KEY + ['year', 'rv_actual']]
+        for s in seeds:
+            assert (per[s][KEY].values == base[KEY].values).all()
+        lnL = np.log(per[seeds[0]].leg.values)
+        lnC = {s: np.log(per[s].rv_pred.values) for s in seeds}
+        lnCm = np.log(np.mean([per[s].rv_pred.values for s in seeds], axis=0))  # ансамбль 10 seed (как final_series драйвера)
+        dates = pd.to_datetime(base.date)
+        G = {k: (np.ones(len(base)) if gk[k] is None else dates.map(gk[k]).fillna(1.0).values) for k in E8_K}
+        tend = base[['date', 'ticker']].merge(A[['date', 'ticker', f'_tend{h}']], on=['date', 'ticker'], how='left')[f'_tend{h}'].values
+        hg = halt_g(base.date.values, tend, h)  # в val ≡ 1 (проверяется ниже)
+        assert (hg == 1).all(), 'halt изменил строки val 2017–2021'
+        Lv = per[seeds[0]].leg.values
+        mk = lambda ln: base.assign(rv_pred=Lv * np.exp(ln - lnL))  # от ноги: λ = 0 или g = 0 — ровно нога (без шума exp(ln x) ≠ x)
+        f = lambda lam, k, c: lnL + G[k] * hg * lam * (c - lnL)  # k = 0 — без воздержания (g = halt ≡ 1 в val)
+
+        def block(vars_, tag):
+            """vars_ — {имя: (λ, k)} -> строки (по варианту и вложенный итог) и словарь рядов."""
+            R, rows = {}, []
+            for v, (lam, k) in vars_.items():
+                V = mk(f(lam, k, lnCm))
+                r = RG.ocenka({v: V}, E, h)
+                s2 = RG.sigma2_F({s: mk(f(lam, k, lnC[s])) for s in seeds}, h, seeds=seeds, F=Fe) if lam > 0 else \
+                    RG.sigma2_F(mk(lnL), h, seeds=seeds, F=Fe)
+                R[v] = r
+                rows.append(dict(ryad=nm, blok=tag, lam=lam, k=k, **_e8_row(v, r, s2)))
+            rn = RG.ocenka({v: mk(f(lam, k, lnCm)) for v, (lam, k) in vars_.items()}, E, h)  # вложенный: вариант складки — по 4 остальным
+            pick = {int(fo.Y): fo.variant for fo in rn['folds'].itertuples()}
+            yrs = base.year.values
+            s2n = RG.sigma2_F({s: mk(np.select([yrs == y for y in pick], [f(*vars_[pick[y]], lnC[s]) for y in pick], lnL)) for s in seeds},
+                              h, seeds=seeds, F=Fe)
+            rows.append(dict(ryad=nm, blok=tag, lam=np.nan, k=np.nan, **_e8_row('вложенный', rn, s2n)))
+            return R, rows, pick
+
+        def luchshiy(R, vs, slozh):
+            b, _ = RG.vybor(R, slozh)
+            return (b, True) if b is not None else (max(R, key=lambda v: R[v]['t_mean']), False)
+
+        if order == 'lam_k':
+            lv = {f'lam={l}': (l, 0) for l in E8_LAM}
+            R1, rows1, pick1 = block(lv, 'lam')
+            best, vh = luchshiy(R1, lv, {v: 0 if l in (0.0, 1.0) else 1 for v, (l, _) in lv.items()})
+            lam_b = lv[best][0]
+            kv = {f'lam={lam_b}__k={k}': (lam_b, k) for k in E8_K}
+            R2, rows2, pick2 = block(kv, f'k (λ = {lam_b})')
+            sv.append(dict(ryad=nm, poryadok=order, luchshiy_1=best, vhod_1=vh, vlozh_1=pick1, vlozh_2=pick2))
+        else:  # k_lam: (а) воздержание при λ = 1: halt (k = 0, g = halt ≡ 1 в val) и k ∈ {3, 5, 10}; (б) λ поверх лучшего k
+            lv = {('halt' if k == 0 else f'k={k}'): (1.0, k) for k in E8_K}
+            R1, rows1, pick1 = block(lv, 'k (λ = 1)')
+            best, vh = luchshiy(R1, lv, {v: (0 if k == 0 else 1) for v, (_, k) in lv.items()})
+            k_b = lv[best][1]
+            kv = {f'{best}__lam={l}': (l, k_b) for l in E8_LAM}
+            R2, rows2, pick2 = block(kv, f'λ ({best})')
+            sv.append(dict(ryad=nm, poryadok=order, luchshiy_1=best, vhod_1=vh, vlozh_1=pick1, vlozh_2=pick2,
+                           halt_max_dln=float(np.abs(f(1.0, 0, lnCm) - lnCm).max())))  # halt в val ничего не меняет: 0
+        tabs += rows1 + rows2
+        if write:  # ряды по seed: λ-сетка и k поверх лучшего λ; сдвиг — каждый ряд (ансамбль)
+            for v, (lam, k) in {**lv, **kv}.items():
+                name = f'G_E8_{nm}__{v}'
+                sc = C.shift_check(mk(f(lam, k, lnCm)), A, h, name, full)
+                sv.append(dict(ryad=name, sdvig_ok=sc['ok'], argmax=sc['argmax'], okonchatelno=sc.get('okonchatelno')))
+                for s in seeds:
+                    C.write_series(full, name, mk(f(lam, k, lnC[s])), h, s, module=MODUL, note=f'G E8 (владелец 21:00): {v}, нога ETA_b_d0_s2emb')
+            P = pd.DataFrame([r for r in rows1 + rows2]).assign(h=h)
+            write_params(full, P.assign(ryad=f'G_E8_{nm}__*'))
+    Tb = pd.DataFrame(tabs)
+    Tb.to_csv(OUTd / f'tablica_E8_h{h}.csv', index=False)
+    Sv = pd.DataFrame(sv)
+    Sv.to_csv(OUTd / f'svodka_E8_h{h}.csv', index=False)
+    return Tb, Sv
+
+
+def e8_leak(h=22):
+    """Детектор на входах поручения: нога — эталон В2, компонента — E1 seed 42; все семейства при фиксированных параметрах."""
+    import r2_driver as DR
+    A, harj = C.load_d0(); C.check_d0(A)
+    E = DR.etalon(h)
+    steps = list(range(1, 7))
+    leg = E[KEY + ['year', 'rv_pred']]
+    hs_, ry_ = E8_RYADY_H[h]['E1']
+    S = _val_only(C.load_series(hs_, ryad=ry_, h=h, seed=42, steps=steps), 'E1')
+    eta = load_etalon(h, steps=steps)
+    LK = leak(h, leg, [S[KEY + ['rv_pred']]], [('E1', '42')], eta, A, harj, steps, [2, 3, 4, 5, 6])
+    LK.to_csv(OUT / 'E8_E1' / f'leak_E8_h{h}.csv', index=False)
+    return LK
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', choices=['selftest', 'dym', 'run', 'leak'])
+    ap.add_argument('cmd', choices=['selftest', 'dym', 'run', 'leak', 'e8-e1'])
     ap.add_argument('--designs', help='yaml со списком designs (контракт драйвера S)')
     ap.add_argument('--dizayn', help='один дизайн (прежняя строка драйвера: per_design)')
     ap.add_argument('--h', type=int, nargs='+', default=[1, 5, 22])
@@ -890,6 +1026,17 @@ def main():
         sys.exit(0 if (dym() and dym_batch()) else 1)
     if a.cmd == 'leak':
         sys.exit(0 if leak_cmd(a.h, a.designs) else 1)
+    if a.cmd == 'e8-e1':
+        pd.set_option('display.width', 250)
+        okv = True
+        for h in a.h:  # владелец 21:05: сначала h = 5, затем h = 22
+            Tb, Sv = e8_e1(h)
+            print(Tb.drop(columns=['folds']).round(3).to_string(index=False))
+            print(Sv.to_string(index=False))
+            LK = e8_leak(h)
+            print(LK[~LK.ok].to_string(index=False) if (~LK.ok).any() else f'детектор E8 h={h}: {len(LK)} строк, все OK')
+            okv &= bool(LK.ok.all())
+        sys.exit(0 if okv else 1)
     src = a.designs or a.dizayn
     assert src, 'run: нужен --designs <yaml> (или --dizayn <yaml>)'
     for h in a.h:
