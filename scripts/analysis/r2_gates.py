@@ -362,6 +362,15 @@ def dym(hs, tickers=None):
               f'тикеров {r["n_tikerov_vyigrysh"]}/{r["n_tikerov"]}, конц. {r["konc"]:.2f}, c3 {r["c3_vse"]}, выигрыш {r["vyigrysh_pct"]:.2f}%, '
               f'вход {r["vhod"]["proshyol"]} ({r["vhod"]["net"] or "—"}); мощность: t_ож {r["moshchnost"]["t_ozhid"]:.2f}, '
               f'P {r["moshchnost"]["P_p_lt_005"]:.2f} -> {r["moshchnost"]["pometka"]}', flush=True)
+        # механика ворот E на реальных рядах (файл не пишется): 2σ к F_h(d0) по 10 seed; F против самого себя — d ≡ 0, не проходит
+        Fs = {s: O.series([O.R / O.CFG['F_h_d0']['file'].format(h=h, seed=s)]) for s in O.SEEDS}
+        if tickers:
+            Fs = {s: f[f.ticker.isin(tickers)] for s, f in Fs.items()}
+        sig = {'F_d0_s42': sigma2_F(Fs, h, F=Fs), 'E_h': sigma2_F(E, h, F=Fs)}
+        g = gate_E_v4({'F_d0_s42': r}, {'F_d0_s42': 0}, {}, sig, h)
+        print(f'  ворота E (механика): 2σ F против F: d̄ {sig["F_d0_s42"]["d_mean"]:.2g}, прошёл {sig["F_d0_s42"]["passed"]}; '
+              f'E_h против F_h(d0): d̄ {sig["E_h"]["d_mean"]:.4g}, порог {sig["E_h"]["thr"]:.3g}, прошёл {sig["E_h"]["passed"]}; '
+              f'финалисты {g["pobeditel"]["poryadok"]} -> {g["pobeditel"]["pobeditel"]}', flush=True)
 
 
 def _sint(rng, eff, n_t=17, noise=0.4, years=range(2016, 2022), drift=None):
