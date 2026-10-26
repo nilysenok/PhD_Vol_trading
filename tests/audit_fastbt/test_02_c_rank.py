@@ -63,16 +63,32 @@ def _td(n=700, seed=1):
                       c, c, c, c, c, np.zeros(n), sg)
 
 
-@pytest.mark.xfail(strict=True, reason="НАЙДЕНО Н1: ранг масок C основного дизайна (masks.py:121, "
-                   "pandas rolling.rank) включает текущий день; исправление — PR c_rank_past")
-def test_main_c_mask_rank_excludes_current_day():
-    design.apply(())
+WANT = dict(thr=0.55, lookback=126, horizon="h1", direction="OFF", term_filter=False, hysteresis=0)
+
+
+def _trend_mask(dsg):
+    design.apply(dsg)
     td = _td()
-    masks._CACHE.clear()
-    rows, idx, params = masks._c_masks(td, "Trend", False)
-    want = dict(thr=0.55, lookback=126, horizon="h1", direction="OFF", term_filter=False,
-                hysteresis=0)
-    i = params.index(want)
+    rows, idx, params = masks.c_masks(td, "Trend", False)
+    design.apply(())
+    return rows[idx[params.index(WANT)]], td
+
+
+def test_main_c_mask_rank_excludes_current_day():
+    """Н1 исправлено: основной дизайн (main.yaml, c_rank_past: true) — ранг без текущего дня."""
+    from fastbt import dev
+    from conftest import ROOT
+    d, _ = dev.load_design(ROOT / "fastbt" / "designs" / "final" / "main.yaml")
+    cfg = dev.make_config(d, "dev")
+    assert ("c_rank_past", True) in cfg.design
+    m, td = _trend_mask(cfg.design)
     pr = s9_stats.past_rank(td.sigma["h1"].copy(), 126, max(50, 126 // 5))
-    expect = ~np.isnan(pr) & (pr > 0.55)
-    assert (rows[idx[i]] == expect).all()
+    assert (m == (~np.isnan(pr) & (pr > 0.55))).all()
+
+
+def test_gate_default_keeps_c22a4b3_rank():
+    """Без ручки (ворота c22a4b3) ранг прежний — pandas rolling.rank с текущим днём."""
+    import pandas as pd
+    m, td = _trend_mask(())
+    pr = pd.Series(td.sigma["h1"]).rolling(126, min_periods=50).rank(pct=True).values
+    assert (m == (~np.isnan(pr) & (pr > 0.55))).all()
