@@ -133,6 +133,7 @@ def gen_B():
             d = copy.deepcopy(d)
             _set(d, 'boost.lib', CFG['B']['lib'])
             _set(d, 'ens.seeds', 1)
+            _set(d, 'boost.row_frac', CFG['B']['row_frac'])  # в хэше: прогон скрининга ≠ ячейка C на всех строках
             ds.append(_maybe_inputs(d))
         out[h] = write_designs(f'B_h{h}', ds, dict(faza='B', h=h, plan='factor_plan_v1.csv (O)', nastroyki='v4: 1 seed, LightGBM, 50% строк',
                                                    row_frac=CFG['B']['row_frac'], row_seed=CFG['B']['row_seed'],
@@ -145,6 +146,7 @@ def gen_B():
         d = dict(copy.deepcopy(base1), design=f'B_h1_r{r} (J/K/L = {x["J"]:+d}/{x["K"]:+d}/{x["L"]:+d})', h=1)
         _set(d, 'boost.lib', CFG['B']['lib'])
         _set(d, 'ens.seeds', 1)
+        _set(d, 'boost.row_frac', CFG['B']['row_frac'])
         for f in CFG['B']['h1_factors']:
             if x[f] > 0:
                 d['features'] = d['features'] + [g for g in RF.FAKTORY[f][2] if g not in d['features']]
@@ -354,6 +356,122 @@ def designs_faktory_E(best, letters, h=None):
     return out
 
 
+# ---------------------------------------------------------------- уровень E по блоку владельца 20:10 (E1–E7 поверх финала R1 d0 и ноги)
+def baza_R1(h):
+    """Основа уровня E (владелец 20:10): финал R1 на данных по день d — прогон плана r01 (все факторы на уровне −1, D12) на ВСЕХ строках,
+    LightGBM, 1 seed (финалисты потом — 10 seed, обе библиотеки), и его нога (HAR-J, роль none). -> (финал, нога)."""
+    b = copy.deepcopy(yaml.safe_load((FACTOR_V1 / f'h{h}.yaml').read_text())['dizainy'][0])
+    b['design'] = f'E_h{h}_F_R1_d0'
+    _set(b, 'boost.lib', CFG['B']['lib'])
+    _set(b, 'ens.seeds', 1)
+    _set(b, 'boost.early_stop', 'qlike_total')
+    noga = dict(design=f'E_h{h}_F_R1_noga', h=h, leg=copy.deepcopy(b.get('leg') or {'type': 'HARJ'}), features=['G0'])
+    return b, noga
+
+
+def hyb_inputs(h):
+    """hyb₁ (и hyb₅ на h=22) для E1/E2: финалист своего h из этого прогона (gate_E, иначе gate_D, design_sha + ряд), иначе F_h(d0) с
+    эмбарго s² (R2/cache/VYR/F_d0_s2emb_h{k}_s{seed}). leg_1 — как в factor_v1 (E_1). -> inputs."""
+    inp = h1_inputs()
+    for k in ((1, 5) if h == 22 else (1,)):
+        src = None
+        for p in ('E', 'D'):
+            f = gate_path(p, k)
+            if f.exists():
+                g = yaml.safe_load(f.read_text()) or {}
+                sha = g.get('design_sha') or (C.design_hash(g['dizayn']) if g.get('dizayn') else None)
+                if sha and not (isinstance(g.get('pobeditel'), dict) and g['pobeditel'].get('pobeditel') == 'F_h(d0)'):
+                    src = {'design_sha': sha, 'series': 'L3'}
+                    break
+        inp[f'base_{k}'] = src or {'file': f'R2/cache/VYR/F_d0_s2emb_h{k}_s{{seed}}_val.parquet'}
+    return inp
+
+
+def designs_E_2010(h):
+    """Варианты уровня E (владелец 20:10) поверх основы baza_R1: -> [(вариант, исполнитель, дизайн | None, примечание)]."""
+    b, noga = baza_R1(h)
+    hy = hyb_inputs(h)
+    out = [('E0 финал R1 d0', 'L>B>L3', b, ''), ('E0 нога финала', 'L>L3', noga, '')]
+
+    def v(tag, mod, base, kv, note='', inputs=False, name=None):
+        d = copy.deepcopy(base)
+        for k, x in kv.items():
+            _set(d, k, x)
+        d['design'] = name or f'{base["design"]}_{tag.split()[0]}'
+        if inputs:
+            d = C.with_inputs(d, hy)
+        try:
+            C.validate(d)
+            out.append((tag, mod, d, note))
+        except C.DesignError as e:
+            out.append((tag, mod, None, f'не принят схемой: {str(e).splitlines()[-1].strip()}'))
+        return d
+
+    e1 = [v('E1 разложение hyb₁', 'M', b, {'mh.scheme': 'decomp', 'mh.decomp_k': 1}, '(hyb₁ + (h−1)·HAR₂₋h)/h', True, f'E_h{h}_E1_k1')]
+    if h == 22:
+        e1.append(v('E1 разложение hyb₅', 'M', b, {'mh.scheme': 'decomp', 'mh.decomp_k': 5}, '(hyb₅ + 17·HAR₆₋₂₂)/22', True, f'E_h{h}_E1_k5'))
+    e2 = v('E2 forward HAR', 'M', b, {'mh.persist': 'OLS'}, 'hyb₁ вместо RV_d' + ('; ❓ M: hyb₅ вместо RV_w — нет в коде' if h == 22 else ''),
+           True, f'E_h{h}_E2')
+    e3 = v('E3 равные веса ног', 'E', b, {'ens.leg_ens': 'equal'}, '½ HAR-J+s² + ½ HAR-X+s²; ❓ E: набор ног и вариант с RVI по ⅓ — нет в коде',
+           name=f'E_h{h}_E3')
+    e4 = v('E4 AveW HAR-X', 'E', dict(noga, leg=dict(type='HARX')), {'ens.window_ens': 'on'}, 'окна: расширяющееся, 5 лет, 3 года',
+           name=f'E_h{h}_E4')
+    v('E5 воздержание shock_fresh', 'G', b, {'k16.gate': 'shock_fresh'}, 'k ∈ {3, 5, 10} — вложенно по t; halt — только при сборке (A)',
+      name=f'E_h{h}_E5')
+    for i, x in enumerate(e1 + [e2, e3, e4], 1):
+        v(f'E6 усадка P поверх {x["design"].split("_")[-1]}', 'P', x, {'leg.panel': 'factor_shrink_05'}, 'кросс-секционная усадка (кластер 14)',
+          name=f'{x["design"]}_E6')
+    v('E7 Хьюбер', 'L', b, {'leg.robust': 'Huber'}, '❓ M: «среднее прямого и итерированного HAR» — нет в коде', name=f'E_h{h}_E7')
+    for f in CFG['E'].get('faktory_na_E_20_15', {}).get(h, []):
+        for d in designs_faktory_E(b, [f], h):
+            out.append((f'фактор {f} (ворота B, околопороговый)', ','.join(route(d)[1:-1]) or 'L', d, ''))
+    for kv, mod in (({'leg.struct': 'tau_midas'}, 'M'), ({'leg.struct': 'tau_boost'}, 'M'), ({'leg.struct': 'tau_rvi'}, 'M'),
+                    ({'leg.struct_split': 'bv_plus_jump'}, 'M'), ({'leg.moe': 'k2'}, 'E'), ({'leg.moe': 'k3'}, 'E')):
+        k, x = next(iter(kv.items()))
+        v(f'кл. 11–13 {k}={x}', mod, b, kv, 'в E, если модуль ставит DONE (дым); иначе — «не прошёл дым»', name=f'E_h{h}_{k.split(".")[-1]}_{x}')
+    return out
+
+
+def cmd_ryady_E(a):
+    """Ряды уровня E (20:10) сразу, без ворот C/D: дизайны -> driver_v1/E_2010_h{h}.yaml (до счёта), затем пакетом через run модулей,
+    h — параллельно, воркеров на h = --workers. Отчёт — R2/report/E_2010_varianty.md (что построено, исполнитель, DONE)."""
+    hs = a.h or [5, 22]
+    runner = Runner(False)
+    import r2_dataset_cache as DS
+    log(f'место на томах кэша (ГБ): {DS.proverka_mesta()}')
+    plan = {h: designs_E_2010(h) for h in hs}
+    for h in hs:
+        ds = [x[2] for x in plan[h] if x[2] is not None]
+        write_designs(f'E_2010_h{h}', ds, dict(faza='E', h=h, osnova='финал R1 d0 (r01, все строки) и нога', blok='владелец 20:10',
+                                               varianty=[dict(variant=t, modul=m, design=(d or {}).get('design'), primechanie=n)
+                                                         for t, m, d, n in plan[h]]))
+    if a.only_generate:
+        return 0
+    res = {}
+
+    def go(h):
+        ds = read_designs(f'E_2010_h{h}')
+        res[h] = runner.chain(ds, h, [42], CFG['steps'], a.workers, 'E', partial=True)
+    th = [threading.Thread(target=go, args=(h,), name=f'E_h{h}') for h in hs]
+    for t in th:
+        t.start()
+    for t in th:
+        t.join()
+    L = [f'# Уровень E — варианты блока владельца 20:10 ({time.strftime("%F %T")})', '',
+         'Основа — финал R1 на данных по день d (прогон r01 плана, все строки) и его нога; seed 42; отбор — ворота E (панельная t, LOYO).', '']
+    for h in hs:
+        L += [f'## h = {h}', '', f'- цепочки: {res[h]}', '', '| вариант | исполнитель | дизайн | ряд L3 | примечание |', '|---|---|---|---|---|']
+        for t, m, d, n in plan[h]:
+            ok_ = bool(d is not None and final_series(d, h, [42])) if d is not None else False
+            L.append(f'| {t} | {m} | {(d or {}).get("design", "—")} | {"есть" if ok_ else "нет"} | '
+                     f'{n}{"" if ok_ or d is None else ("; не прошёл дым / модуль не поставил ряд" if "кл. 11" in t else "; ряда нет")} |')
+        L.append('')
+    REPORT.mkdir(parents=True, exist_ok=True)
+    (REPORT / 'E_2010_varianty.md').write_text('\n'.join(L), encoding='utf-8')
+    log(f'ряды E: {res} -> {REPORT / "E_2010_varianty.md"}')
+    return 0
+
+
 def designs_E(best, ofat):
     out = []
     for k, vals in ofat.items():
@@ -446,6 +564,8 @@ class Runner:
             faza=faza).split()
         if m == 'L3':
             self.l3_stale(designs, h, seeds)
+        if m == 'B' and '--row-frac' not in extra:
+            self.snyat_podvyborku(designs, h)
         import r2_dataset_cache as DS
         try:  # дирижёр 18:40: < 2 ГБ на томе кэша — стоп до старта задач модуля (не 70 упавших задач с No space left)
             DS.proverka_mesta()
@@ -455,6 +575,7 @@ class Runner:
         t0 = time.time()
         rc = subprocess.run(cmd, cwd=REPO).returncode
         net = self.done_missing(m, designs, h, seeds)
+        self.last_net = net
         zamer(m, h, tag, len(designs), len(seeds), len(steps), workers, time.time() - t0, rc, len(net))
         if rc != 0 and designs and not net:  # все DONE на месте (повтор: «задач 0») — код ≠ 0 из-за пустой сводки модуля (E 18:36)
             log(f'модуль {m} h={h}: код {rc}, но все {len(designs) * len(seeds)} отметок DONE_{m} есть — этап пройден (❓ автору: код 0 при 0 задач)')
@@ -466,6 +587,28 @@ class Runner:
         if net:
             log(f'модуль {m} h={h}: без DONE {len(net)} из {len(designs) * len(seeds)} (неприменимые или ошибка задачи): {net[:3]}')
         return True, ''
+
+    @staticmethod
+    def snyat_podvyborku(designs, h):
+        """B на всех строках: в каталоге дизайна не должно быть рядов скрининга на подвыборке (B_rf*, их __cal) и их DONE_B/DONE_L3 —
+        до ключа boost.row_frac (19:5x) ячейка C с тем же хэшем, что прогон скрининга, брала его ряд на 50% строк. Файлы
+        переименовываются в .stale_rf (не удаляются). -> [дизайн]."""
+        out = []
+        for d in designs:
+            full = C.validate({**d, 'h': h})
+            if float(C.get(full, 'boost.row_frac')) != 1:
+                continue
+            cd = C.cache_dir(full)
+            rf = [f for f in cd.glob(f'B_rf*_h{int(h)}_*') if '.stale' not in f.name]
+            if not rf:
+                continue
+            for f in rf + [f for f in cd.glob(f'DONE_B_h{int(h)}_*') if '.stale' not in f.name] + \
+                    [f for f in cd.glob(f'DONE_L3_h{int(h)}_*') if '.stale' not in f.name]:
+                os.replace(f, f.with_name(f'{f.name}.stale_rf'))
+            out.append(full.get('design'))
+        if out:
+            log(f'B h={h}: сняты ряды подвыборки скрининга (B_rf*) у {len(out)} дизайнов на всех строках: {out[:3]}')
+        return out
 
     @staticmethod
     def l3_stale(designs, h, seeds):
@@ -513,12 +656,27 @@ class Runner:
         for m in CFG['chain_order']:
             ds = [d for d in by.get(m, []) if d['design'] not in snyaty]
             if ds:
+                self.last_net = []
                 ok, why = self.run(m, ds, h, seeds, steps, workers, (extra or {}).get(m, ''), tag)
                 if not ok:
                     if not partial:
                         return False, why
                     fails.append(why)
                     snyaty |= {d['design'] for d in ds}
+                    continue
+                # дирижёр 20:05: звено без DONE ни по одному seed — дизайн неприменим к модулю (R: RVI_anchor с refit/rls_lambda);
+                # дальше по цепочке он не идёт (L3 не ищет ряды, которых нет), пометка — в NEPR и логе
+                miss = {}
+                for x in getattr(self, 'last_net', []) or []:
+                    nm, _, s = x.rpartition('/s')
+                    miss.setdefault(nm, set()).add(s)
+                bez = {nm for nm, ss in miss.items() if len(ss) >= len(seeds)}
+                for d in ds:
+                    if d['design'] in bez:
+                        snyaty.add(d['design'])
+                        NEPR.setdefault((h, d['design']), []).append(f'неприменим к модулю {m} (нет DONE_{m})')
+                if bez:
+                    log(f'цепочка h={h}: {len(bez)} дизайнов без DONE_{m} — сняты с последующих звеньев: {sorted(bez)[:3]}')
         return not fails, '; '.join(fails)
 
 
@@ -1362,8 +1520,14 @@ def main():
     p = sp.add_parser('smoke')
     p.add_argument('--real', action='store_true', help='настоящие модули по контракту (3 тикера, шаги 1–3), замеры времени')
     p.add_argument('--h', type=int, nargs='+')
+    p = sp.add_parser('ryady-E', help='ряды уровня E (владелец 20:10) сразу, без ворот C/D')
+    p.add_argument('--h', type=int, nargs='+')
+    p.add_argument('--workers', type=int, default=5)
+    p.add_argument('--only-generate', dest='only_generate', action='store_true')
     sp.add_parser('status')
     a = ap.parse_args()
+    if a.cmd == 'ryady-E':
+        return cmd_ryady_E(a)
     if a.cmd == 'smoke' and a.real:
         return cmd_smoke_real(a)
     if a.cmd == 'generate':

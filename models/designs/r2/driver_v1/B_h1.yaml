@@ -52,6 +52,7 @@ designs:
     role: feature
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -76,6 +77,7 @@ designs:
     role: feature
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -102,6 +104,7 @@ designs:
     role: feature
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -128,6 +131,7 @@ designs:
     role: feature
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -156,6 +160,7 @@ designs:
     role: feature
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -182,6 +187,7 @@ designs:
     role: feature
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -210,6 +216,7 @@ designs:
     role: feature
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -238,6 +245,7 @@ designs:
     role: feature
     lib: lightgbm
     grid: current
+    row_frac: 0.5
     early_stop: qlike_total
   features:
   - G0
@@ -254,26 +262,26 @@ designs:
   h: 1
 index:
 - design: B_h1_r1 (J/K/L = -1/-1/-1)
-  design_sha: 13f464edf82fd39d1d013db9a476ca6c03048509f4041ef1b4df7307eef98f33
-  slozhnost: 5
+  design_sha: abacf6250ecfb302d536994786df5b7213eebe01020f69798f116b504c8e1b1b
+  slozhnost: 6
 - design: B_h1_r2 (J/K/L = +1/-1/-1)
-  design_sha: 5088f29a990186c3ca4b8586ebe4bb40fef7b95ea44cecdd337829d45e78bef6
-  slozhnost: 7
+  design_sha: f9257a1eb1ac1e3cc84933389bdbb49508770a693d8acd96adbdfa4c4ab3d964
+  slozhnost: 8
 - design: B_h1_r3 (J/K/L = -1/+1/-1)
-  design_sha: 613c33e96d176186a49ae218330b2f97ee6c6fdf1b9cc65db71457ea69835167
-  slozhnost: 7
+  design_sha: 278e45af2df437ed6c3cfefef66e544046e84337fd78811a178ea75121aa8e8f
+  slozhnost: 8
 - design: B_h1_r4 (J/K/L = +1/+1/-1)
-  design_sha: c999b436e45f3c576cf6ff47da9883c91544549887c13e16a651eb33393d0b71
-  slozhnost: 9
+  design_sha: 22d7e2430d7ef50363657cb4076949eb11dbcecfc0005210f0c9dfaf3d41e2d7
+  slozhnost: 10
 - design: B_h1_r5 (J/K/L = -1/-1/+1)
-  design_sha: 883b2269a82340d0915d73063b95e4cd63bd75ea7a1a4885dd262eb89856751f
-  slozhnost: 7
+  design_sha: 6a99350b759a4f328e04294f0971a8b35436301e8f943173731e9b9f981eb085
+  slozhnost: 8
 - design: B_h1_r6 (J/K/L = +1/-1/+1)
-  design_sha: 4253037a7f87b36e7a2cf54b3e28ac1aa224b6c556b77dd96061064ce43c6c9c
-  slozhnost: 9
+  design_sha: 4d5629a7e66ffd2eee95fd3a24bb2515d162b43d4aacaebf5f0a54d63915a350
+  slozhnost: 10
 - design: B_h1_r7 (J/K/L = -1/+1/+1)
-  design_sha: b6d22d4855bd96d4bcb18db872127fbe6ec4cbfcbf851204838abc0ad61a7113
-  slozhnost: 9
+  design_sha: 7b242040facc8436b2c316caf2e61f4f8b1f27c5cbd9209f7502f8cc4fd3a658
+  slozhnost: 10
 - design: B_h1_r8 (J/K/L = +1/+1/+1)
-  design_sha: 262a06f77bff3c687c46b7818f73d0eb04080ca76bd7e4e938a320b367d274fa
-  slozhnost: 11
+  design_sha: bd2cec16cecbdd7d60b6209da7e0ffd238e5ab8401a0c33891648a04bb93a550
+  slozhnost: 12
