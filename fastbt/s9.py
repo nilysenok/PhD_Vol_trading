@@ -576,7 +576,8 @@ class Engine:
     def _finish(self, r, gross, exp_, turn, cap):
         used = cap * exp_
         fdr = np.maximum(0.0, 1.0 - used) * self.rf * self.cal
-        mg = np.maximum(0.0, used - 1.0) * (self.kr + 0.02) / 365.0
+        # плата за плечо — за те же календарные дни [d, d_next), что и ставка (аудит FA2a, Н4)
+        mg = np.maximum(0.0, used - 1.0) * (self.kr + 0.02) / 365.0 * self.cal
         total = r + fdr - mg
         p = pd.DataFrame(dict(r=r, gross=gross, exposure=exp_, turnover=turn, total=total,
                               excess=total - self.rf * self.cal,
