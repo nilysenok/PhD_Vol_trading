@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """R2, агент O: уровень 2 — последовательное отсечение точек сетки остаточного ученика (решение владельца 26.10, 16:25; R2 на Маке).
 
-LHS-60 → ступень 1: 2 складки × 1 seed → 30 → ступень 2: 4 складки × 1 seed → 15 → ступень 3: 5 складок × 3 seed → 8.
-- Складки ступени — первые n из порядка `halving.poryadok_skladok` (r2_O_loyo.yaml, задан до счёта); ступени вложены.
+Протокол v4 § 5: LHS-60 → ступень 1: складки 2020, 2021 × 1 seed → 30 → ступень 2: 2018–2021 × 1 seed → 15 → ступень 3: все 5 × 3 seed → 8.
+- Годы ступеней — yaml `halving.stupeni` (заданы протоколом до счёта); наборы вложены.
 - Критерий ступени — средняя t панельного DM против E_h на отложенных годах ступени (r2_gates.t_skladok — код DM теста); при равенстве —
-  больший выигрыш, затем меньший номер точки. Вложенного выбора и c3 на ступенях 1–2 нет (у точки один вариант, ряды только нужных лет).
+  меньший средний QLIKE, затем меньший номер точки. Вложенного выбора и c3 на ступенях нет (у точки один вариант, ряды только нужных лет).
 - 8 выживших идут в ворота кластера 17 (r2_gates.ocenka: все 5 складок, c3, вход, выбор со сложностью).
 Встраивание в r2_driver.py агента S: driver даёт функцию ryad(tochka, seeds, gody) -> кадр val (date, ticker, year, step, rv_actual,
 rv_pred — итоговый прогноз; при нескольких seed — уже агрегированный), O возвращает выживших и трассу. Driver сам решает, какие шаги
@@ -24,10 +24,10 @@ H = O.CFG['halving']
 
 
 def stupeni():
-    """[(номер, годы складок, seeds, оставить)] — вложенные наборы складок."""
-    p = H['poryadok_skladok']
-    assert sorted(p) == [O.Y(s) for s in O.T], 'порядок складок — перестановка 2017–2021'
-    return [(i + 1, list(p[:s['skladok']]), list(s['seeds']), int(s['ostavit'])) for i, s in enumerate(H['stupeni'])]
+    """[(номер, годы складок, seeds, оставить)] — протокол v4 § 5: {2020, 2021} → {2018–2021} → все 5; наборы вложены."""
+    S = [(i + 1, sorted(s['gody']), list(s['seeds']), int(s['ostavit'])) for i, s in enumerate(H['stupeni'])]
+    assert all(set(a[1]) < set(b[1]) for a, b in zip(S, S[1:])) and S[-1][1] == [O.Y(s) for s in O.T], 'ступени вложены, последняя — все 5'
+    return S
 
 
 def otsechenie(tochki, ryad, E, h):
@@ -40,8 +40,8 @@ def otsechenie(tochki, ryad, E, h):
             r = RG.t_skladok(ryad(t, seeds, gody), E, h, gody)
             res[t] = r
             trace.append(dict(stupen=k, tochka=t, gody=','.join(map(str, gody)), seeds=','.join(map(str, seeds)), t_mean=r['t_mean'],
-                              vyigrysh_pct=r['vyigrysh_pct'], **{f't_{y}': r['t'][y] for y in gody}))
-        order = sorted(zhivye, key=lambda t: (-res[t]['t_mean'], -res[t]['vyigrysh_pct'], tochki.index(t)))
+                              q_mean=r['q_mean'], vyigrysh_pct=r['vyigrysh_pct'], **{f't_{y}': r['t'][y] for y in gody}))
+        order = sorted(zhivye, key=lambda t: (-res[t]['t_mean'], res[t]['q_mean'], tochki.index(t)))  # v4: равенство — средний QLIKE
         zhivye = order[:ost]
         for row in trace:
             if row['stupen'] == k:
@@ -74,7 +74,7 @@ def selftest():
     zh, tr = otsechenie(tochki, ryad, E, 1)
     st = stupeni()
     assert [s[3] for s in st] == [30, 15, 8] and len(zh) == 8
-    assert set(st[0][1]) < set(st[1][1]) < set(st[2][1]) and len(st[2][1]) == 5
+    assert st[0][1] == [2020, 2021] and st[1][1] == [2018, 2019, 2020, 2021] and len(st[2][1]) == 5  # v4 § 5
     n = tr.groupby('stupen').tochka.count()
     assert list(n) == [61, 30, 15] and list(tr.groupby('stupen').proshla.sum()) == [30, 15, 8]
     best = sorted(kach, key=lambda t: -kach[t])[:8]

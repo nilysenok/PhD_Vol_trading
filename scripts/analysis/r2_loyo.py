@@ -333,10 +333,9 @@ def validate(design):
     return True
 
 
-def slozhnost(design):
-    """c(u), п. 2.4: число ключей со значением не равным default (schema_v1); группы признаков сверх G0 — по одной; fixed — не в счёт;
-    список значений у ключа с default-сеткой (leg.enet) — не в счёт (выбор внутри складки)."""
-    c = 0
+def otlichnye_klyuchi(design):
+    """Ключи дизайна, отличные от default (то, что считает сложность): fixed, ens.seeds и сетка leg.enet по умолчанию — не в счёт."""
+    out = []
     for p, v in _flat(design).items():
         if any(p == x or p.startswith(x + '.') for x in NE_SCHITAT) or p not in SPECS:
             continue
@@ -344,12 +343,20 @@ def slozhnost(design):
         if s.get('fixed'):
             continue
         if p == 'features':
-            c += len(set(v) - {'G0'})
+            if set(v) - {'G0'}:
+                out.append(p)
         elif p == 'leg.enet':
-            c += 0 if (not isinstance(v, dict) or all(isinstance(x, list) for x in v.values())) else 1
+            if isinstance(v, dict) and not all(isinstance(x, list) for x in v.values()):
+                out.append(p)
         elif 'default' in s and _n(v) != _n(s['default']):
-            c += 1
-    return c
+            out.append(p)
+    return out
+
+
+def slozhnost(design):
+    """c(u), п. 2.4: число ключей со значением не равным default (schema_v1); группы признаков сверх G0 — по одной; fixed — не в счёт;
+    список значений у ключа с default-сеткой (leg.enet) — не в счёт (выбор внутри складки)."""
+    return sum(len(set(_flat(design)['features']) - {'G0'}) if p == 'features' else 1 for p in otlichnye_klyuchi(design))
 
 
 def vybor_shtraf(W, roles=None, k=1, s=None):
@@ -596,7 +603,85 @@ def dizain_hashi(path):
                 canonical_yaml=can)
 
 
-def gate_E(W, h, sig, inputs=(), v0_units=(), N=None, dizainy=None):
+LESTNICA = [  # ступень -> префиксы ключей схемы, которые на ней берутся из дизайна победителя (накопительно); остальное — default
+    ('HAR-J', None), ('+s²', None),
+    ('+HAR-X', ('leg',)),
+    ('+калибровка', ('calib',)),
+    ('+бустинг', ('boost', 'features', 'data')),
+    ('+согласование', ('mh', 'ens')),
+]
+
+
+def _vzyat(src, prefixes, base):
+    """Скопировать в base ключи src с путями, начинающимися с prefixes (вложенные словари)."""
+    import copy
+    out = copy.deepcopy(base)
+    for k, v in src.items():
+        if k in prefixes or any(p.split('.')[0] == k for p in prefixes):
+            out[k] = copy.deepcopy(v)
+    return out
+
+
+def _zapisat_dizain(d, path):
+    import r2_core as C
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(yaml.safe_dump(d, allow_unicode=True, sort_keys=False))
+    ds = C.design_hash(d)
+    return dict(design_yaml=str(path), design_sha=ds, cache_dir=str(R / 'R2' / 'cache' / ds[:16]),
+                ryady_shablon=f'{ds[:16]}/*_h{d["h"]}_s*_val.parquet')
+
+
+def lestnica_ablyacii(win, h, out_dir):
+    """Лестница (кластер 10): HAR-J (эталон (а)) → +s² (эталон (б) = E_h) → +HAR-X → +калибровка → +бустинг → +согласование → финал;
+    ступени 3–6 — дизайны: ключи победителя по группам LESTNICA накопительно, остальное default; финал — победитель.
+    Абляции: финал минус каждый кластер — ключи этого кластера (schema_v1, поле cluster) возвращаются к default.
+    Дизайны пишутся в out_dir (<имя>.yaml), у каждого design_sha (r2_core), cache_dir, шаблон рядов."""
+    import copy
+    e = CFG['etalon']
+    L = [dict(stupen='HAR-J', design_sha=None, ryad=dict(file=str(R / e['file'].format(h=h)), col='har_raw', s2='bez'),
+              primechanie='эталон (а), замороженный ряд ВЫР-1'),
+         dict(stupen='+s²', design_sha=None, ryad=dict(file=str(R / e['file'].format(h=h)), col='har_raw', s2='sm'),
+              primechanie='эталон (б) = E_h (= col har_corr), замороженный ряд ВЫР-1')]
+    base = {'design': '', 'h': h}
+    if 'seeds' in win.get('ens', {}):  # набор seed — условие оценки, не ступень: на всех ступенях как у победителя
+        base['ens'] = {'seeds': win['ens']['seeds']}
+    pref, prev = (), None
+    for name, p in LESTNICA[2:]:
+        pref = pref + p
+        d = _vzyat(win, pref, base)
+        d['design'] = f'lestnica_h{h}_{name.strip("+")}'
+        validate(d)
+        r = _zapisat_dizain(d, Path(out_dir) / f'lestnica_{len(L) + 1}_{name.strip("+")}.yaml')
+        r.update(stupen=name, bez_izmeneniy=bool(prev is not None and prev == r['design_sha']))
+        prev = r['design_sha']
+        L.append(r)
+    fin = _zapisat_dizain(copy.deepcopy(win), Path(out_dir) / f'lestnica_{len(L) + 1}_final.yaml')
+    fin.update(stupen='финал', bez_izmeneniy=fin['design_sha'] == prev,
+               primechanie='' if fin['design_sha'] == prev else 'у победителя есть ключи вне групп лестницы — финал отличается от +согласование')
+    L.append(fin)
+    kl = {}
+    for p in otlichnye_klyuchi(win):  # те же ключи, что считает сложность (п. 2.4): ens.seeds, fixed и сетка enet — не абляции
+        kl.setdefault(int(SPECS[p]['cluster']), []).append(p)
+    A = []
+    for c in sorted(kl):
+        d = copy.deepcopy(win)
+        for p in kl[c]:
+            a, *b = p.split('.')
+            if not b:
+                d.pop(a, None)
+            else:
+                d.get(a, {}).pop(b[0], None)
+                if a in d and not d[a]:
+                    d.pop(a)
+        d['design'] = f'ablyaciya_h{h}_minus_k{c}'
+        validate(d)
+        r = _zapisat_dizain(d, Path(out_dir) / f'ablyaciya_minus_k{c}.yaml')
+        r.update(klaster=c, klyuchi=kl[c])
+        A.append(r)
+    return L, A
+
+
+def gate_E(W, h, sig, inputs=(), v0_units=(), N=None, dizainy=None, ryady=None):
     """Фаза E: финалисты (до 3 + V0), 2σ к F_h(d0) по 10 seed (sig: {unit: sigma2}), победитель; число дизайнов и ложные победители.
     dizainy — {unit: путь к yaml дизайна}: у финалистов и победителя — design_sha (r2_core) и хэш полного yaml (сверка у агента A)."""
     dizainy = dizainy or {}
@@ -607,13 +692,19 @@ def gate_E(W, h, sig, inputs=(), v0_units=(), N=None, dizainy=None):
                  **{k: v for k, v in hs.get(r.unit, {}).items() if k != 'canonical_yaml'},
                  **{f's2_{k}': v for k, v in (sig.get(r.unit) or {}).items()}) for r in fin.itertuples()]
     w = pb['pobeditel']
+    L, A = None, None
     if w in hs:
         pb.update(hs[w])
+        pb['ryady'] = dict(cache_dir=str(R / 'R2' / 'cache' / hs[w]['cache_dir']), shablon=f'*_h{h}_s*_val.parquet',
+                           files=list((ryady or {}).get(w, [])))
+        L, A = lestnica_ablyacii(yaml.safe_load(Path(hs[w]['design_yaml']).read_text()), h, OUT / f'gate_E_h{h}_dizainy')
     elif w != 'F_h(d0)':
         raise ValueError(f'gate E: нет yaml дизайна победителя {w} — design_sha для сборки (агент A) не записан')
     else:
-        pb.update(design_sha=None, primechanie='победителя нет: строка гибрида — F_h(d0) (замороженный ряд ВЫР-1)')
-    return write_gate('E', h, dict(finalisty=rows, pobeditel=pb, primechanie_Fd0=CFG['F_h_d0'].get('otstuplenie', ''),
+        fd = CFG['F_h_d0']['file']
+        pb.update(design_sha=None, primechanie='победителя нет: строка гибрида — F_h(d0) (замороженный ряд ВЫР-1)',
+                  ryady=dict(files=[str(R / fd.format(h=h, seed=s)) for s in SEEDS]))
+    return write_gate('E', h, dict(finalisty=rows, pobeditel=pb, lestnica=L, ablyacii=A, primechanie_Fd0=CFG['F_h_d0'].get('otstuplenie', ''),
                                    lozhnye=lozhnye(N or {'E': (int((~W.is_F).sum()), int((W.vhod & ~W.is_F).sum()))}, len(fin))),
                       list(inputs) + [hs[u]['design_yaml'] for u in hs])
 
@@ -738,7 +829,9 @@ def run_level(L, h, v0_units=()):
             sig[u] = sigma2(per_seed, fd)
         dz = {u: (R / p if not Path(p).is_absolute() else Path(p)) for u, p in
               spec.groupby('unit').design_yaml.first().dropna().items()} if 'design_yaml' in spec else {}
-        print('gate E:', gate_E(W10, h, sig, files, v0_units, dizainy=dz), flush=True)
+        ry = {u: [str(R / f if not Path(f).is_absolute() else f) for f in str(x).split(';')]
+              for u, x in spec.groupby('unit').files10.first().items()}
+        print('gate E:', gate_E(W10, h, sig, files, v0_units, dizainy=dz, ryady=ry), flush=True)
     return W
 
 
@@ -1009,6 +1102,19 @@ def selftest():
         assert pw['design_sha'] == C.design_hash(yaml.safe_load(dzf.read_text())) and pw['cache_dir'] == pw['design_sha'][:16]
         assert pw['yaml_file_sha256'] == sha(dzf) and hashlib.sha256(pw['canonical_yaml'].encode()).hexdigest() == pw['design_sha']
         assert str(dzf) in ge['inputs']
+        # лестница и абляции (для D): порядок ступеней, design_sha через r2_core, ступень = накопление групп ключей победителя
+        L_ = ge['lestnica']
+        assert [x['stupen'] for x in L_] == ['HAR-J', '+s²', '+HAR-X', '+калибровка', '+бустинг', '+согласование', 'финал']
+        assert L_[0]['design_sha'] is None and L_[1]['ryad']['s2'] == 'sm' and L_[-1]['design_sha'] == pw['design_sha']
+        assert L_[3]['bez_izmeneniy'] and not L_[4]['bez_izmeneniy'] and L_[5]['bez_izmeneniy'] and L_[-1]['bez_izmeneniy']
+        hx = yaml.safe_load(Path(L_[2]['design_yaml']).read_text())
+        assert hx['leg'] == base1['leg'] and 'boost' not in hx and 'features' not in hx
+        ab = {a['klaster']: a for a in ge['ablyacii']}
+        assert set(ab) == {2, 4, 5} and set(ab[5]['klyuchi']) == {'features'} and set(ab[2]['klyuchi']) == {'leg.type', 'leg.regressors'}
+        a4 = yaml.safe_load(Path(ab[4]['design_yaml']).read_text())
+        assert 'role' not in a4.get('boost', {}) and 'lib' not in a4.get('boost', {}) and a4['features'] == base1['features']
+        assert all(a['design_sha'] != pw['design_sha'] for a in ge['ablyacii']) and pw['ryady']['cache_dir'].endswith(pw['cache_dir'])
+        assert yaml.safe_load(gate_E(W9, 1, {}, v0_units=('B',)).read_text())['lestnica'] is None
         try:
             gate_E(W9, 1, {top1: sigma2(0.20, 0.21)}, v0_units=('B',))
             raise AssertionError('победитель без yaml дизайна не остановлен')

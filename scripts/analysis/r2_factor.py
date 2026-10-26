@@ -45,6 +45,16 @@ FAKTORY = {
 }
 FIKTIVNYE = {1: ('M', 'N'), 5: ('D',), 22: ('D',)}  # п. 3.1: monotone — только для role = feature; persist/reconcile на h=1 не применимы
 ENET = {'lambda': [0.01, 0.1, 1], 'alpha': [0, 0.5, 1]}
+# Входы h=1 для persist / reconcile (M и N) на фазе B — предложение M (PR #169), принято O: одинаковые для всех 64 прогонов h=5/22,
+# замороженные ряды ВЫР-1 (от факторов скрининга не зависят). После уровня C — лучшая ячейка h=1 (gate_C_h1.yaml).
+MH_VHOD = dict(
+    faza='B',
+    base_1=dict(ryad='F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)', file='R2/cache/VYR/F_d0_h1_s{seed}_val.parquet',
+                seed='как у прогона (скрининг — 42, 43, 44)', s2='bez (поправка в ряде)'),
+    leg_1=dict(ryad='HAR-J+s² d0 = E_1 (нога₁)', file='vyr/etalon_d0_h1_val.parquet', col='har_corr', seed='det'),
+    posle_C='лучшая ячейка h=1 из gate_C_h1.yaml (её ряд и её нога); вход меняет прогноз, но не yaml дизайна — ❓ S/M: в хэш кэша '
+            'должен входить вход h=1 (иначе ряды фазы B и после C под одним design_sha)',
+)
 BAZA = {  # п. 3.1, базовый дизайн скрининга; остальные ключи — default схемы
     1: dict(leg=dict(type='HARX', regressors='S4', enet=ENET), boost=dict(role='feature', lib='both_avg', grid='current'),
             features=['G0', 'G1'], ens=dict(seeds=3), _tochki='D22_h1'),
@@ -121,8 +131,9 @@ def plan_dizainy():
         ds = [dizain(h, r._asdict(), r.run) for r in P.itertuples()]
         meta = [dict(run=int(r.run), slozhnost=O.slozhnost(d), **{f: int(getattr(r, f)) for f in LET}) for d, r in zip(ds, P.itertuples())]
         f = out / f'h{h}.yaml'
+        extra = dict(mh_vhod=MH_VHOD) if h in (5, 22) else {}
         f.write_text(yaml.safe_dump(dict(plan=str(FC['plan']), plan_sha256=info['sha256'], fiktivnye=list(FIKTIVNYE[h]),
-                                         dizainy=ds, meta=meta), allow_unicode=True, sort_keys=False))
+                                         **extra, dizainy=ds, meta=meta), allow_unicode=True, sort_keys=False))
         print(f'h={h}: 64 дизайна -> {f}; сложность {min(m["slozhnost"] for m in meta)}–{max(m["slozhnost"] for m in meta)}', flush=True)
     print('план:', info, flush=True)
     return info

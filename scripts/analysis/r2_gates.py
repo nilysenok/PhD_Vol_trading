@@ -69,45 +69,60 @@ def t_skladok(u, E, h, folds):
         g = P[P.year == y]
         out[y] = FS.dm_series(FS.daily(g.date.values, g.d.values), h)['t']
     g = P[P.year.isin(folds)]
+    lu = FS.qloss(g.rv_actual.values, g.rv_pred.values)
     return dict(t=out, t_mean=float(np.mean(list(out.values()))),
+                q_mean=float(np.mean([lu[(g.year == y).values].mean() for y in folds])),  # средний QLIKE лет ступени (равенство t)
                 vyigrysh_pct=float(100 * FS.daily(g.date.values, g.d.values).mean() / FS.daily(g.date.values, g.lE.values).mean()))
+
+
+def koncentraciya(d_t, lE_t):
+    """v4 § 2 п. 4 (❓ 2): 2% дней с наибольшей потерей эталона (средней по тикерам) в объединении отложенных лет — их доля в Σ d_t.
+    Σ d_t ≤ 0 — inf (вход не пройден)."""
+    total = float(d_t.sum())
+    if total <= 0:
+        return np.inf
+    k = max(1, int(np.ceil(G['konc_dolya_dney'] * len(d_t))))
+    hot = lE_t.sort_values(ascending=False).index[:k]
+    return float(d_t.loc[hot].sum() / total)
 
 
 def ocenka(variants, E, h, ref_q=None):
     """variants — {имя варианта: кадр val (date, ticker, year, step, rv_actual, rv_pred — итоговый прогноз дизайна), шаги 1–6}.
-    -> dict: по складкам (вариант, c3, t, n дней, выигрыш), средняя t, hit rate, тикеры, концентрация, мощность, вход."""
+    Вложенный выбор (v4 § 2): в складке Y среди вариантов с c3 на T\\{Y} — максимум средней панельной t на обучающих годах, при равенстве —
+    меньший средний QLIKE; если c3 нет ни у одного — складка без c3 (вариант — тем же правилом среди всех).
+    -> dict: по складкам (вариант, c3, t, n дней, выигрыш), t̄, hit rate, тикеры, концентрация, мощность, вход."""
     folds = [O.Y(s) for s in O.T]
     tab = tablica_c3(variants, E, ref_q)
     Gv = {v: g.sort_values('step') for v, g in tab.groupby('variant', sort=False)}
     vs = list(Gv)
     P = {v: d_panel(df, E) for v, df in variants.items()}
-    po, dd, rows_all = [], [], []
+    ty = {v: {y: FS.dm_series(FS.daily(P[v][P[v].year == y].date.values, P[v][P[v].year == y].d.values), h)['t'] for y in folds} for v in vs}
+    qy = {v: dict(zip(Gv[v].step, Gv[v].q_hyb)) for v in vs}
+    po, dd, ee, rows_all = [], [], [], []
     for y in folds:
         st = y - 2015
         tr = tuple(s for s in O.T if s != st)
-        order = sorted(vs, key=lambda v: (Gv[v][Gv[v].step.isin(tr)].q_hyb.mean(), vs.index(v)))
-        v, fl, _ = O.pick(Gv, order, tr, ('c3',), c1_E=True, c3_E=True)
-        c3 = v is not None
-        vv = v if c3 else order[0]
+        key = lambda v: (-np.mean([ty[v][O.Y(s)] for s in tr]), np.mean([qy[v][s] for s in tr]), vs.index(v))
+        ok3 = [v for v in vs if O.crit(Gv[v], tr, c1_E=True, c3_E=True)['c3']]
+        c3 = bool(ok3)
+        vv = sorted(ok3 or vs, key=key)[0]
         g = P[vv][P[vv].year == y]
         dt = FS.daily(g.date.values, g.d.values)
         r = FS.dm_series(dt, h)
-        po.append(dict(Y=y, variant=vv, c3=c3, t=r['t'], n_dney=r['n'], mean_d=r['mean_d'],
+        days = np.sort(g.date.unique())
+        po.append(dict(Y=y, variant=vv, c3=c3, t=r['t'], t_obuch=-key(vv)[0], n_dney=r['n'], mean_d=r['mean_d'],
                        vyigrysh_pct=100 * r['mean_d'] / FS.daily(g.date.values, g.lE.values).mean()))
-        dd.append(pd.Series(dt, index=np.sort(g.date.unique())))
+        dd.append(pd.Series(dt, index=days))
+        ee.append(pd.Series(FS.daily(g.date.values, g.lE.values), index=days))
         rows_all.append(g)
     F = pd.DataFrame(po)
-    d_all = pd.concat(dd).sort_index()
+    d_all, lE_all = pd.concat(dd).sort_index(), pd.concat(ee).sort_index()
     A = pd.concat(rows_all)
     tick = A.groupby('ticker').d.mean()
-    top =np.sort(d_all.values)[::-1][:max(1, int(np.ceil(G['konc_dolya_dney'] * len(d_all))))]
-    total = d_all.sum()
-    konc = float(top.sum() / total) if total > 0 else np.inf
-    t_mean = float(F.t.mean())
-    gain = float(100 * d_all.mean() / FS.daily(A.date.values, A.lE.values).mean())
-    res = dict(folds=F, t_mean=t_mean, n_t_ge=int((F.t >= G['t_skladka']).sum()), hit=float((d_all > 0).mean()),
-               n_tikerov_vyigrysh=int((tick > 0).sum()), n_tikerov=int(len(tick)), konc=konc, c3_vse=bool(F.c3.all()),
-               vyigrysh_pct=gain, mean_d=float(d_all.mean()), moshchnost=moshchnost(d_all.values, h))
+    res = dict(folds=F, t_mean=float(F.t.mean()), n_t_ge=int((F.t >= G['t_skladka']).sum()), hit=float((d_all > 0).mean()),
+               n_tikerov_vyigrysh=int((tick > 0).sum()), n_tikerov=int(len(tick)), konc=koncentraciya(d_all, lE_all),
+               c3_vse=bool(F.c3.all()), mean_d=float(d_all.mean()), mean_lE=float(lE_all.mean()),
+               vyigrysh_pct=float(100 * d_all.mean() / lE_all.mean()), moshchnost=moshchnost(d_all.values, h))
     res['vhod'] = vhod(res)
     return res
 
@@ -136,8 +151,9 @@ def moshchnost(d, h, n_test=None):
 
 
 def vybor(R, slozhnost):
-    """R — {unit: результат ocenka}; slozhnost — {unit: c(u)}. Среди прошедших вход: макс. средняя t; при Δt ≤ 0,2 — больший выигрыш;
-    при Δt ≤ 0,2 и разнице выигрыша ≤ 1 п. п. — меньшая сложность (затем большая t). -> (победитель | None, таблица)."""
+    """R — {unit: результат ocenka}; slozhnost — {unit: c(u)}. v4 § 2: среди прошедших вход — макс. t̄; при Δt̄ ≤ 0,2 — больший средний
+    выигрыш mean d; если и выигрыш различается не больше чем на 1% (относительно: Δ mean d / средняя потеря E ≤ 0,01; vyigrysh_pct —
+    mean d в % к потере E, поэтому это Δ vyigrysh_pct ≤ 1) — меньшая сложность (затем большая t̄). -> (победитель | None, таблица)."""
     T = pd.DataFrame([dict(unit=u, t_mean=r['t_mean'], vyigrysh_pct=r['vyigrysh_pct'], slozhnost=slozhnost.get(u, 0),
                            proshyol=r['vhod']['proshyol'], net=r['vhod']['net'], hit=r['hit'], tikery=r['n_tikerov_vyigrysh'],
                            konc=r['konc'], t_ozhid=r['moshchnost']['t_ozhid'], P_moshchnost=r['moshchnost']['P_p_lt_005'],
@@ -148,7 +164,7 @@ def vybor(R, slozhnost):
     best = c.sort_values('t_mean', ascending=False).iloc[0]
     A = c[best.t_mean - c.t_mean <= G['dt']]
     bg = A.sort_values(['vyigrysh_pct', 't_mean'], ascending=False).iloc[0]
-    B = A[bg.vyigrysh_pct - A.vyigrysh_pct <= G['dvyigrysh_pp']]
+    B = A[bg.vyigrysh_pct - A.vyigrysh_pct <= 100 * G['dvyigrysh_otn']]
     w = B.sort_values(['slozhnost', 't_mean'], ascending=[True, False]).iloc[0]
     T['pobeditel'] = T.unit == w.unit
     return w.unit, T
@@ -196,14 +212,18 @@ def selftest():
     g = d_panel(u, E)
     g = g[g.year == 2019]
     assert abs(r['folds'].set_index('Y').t[2019] - FS.dm_series(FS.daily(g.date.values, g.d.values), 5)['t']) < 1e-12
-    # 3. концентрация: выигрыш только на 1% дней -> вход не пройден по konc; c3 провален -> не пройден
-    dts = np.sort(E.date.unique())
-    hot = set(dts[rng.choice(len(dts), int(0.01 * len(dts)), replace=False)])
-    uk = E.copy()
-    m = uk.date.isin(hot).values
-    uk.loc[m, 'rv_pred'] = uk.loc[m, 'rv_actual'] * np.exp(rng.normal(0, 0.05, m.sum()))
-    rk = ocenka({'a': uk}, E, 1)
-    assert rk['konc'] > 0.40 and not rk['vhod']['konc'], rk['konc']
+    # 3. концентрация (v4, ❓ 2): выигрыш только в 1% самых турбулентных дней (наибольшая потеря E) -> konc > 0,40, вход не пройден;
+    #    такой же по размеру выигрыш в 1% спокойных дней -> эти дни не «худшие», konc мала
+    lEd = d_panel(E.assign(rv_pred=E.rv_actual), E).groupby('date').lE.mean().sort_values(ascending=False)
+    k1 = int(0.01 * len(lEd))
+    for dni, bolshe in ((set(lEd.index[:k1]), True), (set(lEd.index[-k1:]), False)):
+        uk = E.copy()
+        m = uk.date.isin(dni).values
+        uk.loc[m, 'rv_pred'] = uk.loc[m, 'rv_actual'] * np.exp(rng.normal(0, 0.05, m.sum()))
+        rk = ocenka({'a': uk}, E, 1)
+        assert (rk['konc'] > 0.40) == bolshe and rk['vhod']['konc'] != bolshe, (bolshe, rk['konc'])
+    dd_ = pd.Series([1.0, -2.0, 0.5]); ee_ = pd.Series([3.0, 1.0, 2.0])
+    assert koncentraciya(dd_, ee_) == np.inf  # Σ d ≤ 0 — вход не пройден
     # 4. мощность: t_ож растёт как √N; P = Φ(t − 1,645); маленький эффект -> «не хуже»
     d = rng.normal(0.01, 0.2, 1250)
     m1, m4 = moshchnost(d, 1, 250), moshchnost(d, 1, 1000)
@@ -211,7 +231,7 @@ def selftest():
     assert moshchnost(rng.normal(0.001, 0.2, 1250), 1, 1000)['pometka'] == 'не хуже'
     assert moshchnost(rng.normal(0.05, 0.2, 1250), 1, 1000)['pometka'] == 'лучше'
     assert 1020 < n_test_dney() < 1100
-    # 5. выбор: макс. t; Δt ≤ 0,2 -> больший выигрыш; Δt ≤ 0,2 и выигрыш ≤ 1 п. п. -> проще
+    # 5. выбор: макс. t̄; Δt̄ ≤ 0,2 -> больший выигрыш; Δt̄ ≤ 0,2 и разница выигрыша ≤ 1% потери E -> проще
     mk = lambda t, g_, ok=True: dict(t_mean=t, vyigrysh_pct=g_, vhod=dict(proshyol=ok, net=''), hit=0.6, n_tikerov_vyigrysh=15, konc=0.1,
                                     moshchnost=dict(t_ozhid=3, P_p_lt_005=0.9, pometka='лучше'))
     w, _ = vybor({'A': mk(3.0, 5.0), 'B': mk(2.9, 7.0), 'C': mk(2.5, 9.0)}, {'A': 3, 'B': 3, 'C': 1})
@@ -229,8 +249,11 @@ def selftest():
     u1b.loc[mm, 'rv_pred'] *= np.exp(rng.normal(0, 1.0, mm.sum()))
     r2 = ocenka({'v1': u1b, 'v2': u2}, E, 1)
     assert r1['folds'].set_index('Y').variant[2018] == r2['folds'].set_index('Y').variant[2018]
-    print('selftest r2_gates: OK (DM = код теста, вход кластера 17: t, hit, тикеры, концентрация, c3; выбор с Δt и выигрышем; мощность '
-          'кластера 20; вложенный выбор без утечки)')
+    assert (r1['folds'].variant == 'v1').all()  # вложенный выбор по t на обучающих годах берёт лучший вариант
+    F1 = r1['folds'].set_index('Y')
+    assert abs(F1.t_obuch[2019] - np.mean([F1.t[y] for y in (2017, 2018, 2020, 2021)])) < 1e-12  # t обучения = t тех же лет
+    print('selftest r2_gates: OK (v4: DM = код теста; вход кластера 17: t, hit, тикеры, концентрация по дням наибольшей потери эталона, c3; '
+          'вложенный выбор по t на обучающих годах; выбор с Δt̄ и относительным выигрышем; мощность кластера 20; без утечки)')
 
 
 def main():
