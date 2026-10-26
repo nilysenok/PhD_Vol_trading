@@ -498,6 +498,17 @@ def selftest():
     ch3, P3 = nested(assemble(leg2, comps2, [('a', '42')], eta3), vs, 5, 'har_corr')
     ok('LOYO: изменение 2019 не меняет выбор складки 2019', P.variant.iloc[2] == P3.variant.iloc[2])
     ok('LOYO: обучающие годы складки не содержат отложенный', all(str(r.god) not in r.obuch_gody.split(';') for r in P.itertuples()))
+    # E8: нули сетки (ключи схемы обходятся: K задаётся явно)
+    K0 = dict(gate='shock_fresh', tau=[1.0], k=[0, 3], q=[0.9], measure='uroven', regime_calib='none', lam_to_ref='on', lam=[0, 1.0],
+              sign_delta='off', delta=[0.1], base='noga', ref='noga')
+    Ad = pd.DataFrame({'date': F2['base'].date, 'ticker': 'X', 'rv_d': F2['Pj'][:, 0], '_tend5': pd.NaT})
+    V0 = {t: fn for t, _, fn, _ in design_variants(K0, F2, Ad, None, 5, [2, 3, 4])}
+    ok('E8: k = 0 — один вариант без q', sum(t.startswith('shock_fresh__k=0') for t in V0) == 2)
+    ok('E8: k = 0, λ = 1 — гибрид', np.allclose(V0['shock_fresh__k=0__lam=1.0_k_noge'](F2['cbar']), F2['leg'] + F2['cbar']))
+    ok('E8: λ = 0 к ноге — нога', np.allclose(V0['shock_fresh__k=0__lam=0_k_noge'](F2['cbar']), F2['leg']))
+    K1 = {**K0, 'ref': 'etalon'}
+    V1 = {t: fn for t, _, fn, _ in design_variants(K1, F2, Ad, None, 5, [2, 3, 4])}
+    ok('кластер 18: λ = 0 к эталону — эталон', np.allclose(V1['shock_fresh__k=0__lam=0'](F2['cbar']), np.log(F2['base'].har_corr.values)))
     S = pd.DataFrame(rows)
     OUT.mkdir(parents=True, exist_ok=True)
     S.to_csv(OUT / 'selftest_G.csv', index=False)
@@ -571,12 +582,24 @@ def _onoff(v):
     return {False: 'off', True: 'on'}.get(v, v) if isinstance(v, bool) else str(v)
 
 
+def _opt(full, dotted, default):
+    """Ключ, которого может не быть в схеме (k18.ref — ❓ S, schema): нет — значение по умолчанию из yaml G."""
+    try:
+        return str(_onoff(C.get(full, dotted)))
+    except (KeyError, TypeError):
+        return str(default)
+
+
 def g_keys(full):
     """Ключи G дизайна (schema_v2) -> dict; None, если все группы выключены."""
     g = lambda k: C.get(full, k)
     K = dict(gate=_onoff(g('k16.gate')), tau=_ls(g('k16.tau')), k=_ls(g('k16.k')), q=_ls(g('k16.q')), measure=str(g('k16.measure')),
              regime_calib=str(g('k16.regime_calib')), lam_to_ref=_onoff(g('k18.lam_to_ref')), lam=_ls(g('k18.lam')),
-             sign_delta=_onoff(g('k20.sign_delta')), delta=_ls(g('k20.delta')), base=str(g('k20.base')))
+             sign_delta=_onoff(g('k20.sign_delta')), delta=_ls(g('k20.delta')), base=str(g('k20.base')),
+             ref=_opt(full, 'k18.ref', CFG['k18'].get('ref', 'etalon')))
+    for nm, v in (('k16.k', K['k']), ('k18.lam', K['lam'])):  # 0 допускается (E8): k = 0 — без воздержания, λ = 0 — ref
+        if any(float(x) < 0 for x in v):
+            raise C.DesignError(f'{nm}: отрицательные значения {v}')
     if K['gate'] == 'off' and K['lam_to_ref'] == 'off' and K['sign_delta'] == 'off':
         return None
     return K
@@ -595,8 +618,10 @@ def design_variants(K, F, A, M, h, steps):
         p16 = [(f'tau={t}', dict(tau=t), g_soft(F, t)) for t in E.TAUS]
     elif K['gate'] == 'shock_fresh':
         mrv = market_rv(A)
-        p16 = [(f'k={k}__q={q}', dict(k=k, q=q), g_shock(F, shock_flags(mrv, k, q, int(CFG['k16']['shock_fresh']['okno']), K['measure'])))
-               for k in K['k'] for q in K['q']]
+        # k = 0 — без воздержания (E8, владелец 20:20): g ≡ 1, один вариант без q
+        p16 = [('k=0', dict(k=0), np.ones(len(leg)))] if any(float(k) == 0 for k in K['k']) else []
+        p16 += [(f'k={k}__q={q}', dict(k=k, q=q), g_shock(F, shock_flags(mrv, k, q, int(CFG['k16']['shock_fresh']['okno']), K['measure'])))
+                for k in K['k'] if float(k) > 0 for q in K['q']]
     elif K['gate'] == 'regime':
         RP = regime_P(M, h, steps, CFG['k16']['regime']['gate'], K['regime_calib'])
         p16 = [('P_spokoyno', dict(regime_calib=K['regime_calib']), g_regime(F, RP))]
@@ -608,8 +633,9 @@ def design_variants(K, F, A, M, h, steps):
                for d in K['delta']]
     p18 = [('', {}, None)]
     if K['lam_to_ref'] == 'on':
-        har = np.log(np.clip(F['base'][CFG['k18']['har']].values, 1e-12, None))
-        p18 = [(f'lam={l}', dict(lam=l), (har, float(l))) for l in K['lam']]
+        # ref = etalon — эталон В2 (кластер 18); ref = noga — нога (E8: ŷ = нога + λ·(кандидат − нога)); λ = 0 — сам ref
+        har = leg if K['ref'] == 'noga' else np.log(np.clip(F['base'][CFG['k18']['har']].values, 1e-12, None))
+        p18 = [(f'lam={l}' + ('_k_noge' if K['ref'] == 'noga' else ''), dict(lam=l, ref=K['ref']), (har, float(l))) for l in K['lam']]
     out = []
     for (t16, a16, g), (t20, a20, b20), (t18, a18, b18) in itertools.product(p16, p20, p18):
         def fn(c, g=g, b20=b20, b18=b18):
@@ -640,26 +666,51 @@ def chain_inputs(full, h, steps, root=None):
     Lr = S[S.modul == 'L']
     want = CFG['vhod']['noga'].get('ryad')
     names = sorted(Lr.ryad.unique())
+    if not names:
+        raise FileNotFoundError(f'G: нет ноги (modul L) в каталоге {sha[:16]}')
     P = S[S.modul == prev]
     groups = {}
     for (ry, sd), g in P.groupby(['ryad', 'seed'], sort=True):
         pv = re.sub(LIB_RE, '', ry) or ry
-        groups.setdefault(pv, ([], []))
-        groups[pv][0].append(_val_only(g, ry)[KEY + ['rv_pred']]); groups[pv][1].append((ry, str(sd)))
-    if want:
-        lname = want
-    elif len(names) == 1:
-        lname = names[0]
-    else:  # несколько ног: та, чьё имя входит в имя ряда предыдущего модуля (самое длинное совпадение)
-        hit = sorted([n for n in names if any(n in pv for pv in groups)], key=len)
+        groups.setdefault(pv, ([], [], []))
+        groups[pv][0].append(_val_only(g, ry)[KEY + ['rv_pred']]); groups[pv][1].append((ry, str(sd))); groups[pv][2].append(ry)
+
+    def leg_of(pv):
+        """Нога варианта: одна нога — она; сетка ноги (leg.enet и т. п.: ряды leg__<вариант>, у B — B_…__<вариант>[__cal], как R в #199) —
+        нога, чей <вариант> стоит в имени ряда отдельным сегментом «__…__» (самое длинное совпадение)."""
+        if want:
+            return want
+        if len(names) == 1:
+            return names[0]
+        key = lambda n: n.split('__', 1)[1] if n.startswith('leg__') else n
+        hit = [n for n in names if re.search(r'(^|__)' + re.escape(key(n)) + r'(__|$)', pv)]
         if not hit:
-            raise ValueError(f'G: ног несколько {names}, сопоставить с {sorted(groups)} нельзя — задайте vhod.noga.ryad')
-        lname = hit[-1]
-    if not names:
-        raise FileNotFoundError(f'G: нет ноги (modul L) в каталоге {sha[:16]}')
-    L = Lr[Lr.ryad == lname]
-    L = _val_only(L[L.seed == sorted(L.seed.unique())[0]], lname)
-    return L[KEY + ['year', 'rv_pred']], groups, prev
+            raise ValueError(f'G: ног несколько {names}, вариант {pv} не сопоставлен — задайте vhod.noga.ryad')
+        return max(hit, key=lambda n: len(key(n)))
+
+    def leg_df(n):
+        L = Lr[Lr.ryad == n]
+        return _val_only(L[L.seed == sorted(L.seed.unique())[0]], n)[KEY + ['year', 'rv_pred']]
+
+    # L3 после B: ряды L3 — калиброванный гибрид. Нога переводится в тот же масштаб: ln ноги += ln L3 − ln B (поправка калибровки
+    # строки, среднее по seed), тогда коррекция = ln B − ln ноги (сырая поправка бустинга), а g = 0 даёт ногу с той же калибровкой.
+    Bm = S[S.modul == 'B'] if prev == 'L3' else None
+    out = {}
+    for pv, (comps, meta, rys) in groups.items():
+        L = leg_df(leg_of(pv))
+        if Bm is not None and len(Bm):
+            sh = []
+            for c, ry, (_, sd) in zip(comps, rys, meta):
+                b = Bm[(Bm.ryad == re.sub(r'__cal$', '', ry)) & (Bm.seed.astype(str) == sd)]
+                if len(b):
+                    m = c.merge(_val_only(b, ry)[KEY + ['rv_pred']], on=KEY, suffixes=('', '_b'))
+                    sh.append(m[KEY].assign(d=np.log(m.rv_pred.values) - np.log(m.rv_pred_b.values)))
+            if sh:
+                d = pd.concat(sh).groupby(KEY, as_index=False)['d'].mean()
+                L = L.merge(d, on=KEY)
+                L = L.assign(rv_pred=L.rv_pred.values * np.exp(L.d.values)).drop(columns='d')
+        out[pv] = (L, comps, meta)
+    return out, prev
 
 
 def fn_G(design, seed, steps):
@@ -668,10 +719,10 @@ def fn_G(design, seed, steps):
     K = g_keys(full)
     A, M, root = C.SHARED['A'], C.SHARED['G_M'], C.SHARED.get('G_root')
     tick = C.SHARED.get('G_tickers')
-    leg, groups, prev = chain_inputs(full, h, steps, root)
+    groups, prev = chain_inputs(full, h, steps, root)
     eta = load_etalon(h, tick, steps)
     out, prows = {}, []
-    for pv, (comps, meta) in groups.items():
+    for pv, (leg, comps, meta) in groups.items():
         F = assemble(leg, comps, meta, eta, list(steps), CFG['vhod']['agg'])
         c = F['cs'].get(str(seed), F['cbar'])
         var = design_variants(K, F, A, M, h, list(steps))
@@ -746,7 +797,8 @@ def dym_batch(A_done=None):
     """Дым контракта: дизайны schema_v2 (по одному на ворота/группу) × h; входы цепочки (L — нога, B — гибриды xgb/lgbm) пишутся
     в кэш дыма под хэш каждого дизайна; run_batch с 3 воркерами, без ворот; проверки — ряды G по вариантам, DONE, params.csv, повтор."""
     dc = CFG['dym']; tick, steps, seed = list(dc['tickers']), list(dc['steps']), int(dc['seed'])
-    D = OUT / 'dym_batch'; root = D / 'cache_p'; D.mkdir(parents=True, exist_ok=True)  # cache_p — кэш дыма после PR #201
+    # свой кэш на версию кода (SHA модуля): новый код — первый прогон заново (DONE от прежней версии не мешает), повтор — пропуск
+    D = OUT / 'dym_batch'; root = D / f'cache_{C.sha_file(Path(__file__))[:8]}'; D.mkdir(parents=True, exist_ok=True)
     src = C.REGEN / 'R2' / 'cache'
     G_DES = [{'k16': {'gate': 'conf_seed'}}, {'k16': {'gate': 'regime'}}, {'k16': {'gate': 'shock_fresh', 'k': [3, 5]}},
              {'k16': {'gate': 'soft'}}, {'k16': {'gate': 'halt'}}, {'k18': {'lam_to_ref': 'on'}},
@@ -767,7 +819,9 @@ def dym_batch(A_done=None):
         des.append(C.validate({'design': 'dymG_bez', 'h': h}))  # без ключей G — пропуск
         f = D / f'designs_h{h}.yaml'
         f.write_text(yaml.safe_dump(dict(designs=des), allow_unicode=True, sort_keys=False))
+        pre = {C.design_hash(d)[:16] for d in des[:-1] if C.done_path(d, MODUL, h, seed, root).exists()}  # уже посчитано этой версией
         T = run_batch(str(f), h, [seed], steps, workers=3, root=root, check_gate=False, block_file=D / 'blok_sdvig.csv', tickers=tick)
+        sdv = lambda s16: True if s16 in pre else bool(len(T) and (T.hash == s16).any() and T[T.hash == s16].sdvig_ok.all())
         T2 = run_batch(str(f), h, [seed], steps, workers=3, root=root, check_gate=False, block_file=D / 'blok_sdvig.csv', tickers=tick)
         for i, d in enumerate(des[:-1]):
             sha = C.design_hash(d)
@@ -782,11 +836,34 @@ def dym_batch(A_done=None):
             rows.append(dict(h=h, design=d['design'], hash=sha[:16], ryadov=Ls.ryad.nunique(), ozhidalos=nexp,
                              shagi=','.join(map(str, sorted(Ls.step.unique()))) if len(Ls) else '',
                              done=C.done_path(d, MODUL, h, seed, root).exists(), params=bool(pc.exists() and len(lp) and not stary),
-                             sdvig_ok=bool(T[T.hash == sha[:16]].sdvig_ok.all()) if len(T) else False,
+                             sdvig_ok=sdv(sha[:16]),
                              ok=bool(Ls.ryad.nunique() == nexp and C.done_path(d, MODUL, h, seed, root).exists()
-                                     and pc.exists() and len(lp) and not stary
-                                     and len(T) and T[T.hash == sha[:16]].sdvig_ok.all())))
+                                     and pc.exists() and len(lp) and not stary and sdv(sha[:16]))))
         rows.append(dict(h=h, design='povtor', ryadov=len(T2), ozhidalos=0, ok=bool(len(T2) == 0)))  # готовое пропущено (DONE_G)
+        # E5: нога с сеткой leg.enet (ряды leg__<вариант>), B_rf50__<вариант>, L3 B_rf50__<вариант>__cal (= B × 1,05) — как в кэше уровня E
+        de = C.validate({'design': 'dymG_enet', 'h': h, 'leg': {'type': 'HARX'}, 'boost': {'role': 'residual', 'early_stop': 'qlike_total'},
+                         'k16': {'gate': 'shock_fresh', 'k': [3], 'q': [0.9]}})
+        rd = lambda p: _val_only(pd.read_parquet(src / p), p)
+        L0 = rd(dc['noga'].format(h=h)); L0 = L0[L0.step.isin(steps) & L0.ticker.isin(tick)]
+        B0 = rd(dc['korr'][h][0]); B0 = B0[B0.step.isin(steps) & B0.ticker.isin(tick)]
+        vv = ['leg.enet.alpha=0__leg.enet.lambda=0.1', 'leg.enet.alpha=1__leg.enet.lambda=1']
+        for j, v in enumerate(vv):
+            C.write_series(de, f'leg__{v}', L0.assign(rv_pred=L0.rv_pred * (1 + 0.1 * j)), h, None, module='L', root=root)
+            C.write_series(de, f'B_rf50__{v}', B0.assign(rv_pred=B0.rv_pred * (1 + 0.1 * j)), h, seed, module='B', root=root)
+            C.write_series(de, f'B_rf50__{v}__cal', B0.assign(rv_pred=B0.rv_pred * (1 + 0.1 * j) * 1.05), h, seed, module='L3', root=root)
+        fe = D / f'designs_enet_h{h}.yaml'
+        fe.write_text(yaml.safe_dump(dict(designs=[de]), allow_unicode=True, sort_keys=False))
+        preE = C.done_path(de, MODUL, h, seed, root).exists()
+        Te = run_batch(str(fe), h, [seed], steps, workers=1, root=root, check_gate=False, block_file=D / 'blok_sdvig.csv', tickers=tick)
+        Ge = C.load_series(C.design_hash(de), h=h, modul=MODUL, root=root)
+        okk = Ge.ryad.nunique() == 2
+        for j, v in enumerate(vv):  # g = 1 — L3; g = 0 — нога × 1,05 (калибровка L3 перенесена на ногу); варианты не перепутаны
+            gg = Ge[Ge.ryad == f'G_B_rf50__{v}__cal__shock_fresh__k=3__q=0.9'].merge(L0[KEY + ['rv_pred']], on=KEY, suffixes=('', '_L'))
+            gg = gg.merge(B0[KEY + ['rv_pred']], on=KEY, suffixes=('', '_B'))
+            r_cal = gg.rv_pred / (gg.rv_pred_B * (1 + 0.1 * j) * 1.05)
+            r_leg = gg.rv_pred / (gg.rv_pred_L * (1 + 0.1 * j) * 1.05)
+            okk &= bool(len(gg) and (np.isclose(r_cal, 1) | np.isclose(r_leg, 1)).all() and np.isclose(r_leg, 1).any())
+        rows.append(dict(h=h, design='dymG_enet', ryadov=Ge.ryad.nunique(), ozhidalos=2, ok=bool(okk and (preE or (len(Te) and Te.sdvig_ok.all())))))
         rows.append(dict(h=h, design='dymG_bez', ryadov=0, ozhidalos=0,
                          ok=not C.done_path(des[-1], MODUL, h, seed, root).exists()))
     R = pd.DataFrame(rows)
