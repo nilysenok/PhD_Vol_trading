@@ -1,0 +1,45 @@
+# R2, агент S: настройки основы конвейера (scripts/analysis/r2_core.py) и сервера (scripts/server.sh).
+# Протокол v3: docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, раздел 6 (строка S). Записано до первого прогона R2.
+schema: models/designs/r2/schema_v1.yaml
+plan: {file: models/designs/r2/factor_plan_v1.csv, sha256: 31b2897751e5d81c776bcd11041dd2d7c2a5ba59b48d438102bbebcdcea3c9b8}
+
+cache:
+  root: data/regen/R2/cache          # переопределение: R2_CACHE (сервер — локальный NVMe)
+  dir: "<sha256[:16]>"               # каталог дизайна; внутри design.yaml (канон), ряды <имя>_h{h}_s{seed|det}_{part}.parquet, DONE_h{h}_s{seed}
+  index: "_index/<модуль>_<хост>_<pid>.csv -> INDEX_R2.csv (r2_core.py index)"
+
+pool:
+  start: fork                        # данные грузятся один раз в родителе (r2_core.share), воркеры получают их копией-при-записи
+  reserve_vcpu: 8                    # воркеров = vCPU − 8 (R2_WORKERS переопределяет); на Маке — явно --workers
+  blas_threads: 1                    # OMP/OPENBLAS/MKL = 1 в каждом воркере; бустинг nthread=1
+  writer: per_worker                 # каждый воркер пишет свои файлы (атомарно: tmp + os.replace) и свой файл индекса
+
+data:
+  info_set: d0                       # r2_nogi.load(d0=True): rv_d = RV дня d, rv_w/rv_m — окна, кончающиеся в d
+  embargo: h                         # train_mask: окно цели [d+1, d+h] кончается до 1 января val-года
+  max_year: 2021                     # load_d0 отбрасывает строки > 2021; write_series не пишет val > 2021
+  dev_steps: [1, 2, 3, 4, 5, 6]
+
+shift_check:                         # протокол п. 2.6
+  shifts: [-2, -1, 0, 1]
+  years: [2017, 2018, 2019, 2020, 2021]
+  corr: spearman_by_ticker_then_median
+  block_file: data/regen/R2/O/blok_sdvig.csv
+
+leak:                                # детектор (как Д26 / ВЫР-1), срезы только ≤ 2021
+  cuts_mid: ['2018-06-29', '2020-03-02', '2021-06-30']
+  cuts_year_end: ['2017-12-31', '2019-12-31', '2020-12-31']
+  perturb: "× U(0,5; 2) на входах после среза и на целях, чьё окно заходит за срез"
+  plant: "все входы строки d := значения строки d+1 тикера"
+
+smoke:                               # Мак, без боевого счёта
+  tickers: [SBER, LKOH, AFLT]
+  steps: [1, 2, 3]
+  seed: 42
+  h: [1, 5, 22]
+
+repro_A:                             # фаза A: сервер принят (протокол, раздел 6, строка S)
+  criterion: "повтор одного дизайна R1: |ΔQLIKE|/QLIKE ≤ 1e-4 по каждому году 2017–2021 и тот же порядок рангов на наборе дизайнов R1"
+  qlike_rel_tol: 1.0e-4
+  out: data/regen/R2/S/repro_A.csv
+  fallback: "иначе весь R2 — на Маке"
