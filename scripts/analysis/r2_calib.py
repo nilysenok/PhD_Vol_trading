@@ -39,8 +39,53 @@ PLANT = {'on': False}
 
 def state_frame(M, h):
     A = M['A']
+    lr = lambda c: np.log(A[c].values.astype(float).clip(1e-10))
     return pd.DataFrame({'date': A['date'].values, 'ticker': A['ticker'].astype(str).values, 'lnrvi2': A['lnrvi2'].values,
-                         'vov': A['vov'].values, 'I2': A['I2'].values, 'tend': A[f'_tend{h}'].values})
+                         'vov': A['vov'].values, 'I2': A['I2'].values, 'tend': A[f'_tend{h}'].values,
+                         'lrv_d': lr('rv_d'), 'lrv_w': lr('rv_w'), 'lrv_m': lr('rv_m')})
+
+
+# ---------------------------------------------------------------- кластер 12: вероятностный слой (scale_har)
+QZ = (np.arange(200) + 0.5) / 200
+PROB_Q = (0.05, 0.25, 0.5, 0.75, 0.95)
+
+
+def prob_layer(design, d, ok, lny, p0, step):
+    """boost.prob = scale_har: масштаб остатка — HAR по ln|e − ē| на [1, ln RV_d, ln RV_w, ln RV_m] (d0) по прошлым OOS-строкам окна
+    (boost.prob_window: 2y — шаги t−2..t−1, all — все прошлые), нормировка — E[(e − ē)/σ]² = 1 на окне; распределение z = (e − ē)/σ —
+    boost.prob_dist: empirical (квантили z окна) или student (t с df по окну). Точечный прогноз под QLIKE — E[RV] = ŷ·e^{ē}·E[e^{σ_d z}]
+    (по 200 квантилям z); квантили q05–q95 ŷ·e^{ē + σ_d·Q_z(α)}. Шаг 1 (нет истории) — ŷ без изменений.
+    scale_boost и quantile5 — бустинг (агент B): NotImplementedError. -> (точка, DataFrame квантилей, строки параметров)."""
+    b = N.complete(design)['boost']
+    if b['prob'] in ('scale_boost', 'quantile5'):
+        raise NotImplementedError(f"boost.prob = {b['prob']} — бустинг, агент B")
+    from scipy import stats
+    X = np.column_stack([np.ones(len(d)), d[['lrv_d', 'lrv_w', 'lrv_m']].fillna(0).values])
+    pt = p0.copy(); Q = np.full((len(d), len(PROB_Q)), np.nan); par = []
+    e_all = lny - np.log(p0)
+    for t in sorted(np.unique(step)):
+        ms = step == t
+        hi = t if PLANT['on'] else t - 1
+        win = ok & (step <= hi) & (step >= (1 if b['prob_window'] == 'all' else t - 2))
+        if win.sum() < 100:
+            continue
+        e = e_all[win]; eb = float(e.mean())
+        beta = np.linalg.lstsq(X[win], np.log(np.abs(e - eb) + 1e-6), rcond=None)[0]
+        sg = np.exp(X[win] @ beta)
+        cadj = float(np.sqrt(np.mean(((e - eb) / sg) ** 2)))
+        z = (e - eb) / (sg * cadj)
+        if b['prob_dist'] == 'student':
+            df_, _, sc = stats.t.fit(z, floc=0)
+            zq = stats.t.ppf(QZ, df_) * sc; qf = lambda a: stats.t.ppf(a, df_) * sc
+            par.append((t, 'prob_df', df_)); par.append((t, 'prob_t_scale', sc))
+        else:
+            zq = np.quantile(z, QZ); qf = lambda a: np.quantile(z, a)
+        sd = np.exp(X[ms] @ beta) * cadj
+        pt[ms] = p0[ms] * np.exp(eb) * np.exp(sd[:, None] * zq[None, :]).mean(1)
+        for j, a in enumerate(PROB_Q):
+            Q[ms, j] = p0[ms] * np.exp(eb + sd * qf(a))
+        par += [(t, 'prob_ebar', eb), (t, 'prob_cadj', cadj)] + [(t, f'prob_b{i}', float(v)) for i, v in enumerate(beta)]
+    return pt, pd.DataFrame(Q, columns=[f'q{int(100 * a):02d}' for a in PROB_Q]), par
 
 
 def _qlike(y, p):
@@ -126,7 +171,7 @@ def _fit(cal, pool, Z, I2, tk, dates, y, p0, p1prev, p2prev, lny):
 def _apply(P, cal, p0, tk, Z, I2):
     if P.s2 is None:
         return p0, p0, p0
-    p1 = p0 * np.exp(P.kappa * _s2_rows(P, cal, tk, Z, I2))
+    p1 = p0 if cal.get('_no_s2') else p0 * np.exp(P.kappa * _s2_rows(P, cal, tk, Z, I2))
     p2 = np.clip(p1 + P.c, 1e-9, None) if cal['c_qlike'] != 'off' else p1
     p3 = np.exp(P.mz[0] + P.mz[1] * np.log(p2)) if (cal['mz'] == 'on' and P.mz is not None) else p2
     return p1, p2, p3
@@ -153,12 +198,17 @@ def _pools_day(cal, dates, tend, d):
 
 def calibrate(design, V, S):
     """design — дизайн по схеме v1 (используются calib.*); V — сырой ряд; S — state_frame. -> (Vc, таблица стабильности)."""
-    cal = N.complete(design)['calib']
+    full = N.complete(design)
+    cal = dict(full['calib'])
     d = V[COLS].merge(S, on=['date', 'ticker'], how='left').sort_values(['date', 'ticker']).reset_index(drop=True)
     ok = (d.rv_actual > 1e-12).values
     y = np.where(ok, d.rv_actual.values, np.nan); lny = np.log(np.where(ok, y, 1.0) + 1e-10)  # +1e-10 — как harx.add_bias (Б0.1 R1)
     p0 = d.rv_pred.values.astype(float)
     step, tk = d.step.values, d.ticker.values
+    Qp, ppar = None, []
+    if full['boost']['prob'] != 'off':  # кластер 12: вероятностный слой заменяет s²/κ (E[e^{σz}] — та же поправка уровня), c и mz — дальше
+        p0, Qp, ppar = prob_layer(design, d, ok, lny, p0, step)
+        cal['_no_s2'] = True
     dates, tend = d.date.values, pd.to_datetime(d.tend).values
     tend = np.where(pd.isna(tend), np.datetime64('2100-01-01'), tend)
     Z, I2 = _state_z(cal, d), d.I2.fillna(0).values
@@ -184,7 +234,13 @@ def calibrate(design, V, S):
             R = pd.DataFrame(rows)
             stab.append(R.median(numeric_only=True).to_dict() | {'step': t})
     out = d[COLS].copy(); out['rv_pred'] = p3
+    if Qp is not None:
+        for c in Qp.columns:
+            out[c] = Qp[c].values
     T = pd.DataFrame(stab).sort_values('step').reset_index(drop=True)
+    if ppar:
+        Pp = pd.DataFrame(ppar, columns=['step', 'param', 'value']).pivot_table(index='step', columns='param', values='value').reset_index()
+        T = T.merge(Pp, on='step', how='left')
     for c in [c for c in T.columns if c != 'step']:
         prev = T[c].shift(1)
         T[f'skachok_{c}'] = (T[c] - prev).abs() / prev.abs().replace(0, np.nan)
@@ -203,6 +259,28 @@ def _prow(t, P):
     if P.mz is not None:
         r.update(mz_a=float(P.mz[0]), mz_b=float(P.mz[1]))
     return r
+
+
+def fn_v0(design, seed, steps):
+    """Модуль для r2_core.run_phase: V0-ячейка (boost.role = none) — нога L × калибровка дизайна; ряд v0 / v0__<тег варианта ноги>.
+    Данные — r2_core.SHARED['M'] (r2_nogi.mat_from). Вариант калибровки выбирается ядром/O по дизайну (ключи calib.*)."""
+    import r2_core as RC
+    M = RC.SHARED['M']
+    h = int(design['h'])
+    S = state_frame(M, h)
+    out, par = {}, []
+    for tag, (V, _) in N.run_leg(design, M=M, steps=steps, params=par).items():
+        Vc, T = calibrate(design, V, S)
+        out[N.series_name(tag, 'v0')] = Vc
+        par += calib_params(tag, T)
+    N.write_params(design, h, par, kind='v0')  # params.csv: <ряд>:b_*, … и <ряд>:calib_s2, calib_kappa, calib_c, calib_mz_a/b, …
+    return out
+
+
+def calib_params(tag, T):
+    """Таблица стабильности -> строки (тег, шаг, calib_<параметр>, значение) для write_params (формат D)."""
+    cols = [c for c in T.columns if c not in ('step', 'flag_50') and not c.startswith('skachok_')]
+    return [(tag, int(r['step']), f'calib_{c}', r[c]) for _, r in T.iterrows() for c in cols]
 
 
 # ---------------------------------------------------------------- контроль, детектор, дым
@@ -240,13 +318,18 @@ DYM = {
     'mz': {'calib': {'mz': 'on'}}, 'all_step': {'calib': {'s2_state': 'RVI_volvol', 'kappa': 'fit', 'c_qlike': 'roll_2y', 'mz': 'on'}},
     'daily_sm': {'calib': {'update': 'daily'}},
     'all_daily': {'calib': {'update': 'daily', 's2_est': 'sm_ewma097', 's2_state': 'RVI', 'kappa': 'fit', 'c_qlike': 'roll_all', 'mz': 'on'}},
+    'prob_emp_all': {'boost': {'prob': 'scale_har'}}, 'prob_t_2y': {'boost': {'prob': 'scale_har', 'prob_dist': 'student', 'prob_window': '2y'}},
+    'prob_emp_c_mz': {'boost': {'prob': 'scale_har'}, 'calib': {'c_qlike': 'roll_2y', 'mz': 'on'}},
 }
 
 
 def dym(hs=N.HS, names=None):
     """Дым: нога HARJ (d0, эмбарго) на 3 тикерах, шаги 1–3, h; каждая калибровка: детектор (срезы 2017-06-30 и 2017-12-31, подлог —
     окно с самим шагом t / неразрешёнными строками), проверка сдвига, таблица стабильности."""
+    import r2_core as RC
     out = N.LDIR / 'dym'; out.mkdir(parents=True, exist_ok=True)
+    if (out / 'blok_sdvig_dym_calib.csv').exists():
+        (out / 'blok_sdvig_dym_calib.csv').unlink()
     rng = np.random.default_rng(20261026)
     M = N.mat_L(tickers=N.DYM_TK)
     rows, stabs = [], []
@@ -278,12 +361,13 @@ def dym(hs=N.HS, names=None):
                     leak['podlog'] = float(np.abs(np.log(mm.rv_pred[pp]) - np.log(mm.rv_pred_p[pp])).max())
             v = Vc[(Vc.step >= 2) & (Vc.rv_actual > 1e-12)]
             q = {int(y): _qlike(g.rv_actual.values, g.rv_pred.values) for y, g in v.groupby('year')}
-            sd = N.sdvig(Vc, M['A'])
+            sd = RC.shift_check(Vc, M['A'], h, f'calib:{nm}', RC.validate(des), block_file=out / 'blok_sdvig_dym_calib.csv')
+            sd = {f'sdvig_{k}': v for k, v in sd.items() if k in ('argmax', 'ok')}
             ok_leak = leak['2017-06-30'] == 0.0 and leak['2017-12-31'] == 0.0 and leak['podlog'] > 0
             rows.append(dict(calib=nm, h=h, sek=round(dt, 1), q2017=q.get(2017), q2018=q.get(2018), nan=int((~np.isfinite(Vc.rv_pred)).sum()),
                              leak_mid=leak['2017-06-30'], leak_ye=leak['2017-12-31'], podlog=leak['podlog'], leak_ok=ok_leak,
                              flag_50=bool(T.flag_50.any()), **sd))
-            rows[-1]['ok'] = bool(ok_leak and rows[-1]['nan'] == 0)
+            rows[-1]['ok'] = bool(ok_leak and rows[-1]['nan'] == 0 and rows[-1]['sdvig_ok'])
             print({k: (round(x, 4) if isinstance(x, float) else x) for k, x in rows[-1].items()}, flush=True)
     R = pd.DataFrame(rows); R.to_csv(out / 'dym_L_calib.csv', index=False)
     pd.concat(stabs).to_csv(out / 'dym_L_calib_stabilnost.csv', index=False)
