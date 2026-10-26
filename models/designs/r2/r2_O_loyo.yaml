@@ -4,7 +4,7 @@
 agent: O
 data: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen   # данные — только общий data/, абсолютные пути
 out: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/R2/O
-schema: models/designs/r2/schema_v1.yaml
+schema: models/designs/r2/schema_v2.yaml   # v2 = v1 (extends) + кластеры 16, 18, 20 и boost.grid_point (S, PR #184); хэши v1 не меняются
 
 # ---- окно: только разработка, val 2017–2021 = шаги 2–6; читается step <= 6 (фильтр pyarrow + assert год <= 2021)
 steps_T: [2, 3, 4, 5, 6]
