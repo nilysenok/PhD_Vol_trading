@@ -133,14 +133,18 @@ def vhod(r):
     return dict(**ok, proshyol=all(ok.values()), net=','.join(k for k, v in ok.items() if not v))
 
 
-def n_test_dney():
-    """Будние дни теста 2022-01-01 … 2026-02-28 по календарю (тест не читается); точное число дней — у открытия."""
+def n_test_dney(h=None):
+    """N_test по h — число дат контрольного периода 2022–2026 (дирижёр 26.10: 1088 / 1084 / 1067; только счёт дней, без метрик).
+    Если h нет в yaml — будние дни календаря 2022-01-01 … 2026-02-28 (тест не читается)."""
+    nt = {int(k): int(v) for k, v in G.get('n_test', {}).items()}
+    if h is not None and int(h) in nt:
+        return nt[int(h)]
     return int(len(pd.bdate_range(G['test_s'], G['test_po'])))
 
 
 def moshchnost(d, h, n_test=None):
     """Кластер 20: ожидаемая t на тесте по LOYO-оценкам среднего и долгосрочной дисперсии d; P(p < 0,05) в нормальной аппроксимации."""
-    n_test = n_test or n_test_dney()
+    n_test = n_test or n_test_dney(h)
     d = np.asarray(d, float)
     v_day = FS.nw_var(d, h - 1) * len(d)  # долгосрочная дисперсия на одно наблюдение (nw_var — дисперсия среднего)
     t_exp = float(d.mean() / np.sqrt(v_day / n_test)) if v_day > 0 else (0.0 if d.mean() == 0 else float(np.inf * np.sign(d.mean())))
@@ -230,7 +234,8 @@ def selftest():
     assert abs(m4['t_ozhid'] / m1['t_ozhid'] - 2) < 1e-9 and abs(m1['P_p_lt_005'] - stats.norm.cdf(m1['t_ozhid'] - stats.norm.ppf(0.95))) < 1e-12
     assert moshchnost(rng.normal(0.001, 0.2, 1250), 1, 1000)['pometka'] == 'не хуже'
     assert moshchnost(rng.normal(0.05, 0.2, 1250), 1, 1000)['pometka'] == 'лучше'
-    assert 1020 < n_test_dney() < 1100
+    assert (n_test_dney(1), n_test_dney(5), n_test_dney(22)) == (1088, 1084, 1067) and 1020 < n_test_dney() < 1100
+    assert moshchnost(d, 22)['n_test'] == 1067
     # 5. выбор: макс. t̄; Δt̄ ≤ 0,2 -> больший выигрыш; Δt̄ ≤ 0,2 и разница выигрыша ≤ 1% потери E -> проще
     mk = lambda t, g_, ok=True: dict(t_mean=t, vyigrysh_pct=g_, vhod=dict(proshyol=ok, net=''), hit=0.6, n_tikerov_vyigrysh=15, konc=0.1,
                                     moshchnost=dict(t_ozhid=3, P_p_lt_005=0.9, pometka='лучше'))
