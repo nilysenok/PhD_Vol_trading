@@ -30,6 +30,7 @@
   - ≡ chain_inputs: гибрид h = 5 из рядов модуля B совпал со входом.
   - ≡ CLI: 4 дизайна h = 5, `--workers 2` (fork), ошибок 0.
   - ❓ (для S): в `r2_S_driver.yaml` у E по-прежнему `per_design: true, run: "run --design {design} --h {h}"` — можно перевести на пакетный шаблон. В `needs_h1_inputs` стоит добавить `ens.ec ≠ off` на h ≠ 1, потому что ec читает ряд h = 1. Умолчание: per_design работает как прежде.
+- 26.10 — моя ошибка, сломала боевой прогон (h=22, фаза B): когда все задачи E уже в кэше, пакет пуст, и `run` падал с AttributeError (у пустого DataFrame нет `ryad`). Исправлено: пустой пакет — успех, код 0 (`run_ok`), у P всегда есть столбцы `ryad` и `sdvig_ok`. ≡ дым rc = 0, повтор пакета без снятия DONE: задач 0, код 0.
 - Прочитанные данные:
   - `features_pit_v3` через `r2_core.load_d0` (строки ≤ 2021);
   - ряды val шагов ≤ 6: `R2/cache/VYR/F_d0_h{1,5,22}_s42`, `R2/cache/E/{HARJ,HEAVY,HARX_ols}_emb_d0_h*`, `R2/cache/B2/F5_D12_h5_{xgb,lgbm}_h5_s42`.

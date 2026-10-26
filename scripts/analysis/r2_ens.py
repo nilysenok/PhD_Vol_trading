@@ -749,7 +749,11 @@ def dym():
     P = run({'designs': [dd, dict(dd, design='E_dym_b', ens=dict(dd['ens'], ec='m10'))]}, hs=CFG['dym']['h'], dym_scope=True,
             A=A, harj=harj, M=M)  # r2_core.run_phase на дыме: пакет из двух дизайнов
     L = leak(hs=CFG['dym']['h'], full=False, A=A, harj=harj)
-    ok = bool(L.ok.all()) and not S.blok.any() and bool(P.sdvig_ok.all()) and 'ОШИБКА' not in set(P.ryad)
+    # пустой пакет (как в боевом прогоне): повтор того же пакета без снятия DONE — всё в кэше, задач 0, run_ok -> код 0
+    Pe = run({'designs': [dd]}, hs=CFG['dym']['h'], dym_scope=True, A=A, harj=harj, M=M, fresh=False)
+    assert Pe.empty and 'ryad' in Pe and run_ok(Pe), 'пустой пакет'
+    print('пустой пакет: задач 0, run_ok — OK', flush=True)
+    ok = bool(L.ok.all()) and not S.blok.any() and bool(P.sdvig_ok.all()) and run_ok(P)
     print(f'дым: рядов {len(Q)} + run_phase {len(P)}, блок сдвига {int(S.blok.sum())}, детектор {"OK" if L.ok.all() else "ОШИБКА"}, '
           f'{time.time() - t0:.0f} с')
     return ok
@@ -792,7 +796,8 @@ def read_designs(src):
     return read_designs(yaml.safe_load(Path(src).read_text()))
 
 
-def run(src, hs=None, dym_scope=False, A=None, harj=None, M=None, seeds=None, workers=None, steps=None, check_gate=None, faza='E'):
+def run(src, hs=None, dym_scope=False, A=None, harj=None, M=None, seeds=None, workers=None, steps=None, check_gate=None, faza='E',
+        fresh=True):
     """Пакет дизайнов -> r2_core.run_phase(faza, h, [дизайны h], fn_E, seeds, steps, workers): кэш по хэшу (schema_v2 ядра),
     shift_check каждого ряда, DONE_E_h{h}_s{seed}; готовое пропускается. Контракт драйвера:
       r2_ens.py run --designs <yaml> --h <h> --seeds <…> --steps <…> --workers <N>
@@ -809,7 +814,7 @@ def run(src, hs=None, dym_scope=False, A=None, harj=None, M=None, seeds=None, wo
     st = list(steps) if steps else (list(c['steps']) if dym_scope else list(STEPS))
     for k in st:
         C.assert_dev_step(k)
-    if dym_scope:  # дым пересчитывается каждый раз: отметки DONE прошлого дыма снимаются (только в R2/E/dym/cache)
+    if dym_scope and fresh:  # дым пересчитывается каждый раз: отметки DONE прошлого дыма снимаются (только в R2/E/dym/cache)
         for f in root.glob('*/DONE_*'):
             f.unlink()
     hs = [int(x) for x in (hs or sorted({int(d['h']) for d in designs if 'h' in d}))]
@@ -823,9 +828,17 @@ def run(src, hs=None, dym_scope=False, A=None, harj=None, M=None, seeds=None, wo
         T.append(C.run_phase(faza, h, dh, fn_E, seeds=sd, steps=st, workers=workers or 1, module='E', root=root,
                              block_file=(OUT / 'dym' / 'blok_sdvig_dym.csv') if dym_scope else None,
                              check_gate=(not dym_scope) if check_gate is None else check_gate))
-    P = pd.concat(T, ignore_index=True) if T else pd.DataFrame(columns=['ryad'])
-    print(P.to_string())
+    P = pd.concat([t for t in T if len(t)], ignore_index=True) if any(len(t) for t in T) else pd.DataFrame()
+    for c in ('ryad', 'sdvig_ok'):  # пустой пакет (всё в кэше, DONE_E) — успех: столбцы есть, строк нет
+        if c not in P:
+            P[c] = pd.Series(dtype=object)
+    print(P.to_string() if len(P) else 'run: пакет пуст — всё уже в кэше (DONE_E), код 0')
     return P
+
+
+def run_ok(P):
+    """Код возврата run: 0, если ошибок нет; пустой пакет — успех."""
+    return P.empty or 'ryad' not in P or 'ОШИБКА' not in set(P['ryad'])
 
 
 # ================================================================ самопроверка (синтетика)
@@ -919,7 +932,7 @@ def main():
         if not src:
             ap.error('run: нужен --designs или --design')
         P = run(src, a.h, a.dym, seeds=a.seeds, workers=a.workers, steps=a.steps, check_gate=False if a.no_gate else None, faza=a.faza)
-        sys.exit(0 if 'ОШИБКА' not in set(P.ryad) else 1)
+        sys.exit(0 if run_ok(P) else 1)
 
 
 if __name__ == '__main__':
