@@ -300,9 +300,10 @@ def _nest(flat):
     return out
 
 
-def validate(design, schema=None, keep_scalar_grid=False):
+def validate(design, schema=None, keep_scalar_grid=False, es_check=True):
     """-> полный нормализованный дизайн (вложенный dict) с `schema` и `design`; ошибки — DesignError со списком.
-    Значение grid-листа (leg.enet.*) всегда список (одиночное -> [x]); keep_scalar_grid — оставить скаляр (для complexity)."""
+    Значение grid-листа (leg.enet.*) всегда список (одиночное -> [x]); keep_scalar_grid — оставить скаляр (для complexity).
+    es_check — запрет ранней остановки на году оценки (роль ≠ none и early_stop = native)."""
     S = schema or load_schema()
     if isinstance(design, (str, Path)):
         design = yaml.safe_load(open(design))
@@ -358,6 +359,12 @@ def validate(design, schema=None, keep_scalar_grid=False):
             elif nv not in L.nvalues:
                 errs.append(f'{L.dotted}: {v!r} вне списка {L.values}')
         full[p] = v
+    # дирижёр 26.10, 17:44 (находка B): ранняя остановка на году оценки (es_year == eval_year) запрещена — у бустинга (роль ≠ none)
+    # только boost.early_stop = qlike_total: внутренняя складка vy−1 с эмбарго h (inner_masks), ≤ 300 деревьев, patience 30.
+    # es_check=False — только для сверки хэшей исторических баз (factor_v1 O в check-o), они не запускаются.
+    if es_check and str(full.get(('boost', 'role'), 'none')) != 'none' and str(full.get(('boost', 'early_stop'))) == 'native':
+        errs.append('boost.early_stop = native: ранняя остановка на году оценки (es_year == eval_year) запрещена — нужна qlike_total '
+                    '(внутренняя складка vy−1 с эмбарго h, ≤ 300 деревьев, patience 30)')
     if errs:
         raise DesignError('дизайн не прошёл схему ' + S.version + ':\n  ' + '\n  '.join(errs))
     out = _nest(full)
@@ -417,14 +424,14 @@ def inputs_identity(inputs):
 
 def needs_h1_inputs(design):
     """persist / reconcile (O, PR #172) и ens.ec (E, PR #187) на h ≠ 1 читают ряды h=1 (base_1, leg_1) — они обязаны входить в хэш."""
-    full = validate(design)
+    full = validate(design, es_check=False)
     on = lambda k: str(get(full, k)) not in ('off', 'False')
     return int(full['h']) != 1 and (on('mh.persist') or on('mh.reconcile') or on('ens.ec'))
 
 
 def with_inputs(design, inputs):
     """Дизайн + внешние входы (только идентичность: file/col/sha256 или design_sha/series)."""
-    d = dict(validate(design))
+    d = dict(validate(design, es_check=False))
     d['inputs'] = _check_inputs({k: dict(v) for k, v in inputs.items()})
     return d
 
@@ -433,7 +440,7 @@ def canonical(design, schema=None):
     """Канонический yaml: полный дизайн без `design`, с `schema`; числа — десятичные строки (шапка schema_v1.yaml, пп. 1–5).
     schema — путь/объект схемы (по умолчанию — текущая, v2); для сверки инвариантности хэшей v1."""
     S = schema if isinstance(schema, Schema) else load_schema(schema or SCHEMA_PATH)
-    full = validate(design, S)
+    full = validate(design, S, es_check=False)  # хэш — не запуск: запрет ранней остановки на году оценки — в run_phase / validate
     full.pop('design', None)
     inputs = full.pop('inputs', None)
     # ключи версий новее базовой (v2: кластеры 16, 18, 20) в канон не пишутся, пока равны default; тогда и `schema` — базовая (v1),
@@ -487,7 +494,7 @@ def complexity(design):
     сетка с default «вся сетка» (leg.enet) — выбор внутри складки: в счёт идёт один раз на группу и только если задано
     одиночное значение (подсетка-список — не в счёт)."""
     S = load_schema()
-    flat = _flatten(validate(design, keep_scalar_grid=True))
+    flat = _flatten(validate(design, keep_scalar_grid=True, es_check=False))
     c, grids = 0, set()
     for p, L in S.leaves.items():
         if L.kind in ('name', 'const') or L.fixed or L.dotted in ('h', 'seed', 'ens.seeds') or L.default is _MISSING:
@@ -506,7 +513,7 @@ def complexity(design):
 def grid_keys(design):
     """Ключи-скаляры, заданные списком (сетка внутри складки), и grid-листы, отличные от одиночного значения."""
     S = load_schema()
-    flat = _flatten(validate(design))
+    flat = _flatten(validate(design, es_check=False))
 
     def group_on(p):  # сетки групп новых версий (k16/k18/k20) действуют, только если переключатель группы не default
         sib = [q for q, M in S.leaves.items() if q[:-1] == p[:-1] and M.kind == 'scalar']
@@ -672,6 +679,35 @@ def load_series(design_sha, part='val', ryad=None, h=None, seed=None, modul=None
             x = x[x['step'].isin(list(steps))]
         out.append(x.assign(ryad=m['ryad'], h=int(m['h']), seed=m['seed'], part=part, modul=meta['modul'], hash=hid))
     return pd.concat(out, ignore_index=True) if out else pd.DataFrame()
+
+
+# ---------------------------------------------------------------- параметры модулей (дирижёр 26.10, 17:50)
+# Каждый модуль пишет СВОЙ файл params_<модуль>.csv в каталог дизайна; общий params.csv не используется (цепочка L → M → … пишет в один
+# каталог — общий файл затирали друг другу; находка 17:27, M). Потребители (D) читают все params_*.csv через load_params.
+PARAMS_RE = re.compile(r'^params_(?P<modul>[A-Za-z0-9]+)\.csv$')
+
+
+def params_path(design, module, root=None):
+    """Путь параметров модуля в каталоге дизайна: <кэш>/<hash16>/params_<модуль>.csv."""
+    if not re.fullmatch(r'[A-Za-z0-9]+', str(module)):
+        raise ValueError(f'имя модуля {module!r}: только буквы и цифры')
+    return cache_dir(design, root=root) / f'params_{module}.csv'
+
+
+def load_params(design_sha, modul=None, root=None):
+    """Все params_<модуль>.csv дизайна одним кадром (колонки файла + modul, hash); modul — фильтр (строка или список).
+    Общий params.csv (старый формат) не читается — он не однозначен по модулю."""
+    root = Path(root or CACHE_ROOT)
+    if not isinstance(design_sha, str) or not re.fullmatch(r'[0-9a-f]{16,64}', design_sha):
+        design_sha = design_hash(design_sha)
+    d = root / design_sha[:16]
+    want = {modul} if isinstance(modul, str) else (set(modul) if modul else None)
+    out = []
+    for f in sorted(d.glob('params_*.csv')) if d.is_dir() else []:
+        m = PARAMS_RE.match(f.name)
+        if m and (want is None or m['modul'] in want):
+            out.append(pd.read_csv(f).assign(modul=m['modul'], hash=design_sha[:16]))
+    return pd.concat(out, ignore_index=True, sort=False) if out else pd.DataFrame()
 
 
 # ================================================================ данные d0, эмбарго
@@ -1100,8 +1136,11 @@ def _schema_selftest():
             ok(f'ошибка схемы ловится: {why}', False)
         except DesignError:
             ok(f'ошибка схемы ловится: {why}', True)
-    d = {'h': 1, 'boost': {'role': 'feature', 'monotone': 'on'}, 'features': ['G0', 'G2', 'G3'], 'calib': {'kappa': [0.5, 'fit']}}
-    ok('сложность = 5 (role, monotone, G2, G3, kappa-сетка)', complexity(d) == 5)
+    d = {'h': 1, 'boost': {'role': 'feature', 'monotone': 'on', 'early_stop': 'qlike_total'}, 'features': ['G0', 'G2', 'G3'],
+         'calib': {'kappa': [0.5, 'fit']}}
+    ok('сложность = 6 (role, monotone, early_stop, G2, G3, kappa-сетка)', complexity(d) == 6)
+    ok('ранняя остановка на году оценки (роль ≠ none, early_stop = native) — DesignError; хэш считается',
+       _raises(lambda: validate({'h': 5, 'boost': {'role': 'residual'}})) and len(design_hash({'h': 5, 'boost': {'role': 'residual'}})) == 64)
     ok('сетка внутри складки: calib.kappa (+ enet 3 × 3 по умолчанию)', 'calib.kappa' in grid_keys(d) and len(variants(d)) == 18
        and len(variants(d, keys=['calib.kappa'])) == 2)
     ok('сетка enet по умолчанию — вся (3 × 3)', len(variants({'h': 5})) == 9)

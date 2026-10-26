@@ -10,6 +10,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -20,6 +21,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -30,6 +32,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -46,6 +49,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -62,6 +66,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -78,6 +83,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -88,6 +94,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -98,6 +105,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -108,6 +116,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -118,6 +127,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -128,6 +138,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -138,6 +149,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -148,6 +160,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -158,6 +171,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -168,6 +182,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -178,6 +193,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -188,6 +204,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -198,6 +215,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -221,59 +239,59 @@ designs:
     role: none
 index:
 - design: C_h22_HARJ_feature
-  design_sha: 43299a5ffea2eaec93a01001d98fb73b609dc78c2cdaf7cd406a240809270ebe
-  slozhnost: 2
+  design_sha: 50e7c9beb049049a94267c83e62fdfa38d702f67c008c02590850ba715dcdd4d
+  slozhnost: 3
 - design: C_h22_HARJ_residual
-  design_sha: a780995d78f81b8f5de070c5865d55222e8a29488d452a16130879cfd9f8646a
-  slozhnost: 2
+  design_sha: 3a06e9bc25e30517cd37e312a61ed9e524507949782fa0fdce4df2cc110bb53a
+  slozhnost: 3
 - design: C_h22_HARJ_offset
-  design_sha: 419e90c9e264b8e40f9fb230d35884082c9fe729a7ac2b4983d8f40b7b8dad02
-  slozhnost: 2
+  design_sha: f4a401aab8e781caf25b0f9f8e55614ad4aa8d880ab92c10f7229163a1495bdd
+  slozhnost: 3
 - design: C_h22_HARX_feature
-  design_sha: 0eae7fcd2c1f197c16295d1bc07e7ad7c65f79ab104841044fe258a97768936e
-  slozhnost: 4
+  design_sha: df9793dae59c2f9f0ee2cb28bbd59c1c928bc84dd5505bf489b080a38a56dee3
+  slozhnost: 5
 - design: C_h22_HARX_residual
-  design_sha: 9e1fb37971cecdff71d9808828a1f89347935d3d72eda71aac592aef895c8f03
-  slozhnost: 4
+  design_sha: e531b7f745aa2504ab3383bdbfc501a69ad01160c401012ae8a853efca221151
+  slozhnost: 5
 - design: C_h22_HARX_offset
-  design_sha: d2530c367f814bf435c1d952d63b02f468eab8237f5288c6842e9122ec60a66d
-  slozhnost: 4
+  design_sha: 9b14d9cf8d4e40a19b29f7543291694bc20dc4816d53ff7da9bd9e74625eb944
+  slozhnost: 5
 - design: C_h22_HARX_regime_feature
-  design_sha: 1cd7a7fefecd54f6ce64e9c1eae880c3982c8d436c38d16125949114b443f793
-  slozhnost: 3
+  design_sha: 18621544f91b1a6381adc50bef5657361abd41c340a78005b56515fc44df1e85
+  slozhnost: 4
 - design: C_h22_HARX_regime_residual
-  design_sha: f5c73d0838d2b6f8f5e644489dd744852fb4d6f08744d62b77a855d6aceac0ad
-  slozhnost: 3
+  design_sha: f93101faf37f90b70d15deee984cf2333746c01faca64a4d2d135ba3186f3e40
+  slozhnost: 4
 - design: C_h22_HARX_regime_offset
-  design_sha: dcf936d1b5b361ae2f0431ec2015ac93991a5fe7a7c041672db73e776992d60d
-  slozhnost: 3
+  design_sha: 703181b64bb1b07d74f4abf000089ddfc24a51c868f6a3025bf0bb01e952e7c8
+  slozhnost: 4
 - design: C_h22_HEAVY_feature
-  design_sha: 1021bc36c47df8178575864006f2db16b99eb230b5eb0178a483be91d599d1b6
-  slozhnost: 3
+  design_sha: 793e42393886f3af4147eec5db4ae85e82edeae04931a98386f1b19c1f0984ab
+  slozhnost: 4
 - design: C_h22_HEAVY_residual
-  design_sha: b0e937e02e158b8b7e08ffc777c09c41950c833388c03ec4f255b3e01a845b66
-  slozhnost: 3
+  design_sha: f1ab152cbdf1e12d92d16c8b9a9105dc60a5bf8ad29cd6a9a2fcd471a28ab132
+  slozhnost: 4
 - design: C_h22_HEAVY_offset
-  design_sha: 39376e699eec13b2164ac7da16b51f00190d7fd0e0a27bb665eab94a57375487
-  slozhnost: 3
+  design_sha: 77fa747492893e4ab9a724574cb4c3bef7bafcf18a04bfbc82b0362e81666450
+  slozhnost: 4
 - design: C_h22_RVI_anchor_feature
-  design_sha: 99e4e7f2e55eaba4534c0542887856f1399597a30a418db9b293fb546d670a27
-  slozhnost: 3
+  design_sha: 779d5ffddbe1ea453114b2a38cadcf87cce4810fee583268c351ff731d5187be
+  slozhnost: 4
 - design: C_h22_RVI_anchor_residual
-  design_sha: a1e33a7fe6f86edf6aac29e19349c9204af3f04a462eee7249448a6d9a4ab07f
-  slozhnost: 3
+  design_sha: c65c5ef5432e268fe49bd4de497a1da6dbc0f5531814dbe5a439906c8c68495f
+  slozhnost: 4
 - design: C_h22_RVI_anchor_offset
-  design_sha: 17541ddd211a517e8b72a8876d522f167a2a9caa9c5244549766f332157f7fe9
-  slozhnost: 3
+  design_sha: 4748bec09e7b975be527523c6f33fb190e73eb5b12b9cbd7d4f001551c6e384b
+  slozhnost: 4
 - design: C_h22_HAR_perlead_feature
-  design_sha: 0a7481c3661ac4686ddb15a1f3cd9a6ddedbba1e55b2a2a056f61e6a001fa37a
-  slozhnost: 3
+  design_sha: 03023e50bc6e41e4f767475090fd971959af8ecb9315f38e224d5ad63ef9666d
+  slozhnost: 4
 - design: C_h22_HAR_perlead_residual
-  design_sha: dfc96917124eaf538f362b02a354b4e37289089972d09e063ff5a2b2d19b9e93
-  slozhnost: 3
+  design_sha: 453c4f6711fe28c5cf08787d4b9ad889f08495f9d8c5cfba28cb7b7785c74959
+  slozhnost: 4
 - design: C_h22_HAR_perlead_offset
-  design_sha: 966d6410a0a882d283c42b76cf78ab8c7b60e8f709585e754ab8242d20ab967d
-  slozhnost: 3
+  design_sha: 405d86122a99482853e3dad27ef2c9f5d3a50964e1f80a77b17de0f9629711d6
+  slozhnost: 4
 - design: C_h22_HARX_V0
   design_sha: 437807c6a3848b664103812590b56309b550310d04fada11c9718d3342a5fd6a
   slozhnost: 2

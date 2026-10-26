@@ -57,9 +57,9 @@ E:
   seeds_final: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
   lib_final: both_avg
   finalists_k: 3
-  # дирижёр 26.10, 17:28: boost_refit = monthly — последним в очереди и только для финалистов уровня E (вариант каждого финалиста
-  # с boost.boost_refit = monthly, 10 seed, считается после финалистов; в ворота E входит как отдельный кандидат)
-  monthly_last: {key: boost.boost_refit, value: monthly}
+  # дирижёр 26.10, 17:50 (заменяет 17:28): boost_refit = monthly для финалистов E НЕ допускается; только seed 42 для приложения,
+  # последним в очереди (после ворот E), в выбор и ворота не входит -> R2/report/prilozhenie_monthly_h{h}.md
+  monthly_last: {key: boost.boost_refit, value: monthly, seeds: [42]}
   # ключи схемы v1 (по одному изменению к лучшему дизайну D)
   ofat:
     calib.s2_est: [smrob, sm_pooled, sm_by_ticker, sm_roll1y, sm_roll2y, sm_ewma097]
