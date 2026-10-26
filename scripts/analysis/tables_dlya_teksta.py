@@ -4,9 +4,10 @@
 2025 – 01.2026. Периоды стоят рядом блоками столбцов.
 
 СРЕЗ ПО ПОРУЧЕНИЮ ВЛАДЕЛЬЦА ПОСЛЕ ЕДИНСТВЕННОГО ЗАПУСКА ТЕСТА (final_test.py --scope test, 26.10 08:57, коммит 002a74c).
-Тест не запускается, прогнозы финала не меняются, сохранённые таблицы теста не перезаписываются. Модели здесь не обучаются; исключение — справочные
-строки табл. 3.4 «LightGBM / XGBoost (чистый бустинг, с поправкой)» (поручение владельца 10:55): прогнозы обучены отдельно scripts/analysis/ref_v0_pure.py
-(путь (в)) и читаются здесь из test_locked/ref_v0_pure со сверкой SHA-256; прежние строки (ноги гибрида) — приложение prilozhenie_nogi_gibrida.csv.
+Тест не запускается, прогнозы финала не меняются, сохранённые таблицы теста не перезаписываются. Модели здесь не обучаются. Строки табл. 3.4
+«LightGBM / XGBoost (базовый бустинг V0, с поправкой)» (решение владельца 11:40) — test_locked/ref_v0_base (scripts/analysis/ref_v0_base.py: сохранённые
+D12_h1_V0 / Bv3, шаг 10 при h=5/22 обучен), среднее QLIKE трёх seed; абляция «бустинг на признаках гибрида» (чистый бустинг 10:55, ref_v0_pure.py) —
+приложение prilozhenie_ablyaciya_buster.csv; ноги гибрида — prilozhenie_nogi_gibrida.csv. SHA-256 прогнозов сверяется.
 
 Версии (--versiya):
   1 — без правила (PR #118): docs/tables/dlya_teksta/v1/table_3_{4..9}.csv. Источники — table_3_*_test, table_3_kontrol_*_test,
@@ -413,12 +414,21 @@ PURE_SHA = {  # test_locked/ref_v0_pure/SHA256.txt (26.10, 11:01–11:06)
     ('xgb', 1): '61ed017c31a88ff4988a0ea6bbc11dce1575d94b467e74cd078b5f6b8dc45a69', ('lgbm', 1): 'e8a8a87a19b92b5b0edcc9a4bdc9f3e54b69b3352a84957468959501946f2860',
     ('xgb', 5): 'a94bd99a819cb50d214b263ac391a4c593a05a00fc0d0925703b03ce4ee5fed6', ('lgbm', 5): '51aa7c0ac2284f7d59aeca4cda4638855e61407a221e0dfc8ebae57a78408919',
     ('xgb', 22): '18c5fc20882b550bc5b853afb278721a7da2f5062eaecb4e3106a85def7fa608', ('lgbm', 22): '95ed0609319b1e72f588c5acab9424dbcbf8390d66df4f49e296432fc75f2eb8'}
-PURE_L, PURE_X = 'LightGBM (чистый бустинг, с поправкой)', 'XGBoost (чистый бустинг, с поправкой)'
+# базовый бустинг V0 (решение владельца 11:40): scripts/analysis/ref_v0_base.py --assemble; seed 42/43/44, в таблице — среднее QLIKE по seed
+V0DIR = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/test_locked/ref_v0_base')
+V0_SHA = {  # test_locked/ref_v0_base/SHA256.txt (26.10, 11:38)
+    ('xgb', 1): '705dd963e7be9c3f2aaad3b28aa83e618f8bcbc550ea9ab45c1c9c5e6869c89b', ('lgbm', 1): '80bd4682ed83dbd46e121f2cd0dba3620257b9613b91b4fc90f4c17141f55d72',
+    ('xgb', 5): 'ab714470ddbd01cba0fb3cbf774500b23af490dfdcd62c4c082d5d3e9e013a4b', ('lgbm', 5): '93aa9c94a016b27affcf23e241fbc3751e0ea83deacb30b76541070573ca8933',
+    ('xgb', 22): '75476cfe88ceef15e55d4dd7e432f053d7a9447251c9bf580ee43b146cc51fe5', ('lgbm', 22): '90c90824be444a804533b228755ca8499d10bb1ac61435e724829f300de2eafd'}
+V0_SEEDS = (42, 43, 44)
+V0_L, V0_X = 'LightGBM (базовый бустинг V0, с поправкой)', 'XGBoost (базовый бустинг V0, с поправкой)'
+PURE_L, PURE_X = 'бустинг на признаках гибрида: LightGBM (с поправкой, при H = 22 вырожден ⚠)','бустинг на признаках гибрида: XGBoost (с поправкой)'
 NOGA_L, NOGA_X = 'нога гибрида (LightGBM на HAR-X)', 'нога гибрида (XGBoost на HAR-X)'
 SRAV = {'Финальная (гибридная)': ('rv_pred', 'QLIKE Финальная'), 'HAR-J с поправкой (эталон)': ('har_corr', 'QLIKE HAR-J (б)'),
-        'HAR-J как в диссертации': ('har_raw', 'QLIKE HAR-J (а)'), PURE_L: ('pure_lgbm', None), PURE_X: ('pure_xgb', None),
+        'HAR-J как в диссертации': ('har_raw', 'QLIKE HAR-J (а)'), V0_L: ('v0_lgbm', None), V0_X: ('v0_xgb', None),
         'GRU': ('ref_GRU', None), 'LSTM': ('ref_LSTM', None), 'GJR-GARCH с калибровкой': ('ref_GJR', None), 'GARCH(1,1) с калибровкой': ('ref_GARCH', None)}
 NOGI = {NOGA_L: ('lgb_corr', 'QLIKE Лучшая одиночная бустинга'), NOGA_X: ('xgb_corr', None)}  # прежние строки 3.4 — приложение (поручение 10:55)
+ABL = {PURE_L: ('pure_lgbm', None), PURE_X: ('pure_xgb', None)}  # чистый бустинг 10:55 — приложение-абляция (решение 11:40)
 BL34 = [Blk('2022–2026¹', 'kontrol', 'b'), Blk('2022–2026¹ с правилом⁴ (устойчивость)', 'kontrol', 's'),
         Blk('2017–2026²', 'vse', 'b'), Blk('2017–2026² с правилом⁴ (устойчивость)', 'vse', 's')]
 SPRAV = ('Справочные модели (GRU, LSTM, GARCH, GJR) открыты на тесте для отчёта по поручению владельца 10:35 и в выборе финала не участвовали; '
@@ -454,15 +464,33 @@ def srez3(D):
             assert np.allclose(j.rv_actual, j.rv_actual_ref, rtol=1e-9, atol=0), f'{f.name}: rv_actual не совпал'
             base[f'pure_{m}'] = j.rv_pred.values
             nchk += 1
+        for m in ('xgb', 'lgbm'):  # базовый бустинг V0 (решение 11:40): по seed, rv_pred = rv_raw × F своего seed
+            f = V0DIR / f'REF_V0B_{m}_h{h}_test.parquet'
+            assert hashlib.sha256(f.read_bytes()).hexdigest() == V0_SHA[(m, h)], f'{f.name}: SHA-256 не совпал с ref_v0_base/SHA256.txt'
+            r = pd.read_parquet(f, columns=['date', 'ticker', 'step', 'seed', 'rv_actual', 'rv_raw', 'F', 'rv_pred'])
+            assert np.allclose(r.rv_pred, r.rv_raw * r.F, rtol=1e-15, atol=0) and sorted(r.seed.unique()) == list(V0_SEEDS)
+            for sd in V0_SEEDS:
+                j = base[['date', 'ticker', 'step', 'rv_actual']].merge(r[r.seed == sd], how='left', on=['date', 'ticker'], suffixes=('', '_ref'), validate='1:1')
+                assert j.rv_pred.notna().all() and (j.step == j.step_ref).all(), f'{f.name} seed {sd}: нет прогноза для части строк теста или шаг не совпал'
+                assert np.allclose(j.rv_actual, j.rv_actual_ref, rtol=1e-6, atol=0), f'{f.name} seed {sd}: rv_actual не совпал'
+                base[f'v0_{m}_s{sd}'] = j.rv_pred.values
+                nchk += 1
+            base[f'v0_{m}'] = base[f'v0_{m}_s42']  # для покрытия; QLIKE строки — среднее по seed (ниже)
         for rk, rname in RULE.items():
             DR = (base[~ex[h]] if rk == 's' else base).reset_index(drop=True)
             for tag in ('kontrol', 'vse'):
                 a, b = YEARS[tag]
                 P = DR[DR.year.between(a, b)]
                 sv = f'table_3_{tag}_svodka_test_{rname}.csv'
-                for name, (c, scol) in {**SRAV, **NOGI}.items():
+                for name, (c, scol) in {**SRAV, **NOGI, **ABL}.items():
                     v = P[c].notna()
                     q = FT._q(P[v], c) if v.any() else np.nan
+                    sq = {}
+                    if c.startswith('v0_'):  # базовый бустинг V0: QLIKE каждого seed, в таблицу — среднее
+                        assert v.all() and len(P) == int(src(sv, {'h': str(h)}, 'n')), f'{sv} h={h} {name}: покрытие'
+                        sq = {sd: FT._q(P, f'{c}_s{sd}') for sd in V0_SEEDS}
+                        q = float(np.mean(list(sq.values())))
+                        nchk += 1
                     if scol:  # финал, эталоны, нога LightGBM с поправкой — те же числа, что в сохранённых сводках
                         assert v.all() and round(q, 4) == num(src(sv, {'h': str(h)}, scol)) and len(P) == int(src(sv, {'h': str(h)}, 'n')), f'{sv} h={h} {name}'
                         nchk += 1
@@ -475,7 +503,10 @@ def srez3(D):
                     miss = P[~v].groupby('year').size()
                     rows.append({'Период': tag, 'правило': rname, 'h': h, 'Модель': name, 'столбец прогноза': c, 'строк периода': len(P),
                                  'строк с прогнозом': int(v.sum()), 'покрытие, %': round(100 * v.mean(), 2), 'QLIKE пул': q,
-                                 'нет прогноза (год: строк)': ', '.join(f'{y}: {k}' for y, k in miss.items())})
+                                 'нет прогноза (год: строк)': ', '.join(f'{y}: {k}' for y, k in miss.items()),
+                                 **{f'QLIKE seed {sd}': sq.get(sd, np.nan) for sd in V0_SEEDS},
+                                 'QLIKE по seed: мин': min(sq.values()) if sq else np.nan, 'QLIKE по seed: макс': max(sq.values()) if sq else np.nan,
+                                 'QLIKE по seed: СКО': float(np.std(list(sq.values()), ddof=1)) if sq else np.nan})
     write_df(pd.DataFrame(rows), IST3)
     print(f'срез 3.4 «Сравнение моделей»: {len(rows)} строк -> {IST3}; контроль: {nchk} сравнений OK')
     return nchk
@@ -515,7 +546,7 @@ def build(v):
     tabs = [t_models(v, '3_4' if v == 1 else '3_4_v_prezhn', ('XGBoost', 'LightGBM', 'HAR-J'), 'pool'), t35(v),
             t_models(v, '3_6', ('Гибридная', 'LightGBM', 'XGBoost', 'HAR-J', 'HAR-J с поправкой'), 'pool'),
             t_models(v, '3_7', ('HAR-J', 'HAR-J с поправкой', 'XGBoost', 'LightGBM', 'Гибридная'), 'years'), t38(v), t39(v)]
-    return ([t34n()] if v == 2 else []) + tabs + ([t_pril(), t34n('pril_nogi', NOGI)] if v == 2 else [])
+    return ([t34n()] if v == 2 else []) + tabs + ([t_pril(), t34n('pril_nogi', NOGI), t34n('pril_abl', ABL)] if v == 2 else [])
 
 
 # ---------- примечания и источники ----------
@@ -569,13 +600,72 @@ def pure_floor():
                 out.append(f'{nm} при H = {h} — {len(f)} строк теста (' + ', '.join(f'шаг {s} ({y}) {t} {n}' for (s, y, t), n in g.items()) + ')')
     if not out:
         return ''
-    return ('⚠ Прогноз на нижней границе 1e-10: ' + '; '.join(out) + '. Причина — linear_tree (λ = 1, как у ноги D12_h22): линейные листья '
+    return ('⚠ Вырождение — прогноз на нижней границе 1e-10: ' +'; '.join(out) + '. Причина — linear_tree (λ = 1, как у ноги D12_h22): линейные листья '
             'экстраполируют на значения признаков вне диапазона обучающего окна, без офсета HAR это не гасится; у val-лет таких строк нет. QLIKE этой '
             'строки определяется этими точками и как оценка модели не информативен. Менять спецификацию после просмотра теста — выбор по тесту, '
             'поэтому число оставлено как есть; другая спецификация — только по решению владельца и с пометкой. ')
 
 
-PURE_NOTE = ('«LightGBM / XGBoost (чистый бустинг, с поправкой)» — справочные строки по поручению владельца 10:55, получены путём (в): сохранённых '
+V0V = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/ref_v0_base')
+
+
+def v0_kontrol():
+    """Контроль базового бустинга V0 из CSV ref_v0_base.py (--check, --leak) -> текст; всё обязано быть пройдено."""
+    ck = pd.concat([pd.read_csv(V0V / f'check_h{h}.csv') for h in HS])
+    lk = pd.concat([pd.read_csv(V0V / f'leak_h{h}.csv') for h in (5, 22)])
+    assert ck.ok.all(), 'ref_v0_base: контроль не пройден'
+    cl, dt = lk[~lk.leak_injected], lk[lk.leak_injected]
+    assert cl.val_identical.all() and cl.best_it_identical.all() and (cl.mismatch_le_T == 0).all() and (dt.mismatch_le_T > 0).all(), 'ref_v0_base: детектор'
+    e = lambda x: f'{x:.0e}'.replace('e-', '·10^−')
+    dd = ck[ck.check.str.startswith('драйвер')].max_rel_diff.max()
+    d2 = ck[ck.check.str.startswith('D12_h1_V0')].max_rel_diff.max()
+    return (f'Контроль: драйвер шага 10 (l2_lib, cfg {{}}) повторяет сохранённые val Bv3 при H = 5, 22 (шаги 2 и 9, seed 42 и 43) и val шага 10 '
+            f'D12_h1_V0 (seed 42) с отн. расхождением не более {e(dd)}; D12_h1_V0 и Bv3 при H = 1 (одна спецификация, два драйвера) расходятся на val '
+            f'не более чем на {e(d2)}; детектор «будущее не влияет» для обученного шага 10 (H = 5, 22, оба бустинга, 3 seed, T = 15.01.2026) — '
+            f'прогнозы val и теста до T совпали побайтно, подложенная утечка поймана во всех {len(dt)} случаях.')
+
+
+def v0_seeds_md():
+    """README: базовый бустинг V0 — среднее и разброс QLIKE по seed 42/43/44 (из IST3)."""
+    f = lambda s: disp(s, 'q4')
+    L = ['**Базовый бустинг V0: QLIKE по seed** (среднее = ячейка табл. 3.4; мин–макс и СКО — по трём seed; источник — `istochnik_sravnenie_test.csv`).', '',
+         '| модель | H | период | правило | среднее | мин–макс | СКО |', '|---|---|---|---|---|---|---|']
+    for name in (V0_L, V0_X):
+        for h in HS:
+            for tag, lab in (('kontrol', '2022–2026'), ('vse', '2017–2026')):
+                for rk in ('b', 's'):
+                    r = [x for x in rows_of(IST3) if x['Модель'] == name and x['h'] == str(h) and x['Период'] == tag and x['правило'] == RULE[rk]][0]
+                    L.append(f"| {name.split(' ')[0]} | {h} | {lab} | {'с правилом' if rk == 's' else 'без правила'} | {f(r['QLIKE пул'])} | "
+                             f"{f(r['QLIKE по seed: мин'])}–{f(r['QLIKE по seed: макс'])} | {f(r['QLIKE по seed: СКО'])} |")
+    return L
+
+
+def v0_note():
+    """V0_NOTE с числом строк шага 10 (путь (в)) при H = 5, 22 — из файлов прогнозов (строки с rv_actual > 1e-12, seed 42)."""
+    n = []
+    for h in (5, 22):
+        r = pd.read_parquet(V0DIR / f'REF_V0B_xgb_h{h}_test.parquet', columns=['step', 'seed', 'rv_actual', 'put'])
+        r = r[(r.seed == 42) & (r.rv_actual > 1e-12)]
+        assert set(r[r.step == 10].put) == {'в'} and set(r[r.step < 10].put) == {'а'}
+        n.append(f'H = {h}: {int((r.step == 10).sum())} из {len(r)} строк 2017–2026')
+    return V0_NOTE.replace('STEP10', '; '.join(n))
+
+
+V0_NOTE = ('Базовый бустинг V0; прогнозы открыты на тесте для отчёта (путь а; шаг 10 при H = 5, 22 — путь в), в выборе финала не участвовали '
+           '(решение владельца 11:40). '
+           'Спецификация — как в диссертации: XGBoost / LightGBM на ln RV (H = 1) или ln среднего RV за [t+1, t+H] (H = 5, 22); признаки — базовый '
+           'набор features_pit_v3 (без календаря окна, ночного гэпа, RRV, слагаемых и прогноза HAR-J/HAR-X); гиперпараметры — протокол B v2b для '
+           'одиночной модели (точка ранга 1 шага, на шагах 7–10 — точка шага 6), без винзоризации, без Huber, LightGBM — обычный gbdt без линейных '
+           'листьев (у V0 их не было: в сохранённых параметрах B v2b linear_tree нет, драйвер tune_Bv2 его не задаёт); seed 42/43/44; поправка Б0.1 '
+           'sm по val-остаткам своего seed (на тесте шага k — оценка шага k, как у финала). В ячейке — среднее QLIKE трёх seed (каждый seed со своей '
+           'поправкой); разброс по seed (мин, макс, СКО) — istochnik_sravnenie_test.csv и README. Путь: (а) сохранённые прогнозы кандидатов V0 — '
+           'H = 1: D12_h1_V0 (кандидат V0 финального пула), шаги 1–10; H = 5, 22: Bv3 (V0 на features_pit_v3 при точках B v2b), шаги 1–9; '
+           '(в) шаг 10 (01–02.2026) при H = 5, 22 сохранённым не был — обучен без подбора по точке шага 6 B v2b (scripts/analysis/ref_v0_base.py), '
+           'это строки 2026 г. (STEP10). D15_h5/D15_h22 — с рычагами (linear_tree, Д7 и др.), спецификации V0 не отвечают. '
+           'Прогнозы и SHA-256 — test_locked/ref_v0_base (входы (а) — ref_v0_base/istochniki_h{1,5,22}.csv). Прежние строки 10:55 «чистый бустинг» '
+           '(на признаках гибрида) — приложение-абляция prilozhenie_ablyaciya_buster.csv. ')
+PURE_NOTE = ('Абляция «бустинг на признаках гибрида» — строки «чистый бустинг» по поручению владельца 10:55, по решению владельца 11:40 перенесены '
+             'из табл. 3.4 в приложение (в табл. 3.4 — базовый бустинг V0). Получены путём (в): сохранённых '
              'тестовых прогнозов чистого бустинга с гиперпараметрами и признаками ног финала нет (V0-дизайны в test_locked — с другими точками или '
              'признаками), сохранённых обученных моделей нет; модели обучены заново (scripts/analysis/ref_v0_pure.py) по точкам гиперпараметров ног финала: '
              'H = 1 — нога D22_h1 (среднее топ-5 точек шага на шагах 1–6, точка шага 6 на шагах 7–10), H = 5 — нога D12_h5, H = 22 — нога D12_h22 '
@@ -587,9 +677,9 @@ PURE_NOTE = ('«LightGBM / XGBoost (чистый бустинг, с поправ
              'XGB-слот при H = 5 — среднее V9-XGBoost и V9-LightGBM). ↺ У XGBoost при H = 5 (pseudo-Huber) цель центрирована средним ln цели обучающего '
              'окна шага: без этого XGBoost 2.1.4 оценивает base_score ≈ −555 и останавливается на итерации 0 на всех шагах (прогноз — константа); '
              'выявлено на val до открытия теста. Прогнозы и SHA-256 — test_locked/ref_v0_pure. Прежние строки «LightGBM / XGBoost одиночный с поправкой» '
-             '(ноги гибрида) — приложение prilozhenie_nogi_gibrida.csv. ')
+             '(ноги гибрида) — приложение prilozhenie_nogi_gibrida.csv. QLIKE по всем парам (дата, тикер) периода финального теста (фильтр rv_actual > 1e-12). ')
 NOGI_NOTE = ('Ноги гибридного финала × F (lgb_corr, xgb_corr файлов test_locked/final3) — прежние строки табл. 3.4 «LightGBM / XGBoost одиночный '
-             'с поправкой», перенесены в приложение по поручению владельца 10:55 (в табл. 3.4 их заменил чистый бустинг). Название — по поручению; '
+             'с поправкой», перенесены в приложение по поручению владельца 10:55 (в табл. 3.4 теперь базовый бустинг V0, решение 11:40). Название — по поручению; '
              'основа ноги: H = 1 — HAR-X⁺ (Д8.12, D22_h1, нога top5: прогноз ln HAR-X⁺ в признаках); H = 5 — HAR-J (V9, D12_h5: бустинг на остатке '
              'ln RV − ln HAR-J и прогноз HAR-J в признаках; нога wrap2: XGBoost-слот = среднее V9-XGBoost и V9-LightGBM, LightGBM-слот — V9-LightGBM); '
              'H = 22 — HAR-J (V9, D12_h22, нога single; финал H = 22 — HAR-J с поправкой). При H = 1 и 5 XGBoost-нога совпадает с финалом. '
@@ -600,12 +690,15 @@ NOGI_NOTE = ('Ноги гибридного финала × F (lgb_corr, xgb_cor
 def foot(v, name):
     if v == 2 and name == '3_4':
         return (f'{SPRAV} QLIKE по всем парам (дата, тикер) периода финального теста (фильтр rv_actual > 1e-12), без выбора. «Финальная» — финальный дизайн '
-                '(rv_pred): H = 1 — D22_h1, H = 5 — D12_h5, H = 22 — HAR-J с поправкой. ' + PURE_NOTE + pure_floor() + pure_kontrol() + ' GRU и LSTM — ансамбль трёх seed с '
+                '(rv_pred): H = 1 — D22_h1, H = 5 — D12_h5, H = 22 — HAR-J с поправкой. ' + v0_note() + v0_kontrol() + ' GRU и LSTM — ансамбль трёх seed с '
                 'поправкой Б0.1; GJR-GARCH и GARCH(1,1) — калибровка a·σ²·F (OLS по логарифмам по тикеру на годе шага t−1); основной rv_pred '
                 'справочных прогнозов, объявленный в отчёте 2026-10-26_ref_nn_garch до теста. ' + pokrytie(),
                 'финал, HAR-J с поправкой, HAR-J как в диссертации — table_3_{kontrol,vse}_svodka_test_{bez_zakrytiya,s_zakrytiem}.csv; '
-                'чистый бустинг и справочные — dlya_teksta/istochnik_sravnenie_test.csv (из прогнозов test_locked/ref_v0_pure — обучены по поручению 10:55, '
-                'SHA-256 сверен, — и сохранённых test_locked/ref_nn_garch).')
+                'базовый бустинг V0 и справочные — dlya_teksta/istochnik_sravnenie_test.csv (из прогнозов test_locked/ref_v0_base — сохранённые D12_h1_V0 '
+                'и Bv3, шаг 10 при H = 5, 22 обучен, SHA-256 сверен, — и сохранённых test_locked/ref_nn_garch).')
+    if v == 2 and name == 'pril_abl':
+        return (PURE_NOTE + pure_floor() + pure_kontrol(),
+                'dlya_teksta/istochnik_sravnenie_test.csv (из прогнозов test_locked/ref_v0_pure, обучены по поручению 10:55, SHA-256 сверен).')
     if v == 2 and name == 'pril_nogi':
         return (NOGI_NOTE, 'нога LightGBM — table_3_{kontrol,vse}_svodka_test_{bez_zakrytiya,s_zakrytiem}.csv («QLIKE Лучшая одиночная бустинга»); '
                 'нога XGBoost — dlya_teksta/istochnik_sravnenie_test.csv (из сохранённых прогнозов test_locked/final3).')
@@ -639,7 +732,9 @@ TITLE = {
     '3_pril_zakrytie': 'Приложение к табл. 3.4–3.9. Точки, исключённые правилом «закрытие биржи», по H и тикерам',
     'pril_nogi': 'Приложение к табл. 3.4. Ноги гибридного финала (XGBoost/LightGBM на HAR-X) с поправкой: QLIKE на 2022–2026 и 2017–2026',
 }
-FNAME = {'pril_nogi': 'prilozhenie_nogi_gibrida.csv'}
+TITLE['pril_abl'] = ('Приложение к табл. 3.4. Абляция «бустинг на признаках гибрида» (чистый бустинг на признаках и точках ног финала) с поправкой: '
+                     'QLIKE на 2022–2026 и 2017–2026')
+FNAME = {'pril_nogi': 'prilozhenie_nogi_gibrida.csv', 'pril_abl': 'prilozhenie_ablyaciya_buster.csv'}
 
 
 def fname(name):
@@ -711,8 +806,9 @@ def readme(rep, nchk):
          '',
          f'**{SRK[2]}** Поручение владельца 26.10, 09:50, п. 2, и дополнение 09:55 (правило «закрытие биржи»); решения 09:00, 09:05, 09:15 — '
          '`docs/zadaniya/2026-10-25_pereschet.md`; правило — FINAL_DESIGN, разд. 13, и `docs/tables/README_zakrytie.md`. '
-         'Тест (`final_test.py --scope test`) повторно не запускался; сохранённые таблицы теста не менялись; модели не обучались, кроме справочных строк '
-         'чистого бустинга табл. 3.4 (поручение владельца 10:55, `scripts/analysis/ref_v0_pure.py`, путь (в) — см. ниже).',
+         'Тест (`final_test.py --scope test`) повторно не запускался; сохранённые таблицы теста не менялись; модели не обучались, кроме абляции '
+         '«бустинг на признаках гибрида» (поручение 10:55, `scripts/analysis/ref_v0_pure.py`) и шага 10 базового бустинга V0 при H = 5, 22 '
+         '(решение 11:40, `scripts/analysis/ref_v0_base.py`) — см. ниже.',
          '',
          'Скрипт: `python3 scripts/analysis/tables_dlya_teksta.py [--versiya 1|2|all]` (перезапускаемый; `--check` — только сверка обеих версий). '
          'Формат: «;», десятичная запятая, UTF-8 с BOM; под таблицей строки «Примечание» и «Источник». '
@@ -728,8 +824,15 @@ def readme(rep, nchk):
          'В 3.8 добавлены тикеры с выигрышем и знаковый тест по тикерам — только иллюстрация: тикеры коррелированы.',
          f'- **Табл. 3.4 «Сравнение моделей» (поручение владельца 10:35) — `table_3_4.csv`.** {SPRAV} Прежняя табл. 3.4 '
          '(бустинг без поправки и HAR-J) переименована в `table_3_4_v_prezhn.csv`, числа не менялись.',
-         '- **Поручение владельца 10:55 — чистый бустинг в табл. 3.4.** Строки «LightGBM (чистый бустинг, с поправкой)» и «XGBoost (чистый бустинг, '
-         'с поправкой)» заменили «LightGBM / XGBoost одиночный с поправкой» (это были ноги гибрида). Прежние строки переименованы в «нога гибрида '
+         '- **Решение владельца 11:40 — базовый бустинг V0 в табл. 3.4.** Строки «LightGBM (базовый бустинг V0, с поправкой)» и «XGBoost (базовый '
+         'бустинг V0, с поправкой)»: **базовый бустинг V0; прогнозы открыты на тесте для отчёта (путь а; шаг 10 при H = 5, 22 — путь в), в выборе '
+         'финала не участвовали.** Признаки — базовый набор features_pit_v3, гиперпараметры — протокол B v2b для одиночной модели, LightGBM без '
+         'линейных листьев (так у V0), seed 42/43/44, поправка s² sm; в ячейке — среднее QLIKE трёх seed, разброс — таблица ниже. Источники (а): '
+         'H = 1 — D12_h1_V0 (шаги 1–10), H = 5, 22 — Bv3 (шаги 1–9); (в): шаг 10 при H = 5, 22 обучен без подбора (`scripts/analysis/ref_v0_base.py`), '
+         'детектор «будущее не влияет» пройден. Строки 10:55 «чистый бустинг» (на признаках гибрида) перенесены в приложение-абляцию '
+         '`prilozhenie_ablyaciya_buster.csv`; вырождение LightGBM при H = 22 там помечено.',
+         '- **Поручение владельца 10:55 — чистый бустинг (теперь абляция в приложении).** Строки «чистый бустинг» заменили в табл. 3.4 '
+         '«LightGBM / XGBoost одиночный с поправкой» (это были ноги гибрида); в 11:40 сами перенесены в приложение-абляцию. Прежние строки переименованы в «нога гибрида '
          '(LightGBM на HAR-X)» и «нога гибрида (XGBoost на HAR-X)» и перенесены в приложение `prilozhenie_nogi_gibrida.csv` (числа не менялись). '
          '**Путь получения чистого бустинга — (в):** (а) сохранённых тестовых прогнозов с теми же точками и признаками нет (V0-дизайны в `test_locked` — '
          'D12_h1_V0, D17F_*_V0*, D25_7_V0_h1 — с другими точками или признаками); (б) сохранённых обученных моделей нет; (в) обучены заново по точкам ног '
@@ -761,14 +864,18 @@ def readme(rep, nchk):
          '`<tag>` — `kontrol` (2022–2026), `vse` (2017–2026), `neotkr` (2025 – 01.2026); `<R>` — `s_zakrytiem` (с правилом) или `bez_zakrytiya` (без правила).',
          '']
     S2 = {
-        '3_4': [('Модель', 'финал, HAR-J с поправкой (эталон), HAR-J как в диссертации, LightGBM и XGBoost (чистый бустинг, с поправкой; поручение 10:55), '
+        '3_4': [('Модель', 'финал, HAR-J с поправкой (эталон), HAR-J как в диссертации, LightGBM и XGBoost (базовый бустинг V0, с поправкой; решение 11:40), '
                  'GRU, LSTM, GJR-GARCH и GARCH(1,1) с калибровкой — по поручению владельца 10:35, без выбора'),
                 ('блоки', '2022–2026 · 2022–2026 с правилом · 2017–2026 · 2017–2026 с правилом; H = 1/5/22'),
                 ('финал, HAR-J (б), HAR-J (а)', '`table_3_<tag>_svodka_test_<R>.csv`: «QLIKE Финальная», «QLIKE HAR-J (б)», «QLIKE HAR-J (а)»'),
-                ('чистый бустинг LightGBM / XGBoost', '`dlya_teksta/istochnik_sravnenie_test.csv`, «QLIKE пул»; прогнозы — '
-                 '`<общий data>/regen/test_locked/ref_v0_pure/REF_V0_{lgbm,xgb}_h{1,5,22}_test.parquet`, столбец rv_pred = rv_raw × F (SHA-256 — '
-                 '`ref_v0_pure/SHA256.txt`, сверяется в `srez3`)'),
+                ('базовый бустинг V0 LightGBM / XGBoost', '`dlya_teksta/istochnik_sravnenie_test.csv`, «QLIKE пул» = среднее «QLIKE seed 42/43/44»; прогнозы — '
+                 '`<общий data>/regen/test_locked/ref_v0_base/REF_V0B_{lgbm,xgb}_h{1,5,22}_test.parquet` (по seed; rv_pred = rv_raw × F; столбец put — путь '
+                 'а/в; SHA-256 — `ref_v0_base/SHA256.txt`, сверяется в `srez3`)'),
                 ('GRU, LSTM, GJR, GARCH', '`dlya_teksta/istochnik_sravnenie_test.csv`, «QLIKE пул» (там же покрытие по строкам и годам)')],
+        'pril_abl': [('Модель', 'бустинг на признаках гибрида: LightGBM, XGBoost — строки «чистый бустинг» поручения 10:55 (перенесены решением 11:40)'),
+                     ('блоки', 'как табл. 3.4'),
+                     ('все ячейки', '`dlya_teksta/istochnik_sravnenie_test.csv`, «QLIKE пул»; прогнозы — `<общий data>/regen/test_locked/ref_v0_pure/'
+                      'REF_V0_{lgbm,xgb}_h{1,5,22}_test.parquet` (SHA-256 — `ref_v0_pure/SHA256.txt`)')],
         'pril_nogi': [('Модель', 'нога гибрида (LightGBM на HAR-X), нога гибрида (XGBoost на HAR-X) — прежние строки табл. 3.4 «LightGBM / XGBoost '
                        'одиночный с поправкой» (поручение 10:55)'),
                       ('блоки', 'как табл. 3.4'),
@@ -794,10 +901,12 @@ def readme(rep, nchk):
         '3_pril_zakrytie': [('все колонки', '`table_3_zakrytie_isklyucheno.csv` (`test_dop2.py`, PR #120): исключено точек, первая и последняя исключённая t по H; '
                              'последний торговый день до и первый после закрытия')],
     }
-    for name in ('3_4', 'pril_nogi', '3_4_v_prezhn', '3_5', '3_6', '3_7', '3_8', '3_9', '3_pril_zakrytie'):
+    for name in ('3_4', 'pril_nogi', 'pril_abl', '3_4_v_prezhn', '3_5', '3_6', '3_7', '3_8', '3_9', '3_pril_zakrytie'):
         L += [f'### `{fname(name)}` — {TITLE[name]}', '', '| колонка | источник |', '|---|---|']
         L += [f'| {a} | {b} |' for a, b in S2[name]]
         L += ['', f'Примечание: {foot(2, name)[0]}', '']
+        if name == '3_4':
+            L += v0_seeds_md() + ['']
     L += ['## Источники колонок (версия 1, `v1/`)',
           '',
           '- 3.4–3.6, 2022–2026 и 2025 – 01.2026: Гибридная, HAR-J, HAR-J с поправкой — `table_3_kontrol_svodka_test.csv`; XGBoost, LightGBM — '
@@ -814,8 +923,11 @@ def readme(rep, nchk):
           'Точки правила — ровно строки `table_3_zakrytie_isklyucheno.csv` (тикер, t от первой до последней исключённой; число точек сверено по каждому тикеру и итогу). '
           'В таблицы идут XGBoost и LightGBM (3.4–3.6) и средние годовых (3.7); остальные строки — для контроля.',
           '',
-          '`istochnik_sravnenie_test.csv` (табл. 3.4 «Сравнение моделей» и приложение с ногами гибрида): QLIKE пул и покрытие одиннадцати строк × '
-          '2022–2026 / 2017–2026 × обе версии × H. Чистый бустинг — `<общий data>/regen/test_locked/ref_v0_pure/REF_V0_{lgbm,xgb}_h{1,5,22}_test.parquet` '
+          '`istochnik_sravnenie_test.csv` (табл. 3.4 «Сравнение моделей» и приложения с ногами гибрида и абляцией): QLIKE пул и покрытие тринадцати строк × '
+          '2022–2026 / 2017–2026 × обе версии × H; у базового бустинга V0 — ещё QLIKE каждого seed, мин, макс и СКО по seed. Базовый бустинг V0 — '
+          '`<общий data>/regen/test_locked/ref_v0_base/REF_V0B_{lgbm,xgb}_h{1,5,22}_test.parquet` (SHA-256 сверен; каждый seed присоединён по (дата, тикер), '
+          'шаг и rv_actual совпали, покрытие полное). ' + v0_kontrol() + ' Хэши: ' + '; '.join(f'`REF_V0B_{m}_h{h}_test.parquet` `{s}`' for (m, h), s in V0_SHA.items())
+          + '. Абляция «бустинг на признаках гибрида» (чистый бустинг 10:55) —`<общий data>/regen/test_locked/ref_v0_pure/REF_V0_{lgbm,xgb}_h{1,5,22}_test.parquet` '
           '(SHA-256 сверен; присоединён по (дата, тикер), шаг и rv_actual совпали, покрытие полное). ' + pure_kontrol() + ' '
           'Хэши тестовых файлов: ' + '; '.join(f'`REF_V0_{m}_h{h}_test.parquet` `{s}`' for (m, h), s in PURE_SHA.items()) + '. '
           'Справочные — `/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/test_locked/ref_nn_garch/REF_{GRU,LSTM,GJR,GARCH}_h{1,5,22}_test.parquet` '
@@ -824,7 +936,7 @@ def readme(rep, nchk):
           '',
           f'Контроль расчёта (v1: {nchk[1]}, v2: {nchk[2]}, табл. 3.4: {nchk[3]} сравнений, все OK): для табл. 3.4 и приложения с ногами QLIKE финала, обоих HAR-J, '
           'ноги LightGBM с поправкой и n обеих версий = `table_3_<tag>_svodka_test_<R>.csv`, нога XGBoost с поправкой 2017–2026 = `table_3_final_po_godam_test`; '
-          'чистый бустинг — SHA-256, полное покрытие, совпадение шага и rv_actual, rv_pred = rv_raw × F. Годовые QLIKE = `table_3_final_po_godam_test`; пул и среднее годовых 2017–2026 = '
+          'базовый бустинг V0 (по seed) и абляция — SHA-256, полное покрытие, совпадение шага и rv_actual, rv_pred = rv_raw × F. Годовые QLIKE = `table_3_final_po_godam_test`; пул и среднее годовых 2017–2026 = '
           '`table_3_final_po_godam_test` и `table_3_7_test`; QLIKE финала, HAR-J (а), (б), лучшей одиночной и n обеих версий = `table_3_<tag>_svodka_test_<R>.csv` '
           'и `table_3_kontrol_svodka_test.csv`; без правила = срез v1; на 2025 – 01.2026 с правилом = без правила.',
           '',
