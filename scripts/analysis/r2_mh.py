@@ -88,6 +88,8 @@ def check_mh(d):
         if k not in CFG['mh']['decomp_k'][h]:
             raise NotApplicable(f'decomp_k={k} на h={h}')
         need.add('base_1' if k == 1 else 'base_5')
+        if k == 1 and 'far' in (d.get('inputs') or {}):  # E1 (владелец 20:25): дальняя часть — готовый ряд RV̄₂₋ₕ из inputs
+            need.add('far')
     elif sch == 'iterated':
         if m['iterated_k'] not in CFG['mh']['iterated_k'][h]:
             raise NotApplicable(f'iterated_k={m["iterated_k"]} на h={h}')
@@ -290,6 +292,9 @@ def default_inputs(h, seed, tickers, steps, override=None, design=None):
     I['base'], files['base'] = read_input(src.get('base', src[f'base_{h}']), seed, h, tickers, steps)
     for nm in ('leg_1', 'base_1', 'base_5', 'base_22', 'ref'):
         I[nm], files[nm] = read_input(src[nm], seed, 1 if nm in ('leg_1', 'base_1') else h, tickers, steps)
+    for nm, spec in ((design or {}).get('inputs') or {}).items():  # прочие входы дизайна (например, far у E1)
+        if nm not in I:
+            I[nm], files[nm] = read_input(spec, seed, h, tickers, steps)
     return I, files
 
 
@@ -445,7 +450,9 @@ def apply_mh(design, ctx, I):
         return F[COLS].assign(rv_pred=F['p'].values), meta
     ai, step = F['ai'].values, F['step'].values
     sch = m['scheme']
-    if sch == 'decomp':
+    if sch == 'decomp' and 'far' in need:  # E1: (ŷ₁ + (h−1)·far₂₋ₕ)/h, far — вход дизайна (в хэше)
+        F['p'] = (F['base_1'].values + (h - 1) * F['far'].values) / h
+    elif sch == 'decomp':
         near, parts = ((F['base_1'].values, [(2, 5, 4)] + ([(6, 22, 17)] if h == 22 else [])) if m['decomp_k'] == 1
                        else (5 * F['base_5'].values, [(6, 22, 17)]))
         F['p'] = (near + sum(w * np.exp(ctx.at_steps(ctx.har_sub(a, b)[0], ai, step)) for a, b, w in parts)) / h
@@ -953,9 +960,132 @@ def leak_cmd(designs, steps, tickers, seed, out=None):
         sys.exit(1)
 
 
+# ================================================================ E1 (поручение владельца 20:25): разложение по горизонту, вне драйвера
+E1_DIR = REG / 'R2' / 'M' / 'E1'
+E1_HYB1 = 'R2/cache/VYR/F_d0_s2emb_h1_s{seed}_val.parquet'          # hyb₁: финал R1 h=1, d0, эмбарго s²
+E1_ETA = 'R2/cache/VYR/ETA_b_d0_s2emb_h{h}_sdet_val.parquet'        # В2: HAR-J d0 + s² sm с эмбарго
+E1_F = 'R2/cache/VYR/F_d0_s2emb_h{h}_s{seed}_val.parquet'           # опора F_R1_d0
+SEEDS10 = tuple(range(42, 52))
+
+
+def har_corr(ctx, S, h, a, b, rows, s2emb='on'):
+    """HAR-J d0 (эмбарго обучения) на RV̄_{a..b} на строках rows (val шагов ctx.steps) с поправкой s² sm кода L
+    (r2_calib.calibrate, calib.s2_embargo = s2emb) — тот же код, что ETA_b_d0_s2emb. -> (кадр COLS, сырой кадр)."""
+    import r2_calib as LC
+    R = rows[KEY + ['year']].copy()
+    ai = ctx.rows(R)
+    R['rv_actual'] = ctx.tgt(a, b)[ai]  # цель подгоризонта; после 2021 — NaN (в пул s² шагов ≤ 6 не входит)
+    R['rv_pred'] = np.exp(ctx.at_steps(ctx.har_sub(a, b)[0], ai, R.step.values))
+    Vc, _ = LC.calibrate({'h': h, 'calib': {'s2_embargo': s2emb}}, R[COLS], S)
+    out = R[KEY].merge(Vc[KEY + ['rv_pred']], on=KEY, how='left')
+    assert out.rv_pred.notna().all()
+    return R[COLS].assign(rv_pred=out.rv_pred.values), R[COLS]
+
+
+def e1_series(ctx, S, h, hyb1, rows, s2emb='on'):
+    """E1: h=5 — (hyb₁ + 4·HAR₂₋₅)/5; h=22 — (hyb₁ + 21·HAR₂₋₂₂)/22; HAR — с поправкой s² sm (эмбарго)."""
+    far, raw = har_corr(ctx, S, h, 2, h, rows, s2emb)
+    m = rows[COLS].merge(hyb1[KEY + ['rv_pred']].rename(columns={'rv_pred': 'h1'}), on=KEY, how='left') \
+        .merge(far[KEY + ['rv_pred']].rename(columns={'rv_pred': 'far'}), on=KEY, how='left')
+    assert m.h1.notna().all() and m.far.notna().all(), 'E1: нет строк hyb₁ или HAR₂₋ₕ'
+    fac = (far.rv_pred / raw.rv_pred).groupby(far.step).agg(['min', 'max'])
+    assert ((fac['max'] - fac['min']) < 1e-9).all(), 'поправка s² — скаляр шага'
+    return m[COLS].assign(rv_pred=(m.h1.values + (h - 1) * m.far.values) / h), far, fac['min']
+
+
+def e1_leak(A, harj, S, h, rows, hyb1):
+    """Детектор на ряде E1 (seed 42): середина года — Δ = 0 до среза; 31.12 — поправка s² шагов vy ≤ год + 1 совпадает (эмбарго);
+    подлоги look1 (матрица и hyb₁ дня d+1) и noemb (без эмбарго обучения и s²) пойманы."""
+    L = CFG['guards']['leak']
+    mk = lambda A_, I_, plant=None, emb='on': e1_series(Ctx(A_, harj, STEPS, plant=plant), S, h, I_, rows, emb)
+    base, _, f0 = mk(A, hyb1)
+    out = []
+    for i, c in enumerate(L['cuts_mid']):
+        o, _, _ = mk(C.perturb_frame(A, c, 20261026 + i), perturb_inputs({'b': hyb1}, c, 20261026 + i)['b'])
+        out.append(dict(test=f'srez {c}', max_dln_do=_maxdl(base, o, c), ok=bool(_maxdl(base, o, c) == 0.0)))
+    ye = L['cut_year_end']
+    kmax = pd.Timestamp(ye).year - 2015 + 1
+    _, _, f1 = mk(C.perturb_frame(A, ye, 20261099), perturb_inputs({'b': hyb1}, ye, 20261099)['b'])
+    same = bool((f0.loc[:kmax] == f1.loc[:kmax]).all())
+    out.append(dict(test=f'embargo {ye}: s² шагов ≤ {kmax}', max_dln_do=float(np.abs(np.log(f0.loc[:kmax] / f1.loc[:kmax])).max()), ok=same))
+    c = L['cuts_mid'][0]
+    o0, _, _ = mk(C.plant_frame(A), plant_inputs({'b': hyb1})['b'], plant='look1')
+    o1, _, _ = mk(C.plant_frame(C.perturb_frame(A, c, 20261026)), plant_inputs(perturb_inputs({'b': hyb1}, c, 20261026))['b'], plant='look1')
+    dl = _maxdl(o0, o1, c)
+    out.append(dict(test='podlog look1', max_dln_do=dl, ok=bool(dl > 0)))
+    _, _, g0 = mk(A, hyb1, plant='noemb', emb='off')
+    _, _, g1 = mk(C.perturb_frame(A, ye, 20261099), perturb_inputs({'b': hyb1}, ye, 20261099)['b'], plant='noemb', emb='off')
+    dl = float(np.abs(np.log(g0.loc[:kmax] / g1.loc[:kmax])).max())
+    out.append(dict(test='podlog noemb', max_dln_do=dl, ok=bool(dl > 0)))
+    return out
+
+
+def _row(nm, h, r, sig=None, opora=False):
+    m = r['moshchnost']
+    return dict(h=h, ryad=nm, opora=opora, t_srednyaya=r['t_mean'], skladok_t_ge_1=r['n_t_ge'],
+                **{f't_{int(y)}': t for y, t in zip(r['folds'].Y, r['folds'].t)}, hit=r['hit'],
+                tikery=f"{r['n_tikerov_vyigrysh']}/{r['n_tikerov']}", konc=r['konc'], c3_vse=r['c3_vse'], vyigrysh_pct=r['vyigrysh_pct'],
+                P_p_lt_005=m['P_p_lt_005'], t_ozhid=m['t_ozhid'], moshchnost=m.get('kategoriya', m.get('kat', '')),
+                vhod=r['vhod']['proshyol'], vhod_net=r['vhod']['net'],
+                **({} if sig is None else dict(s2_d_mean=sig['d_mean'], s2_porog=sig['thr'], s2_proshyol=sig['passed'],
+                                               s2_luchshe_seed=sig['n_better'])))
+
+
+def e1(seeds=SEEDS10):
+    import r2_calib as LC
+    import r2_gates as GT
+    E1_DIR.mkdir(parents=True, exist_ok=True)
+    A, harj = load_A(None)
+    ctx = Ctx(A, harj, STEPS)
+    M = LC.N.mat_L()
+    rows, leak_rows, kon, sdv = [], [], [], []
+    for h in (5, 22):
+        S = LC.state_frame(M, h)
+        Eb, _ = read_input(E1_ETA, h=h)
+        # контроль: тот же путь на RV̄₁₋ₕ даёт эталон В2 ETA_b_d0_s2emb
+        c1, _ = har_corr(ctx, S, h, 1, h, Eb)
+        mm = c1.merge(Eb[KEY + ['rv_pred']], on=KEY, suffixes=('', '_E'))
+        kon.append(dict(h=h, proverka='HAR₁₋ₕ + s² sm emb = ETA_b_d0_s2emb', max_rel=float(np.abs(mm.rv_pred / mm.rv_pred_E - 1).max())))
+        log(f'контроль h={h}: max rel = {kon[-1]["max_rel"]:.2e}')
+        hyb = {s: read_input(E1_HYB1, s, 1)[0] for s in seeds}
+        V = {}
+        for s in seeds:
+            V[s], far, fac = e1_series(ctx, S, h, hyb[s], Eb)
+        far_f = E1_DIR / f'HARc_2_{h}_h{h}_sdet_val.parquet'
+        far.to_parquet(far_f, index=False)
+        # кэш по схеме: дизайн decomp k=1 + входы base_1 (hyb₁) и far (HAR₂₋ₕ с s²) — оба в хэше
+        des = C.with_inputs({'design': f'E1_decomp_h{h}', 'h': h, 'mh': {'scheme': 'decomp', 'decomp_k': 1}},
+                            {'base_1': {'file': E1_HYB1}, 'far': {'file': str(far_f.relative_to(REG))}})
+        for s in seeds:
+            C.write_series(des, 'M_E1', V[s], h, s, module=MODULE, note='E1 владелец 20:25: (hyb1 + (h-1) HAR_2_h)/h')
+            C.done_path(des, MODULE, h, s).write_text(time.strftime('%F %T'))
+        write_params(des, h, 'det', {int(k): {'far_s2_F': np.array([v])} for k, v in fac.items()}, C.params_path(des, MODULE))
+        sc = C.shift_check(V[42], A, h, 'M:E1', des)
+        sdv.append(dict(h=h, **{k: v for k, v in sc.items() if k.startswith('corr') or k in ('argmax', 'ok')}))
+        log(f'сдвиг E1 h={h}: argmax={sc["argmax"]} {"OK" if sc["ok"] else "БЛОК"}')
+        lr = e1_leak(A, harj, S, h, Eb, hyb[42])
+        leak_rows += [dict(h=h, **r) for r in lr]
+        log(f'детектор E1 h={h}: ' + ', '.join(f'{r["test"]} {"OK" if r["ok"] else "ОШИБКА"}' for r in lr))
+        r = GT.ocenka({'E1': V[42]}, Eb, h)
+        Fs = {s: read_input(E1_F, s, h)[0] for s in seeds}
+        sig = GT.sigma2_F(V, h, seeds=list(seeds), F=Fs)
+        rows.append(_row(f'E1 h={h}', h, r, sig) | dict(design_sha=C.design_hash(des)[:16]))
+        op = GT.opora_ocenka(h, Eb, F=Fs, seeds=list(seeds))
+        rows.append(_row('F_R1_d0 (опора)', h, op, opora=True))
+        r['folds'].assign(h=h, ryad='E1').to_csv(E1_DIR / f'folds_E1_h{h}.csv', index=False)
+    T = pd.DataFrame(rows)
+    T.to_csv(E1_DIR / 'e1_tablica.csv', index=False)
+    pd.DataFrame(leak_rows).to_csv(E1_DIR / 'e1_leak.csv', index=False)
+    pd.DataFrame(kon).to_csv(E1_DIR / 'e1_kontrol.csv', index=False)
+    pd.DataFrame(sdv).to_csv(E1_DIR / 'e1_sdvig.csv', index=False)
+    pd.set_option('display.width', 250)
+    print(T.drop(columns=[c for c in T.columns if c.startswith('t_20')]).to_string(index=False))
+    return T
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', choices=['selftest', 'control', 'dym', 'run', 'leak'])
+    ap.add_argument('cmd', choices=['selftest', 'control', 'dym', 'run', 'leak', 'e1'])
     ap.add_argument('--designs')
     ap.add_argument('--inputs')
     ap.add_argument('--h', type=int)
@@ -974,6 +1104,8 @@ def main():
         dym()
     elif a.cmd == 'run':
         print(run(a.designs, a.h, a.seeds, a.steps or list(STEPS), a.inputs, a.workers, a.phase).to_string(index=False))
+    elif a.cmd == 'e1':
+        e1()
     elif a.cmd == 'leak':
         leak_cmd(a.designs, a.steps, a.tickers, a.seed)
 
