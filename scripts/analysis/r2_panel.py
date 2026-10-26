@@ -102,7 +102,7 @@ def check(d):
     extra = [g for g in d['features'] if g not in CFG['applicable']['features']]
     if extra:
         bad.append(f'features {extra}')
-    gk = set(C.grid_keys(d)) - {'leg.enet.lambda', 'leg.enet.alpha', 'leg.pooled_kappa'}
+    gk = set(C.grid_keys(d)) - set(grid_keys_P(d)) - {'leg.enet.lambda', 'leg.enet.alpha'}
     if gk:
         bad.append(f'сетки {sorted(gk)} не относятся к P')
     if bad:
@@ -119,10 +119,15 @@ def applicable(design):
 
 
 def grid_keys_P(d):
+    """Сетки внутри складки, которые относятся к P: S-набор HAR-X рынка (leg.regressors — список), точка сети, κ."""
     leg = d['leg']
     k = []
-    if panel_of(d) != 'off' and leg['type'] in ('HARX', 'factor') and leg['regressors'] != 'none':
-        k += ['leg.enet.lambda', 'leg.enet.alpha']
+    regs = leg['regressors'] if isinstance(leg['regressors'], list) else [leg['regressors']]
+    if panel_of(d) != 'off' and leg['type'] in ('HARX', 'factor'):
+        if isinstance(leg['regressors'], list):
+            k.append('leg.regressors')
+        if any(r != 'none' for r in regs):
+            k += ['leg.enet.lambda', 'leg.enet.alpha']
     k.append('leg.pooled_kappa')
     return k
 
@@ -465,7 +470,7 @@ def run_design(design, Dt, seed=42, steps=STEPS, want_all=False):
     mcache = {}
     shr = float(boost['shrink'])
 
-    def fit(vy_fit, base_tr, pr, kap, lam, l1):
+    def fit(vy_fit, base_tr, pr, kap, lam, l1, regs):
         """Модель с точкой переобучения 1 янв. vy_fit на строках base_tr (эмбарго — у вызывающего), прогноз без бустинга на строках pr.
         -> base (ln), mult (множитель бустинга в итоге), off (запасной HAR без разложения), входы бустинга, параметры q."""
         cut = pd.Timestamp(f'{vy_fit}-01-01')
@@ -493,10 +498,10 @@ def run_design(design, Dt, seed=42, steps=STEPS, want_all=False):
             if kap > 0 and mi.sum() >= MIN_TK:
                 cu[tk_pr == t] = (1 - kap) * m0 + kap * float(np.average(tu[tr_fac][mi], weights=None if w_fac is None else w_fac[mi]))
         q.append(('u_mean_pool', m0))
-        mkey = (vy_fit, lam, l1)
+        mkey = (vy_fit, lam, l1, regs)
         if mkey not in mcache:
-            mp = []
-            fm, parts = mkt_forecast(Dt, which, h, leg, lam, l1, cut, data, mp, '')
+            mp = [] if not isinstance(leg['regressors'], list) else [('mkt_regressors_' + regs, 1.0)]
+            fm, parts = mkt_forecast(Dt, which, h, dict(leg, regressors=regs), lam, l1, cut, data, mp, '')
             mcache[mkey] = (Dt.at(fm), parts, mp)
         fmr, parts, mp = mcache[mkey]
         q += mp
@@ -528,11 +533,12 @@ def run_design(design, Dt, seed=42, steps=STEPS, want_all=False):
             kap = float(_scal(lg['pooled_kappa']))
             e = lg['enet']
             lam, l1 = float(_scal(e['lambda'])), float(_scal(e['alpha']))
-            Fz = fit(vy, tr_k, pr, kap, lam, l1)
+            regs = str(_scal(lg['regressors']))
+            Fz = fit(vy, tr_k, pr, kap, lam, l1, regs)
             p = list(Fz['q']) + [('kappa', kap)]
             ln = Fz['base']
             if boost['role'] == 'residual':
-                Iz = fit(vy - 1, tr_in, va_in, kap, lam, l1)
+                Iz = fit(vy - 1, tr_in, va_in, kap, lam, l1, regs)
                 bi = boost_inputs(Iz, va_in)
                 okv = np.isfinite(Iz['base'])
                 bi.update(X_va=bi['X_pr'][okv], y_va=A[tcol].values[va_in][okv], base_va=Iz['base'][okv], mult_va=Iz['mult'][okv],
@@ -613,10 +619,18 @@ def load_designs(p):
     return Y['designs'] if isinstance(Y, dict) and 'designs' in Y else (Y if isinstance(Y, list) else [Y])
 
 
-def run(designs, h, seeds, steps, workers=None, phase='C', root=None, check_gate=True, block_file=None):
-    """Боевой счёт (сервер) через r2_core.run_phase: ворота, кэш, запись, сдвиг, DONE. Неприменимые дизайны — в лог и мимо."""
+def env_tickers(tickers=None):
+    """--tickers или R2_TICKERS (дым драйвера): срез строк выхода; рынок eq17, τ² β — по всем 17."""
+    t = tickers or ([x for x in os.environ.get('R2_TICKERS', '').split(',') if x] or None)
+    return None if t in (None, ['ALL']) else list(t)
+
+
+def run(designs, h, seeds, steps, workers=None, phase='C', root=None, check_gate=False, block_file=None, tickers=None):
+    """Боевой счёт через r2_core.run_phase: кэш, запись, сдвиг, DONE. Неприменимые дизайны — в лог и мимо.
+    Ворота ведёт драйвер S (check_gate=False по умолчанию, как у R); файл блоков — block_file или R2_BLOCK_FILE."""
     A, harj = load_A()
-    Dt = Data(A)
+    Dt = Data(A, env_tickers(tickers))
+    block_file = block_file or os.environ.get('R2_BLOCK_FILE') or None
     for w in sorted({int(_scal(C.validate({**d, 'h': h})['leg']['panel_beta_window'])) for d in designs}):
         for m in ('RV_IMOEX', 'RV_eq17'):
             Dt.ab(m, w)
@@ -686,6 +700,9 @@ def selftest():
     assert len(C.variants(d, keys=grid_keys_P(d))) == 9
     d = C.validate({'h': 5, 'leg': {'panel': 'off', 'type': 'HARX', 'regressors': 'S1'}})
     assert len(C.variants(d, keys=grid_keys_P(d))) == 1
+    d = C.validate({'h': 5, 'leg': {'panel': 'factor', 'type': 'HARX', 'regressors': ['S1', 'S2', 'S3', 'S4']}})  # сетка S-наборов (PR #199)
+    assert applicable(d)[0] and len(C.variants(d, keys=grid_keys_P(d))) == 36
+    assert leak_point(d)['leg']['regressors'] == 'S4' and not C.grid_keys(leak_point(d))
     # 5) взвешенная эластичная сеть с равными весами = harx.fit_en
     H, Z = rng.normal(size=(300, 3)), rng.normal(size=(300, 2))
     yy = H @ [0.3, 0.2, 0.1] + Z @ [0.5, 0.0] + rng.normal(0, 0.1, 300)
@@ -761,17 +778,45 @@ def dym():
     return S, good
 
 
+def leak_point(des):
+    """Одна точка сеток для детектора (механика та же у всех точек; как R, PR #199): наибольший S-набор, первая точка сети, первый κ."""
+    leg = dict(des['leg'])
+    if isinstance(leg['regressors'], list):
+        leg['regressors'] = leg['regressors'][-1]
+    leg['enet'] = {k: (v[0] if isinstance(v, list) else v) for k, v in leg['enet'].items()}
+    leg['pooled_kappa'] = _scal(leg['pooled_kappa'])
+    return C.validate({**des, 'leg': leg})
+
+
 def leak_cmd(designs, steps, tickers, seed):
+    """Детектор по дизайнам файла. Неприменимые к P (applicable = False) пропускаются с пометкой «неприменимо» — это не ошибка."""
     A, _ = load_A()
-    rows = []
-    cuts = tuple(CFG['guards']['leak']['cuts_full'])
+    rows, skip, seen = [], [], set()
+    # срезы, у которых есть модель шага: середина года Y — шаг Y − 2015; 31.12 Y — шаг Y + 1 − 2015 (иначе подлогу «нечего ловить»)
+    allc = sorted(set(CFG['guards']['leak']['cuts_full']) | set(CFG['guards']['leak']['cuts_dym']))
+    cuts = tuple(c for c in allc if (pd.Timestamp(c).year - 2015 + (1 if c.endswith('12-31') else 0)) in set(steps))
+    cuts = tuple(c for c in CFG['guards']['leak']['cuts_full'] if c in cuts) if set(steps) >= set(STEPS) else cuts
     for d in load_designs(designs):
         des = C.validate({**d, 'seed': seed})
-        R = leak_design(des, A, seed, tuple(steps), tickers, cuts, des.get('design') or 'P')
+        ok, why = applicable(des)
+        if not ok:
+            skip.append(des.get('design'))
+            log(f'неприменимо: {des.get("design")} h={des["h"]} — {why}')
+            continue
+        pt = leak_point(des)
+        sig = C.design_hash(pt)
+        if sig in seen:
+            continue
+        seen.add(sig)
+        R = leak_design(pt, A, seed, tuple(steps), tickers, cuts, des.get('design') or 'P')
         rows.append(R.assign(design=des.get('design'), h=int(des['h'])))
+    log(f'детектор P: проверено дизайнов {len(rows)}, неприменимо {len(skip)}')
+    if not rows:
+        return True
     R = pd.concat(rows, ignore_index=True)
     print(R.to_string(index=False))
     assert R.ok.all(), 'детектор: ОШИБКА'
+    return True
 
 
 def main():
@@ -785,15 +830,18 @@ def main():
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--tickers', nargs='+')
     ap.add_argument('--workers', type=int)
+    ap.add_argument('--check-gate', action='store_true', help='сверять ворота предыдущей фазы (по умолчанию ворота ведёт драйвер S)')
     a = ap.parse_args()
     if a.cmd == 'selftest':
         selftest()
     elif a.cmd == 'dym':
         sys.exit(0 if dym()[1] else 1)
     elif a.cmd == 'run':
-        print(run(load_designs(a.designs), a.h, a.seeds, a.steps, a.workers, a.phase).to_string(index=False))
+        T = run(load_designs(a.designs), a.h, a.seeds, a.steps, a.workers, a.phase, check_gate=a.check_gate, tickers=a.tickers)
+        print(T.to_string(index=False) if len(T) else 'задач нет (готовое пропущено или неприменимо)')
+        sys.exit(1 if len(T) and 'ryad' in T and (T.ryad == 'ОШИБКА').any() else 0)
     elif a.cmd == 'leak':
-        leak_cmd(a.designs, a.steps, a.tickers, a.seed)
+        sys.exit(0 if leak_cmd(a.designs, a.steps, env_tickers(a.tickers), a.seed) else 1)
 
 
 if __name__ == '__main__':
