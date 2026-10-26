@@ -6,10 +6,13 @@ python3 scripts/analysis/final_test_r2.py --selftest
 python3 scripts/analysis/final_test_r2.py --scope test          # ОДИН раз, дирижёр, после «да» владельца на FINAL_DESIGN_round2.md
 
 Строки (все — версия d0, единое информационное множество «по день d включительно»):
-  HAR-J (а) d0, HAR-J (б) d0 — замороженные ряды ВЫР-1: test_locked/vyr/etalon_d0_h{h}_test.parquet (part = test; har_raw, har_corr);
+  HAR-J (а) d0, HAR-J (б) d0 — сырой ряд ВЫР-1, s² по t−1 с эмбарго (решение владельца 17:35, PR #194/#195): собирает
+    r2_sborka_test.py → test_locked/R2/final/etalon_d0_s2emb_h{h}_test.parquet (har_raw, har_corr); прежний (б) ВЫР-1
+    (vyr/etalon_d0_h{h}_test.parquet, s² как R1) — только справочно в таблице периодов и как источник цели для сверки;
   гибрид — победитель R2 (test_locked/R2/final/final_r2_h{h}_test.parquet от r2_sborka_test.py; колонки rv_actual НЕТ — проверка до
-    замка) или, если на h победителя нет, F_h(d0) (test_locked/vyr/final_d0_h{h}_test.parquet, part = test; у h=22 это эталон (б) d0);
-  F_h(d0) — отдельной строкой «Гибридная раунда 1 d0» (в MCS, периодах и DM против F_h(d0) справочно);
+    замка) или, если на h победителя нет, F_h(d0) с тем же s² (R2/final/final_d0_s2emb_h{h}_test.parquet; у h=22 это эталон (б) d0);
+  F_h(d0) — отдельной строкой «Гибридная раунда 1 d0» (в MCS, периодах и DM против F_h(d0) справочно); прежний F_h(d0) ВЫР-1 — справочно;
+  SHA собранных файлов — r2_A_sborka.yaml (sobrano), пишется после сборки, до «да»; без них — СТОП до замка;
   V0 XGBoost / LightGBM (raw и с поправкой) — кадр первого теста test_locked/final3/final_h{h}_test.parquet как есть: по ВЫР-2 они день d
     видят и не перестраивались; HAR-CJ d0 — ВЫР-2 (test_locked/vyr/ref_harcj_d0/), справочно, в таблице периодов;
   HAR-X с поправкой в раскладке (3_raskladka) — кадр первого теста, версия R1 (❓ A-2: d0-ряда на тесте нет).
@@ -79,13 +82,17 @@ def sha(p):
 
 
 def frozen_files(h):
+    """fz — кадр первого теста; et, fd — ВЫР-1 (s² как R1, справочно и цель); et2, fd2 — эталоны и F_h(d0) с s² по t−1 и эмбарго
+    (r2_sborka_test.py, PR #194/#195, решение владельца 17:35); cj — HAR-CJ d0 (ВЫР-2)."""
     return {'fz': f'final3/final_h{h}_test.parquet', 'et': f'vyr/etalon_d0_h{h}_test.parquet', 'fd': f'vyr/final_d0_h{h}_test.parquet',
-            'cj': f'vyr/ref_harcj_d0/REF_HARCJ_d0_h{h}_test.parquet'}
+            'cj': f'vyr/ref_harcj_d0/REF_HARCJ_d0_h{h}_test.parquet',
+            'et2': f'R2/final/etalon_d0_s2emb_h{h}_test.parquet', 'fd2': f'R2/final/final_d0_s2emb_h{h}_test.parquet'}
 
 
 def frozen_sha(spec=SPEC):
-    z = yaml.safe_load(Path(spec).read_text())['zamorozheno']
-    assert all(z.get(r) for h in FTST.HS for r in frozen_files(h).values()), 'r2_A_sborka.yaml: не все замороженные файлы'
+    """SHA замороженных до R2 (zamorozheno) и собранных r2_sborka_test.py (sobrano, пишется после сборки, до «да»)."""
+    y = yaml.safe_load(Path(spec).read_text())
+    z = {**(y.get('zamorozheno') or {}), **(y.get('sobrano') or {})}
     assert all(z[f'final3/final_h{h}_test.parquet'] == TD.SHA[h] for h in FTST.HS), 'r2_A_sborka.yaml: SHA кадра != test_dop.SHA'
     return z
 
@@ -116,6 +123,8 @@ def precheck(src, locked, shas, check_sha=True, fd=FD, need_fd=True):
             p = locked / r
             if not p.exists():
                 raise Stop(f'{r}: нет замороженного файла')
+            if check_sha and not shas.get(r):
+                raise Stop(f'{r}: SHA-256 не записан в r2_A_sborka.yaml (zamorozheno / sobrano)')
             if check_sha and sha(p) != shas.get(r):
                 raise Stop(f'{r}: SHA-256 не совпал с замороженным (r2_A_sborka.yaml)')
     r2_hs = []
@@ -151,14 +160,21 @@ def frame_d0(src, locked, h):
     fz = fz.drop(columns=[c for c in ('rv_pred', 'har_raw', 'har_corr') if c in fz]).rename(columns={'design': 'design_r1'})
     if fz.duplicated(KEY).any():
         raise Stop(f'h={h}: дубли ключа в кадре первого теста')
-    et = test_part(F['et'], ['rv_actual', 'har_raw', 'har_corr']).rename(columns={'rv_actual': 'y_et'})
-    fd = test_part(F['fd'], ['rv_pred']).rename(columns={'rv_pred': 'F_d0'})
+    et = test_part(F['et'], ['rv_actual', 'har_raw', 'har_corr']).rename(columns={'rv_actual': 'y_et', 'har_raw': 'har_raw_r1',
+                                                                                  'har_corr': 'har_corr_bez_emb'})
+    fd = test_part(F['fd'], ['rv_pred']).rename(columns={'rv_pred': 'F_d0_bez_emb'})
+    et2 = pd.read_parquet(F['et2'], columns=KEY + ['har_raw', 'har_corr'])  # эталоны с s² по t−1 и эмбарго — основные строки
+    fd2 = pd.read_parquet(F['fd2'], columns=KEY + ['rv_pred']).rename(columns={'rv_pred': 'F_d0'})
     cj = pd.read_parquet(F['cj'], columns=KEY + ['rv_pred']).rename(columns={'rv_pred': 'harcj_d0'})
     m = fz.merge(et, on=KEY, how='left', validate='1:1').merge(fd, on=KEY, how='left', validate='1:1')
+    m = m.merge(et2, on=KEY, how='left', validate='1:1').merge(fd2, on=KEY, how='left', validate='1:1')
     m = m.merge(cj.drop_duplicates(KEY), on=KEY, how='left', validate='1:1')
-    for c in ('har_raw', 'har_corr', 'F_d0'):
+    for c in ('har_raw', 'har_corr', 'F_d0', 'har_corr_bez_emb', 'F_d0_bez_emb'):
         if m[c].isna().any():
             raise Stop(f'h={h}: {int(m[c].isna().sum())} строк кадра без {c} (d0)')
+    if not np.allclose(m.har_raw, m.har_raw_r1, rtol=1e-12):
+        raise Stop(f'h={h}: сырой эталон (а) сборки != ВЫР-1')
+    m = m.drop(columns='har_raw_r1')
     ok = m.rv_actual > 1e-12
     dy = np.abs(m.y_et[ok] / m.rv_actual[ok] - 1)
     if not (dy < 1e-9).all():
@@ -241,7 +257,8 @@ def period_tables(fr, rule, out_tables, suffix, B, r2_hs=(), note=NOTE_R2):
 
 def periody(frames):
     rows = []
-    mods = {**FTST.MODELS, F_NAME + ' (F_h(d0))': 'F_d0', 'HAR-CJ d0 (справочно)': 'harcj_d0'}
+    mods = {**FTST.MODELS, F_NAME + ' (F_h(d0))': 'F_d0', 'HAR-CJ d0 (справочно)': 'harcj_d0',
+            'HAR-J (б) d0, s² без эмбарго — ВЫР-1 (справочно)': 'har_corr_bez_emb', 'F_h(d0), s² без эмбарго — ВЫР-1 (справочно)': 'F_d0_bez_emb'}
     for h, df in frames.items():
         for nm, (a, b) in PERIODY.items():
             g0 = df[df.year.between(a, b)]
@@ -405,7 +422,13 @@ def selftest():
             vy / f'final_d0_h{h}_test.parquet', index=False)
         cj = g[KEY + ['year', 'rv_actual']].assign(rv_pred_raw=1.0, F=1.0, rv_pred=noise(g.har_corr.values, 0.3), n_train=1)
         cj.drop(index=cj.index[1000:1300]).to_parquet(cjd / f'REF_HARCJ_d0_h{h}_test.parquet', index=False)  # справочная: неполное покрытие допустимо
-    shas = {r: sha(lkd / r) for h in FTST.HS for r in frozen_files(h).values()}
+        # r2_sborka_test: эталоны и F_h(d0) с s² по t−1 и эмбарго (сырой эталон тот же, поправка другая); цели нет
+        e2 = et[KEY + ['year', 'har_raw']].assign(har_corr=noise(et.har_corr.values, 0.05), F_sm=1.12, F_sm_bez_emb=1.1)
+        e2.to_parquet(src / f'etalon_d0_s2emb_h{h}_test.parquet', index=False)
+        f2 = e2.har_corr.values if h == 22 else noise(fdv, 0.05)
+        fd[KEY + ['year', 'leg_raw', 'design']].assign(rv_pred=f2, F_sm=1.12, F_sm_bez_emb=1.1).to_parquet(
+            src / f'final_d0_s2emb_h{h}_test.parquet', index=False)
+    shas ={r: sha(lkd / r) for h in FTST.HS for r in frozen_files(h).values()}
     g.loc[:, ['date', 'ticker']].to_parquet(tmp / 'data' / 'regen' / 'features_pit_v3.parquet', index=False)
     ft = {tk: (x[x < HALT[0]].max(), x[x > HALT[1]].min()) for tk, x in g.groupby('ticker').date}
     assert ft[late][1] == pd.Timestamp('2022-03-28') and ft['T0'][1] == pd.Timestamp('2022-03-24')
@@ -470,6 +493,13 @@ def selftest():
         assert set(p.Период) == set(PERIODY) and set(p.h) == {1, 5, 22}
         hyb, fh = (p[p['Модель'] == m].set_index(['h', 'Период']).QLIKE for m in ('Гибридная', F_NAME + ' (F_h(d0))'))
         assert (hyb.loc[1] == fh.loc[1]).all() and (hyb.loc[5] != fh.loc[5]).any() and (hyb.loc[22] != fh.loc[22]).any()
+        q_b, q_b0 = (p[p['Модель'] == m].set_index(['h', 'Период']).QLIKE for m in (FTST.ETALON_NAME, 'HAR-J (б) d0, s² без эмбарго — ВЫР-1 (справочно)'))
+        assert (q_b != q_b0).any(), 'HAR-J (б) — из сборки (s² t−1 с эмбарго), ВЫР-1 — только справочно'
+        e2 = pd.read_parquet(src / 'etalon_d0_s2emb_h5_test.parquet').merge(D[5][KEY + ['rv_actual']], on=KEY)
+        e2 = e2[e2.year.between(2022, 2026)]
+        assert q_b.loc[(5, '2022–2026 (основной)')] == FTST.fmt(FTST.metrics(e2.rv_actual.values, e2.har_corr.values)['QLIKE'], 'QLIKE')
+        q_f0 = p[p['Модель'] == 'F_h(d0), s² без эмбарго — ВЫР-1 (справочно)'].set_index(['h', 'Период']).QLIKE
+        assert (fh.loc[1] != q_f0.loc[1]).any(), 'F_h(d0) — из сборки'
         cjn = p[p['Модель'] == 'HAR-CJ d0 (справочно)']
         assert len(cjn) == 9 and (cjn.n < p[p['Модель'] == 'Гибридная'].n.values).any()
         dmf = pd.read_csv(t2 / f'table_3_dm_vs_F_{TAG}.csv')
@@ -521,16 +551,18 @@ def selftest():
         x[R2_COLS].iloc[:-5].to_parquet(short / 'final_r2_h5_test.parquet', index=False)
         stop_before_lock(short, 'строк R2')
         for r in ('final3/final_h1_test.parquet', 'vyr/etalon_d0_h5_test.parquet', 'vyr/final_d0_h22_test.parquet',
-                  'vyr/ref_harcj_d0/REF_HARCJ_d0_h1_test.parquet'):
+                  'vyr/ref_harcj_d0/REF_HARCJ_d0_h1_test.parquet', 'R2/final/etalon_d0_s2emb_h5_test.parquet',
+                  'R2/final/final_d0_s2emb_h1_test.parquet'):
             stop_before_lock(src4, 'SHA-256', shas={**shas, r: '0' * 64})
+        stop_before_lock(src4, 'не записан', shas={r: s for r, s in shas.items() if 's2emb_h22' not in r})
         fd_t = tmp / 'FD_template.md'
         fd_t.write_text(f'| s² | {PLACEHOLDER} |\n')
         stop_before_lock(src4, PLACEHOLDER, fd=fd_t)
         stop_before_lock(src4, 'нет', fd=tmp / 'net.md')
         if FD.exists() and PLACEHOLDER in FD.read_text():  # шаблон в репозитории открытие блокирует
             stop_before_lock(src4, PLACEHOLDER, fd=FD)
-        z = frozen_sha()  # yaml: все замороженные файлы, SHA кадра = test_dop.SHA
-        assert len(z) == 12
+        z = frozen_sha()  # yaml: 12 замороженных до R2, SHA кадра = test_dop.SHA; собранные (sobrano) — после сборки
+        assert len([r for r in z if 's2emb' not in r]) == 12
         # 7. строки, не менявшиеся в d0, не совпали с первым тестом — СТОП: в 3.x (основная) и в таблице периодов с правилом
         for nm, (fname, key, row, colname, srcx) in {
                 '3_4': ('table_3_4_test_raw.csv', 'Модель', 'XGBoost', 'H = 5', src2),
@@ -553,7 +585,7 @@ def selftest():
         e1.loc[e1.index[100], 'rv_actual'] *= 1.5
         vy2 = tmp / 'locked2'
         for f in lkd.rglob('*.parquet'):
-            if 'R2' not in f.parts:
+            if not f.name.startswith('final_r2_'):
                 (vy2 / f.relative_to(lkd)).parent.mkdir(parents=True, exist_ok=True)
                 (vy2 / f.relative_to(lkd)).write_bytes(f.read_bytes())
         e1.to_parquet(vy2 / 'vyr' / 'etalon_d0_h1_test.parquet', index=False)
@@ -564,9 +596,10 @@ def selftest():
             assert 'цель эталонов' in str(e), e
     finally:
         TD2.DATA = data0
-    print('selftest final_test_r2: OK (версия d0: эталоны (а), (б) и F_h(d0) — ВЫР-1, HAR-CJ d0 — ВЫР-2, гибрид — R2 или F_h(d0); правило '
-          'закрытия биржи: test_dop2.masks = текст дирижёра, обе версии и флаг bez/pravilo/obe; сверка строк, не менявшихся в d0, с первым '
-          'тестом; до замка — SHA 12 замороженных, шаблон FD, rv_actual и число строк R2; замок; цель эталонов = цель кадра):', tmp)
+    print('selftest final_test_r2: OK (версия d0: эталоны (а), (б) и F_h(d0) — сырой ряд ВЫР-1 с s² сборки (t−1, эмбарго), ВЫР-1 с s² R1 — '
+          'справочно; HAR-CJ d0 — ВЫР-2; гибрид — R2 или F_h(d0); правило закрытия биржи: test_dop2.masks = текст дирижёра, обе версии и '
+          'флаг bez/pravilo/obe; сверка строк, не менявшихся в d0, с первым тестом; до замка — SHA 12 замороженных и 6 собранных (sobrano), '
+          'шаблон FD, rv_actual и число строк R2; замок; цель эталонов = цель кадра):', tmp)
 
 
 def main():
