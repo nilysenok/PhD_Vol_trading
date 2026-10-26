@@ -176,14 +176,18 @@ def itog_E(pobeditel, moshch, noga_v0=None):
                 n_test=moshch['n_test'], **k)
 
 
+def _stroka(u, r, slozhnost=0):
+    """Строка таблицы ворот по результату ocenka (те же поля у ячеек и у опорной строки)."""
+    return dict(unit=u, t_mean=r['t_mean'], vyigrysh_pct=r['vyigrysh_pct'], slozhnost=slozhnost, proshyol=r['vhod']['proshyol'],
+                net=r['vhod']['net'], hit=r['hit'], tikery=r['n_tikerov_vyigrysh'], konc=r['konc'], c3=r.get('c3_vse'),
+                t_ozhid=r['moshchnost']['t_ozhid'], P_moshchnost=r['moshchnost']['P_p_lt_005'], pometka=r['moshchnost']['pometka'])
+
+
 def vybor(R, slozhnost):
     """R — {unit: результат ocenka}; slozhnost — {unit: c(u)}. v4 § 2: среди прошедших вход — макс. t̄; при Δt̄ ≤ 0,2 — больший средний
     выигрыш mean d; если и выигрыш различается не больше чем на 1% (относительно: Δ mean d / средняя потеря E ≤ 0,01; vyigrysh_pct —
     mean d в % к потере E, поэтому это Δ vyigrysh_pct ≤ 1) — меньшая сложность (затем большая t̄). -> (победитель | None, таблица)."""
-    T = pd.DataFrame([dict(unit=u, t_mean=r['t_mean'], vyigrysh_pct=r['vyigrysh_pct'], slozhnost=slozhnost.get(u, 0),
-                           proshyol=r['vhod']['proshyol'], net=r['vhod']['net'], hit=r['hit'], tikery=r['n_tikerov_vyigrysh'],
-                           konc=r['konc'], t_ozhid=r['moshchnost']['t_ozhid'], P_moshchnost=r['moshchnost']['P_p_lt_005'],
-                           pometka=r['moshchnost']['pometka']) for u, r in R.items()])
+    T = pd.DataFrame([_stroka(u, r, slozhnost.get(u, 0)) for u, r in R.items()])
     c = T[T.proshyol]
     if c.empty:
         return None, T
@@ -231,9 +235,44 @@ def chislo(R):
     return len(R), int(sum(bool(r['vhod']['proshyol']) for r in R.values()))
 
 
-def gate_C_v4(R, S, dizainy, nepr=None, k=None):
+def opora_ocenka(h, E, F=None, seeds=None):
+    """Решение владельца 20:05: опорная строка «финал R1 на данных по день d» — ряд F_d0_s2emb (R2/cache/VYR/), seed 42, тем же кодом,
+    что ячейки (ocenka против того же эталона E: выигрыш, панельная t, hit, тикеры, концентрация, c3); для 2σ — 10 seed (разброс Q̄_T
+    по seed — база 2σ кандидатов). Не кандидат: в выборе и рангах не участвует. F — {seed: кадр} (драйвер может подать свои)."""
+    oc = GV4['opora']
+    seeds = list(seeds or O.SEEDS)
+    F = F or {s: O.series([O.R / oc['file'].format(h=h, seed=s)]) for s in seeds}
+    r = ocenka({oc['unit']: F[oc['seed']]}, E, h)
+    q = np.array([O.qbar_T(O.q_steps(F[s], 'bez')) for s in seeds if s in F])
+    sg = float(q.std(ddof=1)) if len(q) > 1 else 0.0
+    r['opora'] = dict(unit=oc['unit'], podpis=oc['podpis'], file=str(O.R / oc['file'].format(h=h, seed=oc['seed'])), seed=oc['seed'],
+                      s2_n_seed=int(len(q)), s2_q_mean=float(q.mean()), s2_q_sigma=sg, s2_porog=-2 * sg / np.sqrt(len(q)) if len(q) else np.nan,
+                      primechanie='опорная строка, не кандидат: в выборе и рангах не участвует; 2σ кандидатов — парно с ней по 10 seed')
+    return r
+
+
+def opora_stroka(op):
+    """Строка таблицы ворот для результата opora_ocenka: поля ячеек + opora = True."""
+    row = _stroka(op['opora']['unit'], op, 0)
+    row.update({k: v for k, v in op['opora'].items() if k != 'unit'}, opora=True)
+    return row
+
+
+def _s_oporoy(payload, opora):
+    """Дописать опорную строку в tablica (последней, opora = True; у остальных opora = False) и отдельным ключом `opora`."""
+    T = [dict(r, opora=False) for r in payload.get('tablica', [])]
+    if opora is not None:
+        row = opora_stroka(opora)
+        T.append(row)
+        payload['opora'] = row
+    payload['tablica'] = T
+    return payload
+
+
+def gate_C_v4(R, S, dizainy, nepr=None, k=None, opora=None):
     """v4 § 4. R — {unit: ocenka} всех ячеек C (нога × роль, V0); dizainy — {unit: дизайн dict}; nepr — {unit: [факторы]} (неприменимые).
-    Ячейки D — первые k (2) с ролью ≠ none в порядке выбора; V0 (роль none, нога из gates_v4.v0_nogi), прошедшие вход, — в финалисты."""
+    Ячейки D — первые k (2) с ролью ≠ none в порядке выбора; V0 (роль none, нога из gates_v4.v0_nogi), прошедшие вход, — в финалисты.
+    opora — opora_ocenka(h, E): опорная строка в таблице (владелец 20:05), в выборе не участвует. Так же в gate_D_v4 и gate_E_v4."""
     k = k or GV4['k_C']
     boost = {u: r for u, r in R.items() if rol(dizainy.get(u)) != 'none'}
     v0 = {u: r for u, r in R.items() if rol(dizainy.get(u)) == 'none' and noga_tip(dizainy.get(u)) in GV4['v0_nogi']}
@@ -246,14 +285,14 @@ def gate_C_v4(R, S, dizainy, nepr=None, k=None):
     T['v0_finalist'] = T.unit.isin(v0p)
     T['faktor_neprimenim'] = [', '.join((nepr or {}).get(u, [])) for u in T.unit]
     N = {'C_boost': chislo(boost), 'C_V0': chislo(v0)}
-    return dict(yacheyki=two, v0_finalisty=v0p, pobeditel_vybora=two[0] if two else None, net_yacheek=not two,
-                pravilo='v4 § 4: вход кластера 17 + c3; порядок — макс. t̄, Δt̄ ≤ 0,2 → выигрыш, Δвыигрыш ≤ 1% → проще; роль ≠ none',
-                chislo=O.lozhnye(N, 0)['urovni'], tablica=T.to_dict('records'),
-                faktor_neprimenim={u: v for u, v in (nepr or {}).items() if u in R},
-                dizainy={u: dizainy[u] for u in two + v0p if u in dizainy})
+    return _s_oporoy(dict(yacheyki=two, v0_finalisty=v0p, pobeditel_vybora=two[0] if two else None, net_yacheek=not two,
+                     pravilo='v4 § 4: вход кластера 17 + c3; порядок — макс. t̄, Δt̄ ≤ 0,2 → выигрыш, Δвыигрыш ≤ 1% → проще; роль ≠ none',
+                     chislo=O.lozhnye(N, 0)['urovni'], tablica=T.to_dict('records'),
+                     faktor_neprimenim={u: v for u, v in (nepr or {}).items() if u in R},
+                     dizainy={u: dizainy[u] for u in two + v0p if u in dizainy}), opora)
 
 
-def gate_D_v4(R, S, dizainy, zhivye, n_tochek=None):
+def gate_D_v4(R, S, dizainy, zhivye, n_tochek=None, opora=None):
     """v4 § 5, итог 8 → 1 на ячейку. R — {unit: ocenka} выживших точек (3 seed, все 5 складок); zhivye — {ячейка: [unit выживших]};
     n_tochek — {ячейка: число точек LHS на входе} (для числа дизайнов). Лучшая на ячейку — выбор кластера 17 среди её выживших;
     лучший уровня (luchshiy -> E) — выбор среди лучших ячеек. Никто не прошёл вход — luchshiy None (на h остаётся F_h(d0))."""
@@ -267,9 +306,9 @@ def gate_D_v4(R, S, dizainy, zhivye, n_tochek=None):
     T['yacheyka'] = T.unit.map({u: c for c, us in zhivye.items() for u in us})
     T['luchshaya_v_yacheyke'] = T.unit.isin([u for u in luch.values() if u])
     N = {f'D_{c}': (int((n_tochek or {}).get(c, len(us))), chislo({u: R[u] for u in us if u in R})[1]) for c, us in zhivye.items()}
-    return dict(luchshiy=w, dizayn=dizainy.get(w) if w else None, luchshie=luch, zhivye=zhivye,
-                pravilo='v4 § 5: 60 → 30 → 15 → 8 (r2_halving); 8 → 1 на ячейку и лучший уровня — вход и выбор кластера 17',
-                chislo=O.lozhnye(N, 0)['urovni'], tablica=T.to_dict('records'))
+    return _s_oporoy(dict(luchshiy=w, dizayn=dizainy.get(w) if w else None, luchshie=luch, zhivye=zhivye,
+                     pravilo='v4 § 5: 60 → 30 → 15 → 8 (r2_halving); 8 → 1 на ячейку и лучший уровня — вход и выбор кластера 17',
+                     chislo=O.lozhnye(N, 0)['urovni'], tablica=T.to_dict('records')), opora)
 
 
 def sigma2_F(cand, h, seeds=None, F=None):
@@ -300,7 +339,7 @@ def _noga(pob, dizainy, v0_all, lestnica):
     return dict(unit=None, istochnik='нет V0 и лестницы — ❓ дирижёру (умолчание: F_h(d0))')
 
 
-def gate_E_v4(R, S, dizainy, sig, h, v0_units=(), N=None, k=None, lestnica=True, out_dir=None):
+def gate_E_v4(R, S, dizainy, sig, h, v0_units=(), N=None, k=None, lestnica=True, out_dir=None, opora=None):
     """v4 § 2, § 6. R — {unit: ocenka на 10 seed (LightGBM + XGBoost), вход заново}; sig — {unit: sigma2_F}; v0_units — V0 из ворот C.
     Финалисты — первые k (3) не-V0 в порядке выбора + V0, прошедшие вход; победитель — первый финалист, прошедший 2σ (никто — F_h(d0)).
     Мощность победителя (кластер 20) и itog_E (владелец 16:45): P < 0,5 — финал = нога (V0). В `pobeditel` — то, что идёт на открытие
@@ -341,12 +380,12 @@ def gate_E_v4(R, S, dizainy, sig, h, v0_units=(), N=None, k=None, lestnica=True,
     _, T = vybor(R, S) if R else (None, pd.DataFrame(columns=['unit']))
     N = dict(N or {})
     N['E_10seed'] = chislo(R)
-    return dict(finalisty=rows, sigma2={u: sig[u] for u in fin if u in sig},
-                pobeditel=dict(pobeditel=final, V0=bool(V0), pobeditel_otbora=pob or 'F_h(d0)', poryadok=fin, noga=noga, itog=it),
-                design_sha=fh.get('design_sha'), design_yaml=fh.get('design_yaml'), dizayn=diz,
-                moshchnost=mosh, lestnica=L, ablyacii=A, primechanie_Fd0=O.CFG['F_h_d0'].get('otstuplenie', ''),
-                lozhnye=O.lozhnye(N, len(fin)), tablica=T.to_dict('records'),
-                ogovorka_moshchnosti='расчёт мощности по LOYO оптимистичен: выбор на тех же складках (v4 § 2)')
+    return _s_oporoy(dict(finalisty=rows, sigma2={u: sig[u] for u in fin if u in sig},
+                     pobeditel=dict(pobeditel=final, V0=bool(V0), pobeditel_otbora=pob or 'F_h(d0)', poryadok=fin, noga=noga, itog=it),
+                     design_sha=fh.get('design_sha'), design_yaml=fh.get('design_yaml'), dizayn=diz,
+                     moshchnost=mosh, lestnica=L, ablyacii=A, primechanie_Fd0=O.CFG['F_h_d0'].get('otstuplenie', ''),
+                     lozhnye=O.lozhnye(N, len(fin)), tablica=T.to_dict('records'),
+                     ogovorka_moshchnosti='расчёт мощности по LOYO оптимистичен: выбор на тех же складках (v4 § 2)'), opora)
 
 
 # ---------------------------------------------------------------- дым и самопроверка
@@ -371,6 +410,18 @@ def dym(hs, tickers=None):
         print(f'  ворота E (механика): 2σ F против F: d̄ {sig["F_d0_s42"]["d_mean"]:.2g}, прошёл {sig["F_d0_s42"]["passed"]}; '
               f'E_h против F_h(d0): d̄ {sig["E_h"]["d_mean"]:.4g}, порог {sig["E_h"]["thr"]:.3g}, прошёл {sig["E_h"]["passed"]}; '
               f'финалисты {g["pobeditel"]["poryadok"]} -> {g["pobeditel"]["pobeditel"]}', flush=True)
+        # опорная строка (владелец 20:05) против эталона ворот драйвера ETA_b_d0_s2emb (если есть)
+        fe = O.R / f'R2/cache/VYR/ETA_b_d0_s2emb_h{h}_sdet_val.parquet'
+        Ev = O.read_val(fe)[['date', 'ticker', 'year', 'step', 'rv_actual', 'rv_pred']] if fe.exists() else E
+        if tickers:
+            Ev = Ev[Ev.ticker.isin(tickers)]
+        Fo = {s: O.series([O.R / GV4['opora']['file'].format(h=h, seed=s)]) for s in O.SEEDS}
+        if tickers:
+            Fo = {s: f[f.ticker.isin(tickers)] for s, f in Fo.items()}
+        row = opora_stroka(opora_ocenka(h, Ev, F=Fo))
+        print(f'  опора {row["unit"]} ({"ETA_b_d0_s2emb" if fe.exists() else "E_h"}): t̄ {row["t_mean"]:.2f}, выигрыш {row["vyigrysh_pct"]:.2f}%, '
+              f'hit {row["hit"]:.3f}, тикеров {row["tikery"]}, конц. {row["konc"]:.3g}, c3 {row["c3"]}, Q̄_T 10 seed {row["s2_q_mean"]:.5f} '
+              f'± {row["s2_q_sigma"]:.2g}', flush=True)
 
 
 def _sint(rng, eff, n_t=17, noise=0.4, years=range(2016, 2022), drift=None):
@@ -488,6 +539,16 @@ def selftest_vorota(rng):
     sg = sigma2_F(good, 5, seeds, F)
     assert sg['passed'] and sg['n'] == 10 and sg['n_better'] == 10
     assert not sigma2_F(F, 5, seeds, F)['passed'] and sigma2_F(u, 5, seeds, F)['passed']
+    # --- опорная строка (владелец 20:05): тем же кодом ocenka, в выборе не участвует, opora = True, в C/D/E
+    op = opora_ocenka(5, E, F={s: good[s] for s in seeds}, seeds=seeds)
+    r_ = ocenka({'x': good[42]}, E, 5)
+    assert abs(op['t_mean'] - r_['t_mean']) < 1e-12 and op['vhod']['proshyol'] and op['opora']['s2_n_seed'] == 10
+    gC2 = gate_C_v4(R, S, D, opora=op)
+    assert gC2['yacheyki'] == gC['yacheyki'] and gC2['v0_finalisty'] == gC['v0_finalisty']  # сильная опора не меняет выбор
+    assert gC2['tablica'][-1]['opora'] is True and gC2['tablica'][-1]['unit'] == GV4['opora']['unit'] and gC2['opora']['c3'] is not None
+    assert sum(r['opora'] for r in gC2['tablica']) == 1 and len(gC2['tablica']) == len(gC['tablica']) + 1
+    assert gate_D_v4(RD, {u: 1 for u in RD}, DD, {'a': ['a_p1', 'a_p2'], 'b': ['b_p1', 'b_p2']}, opora=op)['opora']['opora']
+    assert 'opora' not in gC and all(r['opora'] is False for r in gC['tablica'])
     # --- E: финалисты = top-3 по выбору + V0; победитель — первый, прошедший 2σ; мощность и нога
     RE = {'E1': mk(3.0, 5.0, P=0.95), 'E2': mk(2.7, 4.0, P=0.6), 'E3': mk(2.0, 3.0, P=0.3), 'E4': mk(1.9, 2.0), 'E5': mk(5.0, 9.0, ok=False),
           'HARX_V0': mk(1.6, 2.0, P=0.2)}
@@ -495,8 +556,9 @@ def selftest_vorota(rng):
     SE = {u: 1 for u in RE}
     yes, no = dict(passed=True, d_mean=-1e-3, sigma=1e-4, thr=-6e-5), dict(passed=False, d_mean=1e-3, sigma=1e-4, thr=-6e-5)
     with tempfile.TemporaryDirectory() as td:
-        gE = gate_E_v4(RE, SE, DE, {'E1': yes, 'E2': yes, 'E3': yes, 'HARX_V0': yes}, 5, v0_units=['HARX_V0'], out_dir=td)
+        gE = gate_E_v4(RE, SE, DE, {'E1': yes, 'E2': yes, 'E3': yes, 'HARX_V0': yes}, 5, v0_units=['HARX_V0'], out_dir=td, opora=op)
         pb = gE['pobeditel']
+        assert gE['opora']['unit'] == GV4['opora']['unit'] and GV4['opora']['unit'] not in pb['poryadok']
         assert pb['poryadok'] == ['E1', 'E2', 'E3', 'HARX_V0'] and pb['pobeditel'] == 'E1' and not pb['V0']
         assert pb['itog']['kategoriya'] == 'znachimyy' and pb['itog']['gipoteza'] == 'лучше эталона'
         assert gE['design_sha'] == gE['finalisty'][0]['design_sha'] and len(gE['design_sha']) == 64 and gE['lestnica'][-1]['stupen'] == 'финал'
