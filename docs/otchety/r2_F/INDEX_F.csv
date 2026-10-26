@@ -1,5 +1,5 @@
 group,file,sha256,rows,cols,date_min,date_max,nan_share_2017_2021,nan_share_pre_2014_06_09,opisanie
-G1,data/regen/R2/feat/G1.parquet,d72527dd3a5dd8fe200a3e90bff26c7adfd68dcc5ebfaf328c0f8c953f9f37b8,59684,6,2011-12-08,2026-02-03,0.0,0.8333,"внешние as-of: RVI (18:50), RV_m IMOEX, RV_m рынка d0, PC1–PC3 глобальной вол. (Yahoo — лаг доступности 1 в матрице)"
+G1,data/regen/R2/feat/G1.parquet,d8d259502c20a825d300d78acf50c3900edb14a17fe9a91f0c809209d4fe448a,59684,6,2011-12-08,2026-02-03,0.0,0.8333,"внешние as-of: RVI (18:50), RV_m IMOEX, RV_m рынка d0, PC1–PC3 глобальной вол. (Yahoo — лаг доступности 1 в матрице)"
 G2,data/regen/R2/feat/G2.parquet,fab61536ad6f5e6439c688475831030ed48a682605f7e5cbd65bce68f88d8ef1,59684,15,2011-12-08,2026-02-03,0.0,0.8078,"календарь окна [t+1, t+h] h=1/5/22: будни, число событий ЦБ/экспираций/FOMC, дней до ближайшего; known_from ≤ t; до 2014 — NaN"
 G3,data/regen/R2/feat/G3.parquet,b7d96c3baa4da1c5ba369995f63ce995d409e59d19a3f8abdedaf05c29126348,59684,9,2011-12-08,2026-02-03,0.0,0.0004,"ночной гэп, доля RV последнего часа (крейт), RRV PK/GK d/w/m (Д17.2) — день d"
 G4,data/regen/R2/feat/G4.parquet,b259fb05fa1a3bcf529782f4410d9bb48bf5dfa27198846f9561c1b3c677e711,59684,9,2011-12-08,2026-02-03,0.0,0.0083,"скачки: ln BV, J/RV, число дней J>0 и J/RV≥0,25 за 5/22, дней с последнего, сумма J за 22 — окна включают день d"
@@ -9,4 +9,4 @@ G7,data/regen/R2/feat/G7.parquet,26f00fb38d80f8bf28cc4e6c8d20e8760ba078df624afb5
 G8,data/regen/R2/feat/G8.parquet,117d52c8b3fa35d012825c52ae805fc3d06d8d967b1cca9dcd6b0c73fa65c286,59684,9,2011-12-08,2026-02-03,0.0,0.663,"ē_5/ē_10 (тикер, рынок), серия знака — OOS HAR-J h=1 d0 (переоценка 1 января); ē Д23 (финалист, с 2016)"
 G9,data/regen/R2/feat/G9.parquet,eca655ea2b2b9049eff467c3aac9593da747bbbac73eb91c63506658d73214c2,59684,4,2011-12-08,2026-02-03,0.0,0.26,"ln RV_d/RV_w, ln RV_w/RV_m, ln RVI²/RV_m, ln RV_m/RV_m(−22) — d0"
 G10,data/regen/R2/feat/G10.parquet,2755ff8126f20ce24c2f137747bfa917c6c3719ba642b11c08a5f9530bdaafcb,59684,5,2011-12-08,2026-02-03,0.0,0.0,"день недели, месяц, день месяца, будних дней до конца месяца, последний месяц квартала"
-ALL,data/regen/R2/features/features_r2_v2.parquet,cd78deb7fd38585a68fda06c38602d895821d8d40922adefa3b27ccad12288ca,59684,77,2011-12-08,2026-02-03,,,все группы G1–G10 на ключах v3h
+ALL,data/regen/R2/features/features_r2_v3.parquet,977a87d31f0474c5f4d113aa524f040fe3fe1a5f290da1c27c22ff1878af7a72,59684,77,2011-12-08,2026-02-03,,,все группы G1–G10 на ключах v3h
