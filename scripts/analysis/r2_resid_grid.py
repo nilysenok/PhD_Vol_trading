@@ -56,6 +56,31 @@ def core_fn(design, seed, steps):
     return out
 
 
+def cmd_run(a):
+    """Контракт драйвера S (modules.BG): run --designs <yaml> --h --seeds --steps --workers [--point pNN]. Дизайны точек LHS
+    (boost.grid = resid_small_v1, boost.grid_point = pNN по schema_v2): r2_roli.core_fn с рядом BG; точка — из дизайна (или --point)."""
+    import r2_core as C
+    import r2_roli as B
+    Y = yaml.safe_load(open(a.designs))
+    ds = [d for d in (Y.get('designs') or []) if str(C.get(C.validate(d), 'boost.grid')) == 'resid_small_v1']
+    print(time.strftime('%F %T'), f'BG run: h={a.h}, дизайнов {len(ds)}, точка {a.point}, seed {a.seeds}, шаги {a.steps}', flush=True)
+    if not ds:
+        return
+    B.prepare_run(a.h, tickers=a.tickers)
+    C.share(B_series='BG', B_lhs_point=(int(a.point[1:3]) if a.point else None))
+    T = C.run_phase('D', a.h, ds, B.core_fn, seeds=tuple(a.seeds), steps=tuple(a.steps), workers=a.workers, module='BG', check_gate=False)
+    bad = T[T.ryad == 'ОШИБКА'] if len(T) else T
+    print(time.strftime('%F %T'), f'BG run: рядов {len(T) - len(bad)}, ошибок {len(bad)}', flush=True)
+    if len(bad):
+        print(bad.to_string(), flush=True)
+        raise SystemExit(1)
+
+
+def cmd_leak(a):
+    import r2_roli as B
+    B.cmd_leak_designs(a)
+
+
 def cmd_lhs(a):
     T = lhs_table()
     p = REPO / YB['lhs']['file']
@@ -87,8 +112,12 @@ def main():
     sp = ap.add_subparsers(dest='cmd', required=True)
     sp.add_parser('lhs')
     p = sp.add_parser('smoke'); p.add_argument('--h', type=int, nargs='*')
+    p = sp.add_parser('run'); p.add_argument('--designs', required=True); p.add_argument('--h', type=int, required=True)
+    p.add_argument('--seeds', type=int, nargs='+', default=[42]); p.add_argument('--steps', type=int, nargs='+', default=[1, 2, 3, 4, 5, 6])
+    p.add_argument('--workers', type=int, default=None); p.add_argument('--point', default=None); p.add_argument('--tickers', nargs='*', default=None)
+    p = sp.add_parser('leak'); p.add_argument('--designs', required=True); p.add_argument('--h', type=int, required=True)
     a = ap.parse_args()
-    {'lhs': cmd_lhs, 'smoke': cmd_smoke}[a.cmd](a)
+    {'lhs': cmd_lhs, 'smoke': cmd_smoke, 'run': cmd_run, 'leak': cmd_leak}[a.cmd](a)
 
 
 if __name__ == '__main__':

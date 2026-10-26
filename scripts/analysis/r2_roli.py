@@ -159,6 +159,8 @@ def split(ctx, d, step, before=None):
     if d['data']['history_start'] == 2014:
         trm = trm & (pd.to_datetime(A['date']).values >= np.datetime64(ISS_FIRST))
     tr = np.flatnonzero(trm)
+    if ctx.get('_rowmask') is not None:  # драйвер S, фаза B: --row-frac / --row-seed — подвыборка строк (дата, тикер), маска по строкам A
+        tr = tr[ctx['_rowmask'][tr]]
     if ctx.get('_half'):  # скрининг (владелец 16:25): 50% строк обучения, страты тикер × год, random_state 42 (как l2_lib half)
         s = pd.DataFrame({'i': tr, 't': A['ticker'].values[tr], 'y': A['year'].values[tr]})
         tr = np.sort(s.groupby(['t', 'y'], group_keys=False).sample(frac=.5, random_state=42)['i'].values)
@@ -415,7 +417,9 @@ def fit_step(ctx, d, role, m, step, obj=None, label_fn=None):
     ytr, yva = A[_tc(ctx)].values[tr], A[_tc(ctx)].values[va]
     obj = obj or objective_of(d, role)
     use_lhs = d['boost']['grid'] == 'resid_small_v1' and m == 'lgbm'
-    p = lhs_point(ctx['_lhs_point']) if use_lhs and ctx.get('_lhs_point', 61) != 61 else points(h, role, m, step)
+    gp = str(d['boost'].get('grid_point', 'none'))   # schema_v2: p01…p60, p61_tekushchaya (= текущая точка); иначе — ctx
+    pt = int(gp[1:3]) if gp.startswith('p') else ctx.get('_lhs_point', 61)
+    p = lhs_point(pt) if use_lhs and pt != 61 else points(h, role, m, step)
     Xtr, names, mono, cats = design_X(ctx, d, role, m, step, tr, legtr)
     Xva = design_X(ctx, d, role, m, step, va, legva)[0]
     has_off = role in ('residual', 'residual_std', 'offset') or (obj == 'gamma' and role != 'feature')
@@ -715,11 +719,112 @@ def core_fn(design, seed, steps):
     S = C.SHARED
     d = dict(C.validate(design), seed=int(seed))
     h = int(d['h'])
-    ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=S['leg_provider'](d, h), _half=bool(S.get('B_half', False)))
-    if d['boost']['resid_source'] == 'cross_fit':
-        ctx['leg_refit'] = S['leg_refit_provider'](d, h, S['A'])
-    V = build(d, ctx, steps=steps)
-    return {f'B_{d["boost"]["role"]}' + ('_half' if ctx['_half'] else ''): V}
+    legs = S['leg_provider'](d, h)
+    if not isinstance(legs, dict):
+        legs = {'base': legs}
+    out = {}
+    for tag, leg in legs.items():   # варианты ноги (сетка L внутри складки) -> ряды B / B__<тег>
+        ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=leg, _half=bool(S.get('B_half', False)), _rowmask=S.get('B_rowmask'))
+        if S.get('B_lhs_point') is not None:
+            ctx['_lhs_point'] = S['B_lhs_point']
+        if d['boost']['resid_source'] == 'cross_fit':
+            ctx['leg_refit'] = S['leg_refit_provider'](d, h, S['A'], None if tag == 'base' else tag)
+        nm = S.get('B_series', 'B') + ('' if tag == 'base' else f'__{tag}') + ('_half' if ctx['_half'] else '')
+        out[nm] = build(d, ctx, steps=steps)
+    return out
+
+
+def leg_from_cache(design, h):
+    """Ноги L в каталоге дизайна (цепочка L -> B, r2_nogi.fn_leg): leg_h{h}_lnall.parquet (вариант base) и leg__<тег>_h{h}_lnall.parquet."""
+    import r2_core as C
+    cd = C.cache_dir(design, create=False, root=C.SHARED.get('B_root'))
+    fs = sorted(cd.glob(f'leg*_h{h}_lnall.parquet'))
+    assert fs, f'нет ног L (leg*_h{h}_lnall) в {cd} — модуль L должен идти раньше B'
+    out = {}
+    for f in fs:
+        stem = f.name[:-len(f'_h{h}_lnall.parquet')]
+        out['base' if stem == 'leg' else stem.split('__', 1)[1]] = pd.read_parquet(f)
+    return out
+
+
+def leg_refit_L(design, h, A, tag):
+    """cross_fit: нога, обученная на строках fit_idx (r2_nogi.fit_predict — тот же оценщик L), прогноз на pred_idx. M — mat_from L,
+    строки M['A'] совпадают со строками A модуля (проверяется в run)."""
+    import r2_core as C
+    import r2_nogi as RN
+    M = C.SHARED['M']
+    n = len(M['A'])
+
+    def f(step, fit_idx, pred_idx):
+        tm = np.zeros(n, bool); tm[fit_idx] = True
+        pm = np.zeros(n, bool); pm[pred_idx] = True
+        s = RN.fit_predict(design, tm, pm, M=M, tag=tag)
+        return s.reindex(np.sort(pred_idx)).values[np.argsort(np.argsort(pred_idx))]
+    return f
+
+
+def prepare_run(h, row_frac=None, row_seed=None, tickers=None):
+    """Данные один раз в родителе до пула: load_d0 -> mat_from (L) -> признаки G0–G10 (F v3); подвыборка строк; SHARED."""
+    import r2_core as C
+    import r2_nogi as RN
+    A0, harj = C.load_d0(tickers=tickers)
+    M = RN.mat_from(A0, harj)
+    A, groups = load_groups(M['A'], h)
+    assert len(A) == len(M['A']) and (A['ticker'].values == M['A']['ticker'].values).all() and \
+        (pd.to_datetime(A['date']).values == pd.to_datetime(M['A']['date']).values).all(), 'строки A и M[A] разошлись'
+    rm = None
+    if row_frac is not None and float(row_frac) < 1:
+        rm = np.random.default_rng(int(row_seed)).random(len(A)) < float(row_frac)
+    C.share(A=A, M=M, harj=harj, B_groups=groups, leg_provider=leg_from_cache, leg_refit_provider=leg_refit_L, B_rowmask=rm,
+            B_series='B' if rm is None else f'B_rf{int(round(float(row_frac) * 100))}')
+    return A
+
+
+def cmd_run(a):
+    """Контракт драйвера S (r2_S_driver.yaml, modules.B): run --designs <yaml> --h --seeds --steps --workers [--row-frac --row-seed].
+    Дизайны с boost.grid = resid_small_v1 — у r2_resid_grid (BG), здесь пропускаются; role = none — не модуль B."""
+    import r2_core as C
+    Y = yaml.safe_load(open(a.designs))
+    ds = [d for d in (Y.get('designs') or []) if str(C.get(C.validate(d), 'boost.role')) != 'none'
+          and str(C.get(C.validate(d), 'boost.grid')) != 'resid_small_v1']
+    log(f'B run: h={a.h}, дизайнов {len(ds)} из {len(Y.get("designs") or [])}, seed {a.seeds}, шаги {a.steps}, воркеров {a.workers}, '
+        f'row_frac {a.row_frac}')
+    if not ds:
+        return
+    prepare_run(a.h, a.row_frac, a.row_seed, tickers=a.tickers)
+    T = C.run_phase('B', a.h, ds, core_fn, seeds=tuple(a.seeds), steps=tuple(a.steps), workers=a.workers, module='B', check_gate=False)
+    bad = T[T.ryad == 'ОШИБКА'] if len(T) else T
+    log(f'B run: рядов {len(T) - len(bad)}, ошибок {len(bad)}')
+    if len(bad):
+        print(bad.to_string(), flush=True)
+        raise SystemExit(1)
+
+
+def cmd_leak_designs(a):
+    """Контракт драйвера: leak --designs <yaml> --h — детектор ядра (r2_core.leak_check) на первом дизайне модуля B из файла
+    (на 3 тикерах дыма; нога — HAR-J d0 с эмбарго, пересчитывается из испорченной матрицы; early_stop = qlike_total, без row_frac)."""
+    import r2_core as C
+    Y = yaml.safe_load(open(a.designs))
+    ds = [d for d in (Y.get('designs') or []) if str(C.get(C.validate(d), 'boost.role')) != 'none']
+    if not ds:
+        log('leak B: дизайнов модуля B нет — OK'); return
+    d0 = C.validate(ds[0])
+    h = int(a.h)
+    dz = dict(design='leak', h=h, seed=42, boost=dict(role=str(d0['boost']['role']), lib=str(d0['boost']['lib']), early_stop='qlike_total'),
+              features=list(d0['features']))
+    sm = YB['smoke']
+    A0, harj = C.load_d0(tickers=sm['tickers'])
+    A0, groups = load_groups(A0, h)
+
+    def bld(A):
+        A = A.copy()
+        ctx = dict(A=A, h=h, groups=groups, harj=harj, leg=lnall_harj(A, harj, h, range(1, 7)), _emit_all=True)
+        ctx['leg_refit'] = leg_refit_harj_ols(ctx)
+        return {'B': build(dz, ctx, steps=range(1, 7))}
+    Rr = C.leak_check(bld, A0, f'B leak h={h}', out=R / 'R2' / 'B' / f'leak_driver_h{h}.csv')
+    log(f'leak B h={h}: {int(Rr.ok.sum())}/{len(Rr)} OK')
+    if not Rr.ok.all():
+        raise SystemExit(1)
 
 
 def smoke_ctx(h, legname=None, tickers=None, matrix=None):
@@ -1042,15 +1147,76 @@ def cmd_core_smoke(a):
     assert (T.ryad != 'ОШИБКА').all(), 'ошибка задачи в run_phase'
 
 
+def cmd_drv_legs(a):
+    """(внутренняя) ноги L в каталоге дизайна для дыма по контракту драйвера: r2_nogi.fn_leg на 3 тикерах (кэш — R2_CACHE)."""
+    import r2_core as C
+    import r2_nogi as RN
+    Y = yaml.safe_load(open(a.designs))
+    A0, harj = C.load_d0(tickers=YB['smoke']['tickers'])
+    M = RN.mat_from(A0, harj)
+    C.share(M=M, A=M['A'], harj=harj, L_root=None)
+    for d in Y['designs']:
+        RN.fn_leg(C.validate(d), 42, list(a.steps))
+    log(f'ноги L записаны: {len(Y["designs"])} дизайнов, кэш {C.CACHE_ROOT}')
+
+
+def cmd_drv_smoke(a):
+    """Дым по контракту драйвера S: первые дизайны B_h{5,22,1} из models/designs/r2/driver_v1 -> ноги L (fn_leg) -> `run` модуля B
+    (подпроцесс, --row-frac 0.5 --row-seed 20261026) и `leak --designs`; точка LHS p01 и p61 -> `r2_resid_grid.py run`.
+    3 тикера × шаги 1–3 × seed 42; кэш — R2/B/driver_smoke_cache (R2_CACHE), не боевой."""
+    import subprocess
+    root = R / 'R2' / 'B' / 'driver_smoke_cache'
+    env = dict(os.environ, R2_CACHE=str(root))
+    me, grid = [sys.executable, '-W', 'ignore', str(Path(__file__).resolve())], [sys.executable, '-W', 'ignore', str(HERE / 'r2_resid_grid.py')]
+    tk = YB['smoke']['tickers']
+    st = [str(s) for s in YB['smoke']['steps']]
+    out = []
+    for h in (5, 22, 1):
+        src = yaml.safe_load(open(REPO / 'models' / 'designs' / 'r2' / 'driver_v1' / f'B_h{h}.yaml'))
+        d = src['designs'][0] if h != 1 else src['designs'][-1]
+        f = root / f'B_h{h}.yaml'
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(yaml.safe_dump(dict(designs=[d]), allow_unicode=True, sort_keys=False))
+        gd = json.loads(json.dumps(d))
+        gd.setdefault('boost', {}).update(grid='resid_small_v1', early_stop='qlike_total', grid_point='p01')
+        if gd['boost'].get('role', 'none') == 'none':
+            gd['boost']['role'] = 'residual'
+        gd['design'] = f'{d.get("design")}_p01'
+        g61 = json.loads(json.dumps(gd)); g61['boost']['grid_point'] = 'p61_tekushchaya'; g61['design'] = f'{d.get("design")}_p61'
+        fg = root / f'D_h{h}.yaml'
+        fg.write_text(yaml.safe_dump(dict(designs=[gd, g61]), allow_unicode=True, sort_keys=False))
+        for cmd in (me + ['drv_legs', '--designs', str(f), '--steps'] + st,
+                    me + ['drv_legs', '--designs', str(fg), '--steps'] + st,
+                    me + ['run', '--designs', str(f), '--h', str(h), '--seeds', '42', '--steps'] + st + ['--workers', '2', '--row-frac', '0.5',
+                                                                                                     '--row-seed', '20261026', '--tickers'] + tk,
+                    grid + ['run', '--designs', str(fg), '--h', str(h), '--seeds', '42', '--steps'] + st + ['--workers', '2', '--tickers'] + tk,
+                    me + ['leak', '--designs', str(f), '--h', str(h)]):
+            t0 = time.time()
+            rc = subprocess.run(cmd, env=env, cwd=str(REPO)).returncode
+            out.append(dict(h=h, cmd=' '.join(cmd[3:6]), rc=rc, sec=round(time.time() - t0, 1)))
+            log(f'дым драйвера h={h}: {" ".join(cmd[3:5])} -> код {rc}, {time.time() - t0:.0f} с')
+    T = pd.DataFrame(out)
+    T.to_csv(R / 'R2' / 'B' / 'driver_smoke_B.csv', index=False)
+    assert (T.rc == 0).all(), 'дым драйвера: ошибка'
+
+
 def main():
     ap = argparse.ArgumentParser()
     sp = ap.add_subparsers(dest='cmd', required=True)
     p = sp.add_parser('smoke'); p.add_argument('--hs', type=int, nargs='*')
-    p = sp.add_parser('leak'); p.add_argument('--hs', type=int, nargs='*')
+    p = sp.add_parser('leak'); p.add_argument('--hs', type=int, nargs='*'); p.add_argument('--designs'); p.add_argument('--h', type=int)
+    p = sp.add_parser('run'); p.add_argument('--designs', required=True); p.add_argument('--h', type=int, required=True)
+    p.add_argument('--seeds', type=int, nargs='+', default=[42]); p.add_argument('--steps', type=int, nargs='+', default=[1, 2, 3, 4, 5, 6])
+    p.add_argument('--workers', type=int, default=None); p.add_argument('--row-frac', dest='row_frac', type=float, default=None)
+    p.add_argument('--row-seed', dest='row_seed', type=int, default=20261026); p.add_argument('--tickers', nargs='*', default=None)
+    p = sp.add_parser('drv_legs'); p.add_argument('--designs', required=True); p.add_argument('--steps', type=int, nargs='+', default=[1, 2, 3])
+    sp.add_parser('drv_smoke')
     sp.add_parser('control'); sp.add_parser('leak_leg'); sp.add_parser('leak_xfit'); sp.add_parser('shift'); sp.add_parser('core_smoke')
     a = ap.parse_args()
+    if a.cmd == 'leak' and a.designs:
+        return cmd_leak_designs(a)
     {'smoke': cmd_smoke, 'control': cmd_control, 'leak': cmd_leak, 'leak_leg': cmd_leak_leg, 'leak_xfit': cmd_leak_xfit,
-     'shift': cmd_shift, 'core_smoke': cmd_core_smoke}[a.cmd](a)
+     'shift': cmd_shift, 'core_smoke': cmd_core_smoke, 'run': cmd_run, 'drv_legs': cmd_drv_legs, 'drv_smoke': cmd_drv_smoke}[a.cmd](a)
 
 
 if __name__ == '__main__':
