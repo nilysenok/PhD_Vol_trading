@@ -94,6 +94,9 @@ D_RVI = ("RVI проверен на сдвиг (S0, PR #245): rvi_1850 снят 
 # Ъ 23:10, п. 1: H2 «лучший с лучшим» — отбор по С8 отдельно для каждой σ
 H2_GROUPS = (("гибрид", ("hyb_h1", "hyb_h5")), ("HAR-J (б)", ("harj_h1", "harj_h5")),
              ("наивная", ("naive_h1", "naive_h5")))
+# Ъ 27.10, 00:00, п. 1: в H2 «лучший с лучшим» — без дизайнов с внутренним выбором по валидации
+# (u02 — выбор маски внутри; семьи — выбор точки по валидации на каждый тикер-год)
+H2_VNUTR_VYBOR = ("C основного дизайна", " (выбор по валидации)")
 # Ъ 23:10, п. 2: устойчивость выбора C — точка первого FINAL и допуск по Шарпу
 C_FINAL1 = ("C1", "W504_p70", "hyb_h5")
 USTOY_TOL = 0.1
@@ -1370,20 +1373,24 @@ def h2_luchshiy_v2(s9: "S9", dfc: pd.DataFrame, cports: dict, ckey: tuple) -> pd
     """Ъ 23:10, п. 1: H2 «лучший с лучшим» — для каждой σ (гибрид, HAR-J (б), наивная) свой отбор
     по С8 (rank_c8) по той же сетке C, включая --c-dop (у наивной C* нет: σ/√RV_w ≡ 1), кандидаты —
     h=1 и h=5 этой σ; затем выбранные точки попарно: ΔШарп, p Ледуа–Вольфа (блок 5), IID справочно.
-    Первая таблица H2 (внутри точки гибрида) — s9_H2_vybrannaya_C, не меняется."""
+    Первая таблица H2 (внутри точки гибрида) — s9_H2_vybrannaya_C, не меняется.
+    Ъ 27.10, 00:00, п. 1: кандидаты — только фиксированные точки без выбора внутри: исключены
+    C основного дизайна (u02) и семьи «(выбор по валидации)» (H2_VNUTR_VYBOR)."""
     from fastbt.s9_stats import lw_sharpe_diff
     rows, sel = [], {}
+    fixed = ~(dfc["family"].str.startswith(H2_VNUTR_VYBOR[0])
+              | dfc["family"].str.endswith(H2_VNUTR_VYBOR[1]) | (dfc["point"] == "семья"))
     for nm, srcs in H2_GROUPS:
-        c = dfc[dfc["sigma"].isin(srcs)].copy()
+        c = dfc[dfc["sigma"].isin(srcs) & fixed].copy()
         c["p_holm"] = _holm(c["p_vs_A"].values)
         best = rank_c8(c).iloc[0]
         key = (_ckey(best), best["sigma"])
-        if nm == "гибрид" and key != tuple(ckey):
-            raise SystemExit(f"H2: выбор на гибриде {key} ≠ выбору С8 {ckey}")
         sel[nm] = (f"{best['family']}:{best['point']} на {best['sigma']}", cports[key][0])
-        r = dict(rol="выбор по С8 отдельно для σ", sigma_nabor=nm,
+        r = dict(rol="выбор по С8 отдельно для σ (только фиксированные точки)", sigma_nabor=nm,
                  design=f"{best['family']}:{best['point']}", sigma=best["sigma"], h=best["h"],
-                 n_kandidatov=len(c), n_proshli_C8=int(c["passed"].sum()))
+                 n_kandidatov=len(c), n_proshli_C8=int(c["passed"].sum()),
+                 sovpal_s_vyborom_C8=(key == tuple(ckey)) if nm == "гибрид" else None,
+                 isklyucheny="C основного дизайна (u02); C1/C2/C2W/C*1/C*2 (выбор по валидации): семья")
         r.update({col: best[col] for col in _C8_COLS if col in best.index})
         r["p_holm"] = best["p_holm"]
         r["fakt"] = ("прошёл С8" if best["passed"] else "лучший по С8, С8 не прошёл") + \
@@ -1446,7 +1453,7 @@ def ustoychivost_v2(dfc: pd.DataFrame) -> pd.DataFrame:
                          family=x["family"], point=x["point"], sigma=x["sigma"], h=x["h"],
                          okno=w, porog=p, sharpe=x["sharpe"], d_k_vybrannoy=x["sharpe"] - sh0,
                          win=x["win"], passed=x["passed"], d_vs_A=x["d_vs_A"], p_vs_A=x["p_vs_A"],
-                         p_holm=x["p_holm"]))
+                         p_vs_A_iid=x["p_vs_A_iid"], p_holm=x["p_holm"]))
     w0, p0 = _okno_porog(best["point"])
     same = c[(c["family"] == best["family"]) & (c["sigma"] == best["sigma"])].copy()
     same["okno"], same["porog"] = zip(*same["point"].map(_okno_porog))
@@ -1459,7 +1466,7 @@ def ustoychivost_v2(dfc: pd.DataFrame) -> pd.DataFrame:
                          sigma=x["sigma"], h=x["h"], okno=x["okno"], porog=x["porog"],
                          sharpe=x["sharpe"], d_k_vybrannoy=x["sharpe"] - sh0, win=x["win"],
                          passed=x["passed"], d_vs_A=x["d_vs_A"], p_vs_A=x["p_vs_A"],
-                         v_predelah_0_1=bool(o)))
+                         p_vs_A_iid=x["p_vs_A_iid"], p_holm=x["p_holm"], v_predelah_0_1=bool(o)))
     nxt_w = by_w[by_w["okno"] > w0]["okno"].min() if len(by_w) else None
     nxt_p = by_p["porog"].iloc[0] if len(by_p) else None
     imm = nb[((nb["os_"] == "окно") & (nb["okno"] == nxt_w)) | ((nb["os_"] == "порог") &
@@ -1470,6 +1477,7 @@ def ustoychivost_v2(dfc: pd.DataFrame) -> pd.DataFrame:
                "пик" if int(ok.sum()) == 0 else "частичное плато")
     rows.append(dict(rol="(в) вывод", family=best["family"], point=best["point"], sigma=best["sigma"],
                      h=best["h"], okno=w0, porog=p0, sharpe=sh0,
+                     n_C8_v_predelah=int((~near["_sel"]).sum()), n_kandidatov=len(c) - 1,
                      vyvod=(f"{verdict}: соседей {best['family']} {best['point']} {best['h']} в пределах "
                             f"{TOL_S} и с С8 — по окну {n_w} из {len(by_w)}, по порогу {n_p} из "
                             f"{len(by_p)}; всего точек С8 в пределах {TOL_S} — "
