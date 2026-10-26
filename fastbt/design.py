@@ -30,14 +30,15 @@ _NAMES = ["C_HORIZONS", "D_HORIZONS", "B_GRIDS", "C_TERM_FILTER", "C_THRESHOLDS"
           "C_THRESHOLDS_V41", "C_LOOKBACKS", "C_DIRECTION_TREND", "C_HYSTERESIS_TREND",
           "D_GATE_THRESHOLDS", "D_TARGET_VOLS", "D_SMOOTH", "D_STANDARD", "D_INVERSE",
           "ENS_K", "VOTE_FRAC", "D_CONT", "D_CONT_GAMMA", "TF", "TF_HOLD", "TF_REENTRY",
-          "D_GATE_MODE", "D_REL_WINDOW", "D_REL_THR", "D_HYST_IN", "D_HYST_GAP", "D_MIN_CLOSED"]
+          "D_GATE_MODE", "D_REL_WINDOW", "D_REL_THR", "D_HYST_IN", "D_HYST_GAP", "D_MIN_CLOSED",
+          "C_RANK_PAST"]
 _DEFAULT = {k: copy.deepcopy(getattr(grids, k)) for k in _NAMES}
 _APPLIED = None
 KEYS = {"horizons", "sigma_smooth", "c_thresholds", "c_lookbacks", "c_trend_direction",
         "c_trend_hysteresis", "d_gate_thresholds", "d_target_vols", "d_smooth", "d_mode",
         "ens_k", "vote_frac", "d_continuous", "d_cont_gamma", "turnover_filter", "tf_min_hold",
         "tf_reentry", "d_gate_mode", "d_rel_window", "d_rel_thr", "d_hyst_in", "d_hyst_gap",
-        "d_min_closed"}
+        "d_min_closed", "c_rank_past"}
 
 
 def freeze(d: dict) -> tuple:
@@ -79,6 +80,7 @@ def apply(design: tuple) -> None:
     if "vote_frac" in d:
         grids.VOTE_FRAC = float(d["vote_frac"])
     grids.D_CONT = bool(d.get("d_continuous", False))
+    grids.C_RANK_PAST = bool(d.get("c_rank_past", False))
     if "d_cont_gamma" in d:
         grids.D_CONT_GAMMA = [float(x) for x in d["d_cont_gamma"]]
     for k, name in (("d_gate_mode", "D_GATE_MODE"), ("d_rel_window", "D_REL_WINDOW"),
