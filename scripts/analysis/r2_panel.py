@@ -13,7 +13,7 @@
   4. Прогноз ln ŷ_i = α̃ + β̃·F_mkt + F_u; кросс-секционная усадка ln ŷ ← (1 − w)·ln ŷ + w·(α̃^(h) + β̃·F_mkt), α̃^(h) = α̃ + ū^h
      (α тикера в масштабе цели h), w = 0,25 | 0,5 | w(ρ̄_d),
      ρ̄ — g5_corr_m (средняя корреляция 22 дня, features_r2_v2). panel = off — та же HAR без разложения (абляция).
-Ряд P сырой (без s²): калибровка кластера 3 — общий слой L. Параметры по шагам — R2/cache/<hash>/params.csv (design_sha, h, step, param, value).
+Ряд P сырой (без s²): калибровка кластера 3 — общий слой L. Параметры по шагам — R2/cache/<hash>/params_P.csv (r2_core.params_path; design_sha, h, step, param, value).
 Ничего за годы ≥ 2022 не читается: матрица — r2_core.load_d0 (строки ≤ 2021), G5 — фильтр date ≤ 2021-12-31; пишется только val шагов 1–6.
 test_locked/ не читается. Метрик модуль не считает (выбор — агент O).
 
@@ -50,6 +50,8 @@ MIN_TK = int(CFG['u_leg']['min_ticker_rows'])
 W_LO, W_HI = float(CFG['panel']['w_lo']), float(CFG['panel']['w_hi'])
 Z_MKT = {k: list(v) for k, v in CFG['market_leg']['regressors_Z'].items()}
 LGBM = dict(CFG['u_leg']['lgbm'])
+ES = CFG['u_leg']['early_stop']
+ES_MAX, ES_PAT, ES_MIN_TRAIN = int(ES['max_rounds']), int(ES['patience']), int(ES['min_inner_train'])
 H_MKT = ['x_d', 'x_w', 'x_m']
 SHRINK_W = {'factor': 0.0, 'factor_shrink_025': 0.25, 'factor_shrink_05': 0.5}
 
@@ -112,7 +114,7 @@ def applicable(design):
     try:
         check(design)
         return True, ''
-    except NotApplicable as e:
+    except (NotApplicable, C.DesignError) as e:
         return False, str(e)
 
 
@@ -387,13 +389,39 @@ def _har_kappa(X, y, tk, tr, pr, kappa, w):
     return out, bp, nt
 
 
-def _boost(Xb, r, tr, pr, seed, w):
+def _lgb_params(seed):
+    p = dict(LGBM)
+    p.update(seed=int(seed), metric='None')
+    return p
+
+
+def _qlike(y, p):
+    ok = y > 1e-12
+    r = y[ok] / np.clip(p[ok], 1e-12, None)
+    return float(np.mean(r - np.log(r) - 1))
+
+
+def _boost_es(I, seed):
+    """boost.early_stop = qlike_total (протокол v3, п. 4; r2_core.validate): LightGBM на остатке HAR-u внутренней складки
+    (обучение < vy − 1 с эмбарго, оценка — год vy − 1 без окон, заходящих в vy), остановка по QLIKE итогового прогноза P
+    exp(база + множитель·бустинг) на этой складке, ≤ ES_MAX деревьев, patience ES_PAT. -> число деревьев (0 — складки нет)."""
     import lightgbm as lgb
-    p = {k: v for k, v in LGBM.items() if k != 'n_estimators'}
-    p['seed'] = int(seed)
-    ds = lgb.Dataset(Xb[tr], r, weight=w, free_raw_data=False)
-    bst = lgb.train(p, ds, num_boost_round=int(LGBM['n_estimators']))
-    return bst.predict(Xb[pr], num_threads=1), bst.num_trees()
+    if I['n_tr'] < ES_MIN_TRAIN or I['n_va'] < 1:
+        return 0
+    yv, bv, mv = I['y_va'], I['base_va'], I['mult_va']
+    feval = lambda pr, _: ('qlike_total', _qlike(yv, np.exp(bv + mv * pr)), False)
+    dtr = lgb.Dataset(I['X_tr'], I['r_tr'], weight=I['w_tr'], free_raw_data=False)
+    dva = lgb.Dataset(I['X_va'], np.zeros(I['n_va']), reference=dtr, free_raw_data=False)
+    bst = lgb.train(_lgb_params(seed), dtr, num_boost_round=ES_MAX, valid_sets=[dva], feval=feval,
+                    callbacks=[lgb.early_stopping(ES_PAT, verbose=False)])
+    return int(bst.best_iteration or bst.num_trees())
+
+
+def _boost_fit(Fz, n_trees, seed):
+    import lightgbm as lgb
+    dtr = lgb.Dataset(Fz['X_tr'], Fz['r_tr'], weight=Fz['w_tr'], free_raw_data=False)
+    bst = lgb.train(_lgb_params(seed), dtr, num_boost_round=int(n_trees))
+    return bst.predict(Fz['X_pr'], num_threads=1)
 
 
 # ================================================================ дизайн -> ряды
@@ -426,85 +454,102 @@ def run_design(design, Dt, seed=42, steps=STEPS, want_all=False):
     outV, outW, par = {}, {}, []
     accV = {series_name(tg): [] for tg, _, _ in vrs}
     accW = {series_name(tg): [] for tg, _, _ in vrs}
+    def wsh_at(cut):
+        """w усадки по строкам: константа или w(ρ̄_d) с Ê по датам < cut."""
+        if pan == 'factor_shrink_state':
+            hist = Dt.mk.loc[Dt.dates[Dt.dates < cut], G5_COLS[0]].dropna().values
+            ecdf = np.searchsorted(np.sort(hist), rho, side='right') / max(len(hist), 1)
+            return np.where(np.isfinite(rho) & (len(hist) > 0), W_LO + (W_HI - W_LO) * ecdf, 0.5 * (W_LO + W_HI))
+        return np.full(len(A), SHRINK_W.get(pan, 0.0))
+
+    mcache = {}
+    shr = float(boost['shrink'])
+
+    def fit(vy_fit, base_tr, pr, kap, lam, l1):
+        """Модель с точкой переобучения 1 янв. vy_fit на строках base_tr (эмбарго — у вызывающего), прогноз без бустинга на строках pr.
+        -> base (ln), mult (множитель бустинга в итоге), off (запасной HAR без разложения), входы бустинга, параметры q."""
+        cut = pd.Timestamp(f'{vy_fit}-01-01')
+        q = []
+        tr_off = base_tr & np.isfinite(Xoff).all(1)
+        w_off = _w_recency(A['date'].values[tr_off], cut, data)
+        off_pr, boff, ntf = _har_kappa(Xoff, lnY, tk, tr_off, pr, kap, w_off)
+        q += [(f'u_off_b_{n}', float(v)) for n, v in zip(['const', 'l_d', 'l_w', 'l_m'], boff)]
+        if pan == 'off':
+            q += [('u_n_train', float(tr_off.sum())), ('u_n_ticker_fit', float(ntf))]
+            return dict(base=off_pr, mult=np.full(len(off_pr), shr), off=off_pr, trx=tr_off, Xb=Xb_off, yy=lnY, ww=w_off, Xu=Xoff,
+                        kap=kap, q=q)
+        mkt_ok = Dt.at((tend_m < cut).fillna(False).values.astype(float)) > 0.5
+        tr_fac = base_tr & mkt_ok & np.isfinite(U).all(1) & np.isfinite(tu)
+        w_fac = _w_recency(A['date'].values[tr_fac], cut, data)
+        fu, bu, ntu = _har_kappa(U, tu, tk, tr_fac, pr, kap, w_fac)
+        q += [(f'u_b_{n}', float(v)) for n, v in zip(['const', 'u_d', 'u_w', 'u_m'], bu)]
+        q += [('u_n_train', float(tr_fac.sum())), ('u_n_ticker_fit', float(ntu))]
+        # ū^h тикера (κ-смесь пула и тикера) — уровень u в масштабе цели h: α̃^(h) = α̃ + ū^h (цель усадки)
+        m0 = float(np.average(tu[tr_fac], weights=w_fac))
+        cu = np.full(int(pr.sum()), m0)
+        tk_tr, tk_pr = tk[tr_fac], tk[pr]
+        for t in np.unique(tk_pr):
+            mi = tk_tr == t
+            if kap > 0 and mi.sum() >= MIN_TK:
+                cu[tk_pr == t] = (1 - kap) * m0 + kap * float(np.average(tu[tr_fac][mi], weights=None if w_fac is None else w_fac[mi]))
+        q.append(('u_mean_pool', m0))
+        mkey = (vy_fit, lam, l1)
+        if mkey not in mcache:
+            mp = []
+            fm, parts = mkt_forecast(Dt, which, h, leg, lam, l1, cut, data, mp, '')
+            mcache[mkey] = (Dt.at(fm), parts, mp)
+        fmr, parts, mp = mcache[mkey]
+        q += mp
+        wsh = wsh_at(cut)[pr]
+        sysc = al[pr] + cu + be[pr] * fmr[pr]  # α̃^(h) + β̃·F_mkt
+        base = sysc + (1 - wsh) * (fu - cu)  # = (1 − w)·(α̃ + β̃F_mkt + F_u) + w·(α̃^(h) + β̃F_mkt)
+        return dict(base=base, mult=(1 - wsh) * shr, off=off_pr, trx=tr_fac, Xb=Xb_fac, yy=tu, ww=w_fac, Xu=U, kap=kap, q=q,
+                    parts=parts, wsh=wsh)
+
+    def boost_inputs(Fz, pr):
+        """Остаток HAR-u (в выборке) на строках обучения и признаки бустинга строк pr."""
+        trx = Fz['trx']
+        ins, _, _ = _har_kappa(Fz['Xu'], Fz['yy'], tk, trx, trx, Fz['kap'], Fz['ww'])
+        return dict(X_tr=Fz['Xb'][trx], r_tr=Fz['yy'][trx] - ins, w_tr=Fz['ww'], X_pr=Fz['Xb'][pr], n_tr=int(trx.sum()))
+
     for k in steps:
         C.assert_dev_step(k)
         vy = C.step_years(k)[0]
-        cut = pd.Timestamp(f'{vy}-01-01')
-        base_tr = C.train_mask(A, h, vy) & Dt.out & np.isfinite(lnY)
-        tr_off = base_tr & np.isfinite(Xoff).all(1)
-        mkt_ok = Dt.at((tend_m < cut).fillna(False).values.astype(float)) > 0.5
-        tr_fac = base_tr & mkt_ok & np.isfinite(U).all(1) & np.isfinite(tu)
+        tr_k = C.train_mask(A, h, vy) & Dt.out & np.isfinite(lnY)
         vm = C.val_mask(A, h, vy) & Dt.out
         pr = ((A['year'].values <= vy) & Dt.out) if want_all else vm
-        w_off = _w_recency(A['date'].values[tr_off], cut, data)
-        w_fac = _w_recency(A['date'].values[tr_fac], cut, data)
-        # усадка: w по строкам
-        if pan == 'factor_shrink_state':
-            dtr = Dt.dates[Dt.dates < cut]
-            hist = Dt.mk.loc[dtr, G5_COLS[0]].dropna().values
-            ecdf = np.searchsorted(np.sort(hist), rho, side='right') / max(len(hist), 1)
-            wsh = np.where(np.isfinite(rho) & (len(hist) > 0), W_LO + (W_HI - W_LO) * ecdf, 0.5 * (W_LO + W_HI))
-        else:
-            wsh = np.full(len(A), SHRINK_W.get(pan, 0.0))
-        mcache, ucache = {}, {}
+        vv = vm[pr]
+        if boost['role'] == 'residual':
+            tr_in, va_in, _ = C.inner_masks(A, h, vy)  # внутренняя складка vy − 1 с эмбарго h (ранняя остановка, п. 4)
+            tr_in, va_in = tr_in & Dt.out & np.isfinite(lnY), va_in & Dt.out & np.isfinite(lnY)
         for tg, _, dv in vrs:
             nm = series_name(tg)
             lg = dv['leg']
             kap = float(_scal(lg['pooled_kappa']))
             e = lg['enet']
             lam, l1 = float(_scal(e['lambda'])), float(_scal(e['alpha']))
-            p = []
-            # F_u (или HAR без разложения) — по κ; запасной прогноз строк без α/β — HAR без разложения
-            if kap not in ucache:
-                q = []
-                off_pr, boff, ntf = _har_kappa(Xoff, lnY, tk, tr_off, pr, kap, w_off)
-                q += [(f'u_off_b_{n}', float(v)) for n, v in zip(['const', 'l_d', 'l_w', 'l_m'], boff)]
-                if pan == 'off':
-                    fu, trx, Xb, yy, ww = off_pr, tr_off, Xb_off, lnY, w_off
-                    q += [('u_n_train', float(tr_off.sum())), ('u_n_ticker_fit', float(ntf))]
-                else:
-                    fu, bu, ntu = _har_kappa(U, tu, tk, tr_fac, pr, kap, w_fac)
-                    trx, Xb, yy, ww = tr_fac, Xb_fac, tu, w_fac
-                    q += [(f'u_b_{n}', float(v)) for n, v in zip(['const', 'u_d', 'u_w', 'u_m'], bu)]
-                    q += [('u_n_train', float(tr_fac.sum())), ('u_n_ticker_fit', float(ntu))]
-                if boost['role'] == 'residual':
-                    ins, _, _ = _har_kappa(Xoff if pan == 'off' else U, yy, tk, trx, trx, kap, ww)
-                    bp, nt = _boost(Xb, yy[trx] - ins, trx, pr, seed, ww)
-                    fu = fu + float(boost['shrink']) * bp
-                    q += [(f's{seed}:boost_n_trees', float(nt)), (f's{seed}:boost_resid_sd_train', float(np.std(yy[trx] - ins))),
-                          (f's{seed}:boost_pred_sd', float(np.std(bp)))]
-                # ū^h тикера (κ-смесь пула и тикера) — уровень u в масштабе цели h: α̃^(h) = α̃ + ū^h (цель усадки)
-                cu = np.full(int(pr.sum()), np.nan)
-                if pan != 'off':
-                    m0 = float(np.average(yy[trx], weights=ww))
-                    cu[:] = m0
-                    tk_tr, tk_pr = tk[trx], tk[pr]
-                    for t in np.unique(tk_pr):
-                        mi = tk_tr == t
-                        if kap > 0 and mi.sum() >= MIN_TK:
-                            cu[tk_pr == t] = (1 - kap) * m0 + kap * float(np.average(yy[trx][mi], weights=None if ww is None else ww[mi]))
-                    q.append(('u_mean_pool', m0))
-                q.append(('kappa', kap))
-                ucache[kap] = (fu, off_pr, cu, q)
-            fu, off_pr, cu, q = ucache[kap]
-            p += q
-            if pan == 'off':
-                ln = fu
-                nfb = 0
-            else:
-                mkey = (lam, l1)
-                if mkey not in mcache:
-                    mp = []
-                    fm, parts = mkt_forecast(Dt, which, h, leg, lam, l1, cut, data, mp, '')
-                    mcache[mkey] = (Dt.at(fm), parts, mp)
-                fmr, parts, mp = mcache[mkey]
-                p += mp
-                sysc = al[pr] + cu + be[pr] * fmr[pr]  # α̃^(h) + β̃·F_mkt
-                ln = sysc + (1 - wsh[pr]) * (fu - cu)  # = (1 − w)·(α̃ + β̃F_mkt + F_u) + w·(α̃^(h) + β̃F_mkt)
-                fb = ~np.isfinite(ln)
-                ln = np.where(fb, off_pr, ln)
-                nfb = int((fb & vm[pr]).sum())
-                vv = vm[pr]
+            Fz = fit(vy, tr_k, pr, kap, lam, l1)
+            p = list(Fz['q']) + [('kappa', kap)]
+            ln = Fz['base']
+            if boost['role'] == 'residual':
+                Iz = fit(vy - 1, tr_in, va_in, kap, lam, l1)
+                bi = boost_inputs(Iz, va_in)
+                okv = np.isfinite(Iz['base'])
+                bi.update(X_va=bi['X_pr'][okv], y_va=A[tcol].values[va_in][okv], base_va=Iz['base'][okv], mult_va=Iz['mult'][okv],
+                          n_va=int(okv.sum()))
+                nt = _boost_es(bi, seed)
+                if nt > 0:
+                    bf = boost_inputs(Fz, pr)
+                    bp = _boost_fit(bf, nt, seed)
+                    ln = ln + Fz['mult'] * bp
+                    p += [(f's{seed}:boost_pred_sd_val', float(np.std(bp[vv]))), (f's{seed}:boost_resid_sd_train', float(np.std(bf['r_tr'])))]
+                p += [(f's{seed}:boost_n_trees', float(nt)), (f's{seed}:boost_inner_n_train', float(bi['n_tr'])),
+                      (f's{seed}:boost_inner_n_va', float(bi['n_va']))]
+            fb = ~np.isfinite(ln)
+            ln = np.where(fb, Fz['off'], ln)
+            nfb = int((fb & vm[pr]).sum())
+            if pan != 'off':
+                parts, wsh = Fz['parts'], Fz['wsh']
                 if 'anchor' in parts:
                     di = np.unique(A['_di'].values[pr][vv])
                     kk = parts['anchor_k'][di]
@@ -514,9 +559,9 @@ def run_design(design, Dt, seed=42, steps=STEPS, want_all=False):
                 p += [('beta_med_val', float(np.nanmedian(bv))), ('beta_p10_val', float(np.nanpercentile(bv, 10))),
                       ('beta_p90_val', float(np.nanpercentile(bv, 90))), ('beta_raw_med_val', float(np.nanmedian(ab['beta_raw'][pr][vv]))),
                       ('shrink_c_mean_val', float(np.nanmean(cv))), ('alpha_med_val', float(np.nanmedian(al[pr][vv]))),
-                      ('w_mean_val', float(np.mean(wsh[pr][vv]))), ('w_sd_val', float(np.std(wsh[pr][vv])))]
+                      ('w_mean_val', float(np.mean(wsh[vv]))), ('w_sd_val', float(np.std(wsh[vv])))]
             p.append(('n_fallback_val', float(nfb)))
-            par += [(nm, k, a, v) for a, v in p]  # имя параметра в params.csv — <ряд>:<имя> (write_params)
+            par += [(nm, k, a, v) for a, v in p]  # имя параметра в params_P.csv — <ряд>:<имя> (write_params)
             rows = pr
             fr = pd.DataFrame({'date': A['date'].values[rows], 'ticker': A['ticker'].values[rows].astype(str), 'year': A['year'].values[rows],
                                'step': k, 'rv_actual': A[tcol].values[rows], 'rv_pred': np.clip(np.exp(ln), EPS, None)})
@@ -531,11 +576,12 @@ def run_design(design, Dt, seed=42, steps=STEPS, want_all=False):
     return outV, outW, par
 
 
-# ================================================================ параметры по шагам (R2/cache/<hash>/params.csv)
+# ================================================================ параметры по шагам (R2/cache/<hash>/params_P.csv, r2_core.params_path)
 def write_params(design, h, rows, root=None):
-    """design_sha, h, step, param, value; param = <ряд>:<имя>. Строки с теми же (h, step, param) заменяются (flock + os.replace)."""
+    """params_P.csv дизайна (r2_core.params_path(design, 'P'); общий params.csv не пишется): design_sha, h, step, param, value;
+    param = <ряд>:<имя>. Строки с теми же (h, step, param) заменяются (flock + os.replace). Чтение — r2_core.load_params(sha, 'P')."""
     import fcntl
-    p = C.cache_dir(design, root=root) / 'params.csv'
+    p = C.params_path(design, MODULE, root=root)
     sha = C.design_hash(design)
     new = pd.DataFrame([dict(design_sha=sha, h=int(h), step=int(s), param=f'{nm}:{a}', value=float(v)) for nm, s, a, v in rows
                         if v is not None and np.isfinite(float(v))], columns=['design_sha', 'h', 'step', 'param', 'value'])
@@ -544,7 +590,7 @@ def write_params(design, h, rows, root=None):
         old = pd.read_csv(p) if p.exists() else new.iloc[:0]
         key = lambda x: x.h.astype(str) + '|' + x.step.astype(str) + '|' + x.param
         out = pd.concat([old[~key(old).isin(set(key(new)))], new], ignore_index=True).sort_values(['h', 'param', 'step'])
-        tmp = p.with_name(f'.params.{os.getpid()}.tmp')
+        tmp = p.with_name(f'.{p.name}.{os.getpid()}.tmp')
         out.to_csv(tmp, index=False)
         os.replace(tmp, p)
         fcntl.flock(lk, fcntl.LOCK_UN)
@@ -629,8 +675,10 @@ def selftest():
     m = Dt.mk['m_RV_eq17']
     assert abs(np.exp(F['ym5'].iloc[10]) - m.iloc[11:16].mean()) < 1e-15
     # 4) применимость
-    for na in ({'h': 5, 'leg': {'type': 'HEAVY'}}, {'h': 5, 'leg': {'refit': 'monthly'}}, {'h': 5, 'boost': {'role': 'feature'}},
-               {'h': 5, 'boost': {'role': 'residual', 'lib': 'both_avg'}}, {'h': 5, 'mh': {'persist': 'OLS'}},
+    es = {'early_stop': 'qlike_total'}
+    for na in ({'h': 5, 'leg': {'type': 'HEAVY'}}, {'h': 5, 'leg': {'refit': 'monthly'}}, {'h': 5, 'boost': {'role': 'feature', **es}},
+               {'h': 5, 'boost': {'role': 'residual', 'lib': 'both_avg', **es}}, {'h': 5, 'boost': {'role': 'residual'}},
+               {'h': 5, 'boost': {'role': 'residual', 'resid_source': 'cross_fit', **es}}, {'h': 5, 'mh': {'persist': 'OLS'}},
                {'h': 5, 'data': {'history_start': 'ISS_start'}}, {'h': 5, 'leg': {'regime_count': [2, 3]}}):
         assert not applicable(na)[0], f'не поймано: {na}'
     assert applicable({'h': 5, 'leg': {'panel': 'factor_shrink_state', 'pooled_kappa': [0, 0.5, 1]}, 'data': {'recency_halflife': '4y'}})[0]
@@ -702,7 +750,7 @@ def dym():
     S = pd.DataFrame(summ)
     S.to_csv(out / 'dym_summary.csv', index=False)
     pd.DataFrame(leak_rows).to_csv(out / 'leak.csv', index=False)
-    pd.DataFrame(par_rows).to_csv(out / 'params.csv', index=False)
+    pd.DataFrame(par_rows).to_csv(out / f'params_{MODULE}.csv', index=False)
     pd.DataFrame(sdvig).to_csv(out / 'sdvig.csv', index=False)
     ok = S[(S.status == 'ok') & (S.design != 'kontrol_podlog_d+1')]
     kp = S[S.design == 'kontrol_podlog_d+1']
