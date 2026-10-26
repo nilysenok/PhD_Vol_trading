@@ -5,6 +5,11 @@
   update = step  — параметры шага t — по строкам шагов < t (как Б0.1 первого раунда: шаг 1 — без поправки);
   update = daily — параметры дня d — по строкам, чьё окно цели кончилось до d (дата строки t+h < d), включая уже разрешённые строки
                    текущего года (эмбарго h).
+  calib.s2_embargo (R2, 26.10, находка R в PR #194; ключ слоя L, вне схемы S — вынимается из дизайна до validate):
+    on  (умолчание R2, кандидаты и эталон В2 симметрично) — в режиме step из прошлых OOS-строк ВСЕХ параметров калибровки (s², κ,
+        s²_state, c_qlike, MZ, prob scale_har) исключаются строки, чьё окно цели [t+1, t+h] заходит в оцениваемый val-год vy
+        (конец окна ≥ 1 янв. vy): декабрьские строки шага t−1 при h ≥ 5. Режим daily эмбаргирован по построению (tend < d).
+    off (только контроль) — прежнее поведение Б0.1 R1 / эталона ВЫР-1: все строки шагов < t.
 Порядок слоёв (calib.order, fixed): s2_state_kappa > c_qlike > mz.
   s2_est (оценка s² по остаткам e = ln y − ln ŷ окна):
     sm — дисперсия, окно шагов t−3..t−1 (Б0.1 R1); smrob — (1,4826·MAD)², то же окно; sm_pooled (❓) — дисперсия по всем прошлым шагам;
@@ -35,6 +40,32 @@ import r2_nogi as N
 COLS = N.COLS
 WIN_Y = {'sm': 3, 'smrob': 3, 'sm_by_ticker': 3, 'sm_roll1y': 1, 'sm_roll2y': 2, 'sm_pooled': None, 'sm_ewma097': None}
 PLANT = {'on': False}
+S2_EMB_DEFAULT = 'on'  # calib.s2_embargo: on — умолчание R2; off — только контроль (поведение R1 / ВЫР-1)
+
+
+def split_emb(design):
+    """-> (дизайн без calib.s2_embargo, 'on'|'off'). Ключ принимается вложенным ({'calib': {'s2_embargo': ...}}) и с точкой."""
+    if not isinstance(design, dict):
+        return design, S2_EMB_DEFAULT
+    d, v = dict(design), None
+    if 'calib.s2_embargo' in d:
+        v = d.pop('calib.s2_embargo')
+    if isinstance(d.get('calib'), dict) and 's2_embargo' in d['calib']:
+        c = dict(d['calib']); v = c.pop('s2_embargo')
+        if c:
+            d['calib'] = c
+        else:
+            d.pop('calib')
+    v = S2_EMB_DEFAULT if v is None else N._onoff(v)
+    if v not in ('on', 'off'):
+        raise ValueError(f'calib.s2_embargo = {v!r}: допустимо on / off')
+    return d, v
+
+
+def emb_mask(tend, year, t_rows):
+    """Эмбарго s² для шага с val-годом vy = year строк шага: строка пула допустима, если конец окна цели < 1 янв. vy."""
+    vy = int(np.min(year[t_rows]))
+    return tend < np.datetime64(f'{vy}-01-01')
 
 
 def state_frame(M, h):
@@ -50,7 +81,7 @@ QZ = (np.arange(200) + 0.5) / 200
 PROB_Q = (0.05, 0.25, 0.5, 0.75, 0.95)
 
 
-def prob_layer(design, d, ok, lny, p0, step):
+def prob_layer(design, d, ok, lny, p0, step, emb=None):
     """boost.prob = scale_har: масштаб остатка — HAR по ln|e − ē| на [1, ln RV_d, ln RV_w, ln RV_m] (d0) по прошлым OOS-строкам окна
     (boost.prob_window: 2y — шаги t−2..t−1, all — все прошлые), нормировка — E[(e − ē)/σ]² = 1 на окне; распределение z = (e − ē)/σ —
     boost.prob_dist: empirical (квантили z окна) или student (t с df по окну). Точечный прогноз под QLIKE — E[RV] = ŷ·e^{ē}·E[e^{σ_d z}]
@@ -67,6 +98,8 @@ def prob_layer(design, d, ok, lny, p0, step):
         ms = step == t
         hi = t if PLANT['on'] else t - 1
         win = ok & (step <= hi) & (step >= (1 if b['prob_window'] == 'all' else t - 2))
+        if emb is not None and not PLANT['on']:  # calib.s2_embargo = on: без строк, чьё окно цели заходит в год шага t
+            win &= emb(ms)
         if win.sum() < 100:
             continue
         e = e_all[win]; eb = float(e.mean())
@@ -198,6 +231,7 @@ def _pools_day(cal, dates, tend, d):
 
 def calibrate(design, V, S):
     """design — дизайн по схеме v1 (используются calib.*); V — сырой ряд; S — state_frame. -> (Vc, таблица стабильности)."""
+    design, s2emb = split_emb(design)
     full = N.complete(design)
     cal = dict(full['calib'])
     d = V[COLS].merge(S, on=['date', 'ticker'], how='left').sort_values(['date', 'ticker']).reset_index(drop=True)
@@ -205,19 +239,22 @@ def calibrate(design, V, S):
     y = np.where(ok, d.rv_actual.values, np.nan); lny = np.log(np.where(ok, y, 1.0) + 1e-10)  # +1e-10 — как harx.add_bias (Б0.1 R1)
     p0 = d.rv_pred.values.astype(float)
     step, tk = d.step.values, d.ticker.values
+    dates, tend = d.date.values, pd.to_datetime(d.tend).values
+    tend = np.where(pd.isna(tend), np.datetime64('2100-01-01'), tend).astype('datetime64[ns]')  # нет конца окна — в пул не идёт
+    yr = d.year.values.astype(int)
+    emb = (lambda ms: emb_mask(tend, yr, ms)) if (s2emb == 'on' and cal['update'] == 'step') else None
     Qp, ppar = None, []
     if full['boost']['prob'] != 'off':  # кластер 12: вероятностный слой заменяет s²/κ (E[e^{σz}] — та же поправка уровня), c и mz — дальше
-        p0, Qp, ppar = prob_layer(design, d, ok, lny, p0, step)
+        p0, Qp, ppar = prob_layer(design, d, ok, lny, p0, step, emb=emb)
         cal['_no_s2'] = True
-    dates, tend = d.date.values, pd.to_datetime(d.tend).values
-    tend = np.where(pd.isna(tend), np.datetime64('2100-01-01'), tend)
     Z, I2 = _state_z(cal, d), d.I2.fillna(0).values
     p1, p2, p3 = p0.copy(), p0.copy(), p0.copy()
     stab = []
     for t in sorted(np.unique(step)):
         ms = step == t
         if cal['update'] == 'step':
-            pool = {k: v & ok for k, v in _pools_step(cal, step, t).items()}
+            em = emb(ms) if (emb is not None and not PLANT['on']) else True  # calib.s2_embargo = on (подлог — без эмбарго)
+            pool = {k: v & ok & em for k, v in _pools_step(cal, step, t).items()}
             P = _fit(cal, pool, Z, I2, tk, dates, y, p0, p1, p2, lny)
             a, b, c = _apply(P, cal, p0[ms], tk[ms], None if Z is None else Z[ms], I2[ms])
             p1[ms], p2[ms], p3[ms] = a, b, c
@@ -317,19 +354,45 @@ def calib_params(tag, T):
 
 
 # ---------------------------------------------------------------- контроль, детектор, дым
+def F_sm_emb_ref(V, S, emb=True):
+    """Независимая сверка (pandas, без кода calibrate): F шага t = exp(s²/2), s² = дисперсия e = ln(y + 1e-10) − ln ŷ строк шагов
+    t−3..t−1 с y > 0 (< 30 строк — F = 1); emb — плюс конец окна цели < 1 янв. vy шага t. -> {шаг: F}."""
+    d = V[COLS].merge(S[['date', 'ticker', 'tend']], on=['date', 'ticker'], how='left')
+    d = d[d.rv_actual > 1e-12].assign(e=lambda x: np.log(x.rv_actual + 1e-10) - np.log(x.rv_pred),
+                                      tend=lambda x: pd.to_datetime(x.tend).fillna(pd.Timestamp('2100-01-01')))
+    F = {}
+    for t in sorted(V.step.unique()):
+        vy = int(V.loc[V.step == t, 'year'].min())
+        w = d[(d.step <= t - 1) & (d.step >= t - 3)]
+        if emb:
+            w = w[w.tend < pd.Timestamp(f'{vy}-01-01')]
+        F[int(t)] = float(np.exp(np.var(w.e.values) / 2)) if len(w) >= 30 else 1.0
+    return F
+
+
 def kontrol():
-    """calib по умолчанию (sm, κ = 0,5, const, step) = Б0.1 sm первого раунда: ряд Э HARJ_emb_d0 × V0_F (sm) на 17 тикерах, шаги 1–6."""
+    """(1) calib.s2_embargo = off (sm, κ = 0,5, const, step) = Б0.1 sm первого раунда: ряд Э HARJ_emb_d0 × V0_F (sm), 17 тикеров, шаги 1–6;
+    (2) умолчание R2 (s2_embargo = on) = независимая сверка F_sm_emb_ref(emb=True); (3) on ≠ off на h ≥ 5 (эмбарго что-то исключает)."""
     rows = []
     M = N.mat_L()
     for h in N.HS:
         V = pd.read_parquet(N.CACHE / f'HARJ_emb_d0_h{h}_sdet_val.parquet')
+        S = state_frame(M, h)
         F = pd.read_csv(N.CACHE / f'V0_F_h{h}.csv'); F = F[(F.ryad == 'HARJ_emb_d0') & (F.s2 == 'sm')].set_index('step').F
-        Vc, _ = calibrate({'h': h}, V, state_frame(M, h))
-        ref = V.assign(rv_pred=V.rv_pred * V.step.map(F))
-        m = Vc.merge(ref, on=N.KEY, suffixes=('', '_r'))
-        d = float(np.abs(m.rv_pred / m.rv_pred_r - 1).max())
-        rows.append(dict(h=h, n=len(m), max_rel=d, ok=bool(len(m) == len(V) and d <= 1e-10)))
+        Voff, _ = calibrate({'h': h, 'calib': {'s2_embargo': 'off'}}, V, S)
+        Von, _ = calibrate({'h': h}, V, S)
+        Fe = F_sm_emb_ref(V, S, emb=True)
+        for nm, Vc, ref in (('off=R1', Voff, V.assign(rv_pred=V.rv_pred * V.step.map(F))),
+                            ('on=nezavisimo', Von, V.assign(rv_pred=V.rv_pred * V.step.map(Fe)))):
+            m = Vc.merge(ref, on=N.KEY, suffixes=('', '_r'))
+            d = float(np.abs(m.rv_pred / m.rv_pred_r - 1).max())
+            rows.append(dict(h=h, proverka=nm, n=len(m), max_rel=d, ok=bool(len(m) == len(V) and d <= 1e-10)))
+            print(rows[-1], flush=True)
+        m = Von.merge(Voff, on=N.KEY, suffixes=('', '_o'))
+        dd = float(np.abs(np.log(m.rv_pred / m.rv_pred_o)).max())
+        rows.append(dict(h=h, proverka='on≠off', n=len(m), max_rel=dd, ok=bool(dd > 0)))  # h = 1: исключается последняя строка декабря
         print(rows[-1], flush=True)
+    pd.DataFrame(rows).to_csv(N.LDIR / 'dym' / 'kontrol_L_calib_emb.csv', index=False)
     return rows
 
 
@@ -395,7 +458,7 @@ def dym(hs=N.HS, names=None, designs=None, tag='dym'):
                     leak['podlog'] = float(np.abs(np.log(mm.rv_pred[pp]) - np.log(mm.rv_pred_p[pp])).max())
             v = Vc[(Vc.step >= 2) & (Vc.rv_actual > 1e-12)]
             q = {int(y): _qlike(g.rv_actual.values, g.rv_pred.values) for y, g in v.groupby('year')}
-            sd = RC.shift_check(Vc, M['A'], h, f'calib:{nm}', RC.validate(des), block_file=out / 'blok_sdvig_dym_calib.csv')
+            sd = RC.shift_check(Vc, M['A'], h, f'calib:{nm}', RC.validate(split_emb(des)[0]), block_file=out / 'blok_sdvig_dym_calib.csv')
             sd = {f'sdvig_{k}': v for k, v in sd.items() if k in ('argmax', 'ok')}
             ok_leak = leak['2017-06-30'] == 0.0 and leak['2017-12-31'] == 0.0 and leak['podlog'] > 0
             rows.append(dict(calib=nm, h=h, sek=round(dt, 1), q2017=q.get(2017), q2018=q.get(2018), nan=int((~np.isfinite(Vc.rv_pred)).sum()),
@@ -406,6 +469,173 @@ def dym(hs=N.HS, names=None, designs=None, tag='dym'):
     R = pd.DataFrame(rows); R.to_csv(out / 'dym_L_calib.csv', index=False)
     pd.concat(stabs).to_csv(out / 'dym_L_calib_stabilnost.csv', index=False)
     print(f'дым калибровки: строк {len(R)}, не OK {int((~R.ok).sum())}'); return R
+
+
+# ---------------------------------------------------------------- эталон В2 и F_h(d0) с эмбарго s² (26.10, находка R)
+VYR, VYRC = N.REG / 'vyr', N.REG / 'R2' / 'cache' / 'VYR'
+EDIR = N.LDIR / 'etalon_emb'
+SEEDS = tuple(range(42, 52))
+V_R1, V_EMB = 'd0, s² как R1 (s2_embargo=off)', 'd0, s² с эмбарго (s2_embargo=on)'
+
+
+def _sha(p):
+    import hashlib
+    h = hashlib.sha256()
+    with open(p, 'rb') as f:
+        for b in iter(lambda: f.read(1 << 20), b''):
+            h.update(b)
+    return h.hexdigest()
+
+
+def _put(df, p):
+    """Атомарная запись val ≤ 2021 (шаги 1–6) рядом с рядами ВЫР-1; существующий файл не затирается."""
+    assert int(df.year.max()) <= 2021 and int(pd.to_datetime(df.date).max().year) <= 2021 and int(df.step.max()) <= 6
+    p = Path(p)
+    tmp = p.with_suffix('.tmp.parquet')
+    df.to_parquet(tmp, index=False)
+    if p.exists():  # повтор: тот же файл побайтно — оставить; другой — не затирать
+        same = _sha(tmp) == _sha(p)
+        tmp.unlink()
+        assert same, f'{p} уже есть и отличается — не затираю'
+    else:
+        os.replace(tmp, p)
+    return dict(fayl=str(p.relative_to(N.REG.parent.parent)), strok=len(df), sha256=_sha(p), vremya=time.strftime('%F %T'))
+
+
+def q_dev(V, col='rv_pred'):
+    """QLIKE val 2017–2021 по годам (шаги 2–6) — как vyr_etalony_finaly.q_dev (r2_nogi.qlike, rv_actual > 1e-12)."""
+    d = V[V.step.between(2, 6) & (V.rv_actual > 1e-12)]
+    assert d.year.max() <= 2021
+    q = {int(s): N.qlike(g.rv_actual.values, g[col].values) for s, g in d.groupby('step')}
+    assert sorted(q) == [2, 3, 4, 5, 6]
+    return dict(q1720=float(np.mean([q[s] for s in (2, 3, 4, 5)])), q2021=q[6], q1721=float(np.mean(list(q.values()))),
+                **{f'y{2015 + s}': q[s] for s in q})
+
+
+def _recal(V, S, h):
+    """-> (off, on): калибровка по умолчанию (sm, κ = 0,5, step) без и с эмбарго s²; строки в порядке V."""
+    out = []
+    for e in ('off', 'on'):
+        Vc, _ = calibrate({'h': h, 'calib': {'s2_embargo': e}}, V[COLS], S)
+        out.append(V[N.KEY].merge(Vc[N.KEY + ['rv_pred']], on=N.KEY, how='left').rv_pred.values)
+    return out
+
+
+def etalon_emb(hs=N.HS):
+    """Эталон В2 (HAR-J d0 + s² sm) и F_h(d0) val 2016–2021 (шаги 1–6) с эмбарго s² (calib.s2_embargo = on), рядом с прежними:
+      data/regen/vyr/etalon_d0_s2emb_h{h}_val.parquet (формат ВЫР-1: har_raw, har_corr, F_sm);
+      R2/cache/VYR/ETA_b_d0_s2emb_h{h}_sdet_val.parquet и F_d0_s2emb_h{h}_s{seed}_val.parquet (формат рядов Э: COLS).
+    Контроль: s2_embargo = off повторяет прежние ряды ВЫР-1 (≤ 1e-10). QLIKE по годам до/после — R2/L/etalon_emb/."""
+    EDIR.mkdir(parents=True, exist_ok=True)
+    M = N.mat_L()
+    Q, C, I = [], [], []
+    qrow = lambda h, model, ver, seed, V, col='rv_pred': dict(h=h, model=model, version=ver, seed=seed, **q_dev(V, col))
+    for h in hs:
+        S = state_frame(M, h)
+        E = pd.read_parquet(VYR / f'etalon_d0_h{h}_val.parquet')
+        assert E.step.max() <= 6 and E.year.max() <= 2021
+        off, on = _recal(E.assign(rv_pred=E.har_raw), S, h)
+        C.append(dict(h=h, ryad='etalon (б) d0', seed='det', proverka='s2_embargo=off = ВЫР-1 har_corr',
+                      max_rel=float(np.abs(off / E.har_corr.values - 1).max())))
+        En = E.assign(har_corr=on, F_sm=on / E.har_raw.values)
+        assert (En.groupby('step').F_sm.agg(lambda x: x.max() - x.min()) < 1e-12).all()  # F — скаляр шага, как в ВЫР-1
+        I.append(_put(En[E.columns], VYR / f'etalon_d0_s2emb_h{h}_val.parquet') | dict(ryad='etalon_d0_s2emb (а: har_raw, б: har_corr)', h=h, seed='det'))
+        eta = En[['date', 'ticker', 'year', 'step', 'rv_actual']].assign(rv_pred=En.har_corr.values)
+        I.append(_put(eta, VYRC / f'ETA_b_d0_s2emb_h{h}_sdet_val.parquet') | dict(ryad='ETA_b_d0_s2emb', h=h, seed='det'))
+        Q += [qrow(h, 'HAR-J (а)', 'd0', 'det', E, 'har_raw'), qrow(h, 'HAR-J (б) = В2', V_R1, 'det', E, 'har_corr'),
+              qrow(h, 'HAR-J (б) = В2', V_EMB, 'det', En, 'har_corr')]
+        # F_h(d0): h = 1, 5 — нога ВЫР-1 × F_sm; h = 22 — F_22 = эталон (б)
+        Fa = pd.read_csv(VYR / 'vyr1' / f'factors_f{h}.csv').drop_duplicates(['h', 'seed', 'step'], keep='last') if h != 22 else None
+        for sd in SEEDS:
+            F0 = pd.read_parquet(VYRC / f'F_d0_h{h}_s{sd}_val.parquet')
+            assert F0.step.max() <= 6 and F0.year.max() <= 2021
+            if h == 22:
+                raw = F0[N.KEY].merge(E[N.KEY + ['har_raw']], on=N.KEY, how='left').har_raw.values
+            else:
+                fv = Fa[(Fa.h == h) & (Fa.seed == sd)].set_index('step').Fv
+                raw = F0.rv_pred.values / F0.step.map(fv).values
+            off, on = _recal(F0.assign(rv_pred=raw), S, h)
+            C.append(dict(h=h, ryad='F_d0', seed=sd, proverka='s2_embargo=off = ВЫР-1 F_d0',
+                          max_rel=float(np.abs(off / F0.rv_pred.values - 1).max())))
+            Fn = F0[COLS].assign(rv_pred=on)
+            I.append(_put(Fn, VYRC / f'F_d0_s2emb_h{h}_s{sd}_val.parquet') | dict(ryad='F_d0_s2emb', h=h, seed=sd))
+            Q += [qrow(h, 'F_h(d0)', V_R1, sd, F0), qrow(h, 'F_h(d0)', V_EMB, sd, Fn)]
+        print(C[-1], flush=True)
+    Q, C = pd.DataFrame(Q), pd.DataFrame(C)
+    C['ok'] = C.max_rel <= 1e-10
+    Q['time'] = time.strftime('%F %T')
+    Q.to_csv(EDIR / 'q_etalon_emb.csv', index=False); C.to_csv(EDIR / 'control_etalon_emb.csv', index=False)
+    old = EDIR / 'index_etalon_emb.csv'
+    pd.concat(([pd.read_csv(old)] if old.exists() else []) + [pd.DataFrame(I)], ignore_index=True).drop_duplicates(
+        ['fayl', 'sha256'], keep='first').to_csv(old, index=False)
+    # разница QLIKE по годам: F_h — среднее по 10 seed
+    yc = ['y2017', 'y2018', 'y2019', 'y2020', 'y2021', 'q1721']
+    G = Q[Q.model != 'HAR-J (а)'].groupby(['h', 'model', 'version'])[yc].mean().reset_index()
+    R = []
+    for (h, model), g in G.groupby(['h', 'model']):
+        a = g[g.version == V_R1][yc].iloc[0]; b = g[g.version == V_EMB][yc].iloc[0]
+        for c in yc:
+            R.append(dict(h=h, model=model, god=c[1:] if c != 'q1721' else '2017–2021', q_do=a[c], q_posle=b[c], dq=b[c] - a[c],
+                          dq_proc=100 * (b[c] - a[c]) / a[c]))
+    R = pd.DataFrame(R); R.to_csv(EDIR / 'q_etalon_emb_raznica.csv', index=False)
+    print(R.to_string(), flush=True)
+    print(f'контроль off = ВЫР-1: {int(C.ok.sum())}/{len(C)}; max_rel {C.max_rel.max():.2e}')
+    return R, C
+
+
+# ---------------------------------------------------------------- детектор цепочки нога (L) → калибровка (L3), срезы у границы года
+CHAIN_CUTS = ('2017-06-30', '2016-12-31', '2017-12-31', '2017-01-03', '2018-01-03', '2018-01-15')
+CHAIN = {'default_sm': {}, 'smrob': {'calib': {'s2_est': 'smrob'}}, 'sm_pooled': {'calib': {'s2_est': 'sm_pooled'}},
+         'by_ticker': {'calib': {'s2_est': 'sm_by_ticker'}}, 'state_regime2': {'calib': {'s2_state': 'regime2'}},
+         'all_step': {'calib': {'s2_state': 'RVI_volvol', 'kappa': 'fit', 'c_qlike': 'roll_2y', 'mz': 'on'}},
+         'prob_emp_c_mz': {'boost': {'prob': 'scale_har'}, 'calib': {'c_qlike': 'roll_2y', 'mz': 'on'}},
+         'daily_sm': {'calib': {'update': 'daily'}}}
+
+
+def _chain_task(t):
+    import r2_core as RC
+    A3, harj, h, e = RC.SHARED['A3'], RC.SHARED['harj'], t['h'], t['emb']
+    dz = dict(t['design'], h=h); dz['calib'] = dict(dz.get('calib', {}), s2_embargo=e)
+    leg = split_emb(dz)[0]
+
+    def build(Ax):
+        M = N.mat_from(Ax, harj, None)
+        S = state_frame(M, h)
+        out = {}
+        for tag, (V, _) in N.run_leg(leg, M=M, steps=N.DYM_STEPS).items():
+            out[N.series_name(tag)] = V[['date', 'ticker', 'step', 'rv_pred']].assign(part='val')
+            out[N.series_name(tag, 'v0')] = calibrate(dz, V, S)[0][['date', 'ticker', 'step', 'rv_pred']].assign(part='val')
+        return out
+    R = RC.leak_check(build, A3, f"L→L3:{t['name']}", cuts=CHAIN_CUTS)
+    jan = R.srez.isin([c for c in CHAIN_CUTS if c[5:7] == '01'])
+    R.loc[jan, 'tip'] = 'январь (граница года)'
+    return R.assign(dizayn=t['name'], h=h, s2_embargo=e)
+
+
+def leak_chain(hs=N.HS, names=None, workers=6):
+    """Детектор «будущее не влияет» на цепочке нога HARJ (r2_nogi.run_leg, 3 тикера, шаги 1–3) → калибровка (calibrate) через
+    r2_core.leak_check: срезы 2017-06-30 (середина года, подлог), 31.12 (эмбарго), первые торговые дни января 2017/2018 и 15.01.2018.
+    s2_embargo = on — Δ = 0 на всех срезах; off — контроль: январские срезы ловят утечку s² на h ≥ 5 (находка R)."""
+    import r2_core as RC
+    A, harj = RC.load_d0()
+    RC.share(A3=A[A.ticker.isin(N.DYM_TK)].reset_index(drop=True), harj=harj)
+    N.SH_HARJ['harj'] = harj
+    tasks = [dict(name=nm, design=des, h=h, emb=e, cost=(5 if 'daily' in nm else 1))
+             for h in hs for nm, des in CHAIN.items() if not names or nm in names for e in ('on', 'off')]
+    res = RC.run_pool(_chain_task, tasks, workers, label='leak_chain')
+    bad = [r for r in res if not r['ok']]
+    R = pd.concat([r['result'] for r in res if r['ok']], ignore_index=True)
+    out = N.LDIR / 'dym'; out.mkdir(parents=True, exist_ok=True)
+    R.to_csv(out / 'leak_chain_L_L3.csv', index=False)
+    S = R.groupby(['s2_embargo', 'h', 'tip']).agg(proverok=('ok', 'size'), ok=('ok', 'sum'), max_dln_do=('max_dln_do', 'max')).reset_index()
+    S.to_csv(out / 'leak_chain_L_L3_svodka.csv', index=False)
+    print(S.to_string(), flush=True)
+    on = R[R.s2_embargo == 'on']
+    good = bool(len(on) and on.ok.all() and (on.max_dln_do == 0).all() and not bad)
+    print(f'leak_chain: s2_embargo=on — {int(on.ok.sum())}/{len(on)} OK, max Δ до среза {on.max_dln_do.max():.2e}; ошибок задач {len(bad)}')
+    for b in bad:
+        print('ОШИБКА', b.get('error'))
+    return good
 
 
 # ---------------------------------------------------------------- контракт драйвера S (r2_driver.py, модуль L3)
@@ -469,7 +699,7 @@ def cmd_leak(designs, h):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['run', 'leak', 'dym', 'kontrol'])
+    ap.add_argument('mode', choices=['run', 'leak', 'dym', 'kontrol', 'etalon_emb', 'leak_chain'])
     ap.add_argument('--hs', type=int, nargs='*', default=list(N.HS))
     ap.add_argument('--names', nargs='*', default=None)
     ap.add_argument('--designs'); ap.add_argument('--h', type=int)
@@ -480,6 +710,10 @@ def main():
         sys.exit(cmd_run(a.designs, a.h, a.seeds, a.steps, a.workers))
     if a.mode == 'leak':
         sys.exit(cmd_leak(a.designs, a.h))
+    if a.mode == 'etalon_emb':
+        _, C = etalon_emb(tuple(a.hs)); sys.exit(0 if bool(C.ok.all()) else 1)
+    if a.mode == 'leak_chain':
+        sys.exit(0 if leak_chain(tuple(a.hs), a.names, a.workers) else 1)
     if a.mode == 'dym':
         dym(tuple(a.hs), a.names)
     else:
