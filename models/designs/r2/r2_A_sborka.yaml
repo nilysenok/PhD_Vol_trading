@@ -47,7 +47,13 @@ zamorozheno:
 
 # Собрано r2_sborka_test.py (пишется после сборки, до «да»; без этих SHA final_test_r2 откажет до замка). Пути — от test_locked/.
 #   R2/final/etalon_d0_s2emb_h{1,5,22}_test.parquet, R2/final/final_d0_s2emb_h{1,5,22}_test.parquet, R2/final/final_r2_h{h}_test.parquet
-sobrano: {}
+sobrano:                # r2_sborka_test.py, 26.10 21:35 по Маку; лог — data/regen/R2/S/otkrytie/sborka_2135.log
+  R2/final/etalon_d0_s2emb_h1_test.parquet: 1dce250bc913e93a7643094261eda5695288e10f72eeac3d0ae1d7d97f8665fc
+  R2/final/etalon_d0_s2emb_h5_test.parquet: de559a9ed66c892842b049964003509ab338bfbac87768dd5d63bf406041b51d
+  R2/final/etalon_d0_s2emb_h22_test.parquet: 3341184413c8923a71c0b78bd3e72020ecbaa93cd60a67b7a161a494d302c0fd
+  R2/final/final_d0_s2emb_h1_test.parquet: 5ebcf61a1ccfd0f6c660e03431e306f8fe7719f011a66b469d8431be147c92e4
+  R2/final/final_d0_s2emb_h5_test.parquet: 4c11df7660cb174e9d169abdc67d8fd16286c21aa052351fa36b49e9b63eb887
+  R2/final/final_d0_s2emb_h22_test.parquet: 059a8e664f490ea3cf9ff4ce25b0db9958c2b074b30c21a7e415e0f945b54c2f
 
 # Строки второго открытия в версии d0 (final_test_r2.py):
 #   HAR-J (а) d0 / HAR-J (б) d0  — R2/final/etalon_d0_s2emb_h{h}_test.parquet: har_raw (= ВЫР-1) / har_corr (s² t−1 с эмбарго);
