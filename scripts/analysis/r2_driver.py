@@ -386,9 +386,9 @@ def route(design):
     if any(g(k) not in ('off', 'False', 'direct', 'None') for k in ('mh.scheme', 'mh.persist', 'mh.slope', 'mh.reconcile')) \
             or g('leg.struct') != 'single':
         need.add('M')
-    calib_def = dict(s2_est='sm', kappa='0.5', s2_state='const', c_qlike='off', mz='False', update='step')
-    if any(g(f'calib.{k}') not in (v, 'off') for k, v in calib_def.items()) or g('boost.prob') not in ('off', 'False'):
-        need.add('L3')
+    # дирижёр 26.10, 19:10 (находка O): L3 — ВСЕГДА, последним звеном, с calib дизайна (по умолчанию s2_est = sm, s2_embargo = on):
+    # эталон ворот (ETA_b_d0_s2emb) — с поправкой s², кандидаты обязаны сравниваться так же (сырые ряды L/B — на ~15% ниже)
+    need.add('L3')
     ens = f['ens']
     if any(str(ens[k]) not in ('False', 'off', 'mean', 'single', 'best_by_LOYO') for k in ens if k != 'seeds') or g('leg.moe') not in ('off', 'False'):
         need.add('E')
@@ -444,6 +444,8 @@ class Runner:
         cmd = [sys.executable, str(HERE / spec['file'])] + spec['run'].format(
             designs=dfile, h=h, seeds=' '.join(map(str, seeds)), steps=' '.join(map(str, steps)), workers=workers, extra=extra,
             faza=faza).split()
+        if m == 'L3':
+            self.l3_stale(designs, h, seeds)
         import r2_dataset_cache as DS
         try:  # дирижёр 18:40: < 2 ГБ на томе кэша — стоп до старта задач модуля (не 70 упавших задач с No space left)
             DS.proverka_mesta()
@@ -464,6 +466,32 @@ class Runner:
         if net:
             log(f'модуль {m} h={h}: без DONE {len(net)} из {len(designs) * len(seeds)} (неприменимые или ошибка задачи): {net[:3]}')
         return True, ''
+
+    @staticmethod
+    def l3_stale(designs, h, seeds):
+        """Перезапуск 19:10: L3 переехал в конец цепочки — у дизайнов, где раньше стоял до E/G, DONE_L3 относится к рядам другого
+        звена. Отметка DONE_L3 без рядов <ряд предыдущего звена>__cal переименовывается в .stale (L3 пересчитает). -> [задача]."""
+        I = _index(fresh=True)
+        out = []
+        for d in designs:
+            full = C.validate({**d, 'h': h})
+            ch = route(full)
+            prev = ch[-2] if len(ch) > 1 else 'L'
+            hid = C.design_hash(full)[:16]
+            Ih = I[(I['hash'].astype(str) == hid) & (I['h'].astype(int) == int(h))]
+            for s in seeds:
+                dp = C.done_path(full, 'L3', h, s)
+                if not dp.exists():
+                    continue
+                Is = Ih[Ih['seed'].astype(str).isin([str(s), 'det'])]
+                need = {f'{r}__cal' for r in Is[Is['modul'] == prev]['ryad']}
+                have = set(Is[Is['modul'] == 'L3']['ryad'])
+                if need and not need <= have:
+                    os.replace(dp, dp.with_name(f'{dp.name}.stale_{time.strftime("%H%M%S")}'))
+                    out.append(f'{full.get("design")}/s{s}')
+        if out:
+            log(f'L3 h={h}: устаревших DONE_L3 (звено до L3 сменилось) — {len(out)}, пересчёт: {out[:3]}')
+        return out
 
     @staticmethod
     def done_missing(m, designs, h, seeds):
@@ -494,15 +522,40 @@ class Runner:
         return not fails, '; '.join(fails)
 
 
+_IDX = {}
+
+
+def _index(root=None, fresh=False, ttl=60):
+    """r2_core.read_index с памятью на ttl секунд (final_series зовётся сотни раз за ворота)."""
+    k = str(root or C.CACHE_ROOT)
+    t, I = _IDX.get(k, (0, None))
+    if fresh or I is None or time.time() - t > ttl:
+        I = C.read_index(root)
+        _IDX[k] = (time.time(), I)
+    return I
+
+
 def final_series(design, h, seeds, root=None, steps=None):
     """Итоговый ряд дизайна: ряды последнего модуля цепочки; варианты (сетка внутри складки) — по имени ряда; seed — среднее
     (медиана при ens.agg = median). -> {вариант: кадр val}."""
-    last = route(design)[-1]
+    ch = route(design)
+    last = ch[-1]
+    assert last == 'L3', f'{design.get("design")}: итог не прошёл L3 (цепочка {ch}) — сравнение с эталоном s² невозможно'
     stand_in = SMOKE_FLAG['on'] and not SMOKE_FLAG.get('real')  # дым с заменой модулей HAR-J — ряды smoke_<модуль>
     L = C.load_series(C.design_hash(design), modul=f'smoke_{last}' if stand_in else last, seed=[str(s) for s in seeds],
                       root=root, steps=steps)
     if L.empty:
         return {}
+    if not stand_in:
+        assert L['ryad'].astype(str).str.endswith('__cal').all(), f'{design.get("design")}: ряды L3 без __cal'
+        prev = ch[-2] if len(ch) > 1 else 'L'  # только калибровка рядов ТЕКУЩЕГО предыдущего звена (не устаревшие __cal прежней цепочки)
+        I = _index(root=root)
+        hid = C.design_hash(design)[:16]
+        base = set(I[(I['hash'].astype(str) == hid) & (I['modul'] == prev)]['ryad'].astype(str))
+        if base:
+            L = L[L['ryad'].astype(str).str[:-len('__cal')].isin(base)]
+        if len(ch) > 1 and ch[-2] == 'R':  # после R калибруется R_raw (R уже со своей поправкой — двойная калибровка), дирижёр 17:28
+            L = L[L['ryad'].astype(str).str.startswith('R_raw')]
     agg = 'median' if str(C.get(C.validate(design), 'ens.agg')) == 'median' else 'mean'
     out = {}
     for v, g in L.groupby('ryad'):
@@ -755,6 +808,8 @@ def report(phase, hs, smoke=False):
     out = (SMOKE_REPORT if smoke else REPORT) / f'gate_{phase}.md'
     out.parent.mkdir(parents=True, exist_ok=True)
     L = [f'# Ворота {phase} — {time.strftime("%F %T")}{" (дым, 3 тикера × шаги 1–3)" if smoke else ""}', '']
+    if REPORT_NOTE.get(phase):
+        L += [f'**{REPORT_NOTE[phase]}**', '']
     for h in hs:
         f = gate_path(phase, h, smoke)
         if not f.exists():
@@ -981,7 +1036,36 @@ def stop_note(states, smoke):
     return f
 
 
+REPORT_NOTE = {}  # фаза -> пометка в отчёте (дирижёр 19:10: «пересчитано после исправления калибровки, 19:xx»)
+
+
+def arhiv_vorot(suffix, hs, smoke=False):
+    """Перед пересчётом ворот: gate_{B,C,D,E}_h*.yaml, каталоги gate_E_h*_dizainy, R2/O/factor/*.csv, halving_*.csv и отчёты
+    R2/report/*.md переименовываются с суффиксом (os.replace, не удаляются); при совпадении имени — ещё и время. -> [(было, стало)]."""
+    O_ = SMOKE_O if smoke else C.O_DIR
+    rep = SMOKE_REPORT if smoke else REPORT
+    pats = [O_.glob(f'gate_{p}_h{h}.yaml') for p in 'BCDE' for h in hs] + [O_.glob(f'gate_E_h{h}_dizainy') for h in hs] + \
+        [(O_ / 'factor').glob('*.csv'), O_.glob('halving_*.csv'), rep.glob('*.md')]
+    moved = []
+    for g in pats:
+        for f in list(g):
+            if suffix in f.name:
+                continue
+            t = f.with_name(f'{f.stem}{suffix}{f.suffix}')
+            if t.exists():
+                t = f.with_name(f'{f.stem}{suffix}_{time.strftime("%H%M%S")}{f.suffix}')
+            os.replace(f, t)
+            moved.append((str(f), str(t)))
+    log(f'архив ворот ({suffix}): {len(moved)} файлов/каталогов')
+    return moved
+
+
 def cmd_run(a, smoke=False):
+    if getattr(a, 'arhiv_vorot', None):
+        arhiv_vorot(a.arhiv_vorot, a.h or (SMOKE_HS if smoke else CFG['hs']), smoke)
+        for p in 'BC':
+            REPORT_NOTE[p] = f'пересчитано после исправления калибровки (L3 последним звеном, s² дизайна), {time.strftime("%H:%M")}; ' \
+                             f'прежние ворота — *{a.arhiv_vorot}'
     if not smoke:
         import r2_dataset_cache as DS
         log(f'место на томах кэша (ГБ): {DS.proverka_mesta()}')  # < 2 ГБ — MestaNet, драйвер не стартует
@@ -1126,6 +1210,13 @@ def cmd_smoke(a):
     ok('параметры: params_<модуль>.csv на модуль, load_params читает все (общий params.csv не используется)',
        sorted(Pm.modul.unique()) == ['L', 'M'] and len(C.load_params(dz, modul='M', root=SMOKE_ROOT)) == 1,
        f'общий params.csv ещё в коде: {params_obshchiy() or "нет"}')
+    allD = [d for f in sorted(DDIR.glob('*.yaml')) for d in (yaml.safe_load(f.read_text()).get('designs') or []) if isinstance(d, dict)]
+    ok(f'L3 — последнее звено у всех {len(allD)} дизайнов driver_v1 (калибровка s² дизайна, дирижёр 19:10)',
+       all(route(d)[-1] == 'L3' for d in allD))
+    mv = arhiv_vorot('_bez_s2', SMOKE_HS, smoke=True)
+    ok(f'архив ворот перед пересчётом: {len(mv)} переименовано (_bez_s2), исходных gate_* нет',
+       len(mv) >= 12 and not any(gate_path(p, h, True).exists() for p in 'BCDE' for h in SMOKE_HS)
+       and all(Path(t).exists() for _, t in mv))
     import r2_dataset_cache as DS
 
     def _mesta_stop():
@@ -1266,6 +1357,8 @@ def main():
     p = sp.add_parser('run')
     p.add_argument('--h', type=int, nargs='+')
     p.add_argument('--once', action='store_true', help='не ждать ворот/модулей (один проход)')
+    p.add_argument('--arhiv-vorot', dest='arhiv_vorot', metavar='SUFFIX',
+                   help='переименовать прежние ворота/эффекты/отчёты с суффиксом (напр. _bez_s2) и пересчитать ворота B–E')
     p = sp.add_parser('smoke')
     p.add_argument('--real', action='store_true', help='настоящие модули по контракту (3 тикера, шаги 1–3), замеры времени')
     p.add_argument('--h', type=int, nargs='+')
