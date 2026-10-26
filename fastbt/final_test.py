@@ -31,7 +31,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-TABLES = ROOT / "docs" / "tables"
+TABLES = Path(os.environ.get("CH4_TABLES", ROOT / "docs" / "tables"))   # тест: docs/tables/strat_test
 GAMMAS = (3, 5, 10)
 COSTS_MLN = (1.0, 3.3, 5.0, 13.1, 16.8)       # ΔCost, млн руб. в год (как в FINAL_RESULTS.md)
 BPY = 252

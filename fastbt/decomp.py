@@ -15,6 +15,7 @@ excess = trade_net + cash − rf = trade_net − exp_cost, где
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -25,7 +26,7 @@ from fastbt import msp
 from fastbt.cache import MAIN
 
 ROOT = Path(__file__).resolve().parent.parent
-TABLES = ROOT / "docs" / "tables"
+TABLES = Path(os.environ.get("CH4_TABLES", ROOT / "docs" / "tables"))   # тест: docs/tables/strat_test
 SRC = {"маска [0]": MAIN / "data" / "fastbt" / "a_honest.parquet",
        "маска [1] (утечка)": MAIN / "data" / "fastbt" / "a_mask1.parquet"}
 COMM = 0.0005

@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -30,7 +31,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-TABLES = ROOT / "docs" / "tables"
+TABLES = Path(os.environ.get("CH4_TABLES", ROOT / "docs" / "tables"))   # тест: docs/tables/strat_test
 # владелец 26.10, 10:05, п. 9/10 (толкование дирижёра 10:11): A — на тех же 2022–2026, что и B/C/D;
 # основное окно 2022–2026, отдельно 2025–01.2026; 2020–2026 из таблиц убрано
 YEARS_A = tuple(range(2022, 2027))
