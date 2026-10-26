@@ -45,6 +45,15 @@ roles:
 
 # Вход ролей — ln прогноза ноги на ВСЕХ строках шага: обучение (внутри выборки, как HAR-J в V9), val-год (OOS), тест-год (может отсутствовать).
 # Формат (как data/regen/D17/harx_base_h{h}.parquet): date, ticker, step, part ∈ {tr, va, te}, ln (или base_ln). Ноги — у агента Э (R2/cache/E/).
+# ↺ 26.10 13:30 — ноги Э (PR #146) в длинном формате: R2/cache/E/<ряд>_h{h}_lnall.parquet (step, part, base_ln, emb_ok), 4 версии;
+#   основная — _emb_d0, версия первого раунда (r1) — контроль (r2_B2_sverka.py).
+# ↺ 26.10 14:05 — решение дирижёра: эмбарго и в обучении бустинга роли. Строки обучения, у которых окно цели [t+1, t+h] заходит в
+#   val-год шага, исключаются (маска совпадает с emb_ok Э: _control/embcheck_h{5,22}.csv). Основная версия рядов — нога _emb_d0 +
+#   бустинг с эмбарго (суффикс _be); без эмбарго в бустинге — контроль (без _be). Точки бустинга не меняются. F_5 — как в первом раунде.
+versii:
+  osnovnaya: {noga: emb_d0, emb_bust: true, suffix: '_emb_d0_be'}
+  kontrol_bust: {noga: emb_d0, emb_bust: false, suffix: '_emb_d0'}
+  kontrol_r1: {noga: r1, emb_bust: false, suffix: '_r1'}
 control_legs:                 # известные ноги для контроля движка ролей до появления ног Э
   HARJ: internal              # l2_lib.har_ln без подмены
   HARX: D17/harx_base_h{h}.parquet

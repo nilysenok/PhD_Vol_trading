@@ -7,7 +7,7 @@ CMD=$1; LOG=/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/R2/
 : > "$LOG"
 for rh in "$@"; do
   r=${rh%%:*}; h=${rh##*:}
-  python3 -W ignore scripts/analysis/r2_roli_h5_h22.py "$CMD" --role "$r" --h "$h" --workers 5 >> "$LOG" 2>&1
+  python3 -W ignore scripts/analysis/r2_roli_h5_h22.py "$CMD" --role "$r" --h "$h" --workers 5 ${EXTRA:-} >> "$LOG" 2>&1
   echo "$CMD $r $h exit $?" >> "$LOG"
 done
 echo "${CMD}_DONE $(date +%T)" >> "$LOG"

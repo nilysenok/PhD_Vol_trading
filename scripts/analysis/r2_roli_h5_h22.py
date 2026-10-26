@@ -33,6 +33,7 @@ DEV = 6
 Y = yaml.safe_load(open(YAML))
 G = {}
 _REF = {}
+ARGS = argparse.Namespace()
 
 
 def sha_bytes(b):
@@ -78,13 +79,27 @@ def setup(spec, gamma=False):
                 v = d[['date', 'ticker']].merge(t, on=['date', 'ticker'], how='left')['ln'].values if t is not None else np.full(len(d), np.nan)
             if part == 'te':
                 v = np.where(np.isnan(v), 0.0, v)  # тест не пишется и не используется
+            if part == 'tr' and np.isnan(v).any():  # строки окна без ln ноги (HEAVY: первый день ряда) -> HAR-J, как d17_1.ext_base
+                hj = _har0(tp, [d], h, hc, w, huber, y)[0]
+                v = np.where(np.isnan(v), hj, v)
             assert not np.isnan(v).any(), f'нога: нет ln на строках шага {k}, часть {part}'
             out.append(v)
         return out
 
     L.har_ln = har_ln_leg
+    _split0 = L.split
+
+    def split_emb(A, h, step):  # эмбарго в обучении бустинга (решение дирижёра 26.10): окно цели [t+1, t+h] не заходит в val-год
+        tp, vi, td, vy, ty = _split0(A, h, step)
+        if G.get('emb'):
+            tp = tp[tp['_tend'] < pd.Timestamp(f'{vy}-01-01')]
+        return tp, vi, td, vy, ty
+
+    L.split = split_emb
     n = X.load_cfg(spec['h'], dict(spec['cfg']), spec['matrix'], spec['blocks'])
-    G.update(L=L, X=X, A=X.G['A'], cols=X.G['cols'], cfg=dict(spec['cfg']), h=spec['h'], spec=spec)
+    A = X.G['A']
+    A['_tend'] = A.sort_values(['ticker', 'date']).groupby('ticker')['date'].shift(-spec['h'])  # дата конца окна цели (h торговых дней)
+    G.update(L=L, X=X, A=A, cols=X.G['cols'], cfg=dict(spec['cfg']), h=spec['h'], spec=spec, emb=bool(getattr(ARGS, 'emb', False)))
     return n
 
 
@@ -238,7 +253,7 @@ def cmd_f5(a):
 
 
 def role_spec(role, h):
-    return Y['roles'][role][h]
+    return dict(Y['roles'][role][h], h=h)
 
 
 def cmd_kontrol(a):
@@ -296,9 +311,12 @@ def cmd_leak(a):
             G['A'] = X.corrupt(A0, t0); _REF.clear()
             v = unit((m, st, [(P[(m, st)], 42)]))[0][4]
             G['A'] = A0; _REF.clear()
-            d = float(np.abs(np.log(v.rv_pred.values) - np.log(base.rv_pred.values)).max()) if len(v) == len(base) else np.inf
-            ok = (d == 0.0) if must == 'равны' else (d > 0)
-            rows.append(dict(role=a.role, h=a.h, model=m, step=st, noise_from=t0, expect=must, max_abs_dln=d, ok=bool(ok), time=now()))
+            mm = base[K + ['rv_pred']].merge(v[K + ['rv_pred']], on=K, suffixes=('_b', '_v'))  # общие строки (шум целей меняет набор строк val)
+            d = float(np.abs(np.log(mm.rv_pred_v) - np.log(mm.rv_pred_b)).max())
+            same_rows = len(mm) == len(base) == len(v)
+            ok = (d == 0.0 and same_rows) if must == 'равны' else (d > 0)
+            rows.append(dict(role=a.role, h=a.h, model=m, step=st, noise_from=t0, expect=must, rows_base=len(base), rows_noise=len(v), rows_common=len(mm),
+                             max_abs_dln=d, ok=bool(ok), time=now()))
             log(f'leak {a.role} h={a.h} {m} шаг {st}: шум с {t0} -> max|Δ ln| = {d:.3g} (ожидается: {must}) {"OK" if ok else "ПРОВАЛ"}')
     p = CACHE / '_leak.csv'
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -310,23 +328,30 @@ def cmd_leak(a):
 
 
 def cmd_roles(a):
-    """Все ноги Э на этом h (R2/cache/E/lnall/<нога>_h{h}_lnall.parquet) — одна загрузка матрицы на роль."""
+    """Все ноги Э на этом h и версии (INDEX_E.csv, vid = lnall: R2/cache/E/<ряд>_h{h}_lnall.parquet — date, ticker, step, part, base_ln,
+    emb_ok) — одна загрузка матрицы на роль. Имя ряда Б2: <роль>_<ряд Э>[_r1]_<модель> (у версии первого раунда — суффикс _r1).
+    emb_ok не используется: обучающее окно бустинга — как в первом раунде (l2_lib.split), см. журнал."""
     t0 = time.time()
     sp = role_spec(a.role, a.h)
     setup(sp, gamma=a.role == 'gam')
-    src = REGEN / 'R2' / 'cache' / 'E' / 'lnall'
-    legs = sorted(f.name[:-len(f'_h{a.h}_lnall.parquet')] for f in src.glob(f'*_h{a.h}_lnall.parquet'))
+    I = pd.read_csv(REGEN / 'R2' / 'cache' / 'INDEX_E.csv')
+    I = I[(I.vid == 'lnall') & (I.h == a.h) & (I.versiya == a.versiya)].sort_values('noga')
     if a.legs:
-        legs = [x for x in legs if x in set(a.legs)]
-    log(f'роль {a.role} h={a.h}: ног {len(legs)}: {" ".join(legs)}')
-    for leg in legs:
-        f = src / f'{leg}_h{a.h}_lnall.parquet'
-        one(a.role, a.h, leg, f, sp, a.workers)
-    log(f'роль {a.role} h={a.h}: готово за {time.time() - t0:.0f} с')
+        I = I[I.noga.isin(set(a.legs))]
+    log(f'роль {a.role} h={a.h} версия {a.versiya}: ног {len(I)}: {" ".join(I.ryad)}')
+    for r in I.itertuples():
+        f = REGEN / r.file
+        assert sha_file(f) == r.sha256, f'{r.file}: SHA не совпал с INDEX_E'
+        name = r.ryad + ('_r1' if a.versiya == 'r1' else '')
+        one(a.role, a.h, name, f, sp, a.workers)
+    log(f'роль {a.role} h={a.h} версия {a.versiya}: готово за {time.time() - t0:.0f} с')
 
 
 def one(role, h, leg, f, sp, workers):
+    """Ряд Б2: <роль>_<ряд Э>[_r1][_be]_<модель>; _be — бустинг с эмбарго (основная версия с 26.10, 14:05), без _be — контроль."""
     t0 = time.time()
+    if G.get('emb'):
+        leg = f'{leg}_be'
     G['legtab'] = load_leg(f)
     P = points(sp)
     V, tr = fit_all(P, [42], workers)
@@ -340,6 +365,7 @@ def one(role, h, leg, f, sp, workers):
         write(level_mean(fr['xgb'], fr['lgbm']), f'{role}_{leg}_mean', h, 42, idx)
     for r in idx:
         r['vhod'] = f'{Path(f).relative_to(REGEN)}@{sha_file(f)[:16]}'
+        r['emb_bust'] = bool(G.get('emb'))
     save_index(idx, f'{role}_{leg}_h{h}')
     log(f'  {role} {leg} h={h}: {len(idx)} файлов за {time.time() - t0:.0f} с')
 
@@ -351,6 +377,30 @@ def cmd_role(a):
     f = Path(a.file) if Path(a.file).is_absolute() else REGEN.parent.parent / a.file
     one(a.role, a.h, a.leg, f, sp, a.workers)
     log(f'роль {a.role} нога {a.leg} h={a.h}: {time.time() - t0:.0f} с')
+
+
+def cmd_embcheck(a):
+    """Маска эмбарго бустинга (окно обучения шага после split_emb) против emb_ok Э (HARJ_emb_d0, part = tr) на шагах 1–6."""
+    sp = dict(Y['roles']['ost'][a.h], h=a.h)
+    ARGS.emb = True
+    setup(sp)
+    L = G['L']
+    E = pd.read_parquet(REGEN / 'R2' / 'cache' / 'E' / f'HARJ_emb_d0_h{a.h}_lnall.parquet')
+    E = E[E.part == 'tr']
+    rows = []
+    for s in range(1, DEV + 1):
+        G['emb'] = False
+        tp0 = L.split(G['A'], a.h, s)[0]
+        G['emb'] = True
+        tp1 = L.split(G['A'], a.h, s)[0]
+        e = E[E.step == s][['date', 'ticker', 'emb_ok']]
+        m = tp0[['date', 'ticker']].assign(mine=tp0.index.isin(tp1.index)).merge(e, on=['date', 'ticker'], how='left')
+        rows.append(dict(h=a.h, step=s, rows_window=len(tp0), rows_emb=len(tp1), dropped=len(tp0) - len(tp1),
+                         rows_E=len(e), no_E=int(m.emb_ok.isna().sum()), mismatch=int((m.mine.values != (m.emb_ok == True).values).sum())))  # noqa: E712
+    T = pd.DataFrame(rows)
+    (CACHE / '_control').mkdir(parents=True, exist_ok=True)
+    T.to_csv(CACHE / '_control' / f'embcheck_h{a.h}.csv', index=False)
+    print(T.to_string(index=False), flush=True)
 
 
 def cmd_index(a):
@@ -372,9 +422,14 @@ def main():
             p.add_argument('--leg', required=True); p.add_argument('--file', required=True)
         if nm == 'roles':
             p.add_argument('--legs', nargs='*', default=None)
+            p.add_argument('--versiya', default='emb_d0', choices=['emb_d0', 'emb', 'd0', 'r1'])
+        p.add_argument('--emb', action='store_true', help='эмбарго в обучении бустинга (основная версия)')
+    p = sp.add_parser('embcheck'); p.add_argument('--h', type=int, required=True, choices=[5, 22])
     sp.add_parser('index')
     a = ap.parse_args()
-    {'f5': cmd_f5, 'kontrol': cmd_kontrol, 'leak': cmd_leak, 'role': cmd_role, 'roles': cmd_roles, 'index': cmd_index}[a.cmd](a)
+    global ARGS
+    ARGS = a
+    {'f5': cmd_f5, 'kontrol': cmd_kontrol, 'leak': cmd_leak, 'role': cmd_role, 'roles': cmd_roles, 'index': cmd_index, 'embcheck': cmd_embcheck}[a.cmd](a)
 
 
 if __name__ == '__main__':
