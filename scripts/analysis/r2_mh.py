@@ -88,7 +88,7 @@ def check_mh(d):
         if k not in CFG['mh']['decomp_k'][h]:
             raise NotApplicable(f'decomp_k={k} на h={h}')
         need.add('base_1' if k == 1 else 'base_5')
-        if k == 1 and 'far' in (d.get('inputs') or {}):  # E1 (владелец 20:25): дальняя часть — готовый ряд RV̄₂₋ₕ из inputs
+        if 'far' in (d.get('inputs') or {}):  # E1 / E1b: дальняя часть — готовый ряд RV̄_{k+1..h} из inputs
             need.add('far')
     elif sch == 'iterated':
         if m['iterated_k'] not in CFG['mh']['iterated_k'][h]:
@@ -450,8 +450,9 @@ def apply_mh(design, ctx, I):
         return F[COLS].assign(rv_pred=F['p'].values), meta
     ai, step = F['ai'].values, F['step'].values
     sch = m['scheme']
-    if sch == 'decomp' and 'far' in need:  # E1: (ŷ₁ + (h−1)·far₂₋ₕ)/h, far — вход дизайна (в хэше)
-        F['p'] = (F['base_1'].values + (h - 1) * F['far'].values) / h
+    if sch == 'decomp' and 'far' in need:  # E1 / E1b: (k·ŷ_k + (h−k)·far_{k+1..h})/h, far — вход дизайна (в хэше)
+        k = int(m['decomp_k'])
+        F['p'] = (k * F['base_1' if k == 1 else 'base_5'].values + (h - k) * F['far'].values) / h
     elif sch == 'decomp':
         near, parts = ((F['base_1'].values, [(2, 5, 4)] + ([(6, 22, 17)] if h == 22 else [])) if m['decomp_k'] == 1
                        else (5 * F['base_5'].values, [(6, 22, 17)]))
@@ -1083,9 +1084,200 @@ def e1(seeds=SEEDS10):
     return T
 
 
+# ================================================================ уровень E: E1b, E2, E7 (поручение 20:30; определения — yaml E_level)
+EL = CFG['E_level']
+RECIPE = {'file': str(YAML)}  # рецепт E2 / E7 в хэше дизайна: SHA этого yaml
+
+
+def calib_s2(R, S, h, s2emb='on'):
+    """Итог × s² sm кода L (r2_calib.calibrate, s2_embargo) -> (кадр COLS, множитель шага)."""
+    import r2_calib as LC
+    Vc, _ = LC.calibrate({'h': h, 'calib': {'s2_embargo': s2emb}}, R[COLS], S)
+    out = R[KEY].merge(Vc[KEY + ['rv_pred']], on=KEY, how='left').rv_pred.values
+    assert np.isfinite(out).all()
+    fac = pd.Series(out / R.rv_pred.values).groupby(R.step.values).agg(['min', 'max'])
+    assert ((fac['max'] - fac['min']) < 1e-9).all(), 'поправка s² — скаляр шага'
+    return R[COLS].assign(rv_pred=out), fac['min']
+
+
+def _merge_in(rows, I, names):
+    m = rows[COLS].copy()
+    for nm in names:
+        m = m.merge(I[nm][KEY + ['rv_pred']].rename(columns={'rv_pred': nm}), on=KEY, how='left')
+        assert m[nm].notna().all(), f'нет строк входа {nm}'
+    return m
+
+
+def b_E1b(ctx, S, I, s2emb='on'):
+    """E1b (h=22): (5·hyb₅ + 17·HARc₆₋₂₂)/22."""
+    far, raw = har_corr(ctx, S, 22, 6, 22, I['rows'], s2emb)
+    m = _merge_in(I['rows'], {**I, 'far': far}, ['hyb_5', 'far'])
+    par = pd.DataFrame({'far_s2_F': (far.rv_pred / raw.rv_pred).groupby(far.step).first()})
+    co = ctx.har_sub(6, 22)[1]
+    for i in range(len(co[ctx.steps[0]])):
+        par[f'har_6_22_c{i}'] = pd.Series({s: c[i] for s, c in co.items()})
+    return m[COLS].assign(rv_pred=(5 * m.hyb_5.values + 17 * m.far.values) / 22), par, far
+
+
+def b_E7(ctx, S, I, s2emb='on', h=None):
+    """E7: (прямой HAR-J d0 + итерированный дневной HAR d0 на h дней)/2, затем × s² sm."""
+    R = I['rows'][COLS].copy()
+    ai, step = ctx.rows(R), R.step.values
+    direct = np.exp(ctx.at_steps(ctx.har_sub(1, h)[0], ai, step))
+    if 'dh' not in ctx._c:
+        Hd = ctx.lagmat(ctx.A['rv_d'].astype('float64').clip(lower=FLOOR).values, 22)
+        ctx._c['dh'] = (Hd, np.column_stack([np.log(Hd[:, -1]), np.log(Hd[:, -5:].mean(1)), np.log(Hd.mean(1))]))
+    Hd, X = ctx._c['dh']
+    y = np.log(ctx.tgt(1, 1) + EPS)
+    it, cs = np.empty(len(R)), {}
+    for s in sorted(np.unique(step)):
+        mt = ctx.trmask(2015 + s, 1, y)
+        c = np.linalg.lstsq(np.column_stack([np.ones(mt.sum()), X[mt]]), y[mt], rcond=None)[0]
+        m = step == s
+        a_ = ai[m]
+        it[m] = iterate(Hd[a_], c[0] + X[a_] @ c[1:], 0.0, c, h).mean(1)
+        cs[int(s)] = c
+    V, fac = calib_s2(R.assign(rv_pred=0.5 * (direct + it)), S, h, s2emb)
+    par = pd.DataFrame({f'daily_c{i}': {s: c[i] for s, c in cs.items()} for i in range(4)}).assign(s2_F=fac)
+    return V, par, None
+
+
+def b_E2(ctx, S, I, s2emb='on'):
+    """E2 (h=22): forward HAR ln RV̄₂₂ = β₀ + β₁ ln hyb₁ + β₂ ln hyb₅ + β₃ ln RV_m; β — OLS по OOS шагов < t с эмбарго 22."""
+    h = 22
+    m = _merge_in(I['rows'], I, ['hyb_1', 'hyb_5'])
+    ai, step = ctx.rows(m), m.step.values
+    X = np.column_stack([np.ones(len(m)), np.log(m.hyb_1.values), np.log(m.hyb_5.values),
+                         np.log(ctx.A['rv_m'].astype('float64').values[ai].clip(1e-10))])
+    y = np.log(ctx.tgt(1, h) + EPS)[ai]
+    direct = np.exp(ctx.at_steps(ctx.har_sub(1, h)[0], ai, step))
+    raw, bs = direct.copy(), {}
+    for s in sorted(np.unique(step)):
+        hist = (step < s) & np.isfinite(y) & ctx.emb_ok(h, 2015 + s)[ai]
+        if hist.sum() < 50:  # шаг 1: истории OOS нет — прямой HAR-J d0
+            bs[int(s)] = np.full(4, np.nan)
+            continue
+        b = np.linalg.lstsq(X[hist], y[hist], rcond=None)[0]
+        raw[step == s] = np.exp(X[step == s] @ b)
+        bs[int(s)] = b
+    V, fac = calib_s2(m[COLS].assign(rv_pred=raw), S, h, s2emb)
+    par = pd.DataFrame({f'beta{i}': {s: b[i] for s, b in bs.items()} for i in range(4)}).assign(s2_F=fac)
+    return V, par, None
+
+
+def _perturb_rows(rows, A, h, cut, seed):
+    """rv_actual строк, чьё окно цели [t+1, t+h] заходит за срез (или строка после среза), × U(0,5; 2)."""
+    lo, hi = CFG['guards']['leak']['noise']
+    td = A.sort_values(['date', 'ticker']).assign(_t=lambda d: d.groupby('ticker')['date'].shift(-h))[['date', 'ticker', '_t']]
+    r = rows.merge(td, on=['date', 'ticker'], how='left')
+    cross = ((r['date'] > pd.Timestamp(cut)) | r['_t'].isna() | (r['_t'] > pd.Timestamp(cut))).values
+    out = rows.copy()
+    out.loc[cross, 'rv_actual'] = out.loc[cross, 'rv_actual'].values * np.random.default_rng(seed).uniform(lo, hi, int(cross.sum()))
+    return out
+
+
+def e_leak(build, A, harj, S, I, h):
+    """Детектор для рядов уровня E: середина года — Δ = 0 до среза; 31.12 — параметры (β, коэффициенты, s²) шагов vy ≤ год + 1
+    совпадают (эмбарго); подлоги look1 (матрица и входы дня d+1) и noemb (без эмбарго обучения и s²) пойманы.
+    Шум после среза — матрица (r2_core.perturb_frame), входные ряды и цели строк, чьё окно заходит за срез."""
+    L = CFG['guards']['leak']
+    mk = lambda A_, I_, plant=None, emb='on': build(Ctx(A_, harj, STEPS, plant=plant), S, I_, emb)[:2]
+
+    def pert(c, sd, I_=I):
+        J = perturb_inputs({k: v for k, v in I_.items() if k != 'rows'}, c, sd)
+        J['rows'] = _perturb_rows(I_['rows'], A, h, c, sd)
+        return J
+    base, p0 = mk(A, I)
+    out = []
+    for i, c in enumerate(L['cuts_mid']):
+        o, _ = mk(C.perturb_frame(A, c, 20261026 + i), pert(c, 20261026 + i))
+        dl = _maxdl(base, o, c)
+        out.append(dict(test=f'srez {c}', max_dln_do=dl, ok=bool(dl == 0.0)))
+    ye = L['cut_year_end']
+    kmax = pd.Timestamp(ye).year - 2015 + 1
+    _, p1 = mk(C.perturb_frame(A, ye, 20261099), pert(ye, 20261099))
+    a0, a1 = p0.loc[:kmax].fillna(0).values, p1.loc[:kmax].fillna(0).values
+    out.append(dict(test=f'embargo {ye}: param. shagov <= {kmax}', max_dln_do=float(np.abs(a0 - a1).max()), ok=bool((a0 == a1).all())))
+    c = L['cuts_mid'][0]
+    Ip = {k: v for k, v in I.items() if k != 'rows'}
+    o0, _ = mk(C.plant_frame(A), {**plant_inputs(Ip), 'rows': I['rows']}, plant='look1')
+    J = pert(c, 20261026)
+    o1, _ = mk(C.plant_frame(C.perturb_frame(A, c, 20261026)), {**plant_inputs({k: v for k, v in J.items() if k != 'rows'}), 'rows': J['rows']},
+               plant='look1')
+    dl = _maxdl(o0, o1, c)
+    out.append(dict(test='podlog look1', max_dln_do=dl, ok=bool(dl > 0)))
+    _, g0 = mk(A, I, plant='noemb', emb='off')
+    _, g1 = mk(C.perturb_frame(A, ye, 20261099), pert(ye, 20261099), plant='noemb', emb='off')
+    b0, b1 = g0.loc[:kmax].fillna(0).values, g1.loc[:kmax].fillna(0).values
+    dl = float(np.abs(b0 - b1).max())
+    out.append(dict(test='podlog noemb', max_dln_do=dl, ok=bool(dl > 0)))
+    return out
+
+
+def e_level(seeds=SEEDS10, which=('E2', 'E7_5', 'E7_22', 'E1b')):
+    import r2_calib as LC
+    import r2_gates as GT
+    od = REG / 'R2' / 'M' / 'E'
+    od.mkdir(parents=True, exist_ok=True)
+    A, harj = load_A(None)
+    ctx = Ctx(A, harj, STEPS)
+    M = LC.N.mat_L()
+    hyb = {k: {s: read_input(EL[k], s, int(k[-1]))[0] for s in seeds} for k in ('hyb_1', 'hyb_5')}
+    spec = {'E2': (22, b_E2, True), 'E7_5': (5, lambda c, S, I, e='on': b_E7(c, S, I, e, h=5), False),
+            'E7_22': (22, lambda c, S, I, e='on': b_E7(c, S, I, e, h=22), False), 'E1b': (22, b_E1b, True)}
+    rows, leak_rows, sdv, opora_done = [], [], [], set()
+    for nm in which:
+        h, build, by_seed = spec[nm]
+        S = LC.state_frame(M, h)
+        Eb, _ = read_input(E1_ETA, h=h)
+        Is = {s: dict(rows=Eb, hyb_1=hyb['hyb_1'][s], hyb_5=hyb['hyb_5'][s]) for s in seeds}
+        out = {s: build(ctx, S, Is[s]) for s in (seeds if by_seed else seeds[:1])}
+        V = {s: out[s][0] for s in out}
+        par = out[seeds[0]][1]
+        name = nm.split('_')[0]
+        if nm == 'E1b':
+            far_f = od / 'HARc_6_22_h22_sdet_val.parquet'
+            out[seeds[0]][2].to_parquet(far_f, index=False)
+            des = C.with_inputs({'design': 'E1b_decomp5_h22', 'h': 22, 'mh': {'scheme': 'decomp', 'decomp_k': 5}},
+                                {'base_5': {'file': EL['hyb_5']}, 'far': {'file': str(far_f.relative_to(REG))}})
+        elif name == 'E2':
+            des = C.with_inputs({'design': 'E2_fwdHAR_h22', 'h': 22},
+                                {'base_1': {'file': EL['hyb_1']}, 'base_5': {'file': EL['hyb_5']}, 'recipe_E2': RECIPE})
+        else:
+            des = C.with_inputs({'design': f'E7_dir_iter_h{h}', 'h': h}, {'recipe_E7': RECIPE})
+        for s, v in V.items():
+            sd = s if by_seed else 'det'
+            C.write_series(des, f'M_{name}', v, h, sd, module=MODULE, note=f'{name} (уровень E, поручение 20:30): {EL[name][:80]}')
+            C.done_path(des, MODULE, h, sd).write_text(time.strftime('%F %T'))
+        write_params(des, h, 42 if by_seed else 'det',
+                     {int(s): {c: np.array([par.loc[s, c]]) for c in par.columns if np.isfinite(par.loc[s, c])} for s in par.index},
+                     C.params_path(des, MODULE))
+        sc = C.shift_check(V[seeds[0]], A, h, f'M:{nm}', des)
+        sdv.append(dict(ryad=nm, h=h, **{k: v for k, v in sc.items() if k.startswith('corr') or k in ('argmax', 'ok')}))
+        lr = e_leak(build, A, harj, S, Is[seeds[0]], h)
+        leak_rows += [dict(ryad=nm, h=h, **r) for r in lr]
+        log(f'{nm}: сдвиг argmax={sc["argmax"]} {"OK" if sc["ok"] else "БЛОК"}; детектор ' +
+            ', '.join(f'{r["test"]} {"OK" if r["ok"] else "ОШИБКА"}' for r in lr))
+        Fs = {s: read_input(E1_F, s, h)[0] for s in seeds}
+        r = GT.ocenka({nm: V[seeds[0]]}, Eb, h)
+        sig = GT.sigma2_F(V if by_seed else V[seeds[0]], h, seeds=list(seeds), F=Fs)
+        rows.append(_row(f'{name} h={h}', h, r, sig) | dict(design_sha=C.design_hash(des)[:16]))
+        r['folds'].assign(h=h, ryad=nm).to_csv(od / f'folds_{nm}.csv', index=False)
+        if h not in opora_done:
+            rows.append(_row('F_R1_d0 (опора)', h, GT.opora_ocenka(h, Eb, F=Fs, seeds=list(seeds)), opora=True))
+            opora_done.add(h)
+    T = pd.DataFrame(rows)
+    T.to_csv(od / 'e_tablica.csv', index=False)
+    pd.DataFrame(leak_rows).to_csv(od / 'e_leak.csv', index=False)
+    pd.DataFrame(sdv).to_csv(od / 'e_sdvig.csv', index=False)
+    pd.set_option('display.width', 250)
+    print(T.drop(columns=[c for c in T.columns if c.startswith('t_20')]).to_string(index=False))
+    return T
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', choices=['selftest', 'control', 'dym', 'run', 'leak', 'e1'])
+    ap.add_argument('cmd', choices=['selftest', 'control', 'dym', 'run', 'leak', 'e1', 'elevel'])
     ap.add_argument('--designs')
     ap.add_argument('--inputs')
     ap.add_argument('--h', type=int)
@@ -1106,6 +1298,8 @@ def main():
         print(run(a.designs, a.h, a.seeds, a.steps or list(STEPS), a.inputs, a.workers, a.phase).to_string(index=False))
     elif a.cmd == 'e1':
         e1()
+    elif a.cmd == 'elevel':
+        e_level()
     elif a.cmd == 'leak':
         leak_cmd(a.designs, a.steps, a.tickers, a.seed)
 

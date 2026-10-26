@@ -110,3 +110,16 @@ dym:
     - {name: tau_rvi_bvj,    leg: {struct: tau_rvi, tau_window: 22, struct_split: bv_plus_jump}}
     - {name: tau_boost,      leg: {struct: tau_boost, tau_window: 22}}
     - {name: tau_boost_ar1,  leg: {struct: tau_boost, tau_window: 66, tau_extend: AR1}}
+
+# ---- уровень E, блок владельца 20:10 / поручения 20:25 и 20:30 (вне драйвера, val 2017–2021; оценка — r2_gates против В2
+#      ETA_b_d0_s2emb, опора F_R1_d0 = F_d0_s2emb, 2σ — 10 seed). Записано до счёта. Поправка s² — r2_calib.calibrate (sm, s2_embargo on).
+E_level:
+  hyb_1: R2/cache/VYR/F_d0_s2emb_h1_s{seed}_val.parquet
+  hyb_5: R2/cache/VYR/F_d0_s2emb_h5_s{seed}_val.parquet      # F_5(d0) с эмбарго s²
+  E1:  "h=5: (hyb₁ + 4·HARc₂₋₅)/5; h=22: (hyb₁ + 21·HARc₂₋₂₂)/22 (PR #213)"
+  E1b: "h=22: (5·hyb₅ + 17·HARc₆₋₂₂)/22; HARc — HAR-J d0 с эмбарго обучения на подгоризонт × s² sm (эмбарго)"
+  E2:  "h=22, forward HAR: ln RV̄₂₂ = β₀ + β₁ ln hyb₁ + β₂ ln hyb₅ + β₃ ln RV_m (RV_m d0 как есть); β шага t — OLS по OOS-строкам
+        шагов < t с эмбарго 22 (конец цели < 1 янв. vy_t); шаг 1 (истории нет) — HAR-J d0 прямой; итог × s² sm (эмбарго)"
+  E7:  "h ∈ {5, 22}: (прямой HAR-J d0 + итерированный дневной HAR d0 на все h дней)/2 в уровнях; дневной HAR — ln RV_d, ln mean5,
+        ln mean22 (как iterate Д22, δ = 0, f₁ — его же прогноз); итог × s² sm (эмбарго)"
+  cache: "дизайн по схеме + inputs (в хэше): E1b — decomp k=5, {base_5, far}; E2, E7 — рецепт: {recipe_E2|recipe_E7: этот yaml}"
