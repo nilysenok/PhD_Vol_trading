@@ -153,10 +153,21 @@ def vorota(spec_path):
     fd0 = {int(h) for h in (spec.get('F_h_d0') or [])}
     if set(hs) & fd0 or set(hs) | fd0 != set(HS):
         raise Stop(f'спецификация: h со сборкой {sorted(hs)} и с F_h(d0) {sorted(fd0)} должны разбивать {HS}')
+    dsha = {int(h): s for h, s in (spec.get('gate_D_sha') or {}).items()}
     for h in HS:
         g = GATES / f'gate_E_h{h}.yaml'
-        if not g.exists():
-            raise Stop(f'нет {g} — ворота E на h={h} не пройдены')
+        if not g.exists():  # ворота E не решались: допустимо, только если ворота D без лучшего дизайна (драйвер: на h остаётся F_h(d0))
+            gd = GATES / f'gate_D_h{h}.yaml'
+            if not gd.exists() or h not in dsha:
+                raise Stop(f'нет {g} — ворота E на h={h} не пройдены (и нет gate_D_h{h} в спецификации)')
+            if sha(gd) != dsha[h]:
+                raise Stop(f'{gd.name}: SHA-256 не совпал со спецификацией')
+            GD = yaml.safe_load(gd.read_text())
+            if GD.get('phase') != 'D' or int(GD['h']) != h or GD.get('luchshiy') is not None:
+                raise Stop(f'h={h}: нет gate_E, а gate_D с лучшим дизайном {GD.get("luchshiy")!r} — нужны ворота E')
+            if h not in fd0:
+                raise Stop(f'h={h}: по воротам D дизайна нет (F_h(d0)), а спецификация собирает {hs.get(h, {}).get("design")}')
+            continue
         if sha(g) != gsha.get(h):
             raise Stop(f'{g.name}: SHA-256 не совпал со спецификацией (ворота изменены после записи спецификации)')
         G = yaml.safe_load(g.read_text())
