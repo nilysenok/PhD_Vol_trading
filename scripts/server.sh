@@ -36,6 +36,7 @@ PULL_DIRS=(data/regen/R2)
 typeset -A TASKS
 TASKS=(
   repro    "python3 scripts/server_repro_check.py --workers ${PHD_REPRO_WORKERS:-4}"
+  repro_A  "python3 scripts/analysis/r2_repro_A.py --workers ${PHD_REPRO_WORKERS:-4}"
   checkenv "python3 env/check_env.py"
 )
 
