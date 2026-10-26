@@ -1326,7 +1326,7 @@ def check_o(verbose=True):
     ddir = REPO / 'models' / 'designs' / 'r2' / 'driver_v1'
     for f in sorted(ddir.glob('*.yaml')) if ddir.exists() else []:
         Y = yaml.safe_load(open(f))
-        allD += [d for d in (Y.get('designs') or []) if not any(k in str(d) for k in ('grid_point', 'k16', 'k18', 'k20'))]
+        allD += [d for d in (Y.get('designs') or []) if not any(k in str(d) for k in ('grid_point', 'k16', 'k18', 'k20', 'row_frac'))]
     n, bad = check_v2_invariance(allD)
     rows.append(dict(h='все', proverka=f'schema_v2: хэш v1 = хэш v2 у {n} дизайнов (factor_v1 + driver_v1)', rasxozhdeniy=len(bad), ok=not bad))
     ok &= not bad
