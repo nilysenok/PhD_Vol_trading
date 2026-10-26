@@ -284,20 +284,33 @@ def main(argv=None):
     p.add_argument("--tables", default=None, help="папка таблиц (по умолчанию как у s9)")
     p.add_argument("--out", default=None, help="папка журнала run_log (по умолчанию как у s9)")
     p.add_argument("--c-dop", nargs="?", const="", default=None)
+    # К (Ъ 27.10, 00:10): v2 и --c8v2 на быстром слое — как у fastbt.s9 run (без флагов — как было)
+    p.add_argument("--sigma-set", choices=["old", "v2"], default="old")
+    p.add_argument("--comm", type=float, default=None)
+    p.add_argument("--c8v2", action="store_true")
+    p.add_argument("--s9-cache", action="store_true",
+                   help="кэш A/C из data/fastbt/s9 (s9.load_cache) вместо fast_signals.build")
     a = p.parse_args(argv)
     from fastbt import fast_signals, s9
     s9.set_scope("dev")
-    s9.use_sigma_h1(a.sigma_h1)
+    if a.c8v2:
+        s9.set_c8v2("dev", a.sigma_set, a.c_dop is not None)
+    if a.sigma_set == "v2":
+        s9.use_v2(a.comm)
+    else:
+        s9.use_sigma_h1(a.sigma_h1)
     if a.c_dop is not None:
         s9.load_c_dop(a.c_dop or None)
     if a.tables:
         s9.TABLES = Path(a.tables)
     # журнал run_log — не в папку С9 (её кэш и журнал не трогаем)
     from fastbt.cache import MAIN
+    t0 = time.time()
+    cache = s9.load_cache() if a.s9_cache else None
     s9.OUT = Path(a.out) if a.out else MAIN / "data" / "fastbt" / "fs"
     s9.OUT.mkdir(parents=True, exist_ok=True)
-    t0 = time.time()
-    cache = fast_signals.build(a.workers)
+    if cache is None:
+        cache = fast_signals.build(a.workers)
     print(f"cache (быстрый слой): {time.time() - t0:.1f} с", flush=True)
     if a.stage in ("run", "all"):
         tm = {}
