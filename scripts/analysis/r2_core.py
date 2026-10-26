@@ -41,9 +41,10 @@ API (подробно — docs/server_r2.md, раздел «r2_core»):
 
   Проверки (кластер 9, п. 2.6) и детектор утечек
     shift_check(V, A, h, name, design=None, block_file=None, K=None) -> dict   п. 2.6 по правилу O (импорт r2_loyo.sdvig/sdvig_ok):
-                                                          ок, если min K ≤ argmax ≤ 0 (K — последние известные дни входов: явно или
-                                                          r2_loyo.K_dizaina(design) по группам признаков); +1 — блок всегда;
-                                                          блок -> R2/O/blok_sdvig.csv (r2_loyo.blok_zapis)
+                                                          решение — r2_loyo.sdvig_ok(…, eps=SDVIG_EPS = 0,01), допуск СИММЕТРИЧНЫЙ:
+                                                          c_out − c_in ≤ ε вне [min K; max K] (K — r2_loyo.K_dizaina или явно);
+                                                          каждый ряд -> r2_loyo.sdvig_zapis (блок и «плоский профиль» -> blok_sdvig.csv);
+                                                          okonchatelno = False на неполной выборке (дым) — блок предварительный
     perturb_frame(A, cut, seed) / plant_frame(A)          шум после среза (и цели, чьё окно заходит за срез) / подложенная утечка «день d+1»
     leak_check(build, A, name, cuts=..., h=None) -> DataFrame   build(A) -> {ряд: DataFrame(date, ticker, step, rv_pred[, part])}:
                                                           Δ на строках ≤ среза = 0, после среза > 0, подлог пойман (середина года);
@@ -105,6 +106,9 @@ STEPS_DEV = range(1, 7)
 MAX_YEAR = 2021
 KEY = ['date', 'ticker', 'step']
 SHIFTS = (-2, -1, 0, 1)
+SDVIG_EPS = 0.01                 # симметричный допуск ε п. 2.6 (решение дирижёра по ❓ 5, O PR #179); сверяется с r2_O_loyo.yaml
+SDVIG_N_TIKEROV = 17             # полная выборка проверки сдвига: 17 тикеров × val 2017–2021 (иначе решение предварительное)
+SDVIG_GODY = (2017, 2021)
 CUTS_MID = ('2018-06-29', '2020-03-02', '2021-06-30')
 CUTS_YE = ('2017-12-31', '2019-12-31', '2020-12-31')
 SHARED = {}
@@ -824,14 +828,31 @@ def shift_check(V, A, h, name, design=None, block_file=None, K=None):
       решение — r2_loyo.sdvig_ok: ок, если min K ≤ argmax ≤ 0; +1 блокируется всегда; K — последние известные дни входов ряда:
       явно (K=…) или r2_loyo.K_dizaina(design) по группам признаков (метаданные F, r2_O_loyo.yaml sdvig.izvestnyy_den_grupp); иначе {0};
       блок — строка в R2/O/blok_sdvig.csv через r2_loyo.blok_zapis (тот же формат, с posledniy_izvestnyy_den).
-    A — таблица с date, ticker, rv (дневная RV дня строки), строки ≤ 2021 (load_d0)."""
+    A — таблица с date, ticker, rv (дневная RV дня строки), строки ≤ 2021 (load_d0).
+    26.10, 17:10 (поручение дирижёра, PR #179 O): решение — явный вызов r2_loyo.sdvig_ok(argmax, K, corr, eps=SDVIG_EPS) с СИММЕТРИЧНЫМ
+    допуском ε = 0,01 (значение — r2_O_loyo.yaml sdvig.eps, сверяется). Полнота выборки (17 тикеров × val 2017–2021) пишется в строку:
+    блок на неполной выборке (дым: 3 тикера × 2017–2018) — предварительный (okonchatelno = False, пометка); окончательно — на полной."""
     import r2_loyo as O
+    eps = float(O.CFG['sdvig']['eps'])
+    if abs(eps - SDVIG_EPS) > 1e-12:
+        raise AssertionError(f'r2_O_loyo.yaml sdvig.eps = {eps} ≠ {SDVIG_EPS} (симметричный допуск, решение по ❓ 5, PR #179)')
     if K is None:
         K = O.K_dizaina(design) if design is not None else (0,)
     rv = A[['date', 'ticker', 'rv']].copy()
     rv['date'] = pd.to_datetime(rv['date'])
     rv = rv[rv['date'].dt.year <= MAX_YEAR]
     s = O.sdvig(V[['date', 'ticker', 'rv_pred']], rv, K=tuple(K))
+    corr = {sh: s[f'corr_s{sh:+d}'] for sh in O.CFG['sdvig']['sdvigi']}
+    ok, why = O.sdvig_ok(s['argmax'], tuple(K), corr=corr, eps=SDVIG_EPS)  # решение — только функцией O (импорт, не копия)
+    s.update(ok=ok, blok=not ok, prichina='' if ok else why, pometka=why if ok else '')
+    gody = sorted({int(y) for y in pd.to_datetime(V['date']).dt.year if SDVIG_GODY[0] <= y <= SDVIG_GODY[1]})
+    polnaya = s['n_tikerov'] >= SDVIG_N_TIKEROV and gody == list(range(SDVIG_GODY[0], SDVIG_GODY[1] + 1))
+    s['okonchatelno'] = bool(polnaya)
+    if not polnaya:
+        tag = (f'неполная выборка ({s["n_tikerov"]} тик., val {gody[0] if gody else "—"}–{gody[-1] if gody else "—"}): '
+               f'решение предварительное, окончательно — на {SDVIG_N_TIKEROV} тикерах × {SDVIG_GODY[0]}–{SDVIG_GODY[1]}')
+        if not ok:
+            s['pometka'] = tag
     r = dict(ryad=name, h=int(h), hash=(design_hash(design)[:16] if design is not None else ''), **s, vremya=time.strftime('%F %T'))
     # O (PR #178): каждый проверенный ряд — через r2_loyo.sdvig_zapis (пишет блоки и «плоский профиль»; допуск ε — у O)
     O.sdvig_zapis(r, block_file or (O_DIR / 'blok_sdvig.csv'))
@@ -959,7 +980,7 @@ def _phase_task(t):
         p = write_series(d, name, V, h, seed, module=t['module'], root=root)
         sc = shift_check(V, A, h, name, d, block_file=t.get('block_file')) if A is not None else {'ok': None}
         rows.append(dict(ryad=name, h=h, seed=seed, hash=p.parent.name, fayl=p.name, stroki=len(V), sdvig_ok=sc.get('ok'),
-                         argmax=sc.get('argmax')))
+                         argmax=sc.get('argmax'), sdvig_okonchatelno=sc.get('okonchatelno'), sdvig_pometka=sc.get('pometka', '')))
     _atomic_write(done_path(d, t['module'], h, seed, root), time.strftime('%F %T').encode())
     return rows
 
