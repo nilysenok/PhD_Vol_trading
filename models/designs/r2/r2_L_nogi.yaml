@@ -1,6 +1,12 @@
 # R2, агент L (бывш. Э): ноги кластера 2 и эконометрические части кластеров 11, 14, 15; калибровка кластера 3 (протокол v3, раздел 6)
 agent: L
 moduli: [scripts/analysis/r2_nogi.py, scripts/analysis/r2_calib.py]
+kontrakt_draivera:   # r2_driver.py (агент S, PR #184), модули L и L3 (r2_L_calib.yaml)
+  run: "run --designs <yaml> --h --seeds --steps --workers  # кэш по хэшу, модуль 'L', DONE_L; panel ≠ off — пропуск (P); код 0/1"
+  leak: "leak --hs {h}  # r2_core.leak_check на дизайнах дыма L (3 тикера, шаги 1–3); код 0/1"
+  odna_realizaciya: "ключи R (leg.refit, rls_lambda, estimator) и M (leg.struct) L сбрасывает в default — их применяют R и M"
+neprimenimye_faktory: []   # L входит во все цепочки: ключи, которыми нога не пользуется (features, boost.*, history_start), на ряд L не влияют
+schema_validacii: schema_v2   # через r2_core.validate
 yadro: scripts/analysis/r2_core.py   # агент S: validate, variants, load_d0, train_mask, shift_check, leak_check, run_phase
 schema: models/designs/r2/schema_v1.yaml
 info_set: d0                         # r2_nogi.load(d0=True): rv_d = RV_d, rv_w = mean RV_{d−4..d}, rv_m = mean RV_{d−21..d}
