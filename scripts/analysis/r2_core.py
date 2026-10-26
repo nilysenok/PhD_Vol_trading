@@ -27,6 +27,12 @@ API (подробно — docs/server_r2.md, раздел «r2_core»):
     train_mask(A, h, vy) / val_mask(A, h, vy) / inner_masks(A, h, vy)   эмбарго h: окно цели [d+1, d+h] кончается до 1 янв. vy
     step_years(k) -> (vy, train_last); assert_dev_step(k)  шаги разработки 1–6 (val 2016–2021); ≥ 2022 — запрет
 
+  Режим R2 (решение владельца 16:25)
+    check_no_future(df)                                   отказ (PermissionError) писать прогнозы за годы > 2021 — в write_series
+                                                          для любого part; отбор считает только val 2017–2021
+    enable_test_assembly('A', gate_E_path)                единственный флаг записи ≥ 2022: только агент A, только при сборке
+                                                          тестовых прогнозов финалистов, только при существующем gate_E
+
   Пул воркеров
     n_workers(requested=None) -> int                      R2_WORKERS | requested | vCPU − reserve (8 из r2_S_server.yaml), ≥ 1
     share(**data) / SHARED                                данные грузятся один раз в родителе ДО пула; воркеры (fork) видят их без копий
@@ -84,7 +90,7 @@ sys.path.insert(0, str(HERE))
 
 MAC_ROOT = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')  # на сервере — ссылка на копию проекта (env/setup_server.sh)
 REGEN = MAC_ROOT / 'data' / 'regen'
-SCHEMA_PATH = REPO / 'models' / 'designs' / 'r2' / 'schema_v1.yaml'
+SCHEMA_PATH = REPO / 'models' / 'designs' / 'r2' / 'schema_v2.yaml'  # v2 = v1 + кластеры 16, 18, 20; хэши дизайнов v1 не меняются
 CFG_PATH = REPO / 'models' / 'designs' / 'r2' / 'r2_S_server.yaml'
 PLAN_PATH = REPO / 'models' / 'designs' / 'r2' / 'factor_plan_v1.csv'
 PLAN_SHA = '31b2897751e5d81c776bcd11041dd2d7c2a5ba59b48d438102bbebcdcea3c9b8'
@@ -223,11 +229,19 @@ class Leaf:
 
 class Schema:
     def __init__(self, raw, path=None):
+        """`extends: <файл>` — версия поверх предыдущей: её листья берутся без изменений (since = версия базы), новые — since = эта версия;
+        переопределять листья базы нельзя. base_version — версия, которая остаётся в каноне, пока новые ключи равны default."""
         self.raw, self.path = raw, path
         self.version = str(raw.get('schema', ''))
         self.leaves = {}
+        self.base_version = self.version
+        if raw.get('extends'):
+            base = load_schema(Path(path).parent / raw['extends'])
+            self.leaves.update(base.leaves)
+            self.base_version = base.base_version
+        self._since = self.version
         for k, node in raw.items():
-            if k == 'schema':
+            if k in ('schema', 'extends'):
                 continue
             self._walk((k,), node, False)
 
@@ -237,7 +251,11 @@ class Schema:
         is_leaf = 'values' in node or isinstance(node.get('type'), str) or (node.get('fixed') and not any(
             isinstance(v, dict) and 'values' in v for v in node.values()))
         if is_leaf:
-            self.leaves[path] = Leaf(path, node, parent_default)
+            if path in self.leaves:
+                raise DesignError(f'схема {self.version}: лист {".".join(path)} уже есть в базовой версии — переопределять нельзя')
+            L = Leaf(path, node, parent_default)
+            L.since = self._since
+            self.leaves[path] = L
             return
         for k, v in node.items():
             if k in _META and not isinstance(v, dict):  # `leg.type` — лист, а не метаполе
@@ -284,9 +302,16 @@ def validate(design, schema=None, keep_scalar_grid=False):
     S = schema or load_schema()
     if isinstance(design, (str, Path)):
         design = yaml.safe_load(open(design))
+    design = dict(design)
+    inputs = design.pop('inputs', None)
     flat = _flatten(design)
     flat.pop(('schema',), None)
     errs, full = [], {}
+    if inputs is not None:
+        try:
+            inputs = _check_inputs(inputs)
+        except DesignError as e:
+            errs.append(str(e))
     for p in flat:
         if p not in S.leaves:
             errs.append(f'неизвестный ключ {".".join(p)}')
@@ -333,18 +358,115 @@ def validate(design, schema=None, keep_scalar_grid=False):
         raise DesignError('дизайн не прошёл схему ' + S.version + ':\n  ' + '\n  '.join(errs))
     out = _nest(full)
     out['schema'] = S.version
+    if inputs:
+        out['inputs'] = inputs
     return out
 
 
-def canonical(design):
-    """Канонический yaml: полный дизайн без `design`, с `schema`; числа — десятичные строки (шапка schema_v1.yaml, пп. 1–5)."""
+# ---------------------------------------------------------------- внешние входы дизайна (O, PR #172): base_1 / leg_1 для persist и reconcile
+INPUT_ID = ('file', 'col', 'design_sha', 'series', 'sha256')  # поля, задающие идентичность входа (описания вроде `ryad` в хэш не идут)
+H1_INPUT_NAMES = ('base_1', 'leg_1')
+
+
+def _check_inputs(inputs):
+    if not isinstance(inputs, dict) or not all(isinstance(v, dict) for v in inputs.values()):
+        raise DesignError('inputs: словарь {имя входа: {file | design_sha + series, [col], [sha256]}}')
+    out = {}
+    for name, spec in inputs.items():
+        if not (spec.get('file') or spec.get('design_sha')):
+            raise DesignError(f'inputs.{name}: нужен file или design_sha')
+        out[str(name)] = {k: spec[k] for k in spec if k in INPUT_ID or k in ('ryad', 's2', 'seed')}
+    return out
+
+
+def _file_sha_memo(p):
+    st = p.stat()
+    k = (str(p), st.st_size, st.st_mtime_ns)
+    if k not in _FSHA:
+        _FSHA[k] = sha_file(p)
+    return _FSHA[k]
+
+
+_FSHA = {}
+
+
+def inputs_identity(inputs):
+    """Канон входов для хэша: только поля идентичности; у входа-файла без sha256 — SHA содержимого (шаблон {seed} — все seed 42–51,
+    что есть на диске, SHA их списка). Вход из кэша R2 — design_sha + series (имя ряда)."""
+    out = {}
+    for name, spec in sorted(inputs.items()):
+        ident = {k: spec[k] for k in INPUT_ID if k in spec}
+        if 'file' in spec and 'sha256' not in spec:
+            f = str(spec['file'])
+            fs = [f.format(seed=s) for s in range(42, 52)] if '{seed}' in f else [f]
+            shas = []
+            for x in fs:
+                p = Path(x) if Path(x).is_absolute() else REGEN / x
+                if p.exists():
+                    shas.append(f'{x}:{_file_sha_memo(p)}')
+            if not shas:
+                raise DesignError(f'inputs.{name}: нет файла {f}')
+            ident['sha256'] = sha_bytes('\n'.join(shas).encode())
+        out[name] = ident
+    return out
+
+
+def needs_h1_inputs(design):
+    """persist / reconcile на h ≠ 1 читают ряды h=1 (base_1, leg_1) — они обязаны входить в хэш (O, PR #172)."""
     full = validate(design)
+    return int(full['h']) != 1 and (str(get(full, 'mh.persist')) not in ('off', 'False') or str(get(full, 'mh.reconcile')) not in ('off', 'False'))
+
+
+def with_inputs(design, inputs):
+    """Дизайн + внешние входы (только идентичность: file/col/sha256 или design_sha/series)."""
+    d = dict(validate(design))
+    d['inputs'] = _check_inputs({k: dict(v) for k, v in inputs.items()})
+    return d
+
+
+def canonical(design, schema=None):
+    """Канонический yaml: полный дизайн без `design`, с `schema`; числа — десятичные строки (шапка schema_v1.yaml, пп. 1–5).
+    schema — путь/объект схемы (по умолчанию — текущая, v2); для сверки инвариантности хэшей v1."""
+    S = schema if isinstance(schema, Schema) else load_schema(schema or SCHEMA_PATH)
+    full = validate(design, S)
     full.pop('design', None)
+    inputs = full.pop('inputs', None)
+    # ключи версий новее базовой (v2: кластеры 16, 18, 20) в канон не пишутся, пока равны default; тогда и `schema` — базовая (v1),
+    # и хэш дизайна v1 не меняется
+    flat = _flatten(full)
+    newer = False
+    for p, L in S.leaves.items():
+        if getattr(L, 'since', S.base_version) != S.base_version and p in flat:
+            if _norm(flat[p]) == L.ndefault:
+                del flat[p]
+            else:
+                newer = True
+    flat[('schema',)] = S.version if newer else S.base_version
+    full = _drop_empty(_nest(flat))
+    if inputs:  # внешние входы (base_1, leg_1 …) — в хэш входят их идентичность и SHA содержимого
+        full['inputs'] = inputs_identity(inputs)
     return yaml.safe_dump(_norm(full), sort_keys=True, allow_unicode=True, default_flow_style=False)
 
 
-def design_hash(design):
-    return sha_bytes(canonical(design).encode('utf-8'))
+def _drop_empty(d):
+    return {k: _drop_empty(v) if isinstance(v, dict) else v for k, v in d.items() if not (isinstance(v, dict) and not v)}
+
+
+def design_hash(design, schema=None):
+    return sha_bytes(canonical(design, schema).encode('utf-8'))
+
+
+SCHEMA_V1_PATH = REPO / 'models' / 'designs' / 'r2' / 'schema_v1.yaml'
+
+
+def check_v2_invariance(designs):
+    """Хэш каждого дизайна v1 по схеме v2 = хэш по схеме v1 (новые ключи по умолчанию в канон не пишутся). -> (n, расхождения)."""
+    bad = []
+    for d in designs:
+        a, b = design_hash(d, SCHEMA_V1_PATH), design_hash(d)
+        if a != b:
+            bad.append((d.get('design'), a[:16], b[:16]))
+    return len(designs), bad
 
 
 def get(design, dotted):
@@ -380,8 +502,14 @@ def grid_keys(design):
     """Ключи-скаляры, заданные списком (сетка внутри складки), и grid-листы, отличные от одиночного значения."""
     S = load_schema()
     flat = _flatten(validate(design))
+
+    def group_on(p):  # сетки групп новых версий (k16/k18/k20) действуют, только если переключатель группы не default
+        sib = [q for q, M in S.leaves.items() if q[:-1] == p[:-1] and M.kind == 'scalar']
+        return any(_norm(flat[q]) != S.leaves[q].ndefault for q in sib)
+
     return {L.dotted: flat[p] for p, L in S.leaves.items()
-            if isinstance(flat.get(p), list) and (L.kind == 'grid' or (L.kind == 'scalar' and not L.fixed)) and len(flat[p]) > 1}
+            if isinstance(flat.get(p), list) and (L.kind == 'grid' or (L.kind == 'scalar' and not L.fixed)) and len(flat[p]) > 1
+            and not (getattr(L, 'since', S.base_version) != S.base_version and L.kind == 'grid' and not group_on(p))}
 
 
 def variants(design, keys=None):
@@ -454,12 +582,16 @@ def write_series(design, name, df, h, seed, part='val', module='core', root=None
     miss = [c for c in SERIES_COLS if c not in df.columns]
     if miss:
         raise ValueError(f'{name}: нет колонок {miss}')
-    if part == 'val' and int(pd.to_datetime(df['date']).dt.year.max()) > MAX_YEAR:
-        raise ValueError(f'{name}: val с датами > {MAX_YEAR} — запрет «ничего ≥ 2022»')
+    check_no_future(df, name)
     p = np.asarray(df['rv_pred'], dtype=float)
     if not np.isfinite(p).all() or (p <= 0).any():
         raise ValueError(f'{name}: rv_pred должен быть конечным и > 0')
     path = series_path(design, name, h, seed, part, root)
+    own = path.with_name(path.name + '.owner')  # один ряд — один модуль: чужой модуль не затирает файл (цепочка L -> B -> M -> E)
+    if own.exists() and own.read_text().strip() != module:
+        raise PermissionError(f'{path.name}: ряд уже записан модулем {own.read_text().strip()} — модуль {module} должен писать под своим именем')
+    if not own.exists():
+        _atomic_write(own, module.encode())
     buf = io.BytesIO()
     df.sort_values(KEY).reset_index(drop=True).to_parquet(buf, index=False)
     b = buf.getvalue()
@@ -568,8 +700,41 @@ def step_years(k):
 
 
 def assert_dev_step(k, allow_test=False):
-    if not allow_test and not (1 <= int(k) <= 6):
-        raise AssertionError(f'шаг {k}: в разработке R2 только шаги 1–6 (val ≤ 2021)')
+    if not (allow_test and _TEST_ASSEMBLY['on']) and not (1 <= int(k) <= 6):
+        raise AssertionError(f'шаг {k}: в разработке R2 только шаги 1–6 (val ≤ 2021); шаги 7–10 — только сборка A (enable_test_assembly)')
+
+
+# ---------------------------------------------------------------- режим R2 (решение владельца 16:25): прогнозов ≥ 2022 не пишет никто,
+# кроме агента A при сборке тестовых прогнозов финалистов — отдельным флагом.
+_TEST_ASSEMBLY = {'on': False, 'who': None}
+
+
+def enable_test_assembly(who, finalists_gate):
+    """Включить запись прогнозов ≥ 2022 в этом процессе. Только агент A, только при сборке (фаза F): нужен существующий файл ворот E
+    (`R2/O/gate_E_h{h}.yaml`) и who == 'A'. Отбор (фазы B–E) этим флагом не пользуется."""
+    if who != 'A':
+        raise PermissionError('прогнозы ≥ 2022 пишет только агент A при сборке тестовых прогнозов финалистов')
+    if not Path(finalists_gate).exists():
+        raise PermissionError(f'нет ворот E {finalists_gate} — сборка теста до решения ворот запрещена')
+    _TEST_ASSEMBLY.update(on=True, who=who)
+    log(f'РЕЖИМ СБОРКИ ТЕСТА (A): запись прогнозов ≥ 2022 разрешена в этом процессе; ворота {finalists_gate}')
+
+
+def check_no_future(df, name='ряд'):
+    """Отказ писать прогнозы за годы > 2021 (по дате строки и по колонке year), кроме режима сборки A."""
+    if _TEST_ASSEMBLY['on']:
+        return
+    yrs = pd.to_datetime(df['date']).dt.year
+    ymax = int(max(yrs.max(), df['year'].max() if 'year' in df else yrs.max()))
+    if ymax > MAX_YEAR:
+        try:  # протокол v4, разд. 1: исключение, остановка задачи, строка в R2/S/otkaz_2022.csv
+            f = S_DIR / 'otkaz_2022.csv'
+            S_DIR.mkdir(parents=True, exist_ok=True)
+            pd.DataFrame([dict(vremya=time.strftime('%F %T'), ryad=name, god_max=ymax, stroki_2022plus=int((yrs > MAX_YEAR).sum()),
+                               pid=os.getpid())]).to_csv(f, mode='a', header=not f.exists(), index=False)
+        except OSError:
+            pass
+        raise PermissionError(f'{name}: прогнозы за {ymax} > {MAX_YEAR} — режим R2 запрещает запись ≥ 2022 (отбор — только val 2017–2021)')
 
 
 def _tend(A, h):
@@ -603,8 +768,10 @@ def n_workers(requested=None):
         return max(1, int(env))
     if requested:
         return max(1, int(requested))
-    reserve = int(CFG.get('pool', {}).get('reserve_vcpu', 8))
-    return max(1, (os.cpu_count() or 2) - reserve)
+    pool = CFG.get('pool', {})
+    if sys.platform == 'darwin':  # решение владельца 16:25: весь счёт на Маке, 10 воркеров
+        return max(1, min(int(pool.get('mac_workers', 10)), os.cpu_count() or 2))
+    return max(1, (os.cpu_count() or 2) - int(pool.get('reserve_vcpu', 8)))
 
 
 def share(**data):
@@ -665,8 +832,9 @@ def shift_check(V, A, h, name, design=None, block_file=None, K=None):
     rv = rv[rv['date'].dt.year <= MAX_YEAR]
     s = O.sdvig(V[['date', 'ticker', 'rv_pred']], rv, K=tuple(K))
     r = dict(ryad=name, h=int(h), hash=(design_hash(design)[:16] if design is not None else ''), **s, vremya=time.strftime('%F %T'))
+    # O (PR #178): каждый проверенный ряд — через r2_loyo.sdvig_zapis (пишет блоки и «плоский профиль»; допуск ε — у O)
+    O.sdvig_zapis(r, block_file or (O_DIR / 'blok_sdvig.csv'))
     if not r['ok']:
-        O.blok_zapis([{k: v for k, v in r.items() if k not in ('blok', 'vremya')}], block_file or (O_DIR / 'blok_sdvig.csv'))
         log(f'БЛОК сдвига: {name} h={h} argmax={r["argmax"]} K={r["posledniy_izvestnyy_den"]} {r["prichina"]}')
     return r
 
@@ -791,8 +959,13 @@ def _phase_task(t):
         sc = shift_check(V, A, h, name, d, block_file=t.get('block_file')) if A is not None else {'ok': None}
         rows.append(dict(ryad=name, h=h, seed=seed, hash=p.parent.name, fayl=p.name, stroki=len(V), sdvig_ok=sc.get('ok'),
                          argmax=sc.get('argmax')))
-    _atomic_write(cache_dir(d, root=root) / f'DONE_h{h}_s{seed}', time.strftime('%F %T').encode())
+    _atomic_write(done_path(d, t['module'], h, seed, root), time.strftime('%F %T').encode())
     return rows
+
+
+def done_path(design, module, h, seed, root=None):
+    """Отметка готовности — своя у каждого модуля (цепочка L -> B -> M -> E пишет в один каталог дизайна)."""
+    return cache_dir(design, root=root) / f'DONE_{module}_h{int(h)}_s{seed}'
 
 
 def run_phase(phase, h, designs, fn, seeds=(42,), steps=STEPS_DEV, workers=None, module='core', root=None, block_file=None,
@@ -809,7 +982,7 @@ def run_phase(phase, h, designs, fn, seeds=(42,), steps=STEPS_DEV, workers=None,
             raise DesignError(f'дизайн {full.get("design")}: h={full["h"]} ≠ {h}')
         cd = cache_dir(full, root=root)
         for s in seeds:
-            if (cd / f'DONE_h{h}_s{s}').exists():
+            if done_path(full, module, h, s, root).exists():
                 continue
             tasks.append(dict(design=full, seed=s, steps=list(steps), h=int(h), root=root, module=module, block_file=block_file,
                               cost=complexity(full) + 1))
@@ -911,7 +1084,40 @@ def _schema_selftest():
        and len(variants(d, keys=['calib.kappa'])) == 2)
     ok('сетка enet по умолчанию — вся (3 × 3)', len(variants({'h': 5})) == 9)
     ok('план: SHA factor_plan_v1.csv', check_plan())
+    # режим R2: прогнозы ≥ 2022 не пишутся (любой part), флаг — только A и только при воротах E
+    fut = pd.DataFrame({'date': pd.to_datetime(['2021-12-30', '2022-01-03']), 'ticker': 'SBER', 'year': [2021, 2022], 'step': 6,
+                        'rv_pred': [1e-4, 1e-4]})
+    for part in ('val', 'test'):
+        try:
+            write_series({'h': 5}, 'zapret', fut, 5, 42, part=part, root=S_DIR / 'smoke' / 'cache_zapret')
+            ok(f'режим R2: запись ≥ 2022 (part={part}) запрещена', False)
+        except PermissionError:
+            ok(f'режим R2: запись ≥ 2022 (part={part}) запрещена', True)
+    for who, gate in (('B', __file__), ('A', S_DIR / 'нет_ворот.yaml')):
+        try:
+            enable_test_assembly(who, gate)
+            ok(f'флаг сборки: отказ ({who}, {Path(gate).name})', False)
+        except PermissionError:
+            ok(f'флаг сборки: отказ ({who}, {Path(gate).name})', True)
+    ok('шаг 7 в разработке запрещён', _raises(lambda: assert_dev_step(7)))
+    # входы h=1 (O, PR #172): base_1 / leg_1 входят в хэш (идентичность + SHA содержимого), описания — нет
+    dp = {'h': 5, 'mh': {'persist': 'qlike'}}
+    i1 = {'base_1': {'file': 'R2/cache/VYR/F_d0_h1_s{seed}_val.parquet', 'ryad': 'F_1(d0)'},
+          'leg_1': {'file': 'vyr/etalon_d0_h1_val.parquet', 'col': 'har_corr'}}
+    i2 = {'base_1': dict(i1['base_1'], ryad='другое описание'), 'leg_1': i1['leg_1']}
+    i3 = {'base_1': {'design_sha': '0' * 64, 'series': 'B_feature_h1'}, 'leg_1': i1['leg_1']}
+    hs_ = [design_hash(x) for x in (dp, with_inputs(dp, i1), with_inputs(dp, i2), with_inputs(dp, i3))]
+    ok('входы h=1 в хэше: без входов ≠ с F_1(d0) ≠ с ячейкой C; описание входа хэш не меняет',
+       needs_h1_inputs(dp) and hs_[0] != hs_[1] and hs_[1] == hs_[2] and hs_[1] != hs_[3])
     return rows
+
+
+def _raises(fn):
+    try:
+        fn()
+        return False
+    except (AssertionError, PermissionError, ValueError):
+        return True
 
 
 def cmd_smoke(a):
@@ -1054,6 +1260,17 @@ def check_o(verbose=True):
                 mism.append((L.dotted, x, mine, theirs))
     rows.append(dict(h='все', proverka='нормализация = r2_loyo._n', rasxozhdeniy=len(mism), ok=not mism))
     ok &= not mism
+    # schema_v2: хэши дизайнов v1 не меняются (factor_v1 3 × 64 и driver_v1 без ключей v2)
+    allD = [d for h in HS for d in yaml.safe_load(open(FACTOR_DIR / f'h{h}.yaml'))['dizainy']]
+    ddir = REPO / 'models' / 'designs' / 'r2' / 'driver_v1'
+    for f in sorted(ddir.glob('*.yaml')) if ddir.exists() else []:
+        Y = yaml.safe_load(open(f))
+        allD += [d for d in (Y.get('designs') or []) if not any(k in str(d) for k in ('grid_point', 'k16', 'k18', 'k20'))]
+    n, bad = check_v2_invariance(allD)
+    rows.append(dict(h='все', proverka=f'schema_v2: хэш v1 = хэш v2 у {n} дизайнов (factor_v1 + driver_v1)', rasxozhdeniy=len(bad), ok=not bad))
+    ok &= not bad
+    for x in bad[:5]:
+        print('  хэш v1 ≠ v2:', x)
     if verbose:
         print(pd.DataFrame(rows).to_string(index=False))
         for x in mism[:10]:
