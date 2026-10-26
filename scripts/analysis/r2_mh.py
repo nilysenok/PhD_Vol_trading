@@ -234,23 +234,62 @@ def load_A(tickers=None):
 
 
 # ================================================================ входные ряды (ноги L, роли B)
-def read_input(rel, seed=42, h=None, tickers=None, steps=STEPS):
+def read_input(spec, seed=42, h=None, tickers=None, steps=STEPS):
+    """spec — путь (от data/regen, шаблоны {seed}, {h}) или вход дизайна r2_core: {file[, col]} | {design_sha, series}."""
     import pyarrow.parquet as pq
-    p = REG / rel.format(seed=seed, h=h)
-    flt = [('step', '<=', MAXSTEP)] + ([('ticker', 'in', list(tickers))] if tickers else [])
-    d = pq.read_table(p, columns=COLS, filters=flt).to_pandas()
+    if isinstance(spec, dict) and spec.get('design_sha'):
+        X = C.load_series(spec['design_sha'], ryad=spec.get('series'), h=h, steps=steps)
+        sd = X.seed.astype(str)
+        X = X[sd == str(seed)] if (sd == str(seed)).any() else X[sd == sd.iloc[0]]
+        d, p = X[COLS].copy(), C.CACHE_ROOT / spec['design_sha'][:16]
+    else:
+        rel, col = (spec['file'], spec.get('col')) if isinstance(spec, dict) else (spec, None)
+        p = Path(str(rel).format(seed=seed, h=h))
+        p = p if p.is_absolute() else REG / p
+        cols = ['date', 'ticker', 'year', 'step', 'rv_actual', col or 'rv_pred']
+        d = pq.read_table(p, columns=cols, filters=[('step', '<=', MAXSTEP)]).to_pandas()
+        if col:
+            d = d.rename(columns={col: 'rv_pred'})
     d['date'] = pd.to_datetime(d['date'])
+    d['ticker'] = d['ticker'].astype(str)
+    if tickers:
+        d = d[d.ticker.isin(list(tickers))]
     assert d['year'].max() <= C.MAX_YEAR and d['step'].max() <= MAXSTEP, f'{p}: строки ≥ 2022'
-    return d[d.step.isin(list(steps))].sort_values(KEY).reset_index(drop=True), p
+    return d[d.step.isin(list(steps))].sort_values(KEY).reset_index(drop=True)[COLS], p
 
 
-def default_inputs(h, seed, tickers, steps, override=None):
-    """base — ряд h дизайна; leg_1, base_1, base_5, base_22 — соседние горизонты; ref — строки и rv_actual (нога L HARJ_emb_d0_h{h})."""
-    src = {**CFG['inputs_default'], **(override or {})}
+UPSTREAM = ('BG', 'B', 'R', 'P', 'L')  # модули цепочки до M (r2_S_driver.yaml chain_order), последний — первым
+
+
+def chain_bases(design, h, seed, steps, tickers=None, root=None):
+    """Ряды h предыдущего модуля цепочки в каталоге этого дизайна (r2_core.load_series): {имя ряда: кадр}. Нет — {}."""
+    try:
+        X = C.load_series(design, h=h, steps=steps, root=root)
+    except FileNotFoundError:
+        return {}, None
+    if not len(X) or 'rv_actual' not in X:
+        return {}, None
+    X = X[X.modul.isin(UPSTREAM)]
+    if not len(X):
+        return {}, None
+    last = next(m for m in UPSTREAM if m in set(X.modul))
+    X = X[X.modul == last]
+    sd = X.seed.astype(str)
+    X = X[sd == str(seed)] if (sd == str(seed)).any() else X[sd == 'det']
+    X = X.assign(date=pd.to_datetime(X.date), ticker=X.ticker.astype(str))
+    if tickers:
+        X = X[X.ticker.isin(list(tickers))]
+    return {ry: g.sort_values(KEY).reset_index(drop=True)[COLS] for ry, g in X.groupby('ryad')}, last
+
+
+def default_inputs(h, seed, tickers, steps, override=None, design=None):
+    """base — ряд h дизайна; leg_1, base_1, base_5, base_22 — соседние горизонты; ref — строки и rv_actual (нога L HARJ_emb_d0_h{h}).
+    Порядок источников: inputs дизайна (base_1, leg_1 — входят в хэш) > override (--inputs) > inputs_default yaml."""
+    src = {**CFG['inputs_default'], **(override or {}), **((design or {}).get('inputs') or {})}
     I, files = {}, {}
     I['base'], files['base'] = read_input(src.get('base', src[f'base_{h}']), seed, h, tickers, steps)
     for nm in ('leg_1', 'base_1', 'base_5', 'base_22', 'ref'):
-        I[nm], files[nm] = read_input(src[nm], seed, h, tickers, steps)
+        I[nm], files[nm] = read_input(src[nm], seed, 1 if nm in ('leg_1', 'base_1') else h, tickers, steps)
     return I, files
 
 
@@ -682,16 +721,23 @@ def params_rows(design_sha, h, seed, meta):
     return rows
 
 
-def write_params(design, h, seed, meta, path):
-    """R2/cache/<hash>/params.csv: свои строки (h, seed) заменяются; запись под flock + os.replace (несколько seed одного дизайна в пуле)."""
+PARAMS_FILE = f'params_{MODULE}.csv'  # решение дирижёра: у каждого модуля свой файл; чужие params_<модуль>.csv M не читает и не пишет
+
+
+def write_params(design, h, seed, meta, path, prefix=''):
+    """R2/cache/<hash>/params_M.csv: свои строки (h, seed) заменяются; flock + os.replace (несколько seed одного дизайна в пуле).
+    Читается только свой файл. prefix — имя входного ряда, если у предыдущего модуля их несколько."""
     import fcntl
-    new = pd.DataFrame(params_rows(C.design_hash(design)[:16], h, seed, meta),
-                       columns=['design_sha', 'h', 'step', 'param', 'value', 'seed'])
+    assert Path(path).name == PARAMS_FILE, f'M пишет только {PARAMS_FILE}'
+    metas = meta if isinstance(meta, list) else [(prefix, meta)]  # [(префикс, meta), ...]
+    rows = [dict(r, param=f'{pf}:{r["param"]}' if pf else r['param']) for pf, m in metas
+            for r in params_rows(C.design_hash(design)[:16], h, seed, m)]
+    new = pd.DataFrame(rows, columns=['design_sha', 'h', 'step', 'param', 'value', 'seed'])
     with open(str(path) + '.lock', 'a') as lk:
         fcntl.flock(lk, fcntl.LOCK_EX)
         old = pd.read_csv(path) if path.exists() else new.iloc[:0]
         old = old[~((old.h == int(h)) & (old.seed.astype(str) == str(seed)))]
-        tmp = path.with_name(f'.params.{os.getpid()}.tmp')
+        tmp = path.with_name(f'.{PARAMS_FILE}.{os.getpid()}.tmp')
         pd.concat([old, new], ignore_index=True).sort_values(['h', 'seed', 'step', 'param']).to_csv(tmp, index=False)
         os.replace(tmp, path)
         fcntl.flock(lk, fcntl.LOCK_UN)
@@ -702,15 +748,32 @@ def phase_fn(design, seed, steps):
     """fn для r2_core.run_phase: SHARED['A'], SHARED['harj'] (load_d0 до пула), SHARED['M_inputs'] — {h: {вход: путь}} (необязательно)."""
     S = C.SHARED
     h = int(design['h'])
+    root = S.get('M_root')
     ctx = Ctx(S['A'], S['harj'], steps)
-    I, files = default_inputs(h, seed, None, steps, (S.get('M_inputs') or {}).get(h))
-    out, meta, la = run_one(design, ctx, I)
-    res = {'M': out}
-    if la is not None:
-        C.write_series(design, 'M', la, h, seed, part='lnall', module=MODULE, root=S.get('M_root'))
-    cd = C.cache_dir(design, root=S.get('M_root'))
-    write_params(design, h, seed, meta, cd / 'params.csv')
-    pd.DataFrame([dict(vhod=k, fayl=str(Path(p).relative_to(REG)), sha256=C.sha_file(p)) for k, p in sorted(files.items())]).to_csv(
+    tk = os.environ.get('R2_TICKERS')  # дым драйвера: строки 3 тикеров (матрица и модели — на всех 17)
+    tk = tk.split(',') if tk else None
+    I, files = default_inputs(h, seed, tk, steps, (S.get('M_inputs') or {}).get(h), design)
+    res, metas = {}, []
+    bases, src = ({}, None) if is_struct(design) else chain_bases(design, h, seed, steps, tickers=tk, root=root)
+    if not bases:  # нога кл. 11 или в каталоге нет рядов предыдущего модуля — база из inputs yaml
+        out, meta, la = run_one(design, ctx, I)
+        res['M'] = out
+        metas.append(('', meta))
+        if la is not None:
+            C.write_series(design, 'M', la, h, seed, part='lnall', module=MODULE, root=root)
+    else:  # контракт драйвера: база — ряды последнего модуля цепочки до M в каталоге этого дизайна
+        files['base'] = f'cache/{C.design_hash(design)[:16]}: модуль {src}, ряды {sorted(bases)}'
+        for ry, b in sorted(bases.items()):
+            out, meta, _ = run_one(design, ctx, {**I, 'base': b})
+            res[f'M_{ry}'] = out
+            metas.append((ry if len(bases) > 1 else '', meta))
+    cd = C.cache_dir(design, root=root)
+    write_params(design, h, seed, metas, cd / PARAMS_FILE)
+
+    def ident(p):
+        p = Path(p) if not isinstance(p, str) else p
+        return (str(p.relative_to(REG)) if str(p).startswith(str(REG)) else str(p), C.sha_file(p) if isinstance(p, Path) and p.is_file() else '')
+    pd.DataFrame([dict(vhod=k, fayl=ident(p)[0], sha256=ident(p)[1]) for k, p in sorted(files.items())]).to_csv(
         cd / f'M_h{h}_s{seed}_vhody.csv', index=False)
     return res
 
@@ -823,7 +886,7 @@ def dym():
     S = pd.DataFrame(summ)
     S.to_csv(out / 'dym_summary.csv', index=False)
     pd.DataFrame(leak_rows).to_csv(out / 'leak.csv', index=False)
-    pd.DataFrame(par_rows).to_csv(out / 'params.csv', index=False)  # формат D (design_sha, h, step, param, value, seed) + имя дизайна
+    pd.DataFrame(par_rows).to_csv(out / PARAMS_FILE, index=False)  # формат D (design_sha, h, step, param, value, seed) + имя дизайна
     pd.DataFrame(sdvig).to_csv(out / 'sdvig.csv', index=False)
     ok = S[S.status == 'ok']
     log(f'дым: контуров {len(ok)}, детектор {int(ok.leak_ok.sum())}/{len(ok)}, сдвиг {int((ok.shift_ok == True).sum())}/{len(ok)}, '
@@ -850,21 +913,44 @@ def run(designs, h, seeds, steps, inputs=None, workers=None, phase='E', root=Non
         except NotApplicable as e:
             log(f'не применим: {full.get("design")} — {e}')
     return C.run_phase(phase, h, ok, phase_fn, seeds=tuple(seeds), steps=tuple(steps), workers=workers, module=MODULE, root=root,
-                       block_file=block_file, check_gate=check_gate)
+                       block_file=block_file or os.environ.get('R2_BLOCK_FILE'), check_gate=check_gate)
 
 
-def leak_cmd(designs, steps, tickers, seed):
+def contour(d):
+    """Ключи, от которых зависит код M: один детектор на контур (h, mh, leg.struct*, входы h=1)."""
+    lg = d['leg']
+    return repr((int(d['h']), sorted(d['mh'].items()), lg['struct'], lg['struct_split'], lg['tau_window'], lg['tau_extend'],
+                 sorted((d.get('inputs') or {}).keys())))
+
+
+def leak_cmd(designs, steps, tickers, seed, out=None):
+    """Детектор на каждом новом контуре файла дизайнов (драйвер: один раз на (модуль, h) до боевого счёта). По умолчанию —
+    тикеры и шаги дыма (срезы детектора — внутри шагов 1–3). Код выхода ≠ 0 — провал."""
+    tickers = tickers or CFG['dym']['tickers']
+    steps = tuple(steps or CFG['dym']['steps'])
     bench = LeakBench(tickers, steps)
-    rows = []
+    rows, seen = [], set()
     for d in load_designs(designs):
         des = C.validate({**d, 'seed': seed})
+        try:
+            (check_struct if is_struct(des) else check_mh)(des)
+        except NotApplicable:
+            continue
+        k = contour(des)
+        if k in seen:
+            continue
+        seen.add(k)
         h = int(des['h'])
-        I, _ = default_inputs(h, seed, tickers, steps)
+        I, _ = default_inputs(h, seed, tickers, steps, design=des)
         _, lr = bench.check_struct(des, I, des['design'] or 'M') if is_struct(des) else bench.check_mh(des, I)
         rows += [dict(design=des.get('design'), h=h, **r) for r in lr]
     R = pd.DataFrame(rows)
-    print(R.to_string(index=False))
-    assert R.ok.all(), 'детектор: ОШИБКА'
+    if out:
+        R.to_csv(out, index=False)
+    log(f'детектор M: контуров {len(seen)}, проверок {len(R)}, провалов {int((~R.ok).sum()) if len(R) else 0}')
+    if len(R) and not R.ok.all():
+        print(R[~R.ok].to_string(index=False))
+        sys.exit(1)
 
 
 def main():
@@ -874,7 +960,7 @@ def main():
     ap.add_argument('--inputs')
     ap.add_argument('--h', type=int)
     ap.add_argument('--phase', default='E')
-    ap.add_argument('--steps', type=int, nargs='+', default=list(STEPS))
+    ap.add_argument('--steps', type=int, nargs='+')
     ap.add_argument('--seeds', type=int, nargs='+', default=[42])
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--tickers', nargs='+')
@@ -883,13 +969,13 @@ def main():
     if a.cmd == 'selftest':
         selftest()
     elif a.cmd == 'control':
-        print(control(tuple(a.steps)).to_string(index=False))
+        print(control(tuple(a.steps or STEPS)).to_string(index=False))
     elif a.cmd == 'dym':
         dym()
     elif a.cmd == 'run':
-        print(run(a.designs, a.h, a.seeds, a.steps, a.inputs, a.workers, a.phase).to_string(index=False))
+        print(run(a.designs, a.h, a.seeds, a.steps or list(STEPS), a.inputs, a.workers, a.phase).to_string(index=False))
     elif a.cmd == 'leak':
-        leak_cmd(a.designs, tuple(a.steps), a.tickers, a.seed)
+        leak_cmd(a.designs, a.steps, a.tickers, a.seed)
 
 
 if __name__ == '__main__':
