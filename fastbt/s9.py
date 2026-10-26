@@ -85,6 +85,10 @@ TEST_VAL_START, TEST_VAL_END = 2018, 2021
 TEST_TABLES = Path(os.environ.get("S9_TABLES", ROOT / "docs" / "tables" / "strat_test"))
 # владелец 26.10, 10:00: на тест из сетки C — одна точка C1 W504 p70 на h=5 (выбрана по С8 на разработке)
 TEST_C = ("C1:W504_p70", "hyb_h5")
+# Ъ 26.10, 22:30: новые точки сетки C (C2W — частичная 1→0,5→0, C*1/C*2 — ранг σ_pred/√RV_w),
+# fastbt/designs/s9/setka_C.yaml, раздел dop; включаются флагом run --c-dop. None — сетка как была.
+C_DOP_YAML = ROOT / "fastbt" / "designs" / "s9" / "setka_C.yaml"
+C_DOP = None
 
 
 def set_scope(scope: str, val_start: int | None = None) -> None:
@@ -175,6 +179,65 @@ def load_source(label: str) -> pd.DataFrame:
     d["date"] = pd.to_datetime(d["date"])
     d = d[d["date"] <= CUT].rename(columns={col: "sigma"})
     return d.sort_values(["ticker", "date"])
+
+
+def load_c_dop(path=None) -> dict:
+    """Раздел dop сетки C (Ъ 22:30) → глобальный C_DOP."""
+    import yaml
+    global C_DOP
+    C_DOP = yaml.safe_load(Path(path or C_DOP_YAML).read_text())["dop"]
+    return C_DOP
+
+
+def _c_gate(R: np.ndarray, par) -> np.ndarray:
+    """G[3, тикер, бар] по рангу R: par = p — фильтр (как C1), par = (p1, p2) — частичная
+    1 → 0,5 → 0 (как C2). Ранг NaN → 1."""
+    T, N = R.shape
+    nanR = np.isnan(R)
+    G = np.ones((3, T, N))
+    with np.errstate(invalid="ignore"):
+        if not isinstance(par, tuple):
+            p = par
+            G[0] = np.where(nanR | (R > 1 - p), 1.0, 0.0)
+            G[1] = np.where(nanR | (R < p), 1.0, 0.0)
+            G[2] = np.where(nanR | ((R >= 1 - p) & (R <= p)), 1.0, 0.0)
+            return G
+        p1, p2 = par
+        G[0] = np.where(R > 1 - p1, 1.0, np.where(R > 1 - p2, 0.5, 0.0))
+        G[1] = np.where(R < p1, 1.0, np.where(R < p2, 0.5, 0.0))
+        inner = (R >= 1 - p1) & (R <= p1)
+        outer = (R >= 1 - p2) & (R <= p2)
+        G[2] = np.where(inner, 1.0, np.where(outer, 0.5, 0.0))
+    for k in range(3):
+        G[k][nanR] = 1.0
+    return G
+
+
+def c_dop_gates(S: np.ndarray, RV, n_t, spec: dict) -> list:
+    """Новые точки C: [(семья, [(метка, G[3, тикер, бар])])]. S — σ_pred [тикер, бар],
+    RV — √RV_w (None — без C*). Ранг — по окну [d−W, d−1] без текущего дня."""
+    from fastbt.s9_stats import past_rank
+    out = []
+    for fam, f in spec["semi"].items():
+        if f["signal"] == "sigma_over_rvw":
+            if RV is None:
+                continue
+            X = S / RV
+        else:
+            X = S
+        pts = []
+        for W in f["okna"]:
+            R = np.full(X.shape, np.nan)
+            for ti in range(X.shape[0]):
+                n = n_t[ti]
+                R[ti, :n] = past_rank(np.ascontiguousarray(X[ti, :n]), int(W),
+                                      int(spec["min_periods"][W]))
+            for v in f.get("filtr", []):
+                pts.append((f"W{W}_p{v}", _c_gate(R, v / 100)))
+            for v1, v2 in f.get("chastichnaya", []):
+                pts.append((f"W{W}_p{v1}_{v2}", _c_gate(R, (v1 / 100, v2 / 100))))
+        out.append((fam, pts))
+    return out
 
 
 def align(dates: np.ndarray, d: pd.DataFrame) -> np.ndarray:
@@ -344,6 +407,22 @@ class Engine:
                 S[ti, :self.n_t[ti]] = align(self.cache[t]["dates"], df[df["ticker"] == t])
             self.sig[label] = S
         return self.sig[label]
+
+    def rvw(self) -> np.ndarray:
+        """√RV_w [тикер, бар] для C* (файл из C_DOP['rvw']; дата ≤ бара, после CUT — NaN)."""
+        if "__rvw__" not in self.sig:
+            spec = C_DOP["rvw"]
+            p = Path(spec["file"])
+            p = p if p.is_absolute() else MAIN / p
+            d = pd.read_parquet(p, columns=["date", "ticker", spec["column"]])
+            d["date"] = pd.to_datetime(d["date"])
+            d = d[d["date"] <= CUT].rename(columns={spec["column"]: "sigma"})
+            d = d.sort_values(["ticker", "date"])
+            R = np.full((len(self.tickers), self.nmax), np.nan)
+            for ti, t in enumerate(self.tickers):
+                R[ti, :self.n_t[ti]] = align(self.cache[t]["dates"], d[d["ticker"] == t])
+            self.sig["__rvw__"] = R
+        return self.sig["__rvw__"]
 
     def rvi(self, lag: int = 0) -> np.ndarray:
         d = pd.read_parquet(RVI)
@@ -802,7 +881,11 @@ class S9:
             rows.append(r)
             ports[("Cref", src)] = (self.C[src], self.C_rows[src])
             pts1, pts2 = self.c_points(src)
-            for fam, pts in (("C1", pts1), ("C2", pts2)):
+            fams = [("C1", pts1), ("C2", pts2)]
+            if C_DOP is not None:          # Ъ 22:30: новые точки; C* — не на самой наивной σ
+                rv = None if src.startswith("naive") else e.rvw()
+                fams += c_dop_gates(e.sigma(src), rv, e.n_t, C_DOP)
+            for fam, pts in fams:
                 for lab, G in pts:
                     g = e.g_row(G)
                     r, p = self.row(e.A_row * g, fam, lab, h, src,
@@ -810,7 +893,7 @@ class S9:
                     rows.append(r)
                     ports[(f"{fam}:{lab}", src)] = (p, e.A_row * g)
                 stack = np.stack([G for _, G in pts])
-                kind = "mask" if fam == "C1" else "scale"
+                kind = "mask" if fam in ("C1", "C*1") else "scale"
                 g, cnt = e.select(stack, kind, None, cat=True)
                 ch = ", ".join(f"{pts[k][0]}×{v}" for k, v in
                                sorted(cnt.items(), key=lambda kv: -kv[1])[:4])
@@ -1143,9 +1226,15 @@ def main(argv=None):
     p.add_argument("--val-start", type=int, default=None,
                    help="начало замороженного окна валидации в тесте (по умолчанию 2018; конец — "
                         "2021); в разработке всегда 2017…Y−1")
+    p.add_argument("--c-dop", nargs="?", const=str(C_DOP_YAML), default=None,
+                   help="новые точки сетки C (Ъ 22:30) из yaml, раздел dop; без флага — как было")
     a = p.parse_args(argv)
     from fastbt import dev
     dev.check_scope(a.scope)               # замок: test без FINAL_DESIGN_strategies.md — отказ
+    if a.c_dop:
+        if a.scope != "dev":               # √RV_w из ch4_dev — только ≤ 2021: на тесте C* был бы = A
+            raise SystemExit("--c-dop только для --scope dev (нет √RV_w на тест)")
+        load_c_dop(a.c_dop)
     set_scope(a.scope, a.val_start)
     use_sigma_h1(a.sigma_h1 or ("final2" if a.scope == "dev" else "final3_full"), a.suffix)
     if a.stage == "sources":
