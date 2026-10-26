@@ -1,0 +1,91 @@
+# Глава 4, раунд v2: спецификация второго открытия теста стратегий (scripts/analysis/final_test_ch4_v2.py).
+# Постановка — docs/zadaniya/2026-10-26_razrabotka_strategiy_v2.md (владелец 22:20; смягчение 22:25, п. 4).
+# Черновик FINAL — docs/otchety/FINAL_DESIGN_strategies_v2_chernovik.md (после «да» — FINAL_DESIGN_strategies_v2.md).
+#
+# Пока status ≠ zamorozheno, скрипт в режиме --scope test ОТКАЗЫВАЕТ до чтения любых данных (код 2); test_locked не читается.
+# Заморозка (СF / дирижёр, после «да» владельца на FINAL v2):
+#   1) dizayny: по одному на подход (B, C, D, MSP) — ключи из docs/tables/strat_dev_v2/ (выбор по С8, раздел 2 FINAL v2);
+#   2) h2.dizayn — подход, внутри выбранной точки которого считается H2 (по умолчанию C);
+#   3) final_v2.sha256 — SHA-256 файла FINAL_DESIGN_strategies_v2.md (переименованного черновика);
+#   4) vhody.*.sha256 и kod.* — пустые строки заполнить (shasum -a 256);
+#   5) da_vladeltsa — дословно и время по Маку; status: zamorozheno; коммит; затем один запуск --scope test.
+# FINAL v2 на SHA этого файла не ссылается (иначе круг): SHA спецификации пишется в замок и в журнал открытия.
+
+status: ждёт «да» владельца      # → zamorozheno
+da_vladeltsa: ''                 # «да» владельца дословно, дата и время по Маку
+final_v2:
+  put: docs/otchety/FINAL_DESIGN_strategies_v2.md
+  sha256: ''
+
+# Входы. Пути σ теста — от data/regen/test_locked/ (открытие 21:36; SHA = models/designs/r2/r2_A_sborka.yaml: sobrano,
+# сверяются с обоими). Ряды σ строятся тем же кодом, что разработка S0 (scripts/analysis/ch4_dev_sigma.py → h2_d0_ch4.sigma_ch3,
+# naive_from_rv), на всём периоде до srez.
+vhody:
+  sigma_test:
+    hyb_h1:    {fayl: R2/final/final_d0_s2emb_h1_test.parquet,  stolbets: rv_pred,  vyhod: sigma_pred_h1, sha256: 5ebcf61a1ccfd0f6c660e03431e306f8fe7719f011a66b469d8431be147c92e4}
+    hyb_h5:    {fayl: R2/final/final_d0_s2emb_h5_test.parquet,  stolbets: rv_pred,  vyhod: sigma_pred_h5, sha256: 4c11df7660cb174e9d169abdc67d8fd16286c21aa052351fa36b49e9b63eb887}
+    harj_b_h1: {fayl: R2/final/etalon_d0_s2emb_h1_test.parquet, stolbets: har_corr, vyhod: sigma_pred_h1, sha256: 1dce250bc913e93a7643094261eda5695288e10f72eeac3d0ae1d7d97f8665fc}
+    harj_b_h5: {fayl: R2/final/etalon_d0_s2emb_h5_test.parquet, stolbets: har_corr, vyhod: sigma_pred_h5, sha256: de559a9ed66c892842b049964003509ab338bfbac87768dd5d63bf406041b51d}
+  # наивная d0 (√ среднего RV дней d−4…d) и RVI 18:50 — из features_pit_v3; бары — ohlcv_daily_full (fastbt.data.OHLCV);
+  # ставка ЦБ — fastbt.msp.KEY_RATE. Пути — от корня основной копии (MAIN).
+  features: {fayl: data/regen/features_pit_v3.parquet, sha256: 8c51bfa1eb6ee8624f7e9e0759c693152402a4c76b9e438d69a8f542aadfe0bc}
+  bary:     {fayl: moex_volatility/results/final/strategies/data/ohlcv_daily_full.parquet, sha256: ''}
+  stavka:   {fayl: moex_discovery/data/external/macro/raw/key_rate_cbr.parquet, sha256: ''}
+  # разработка (псевдотест --selftest): σ — data/regen/ch4_dev/, SHA — data/regen/ch4_dev/SHA256.txt (S0, PR #234, #235)
+
+# Код (пути от корня репозитория; пустая строка — заполнить при заморозке; несовпадение — отказ до замка).
+kod:
+  scripts/analysis/final_test_ch4_v2.py: ''
+  scripts/analysis/h2_d0_ch4.py: ''
+  fastbt/s9.py: ''
+  fastbt/s9_stats.py: ''
+  fastbt/msp.py: ''
+  fastbt/report.py: ''
+  fastbt/approach_a.py: ''
+  fastbt/turnover.py: ''
+  fastbt/masks.py: ''
+  fastbt/data.py: ''
+  fastbt/designs/final/main.yaml: ''
+
+# Дизайны теста: по одному на подход; A — эталон, всегда. Пусто до «да».
+# Формат: {semya: C1|C2|Cmed|Cstar|D1|D2|D4|Dcont|B|P1|P2, sigma: hyb_h1|hyb_h5|harj_b_h1|harj_b_h5|naive, параметры семьи,
+#          klyuch: строка из docs/tables/strat_dev_v2/*.csv, kod: '<путь>.py:<функция>' (необязательно), kod_sha256: ''}.
+# kod — если раунд считал семью своим построителем: тогда тест вызывает его же (SHA сверяется), иначе встроенный (раздел «семьи»
+# скрипта, математика fastbt.s9 / s9_stats).
+dizayny:
+  B: {}
+  C: {}        # C или C* — один на подход C (❓ F2-1 в черновике FINAL v2)
+  D: {}
+  MSP: {}      # P1 или P2 — один на подход МСП
+
+h2:
+  dizayn: C                       # H2 — внутри выбранной точки этого подхода, без выбора
+  istochniki: [hyb, harj_b, naive]
+
+test:
+  okna:
+    '2022–2026': ['2022-01-01', '2026-02-03']
+    '2025–01.2026': ['2025-01-01', '2026-02-03']
+  srez: '2026-02-03'
+  val: [2018, 2021]               # окна валидации/калибровки заморожены на разработке (как fastbt.s9 TEST_VAL_*)
+  zakrytie: ['2022-02-28', '2022-03-23']   # остановка торгов MOEX; правило — столбец pravilo (без / с правилом, рядом)
+  butstrap: {metod: LW, blok: 5, reps: 10000, seed: 42}   # fastbt.s9_stats.lw_sharpe_diff, как в разработке
+  komissiya: 0.0005               # 0,05 % за сторону (fastbt.s9.COMM); 0,06 % — строка чувствительности
+  komissiya_chuvstv: 0.0006
+
+# Заглушки ТОЛЬКО для --selftest (псевдотест 2018–2021, окна заморожены на 2017). В тест не идут; это опорные точки прошлой
+# сетки и раунда 22:20, не выбор.
+selftest_zaglushki:
+  B:   {semya: B,  sigma: hyb_h5, cap: 1.0, band: 0.20, W: 252}                   # ЗАГЛУШКА: B по h=5, полоса 20 %
+  C:   {semya: C1, sigma: hyb_h1, W: 252, p: 0.80}                                # ЗАГЛУШКА: опорная C1 W252 p80 h=1
+  D:   {semya: D1, sigma: hyb_h1, W: 252, p: 0.80}                                # ЗАГЛУШКА: затвор W252 p80 h=1
+  MSP: {semya: P2, sostav: [A, B, C, D]}                                          # ЗАГЛУШКА: равные доли
+  dop:                                                                            # не в тест: проверка остальных семей
+    C1_W504: {semya: C1, sigma: hyb_h5, W: 504, p: 0.70, razgon: 252}             # разгон W504: растущее окно 252 → 504
+    C2:      {semya: C2, sigma: hyb_h1, W: 252, p1: 0.70, p2: 0.90}
+    Cmed:    {semya: Cmed, sigma: hyb_h1, W: 252, p: 0.80, med: 22}
+    Cstar:   {semya: Cstar, sigma: hyb_h1, W: 252, p: 0.80}
+    D2:      {semya: D2, sigma: hyb_h1, W: 252, p: 0.80, g: 0.10}
+    D4:      {semya: D4, sigma: hyb_h5, W: 252, p: 0.80, span: 5}
+    Dcont:   {semya: Dcont, sigma: hyb_h1, W: 252, gamma: 1.0, cap: 1.5}
+    P1:      {semya: P1, baza: C}
