@@ -619,10 +619,18 @@ def load_designs(p):
     return Y['designs'] if isinstance(Y, dict) and 'designs' in Y else (Y if isinstance(Y, list) else [Y])
 
 
-def run(designs, h, seeds, steps, workers=None, phase='C', root=None, check_gate=True, block_file=None):
-    """Боевой счёт (сервер) через r2_core.run_phase: ворота, кэш, запись, сдвиг, DONE. Неприменимые дизайны — в лог и мимо."""
+def env_tickers(tickers=None):
+    """--tickers или R2_TICKERS (дым драйвера): срез строк выхода; рынок eq17, τ² β — по всем 17."""
+    t = tickers or ([x for x in os.environ.get('R2_TICKERS', '').split(',') if x] or None)
+    return None if t in (None, ['ALL']) else list(t)
+
+
+def run(designs, h, seeds, steps, workers=None, phase='C', root=None, check_gate=False, block_file=None, tickers=None):
+    """Боевой счёт через r2_core.run_phase: кэш, запись, сдвиг, DONE. Неприменимые дизайны — в лог и мимо.
+    Ворота ведёт драйвер S (check_gate=False по умолчанию, как у R); файл блоков — block_file или R2_BLOCK_FILE."""
     A, harj = load_A()
-    Dt = Data(A)
+    Dt = Data(A, env_tickers(tickers))
+    block_file = block_file or os.environ.get('R2_BLOCK_FILE') or None
     for w in sorted({int(_scal(C.validate({**d, 'h': h})['leg']['panel_beta_window'])) for d in designs}):
         for m in ('RV_IMOEX', 'RV_eq17'):
             Dt.ab(m, w)
@@ -822,15 +830,18 @@ def main():
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--tickers', nargs='+')
     ap.add_argument('--workers', type=int)
+    ap.add_argument('--check-gate', action='store_true', help='сверять ворота предыдущей фазы (по умолчанию ворота ведёт драйвер S)')
     a = ap.parse_args()
     if a.cmd == 'selftest':
         selftest()
     elif a.cmd == 'dym':
         sys.exit(0 if dym()[1] else 1)
     elif a.cmd == 'run':
-        print(run(load_designs(a.designs), a.h, a.seeds, a.steps, a.workers, a.phase).to_string(index=False))
+        T = run(load_designs(a.designs), a.h, a.seeds, a.steps, a.workers, a.phase, check_gate=a.check_gate, tickers=a.tickers)
+        print(T.to_string(index=False) if len(T) else 'задач нет (готовое пропущено или неприменимо)')
+        sys.exit(1 if len(T) and 'ryad' in T and (T.ryad == 'ОШИБКА').any() else 0)
     elif a.cmd == 'leak':
-        leak_cmd(a.designs, a.steps, a.tickers, a.seed)
+        sys.exit(0 if leak_cmd(a.designs, a.steps, env_tickers(a.tickers), a.seed) else 1)
 
 
 if __name__ == '__main__':
