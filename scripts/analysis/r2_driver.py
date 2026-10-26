@@ -1127,6 +1127,26 @@ def gate_D(h, cells, runner, root, workers):
     return write_gate('D', h, dict(g, barier_L3=bar))
 
 
+def razrezhit(d):
+    """Разреженный дизайн: только ключи ≠ default (плюс h, design, inputs), без fixed-констант (selection.*, guards.*). Хэш тот же
+    (канон валидирует заново; assert). Полный дизайн (r2_core.validate / with_inputs) r2_loyo.validate не принимает — ключи selection.*
+    не листья его схемы (лестница O упала в e8 21:17)."""
+    S = C.load_schema()
+    full = C.validate(d, es_check=False)
+    inputs = full.pop('inputs', None)
+    flat = C._flatten(full)
+    keep = {}
+    for p, v in flat.items():
+        L = S.leaves.get(p)
+        if p in (('h',), ('design',)) or (L is not None and L.kind not in ('const', 'name') and not L.fixed and C._norm(v) != L.ndefault):
+            keep[p] = v
+    out = C._nest(keep)
+    if inputs:
+        out['inputs'] = inputs
+    assert C.design_hash(out) == C.design_hash(d), f'{d.get("design")}: разреженный дизайн — другой хэш'
+    return out
+
+
 def odin_ryad(V):
     """Итоговый ряд дизайна одним кадром: единственный вариант; при нескольких — первый по имени (сетку выбирает модуль)."""
     return V[sorted(V)[0]] if V else None
@@ -1155,15 +1175,20 @@ def gate_E(h, units, root, v0_units, runner=None, steps=None, workers=1, tab1=No
     if SMOKE_FLAG['on'] and R:
         top = max((u for u in R if u not in v0_units), key=lambda u: R[u]['t_mean'], default=None)
         sig = {u: dict(passed=(u == top), d_mean=np.nan, sigma=np.nan, thr=np.nan, pometka='дым: 2σ не считается') for u in R}
-    dizainy = dict(units)
+    dizainy = {u: razrezhit(d) for u, d in units.items()}  # лестница / абляции O (r2_loyo.validate) — только разреженные дизайны
     if extra:
         R.update(extra['R'])
         S.update(extra['S'])
         sig.update(extra['sig'])
-        dizainy.update(extra['dizainy'])
+        dizainy.update({u: razrezhit(d) for u, d in extra['dizainy'].items()})
     out_dir = (SMOKE_O / f'gate_E_h{h}_dizainy') if SMOKE_FLAG['on'] else \
         (E8_DYM['dir'] / f'gate_{faza}_h{h}_dizainy' if E8_DYM['dir'] else (C.O_DIR / f'gate_{faza}_h{h}_dizainy' if faza != 'E' else None))
-    g = RG.gate_E_v4(R, S, dizainy, sig, h, list(v0_units), lestnica=not SMOKE_FLAG['on'], out_dir=out_dir, opora=opora(h))
+    try:
+        g = RG.gate_E_v4(R, S, dizainy, sig, h, list(v0_units), lestnica=not SMOKE_FLAG['on'], out_dir=out_dir, opora=opora(h))
+    except ValueError as e:  # лестница O (r2_loyo.validate) не принимает inputs (E1: base_1, основа: F_R1) — ворота без лестницы
+        log(f'ворота {faza} h={h}: лестница O не построена ({e}) — ворота без лестницы и абляций (❓ O: inputs в r2_loyo.validate)')
+        g = RG.gate_E_v4(R, S, dizainy, sig, h, list(v0_units), lestnica=False, out_dir=out_dir, opora=opora(h))
+        g['lestnica_pometka'] = f'не построена: {e} (❓ O: r2_loyo.validate без inputs)'
     g['barier_L3'] = bar
     if tab1:
         g['tablica_E_1seed'] = tab1
@@ -1238,8 +1263,7 @@ def e8_dizain(best, h):
     готовых рядов (итог L3 лучшего и его ноги), тем же правилом, что модули: G — ln ŷ = ln нога + λ·g_k·(ln канд − ln нога), E — ŷ = w·нога +
     (1 − w)·ŷ_G (r2_ens.leg_w_mix)."""
     s = CFG['E']['E8_setka']
-    d = copy.deepcopy(best)
-    d.pop('schema', None)
+    d = razrezhit(best)
     for k, x in (('k16.gate', 'shock_fresh'), ('k16.k', [int(v) for v in s['k_vozderzhaniya']]), ('k16.q', s['q_shock']),
                  ('k18.lam_to_ref', 'on'), ('k18.ref', 'noga'), ('k18.lam', [float(v) for v in s['lam_k_noge']]),
                  ('ens.leg_w', list(s['ves_nogi']))):
@@ -1311,17 +1335,18 @@ def e8_istochnik(h, gate_file=None, unit=None):
 
 
 def e8_noga(best, h):
-    """Нога лучшего с калибровкой: «нога + калибровка» (noga_dizain, без inputs), иначе нога финала R1 (E0). -> (источник, дизайн, кадр)."""
+    """Нога: нога основы E — HAR-J d0 + s² (E_h{h}_F_R1_noga; закон владельца 21:00: основа F_R1_d0 «с ногой HAR-J d0»), иначе «нога +
+    калибровка» лучшего (noga_dizain, без inputs). -> (источник, дизайн, кадр)."""
     b = copy.deepcopy(best)
     b.pop('inputs', None)
     kand = []
+    n0 = e8_vse_dizainy(h).get(f'E_h{h}_F_R1_noga')
+    if n0 is not None:
+        kand.append(('нога основы E: HAR-J d0 + s² (E0)', n0))
     try:
         kand.append(('нога + калибровка лучшего (noga_dizain)', noga_dizain(b, {})))
     except Exception:  # noqa: BLE001
         pass
-    n0 = e8_vse_dizainy(h).get(f'E_h{h}_F_R1_noga')
-    if n0 is not None:
-        kand.append(('нога финала R1 d0 (E0)', n0))
     for src, nd in kand:
         V = final_series(nd, h, [42])
         if V:
