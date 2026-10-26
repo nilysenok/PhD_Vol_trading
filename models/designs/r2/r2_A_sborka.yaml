@@ -1,0 +1,40 @@
+# R2, агент A: спецификация тестовой сборки (r2_sborka_test.py) и замороженные файлы второго открытия (final_test_r2.py).
+# Протокол v3 — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, разделы 2.8, 6, 8, 9. Формат сборки — шапка r2_sborka_test.py.
+# До ворот E статус «ждёт ворот E»: r2_sborka_test.py отказывает (СТОП), test_locked не читается.
+# После ворот E агент A заполняет gate_E_sha, h, F_h_d0 по R2/O/gate_E_h{h}.yaml и параметрам val (шаги <= 6), ставит
+# status: zamorozheno и коммитит до запуска сборки; дальше файл не меняется (SHA — в журнале и SHA256.txt выхода).
+
+status: ждёт ворот E
+gate_E_sha: {}          # {h: sha256 R2/O/gate_E_h{h}.yaml}
+h: {}                   # {h: {design, design_sha, pravilo, komponenty, ...}} — только h с победителем R2
+F_h_d0: []              # h без победителя R2: строка гибрида — F_h(d0) (ВЫР-1)
+
+# Контракт с агентом O (❓ A-1, умолчание): R2/O/gate_E_h{h}.yaml содержит поля
+#   h, pobeditel (имя дизайна | F_h_d0), design_sha (SHA-256 канонического yaml по схеме v1 | null).
+# Победитель V0 — финал = эконометрическая компонента: pravilo single, одна компонента (нога L) со своей калибровкой.
+
+# Замороженные ряды второго открытия (раздел 2.8: в R2 не пересчитываются). SHA-256 взяты до R2 из журналов записи,
+# без открытия test_locked: ВЫР-1 — data/regen/vyr/vyr1/lock_{etalon,f1,f5,f22}.csv; ВЫР-2 — docs/otchety/2026-10-26_vyr2.md;
+# кадр первого теста (ключи, цель, V0) — scripts/analysis/test_dop.py (SHA, = FINAL_DESIGN поле 10).
+# Пути — относительно data/regen/test_locked/.
+zamorozheno:
+  final3/final_h1_test.parquet: 4e56f6252a48cb47f6027a0ff86c1f197102a5e02f61123265287b119cf4e7d0
+  final3/final_h5_test.parquet: 4694991372bd95d3e2a7a091c2548444d77050ca4c75cc40170f5bd78b8652fc
+  final3/final_h22_test.parquet: 91f2a48e5f4ad431ac75c85bdd3dd7a58a449e4e0c9d731fed6dbd0a4937b059
+  vyr/etalon_d0_h1_test.parquet: 3657f85805fd2be5906892d63d56f709425ee19a1442de9c9cd76d4643556de6
+  vyr/etalon_d0_h5_test.parquet: d28f791f7cc5d92fe77e07d53133cce97082d6cd1290562ea2c6c7b0f9f892e5
+  vyr/etalon_d0_h22_test.parquet: f29cacef3f99d06362ca267412ed6af27c34aa8b2ad26fac929419e7ddd4ff19
+  vyr/final_d0_h1_test.parquet: e4c59d2f5a3fbf0a0a1b4269209e736fc93fcbf9d60d5e01f359e8edc088f432
+  vyr/final_d0_h5_test.parquet: ef81c061d85f2ab122b3e9f690d54d46938dde4479f6499aa4218138189077f0
+  vyr/final_d0_h22_test.parquet: a5c870caf15ed3112cc07651910d5bc1afe5bb5db64bc3236e33551b60783390
+  vyr/ref_harcj_d0/REF_HARCJ_d0_h1_test.parquet: a42b1ae379eb2388b8f7af4312a7702cf076ae30d8d38c5b17b2c97cd236f8ed
+  vyr/ref_harcj_d0/REF_HARCJ_d0_h5_test.parquet: 02959e651fdacded944a85be294b409ba372bf30b7e252e9a103eee508591496
+  vyr/ref_harcj_d0/REF_HARCJ_d0_h22_test.parquet: ee36287815153af9d2aee119908e90d7e7a57dc7271c38b0665005ba18b3da5c
+
+# Строки второго открытия в версии d0 (final_test_r2.py):
+#   HAR-J (а) d0 / HAR-J (б) d0  — vyr/etalon_d0_h{h}_test.parquet, part = test: har_raw / har_corr;
+#   Гибридная                    — R2/final/final_r2_h{h}_test.parquet, иначе F_h(d0) = vyr/final_d0_h{h}_test.parquet (part = test);
+#   F_h(d0) отдельной строкой    — справочно, сравнение с победителем R2;
+#   V0 XGBoost / LightGBM (raw, с поправкой) — кадр первого теста как есть (ВЫР-2: день d видят, не перестраивались);
+#   HAR-CJ d0                    — vyr/ref_harcj_d0 (справочно, в таблице периодов);
+#   HAR-X с поправкой (раскладка) — кадр первого теста, версия R1 (❓ A-2: d0-ряда HAR-X с поправкой на тесте нет).
