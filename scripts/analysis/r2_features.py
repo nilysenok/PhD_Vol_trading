@@ -49,7 +49,9 @@ DATA = MAIN / 'data'
 REG = DATA / 'regen'
 OUT = REG / 'R2' / 'feat'
 WORK = OUT / '_work'
-COMB = REG / 'R2' / 'features' / 'features_r2_v2.parquet'  # v2 (26.10, 16:30): без 3 столбцов, заблокированных O (PR #167); v1 не меняется
+# v2 (26.10, 16:30): без 3 столбцов, заблокированных O (PR #167); v3 (16:45): G1 ln RV_m IMOEX и выбор строк внешних рядов — как harx
+# (флаг imoex_low_bars вместо low_bars_dup0, строки с NaN close_IMOEX не выбрасываются). v1, v2 не меняются.
+COMB = REG / 'R2' / 'features' / 'features_r2_v3.parquet'
 DOCS = ROOT / 'docs' / 'otchety' / 'r2_F'
 YAML = ROOT / 'models' / 'designs' / 'r2' / 'r2_F_features.yaml'
 V3H = REG / 'features_pit_v3h.parquet'
@@ -260,7 +262,7 @@ def stage_daily(a):
 
 # ================================================================ входы и построение групп
 def load_inputs():
-    K = pd.read_parquet(V3H, columns=['date', 'ticker', 'volume', 'close_RVI', 'rv_IMOEX', 'low_bars_dup0', 'close_IMOEX',
+    K = pd.read_parquet(V3H, columns=['date', 'ticker', 'volume', 'close_RVI', 'rv_IMOEX', 'imoex_low_bars', 'close_IMOEX',
                                       'sp500', 'eem', 'dxy', 'gold', 'brent', 'wti', 'vix'])
     K['date'] = pd.to_datetime(K.date)
     K = K.sort_values(['date', 'ticker']).reset_index(drop=True)
@@ -314,15 +316,18 @@ def har0(I):
 
 def _fill_rows(IDX):
     """Строки-заполнители матрицы (как harx._by_date: close_IMOEX равен значению первой строки) — не реальные дни внешних рядов."""
-    return (IDX['close_IMOEX'] == IDX['close_IMOEX'].iloc[0]).values | IDX['close_IMOEX'].isna().values
+    # v3: ровно как harx (без «| isna()»: строки с NaN остаются, rolling их пропускает, но они занимают место в окне 22 строк)
+    return (IDX['close_IMOEX'] == IDX['close_IMOEX'].iloc[0]).values
 
 
 def g1(I):
     x = I['IDX'].sort_values('date').set_index('date')
     v = x[~_fill_rows(x.reset_index())].copy()
-    rvi = np.log(v['close_RVI'].clip(lower=1e-6) ** 2).reindex(x.index).ffill()
-    rim = v['rv_IMOEX'].where(v['low_bars_dup0'] != 1).ffill(limit=2)
-    rvm_im = np.log((rim ** 2).rolling(22, min_periods=13).mean().clip(lower=EPS)).reindex(x.index).ffill()
+    # v3: как harx.t_rvi / t_rvm_imoex — reindex(method='ffill') по тем же датам, т. е. без протяжки пропусков
+    rvi = np.log(v['close_RVI'].clip(lower=1e-6) ** 2).reindex(x.index, method='ffill')
+    # дни с неполными барами IMOEX (n_bars < 30, флаг imoex_low_bars матрицы) — NaN и протяжка ≤ 2 дней, как harx.t_rvm_imoex
+    rim = v['rv_IMOEX'].where(v['imoex_low_bars'] != 1).ffill(limit=2)
+    rvm_im = np.log((rim ** 2).rolling(22, min_periods=13).mean().clip(lower=EPS)).reindex(x.index, method='ffill')
     # PC1–PC3 (Д7.2 на трёх компонентах): 5-дневная реализованная вол. глобальных активов (Yahoo, в матрице лаг доступности 1) и ln VIX,
     # стандартизация и веса оцениваются 1 января года по строкам строго раньше
     GL = ['sp500', 'eem', 'dxy', 'gold', 'brent', 'wti']
@@ -613,7 +618,7 @@ def stage_build(a):
     L = ['# R2, агент F: группы признаков кластера 5 (schema_v1: features). Строится scripts/analysis/r2_features.py --stage build.',
          '# Информационное множество d0: строка (d, ticker) — данные по день d включительно; RV_d до 18:50; без shift(1).',
          '# Ключи — features_pit_v3h (ISS_start); history_start = 2014 -> строки date >= 2014-06-09.',
-         'agent: F', 'version: features_r2_v2', 'removed_v2: [' + ', '.join(sum(DROP.values(), [])) + ']  # блок O (PR #167), разбор — stage razbor', f'combined: {{file: {COMB.relative_to(MAIN)}, sha256: {sha(COMB)}}}',
+         'agent: F', 'version: features_r2_v3', 'changed_v3: "G1 (ln_rvm_imoex: флаг imoex_low_bars; строки внешних рядов как harx), G9 ln_rvi2_m — как R1"', 'removed_v2: [' + ', '.join(sum(DROP.values(), [])) + ']  # блок O (PR #167), разбор — stage razbor', f'combined: {{file: {COMB.relative_to(MAIN)}, sha256: {sha(COMB)}}}',
          'key: [date, ticker]', 'history_start: {"2014": "date >= 2014-06-09 (ключи v3)", ISS_start: "все строки (v3h, с 2011-12-08)"}',
          'groups:', '  G0: {file: data/regen/features_pit_v3.parquet, note: "база; в версии d0 — у агента S/L (rv_d, rv_w, rv_m, jump_lag* там сдвинуты на 1)"}']
     for r in rows[:-1]:
@@ -890,6 +895,33 @@ def stage_razbor(a):
     print(S[['col', 'rho_-2', 'rho_-1', 'rho_0', 'rho_1', 'argmax', 'drho_-2', 'drho_-1', 'drho_0', 'drho_1', 'd_argmax']].to_string())
 
 
+# ================================================================ sverka_r1: G1 против слагаемых R1 (harx.TERMS на v3), только ≤ 2021
+def stage_sverka_r1(a):
+    import harx as HX
+    A, harj = HX.load()
+    A['date'] = pd.to_datetime(A['date'])
+    r1 = A[['date', 'ticker']].copy()
+    for t in ('ln_rvi2', 'ln_rvm_imoex', 'pc1'):
+        r1[t] = HX.TERMS[t](A).values
+    rows = []
+    for ver in ('v2', 'v3'):
+        p = REG / 'R2' / 'features' / f'features_r2_{ver}.parquet'
+        F = pd.read_parquet(p, columns=['date', 'ticker', 'g1_ln_rvi2', 'g1_ln_rvm_imoex', 'g1_pc1'])
+        F['date'] = pd.to_datetime(F['date'])
+        m = r1.merge(F, on=['date', 'ticker'])
+        m = m[m.date <= LAST_DEV]
+        for t, c in (('ln_rvi2', 'g1_ln_rvi2'), ('ln_rvm_imoex', 'g1_ln_rvm_imoex'), ('pc1', 'g1_pc1')):
+            a_, b_ = m[t].values, m[c].values
+            ok = np.isfinite(a_) & np.isfinite(b_)
+            d = np.abs(a_[ok] - b_[ok])
+            rows.append(dict(versiya=ver, r1=t, f=c, n=int(ok.sum()), median_abs=float(np.median(d)), max_abs=float(d.max()),
+                             dolya_1e12=float((d <= 1e-12).mean()), nan_tolko_r1=int((~np.isfinite(a_) & np.isfinite(b_)).sum()),
+                             nan_tolko_f=int((np.isfinite(a_) & ~np.isfinite(b_)).sum())))
+    R = pd.DataFrame(rows)
+    R.to_csv(DOCS / 'sverka_G1_R1.csv', index=False)
+    print(R.to_string())
+
+
 # ================================================================ nobs: ISS_start
 def stage_nobs(a):
     DOCS.mkdir(parents=True, exist_ok=True)
@@ -918,7 +950,7 @@ def stage_nobs(a):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--stage', required=True, choices=['bars', 'daily', 'build', 'check', 'nobs', 'razbor', 'all'])
+    ap.add_argument('--stage', required=True, choices=['bars', 'daily', 'build', 'check', 'nobs', 'razbor', 'sverka_r1', 'all'])
     ap.add_argument('--bin', default=None)
     a = ap.parse_args()
     for s in (['bars', 'daily', 'build', 'check', 'nobs'] if a.stage == 'all' else [a.stage]):

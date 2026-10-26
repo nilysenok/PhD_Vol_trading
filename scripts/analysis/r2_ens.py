@@ -243,13 +243,18 @@ def _auc(lab, P, nk):
     return float(roc_auc_score(lab, P[:, 1]) if nk == 2 else roc_auc_score(lab, P, multi_class='ovr', average='macro'))
 
 
-def moe(M, h, terms, mode, gate='logit', calib='none', hard='off', seed=42, steps=STEPS, tickers=None, plant=False):
-    """-> (ряд смеси, таблица шагов: пороги, AUC привратника на отложенном годе). mode k2|k3."""
+def _moe_steps(M, h, terms, mode, gate='logit', calib='none', seed=42, steps=STEPS, plant=False):
+    """Привратник кластера 13 по шагам (общая часть moe и moe_proba). Для каждого шага k отдаёт словарь:
+    k, vy, tr (обучение: годы < vy, эмбарго h), lab (режим на всех строках: 0 — самый спокойный), cuts,
+    P (сырые вероятности, n × nk, все строки M), Pc (после изотонной калибровки по прошлым OOS; без неё — P).
+    Режим: z = ln y_h − медиана ln y тикера на обучении шага; k2 — z ≥ 0, k3 — терцили z на обучении.
+    Калибровка — по классу на OOS привратника шагов < k с концом цели < 1 янв. vy, затем нормировка."""
     from sklearn.isotonic import IsotonicRegression
-    nk = {'k2': 2, 'k3': 3}[mode]; kap = float(CFG['moe']['kappa_shrink'])
+    nk = {'k2': 2, 'k3': 3}[mode]
     A = M['A']; t = f'rv_target_h{h}'
     lny = np.log(A[t].values + 1e-10); has = A[t].notna().values
-    past, V, info = [], [], []
+    fd_all = pd.to_datetime(A[f'_tend{h}']).values
+    past = []
     for k in sorted(steps):
         vy = 2015 + k; tr = trmask(M, h, vy, plant)
         Zk = _z(M, terms, tr)  # пропуски — средним по обучению шага
@@ -258,10 +263,7 @@ def moe(M, h, terms, mode, gate='logit', calib='none', hard='off', seed=42, step
         z = lny - A.ticker.map(med).values
         cuts = [0.0] if nk == 2 else list(np.quantile(z[tr], [1 / 3, 2 / 3]))
         lab = np.digitize(z, cuts)
-        ln0 = fit_ln(M, h, terms, tr)
-        lnr = [(1 - kap) * ln0 + kap * fit_ln(M, h, terms, tr & (lab == r)) for r in range(nk)]
-        clf = _gate(gate, seed).fit(G[tr], lab[tr])
-        P = clf.predict_proba(G)
+        P = _gate(gate, seed).fit(G[tr], lab[tr]).predict_proba(G)
         va = (A.year.values == vy) & has
         Pc = P.copy()
         if calib == 'isotonic' and past:
@@ -273,14 +275,46 @@ def moe(M, h, terms, mode, gate='logit', calib='none', hard='off', seed=42, step
                     Pc[:, r] = iso.predict(P[:, r])
                 s = Pc.sum(1, keepdims=True)
                 Pc = np.where(s > 1e-12, Pc / np.where(s > 1e-12, s, 1), 1.0 / nk)
+        past.append(pd.DataFrame({**{f'p{r}': P[va, r] for r in range(nk)}, 'lab': lab[va], 'fd': fd_all[va]}))
+        yield dict(k=k, vy=vy, tr=tr, lab=lab, cuts=cuts, P=P, Pc=Pc, va=va, nk=nk)
+
+
+def moe_proba(M, h, terms, mode='k2', gate='logit', calib='none', seed=42, steps=STEPS, tickers=None, plant=False):
+    """Публичная: вероятности режима привратника кластера 13 (те же, что смешивают экспертов в moe) -> DataFrame
+    date, ticker, year, step, p0..p{K−1} (после калибровки; без неё — сырые), p0_raw..p{K−1}_raw, lab (−1 — цели нет).
+    Строки — val-год шага (все дни года, в т. ч. без цели). Режим 0 — спокойный (ln y_h ниже медианы тикера на обучении шага);
+    k3 — 0/1/2 по терцилям. M — r2_ens.prep(A, harj); terms — слагаемые HAR-X (leg_terms(design, h) или свой список)."""
+    A = M['A']; t = f'rv_target_h{h}'; has = A[t].notna().values
+    out = []
+    for s in _moe_steps(M, h, terms, mode, gate, calib, seed, steps, plant):
+        sel = A.year.values == s['vy']
+        if tickers:
+            sel &= A.ticker.isin(tickers).values
+        d = pd.DataFrame({'date': A.date.values[sel], 'ticker': A.ticker.values[sel].astype(str), 'year': s['vy'], 'step': s['k']})
+        for r in range(s['nk']):
+            d[f'p{r}'] = s['Pc'][sel, r]
+        for r in range(s['nk']):
+            d[f'p{r}_raw'] = s['P'][sel, r]
+        d['lab'] = np.where(has[sel], s['lab'][sel], -1)
+        out.append(d)
+    return pd.concat(out, ignore_index=True).sort_values(KEY).reset_index(drop=True)
+
+
+def moe(M, h, terms, mode, gate='logit', calib='none', hard='off', seed=42, steps=STEPS, tickers=None, plant=False):
+    """-> (ряд смеси, таблица шагов: пороги, AUC привратника на отложенном годе). mode k2|k3. Вероятности — _moe_steps (= moe_proba)."""
+    kap = float(CFG['moe']['kappa_shrink'])
+    V, info = [], []
+    for s in _moe_steps(M, h, terms, mode, gate, calib, seed, steps, plant):
+        k, tr, lab, P, Pc, va, nk = s['k'], s['tr'], s['lab'], s['P'], s['Pc'], s['va'], s['nk']
+        ln0 = fit_ln(M, h, terms, tr)
+        lnr = [(1 - kap) * ln0 + kap * fit_ln(M, h, terms, tr & (lab == r)) for r in range(nk)]
         lv = np.exp(np.column_stack(lnr))
         pred = (Pc * lv).sum(1)
         if hard != 'off':
             j = Pc.argmax(1); top = Pc.max(1) >= float(hard)
             pred = np.where(top, lv[np.arange(len(lv)), j], pred)
-        past.append(pd.DataFrame({**{f'p{r}': P[va, r] for r in range(nk)}, 'lab': lab[va], 'fd': pd.to_datetime(A[f'_tend{h}']).values[va]}))
         V.append(_val(M, h, k, pred, tickers))
-        info.append(dict(step=k, year=vy, cuts=';'.join(f'{c:.4f}' for c in cuts), auc_raw=_auc(lab[va], P[va], nk),
+        info.append(dict(step=k, year=s['vy'], cuts=';'.join(f'{c:.4f}' for c in s['cuts']), auc_raw=_auc(lab[va], P[va], nk),
                          auc_calib=_auc(lab[va], Pc[va], nk), dolya_hard=float((Pc[va].max(1) >= float(hard)).mean()) if hard != 'off' else 0.0))
     return _fin(V), pd.DataFrame(info)
 
@@ -538,7 +572,9 @@ def leak_refit(h, A, harj, cuts, design, steps, tickers, seed):
         return {'window_ens': window_ens(MM, h, terms, steps, tickers)[0],
                 'ticker_bag': ticker_bag(MM, h, terms, steps, tickers)[0],
                 'moe_k2_logit_iso': moe(MM, h, terms, 'k2', 'logit', 'isotonic', 'off', 42, steps, tickers)[0],
-                'moe_k3_boost_hard': moe(MM, h, terms, 'k3', 'boost', 'none', 0.7, 42, steps, tickers)[0]}
+                'moe_k3_boost_hard': moe(MM, h, terms, 'k3', 'boost', 'none', 0.7, 42, steps, tickers)[0],
+                'moe_proba_k2_iso': moe_proba(MM, h, terms, 'k2', 'logit', 'isotonic', 42, steps, tickers)
+                .assign(rv_pred=lambda d: d.p0.clip(1e-6, None))}
     L = C.leak_check(build, A, f'E_h{h}', cuts=cuts, seed=seed)
     return [dict(h=h, kontur=r.ryad, srez=r.srez, max_d_do_sreza=r.max_dln_do, max_d_posle=r.max_dln_posle,
                  podlog_max_d_do_sreza=r.get('podlog_max_dln_do', np.nan), ok=bool(r.ok)) for _, r in L.iterrows()]
@@ -630,6 +666,12 @@ def dym():
                 rec(h, nm, df, lref, d)
                 if vn.startswith('moe') and tab is not None:
                     AUC.append(tab.assign(h=h, ryad=nm))
+                    if nm == 'moe=k2|logit|isotonic':  # moe_proba — те же вероятности, что смешивает moe
+                        PP = moe_proba(M, h, leg_terms(d, h), 'k2', 'logit', 'isotonic', seed, st)  # AUC moe — по 17 тикерам
+                        assert np.allclose(PP[['p0', 'p1']].sum(1), 1) and len(PP[PP.ticker.isin(tk)]) >= len(df)
+                        a2 = [_auc(g.lab.values, g[['p0', 'p1']].values, 2) for _, g in PP[PP.lab >= 0].groupby('step')]
+                        assert np.allclose(a2, tab.auc_calib.values, equal_nan=True), (a2, tab.auc_calib.values)
+                        PP[PP.ticker.isin(tk)].to_csv(od / f'moe_proba_k2_h{h}.csv', index=False)
         print(f'h={h} готов, {time.time() - t0:.0f} с', flush=True)
     Q = pd.DataFrame(Q); S = pd.DataFrame(SD); AU = pd.concat(AUC, ignore_index=True)
     Q.to_csv(od / 'dym_qlike.csv', index=False); S.to_csv(od / 'dym_sdvig.csv', index=False); AU.to_csv(od / 'dym_moe_auc.csv', index=False)
@@ -682,6 +724,9 @@ def run(path, hs=None, dym_scope=False, A=None, harj=None, M=None, seeds=None, w
             E_seeds_only=[int(c['seed'])] if dym_scope else None)
     st = list(c['steps']) if dym_scope else list(STEPS)
     root = (OUT / 'dym' / 'cache') if dym_scope else None
+    if dym_scope:  # дым пересчитывается каждый раз: отметки DONE прошлого дыма снимаются (только в R2/E/dym/cache)
+        for f in root.glob('*/DONE_h*_s*'):
+            f.unlink()
     T = []
     for h in (hs or [design['h']]):
         d = dict(design, h=int(h))
