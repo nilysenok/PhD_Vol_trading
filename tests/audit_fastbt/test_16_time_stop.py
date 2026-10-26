@@ -40,7 +40,20 @@ MUTATIONS = {
     "trend_a_time_stop": lambda mp: mp.setattr(engine_trend, "trend_run", mutant(
         engine_trend.trend_run, [(TR_TS, "held >= (mht if kind == 2 else 30)", 1)])),
     "dyn_hold_no_clip": _noclip,
+    "time_decay_off": lambda mp: mp.setattr(engine, "lvl_run", mutant(
+        engine.lvl_run, [("if tdec > 0 and held > mht // 2:", "if False:", 1)])),
 }
+
+
+def test_time_decay_halves_take_after_half_hold():
+    """time_decay (S5/S6 ATR-варианты): после held > max_hold//2 тейк = ep ± 0,5·исходного."""
+    c, h, lo = _flat(14)
+    h[4] = h[7] = 102.5                       # тейк 104; с held 6 > 10//2 — 102
+    assert run_lvl(c, h, lo, longs=[1], a1=50, a2=4, mh=10, tdec=1) == [(1, 7, 1)]
+    assert run_lvl(c, h, lo, longs=[1], a1=50, a2=4, mh=10, tdec=0) == [(1, 11, 1)]
+    lo2 = lo.copy()
+    lo2[7] = 97.5
+    assert run_lvl(c, h, lo2, shorts=[1], a1=50, a2=4, mh=10, tdec=1) == [(1, 7, -1)]
 
 
 def _flat(n):
