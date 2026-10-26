@@ -108,14 +108,24 @@ def test_s9_engine_same_rate_in_excess():
     assert np.allclose(e.rf * 365, [0.0425, 0.0425, 0.045, 0.045])
 
 
-@pytest.mark.xfail(strict=True, reason="НАЙДЕНО Н2: начисление на свободный капитал за дни "
-                   "(d_prev, d], а доходность позиции — d→d+1 (msp.portfolio, s9.Engine._finish); "
-                   "исправление — PR cash_forward")
 def test_cash_accrues_over_position_period():
-    """Позиция пятницы держится пт→пн: кэш пятницы — за 3 дня по экспозиции пятницы."""
+    """Н2 исправлено: позиция пятницы держится пт→пн — кэш пятницы за 3 дня по экспозиции и
+    ставке пятницы; выходные перед сменой ставки (пн 22.03.2021) идут по старой ставке."""
     d = pd.to_datetime(["2021-03-18", "2021-03-19", "2021-03-22", "2021-03-23"])
-    rate = pd.Series([0.05], pd.to_datetime(["2021-01-01"]))
+    rate = pd.Series([0.0425, 0.045], pd.to_datetime(["2021-03-01", "2021-03-22"]))
     port = msp.portfolio(_pos(d, [0.0, 1.0, 0.0, 0.0], 0.0), rate, 0.0)
-    rf = 0.05 / 365
-    assert np.allclose(port["fdr"], [1 * rf, 0.0, 1 * rf, 1 * rf])     # пт: экспозиция 1 → 0
-    assert np.allclose(port["total"] - port["excess"], [rf, 3 * rf, rf, rf])
+    rf = np.array([0.0425, 0.0425, 0.045, 0.045]) / 365
+    assert np.allclose(port["cal_days"], [1, 3, 1, 1])
+    assert np.allclose(port["fdr"], [rf[0], 0.0, rf[2], rf[3]])        # пт: экспозиция 1
+    assert np.allclose(port["total"] - port["excess"], rf * [1, 3, 1, 1])
+    assert np.allclose(msp.cal_days(d), [1, 3, 1, 1])
+    assert np.allclose(msp.cal_days(d, forward=False), [1, 1, 3, 1])   # ворота (печати)
+    import inspect
+    assert "msp.cal_days(self.dates)" in inspect.getsource(s9.Engine.__init__)
+
+
+def test_gate_restored_rate_keeps_print_convention():
+    r = pd.Series([0.1], pd.to_datetime(["2021-01-01"]))
+    r.attrs["cal"] = "back"
+    d = pd.to_datetime(["2021-03-18", "2021-03-19", "2021-03-22"])
+    assert np.allclose(msp.portfolio(_pos(d, 0.0, 0.0), r, 0.0)["cal_days"], [1, 1, 3])

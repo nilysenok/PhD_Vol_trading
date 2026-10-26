@@ -3,6 +3,8 @@
 Шаги: среднее позиции и валовой доходности по имеющимся стратегиям на (дата, тикер) →
 комиссия от |Δ средней позиции| на тикере → EW по тикерам → свободный капитал под ставку:
 total = r + max(0, 1−exp)·rf·cal_days − max(0, exp−1)·(key+0,02)/365, excess = total − rf·cal_days.
+cal_days — дни [d, d_next) периода позиции d→d+1 (аудит FA, Н2); у восстановленной ставки
+печати (ворота) — прежние (d_prev, d].
 Шарп = mean(excess)/std(excess, ddof=1)·√252 (печать; fix_sharpe — то же «везде»).
 
 Ставка: gate — восстановлена из MSP_A_inst.csv (спецификация п. 9); fix_rate — решения ЦБ
@@ -29,7 +31,24 @@ def rate_restored() -> pd.Series:
     idx = d.index
     cal = np.ones(len(idx))
     cal[1:] = np.diff(idx.values).astype("timedelta64[D]").astype(float)
-    return pd.Series((d["total_ret"] - d["excess_ret"]).values / cal * 365.0, index=idx)
+    s = pd.Series((d["total_ret"] - d["excess_ret"]).values / cal * 365.0, index=idx)
+    s.attrs["cal"] = "back"          # печатные ряды собраны с днями (d_prev, d] — ворота
+    return s
+
+
+def cal_days(index, forward: bool = True) -> np.ndarray:
+    """Календарные дни начисления ставки на дату портфеля.
+    forward=True (аудит FA, Н2): дни [d, d_next) — период позиции d→d+1, последняя дата — 1;
+    forward=False (ST5:216-219, печати): дни (d_prev, d], первая дата — 1."""
+    v = pd.DatetimeIndex(index).values
+    cal = np.ones(len(v))
+    if len(v) > 1:
+        dd = np.diff(v).astype("timedelta64[D]").astype(float)
+        if forward:
+            cal[:-1] = dd
+        else:
+            cal[1:] = dd
+    return cal
 
 
 def rate_cbr() -> pd.Series:
@@ -63,8 +82,7 @@ def portfolio(pos: pd.DataFrame, rate: pd.Series, comm: float, agg: str = "pairs
     kr = rate.reindex(rate.index.union(port.index)).sort_index().ffill().bfill()
     kr = kr.reindex(port.index)
     rf = kr.values / 365.0
-    cal = np.ones(len(port))
-    cal[1:] = np.diff(port.index.values).astype("timedelta64[D]").astype(float)
+    cal = cal_days(port.index, forward=rate.attrs.get("cal") != "back")
     exp_ = port["exposure"].values
     used = cap_share * exp_
     port["fdr"] = np.maximum(0.0, 1.0 - used) * rf * cal
