@@ -773,7 +773,7 @@ def build(design, ctx, steps=range(1, 7)):
 # ---------------------------------------------------------------- дым / контроль / детекторы
 def load_groups(A, h):
     """G0 — признаки features_pit_v3 (config feature_cols + l2_lib.build_features) на матрице d0 ядра; G1–G10 — файл F
-    (features_r2_v1.parquet, колонки групп — r2_F_features.yaml). -> (A с признаками, {группа: колонки})."""
+    (features_r2_v3.parquet — файл и SHA из r2_F_features.yaml combined, колонки групп — оттуда же). -> (A с признаками, {группа: колонки})."""
     import l2_lib as L
     cfg = json.load(open(R / 'features_pit_v3.config.json'))
     FC = [c for c in cfg['feature_cols'] if c in A.columns]
@@ -785,7 +785,7 @@ def load_groups(A, h):
         if g != 'G0':
             groups[g] = list(spec['columns'])
             cols += groups[g]
-    fp = ROOT / FY['combined']['file']   # features_r2_v2 (PR #170): файл и SHA — из yaml F
+    fp = ROOT / FY['combined']['file']   # features_r2_v3 (PR #176): файл и SHA — из yaml F
     if '_fsha' not in _EXC:
         import r2_core as C
         _EXC['_fsha'] = C.sha_file(fp)
@@ -820,9 +820,10 @@ def core_fn(design, seed, steps):
     ❓ (для S) бинарные Dataset / QuantileDMatrix из r2_dataset_cache.py: модуля в базе нет; до него Dataset строится в воркере."""
     import r2_core as C
     S = C.SHARED
-    d = dict(C.validate(design), seed=int(seed))
+    d0 = C.validate(design)
+    d = dict(d0, seed=int(seed))
     h = int(d['h'])
-    legs = S['leg_provider'](d, h)
+    legs = S['leg_provider'](d0, h)   # каталог дизайна (run_phase: cache_dir дизайна как есть) — seed задачи в хэш не подставляется
     if not isinstance(legs, dict):
         legs = {'base': legs}
     out = {}

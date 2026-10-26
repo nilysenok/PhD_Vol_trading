@@ -43,13 +43,14 @@ def core_fn(design, seed, steps):
     import r2_core as C
     import r2_roli as B
     S = C.SHARED
-    d = dict(C.validate(design), seed=int(seed))
+    d0 = C.validate(design)
+    d = dict(d0, seed=int(seed))
     assert d['boost']['grid'] == 'resid_small_v1' and d['boost']['early_stop'] == 'qlike_total' and d['boost']['lib'] == 'lightgbm', \
         'фаза D: grid = resid_small_v1, early_stop = qlike_total, lib = lightgbm'
     h = int(d['h'])
     out = {}
     for pt in S.get('B_grid_points', range(1, 62)):
-        leg = S['leg_provider'](d, h)
+        leg = S['leg_provider'](d0, h)   # каталог дизайна как есть (seed задачи в хэш не подставляется)
         leg = leg['base'] if isinstance(leg, dict) else leg
         ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=leg, _lhs_point=int(pt), _afp=S.get('B_afp'))   # кэш наборов — как r2_roli
         if d['boost']['resid_source'] == 'cross_fit':
