@@ -4,15 +4,22 @@
 # После ворот E агент A заполняет gate_E_sha, h, F_h_d0 по R2/O/gate_E_h{h}.yaml и параметрам val (шаги <= 6), ставит
 # status: zamorozheno и коммитит до запуска сборки; дальше файл не меняется (SHA — в журнале и SHA256.txt выхода).
 
-status: ждёт ворот E
+# Решение владельца 26.10 (вечер): вариант 1 — победителей R2 нет, на h = 1, 5, 22 финал — F_h(d0) (F_d0_s2emb).
+# После «да» на FINAL_DESIGN_round2: сверить gate-SHA ниже с R2/O (если ворота E перепишутся счётом на исправленной основе —
+# обновить), поставить status: zamorozheno, закоммитить, затем `python3 scripts/analysis/r2_sborka_test.py`.
+status: ждёт «да» владельца
 # s² калибровки у эталона (б) d0, F_h(d0) и победителя — одним правилом (решение владельца «s² последовательно при открытии»;
 # эмбарго s² — PR #194, #195, решение владельца 17:35): t−1 по OOS-остаткам val шагов окна, с эмбарго; на шагах 7–10 — остатки
 # val 2022–2025 из test_locked (только part = val, метка R2-guard-s2). zamorozka (раздел 8 протокола) — справочный режим.
 s2_pravilo: posledovatelno
 s2_etalon: {est: sm, kappa: 0.5, embargo: "on"}   # эталон (б) d0 и F_h(d0): Б0.1 sm, как ВЫР-1, плюс эмбарго
-gate_E_sha: {}          # {h: sha256 R2/O/gate_E_h{h}.yaml}
-h: {}                   # {h: {design, design_sha, pravilo, komponenty, ...}} — только h с победителем R2
-F_h_d0: []              # h без победителя R2: строка гибрида — F_h(d0) (ВЫР-1)
+gate_E_sha:             # sha256 R2/O/gate_E_h{h}.yaml (26.10: h=5 — 21:06:06, h=22 — 20:47:28; pobeditel F_h(d0))
+  5: e9d5c381b5657e93fa24978e386aeab8af650f4431c771be0887a95037e1b92e
+  22: f40c81468ed7da048b9bcc476bdfab37d9f058db18d08405a32307f5d5f3ae23
+gate_D_sha:             # h без gate_E: ворота D без лучшего дизайна (luchshiy: null) — на h остаётся F_h(d0) (STOP 21:06)
+  1: 44b964b675a0edb26734e7441061b55fe8e37236baebbc5845985cbd51d390ea
+h: {}                   # победителей R2 нет (вариант 1)
+F_h_d0: [1, 5, 22]      # строка гибрида — F_h(d0) с s² сборки (R2/final/final_d0_s2emb_h{h}_test.parquet)
 
 # Ворота E — формат r2_loyo.gate_E (PR #161): phase: E, h, pobeditel: {pobeditel: <единица> | 'F_h(d0)', V0, poryadok}.
 # ❓ A-1 (для O, умолчание): имени единицы мало для однозначной сборки — в спецификации A сам пишет design_sha и design_yaml

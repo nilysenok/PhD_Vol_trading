@@ -904,6 +904,23 @@ def selftest():
             stop({**sp_e, 'h': {**sp_e['h'], 5: {**sp_e['h'][5], 'e1': {**sp_e['h'][5]['e1'], 'e8': bad_e8}}}}, what)
         stop({**sp_e, 'h': {**sp_e['h'], 5: {**sp_e['h'][5], 'e1': {**sp_e['h'][5]['e1'], 'n_hyb': 5}}}}, 'n_hyb')
         stop({**sp_e, 'h': {**sp_e['h'], 22: {**sp_e['h'][22], 'e1': {**sp_e['h'][22]['e1'], 'har': {'file': H22['file']}}}}}, 'нужен har')
+        # 9. вариант 1 (решение владельца): F_h(d0) на всех h; h=1 — без gate_E, по gate_D без лучшего дизайна; победителей нет
+        for h in (5, 22):
+            (GATES / f'gate_E_h{h}.yaml').write_text(yaml.safe_dump(dict(phase='E', h=h, pobeditel=dict(pobeditel='F_h(d0)', V0=False, poryadok=[])),
+                                                                     allow_unicode=True))
+        (GATES / 'gate_E_h1.yaml').unlink()
+        (GATES / 'gate_D_h1.yaml').write_text(yaml.safe_dump(dict(phase='D', h=1, luchshiy=None), allow_unicode=True))
+        sp1 = dict(status='zamorozheno', s2_pravilo='posledovatelno', s2_etalon=dict(est='sm', kappa=0.5, embargo='on'), h={}, F_h_d0=[1, 5, 22],
+                   gate_E_sha={h: sha(GATES / f'gate_E_h{h}.yaml') for h in (5, 22)}, gate_D_sha={1: sha(GATES / 'gate_D_h1.yaml')})
+        OUTDIR = tmp / 'v1' / 'final'
+        READ.clear(); WROTE.clear()
+        o1 = run(putspec(sp1, tmp / 'spec_v1.yaml'))
+        assert not list(OUTDIR.glob('final_r2_*')) and len(list(OUTDIR.glob('*_s2emb_h*_test.parquet'))) == 6
+        for h in HS:
+            assert np.allclose(o1[('E', h)].F_sm, out[('E', h)].F_sm, rtol=0, atol=0), f'h={h}: эталон варианта 1 = основной прогон'
+        stop({**sp1, 'gate_D_sha': {}}, 'нет gate_D_h1')
+        (GATES / 'gate_D_h1.yaml').write_text(yaml.safe_dump(dict(phase='D', h=1, luchshiy='C_h1_x'), allow_unicode=True))
+        stop({**sp1, 'gate_D_sha': {1: sha(GATES / 'gate_D_h1.yaml')}}, 'нужны ворота E')
         OUTDIR = LOCKED / 'R2' / 'final'
     finally:
         REGEN, LOCKED, OUTDIR, GATES, JOURNAL = saved
