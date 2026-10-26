@@ -1,5 +1,5 @@
 # D непрерывный (Moreira–Muir), лучший непрошедший С8 (t05_dcont_tf)
-vpred: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/sigma_pred_h1_final2.parquet
+vpred: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/sigma_pred_h1_final3_full.parquet
 fix_c_s12_val: true
 fix_b_median: true
 fix_d_units: true
