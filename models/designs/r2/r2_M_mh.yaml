@@ -1,0 +1,108 @@
+# R2, агент M: многогоризонтные схемы (кластер 6) и двухкомпонентная структура τ × g (кластер 11).
+# Протокол v3 — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md (раздел 6, строка «M»; условия — раздел 1; запреты — раздел 10).
+# Схема ключей — models/designs/r2/schema_v1.yaml (mh.*, leg.struct*, leg.tau_*). Записан до счёта.
+agent: M
+script: scripts/analysis/r2_mh.py
+root: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading     # данные — общий data/ (на сервере — PHD_ROOT)
+features: data/regen/features_pit_v3.parquet              # читается с фильтром date <= 2021-12-31 (pyarrow filters) + assert
+max_date: '2021-12-31'
+max_step: 6                                               # val шагов 1–6 (2016–2021); шаги 7–10 и тест — только после ворот E
+out:
+  cache: data/regen/R2/cache                              # <sha256[:16]>/M_h{h}_s{seed}_val.parquet (+ _lnall, _meta.csv, design.yaml)
+  index: data/regen/R2/cache/INDEX_M.csv
+  dym: data/regen/R2/M/dym                                # дым на Маке (3 тикера) — не кэш, в выбор не идёт
+  blok_sdvig: data/regen/R2/O/blok_sdvig.csv              # п. 2.6: заблокированные ряды (дописывается)
+
+# ---- входы по умолчанию (конвейер ядра передаёт ряды своего дизайна через inputs; здесь — для дыма и ручного прогона).
+# Все ряды сырые (без s²): date, ticker, year, step, rv_actual, rv_pred. r̂₁ = ln base_1 − ln leg_1 (Д19).
+inputs_default:
+  leg_1:   R2/cache/E/HARJ_emb_d0_h1_sdet_val.parquet                 # нога h=1 (L): база r̂₁ и поправка δ итерации
+  base_1:  R2/cache/B1/HARJ_emb_d0__priznak_mean_h1_s{seed}_val.parquet # гибрид h=1 (B, роль feature): r̂₁, ближняя часть decomp/perlead
+  base_5:  R2/cache/B2/ost_HARJ_emb_d0_mean_h5_s{seed}_val.parquet     # ряд h=5 (B): узел RV̄₅, ближняя часть decomp k=5 и slope h=22
+  base_22: R2/cache/B2/ost_HARJ_emb_d0_mean_h22_s{seed}_val.parquet    # ряд h=22 (B): узел RV̄₂₂ MinT
+  ref:     R2/cache/E/HARJ_emb_d0_h{h}_sdet_val.parquet               # строки и rv_actual ног кластера 11; контроль HAR-J
+
+# ---- кластер 6 (порядок применения: scheme -> slope -> persist -> reconcile)
+mh:
+  sub_har: "HAR-J d0 (rv_d = RV_d, rv_w/rv_m — окна, кончающиеся d; скачки — как gibrid_har.load_pit), OLS в логах; цель RV̄_{a..b} =
+            среднее RV за [t+a, t+b]; обучение — годы < vy, эмбарго по концу цели (дата строки t+b тикера < 1 янв. vy)"
+  scheme:
+    direct: "ряд дизайна без изменений"
+    decomp: "h=5, k=1: (ŷ₁ + 4·HAR[2..5])/5; h=22, k=1: (ŷ₁ + 4·HAR[2..5] + 17·HAR[6..22])/22; h=22, k=5: (5·ŷ₅ + 17·HAR[6..22])/22 (Д18, x2 Д22)"
+    iterated: "дневная HAR d0 шага (ln RV_d, ln mean5, ln mean22), путь f_1 = ŷ₁, f_j — рекурсия с поправкой δ = ln leg_1 − HAR_daily(t)
+               на каждом шаге (Д20 = x6 Д22); k' = k_iter (k' < h: дальняя часть HAR[k'+1..h]); итог = (iter + прямой)/2 в уровнях (mix_lvl Д26.2)"
+    joint_h: "одна HAR на объединённой выборке h' ∈ {1, 5, 22}: регрессоры HAR-J, они же × ln h', фиктивные h' (Д24.2 в эконометрике);
+              итог = (joint + прямой)/2 в уровнях"
+    perlead: "h=5: (ŷ₁ + Σ_{j=2..5} HAR[j..j])/5 — прямые модели по лидам, лид 1 = гибрид h=1 (Д26.3 в эконометрике)"
+  decomp_k: {5: [1], 22: [1, 5]}
+  iterated_k: {5: [5], 22: [5, 10]}      # h=5, k=10 = k=5 (весь горизонт) -> не применим
+  slope: "Д25.3: ŝ = HAR-J на ln(RV̄_h / RV̄_k), k = 5 при h=22, k = 1 при h=5; ŷ_h = ŷ_k · exp(ŝ); только при scheme = direct"
+  persist:
+    rule: "ln ŷ_h ← ln ŷ_h + ρ·r̂₁, r̂₁ = ln base_1 − ln leg_1; ρ шага t — по OOS-строкам шагов < t с эмбарго h (конец цели < 1 янв. vy_t);
+           шаг 1 — ρ = 0 (истории нет)"
+    OLS: "без константы по res = ln y − ln ŷ_h (Д19.1)"
+    qlike: "argmin QLIKE с профильным масштабом (c = mean(y/f)), ρ ∈ [−1; 3]"
+    pos_neg: "OLS отдельно для r̂₁ > 0 и r̂₁ < 0"
+    sqrtRQ: "ρ_d = ρ₀ + ρ₁·q_d, q_d = √(n_bars·rkurt/3) ∧ 10 (= √RQ_d / RV_d, r1q Д22), OLS без константы"
+    rho_bounds: [-1.0, 3.0]
+  reconcile:
+    MinT: "узлы (RV̄₅, RV̄₂₂, RV̄₁, RV̄₂₋₅, RV̄₆₋₂₂) = S·b, b = (RV̄₁, RV̄₂₋₅, RV̄₆₋₂₂); базовые: ряд h=5, ряд h=22, ŷ₁, HAR[2..5], HAR[6..22];
+           W = D·Σ·D, D = diag(ŷ) строки, Σ — Ледуа–Вольф по относительным ошибкам y/ŷ − 1 OOS-строк шагов < t с эмбарго 22;
+           b̃ = (S'W⁻¹S)⁻¹S'W⁻¹ŷ; шаг 1 — без согласования (истории нет)"
+  h1: "persist и reconcile на h=1 — фиктивные (ряд не меняется, факторы M и N скрининга); scheme ≠ direct и slope на h=1 — не применимы"
+
+# ---- кластер 11: нога τ × g (детерминирована, кроме tau_boost — seed дизайна)
+struct:
+  component: "rv_whole: Z = RV; bv_plus_jump: Z = C = RV − J (= min(RV, BV)), прогноз = Ĉ_h + Ĵ_h"
+  single: "HAR-J на Z (single + rv_whole = нога L HARJ — не применим)"
+  g: "HAR на ln(Z/τ_t): ln Z_d − ln τ_t, ln mean5 Z − ln τ_t, ln mean22 Z − ln τ_t + скачки HAR-J; цель ln Z̄_h − ln τ̄_ext; ln ŷ = ln τ̄_ext + ĝ"
+  tau_midas: "τ_t = Σ_{k<W} φ_k(ω) Z_{t−k}, φ_k ∝ (1 − k/W)^(ω−1), ω ∈ omega_grid — минимум in-sample MSE итоговой модели на окне шага"
+  tau_rvi: "ln τ_t = a_тикер + b·ln RVI_t² (close_RVI, ffill), OLS ln(среднего Z за W дней по d) на окне шага; нет RVI — плоское среднее за W"
+  tau_boost: "LightGBM: ln Z̄_{t+1..t+W} по медленным признакам (ln средних Z за 5/22/66/W, ln RVI², ln RV IMOEX за 22, тикер);
+              обучение — годы < vy с эмбарго W; на строках обучения — кросс-фит по годам окна (год Y — модель без года Y и без целей, заходящих в Y)"
+  tau_extend: "const: τ̄ = τ_t; AR1: ln τ − μ_тикер = φ^j (ln τ_t − μ_тикер), φ — пул по окну шага, τ̄ = среднее за j = 1..h"
+  jump: "Ĵ_h = OLS уровней J̄_{t+1..t+h} на (1, J_d, mean5 J, mean22 J) на окне шага с эмбарго, ∨ 0"
+  omega_grid: [1, 2, 4, 8]
+  lgbm: {num_leaves: 15, learning_rate: 0.05, n_estimators: 150, min_data_in_leaf: 300, feature_fraction: 0.8, bagging_fraction: 0.8,
+         bagging_freq: 1, lambda_l2: 1.0, num_threads: 1, deterministic: true, verbose: -1}
+  floor: 1.0e-6                          # пол уровня Z для логов (как RV_FLOOR Д22)
+
+# ---- охрана (кластер 9, п. 2.6) — на каждом новом контуре
+guards:
+  shift_check: {s: [-2, -1, 0, 1], years: [2017, 2021], stat: spearman_median_by_ticker, need_argmax: 0}
+  leak:
+    cuts_mid: ['2017-06-30', '2018-03-31']   # строки <= среза совпадают точно (Δ = 0)
+    cut_year_end: '2016-12-31'               # параметры шагов с vy <= год среза + 1 совпадают точно (эмбарго)
+    noise: [0.5, 2.0]                        # всё числовое после среза (признаки и входные ряды) × U(0,5; 2)
+    plants: [look1, noemb]                   # look1 — регрессоры и входы дня d+1; noemb — без эмбарго: оба должны быть пойманы
+    tol: 0.0
+  control: {tol: 1.0e-7, note: "HAR[1..h] модуля = нога L HARJ_emb_d0_h{h} на шагах дыма, 17 тикеров"}
+
+# ---- дым на Маке (раздел 6 протокола): 3 тикера × шаги 1–3 × seed 42 × h ∈ {1, 5, 22}; без боевого счёта, без выбора
+dym:
+  tickers: [SBER, LKOH, AFLT]
+  steps: [1, 2, 3]
+  seed: 42
+  h: [1, 5, 22]
+  designs:
+    - {name: direct,         mh: {scheme: direct}}
+    - {name: persist_OLS,    mh: {persist: OLS}}
+    - {name: persist_qlike,  mh: {persist: qlike}}
+    - {name: persist_pos_neg, mh: {persist: pos_neg}}
+    - {name: persist_sqrtRQ, mh: {persist: sqrtRQ}}
+    - {name: decomp_k1,      mh: {scheme: decomp, decomp_k: 1}}
+    - {name: decomp_k5,      mh: {scheme: decomp, decomp_k: 5}, only_h: [22]}
+    - {name: iterated_k5,    mh: {scheme: iterated, iterated_k: 5}}
+    - {name: iterated_k10,   mh: {scheme: iterated, iterated_k: 10}, only_h: [22]}
+    - {name: joint_h,        mh: {scheme: joint_h}}
+    - {name: perlead,        mh: {scheme: perlead}, only_h: [5]}
+    - {name: slope,          mh: {slope: 'on'}}
+    - {name: reconcile_MinT, mh: {reconcile: MinT}}
+    - {name: persist_qlike_MinT, mh: {persist: qlike, reconcile: MinT}}
+    - {name: struct_single_bvj, leg: {struct: single, struct_split: bv_plus_jump}}
+    - {name: tau_midas,      leg: {struct: tau_midas, tau_window: 22}}
+    - {name: tau_midas_66_ar1, leg: {struct: tau_midas, tau_window: 66, tau_extend: AR1}}
+    - {name: tau_rvi,        leg: {struct: tau_rvi, tau_window: 44}}
+    - {name: tau_rvi_bvj,    leg: {struct: tau_rvi, tau_window: 22, struct_split: bv_plus_jump}}
+    - {name: tau_boost,      leg: {struct: tau_boost, tau_window: 22}}
+    - {name: tau_boost_ar1,  leg: {struct: tau_boost, tau_window: 66, tau_extend: AR1}}
