@@ -27,7 +27,11 @@ python3 scripts/analysis/final_test_r2.py --scope test          # ОДИН ра�
     исключённые точки — table_3_zakrytie_isklyucheno_test_r2.csv; правило — test_dop2.masks + first_trade, контроль — текст дирижёра
     (на тикер последние h торговых дней до 25.02.2022);
   дополнительно: table_3_periody_* (QLIKE / RMSE / MAE: 2022–2026 основной, 2025 – 01/02.2026, 2017–2026 справочно) и
-    table_3_dm_vs_F_* (против F_h(d0), только h с победителем R2).
+    table_3_dm_vs_F_* (против F_h(d0), только h с победителем R2);
+  h=22, вторичные свидетельства (блок владельца 20:10, объявлены в FINAL_DESIGN_round2 до открытия) — table_3_h22_vtorichnye_*:
+    основной — панельный DM против HAR-J (б) на 2022–2026 (тот же, что в 3.8); вторичные — тот же DM на 2017–2026 (оговорка: 2017–2021
+    участвовали в отборе), MCS на обоих периодах, DM по неперекрывающимся точкам отсчёта (первая торговая дата периода и каждая 22-я
+    далее, средняя по тикерам, без NW).
 Сверка кода с первым тестом: строки моделей, которые в d0 не менялись (V0 XGBoost / LightGBM, лучшая одиночная бустинга), побайтно
   совпадают с table_3_*_test_raw.csv и таблицами периодов _test_bez_zakrytiya / _test_<--first-close-tag>; строки эталонов и гибрида
   в d0 другие и не сверяются. Расхождение — СТОП (STOP_R2.txt, код выхода 3).
@@ -278,6 +282,49 @@ def dm_vs_F(frames, r2_hs):
     return pd.DataFrame(out, columns=['H', 'эталон', 'способ', 'n', 't', 'p_two', 'p_one_H1', 'mean_d'])
 
 
+# ---------------------------------------------------------------- h=22: вторичные свидетельства (блок владельца 20:10, объявлены в FD до открытия)
+V22 = {'kontrol': ('2022–2026 (контрольный)', 2022, 2026, ''),
+       'vse': ('2017–2026', 2017, 2026, 'годы 2017–2021 участвовали в отборе (LOYO) — не независимая оценка')}
+SHAG22 = 22
+
+
+def tochki22(dates, shag=SHAG22):
+    """Неперекрывающиеся точки отсчёта: отсортированные торговые даты периода (объединение по тикерам кадра), первая дата периода
+    и далее каждая 22-я (позиции 0, 22, 44, …). Окна цели [t+1, t+22] соседних точек не пересекаются."""
+    u = np.sort(pd.unique(pd.to_datetime(dates)))
+    return u[::shag]
+
+
+def dm_neperekr(df, ref, shag=SHAG22):
+    """DM по неперекрывающимся точкам: в каждой точке — средняя по тикерам разность потерь QLIKE (эталон − гибрид); t без NW (лаг 0)."""
+    t0 = set(tochki22(df.date.values, shag))
+    g = df[pd.to_datetime(df.date).isin(t0)]
+    d = FT.S.qloss(g.rv_actual.values, g[ref].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values)
+    return FT.S.dm_series(FT.S.daily(g.date.values, d), 1), int(g.date.nunique())
+
+
+def vtorichnye22(fr, B, rlab):
+    """h=22: основной — панельный DM (дневной ряд средней по тикерам, NW лаг 21) против HAR-J (б) на 2022–2026; вторичные — DM на
+    2017–2026 тем же способом, MCS, DM по неперекрывающимся месячным точкам (каждая 22-я торговая дата, без NW). -> таблица."""
+    if 22 not in fr:
+        return pd.DataFrame()
+    rows = []
+    for tag, (label, a, b, ogov) in V22.items():
+        g = fr[22][fr[22].year.between(a, b)].reset_index(drop=True)
+        r = FT.S.dm_main(g, FTST.ETALON, 22)
+        rows.append(dict(svidetelstvo='основное' if tag == 'kontrol' else 'вторичное', metod='панельный DM (дневной ряд, NW лаг 21) против HAR-J (б)',
+                         period=label, n=r['n'], t=round(r['t'], 2), p_odnostor=FT.pf(r['p_one']), mean_d=r['mean_d'], ogovorka=ogov))
+        r2, nd = dm_neperekr(g, FTST.ETALON)
+        rows.append(dict(svidetelstvo='вторичное', metod='DM по неперекрывающимся месячным точкам (каждая 22-я торговая дата), без NW',
+                         period=label, n=nd, t=round(r2['t'], 2), p_odnostor=FT.pf(r2['p_one']), mean_d=r2['mean_d'], ogovorka=ogov))
+        mc = FT.mcs_table({22: g}, B)
+        for _, x in mc.iterrows():
+            rows.append(dict(svidetelstvo='вторичное', metod=f'MCS: {x["Модель"]}', period=label, n=int(x['дней']), t=np.nan,
+                             p_odnostor=np.nan, mean_d=x['средний дневной QLIKE'], p_MCS_T_R=x['p_MCS T_R'], p_MCS_T_max=x['p_MCS T_max'],
+                             ogovorka=ogov))
+    return pd.DataFrame(rows).assign(h=22, pravilo=rlab, primechanie='основной результат h=22 — панельный DM на 2022–2026; прочее — вторичное')
+
+
 # ---------------------------------------------------------------- сверка кода с первым тестом (только строки, не менявшиеся в d0)
 # (имя таблицы, разделитель, ключ, колонка модели, исключаемые префиксы колонок, только эти колонки)
 SVERKA = [(n, ',', ['Модель'], 'Модель', (), None) for n in ('3_4', '3_4_rmse', '3_4_mae', '3_6', '3_6_rmse', '3_6_mae', '3_7', '3_7_rmse', '3_7_mae')] + [
@@ -374,6 +421,8 @@ def run_r2(src, locked, first_tables, out_tables, feat, B, lock=True, need_fd=Tr
             period_tables(fr, RULES[ver], out_tables, f'test_r2_{RULES[ver]}', B, r2_hs)
         periody(fr).to_csv(out_tables / f'table_3_periody_{tag}.csv', index=False)
         dm_vs_F(fr, r2_hs).to_csv(out_tables / f'table_3_dm_vs_F_{tag}.csv', index=False)
+        with r2_env(hs, out_tables):
+            vtorichnye22(fr, B, TD2.RULE[RULES[ver]]).to_csv(out_tables / f'table_3_h22_vtorichnye_{tag}.csv', index=False)
         bad, n = [], 0
         if ftag3:
             b3, n3 = sverka(first_tables, out_tables, hs, tag_first=ftag3, tag_r2=tag)
@@ -509,6 +558,33 @@ def selftest():
         sv = pd.read_csv(t2 / 'table_3_kontrol_svodka_test_r2_bez_zakrytiya.csv', sep=';', decimal=',', encoding='utf-8-sig')
         assert sv[sv.h == 22]['DM t vs HAR-J (б)'].notna().all(), 'DM h=22 у победителя R2 должен считаться'
         assert NOTE_R2 in set(sv['пометка'])
+        # 3d. h=22: основной — панельный DM 2022–2026; вторичные — DM 2017–2026 (с оговоркой), MCS, DM по неперекрывающимся точкам
+        v = pd.read_csv(t2 / f'table_3_h22_vtorichnye_{TAG}.csv')
+        osn = v[v.svidetelstvo == 'основное']
+        assert len(osn) == 1 and osn.period.iloc[0].startswith('2022') and osn.metod.iloc[0].startswith('панельный')
+        assert (v.svidetelstvo == 'вторичное').sum() == len(v) - 1
+        F22 = frame_d0(src, lkd, 22)
+        K = F22[F22.year.between(2022, 2026)]
+        r = FT.S.dm_main(K, FTST.ETALON, 22)
+        assert abs(osn.t.iloc[0] - round(r['t'], 2)) < 1e-9
+        r = FT.S.dm_main(F22, FTST.ETALON, 22)
+        vs = v[(v.period == '2017–2026') & v.metod.str.startswith('панельный')]
+        assert vs.svidetelstvo.iloc[0] == 'вторичное' and abs(vs.t.iloc[0] - round(r['t'], 2)) < 1e-9 and 'отборе' in vs.ogovorka.iloc[0]
+        u = np.sort(K.date.unique())
+        pts = u[::22]
+        pos = np.searchsorted(u, pts)
+        assert pos[0] == 0 and (np.diff(pos) == 22).all(), 'точки: позиции 0, 22, 44, … торгового календаря периода'
+        g = K[K.date.isin(pts)]
+        s = pd.Series(FT.S.qloss(g.rv_actual.values, g[FTST.ETALON].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values),
+                      index=g.date.values).groupby(level=0).mean()
+        t_ref = s.mean() / np.sqrt(s.var(ddof=0) / len(s))  # без NW
+        row = v[v.period.str.startswith('2022') & v.metod.str.startswith('DM по неперекр')]
+        assert row.n.iloc[0] == len(pts) == int(np.ceil(len(u) / 22)) and abs(row.t.iloc[0] - round(t_ref, 2)) < 1e-9
+        assert set(v[v.metod.str.startswith('MCS')].period) == {'2022–2026 (контрольный)', '2017–2026'}
+        assert {'MCS: Финальная', 'MCS: HAR-J (б)', f'MCS: {F_NAME}'} <= set(v.metod)
+        assert (t2 / f'table_3_h22_vtorichnye_{TAG_Z}.csv').exists()
+        vz = pd.read_csv(t2 / f'table_3_h22_vtorichnye_{TAG_Z}.csv')
+        assert set(vz.pravilo) == {TD2.RULE['s_zakrytiem']} and (vz.t.dropna() != v.t.dropna()).any()
         fpg = pd.read_csv(t2 / f'table_3_final_po_godam_{TAG}.csv')
         f1 = pd.read_csv(t1 / 'table_3_final_po_godam_test_raw.csv')
         a = fpg[(fpg['Модель'] == 'Гибридная') & (fpg.h == 5)].QLIKE.values
@@ -599,7 +675,8 @@ def selftest():
     print('selftest final_test_r2: OK (версия d0: эталоны (а), (б) и F_h(d0) — сырой ряд ВЫР-1 с s² сборки (t−1, эмбарго), ВЫР-1 с s² R1 — '
           'справочно; HAR-CJ d0 — ВЫР-2; гибрид — R2 или F_h(d0); правило закрытия биржи: test_dop2.masks = текст дирижёра, обе версии и '
           'флаг bez/pravilo/obe; сверка строк, не менявшихся в d0, с первым тестом; до замка — SHA 12 замороженных и 6 собранных (sobrano), '
-          'шаблон FD, rv_actual и число строк R2; замок; цель эталонов = цель кадра):', tmp)
+          'шаблон FD, rv_actual и число строк R2; замок; цель эталонов = цель кадра; h=22 — основной панельный DM 2022–2026 и вторичные: '
+          'DM 2017–2026 с оговоркой, MCS, DM по неперекрывающимся точкам каждые 22 торговые даты без NW — сверены независимым счётом):', tmp)
 
 
 def main():
