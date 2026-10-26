@@ -6,11 +6,21 @@ python3 -m fastbt.s9 cache [--workers 2]     — A (основной дизай�
 python3 -m fastbt.s9 run [--boot-reps 1000]  — надстройки D/B/C, портфели P1–P3, T1–T2 →
                                                docs/tables/strat_dev/*.csv («;», десятичная запятая)
 
-Только --scope dev: σ-источники обрезаются по 31.12.2021, оцениваются годы 2018–2021, валидация
-2017…Y−1 (маска _year_bounds(...)[0]). Надстройки применяются к позиции A основного дизайна того
-же года (fastbt/designs/final/main.yaml: ансамбль A + фильтр оборота); эталоны — A и C (u02)
-основного дизайна на том же σ. Все окна, перцентили, медианы — только прошлые бары (сдвиг на 1).
-Сетки — docs/otchety/dev_log_strategies.md, строка «С9 … сетки объявлены до запуска».
+--scope dev (по умолчанию): σ-источники обрезаются по 31.12.2021, оцениваются годы 2018–2021,
+валидация 2017…Y−1 (маска _year_bounds(...)[0]). Надстройки применяются к позиции A основного
+дизайна того же года (fastbt/designs/final/main.yaml: ансамбль A + фильтр оборота); эталоны — A и
+C (u02) основного дизайна на том же σ. Все окна, перцентили, медианы — только прошлые бары (сдвиг
+на 1). Сетки — docs/otchety/dev_log_strategies.md, строка «С9 … сетки объявлены до запуска».
+
+--scope test — тот же код на 2022–03.02.2026 (σ до TEST_CUT, валидация с --val-start, по
+умолчанию 2017, как в разработке; σ_pred h=1 по умолчанию final3). Замок тот же, что у fastbt.dev
+и fastbt.final_test: без docs/otchety/FINAL_DESIGN_strategies.md — отказ (fastbt.dev.TestLocked)
+до чтения любых данных. Выбор B/C/D по С8 не повторяется: ключи берутся из таблиц разработки
+(docs/tables/strat_dev/s9_*<суффикс>.csv). C (владелец 26.10, 10:00): основная строка — одна
+точка TEST_C = C1 W504 p70 на h=5 (s9_C_osnovnaya), остальная сетка C — s9_C_chuvstvitelnost с
+пометкой «чувствительность» (справочно, без выбора и проверки гипотез). Наивная √RV_w и RVI — отдельные файлы *_test.parquet
+(sources --scope test), seed-σ в тесте нет. Выход — docs/tables/strat_test/s9_*<суффикс>_test.csv,
+кэш и журнал — data/fastbt/s9/*<суффикс>_test.*.
 """
 from __future__ import annotations
 
@@ -57,14 +67,45 @@ RVI = OUT / "rvi_1850.parquet"
 # период стратегий; на 2017–2021 побитно равен final3.
 SIGMA_H1 = {"final2": REGEN / "sigma_pred_h1_final2.parquet",
             "final3": REGEN / "sigma_pred_h1_final3.parquet",
-            "FINAL": REGEN / "sigma_pred_h1_FINAL.parquet"}
+            "FINAL": REGEN / "sigma_pred_h1_FINAL.parquet",
+            # тот же ряд final3, собранный кодом главы 3 на весь период (sigma_pred_h1_final3_full.py);
+            # побитно = final3 (SHA 5bed7be9…), таблицы и кэш — с суффиксом _final3
+            "final3_full": REGEN / "sigma_pred_h1_final3_full.parquet"}
 SUFFIX = ""
+SCOPE = "dev"
+TABLES_DEV = ROOT / "docs" / "tables" / "strat_dev"      # источник выбора по С8 для теста
+T2_CUT, T2_LABELS = "2020-03-01", ("2018–2021", "до 1.03.2020", "с 1.03.2020")
+# тест: σ_pred h=1/h=5 и HAR-J — до 03.02.2026; 2026 — неполный год (январь)
+TEST_YEARS = (2022, 2023, 2024, 2025, 2026)
+TEST_CUT = pd.Timestamp("2026-02-03")
+TEST_TABLES = Path(os.environ.get("S9_TABLES", ROOT / "docs" / "tables" / "strat_test"))
+# владелец 26.10, 10:00: на тест из сетки C — одна точка C1 W504 p70 на h=5 (выбрана по С8 на разработке)
+TEST_C = ("C1:W504_p70", "hyb_h5")
+
+
+def set_scope(scope: str, val_start: int = VAL_START) -> None:
+    """Переключает годы, срез σ, источники и папку таблиц. test — только при снятом замке."""
+    global SCOPE, YEARS, VAL_START, CUT, RVI, TABLES, T2_CUT, T2_LABELS
+    if scope == "dev":
+        return
+    from fastbt import dev
+    dev.check_scope(scope)                 # без FINAL_DESIGN_strategies.md — TestLocked
+    SCOPE, YEARS, VAL_START, CUT = scope, TEST_YEARS, val_start, TEST_CUT
+    SOURCES["naive_h1"] = (OUT / "sigma_naive_rvw_test.parquet", "sigma_pred_h1", "h1")
+    for s in (42, 43, 44):                 # seed-σ — реализации D12_h1 на 2017–2021
+        SOURCES.pop(f"seed{s}_h1", None)
+    RVI = OUT / "rvi_1850_test.parquet"
+    TABLES = TEST_TABLES
+    T2_CUT, T2_LABELS = "2025-01-01", ("2022–2026", "2022–2024", "2025–01.2026")
 
 
 def use_sigma_h1(name: str, suffix: str | None = None) -> None:
     global SUFFIX
     SOURCES["hyb_h1"] = (SIGMA_H1[name], "sigma_pred_h1", "h1")
-    SUFFIX = ("" if name == "final2" else f"_{name}") if suffix is None else suffix
+    tag = name.replace("_full", "")
+    SUFFIX = ("" if tag == "final2" else f"_{tag}") if suffix is None else suffix
+    if SCOPE != "dev":
+        SUFFIX += f"_{SCOPE}"
 
 
 def to_csv(df: pd.DataFrame, name: str) -> Path:
@@ -92,6 +133,13 @@ def build_sources() -> None:
     nv.dropna().to_parquet(SOURCES["naive_h1"][0], index=False)
     rvi = f.dropna(subset=["close_RVI"]).groupby("date")["close_RVI"].first().reset_index()
     rvi.to_parquet(RVI, index=False)
+    if SCOPE != "dev":
+        (OUT / f"sources_README_{SCOPE}.json").write_text(json.dumps(dict(
+            naive=f"sqrt(rv_w) из features_pit_v3 (строка дня t, RV дней t−5…t−1), "
+                  f"2017-01-03…{CUT.date()}", rvi="close_RVI (срез 18:50) из features_pit_v3",
+            rows=dict(naive=int(nv.dropna().shape[0]), rvi=len(rvi))), ensure_ascii=False, indent=1))
+        print("σ-источники (тест):", SOURCES["naive_h1"][0].name, RVI.name)
+        return
     steps = pd.read_csv(REGEN / "sigma_pred_h1_final2_steps.csv")
     F = dict(zip(steps["test_year"], steps["F"]))
     src = {42: REGEN / "D12_h1_A_d812_xgb_h1_val.parquet",
@@ -136,7 +184,9 @@ def align(dates: np.ndarray, d: pd.DataFrame) -> np.ndarray:
 # ======================= кэш A и C основного дизайна =======================
 
 def _job(args):
-    ticker, srcs = args
+    ticker, srcs = args[:2]
+    if len(args) > 2:                      # тест: в процессе spawn глобальные настройки заново
+        set_scope(*args[2])
     os.environ["NUMBA_NUM_THREADS"] = "1"
     from fastbt import dev, masks, turnover
     from fastbt import design as dsg
@@ -145,8 +195,11 @@ def _job(args):
     from fastbt.data import load_ticker
     from fastbt.unit import make_unit
     d, _ = dev.load_design(MAIN_YAML)
-    cfg = dev.make_config(d, "dev")
-    cfg5 = dev.make_config({**d, "horizons": ["h5"]}, "dev")
+    cfg = dev.make_config(d, SCOPE)
+    cfg5 = dev.make_config({**d, "horizons": ["h5"]}, SCOPE)
+    if SCOPE != "dev":
+        cfg = dataclasses.replace(cfg, val_start=VAL_START)
+        cfg5 = dataclasses.replace(cfg5, val_start=VAL_START)
     dsg.apply(cfg.design)
     td = load_ticker(ticker, cfg.corp_actions)
     sig = {lab: (h, align(td.dates, df)) for lab, (h, df) in srcs.items()}
@@ -157,6 +210,8 @@ def _job(args):
         a = ApproachA(u, cfg).run()
         a_tf = turnover.apply(a, u, cfg, "A")
         out["A"][sid] = {Y: v[1].astype(np.float64) for Y, v in a_tf.items()}
+        if SCOPE != "dev":                 # п. 15 (10:05): A без фильтра оборота — рядом с основным
+            out.setdefault("A0", {})[sid] = {Y: np.asarray(v[1], np.float64) for Y, v in a.items()}
         for lab, (h, arr) in sig.items():
             c_cfg = cfg if h == "h1" else cfg5
             dsg.apply(c_cfg.design)
@@ -180,6 +235,8 @@ def cache_key() -> str:
     h.update(MAIN_YAML.read_bytes())
     for lab, (p, _, _) in SOURCES.items():
         h.update(lab.encode() + hashlib.sha1(Path(p).read_bytes()).digest())
+    if SCOPE != "dev":
+        h.update(f"{SCOPE}|{VAL_START}|{CUT.date()}".encode())
     return h.hexdigest()[:10]
 
 
@@ -187,7 +244,8 @@ def build_cache(workers: int = 2) -> Path:
     from fastbt.data import TICKERS
     os.environ["FASTBT_VPRED"] = str(SOURCES["hyb_h1"][0])
     srcs = {lab: (SOURCES[lab][2], load_source(lab)) for lab in SOURCES}
-    jobs = [(t, {lab: (h, df[df["ticker"] == t]) for lab, (h, df) in srcs.items()})
+    extra = () if SCOPE == "dev" else ((SCOPE, VAL_START),)
+    jobs = [(t, {lab: (h, df[df["ticker"] == t]) for lab, (h, df) in srcs.items()}) + extra
             for t in TICKERS]
     t0 = time.time()
     res = {}
@@ -494,6 +552,18 @@ class S9:
         d, pv, _, _ = boot_delta(p1["excess"].values, p0["excess"].values, self.reps)
         return d, pv
 
+    def delta(self, r: dict, key: str, p1, p0) -> None:
+        """r[d_key], r[p_key]. dev — парный IID (как прежде). test (владелец 26.10, 10:05, п. 12):
+        основной p — Ледуа–Вольф, круговой блочный, блок 5; IID — справочно в p_key_iid."""
+        d, pv = self.boot(p1, p0)
+        r[f"d_{key}"] = d
+        if SCOPE == "dev":
+            r[f"p_{key}"] = pv
+            return
+        from fastbt.s9_stats import lw_sharpe_diff
+        r[f"p_{key}"] = lw_sharpe_diff(p1["excess"].values, p0["excess"].values, self.reps, 5)[2]
+        r[f"p_{key}_iid"] = pv
+
     def row(self, pos, family, point, h, src, extra=None, g=None, c_ref=None):
         e = self.e
         p, pm = e.port(pos), e.port(pos, cap=MARGIN)
@@ -506,10 +576,10 @@ class S9:
         r.update(m)
         r["sharpe_margin"] = metrics(pm)["sharpe"]
         r["sharpe_A"], r["sharpe_A_margin"] = self.mA["sharpe"], self.mAm["sharpe"]
-        r["d_vs_A"], r["p_vs_A"] = self.boot(p, self.A)
+        self.delta(r, "vs_A", p, self.A)
         if c_ref is not None:
             r["sharpe_C"] = metrics(self.C[c_ref])["sharpe"]
-            r["d_vs_C"], r["p_vs_C"] = self.boot(p, self.C[c_ref])
+            self.delta(r, "vs_C", p, self.C[c_ref])
         r.update(c8(m, self.mA))
         return r, p
 
@@ -657,7 +727,7 @@ class S9:
                         r = dict(family="B", point=lab, h=h, sigma=src, scenario=sc,
                                  **self._bcols(p, pg))
                         r["mean_weight"], r["max_weight"] = float(g.mean()), float(g.max())
-                        r["d_vs_A"], r["p_vs_A"] = self.boot(p, ref)
+                        self.delta(r, "vs_A", p, ref)
                         r.update(c8(metrics(p), metrics(ref)))
                         rows.append(r)
                         if sc == "спот":
@@ -718,7 +788,7 @@ class S9:
             m = metrics(self.C[src])
             r = dict(family="C основного дизайна (u02)", point="как в коде", h=h, sigma=src,
                      **m, sharpe_margin=metrics(self.Cm[src])["sharpe"])
-            r["d_vs_A"], r["p_vs_A"] = self.boot(self.C[src], self.A)
+            self.delta(r, "vs_A", self.C[src], self.A)
             r.update(c8(m, self.mA))
             rows.append(r)
             ports[("Cref", src)] = (self.C[src], self.C_rows[src])
@@ -789,7 +859,7 @@ class S9:
                     if wn == "равные":
                         refs[(bn, sc)] = p
                     else:
-                        r["d_vs_equal"], r["p_vs_equal"] = self.boot(p, refs[(bn, sc)])
+                        self.delta(r, "vs_equal", p, refs[(bn, sc)])
                     rows.append(r)
         return pd.DataFrame(rows)
 
@@ -807,8 +877,8 @@ class S9:
         for nm, p in (("равные доли A/B/C/D", eq), ("среднее позиций A/B/C/D", avg)):
             r = dict(portfolio=nm, **metrics(p))
             r["best_single"] = best_k
-            r["d_vs_best"], r["p_vs_best"] = self.boot(p, singles[best_k])
-            r["d_vs_A"], r["p_vs_A"] = self.boot(p, self.A)
+            self.delta(r, "vs_best", p, singles[best_k])
+            self.delta(r, "vs_A", p, self.A)
             rows.append(r)
         eqm = e.mix([e.port(v[1], cap=MARGIN) for v in sel.values()], cap=MARGIN)
         avgm = e.port(sum(v[1] for v in sel.values()) / len(sel), cap=MARGIN)
@@ -850,10 +920,10 @@ class S9:
 
     def run_t2(self, sel_ports: dict):
         rows = []
-        cut = pd.Timestamp("2020-03-01")
+        cut = pd.Timestamp(T2_CUT)
         for nm, p in sel_ports.items():
-            for per, mask in (("2018–2021", slice(None)),
-                              ("до 1.03.2020", p.index < cut), ("с 1.03.2020", p.index >= cut)):
+            for per, mask in ((T2_LABELS[0], slice(None)),
+                              (T2_LABELS[1], p.index < cut), (T2_LABELS[2], p.index >= cut)):
                 q = p.loc[mask] if not isinstance(mask, slice) else p
                 rows.append(dict(design=nm, period=per, sharpe=sharpe(q["excess"]),
                                  ann_excess_pct=float(q["excess"].mean() * 252 * 100),
@@ -874,9 +944,9 @@ def load_cache() -> dict:
 def check_against_pipeline(eng: Engine, s9: "S9") -> str:
     """Сверка движка с fastbt.msp.portfolio на позициях пробного прогона основного дизайна."""
     from fastbt import msp
-    p = MAIN / "data" / "fastbt" / "final_dev_main.parquet"
+    p = MAIN / "data" / "fastbt" / f"final_{SCOPE}_main.parquet"
     if not p.exists():
-        return "нет final_dev_main.parquet — сверка пропущена"
+        return f"нет {p.name} — сверка пропущена"
     pos = pd.read_parquet(p)
     pos = pos[pos["test_year"].isin(YEARS)]
     out = []
@@ -905,29 +975,25 @@ def run_all_experiments(reps: int) -> None:
     print(f"B: {len(dfb)} строк, {time.time() - t0:.0f} с", flush=True)
     # C (+ HAR-J, наивная для C3)
     dfc, cports = s9.run_c(("hyb_h1", "hyb_h5", "harj_h1", "naive_h1"))
-    to_csv(dfc, "s9_C_rezhim.csv")
+    if SCOPE == "dev":
+        to_csv(dfc, "s9_C_rezhim.csv")
+    else:                                  # тест: одна заданная точка C + сетка «чувствительность»
+        kt = frozen_keys()
+        main_c, sens_c = split_c_test(dfc, kt["C"])
+        to_csv(main_c, "s9_C_osnovnaya.csv")
+        to_csv(sens_c, "s9_C_chuvstvitelnost.csv")
     dfc3 = s9.run_c3(cports)
     to_csv(dfc3, "s9_C3_tochnost_v_rezultat.csv")
     print(f"C: {len(dfc)} строк, C3 {len(dfc3)}, {time.time() - t0:.0f} с", flush=True)
-    # выбор лучших по С8
-    fam_d = dfd[dfd["point"] == "семья"].copy()
-    best_d = rank_c8(fam_d).iloc[0]
-    best_d1 = rank_c8(fam_d[fam_d["h"] == "h1"]).iloc[0]
-    bsp = dfb[(dfb["family"] == "B") & (dfb["scenario"] == "спот")]
-    best_b = rank_c8(bsp).iloc[0]
-    best_b1 = rank_c8(bsp[bsp["h"] == "h1"]).iloc[0]
-    cc = dfc[dfc["sigma"].isin(["hyb_h1", "hyb_h5"])]
-    best_c = rank_c8(cc).iloc[0]
-    dkey = (best_d["family"].replace(" (выбор по валидации)", ""), best_d["sigma"])
-    bkey = (best_b["point"], best_b["sigma"])
-    ckey_name = ("Cref" if best_c["family"].startswith("C основного") else
-                 (best_c["family"].replace(" (выбор по валидации)", " семья")
-                  if best_c["point"] == "семья" else f"{best_c['family']}:{best_c['point']}"))
-    ckey = (ckey_name, best_c["sigma"])
+    # выбор лучших по С8 (в тесте — не повторяется: ключи из таблиц разработки)
+    k = select_keys(dfd, dfb, dfc) if SCOPE == "dev" else kt
+    dkey, bkey, ckey, dk1, b1 = k["D"], k["B"], k["C"], k["D1"], k["B1"]
     sel = {"A": (s9.A, eng.A_row), "B": bports[bkey], "C": cports[ckey], "D": dports[dkey]}
     choice = dict(D=f"{dkey[0]} на {dkey[1]}", B=f"{bkey[0]} на {bkey[1]}",
                   C=f"{ckey[0]} на {ckey[1]}")
-    log.append(f"выбор по С8: {choice}")
+    log.append(f"выбор по С8{'' if SCOPE == 'dev' else ' (из разработки)'}: {choice}")
+    if SCOPE != "dev":
+        to_csv(main_rows(s9, eng, sel, choice, k["passed"]), "s9_osnovnye.csv")
     print(log[-1], flush=True)
     dfp2, p2 = s9.run_p2(sel)
     to_csv(dfp2, "s9_P2_multistrategiya.csv")
@@ -938,13 +1004,11 @@ def run_all_experiments(reps: int) -> None:
     dj, dpj = s9.run_d(("harj_h1",))
     to_csv(dj, "s9_D_zatvor_harj.csv")
     bj, bpj = s9.run_b(("harj_h1",))
-    dk1 = best_d1["family"].replace(" (выбор по валидации)", "")
     pairs = {"C основного дизайна (u02)": (s9.C["hyb_h1"], s9.C["harj_h1"]),
              "C1 семья": (cports[("C1 семья", "hyb_h1")][0], cports[("C1 семья", "harj_h1")][0]),
              "C2 семья": (cports[("C2 семья", "hyb_h1")][0], cports[("C2 семья", "harj_h1")][0]),
              f"D лучший на h=1: {dk1}": (dports[(dk1, "hyb_h1")][0], dpj[(dk1, "harj_h1")][0]),
-             f"B лучший на h=1: {best_b1['point']}": (bports[(best_b1["point"], "hyb_h1")][0],
-                                                     bpj[(best_b1["point"], "harj_h1")][0])}
+             f"B лучший на h=1: {b1}": (bports[(b1, "hyb_h1")][0], bpj[(b1, "harj_h1")][0])}
     to_csv(s9.run_p3(pairs), "s9_P3_fko.csv")
     # T1/T2
     t_sel = {"A": eng.A_row, f"B {choice['B']}": sel["B"][1], f"C {choice['C']}": sel["C"][1],
@@ -964,11 +1028,11 @@ def run_all_experiments(reps: int) -> None:
         bb, bpp = (dfb, bports) if sd == "hyb_h1" else s9.run_b((sd,))
         items = {"C основного дизайна (u02)": s9.C[sd], "C1 семья": cpp[("C1 семья", sd)][0],
                  "C2 семья": cpp[("C2 семья", sd)][0], f"D {dk1}": dpp[(dk1, sd)][0],
-                 f"B {best_b1['point']}": bpp[(best_b1["point"], sd)][0]}
+                 f"B {b1}": bpp[(b1, sd)][0]}
         for nm, p in items.items():
             m = metrics(p)
             r = dict(sigma=sd, design=nm, **m)
-            r["d_vs_A"], r["p_vs_A"] = s9.boot(p, s9.A)
+            s9.delta(r, "vs_A", p, s9.A)
             r.update(c8(m, s9.mA))
             seed_rows.append(r)
     if seed_rows:
@@ -980,21 +1044,100 @@ def run_all_experiments(reps: int) -> None:
     print("\n".join(log))
 
 
+def main_rows(s9: "S9", eng: Engine, sel: dict, choice: dict, passed: dict) -> pd.DataFrame:
+    """Тест (владелец 26.10, 10:05, п. 13, 15): по одному дизайну на подход, выбранному по С8 на
+    разработке; основной A — с фильтром оборота, A без фильтра — рядом (справочно); Δ к A —
+    p Ледуа–Вольфа (блок 5) основной, IID справочно; маржа — отдельная таблица, здесь только спот."""
+    rows = []
+    a0 = eng.rows_from({(t, s): eng.cache[t]["A0"][s] for t, s in eng.pairs})
+    items = [("A", "A основного дизайна (с фильтром оборота) — база С8 и H3", s9.A, "")]
+    items.append(("A без фильтра", "A без фильтра оборота — справочно", eng.port(a0), ""))
+    for ap in ("B", "C", "D"):
+        note = "" if passed[ap] else "лучшая по С8 на разработке, С8 не прошла"
+        items.append((ap, choice[ap], sel[ap][0], note))
+    for ap, design, p, note in items:
+        r = dict(approach=ap, design=design, note=note, **metrics(p))
+        if ap != "A":
+            s9.delta(r, "vs_A", p, s9.A)
+        rows.append(r)
+    return pd.DataFrame(rows)
+
+
+def _key_of(row, sem=" семья"):
+    return row["family"].replace(" (выбор по валидации)", sem)
+
+
+def select_keys(dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) -> dict:
+    """Лучшие по С8: D (семья), B (спот), C (h=1/h=5 гибрида); D1, B1 — лучшие на h=1 (для P3)."""
+    fam_d = dfd[dfd["point"] == "семья"].copy()
+    best_d = rank_c8(fam_d).iloc[0]
+    best_d1 = rank_c8(fam_d[fam_d["h"] == "h1"]).iloc[0]
+    bsp = dfb[(dfb["family"] == "B") & (dfb["scenario"] == "спот")]
+    best_b = rank_c8(bsp).iloc[0]
+    best_b1 = rank_c8(bsp[bsp["h"] == "h1"]).iloc[0]
+    cc = dfc[dfc["sigma"].isin(["hyb_h1", "hyb_h5"])]
+    best_c = rank_c8(cc).iloc[0]
+    ckey_name = ("Cref" if best_c["family"].startswith("C основного") else
+                 (_key_of(best_c) if best_c["point"] == "семья"
+                  else f"{best_c['family']}:{best_c['point']}"))
+    return dict(D=(_key_of(best_d, ""), best_d["sigma"]), B=(best_b["point"], best_b["sigma"]),
+                C=(ckey_name, best_c["sigma"]), D1=_key_of(best_d1, ""), B1=best_b1["point"],
+                passed={k: bool(v["passed"]) for k, v in (("B", best_b), ("C", best_c), ("D", best_d))})
+
+
+def frozen_keys() -> dict:
+    """Тест: выбор по С8 из таблиц разработки того же σ (docs/tables/strat_dev), без перевыбора."""
+    suf = SUFFIX[:-len(f"_{SCOPE}")] if SCOPE != "dev" else SUFFIX
+
+    def rd(name):
+        p = TABLES_DEV / name.replace(".csv", f"{suf}.csv")
+        d = pd.read_csv(p, sep=";", decimal=",", encoding="utf-8-sig" if suf else "utf-8")
+        for c in ("passed", "positive"):
+            if c in d:
+                d[c] = d[c].map({True: True, False: False, "True": True, "False": False})
+        return d
+    k = select_keys(rd("s9_D_zatvor.csv"), rd("s9_B_targetirovanie.csv"), rd("s9_C_rezhim.csv"))
+    if k["C"] != TEST_C:
+        raise SystemExit(f"C в тест задан владельцем ({TEST_C}), а таблицы разработки дают {k['C']}")
+    return k
+
+
+def split_c_test(dfc: pd.DataFrame, ckey: tuple) -> tuple:
+    """Тест (владелец 26.10, 10:00): основная строка C — одна заданная точка; остальная сетка C —
+    отдельно, «чувствительность»: справочно, без выбора и без проверки гипотез."""
+    name, sig = ckey
+    if name == "Cref":
+        m = dfc["family"].str.startswith("C основного")
+    elif name.endswith(" семья"):
+        m = (dfc["family"] == name.replace(" семья", " (выбор по валидации)")) & (dfc["point"] == "семья")
+    else:
+        fam, pt = name.split(":", 1)
+        m = (dfc["family"] == fam) & (dfc["point"] == pt)
+    m = m & (dfc["sigma"] == sig)
+    if m.sum() != 1:
+        raise SystemExit(f"основная точка C {ckey}: найдено строк {int(m.sum())}, нужна одна")
+    main = dfc[m].assign(rol="основная: одна точка, выбрана по С8 на разработке; на тесте выбора нет")
+    sens = dfc[~m].assign(rol="чувствительность: справочно, без выбора и без проверки гипотез")
+    return main, sens
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("stage", choices=["sources", "cache", "check", "run"])
     p.add_argument("--workers", type=int, default=2)
     p.add_argument("--boot-reps", type=int, default=1000)
     p.add_argument("--scope", choices=["dev", "test"], default="dev")
-    p.add_argument("--sigma-h1", choices=sorted(SIGMA_H1), default="final2",
-                   help="σ_pred гибрида h=1 (final3 — финал третьего круга D22_h1)")
+    p.add_argument("--sigma-h1", choices=sorted(SIGMA_H1), default=None,
+                   help="σ_pred гибрида h=1 (final3 — финал третьего круга D22_h1); "
+                        "по умолчанию dev — final2, test — final3")
     p.add_argument("--suffix", default=None, help="суффикс таблиц/кэша (по умолчанию от --sigma-h1)")
+    p.add_argument("--val-start", type=int, default=VAL_START,
+                   help="начало валидации B/C/D в тесте (в разработке всегда 2017)")
     a = p.parse_args(argv)
     from fastbt import dev
-    dev.check_scope(a.scope)
-    use_sigma_h1(a.sigma_h1, a.suffix)
-    if a.scope != "dev":
-        sys.exit("С9 считается только на разработке (--scope dev)")
+    dev.check_scope(a.scope)               # замок: test без FINAL_DESIGN_strategies.md — отказ
+    set_scope(a.scope, a.val_start)
+    use_sigma_h1(a.sigma_h1 or ("final2" if a.scope == "dev" else "final3_full"), a.suffix)
     if a.stage == "sources":
         build_sources()
     elif a.stage == "cache":
