@@ -54,6 +54,7 @@ REPORT = C.REGEN / CFG['report_dir']
 STATE = C.REGEN / CFG['state_dir']
 FACTOR_V1 = REPO / 'models' / 'designs' / 'r2' / 'factor_v1'
 LOCK = threading.Lock()
+RUN_EXTRA = {}  # модуль -> добавка к {extra} (только дым --real: --tickers у B, BG)
 
 
 def log(*a):
@@ -331,10 +332,10 @@ def route(design):
         need.add('P')
     if g('leg.refit') != 'yearly' or g('leg.rls_lambda') != '1' or g('leg.estimator') != 'log_ols_calib' or g('boost.boost_refit') != 'yearly':
         need.add('R')
-    if g('boost.role') != 'none':
-        need.add('B')
-    if g('boost.grid') == 'resid_small_v1':
+    if g('boost.grid') == 'resid_small_v1':  # точки LHS — только BG (r2_roli.cmd_run такие дизайны пропускает, PR #185)
         need.add('BG')
+    elif g('boost.role') != 'none':
+        need.add('B')
     if any(g(k) not in ('off', 'False', 'direct', 'None') for k in ('mh.scheme', 'mh.persist', 'mh.slope', 'mh.reconcile')) \
             or g('leg.struct') != 'single':
         need.add('M')
@@ -392,6 +393,7 @@ class Runner:
                     return False, f'модуль {m}: ошибка на дизайне {d.get("design")}'
             return True, ''
         faza = 'B' if tag in ('econ', 'B') or tag.startswith('dym') else tag[:1]  # B/эконометрика — план; C/D/E — ворота пред. фазы
+        extra = f'{extra} {RUN_EXTRA.get(m, "")}'.strip()  # дым --real: --tickers для B, BG
         cmd = [sys.executable, str(HERE / spec['file'])] + spec['run'].format(
             designs=dfile, h=h, seeds=' '.join(map(str, seeds)), steps=' '.join(map(str, steps)), workers=workers, extra=extra,
             faza=faza).split()
@@ -748,6 +750,8 @@ def pipeline(h, runner, smoke=False, once=False):
 
     # B
     B = read_designs(f'B_h{h}')
+    if smoke and SMOKE_FLAG.get('real'):
+        B = B[:4]  # дым с модулями: замер на 4 прогонах плана на h
     ok, why = stage('B_schet', lambda: chain(B, h, CFG['B']['seeds'], steps, W, f'B', extra={'B': f'--row-frac {CFG["B"]["row_frac"]} --row-seed {CFG["B"]["row_seed"]}'}))
     if not ok:
         st['zhdyot'] = why
@@ -1009,6 +1013,7 @@ def cmd_smoke_real(a):
     os.environ.update(R2_CACHE=str(SMOKE_ROOT), R2_TICKERS=','.join(SMOKE_TICKERS), R2_BLOCK_FILE=str(base / 'blok_sdvig.csv'))
     C.CACHE_ROOT = SMOKE_ROOT
     SMOKE_FLAG.update(on=True, real=True)
+    RUN_EXTRA.update({m: '--tickers ' + ' '.join(SMOKE_TICKERS) for m in ('B', 'BG')})
     if not (DDIR / 'B_h5.yaml').exists():
         cmd_generate()
     runner = Runner(False)
