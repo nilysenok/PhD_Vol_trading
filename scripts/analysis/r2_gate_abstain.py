@@ -967,6 +967,15 @@ def e8_e1(h=22, write=True, ryady=None, order=None):
             kv = {f'lam={lam_b}__k={k}': (lam_b, k) for k in E8_K}
             R2, rows2, pick2 = block(kv, f'k (λ = {lam_b})')
             sv.append(dict(ryad=nm, poryadok=order, luchshiy_1=best, vhod_1=vh, vlozh_1=pick1, vlozh_2=pick2))
+        elif order == 'joint':  # дирижёр 21:3x: (k, λ) совместно, полностью вложенно — для складки Y выбор по 4 остальным
+            jv = {f'k={k}__lam={l}': (l, k) for k in E8_K for l in E8_LAM}
+            R1, rows1, pick1 = block(jv, 'совместно k × λ')
+            rows1 = [r for r in rows1 if r['variant'] == 'вложенный' or r['lam'] > 0]  # λ = 0 — нога при любом k
+            kf = {f'k=3__lam={l}': (l, 3) for l in E8_LAM}  # сравнение: k = 3 фиксирован (выбран по всем складкам), λ вложенно
+            R2, rows2, pick2 = block(kf, 'k = 3 фиксировано (k выбран по всем складкам), λ вложенно')
+            rows2 = [r for r in rows2 if r['variant'] == 'вложенный']
+            lv, kv = jv, {}
+            sv.append(dict(ryad=nm, poryadok=order, vlozh_1=pick1, vlozh_2=pick2))
         else:  # k_lam: (а) воздержание при λ = 1: halt (k = 0, g = halt ≡ 1 в val) и k ∈ {3, 5, 10}; (б) λ поверх лучшего k
             lv = {('halt' if k == 0 else f'k={k}'): (1.0, k) for k in E8_K}
             R1, rows1, pick1 = block(lv, 'k (λ = 1)')
@@ -985,11 +994,12 @@ def e8_e1(h=22, write=True, ryady=None, order=None):
                 for s in seeds:
                     C.write_series(full, name, mk(f(lam, k, lnC[s])), h, s, module=MODUL, note=f'G E8 (владелец 21:00): {v}, нога ETA_b_d0_s2emb')
             P = pd.DataFrame([r for r in rows1 + rows2]).assign(h=h)
-            write_params(full, P.assign(ryad=f'G_E8_{nm}__*'))
+            write_params(full, P.assign(ryad=f'G_E8_{nm}__*' + ('_joint' if order == 'joint' else ''), poryadok=order))
+    sfx = '_joint' if order == 'joint' else ''
     Tb = pd.DataFrame(tabs)
-    Tb.to_csv(OUTd / f'tablica_E8_h{h}.csv', index=False)
+    Tb.to_csv(OUTd / f'tablica_E8_h{h}{sfx}.csv', index=False)
     Sv = pd.DataFrame(sv)
-    Sv.to_csv(OUTd / f'svodka_E8_h{h}.csv', index=False)
+    Sv.to_csv(OUTd / f'svodka_E8_h{h}{sfx}.csv', index=False)
     return Tb, Sv
 
 
@@ -1019,6 +1029,7 @@ def main():
     ap.add_argument('--workers', type=int)
     ap.add_argument('--phase', default='E')
     ap.add_argument('--root')
+    ap.add_argument('--poryadok', choices=['lam_k', 'k_lam', 'joint'], help='e8-e1: порядок подбора (по умолчанию h=5 k_lam, h=22 lam_k)')
     a = ap.parse_args()
     if a.cmd == 'selftest':
         sys.exit(0 if selftest() else 1)
@@ -1030,7 +1041,7 @@ def main():
         pd.set_option('display.width', 250)
         okv = True
         for h in a.h:  # владелец 21:05: сначала h = 5, затем h = 22
-            Tb, Sv = e8_e1(h)
+            Tb, Sv = e8_e1(h, order=a.poryadok)
             print(Tb.drop(columns=['folds']).round(3).to_string(index=False))
             print(Sv.to_string(index=False))
             LK = e8_leak(h)
