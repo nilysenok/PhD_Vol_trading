@@ -103,6 +103,6 @@ modules:
   BG: {file: r2_resid_grid.py,   yaml: r2_B_roli.yaml,    run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} {extra}", leak: "leak --designs {designs} --h {h}"}
   M:  {file: r2_mh.py,           yaml: r2_M_mh.yaml,      run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs}"}
   L3: {file: r2_calib.py,        yaml: r2_L_calib.yaml,   run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers}", leak: "leak --designs {designs} --h {h}"}
-  E:  {file: r2_ens.py,          yaml: r2_E_ens.yaml,     run: "run --design {design} --h {h}", per_design: true, leak: "leak --h {h}"}
-  G:  {file: r2_gate_abstain.py, yaml: r2_G_abstain.yaml, run: "run --dizayn {design} --h {h}", per_design: true, leak: "dym"}
+  E:  {file: r2_ens.py,          yaml: r2_E_ens.yaml,     run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --faza {faza}", leak: "leak --h {h}"}   # пакет (E, PR #187)
+  G:  {file: r2_gate_abstain.py, yaml: r2_G_abstain.yaml, run: "run --designs {designs} --h {h} --seeds {seeds} --steps {steps} --workers {workers} --phase {faza}", leak: "leak --h {h} --designs {designs}"}   # пакет (G, PR #188)
 chain_order: [L, P, R, B, BG, M, L3, E, G]   # цепочка модулей дизайна; итог дизайна — ряды последнего модуля цепочки
