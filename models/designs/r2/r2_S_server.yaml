@@ -10,7 +10,8 @@ cache:
 
 pool:
   start: fork                        # данные грузятся один раз в родителе (r2_core.share), воркеры получают их копией-при-записи
-  reserve_vcpu: 8                    # воркеров = vCPU − 8 (R2_WORKERS переопределяет); на Маке — явно --workers
+  reserve_vcpu: 8                    # сервер: воркеров = vCPU − 8 (R2_WORKERS переопределяет)
+  mac_workers: 10                    # решение владельца 16:25: весь R2 на Маке, 10 воркеров (R2_WORKERS / --workers переопределяют)
   blas_threads: 1                    # OMP/OPENBLAS/MKL = 1 в каждом воркере; бустинг nthread=1
   writer: per_worker                 # каждый воркер пишет свои файлы (атомарно: tmp + os.replace) и свой файл индекса
 

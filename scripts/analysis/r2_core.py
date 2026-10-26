@@ -27,6 +27,12 @@ API (подробно — docs/server_r2.md, раздел «r2_core»):
     train_mask(A, h, vy) / val_mask(A, h, vy) / inner_masks(A, h, vy)   эмбарго h: окно цели [d+1, d+h] кончается до 1 янв. vy
     step_years(k) -> (vy, train_last); assert_dev_step(k)  шаги разработки 1–6 (val 2016–2021); ≥ 2022 — запрет
 
+  Режим R2 (решение владельца 16:25)
+    check_no_future(df)                                   отказ (PermissionError) писать прогнозы за годы > 2021 — в write_series
+                                                          для любого part; отбор считает только val 2017–2021
+    enable_test_assembly('A', gate_E_path)                единственный флаг записи ≥ 2022: только агент A, только при сборке
+                                                          тестовых прогнозов финалистов, только при существующем gate_E
+
   Пул воркеров
     n_workers(requested=None) -> int                      R2_WORKERS | requested | vCPU − reserve (8 из r2_S_server.yaml), ≥ 1
     share(**data) / SHARED                                данные грузятся один раз в родителе ДО пула; воркеры (fork) видят их без копий
@@ -454,8 +460,7 @@ def write_series(design, name, df, h, seed, part='val', module='core', root=None
     miss = [c for c in SERIES_COLS if c not in df.columns]
     if miss:
         raise ValueError(f'{name}: нет колонок {miss}')
-    if part == 'val' and int(pd.to_datetime(df['date']).dt.year.max()) > MAX_YEAR:
-        raise ValueError(f'{name}: val с датами > {MAX_YEAR} — запрет «ничего ≥ 2022»')
+    check_no_future(df, name)
     p = np.asarray(df['rv_pred'], dtype=float)
     if not np.isfinite(p).all() or (p <= 0).any():
         raise ValueError(f'{name}: rv_pred должен быть конечным и > 0')
@@ -568,8 +573,34 @@ def step_years(k):
 
 
 def assert_dev_step(k, allow_test=False):
-    if not allow_test and not (1 <= int(k) <= 6):
-        raise AssertionError(f'шаг {k}: в разработке R2 только шаги 1–6 (val ≤ 2021)')
+    if not (allow_test and _TEST_ASSEMBLY['on']) and not (1 <= int(k) <= 6):
+        raise AssertionError(f'шаг {k}: в разработке R2 только шаги 1–6 (val ≤ 2021); шаги 7–10 — только сборка A (enable_test_assembly)')
+
+
+# ---------------------------------------------------------------- режим R2 (решение владельца 16:25): прогнозов ≥ 2022 не пишет никто,
+# кроме агента A при сборке тестовых прогнозов финалистов — отдельным флагом.
+_TEST_ASSEMBLY = {'on': False, 'who': None}
+
+
+def enable_test_assembly(who, finalists_gate):
+    """Включить запись прогнозов ≥ 2022 в этом процессе. Только агент A, только при сборке (фаза F): нужен существующий файл ворот E
+    (`R2/O/gate_E_h{h}.yaml`) и who == 'A'. Отбор (фазы B–E) этим флагом не пользуется."""
+    if who != 'A':
+        raise PermissionError('прогнозы ≥ 2022 пишет только агент A при сборке тестовых прогнозов финалистов')
+    if not Path(finalists_gate).exists():
+        raise PermissionError(f'нет ворот E {finalists_gate} — сборка теста до решения ворот запрещена')
+    _TEST_ASSEMBLY.update(on=True, who=who)
+    log(f'РЕЖИМ СБОРКИ ТЕСТА (A): запись прогнозов ≥ 2022 разрешена в этом процессе; ворота {finalists_gate}')
+
+
+def check_no_future(df, name='ряд'):
+    """Отказ писать прогнозы за годы > 2021 (по дате строки и по колонке year), кроме режима сборки A."""
+    if _TEST_ASSEMBLY['on']:
+        return
+    yrs = pd.to_datetime(df['date']).dt.year
+    ymax = int(max(yrs.max(), df['year'].max() if 'year' in df else yrs.max()))
+    if ymax > MAX_YEAR:
+        raise PermissionError(f'{name}: прогнозы за {ymax} > {MAX_YEAR} — режим R2 запрещает запись ≥ 2022 (отбор — только val 2017–2021)')
 
 
 def _tend(A, h):
@@ -603,8 +634,10 @@ def n_workers(requested=None):
         return max(1, int(env))
     if requested:
         return max(1, int(requested))
-    reserve = int(CFG.get('pool', {}).get('reserve_vcpu', 8))
-    return max(1, (os.cpu_count() or 2) - reserve)
+    pool = CFG.get('pool', {})
+    if sys.platform == 'darwin':  # решение владельца 16:25: весь счёт на Маке, 10 воркеров
+        return max(1, min(int(pool.get('mac_workers', 10)), os.cpu_count() or 2))
+    return max(1, (os.cpu_count() or 2) - int(pool.get('reserve_vcpu', 8)))
 
 
 def share(**data):
@@ -911,7 +944,31 @@ def _schema_selftest():
        and len(variants(d, keys=['calib.kappa'])) == 2)
     ok('сетка enet по умолчанию — вся (3 × 3)', len(variants({'h': 5})) == 9)
     ok('план: SHA factor_plan_v1.csv', check_plan())
+    # режим R2: прогнозы ≥ 2022 не пишутся (любой part), флаг — только A и только при воротах E
+    fut = pd.DataFrame({'date': pd.to_datetime(['2021-12-30', '2022-01-03']), 'ticker': 'SBER', 'year': [2021, 2022], 'step': 6,
+                        'rv_pred': [1e-4, 1e-4]})
+    for part in ('val', 'test'):
+        try:
+            write_series({'h': 5}, 'zapret', fut, 5, 42, part=part, root=S_DIR / 'smoke' / 'cache_zapret')
+            ok(f'режим R2: запись ≥ 2022 (part={part}) запрещена', False)
+        except PermissionError:
+            ok(f'режим R2: запись ≥ 2022 (part={part}) запрещена', True)
+    for who, gate in (('B', __file__), ('A', S_DIR / 'нет_ворот.yaml')):
+        try:
+            enable_test_assembly(who, gate)
+            ok(f'флаг сборки: отказ ({who}, {Path(gate).name})', False)
+        except PermissionError:
+            ok(f'флаг сборки: отказ ({who}, {Path(gate).name})', True)
+    ok('шаг 7 в разработке запрещён', _raises(lambda: assert_dev_step(7)))
     return rows
+
+
+def _raises(fn):
+    try:
+        fn()
+        return False
+    except (AssertionError, PermissionError, ValueError):
+        return True
 
 
 def cmd_smoke(a):
