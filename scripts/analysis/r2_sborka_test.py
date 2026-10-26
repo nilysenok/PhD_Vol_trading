@@ -82,8 +82,8 @@ KEY = ['date', 'ticker', 'step']
 ID = ['date', 'ticker', 'year', 'step']
 LAST = 6  # последний шаг разработки (val 2021)
 RULES = ('single', 'mean', 'median', 'weights', 'ridge_noga', 'e1')
-KEEP_G = ('date', 'ticker', 'step', 'g')  # белый список колонок ворот воздержания G (кластер 16, shock_fresh)
-G_CFG = yaml.safe_load((REPO / 'models' / 'designs' / 'r2' / 'r2_G_abstain.yaml').read_text())['k16']['halt']  # остановка торгов
+sys.path.insert(0, str(HERE))
+import r2_gate_abstain as GA  # noqa: E402  E8 агента G: ворота (shock_flags, halt_g) и операции e8_e1 — импорт, не своя формула
 S2_RULES = ('posledovatelno', 'zamorozka')
 S2_WIN = {'sm': 3, 'smrob': 3, 'sm_roll1y': 1, 'sm_roll2y': 2, 'sm_pooled': None}  # окно в val-годах (как r2_calib.WIN_Y)
 F_D0 = (None, 'F_h(d0)', 'F_h_d0')  # «победителя нет» в gate_E (r2_loyo.pobeditel пишет 'F_h(d0)')
@@ -191,7 +191,7 @@ def vorota(spec_path):
         s2s = [c.get('s2')]
         if c['pravilo'] == 'e1':
             e1_check(c, h, set(hs))
-            s2s += [c['e1']['har']['s2'], c['e1']['noga']['s2']]
+            s2s += [c['e1']['har']['s2']]
         for s in s2s:
             if s is not None:
                 s2_cfg(s, f'h={h}')
@@ -233,6 +233,9 @@ def read_locked(r, keep, part='test', s2=False):
         d = pd.read_parquet(p, columns=use)
     assert not set(d.columns) & set(TARGET)  # R2-guard: целевая колонка не загружена
     READ.append((rel(p) + ('' if part == 'test' else f' [part = {part}, без цели]'), sha(p), len(d)))
+    if 'step' not in d:  # ряд по дате (ворота G)
+        assert len(d) and not d.date.duplicated().any(), f'{p.name}: пусто или дубли даты'
+        return d
     assert len(d) and d.duplicated(KEY).sum() == 0 and set(d.step.unique()) <= set(range(1, 11)), f'{p.name}: пусто, дубли ключа или шаг вне 1–10'
     if part == 'val':
         assert d.step.between(LAST + 1, 10).all(), f'{p.name}: val в test_locked — только шаги 7–10'
@@ -431,15 +434,16 @@ def e1_check(c, h, hs):
     nh = e.get('n_hyb')
     if h not in (5, 22) or nh not in ((1,) if h == 5 else (1, 5)):
         raise Stop(f'h={h}: E1 — h=5: hyb₁; h=22: hyb₁ или hyb₅ (n_hyb = {nh})')
-    for k in ('har', 'noga'):
-        if not (e.get(k) or {}).get('file') or not (e[k].get('s2') or {}):
-            raise Stop(f'h={h}: E1 — нужен {k}: file (test_locked/R2/<агент>/) и s2 (с val_file)')
+    if not (e.get('har') or {}).get('file') or not (e['har'].get('s2') or {}):
+        raise Stop(f'h={h}: E1 — нужен har: file (test_locked/R2/<агент>/) и s2 (с val_file)')
     e8 = e.get('e8') or {}
-    for k in ('lam', 'k', 'w'):
+    for k in ('lam', 'k'):
         if not isinstance(e8.get(k), (int, float)) or isinstance(e8.get(k), bool):
-            raise Stop(f'h={h}: E8 — {k} должен быть константой, выбранной на разработке (а не {e8.get(k)!r})')
-    if not (0 <= e8['lam'] <= 1 and 0 <= e8['w'] < 1 and e8['k'] >= 0):
-        raise Stop(f'h={h}: E8 — λ ∈ [0, 1], w ∈ [0, 1), k ≥ 0')
+            raise Stop(f'h={h}: E8 — {k} должен быть константой, выбранной на разработке (а не {e8.get(k)!r}; пока — ждёт G)')
+    if 'w' in e8:
+        raise Stop(f'h={h}: E8 — веса ноги w в E8 агента G нет (r2_gate_abstain.e8_e1: только λ и k)')
+    if not (0 <= e8['lam'] <= 1 and e8['k'] in GA.E8_K):
+        raise Stop(f'h={h}: E8 — λ ∈ [0, 1], k ∈ {GA.E8_K}')
     if (e8['k'] > 0) != bool(e8.get('g_file')):
         raise Stop(f'h={h}: E8 — при k > 0 нужен g_file ворот G (shock_fresh), при k = 0 его быть не должно')
 
@@ -456,47 +460,103 @@ def ryad_s2(r, h, zam, what):
     return o.assign(rv_pred=o.rv_pred * o.step.map(F).values)[ID + ['rv_pred']]
 
 
-def halt_g(df, h):
-    """Остановка торгов (G, кластер 16 halt; r2_G_abstain.yaml): g = 0, если окно цели (d, tend] пересекает [start, end];
-    tend — h-й следующий торговый день тикера по календарю ряда, иначе d + h рабочих дней + запас. Только даты, без данных."""
+def tend_cal(df, h):
+    """Конец окна цели: h-й следующий торговый день тикера по календарю ряда (как _tend{h} в r2_nogi: shift(−h) по тикеру); NaT — нет."""
     cal = df[['date', 'ticker']].drop_duplicates().sort_values(['ticker', 'date'])
     cal['tend'] = cal.groupby('ticker').date.shift(-h)
-    te = df[['date', 'ticker']].merge(cal, on=['date', 'ticker'], how='left').tend
-    d = pd.to_datetime(df.date.values)
-    fb = pd.Series(d + pd.offsets.BDay(int(h)) + pd.Timedelta(days=int(G_CFG['zapas_dney'])))
-    te = pd.to_datetime(te).where(te.notna(), fb).values
-    hit = (d < pd.Timestamp(G_CFG['end'])) & (te >= np.datetime64(pd.Timestamp(G_CFG['start'])))
-    return np.where(hit, 0.0, 1.0)
+    return df[['date', 'ticker']].merge(cal, on=['date', 'ticker'], how='left').tend.values
+
+
+def e8_ops():
+    """Операции E8 агента G. Если G вынес их в функции (e8_ln, e8_uroven) — импорт; иначе — дословно выражения
+    r2_gate_abstain.e8_e1 (f и mk; в ней это локальные lambda): ln ŷ = lnL + g·halt·λ·(ln E1 − lnL), ŷ = нога·exp(ln ŷ − lnL).
+    Побайтное совпадение с рядами G на val проверяет proverka_G (Δ = 0)."""
+    if hasattr(GA, 'e8_ln') and hasattr(GA, 'e8_uroven'):
+        return GA.e8_ln, GA.e8_uroven
+    f = lambda lnL, c, lam, g, hg: lnL + g * hg * lam * (c - lnL)  # = e8_e1: f(lam, k, c) с G[k] = g
+    mk = lambda Lv, ln, lnL: Lv * np.exp(ln - lnL)  # = e8_e1: mk(ln)
+    return f, mk
+
+
+def g_k(dates, k, gser=None):
+    """Ворота G по дате: k = 0 — единицы (без воздержания); k > 0 — ряд g по дате (GA.shock_flags на val; на тесте — файл G),
+    как в e8_e1: dates.map(gk[k]).fillna(1.0)."""
+    d = pd.to_datetime(pd.Series(np.asarray(dates)))
+    return np.ones(len(d)) if int(k) == 0 else d.map(gser).fillna(1.0).values
+
+
+def e8(Lv, p1, dates, tend, h, lam, k, gser=None):
+    """E8 поверх E1 функциями G: нога Lv (эталон В2 = HAR-J d0 + s² с эмбарго, как в e8_e1), компонента p1 (ансамбль E1)."""
+    f, mk = e8_ops()
+    lnL = np.log(Lv)
+    hg = GA.halt_g(dates, tend, h)  # halt G — всегда
+    return mk(Lv, f(lnL, np.log(p1), float(lam), g_k(dates, k, gser), hg), lnL)
 
 
 def e1(c, h, out, zam):
     """E1: h=5 — (hyb₁ + 4·HAR₂₋₅)/5; h=22 — (hyb₁ + 21·HAR₂₋₂₂)/22 или (hyb₅ + 17·HAR₆₋₂₂)/22 (уровни). hyb — финал сборки своего h
-    (победитель или F_h(d0) с s² сборки); HAR подгоризонта — нога финалиста с s² (t−1, эмбарго окна h).
-    E8 поверх: ln ŷ_G = ln ноги + λ·g·(ln E1 − ln ноги) (G: k — воздержание shock_fresh, g из файла G; halt — всегда), затем
-    ŷ = w·ŷ_ноги + (1 − w)·ŷ_G (E: вес ноги). Нога — нога финалиста h с s². λ, k, w — константы разработки."""
-    e, e8 = c['e1'], c['e1']['e8']
+    (победитель или F_h(d0) с s² сборки); HAR подгоризонта — с s² (t−1, эмбарго окна h).
+    E8 поверх — функциями G (e8): нога — эталон (б) d0 с эмбарго s² этой же сборки, g — ворота G (k > 0: файл G по дате), halt — всегда.
+    λ, k — константы разработки (от G после вложенного счёта)."""
+    e, e8p = c['e1'], c['e1']['e8']
     nh = int(e['n_hyb'])
     hyb = out.get(nh, out[('F', nh)])[KEY + ['rv_pred']].rename(columns={'rv_pred': 'hyb'})
     har = ryad_s2(e['har'], h, zam, f'h={h} HAR подгоризонта').rename(columns={'rv_pred': 'har'})
-    leg = ryad_s2(e['noga'], h, zam, f'h={h} нога').rename(columns={'rv_pred': 'leg'})
-    m = har.merge(hyb, on=KEY, how='inner', validate='1:1').merge(leg[KEY + ['leg']], on=KEY, how='inner', validate='1:1')
+    leg = out[('E', h)][KEY + ['har_corr']].rename(columns={'har_corr': 'leg'})
+    m = har.merge(hyb, on=KEY, how='inner', validate='1:1').merge(leg, on=KEY, how='inner', validate='1:1')
     if len(m) != len(har) or len(m) != len(leg):
-        raise Stop(f'h={h}: E1 — строки HAR ({len(har)}), hyb{nh} и ноги ({len(leg)}) не совпали ({len(m)})')
+        raise Stop(f'h={h}: E1 — строки HAR ({len(har)}), hyb{nh} и эталона ({len(leg)}) не совпали ({len(m)})')
     p1 = (nh * m.hyb.values + (h - nh) * m.har.values) / h
-    g = halt_g(m, h)
-    if e8['k'] > 0:
-        G = read_locked(e8['g_file'], KEEP_G)
-        gg = m[KEY].merge(G, on=KEY, how='left', validate='1:1').g
-        if gg.isna().any() or not gg.between(0, 1).all():
-            raise Stop(f'h={h}: g ворот G есть не у всех строк или вне [0, 1]')
-        g = g * gg.values
-    lnl = np.log(m.leg.values)
-    pg = np.exp(lnl + float(e8['lam']) * g * (np.log(p1) - lnl))
-    w = float(e8['w'])
-    pred = w * m.leg.values + (1 - w) * pg
+    gser = None
+    if e8p['k'] > 0:
+        G = read_locked(e8p['g_file'], ('date', 'g'))  # ворота G по дате (рыночный признак, как shock_flags)
+        if G.date.duplicated().any() or not G.g.between(0, 1).all():
+            raise Stop(f'h={h}: g ворот G — дубли дат или вне [0, 1]')
+        gser = pd.Series(G.g.values, index=pd.to_datetime(G.date))
+        miss = ~pd.to_datetime(m.date).isin(gser.index)
+        if miss.any():
+            raise Stop(f'h={h}: g ворот G нет у {int(miss.sum())} строк')
+    pred = e8(m.leg.values, p1, m.date.values, tend_cal(m, h), h, e8p['lam'], e8p['k'], gser)
     o = m[ID].assign(rv_pred=pred, design=c['design'])
     assert np.isfinite(o.rv_pred).all() and (o.rv_pred > 0).all(), f'h={h}: E1 не конечен или <= 0'
     return o.sort_values(['step', 'date', 'ticker']).reset_index(drop=True)
+
+
+def proverka_G(h, nm='E1'):
+    """Val 2017–2021 (только разработка; test_locked не читается): E8 сборки (функции G) на входах G = ряды G_E8_<nm>__* кэша
+    по всей сетке (λ, k) и всем seed, побайтно (Δ = 0). Входы — как в r2_gate_abstain.e8_e1."""
+    import r2_core as C
+    import r2_driver as DR
+    import re
+    A, _ = C.load_d0()
+    assert A.date.dt.year.max() <= 2015 + LAST
+    E = DR.etalon(h)
+    hsh, ryad = GA.E8_RYADY_H[h][nm]
+    seeds = list(GA.SDRV['E']['seeds_final'])
+    S = GA._val_only(C.load_series(hsh, ryad=ryad, h=h, steps=list(range(1, 7))), ryad)
+    Lg = E[KEY + ['year', 'rv_actual', 'rv_pred']].rename(columns={'rv_pred': 'leg'})  # R2-guard: val 2016–2021
+    per = {s: S[S.seed.astype(str) == str(s)][KEY + ['rv_pred']].merge(Lg, on=KEY).sort_values(KEY).reset_index(drop=True) for s in seeds}
+    base = per[seeds[0]]
+    tend = base[['date', 'ticker']].merge(A[['date', 'ticker', f'_tend{h}']], on=['date', 'ticker'], how='left')[f'_tend{h}'].values
+    mrv = GA.market_rv(A)
+    X = C.load_series(hsh, h=h, steps=list(range(1, 7)))
+    X = X[X.ryad.astype(str).str.startswith(f'G_E8_{nm}__')]
+    if X.empty:
+        raise Stop(f'h={h}: в кэше {hsh} нет рядов G_E8_{nm}__* — сверять не с чем')
+    rows = []
+    for ry, gX in X.groupby('ryad'):
+        lam = float(re.search(r'lam=([0-9.]+)', ry).group(1)) if 'lam=' in ry else 1.0  # h=5 (k_lam): 'halt', 'k=3' — λ = 1
+        mk_ = re.search(r'(?<![a-z])k=(\d+)', ry)
+        k = int(mk_.group(1)) if mk_ else 0  # 'halt' и 'lam=…' без k — k = 0
+        gser = GA.shock_flags(mrv, k, GA.E8_Q, int(GA.CFG['k16']['shock_fresh']['okno']), 'uroven') if k > 0 else None
+        for s in seeds:
+            mine = e8(base.leg.values, per[s].rv_pred.values, base.date.values, tend, h, lam, k, gser)
+            g = gX[gX.seed.astype(str) == str(s)][KEY + ['rv_pred']].merge(base[KEY], on=KEY).sort_values(KEY)
+            d = np.abs(g.rv_pred.values - mine).max() if len(g) == len(base) else np.inf
+            rows.append(dict(h=h, ryad=ry, lam=lam, k=k, seed=s, n=len(g), max_abs_delta=float(d), ok=bool(d == 0)))
+    R = pd.DataFrame(rows)
+    print(f'proverka_G h={h} {nm}: {int(R.ok.sum())}/{len(R)} (ряд G_E8 × seed) побайтно, Δ = 0', flush=True)
+    return R
 
 
 def journal(lines):
@@ -762,8 +822,7 @@ def selftest():
         n22[ID].assign(rv_actual=1.0).to_parquet(LOCKED / 'R2' / 'L' / 'bez_pred_h22_test.parquet', index=False)  # R2-guard
         stop({**spec, 'h': {**spec['h'], 22: {**spec['h'][22], 'komponenty': [dict(name='noga', file='test_locked/R2/L/bez_pred_h22_test.parquet')]}}},
              'нет колонок', AssertionError)
-        # 8. E1 (+E8): h=5 — (hyb₁ + 4·HAR₂₋₅)/5, k = 3 (g из файла G) × halt; h=22 — (hyb₅ + 17·HAR₆₋₂₂)/22, k = 0 (только halt)
-        import r2_gate_abstain as GA  # halt — независимая сверка функцией G
+        # 8. E1 (+E8 функциями G): h=5 — (hyb₁ + 4·HAR₂₋₅)/5, k = 3 (g по дате из файла G) × halt; h=22 — (hyb₅ + 17·HAR₆₋₂₂)/22, k = 0
         (LOCKED / 'R2' / 'M').mkdir(); (LOCKED / 'R2' / 'G').mkdir()
         SR = {}
 
@@ -776,50 +835,75 @@ def selftest():
             V[V.step <= 6][ID].assign(rv_actual=V[V.step <= 6].y.values, rv_pred=V[V.step <= 6].raw.values).to_parquet(pv_, index=False)  # R2-guard
             SR[name] = (T, g)
             return dict(file=f'test_locked/R2/M/{name}_test.parquet', s2=dict(est='sm', kappa=0.5, embargo='on', val_file=dict(file=str(pv_), sha=sha(pv_))))
-        H5, N5, H22, N22 = ser('har_2_5_h5', 5), ser('noga_h5', 5), ser('har_6_22_h22', 22), ser('noga_h22', 22)
-        g5 = SR['har_2_5_h5'][0][KEY].assign(g=(rng.random(len(SR['har_2_5_h5'][0])) > 0.2).astype(float))
-        g5.to_parquet(LOCKED / 'R2' / 'G' / 'g_h5_test.parquet', index=False)
+        H5, H22 = ser('har_2_5_h5', 5), ser('har_6_22_h22', 22)
+        # ворота G по дате: GA.shock_flags на синтетической RV рынка (на тесте этот файл пишет G)
+        dts = pd.Series(sorted(SR['har_2_5_h5'][0].date.unique()))
+        mrv = pd.Series(np.exp(rng.normal(-8, .5, len(dts))), index=pd.to_datetime(dts))
+        gs = GA.shock_flags(mrv, 3, GA.E8_Q, int(GA.CFG['k16']['shock_fresh']['okno']), 'uroven')
+        assert (gs == 0).any() and (gs == 1).any()
+        pd.DataFrame({'date': gs.index, 'g': gs.values}).to_parquet(LOCKED / 'R2' / 'G' / 'g_h5_test.parquet', index=False)
         ge = {5: dict(phase='E', h=5, pobeditel=dict(pobeditel='E1_E8_h5', V0=False, poryadok=['E1_E8_h5'])),
               22: dict(phase='E', h=22, pobeditel=dict(pobeditel='E1_E8_h22', V0=False, poryadok=['E1_E8_h22']))}
         for h, gd in ge.items():
             (GATES / f'gate_E_h{h}.yaml').write_text(yaml.safe_dump(gd, allow_unicode=True))
-        E8_5, E8_22 = dict(lam=0.75, k=3, w=1 / 3, g_file='test_locked/R2/G/g_h5_test.parquet'), dict(lam=0.5, k=0, w=0.5)
+        E8_5, E8_22 = dict(lam=0.75, k=3, g_file='test_locked/R2/G/g_h5_test.parquet'), dict(lam=0.5, k=0)
         sp_e = {**spec, 'gate_E_sha': {h: sha(GATES / f'gate_E_h{h}.yaml') for h in HS}, 'h': {
-            5: dict(design='E1_E8_h5', pravilo='e1', e1=dict(n_hyb=1, har=H5, noga=N5, e8=E8_5)),
-            22: dict(design='E1_E8_h22', pravilo='e1', e1=dict(n_hyb=5, har=H22, noga=N22, e8=E8_22))}}
+            5: dict(design='E1_E8_h5', pravilo='e1', e1=dict(n_hyb=1, har=H5, e8=E8_5)),
+            22: dict(design='E1_E8_h22', pravilo='e1', e1=dict(n_hyb=5, har=H22, e8=E8_22))}}
         OUTDIR = tmp / 'e1' / 'final'
         READ.clear(); WROTE.clear()
         oe = run(putspec(sp_e, tmp / 'spec_e1.yaml'))
         cal = lambda T, h, F: T[ID].assign(rv_pred=T.raw.values * T.step.map(F).values)
 
-        def want_e1(h, nh, hyb, e8, gfile=None):
-            Fh, Fn = ({k: _ref_emb(SR[n][1], h, k) for k in range(1, 11)} for n in (('har_2_5_h5', 'noga_h5') if h == 5 else ('har_6_22_h22', 'noga_h22')))
-            Th, Tn = (SR[n][0] for n in (('har_2_5_h5', 'noga_h5') if h == 5 else ('har_6_22_h22', 'noga_h22')))
-            m = cal(Th, h, Fh).rename(columns={'rv_pred': 'har'}).merge(hyb[KEY + ['rv_pred']].rename(columns={'rv_pred': 'hyb'}), on=KEY)
-            m = m.merge(cal(Tn, h, Fn)[KEY + ['rv_pred']].rename(columns={'rv_pred': 'leg'}), on=KEY).sort_values(['ticker', 'date'])
+        def want_e1(h, nh, hyb, e8p, gser=None):
+            """Дословно операции r2_gate_abstain.e8_e1 (f, mk) с воротами G по дате и halt G; нога — эталон (б) d0 сборки."""
+            n = 'har_2_5_h5' if h == 5 else 'har_6_22_h22'
+            Fh = {k: _ref_emb(SR[n][1], h, k) for k in range(1, 11)}
+            m = cal(SR[n][0], h, Fh).rename(columns={'rv_pred': 'har'}).merge(hyb[KEY + ['rv_pred']].rename(columns={'rv_pred': 'hyb'}), on=KEY)
+            m = m.merge(oe[('E', h)][KEY + ['har_corr']], on=KEY).sort_values(['ticker', 'date'])
             cl = m[['date', 'ticker']].drop_duplicates().sort_values(['ticker', 'date'])
             cl['te'] = cl.groupby('ticker').date.shift(-h)
             te = m[['date', 'ticker']].merge(cl, on=['date', 'ticker'], how='left').te.values
-            g = GA.halt_g(m.date.values, te, h)
-            if gfile is not None:
-                g = g * m[KEY].merge(gfile, on=KEY, how='left').g.values
-            p1 = (nh * m.hyb + (h - nh) * m.har).values
-            p1 = p1 / h
-            pg = np.exp(np.log(m.leg.values) + e8['lam'] * g * (np.log(p1) - np.log(m.leg.values)))
-            return m.assign(want=e8['w'] * m.leg.values + (1 - e8['w']) * pg)[KEY + ['want']], (g == 0).sum()
-        w5, nh5 = want_e1(5, 1, oe[('F', 1)], E8_5, g5)
+            hg = GA.halt_g(m.date.values, te, h)
+            G = np.ones(len(m)) if gser is None else pd.to_datetime(m.date).map(gser).fillna(1.0).values
+            Lv = m.har_corr.values
+            lnL = np.log(Lv)
+            c = np.log((nh * m.hyb.values + (h - nh) * m.har.values) / h)
+            f = lambda lam: lnL + G * hg * lam * (c - lnL)  # r2_gate_abstain.e8_e1, стр. f
+            mk = lambda ln: Lv * np.exp(ln - lnL)  # r2_gate_abstain.e8_e1, стр. mk
+            return m.assign(want=mk(f(float(e8p['lam']))))[KEY + ['want']], int(((G * hg) == 0).sum()), int((hg == 0).sum())
+        w5, ng5, _ = want_e1(5, 1, oe[('F', 1)], E8_5, gs)
         x = oe[5].merge(w5, on=KEY, validate='1:1')
-        assert len(x) == len(oe[5]) and np.allclose(x.rv_pred, x.want, rtol=1e-12), 'E1 (+E8) h=5'
-        w22, nh22 = want_e1(22, 5, oe[5], E8_22)
+        assert len(x) == len(oe[5]) and np.allclose(x.rv_pred, x.want, rtol=1e-12), 'E1 (+E8) h=5 (s² — независимой сверкой)'
+        assert ng5 > 0
+        w22, _, nh22 = want_e1(22, 5, oe[5], E8_22)
         x = oe[22].merge(w22, on=KEY, validate='1:1')
         assert len(x) == len(oe[22]) and np.allclose(x.rv_pred, x.want, rtol=1e-12), 'E1 (+E8) h=22 (hyb₅ = E1 h=5)'
-        assert nh22 > 0, 'halt должен обнулять g у окон через остановку торгов'
+        assert nh22 > 0, 'halt G должен обнулять g у окон через остановку торгов'
+        # E8 побайтно: на одних входах e8() сборки = операции e8_e1 G (f, mk, ворота по дате, halt_g) — Δ = 0 по всей сетке (λ, k)
+        nn = 4000
+        dz = pd.Series(pd.to_datetime(rng.choice(dts.values, nn)))
+        Lv_, p_ = np.exp(rng.normal(-8, .4, nn)), np.exp(rng.normal(-8, .4, nn))
+        te_ = (dz + pd.offsets.BDay(22)).values
+        for k in GA.E8_K:
+            gk = GA.shock_flags(mrv, k, GA.E8_Q, int(GA.CFG['k16']['shock_fresh']['okno']), 'uroven') if k > 0 else None
+            Gk = np.ones(nn) if gk is None else pd.to_datetime(dz).map(gk).fillna(1.0).values
+            hg_ = GA.halt_g(dz.values, te_, 22)
+            lnL_, c_ = np.log(Lv_), np.log(p_)
+            for lam in GA.E8_LAM:
+                ref = Lv_ * np.exp((lnL_ + Gk * hg_ * lam * (c_ - lnL_)) - lnL_)
+                assert (e8(Lv_, p_, dz.values, te_, 22, lam, k, gk) == ref).all(), f'E8 λ={lam}, k={k}: не побайтно'
+        lv0 = e8(np.array([1.5, 2.0]), np.array([3.0, 0.5]), pd.to_datetime(['2019-01-10', '2019-01-11']).values,
+                 pd.to_datetime(['2019-02-10', '2019-02-11']).values, 22, 0.0, 0)
+        assert (lv0 == np.array([1.5, 2.0])).all(), 'λ = 0 — ровно нога (как mk G)'
+        assert e8_ops()[0].__code__.co_filename == __file__ or hasattr(GA, 'e8_ln')
         assert any('цель для s²' in r and 'har_6_22' in r for r, _, _ in READ) and any('g_h5_test' in r for r, _, _ in READ)
         for bad_e8, what in ((dict(E8_5, lam=[0.5, 1.0]), 'константой'), ({k: v for k, v in E8_5.items() if k != 'g_file'}, 'g_file'),
-                             (dict(E8_22, g_file='test_locked/R2/G/g_h5_test.parquet'), 'g_file'), (dict(E8_5, w=1.0), 'w ∈')):
+                             (dict(E8_22, g_file='test_locked/R2/G/g_h5_test.parquet'), 'g_file'), (dict(E8_5, w=0.5), 'веса ноги'),
+                             (dict(E8_5, k=4), 'k ∈'), (dict(E8_5, lam='ждёт G'), 'константой')):
             stop({**sp_e, 'h': {**sp_e['h'], 5: {**sp_e['h'][5], 'e1': {**sp_e['h'][5]['e1'], 'e8': bad_e8}}}}, what)
         stop({**sp_e, 'h': {**sp_e['h'], 5: {**sp_e['h'][5], 'e1': {**sp_e['h'][5]['e1'], 'n_hyb': 5}}}}, 'n_hyb')
-        stop({**sp_e, 'h': {**sp_e['h'], 22: {**sp_e['h'][22], 'e1': {**sp_e['h'][22]['e1'], 'noga': {'file': N22['file']}}}}}, 'нужен noga')
+        stop({**sp_e, 'h': {**sp_e['h'], 22: {**sp_e['h'][22], 'e1': {**sp_e['h'][22]['e1'], 'har': {'file': H22['file']}}}}}, 'нужен har')
         OUTDIR = LOCKED / 'R2' / 'final'
     finally:
         REGEN, LOCKED, OUTDIR, GATES, JOURNAL = saved
@@ -835,9 +919,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--spec', default=str(SPEC))
     ap.add_argument('--selftest', action='store_true')
+    ap.add_argument('--proverka-G', type=int, choices=[5, 22], help='val 2017–2021: E8 сборки = ряды G_E8 кэша побайтно (test_locked не читается)')
+    ap.add_argument('--ryad', default='E1', help='--proverka-G: E1 / E1b / E2 (r2_gate_abstain.E8_RYADY_H)')
     a = ap.parse_args()
     if a.selftest:
         return selftest()
+    if a.proverka_G:
+        R = proverka_G(a.proverka_G, a.ryad)
+        sys.exit(0 if R.ok.all() else 3)
     try:
         run(a.spec)
     except Stop as e:
