@@ -379,8 +379,10 @@ class Runner:
                 if subprocess.run(cmd, cwd=REPO).returncode != 0:
                     return False, f'модуль {m}: ошибка на дизайне {d.get("design")}'
             return True, ''
+        faza = 'B' if tag in ('econ', 'B') else tag[:1]  # ворота run_phase модуля: B/эконометрика — план; C/D/E — ворота предыдущей фазы
         cmd = [sys.executable, str(HERE / spec['file'])] + spec['run'].format(
-            designs=dfile, h=h, seeds=' '.join(map(str, seeds)), steps=' '.join(map(str, steps)), workers=workers, extra=extra).split()
+            designs=dfile, h=h, seeds=' '.join(map(str, seeds)), steps=' '.join(map(str, steps)), workers=workers, extra=extra,
+            faza=faza).split()
         rc = subprocess.run(cmd, cwd=REPO).returncode
         return rc == 0, '' if rc == 0 else f'модуль {m}: код {rc}'
 

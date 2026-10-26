@@ -412,9 +412,10 @@ def inputs_identity(inputs):
 
 
 def needs_h1_inputs(design):
-    """persist / reconcile на h ≠ 1 читают ряды h=1 (base_1, leg_1) — они обязаны входить в хэш (O, PR #172)."""
+    """persist / reconcile (O, PR #172) и ens.ec (E, PR #187) на h ≠ 1 читают ряды h=1 (base_1, leg_1) — они обязаны входить в хэш."""
     full = validate(design)
-    return int(full['h']) != 1 and (str(get(full, 'mh.persist')) not in ('off', 'False') or str(get(full, 'mh.reconcile')) not in ('off', 'False'))
+    on = lambda k: str(get(full, k)) not in ('off', 'False')
+    return int(full['h']) != 1 and (on('mh.persist') or on('mh.reconcile') or on('ens.ec'))
 
 
 def with_inputs(design, inputs):
