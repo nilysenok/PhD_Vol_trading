@@ -566,7 +566,8 @@ def etalon_emb(hs=N.HS):
     Q['time'] = time.strftime('%F %T')
     Q.to_csv(EDIR / 'q_etalon_emb.csv', index=False); C.to_csv(EDIR / 'control_etalon_emb.csv', index=False)
     old = EDIR / 'index_etalon_emb.csv'
-    pd.concat(([pd.read_csv(old)] if old.exists() else []) + [pd.DataFrame(I)], ignore_index=True).to_csv(old, index=False)
+    pd.concat(([pd.read_csv(old)] if old.exists() else []) + [pd.DataFrame(I)], ignore_index=True).drop_duplicates(
+        ['fayl', 'sha256'], keep='first').to_csv(old, index=False)
     # разница QLIKE по годам: F_h — среднее по 10 seed
     yc = ['y2017', 'y2018', 'y2019', 'y2020', 'y2021', 'q1721']
     G = Q[Q.model != 'HAR-J (а)'].groupby(['h', 'model', 'version'])[yc].mean().reset_index()
