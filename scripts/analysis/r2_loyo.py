@@ -141,23 +141,33 @@ def crit(g, steps, c1='sm', leg=True, runs=True):
     return dict(c1=bool(c1v), c2=bool(c2v), c3=bool(base['c3']), c4=bool(c4v))
 
 
-def pick(G, order, steps, c1):
-    """Первый по среднему q на steps вариант с c1–c4 (варианты перебираются по возрастанию среднего — дальше не нужно).
-    -> (вариант | None, флаги выбранного или лучшего по q, число проверенных)."""
+def pick(G, order, steps, c1, sel=CR):
+    """Первый по среднему q на steps вариант, у которого выполнены критерии sel (варианты перебираются по возрастанию среднего).
+    -> (вариант | None, флаги c1–c4 выбранного или лучшего по q, число проверенных)."""
     first = None
     for k, v in enumerate(order):
         fl = crit(G[v], steps, c1)
         if first is None:
             first = (v, fl)
-        if all(fl.values()):
+        if all(fl[x] for x in sel):
             return v, fl, k + 1
     return None, first[1], len(order)
 
 
+MODES = {'vladelec_1420': dict(sel=tuple(CFG.get('vybor_kriterii', ['c3'])), pool='proshedshie'),
+         'protokol_v2': dict(sel=CR, pool='vse')}
+
+
 # ---------------------------------------------------------------- LOYO
-def loyo(tab, F_unit, c1=None):
-    """tab — таблица шагов уровня одного h. -> (широкая таблица по единицам, длинная по складкам)."""
+def loyo(tab, F_unit, c1=None, mode=None):
+    """tab — таблица шагов уровня одного h. -> (широкая таблица по единицам, длинная по складкам).
+    mode 'vladelec_1420' (по умолчанию, решение 14:20): вариант в складке — по критериям vybor_kriterii (c3); вход — лучше эталона
+    (q_har_c1 = HAR-J d0 sm) на отложенном году в >= etalon_folds_min складках и c3 на всех складках; ранги — среди прошедших и F_h.
+    mode 'protokol_v2': c1–c4 на складке, недопущенные — хвостовой ранг среди всех единиц, вход — допуск на всех складках."""
     c1 = c1 or CFG['c1_etalon']
+    mode = mode or CFG.get('rezhim', 'vladelec_1420')
+    sel, pool_rule = MODES[mode]['sel'], MODES[mode]['pool']
+    vmin = int(CFG.get('vhod', {}).get('etalon_folds_min', 3))
     tab = tab[tab.step.isin(T)]
     assert set(tab.step.unique()) <= set(T)
     units = list(dict.fromkeys(tab.unit))
@@ -174,53 +184,62 @@ def loyo(tab, F_unit, c1=None):
     assert len(var[F_unit]) == 1, 'F_h — контрольная единица с одним вариантом'
     meta = tab.groupby('unit', sort=False).agg(role=('role', 'first') if 'role' in tab else ('unit', 'first'),
                                                n_rych=('n_rych', 'first') if 'n_rych' in tab else ('step', lambda s: 0))
-    long = []
+    ok_units = [u for u in units if u in var]
+    per = {}  # (u, Y) -> выбор в складке
     for Yst in T:
         tr = tuple(s for s in T if s != Yst)
-        per = {}
-        for u in units:
-            if u not in var:
-                continue
+        for u in ok_units:
             order = sorted(var[u], key=lambda v: (np.mean([Q[(u, v)][s] for s in tr]), var[u].index(v)))
-            v, fl, nchk = pick(G[u], order, tr, c1)
+            v, fl, nchk = pick(G[u], order, tr, c1, sel)
             vv = v if v is not None else order[0]
-            per[u] = dict(Y=Y(Yst), unit=u, variant=vv, dop=v is not None, q=Q[(u, vv)][Yst],
-                          q_train=float(np.mean([Q[(u, vv)][s] for s in tr])), n_checked=nchk, n_var=len(order),
-                          failed=','.join(k for k in CR if not fl[k]), **fl)
-        adm = [u for u in per if per[u]['dop']]
-        rk = pd.Series({u: per[u]['q'] for u in adm}, dtype=float).rank(method='average')
-        tail = (len(adm) + 1 + len(per)) / 2
-        qF = per[F_unit]['q']
-        for u in per:
-            per[u]['rank'] = float(rk[u]) if per[u]['dop'] else tail
-            per[u]['r'] = per[u]['q'] / qF - 1
-            per[u]['better_F'] = bool(per[u]['q'] < qF) if u != F_unit else False
-            long.append(per[u])
+            qE = float(G[u][vv].set_index('step').q_har_c1[Yst]) if 'q_har_c1' in G[u][vv] else np.nan
+            per[(u, Yst)] = dict(Y=Y(Yst), unit=u, variant=vv, dop=v is not None, q=Q[(u, vv)][Yst], q_etalon=qE,
+                                 better_E=bool(Q[(u, vv)][Yst] < qE), q_train=float(np.mean([Q[(u, vv)][s] for s in tr])),
+                                 n_checked=nchk, n_var=len(order), failed=','.join(k for k in CR if not fl[k]), **fl)
+    dop_all = {u: all(per[(u, s)]['dop'] for s in T) for u in ok_units}
+    nE = {u: sum(per[(u, s)]['better_E'] for s in T) for u in ok_units}
+    vhod = {u: (dop_all[u] and nE[u] >= vmin) if mode == 'vladelec_1420' else dop_all[u] for u in ok_units}
+    pool = [u for u in ok_units if vhod[u] or u == F_unit] if pool_rule == 'proshedshie' else ok_units
+    long = []
+    for Yst in T:
+        P = [per[(u, Yst)] for u in ok_units]
+        adm = [p['unit'] for p in P if p['unit'] in pool and p['dop']]
+        rk = pd.Series({u: per[(u, Yst)]['q'] for u in adm}, dtype=float).rank(method='average')
+        tail = (len(adm) + 1 + len(pool)) / 2  # недопущенные в складке единицы пула — средний ранг хвоста
+        qF = per[(F_unit, Yst)]['q']
+        for p in P:
+            u = p['unit']
+            p['rank'] = (float(rk[u]) if p['dop'] else tail) if u in pool else np.nan
+            p['r'] = p['q'] / qF - 1
+            p['better_F'] = bool(p['q'] < qF) if u != F_unit else False
+            long.append(p)
     L = pd.DataFrame(long)
     rows = []
-    for u in [u for u in units if u in var]:
+    for u in ok_units:
         g = L[L.unit == u].set_index('Y')
         order = sorted(var[u], key=lambda v: (qbar_T(Q[(u, v)]), var[u].index(v)))
-        sel, flsel, _ = pick(G[u], order, T, c1)
+        sv, flsel, _ = pick(G[u], order, T, c1, sel)
         r = dict(unit=u, role=meta.loc[u, 'role'], n_rych=meta.loc[u, 'n_rych'], n_variants=len(var[u]), is_F=u == F_unit)
         for y in g.index:
             r.update({f'var_{y}': g.loc[y, 'variant'], f'q_{y}': g.loc[y, 'q'], f'rank_{y}': g.loc[y, 'rank'],
-                      f'dop_{y}': g.loc[y, 'dop'], f'fail_{y}': g.loc[y, 'failed'], f'r_{y}': g.loc[y, 'r']})
-        r.update(R_bar=g['rank'].mean(), mean_q=g.q.mean(), mean_r=g.r.mean(), sigma_r=g.r.std(ddof=1),
-                 worst_year=int(g.r.idxmax()), worst_r=g.r.max(), dopusk=bool(g.dop.all()),
+                      f'dop_{y}': g.loc[y, 'dop'], f'fail_{y}': g.loc[y, 'failed'], f'r_{y}': g.loc[y, 'r'], f'qE_{y}': g.loc[y, 'q_etalon']})
+        r.update(R_bar=g['rank'].mean() if u in pool else np.nan, mean_q=g.q.mean(), mean_r=g.r.mean(), sigma_r=g.r.std(ddof=1),
+                 worst_year=int(g.r.idxmax()), worst_r=g.r.max(), dopusk=dop_all[u], n_better_E=nE[u], vhod=vhod[u],
+                 c1234_all=bool(g[list(CR)].values.all()),  # справочно: c1–c4 у выбранных вариантов на всех складках
                  n_better_F=int(g.better_F.sum()), gate3=bool(g.better_F.sum() >= CFG['gate_min_folds']) if u != F_unit else False,
-                 sel_all=sel if sel is not None else '', sel_all_q=qbar_T(Q[(u, sel)]) if sel is not None else np.nan,
-                 sel_all_failed='' if sel is not None else ','.join(k for k in CR if not flsel[k]))
+                 sel_all=sv if sv is not None else '', sel_all_q=qbar_T(Q[(u, sv)]) if sv is not None else np.nan,
+                 sel_all_failed='' if sv is not None else ','.join(k for k in sel if not flsel[k]), rezhim=mode)
         rows.append(r)
     W = pd.DataFrame(rows)
-    W = W.sort_values(['dopusk', 'R_bar', 'mean_q', 'n_rych'], ascending=[False, True, True, True], kind='stable').reset_index(drop=True)
+    W['_rb'] = W.R_bar.fillna(np.inf)
+    W = W.sort_values(['vhod', '_rb', 'mean_q', 'n_rych'], ascending=[False, True, True, True], kind='stable').drop(columns='_rb').reset_index(drop=True)
     W.insert(0, 'poryadok', range(1, len(W) + 1))
     return W, L
 
 
 def vybor(W, roles=None, k=2):
-    """Выход уровня: допущенные единицы (без F_h) с наименьшим R̄; roles — фильтр ролей (уровень 1: признак, остаток, офсет)."""
-    c = W[W.dopusk & ~W.is_F]
+    """Выход уровня: прошедшие условие входа единицы (без F_h) с наименьшим R̄; roles — фильтр ролей (уровень 1: признак, остаток, офсет)."""
+    c = W[W.vhod & ~W.is_F]
     if roles is not None:
         c = c[c.role.isin(roles)]
     return c.head(k)
@@ -240,13 +259,24 @@ def sigma2(cand, ref, seeds=SEEDS):
 
 
 def vorota(W, unit, sig, test_ready=False):
-    """Итоговые ворота кандидата (протокол, п. 1–4)."""
+    """Итоговые ворота кандидата; условия — раздельными колонками (дирижёр 13:24; владелец 14:20):
+    u1 — условие входа (лучше эталона HAR-J d0 sm в >= 3 складках и c3 на всех; в режиме protokol_v2 — c1–c4 на всех складках);
+    u2 — 2σ по 10 seed к F_h(d0); u3 — лучше F_h на отложенном году в >= 3 складках (протокол, п. 3); u4 — тестовые прогнозы собраны."""
     r = W[W.unit == unit].iloc[0]
-    g = dict(unit=unit, u1_dopusk=bool(r.dopusk), u2_2sigma=bool(sig['passed']) if sig else False,
+    g = dict(unit=unit, u1_vhod=bool(r.vhod), n_better_E=int(r.n_better_E), u2_2sigma_Fd0=bool(sig['passed']) if sig else False,
              u3_luchshe_F=bool(r.gate3), n_better_F=int(r.n_better_F), u4_test=bool(test_ready),
              d_mean=sig['d_mean'] if sig else np.nan, sigma=sig['sigma'] if sig else np.nan, t=sig['t'] if sig else np.nan, R_bar=r.R_bar)
-    g['proshyol'] = g['u1_dopusk'] and g['u2_2sigma'] and g['u3_luchshe_F'] and g['u4_test']
+    g['proshyol'] = g['u1_vhod'] and g['u2_2sigma_Fd0'] and g['u3_luchshe_F'] and g['u4_test']
     return g
+
+
+def fh_d0_seeds(h):
+    """Q̄_T F_h(d0) по seed 42–51 (ряды ВЫР-1). -> {seed: Q̄_T} или None, пока файлов нет."""
+    c = CFG['F_h_d0']
+    fs = {s: R / c['file'].format(h=h, seed=s) for s in SEEDS}
+    if not all(f.exists() for f in fs.values()):
+        return None
+    return {s: qbar_T(q_steps(series([f]), c['s2'])) for s, f in fs.items()}
 
 
 # ---------------------------------------------------------------- адаптер: ряды -> таблица шагов (уровни 1–3)
@@ -360,8 +390,9 @@ def proverka(hs):
         write_level(W, L, 1, h, out, extra=dict(proverka_r1=True, sources=src))
         n_fold_c1 = int(sum((W[f'fail_{y}'].fillna('').str.contains('c1')).sum() for y in range(2017, 2022)))
         summ.append(dict(h=h, units=len(W), variants=int(W.n_variants.sum()), flags_checked=len(tab.groupby(['unit', 'variant'])),
-                         flags_mismatch=mism, dopusk=int(W.dopusk.sum()), gate3=int(W.gate3.sum())))
-        cols = ['poryadok', 'unit', 'role', 'n_variants', 'R_bar', 'mean_q', 'mean_r', 'sigma_r', 'worst_year', 'dopusk', 'n_better_F', 'gate3', 'sel_all']
+                         flags_mismatch=mism, c3_vse=int(W.dopusk.sum()), vhod=int(W.vhod.sum()), gate3=int(W.gate3.sum())))
+        cols = ['poryadok', 'unit', 'role', 'n_variants', 'R_bar', 'mean_q', 'mean_r', 'sigma_r', 'dopusk', 'n_better_E', 'vhod', 'c1234_all',
+                'n_better_F', 'gate3', 'sel_all']
         print(f'\n=== h={h}: {len(W)} единиц, {int(W.n_variants.sum())} вариантов; сверка флагов с gibrid_v17: расхождений {mism} ===', flush=True)
         print(W[cols].to_string(index=False, float_format=lambda x: f'{x:.4f}'), flush=True)
     S = pd.DataFrame(summ)
@@ -410,7 +441,7 @@ def proverka_series():
     W, L = loyo(tab, F['name'])
     write_level(W, L, 'S', h, out, extra=dict(proverka_r1=True, series_demo=True))
     print(f'(б) мини-уровень 1 на рядах, h={h}:', flush=True)
-    print(W[['poryadok', 'unit', 'role', 'n_variants', 'R_bar', 'mean_q', 'mean_r', 'dopusk', 'n_better_F', 'gate3', 'sel_all']].to_string(
+    print(W[['poryadok', 'unit', 'role', 'n_variants', 'R_bar', 'mean_q', 'mean_r', 'dopusk', 'n_better_E', 'vhod', 'n_better_F', 'gate3', 'sel_all']].to_string(
         index=False, float_format=lambda x: f'{x:.4f}'), flush=True)
     # (в) 2σ по 10 seed
     qF, qL = {}, {}
@@ -468,7 +499,7 @@ def selftest():
     wj = [(0, 1, 0), (0, 1, 0), (0, .5, .5), (0, 0, 1), (0, 0, 1)]  # скачок 0,5 на парах 3-4 и 4-5; на [2,3] и [5,6] — 0
     rows += unit('E', 1, 0.255, wj=wj)
     tab = pd.DataFrame(rows)
-    W, L = loyo(tab, 'F')
+    W, L = loyo(tab, 'F', mode='protokol_v2')  # тесты 1–5, 8 — режим протокола v2 (c1–c4, хвост по всем единицам)
     w = W.set_index('unit')
     # 1. C: допущена только в складке 2018 (обучающие годы без 2018); в остальных — хвостовой ранг
     lc = L[L.unit == 'C'].set_index('Y')
@@ -487,10 +518,12 @@ def selftest():
         t2 = tab.copy()
         m = t2.step == yy - 2015
         t2.loc[m, 'q_hyb'] *= np.exp(rng.normal(0, 0.2, m.sum()))
-        _, L2 = loyo(t2, 'F')
-        a = L[L.Y == yy].set_index('unit').variant
-        b = L2[L2.Y == yy].set_index('unit').variant
-        assert (a == b).all(), yy
+        for md in MODES:
+            _, L1 = loyo(tab, 'F', mode=md)
+            _, L2 = loyo(t2, 'F', mode=md)
+            a = L1[L1.Y == yy].set_index('unit').variant
+            b = L2[L2.Y == yy].set_index('unit').variant
+            assert (a == b).all(), (yy, md)
     # 4. ранги: сумма рангов в складке = n(n+1)/2; R̄ — среднее рангов
     for yy, gL in L.groupby('Y'):
         assert abs(gL['rank'].sum() - len(gL) * (len(gL) + 1) / 2) < 1e-9
@@ -519,8 +552,30 @@ def selftest():
     f = factors(rd, 'sm')
     assert f[7] == f[6] == f[10]
     # 8. выбор уровня 1: только роли с бустингом, допущенные, без F
-    assert list(vybor(W, roles=['ostatok']).unit) == [u for u in W[W.dopusk & ~W.is_F & (W.role == 'ostatok')].unit][:2]
-    print('selftest r2_loyo: OK (ранги и хвост, c4 по отрезкам, нет утечки отложенного года, 2σ, чтение шагов <= 6, OOS s², выбор)')
+    assert list(vybor(W, roles=['ostatok']).unit) == [u for u in W[W.vhod & ~W.is_F & (W.role == 'ostatok')].unit][:2]
+    assert (W.vhod == W.dopusk).all()  # в режиме протокола вход = c1–c4 на всех складках
+    # 9. режим владельца 14:20: вход — лучше эталона (q_har_c1 = 0,30) в >= 3 складках и c3 на всех; ранги — среди прошедших и F_h
+    def fixed(u, qs):
+        return [dict(unit=u, variant=f'{u}.v0', step=st, role='ostatok', n_rych=1, q_hyb=q, q_har=0.30, q_har_c1=0.30, q_xgb_single=0.31,
+                     q_lgb_single=0.31, scheme='cell', v1_ml='', w_har=0.0, w_xgb=0.0, w_lgb=0.0) for st, q in zip(T, qs)]
+    t9 = pd.DataFrame(rows + fixed('G', [0.28, 0.28, 0.305, 0.305, 0.305])  # c3 везде, лучше эталона только в 2 складках
+                      + fixed('H', [0.25, 0.25, 0.32, 0.25, 0.25]))  # лучше эталона в 4, но c3 нарушен, когда 2018 в обучении
+    W9, L9 = loyo(t9, 'F', mode='vladelec_1420')
+    w9 = W9.set_index('unit')
+    assert w9.loc['G', 'n_better_E'] == 2 and w9.loc['G', 'dopusk'] and not w9.loc['G', 'vhod']
+    assert w9.loc['H', 'n_better_E'] == 4 and not w9.loc['H', 'dopusk'] and not w9.loc['H', 'vhod']
+    assert not w9.loc['C', 'vhod']  # c3 нарушен в складках, где 2018 в обучении
+    assert w9.loc['E', 'vhod'] and not w9.loc['E', 'c1234_all']  # c4 во вход не входит (справочно — нарушен)
+    assert w9.loc[['A', 'B'], 'vhod'].all() and np.isnan(w9.loc['G', 'R_bar']) and np.isnan(w9.loc['H', 'R_bar'])
+    pool = [u for u in w9.index if w9.loc[u, 'vhod'] or u == 'F']
+    for yy, gL in L9.groupby('Y'):
+        gp = gL[gL.unit.isin(pool)]
+        assert gL[~gL.unit.isin(pool)]['rank'].isna().all() and abs(gp['rank'].sum() - len(gp) * (len(gp) + 1) / 2) < 1e-9
+    assert set(vybor(W9, k=10).unit) == set(pool) - {'F'} and list(W9.poryadok[:len(pool)]) == list(range(1, len(pool) + 1))
+    g9 = vorota(W9, 'A', sigma2({s: 0.25 for s in SEEDS}, {s: 0.29 + 1e-3 * (s % 3) for s in SEEDS}))
+    assert g9['u1_vhod'] and g9['u2_2sigma_Fd0'] and g9['u3_luchshe_F'] and not g9['u4_test'] and not g9['proshyol']
+    print('selftest r2_loyo: OK (протокол v2: ранги и хвост, c4 по отрезкам; режим владельца 14:20: вход «эталон >= 3 из 5 + c3», ранги среди '
+          'прошедших; нет утечки отложенного года в обоих; 2σ; чтение шагов <= 6, OOS s², выбор, ворота раздельно)')
 
 
 def main():
@@ -543,14 +598,24 @@ def main():
         for h in a.h:
             spec = pd.read_csv(R / lc['spec'].replace('level1', f'level{a.level}').format(h=h))
             rf = pd.read_csv(R / lc['ref'].format(h=h))  # key, file
-            ref = ref_from_files(dict(zip(rf.key, rf.file)))
+            files = dict(zip(rf.key, rf.file))
+            files['har'] = CFG['etalon']['file'].format(h=h)  # владелец 14:20: эталон — HAR-J d0 с эмбарго (Э, HARJ_emb_d0), c1 — его sm
+            ref = ref_from_files(files)
             tab = series_tab(spec, ref, h)
-            F = CFG['F_h'][h]
-            dv = read_designs(R / F['designs_val'])
-            fr = dv[dv.design == F['design']]
-            tab = pd.concat([tab, fr.assign(unit=F['name'], variant=F['design'], role='F_h', n_rych=0,
-                                            q_har_c1=fr.step.map(ref['har']['sm']).values)], ignore_index=True)
-            W, L = loyo(tab, F['name'])
+            fd = R / CFG['F_h_d0']['file'].format(h=h, seed=42)
+            if fd.exists():  # F_h(d0) — финал первого раунда на ногах d0 (ВЫР-1), seed 42 — для рангов
+                Fname = f'F_{h}(d0)'
+                tab = pd.concat([tab, series_tab(pd.DataFrame([dict(unit=Fname, role='F_h', leg='F', variant=fd.name, files=str(fd),
+                                                                     s2=CFG['F_h_d0']['s2'], n_rych=0)]), ref, h)], ignore_index=True)
+            else:  # до выкладки ВЫР-1 — прежний F_h, справочно
+                F = CFG['F_h'][h]
+                Fname = F['name'] + ' [справочно: без выравнивания d0]'
+                print(f'ВНИМАНИЕ h={h}: нет {fd} — F_h без выравнивания (справочно)', flush=True)
+                dv = read_designs(R / F['designs_val'])
+                fr = dv[dv.design == F['design']]
+                tab = pd.concat([tab, fr.assign(unit=Fname, variant=F['design'], role='F_h', n_rych=0,
+                                                q_har_c1=fr.step.map(ref['har']['sm']).values)], ignore_index=True)
+            W, L = loyo(tab, Fname)
             write_level(W, L, a.level, h)
             if a.level == 1:
                 vybor(W, roles=lc['boost_roles']).to_csv(OUT / f'vybor_level1_h{h}.csv', index=False)
