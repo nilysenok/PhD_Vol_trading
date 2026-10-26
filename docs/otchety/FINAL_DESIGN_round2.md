@@ -135,24 +135,14 @@
 | `vyr/ref_harcj_d0/REF_HARCJ_d0_h1_test.parquet` | `a42b1ae379eb2388b8f7af4312a7702cf076ae30d8d38c5b17b2c97cd236f8ed` |
 | `vyr/ref_harcj_d0/REF_HARCJ_d0_h5_test.parquet` | `02959e651fdacded944a85be294b409ba372bf30b7e252e9a103eee508591496` |
 | `vyr/ref_harcj_d0/REF_HARCJ_d0_h22_test.parquet` | `ee36287815153af9d2aee119908e90d7e7a57dc7271c38b0665005ba18b3da5c` |
-| `ref_nn_garch/REF_GRU_h1_test.parquet` | `5f5443d7f4f05e21874118a8f6f3bc6a2f4a3be08442d23a9a696fab0328d2a3` |
-| `ref_nn_garch/REF_GRU_h5_test.parquet` | `02bf4ff2badcad5ef01d8b5198910f2c116371b38e00ac86c340e1172c293370` |
-| `ref_nn_garch/REF_GRU_h22_test.parquet` | `a330b1183a95fb4dc7bb3c59fa76eb5307099804248dbf852ab8dfe0bf576924` |
-| `ref_nn_garch/REF_LSTM_h1_test.parquet` | `ae726e37ec98ad2547bc9d4f67f98dc69eff06ad6e484103d864614a9bb57e0d` |
-| `ref_nn_garch/REF_LSTM_h5_test.parquet` | `f349ad30f6e0f56b7e71b427d687db9e05cbf2d4d65939c03aa5a58a14a9ec6e` |
-| `ref_nn_garch/REF_LSTM_h22_test.parquet` | `0a4e35a5da578519f0bb3d3ffbbaa03da2dd9423c56d7f6efeb5b46afbbaff3c` |
-| `ref_nn_garch/REF_GARCH_h1_test.parquet` | `db4e7b93ac65227a99a8553535690cce8b7e173f05320297fa2cef52f9d56d9d` |
-| `ref_nn_garch/REF_GARCH_h5_test.parquet` | `cb039e04ea69a5b01ee14ab3526ed400a9053b4baa89a8ec35e21b2df9be4c00` |
-| `ref_nn_garch/REF_GARCH_h22_test.parquet` | `e5a8691ec20a507226b2754733174ecc71598646664a9a5d4fe5ea5972044831` |
-| `ref_nn_garch/REF_GJR_h1_test.parquet` | `714678801fd872bf8563295af10f24562d0639b0bf142ff21083ef3a6c3fe59f` |
-| `ref_nn_garch/REF_GJR_h5_test.parquet` | `f2a486533ab7d48d48b242c3c62ccb005094d707bbb2b054a5fc7638efa3ae8b` |
-| `ref_nn_garch/REF_GJR_h22_test.parquet` | `b435823e167ddfc6d16bb3b81890b3b321ece952f9b7096563c8d2c0f78588be` |
 
-SHA справочных NN / GARCH взяты из журнала записи `docs/otchety/2026-10-26_ref_nn_garch.md` (раздел «Хэши SHA-256», закрытые прогнозы); `test_locked` не открывался. Сверяются `final_test_r2.py` до замка — 24 замороженных файла.
+- **GRU, LSTM, GARCH(1,1), GJR-GARCH** (`test_locked/ref_nn_garch/`). По ВЫР-2 (PR #154) день d они видят, не перестраивались.
+  - Это справочные строки без изменений. Добавляются отдельным PR после открытия (решение владельца 21:40). Нового открытия не нужно: от метрики H1 они не зависят.
+  - SHA — из журнала записи `docs/otchety/2026-10-26_ref_nn_garch.md`.
 
 - **Собранные файлы** `R2/final/etalon_d0_s2emb_h{1,5,22}_test.parquet` и `final_d0_s2emb_h{1,5,22}_test.parquet`: их SHA вносятся в `r2_A_sborka.yaml: sobrano` после сборки и до запуска открытия.
 - **Код** (SHA-256 на коммите этого PR):
-  - `r2_sborka_test.py` `62f9e401e02e0fdd…`, `final_test_r2.py` `ac3e5a1f49d0ddea…` (справочные NN / GARCH добавлены);
+  - `r2_sborka_test.py` `62f9e401e02e0fdd…`, `final_test_r2.py` `ee44869069409253…` (DM пятью способами);
   - `r2_driver.py` `59f539ae4e9f8633…` (PR #219), `r2_gates.py` `9c8524e26f3a7381…`, `r2_gate_abstain.py` `b69b96135f09ab59…`, `r2_mh.py` `3bb2fa6a21afb309…`, `r2_core.py` `0417e91ca088c68b…`, `r2_calib.py` `09f59056b0493348…`, `r2_nogi.py` `b24d48cced846…`, `r2_ens.py` `83f3a875bc5d9885…`;
   - без изменений: `gibrid_designs.py` `7462015b2989ffce…`, `gibrid_bias.py` `40e65cacbd4be1fd…`, `final_test.py` `ea67239fe302f566…`, `ftp_tables.py` `2feca8238c617a66…`, `ftp_stats.py` `ce705f96f5337633…`;
   - `code_sha256` ворот не равен текущим файлам: код менялся после записи ворот. Ворота — по своему SHA.
@@ -240,7 +230,7 @@ SHA справочных NN / GARCH взяты из журнала записи 
 | HAR-J (б) d0 и F_h(d0) с s² как R1 | `vyr/etalon_d0_h{h}_test.parquet`, `vyr/final_d0_h{h}_test.parquet` | ВЫР-1 до эмбарго s², справочно |
 | V0 XGBoost / LightGBM | кадр `final3` | день d видят (ВЫР-2) |
 | HAR-CJ d0 | `vyr/ref_harcj_d0/` | ВЫР-2, справочно |
-| GRU, LSTM, GARCH(1,1), GJR-GARCH | `ref_nn_garch/REF_{GRU,LSTM,GARCH,GJR}_h{h}_test.parquet`, `rv_pred` | По ВЫР-2 (PR #154) день d видят, не перестраивались. Справочные строки без изменений: таблица периодов (QLIKE / RMSE / MAE). Не в H1, DM против эталона и MCS |
+| GRU, LSTM, GARCH(1,1), GJR-GARCH | `ref_nn_garch/REF_{GRU,LSTM,GARCH,GJR}_h{h}_test.parquet` | по ВЫР-2 (PR #154) день d видят, не перестраивались; справочные строки без изменений — отдельным PR после открытия, не в H1 |
 | HAR-X с поправкой (раскладка) | кадр `final3`, R1 | ❓ A-2: пометка «R1, до выравнивания» |
 
 - Правило закрытия биржи: основная версия — без правила, с правилом — рядом.
@@ -255,13 +245,14 @@ SHA справочных NN / GARCH взяты из журнала записи 
 |---|---|
 | сводка контрольного периода: финал, (б), (а), финал к (б) и к (а) в %, DM против (б) и (а) — t; p, MCS — финал / (б) / (а) / лучшая одиночная, тикеров с выигрышем, знаковый p, H1 | `table_3_kontrol_svodka_test_r2_{bez_zakrytiya,s_zakrytiem}.csv` (то же для `vse` 2017–2026 и `neotkr` 2025 – 01/02.2026) |
 | QLIKE по годам, пул и среднее по годам | `table_3_final_po_godam_test_r2*.csv`, `table_3_2`, `3_3`, `3_7` (+ `_rmse`, `_mae`), `table_3_periody_test_r2*.csv` |
-| DM тремя способами: номинальный (пул, без HAC); NW лаг h − 1 на пуле; основной — дневной ряд средней по тикерам, NW лаг h − 1. Против (б) и против (а) | `table_3_9_test_r2*.csv`, основной — `table_3_8` |
+| DM тремя способами, как в первом отчёте: (1) номинальный на пуле без HAC; (2) NW на пуле, лаг h − 1; (3) основной панельный — дневной ряд средней по 17 тикерам, NW лаг h − 1. Против (б) и против (а) | `table_3_9_test_r2*.csv`, основной — `table_3_8` |
+| DM дополнительно (решение владельца 21:40): (4) по тикерам, NW лаг h − 1, с поправкой Холма — число тикеров, значимо лучших после Холма; (5) по непересекающимся точкам — первая дата периода и каждая h-я, без NW. Все пять в одной таблице, периоды 2022–2026 и 2017–2026 | `table_3_dm5_test_r2{,_zakrytie}.csv` |
 | MCS (T_R, T_max; в MCS 10% и 25%) | `table_3_mcs_test_r2*.csv` и `table_3_{kontrol,vse,neotkr}_mcs_*` |
 | доля тикеров, где финал лучше; знаковый тест | `table_3_tickers_test_r2*.csv`, `table_3_{…}_tickers_*`, `table_3_{…}_znak_*` |
 | MZ; подпериоды; терцили | `table_3_mz`, `table_3_subperiods`, `table_3_terciles` (`_test_r2*`), `table_3_{…}_subperiods_*` |
 | правило закрытия биржи: исключено точек и их доля | `table_3_zakrytie_isklyucheno_test_r2.csv` |
 | вторичные свидетельства h=22 | `table_3_h22_vtorichnye_test_r2{,_zakrytie}.csv` |
-| справочные (V0, HAR-CJ d0, GRU, LSTM, GARCH(1,1), GJR-GARCH, ряды ВЫР-1 с s² как R1) | `table_3_periody_test_r2*.csv` (QLIKE / RMSE / MAE по трём периодам); V0 — ещё и в 3.4–3.7 |
+| справочные (V0, HAR-CJ d0, ряды ВЫР-1 с s² как R1; GRU, LSTM, GARCH, GJR — после открытия) | `table_3_periody_test_r2*.csv` (QLIKE / RMSE / MAE по трём периодам); V0 — ещё и в 3.4–3.7 |
 
 - В варианте 1 гибрид = F_h(d0). Поэтому `table_3_dm_vs_F_*` пуст: разность тождественно 0.
 - Выигрыш финала к (а) и (б) в % — по h и периодам в сводках `svodka`.

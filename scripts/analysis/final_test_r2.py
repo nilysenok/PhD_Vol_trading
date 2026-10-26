@@ -64,7 +64,6 @@ HALT = (pd.Timestamp('2022-02-28'), pd.Timestamp('2022-03-23'))
 TAG, TAG_Z = 'test_r2', 'test_r2_zakrytie'
 RULES = {'bez': 'bez_zakrytiya', 'pravilo': 's_zakrytiem'}
 F_NAME = 'Гибридная раунда 1 d0'  # F_h(d0)
-REF_NG = {'GRU': 'GRU', 'LSTM': 'LSTM', 'GARCH': 'GARCH(1,1)', 'GJR': 'GJR-GARCH'}  # справочные (ref_nn_garch), не в H1 / DM / MCS
 SAME = ('XGBoost', 'LightGBM', 'XGBoost с поправкой', 'LightGBM с поправкой', 'Лучшая одиночная бустинга')  # в d0 не менялись
 NOTE_R2 = ('второе открытие (R2), версия d0: эталоны (а), (б) и F_h(d0) — ВЫР-1, справочные — ВЫР-2, гибрид — победитель R2 или F_h(d0); '
            'числа первого прогона (до выравнивания) — только журнал')
@@ -88,12 +87,10 @@ def sha(p):
 
 def frozen_files(h):
     """fz — кадр первого теста; et, fd — ВЫР-1 (s² как R1, справочно и цель); et2, fd2 — эталоны и F_h(d0) с s² по t−1 и эмбарго
-    (r2_sborka_test.py, PR #194/#195, решение владельца 17:35); cj — HAR-CJ d0 (ВЫР-2); gru, lstm, garch, gjr — справочные NN и GARCH
-    (test_locked/ref_nn_garch, PR #97; по ВЫР-2, PR #154, день d видят — без изменений)."""
+    (r2_sborka_test.py, PR #194/#195, решение владельца 17:35); cj — HAR-CJ d0 (ВЫР-2)."""
     return {'fz': f'final3/final_h{h}_test.parquet', 'et': f'vyr/etalon_d0_h{h}_test.parquet', 'fd': f'vyr/final_d0_h{h}_test.parquet',
             'cj': f'vyr/ref_harcj_d0/REF_HARCJ_d0_h{h}_test.parquet',
-            'et2': f'R2/final/etalon_d0_s2emb_h{h}_test.parquet', 'fd2': f'R2/final/final_d0_s2emb_h{h}_test.parquet',
-            **{m.lower(): f'ref_nn_garch/REF_{m}_h{h}_test.parquet' for m in REF_NG}}
+            'et2': f'R2/final/etalon_d0_s2emb_h{h}_test.parquet', 'fd2': f'R2/final/final_d0_s2emb_h{h}_test.parquet'}
 
 
 def frozen_sha(spec=SPEC):
@@ -176,9 +173,6 @@ def frame_d0(src, locked, h):
     m = fz.merge(et, on=KEY, how='left', validate='1:1').merge(fd, on=KEY, how='left', validate='1:1')
     m = m.merge(et2, on=KEY, how='left', validate='1:1').merge(fd2, on=KEY, how='left', validate='1:1')
     m = m.merge(cj.drop_duplicates(KEY), on=KEY, how='left', validate='1:1')
-    for mod in REF_NG:  # справочные NN / GARCH: как есть (rv_pred файла), покрытие может быть неполным — считаются по своим строкам
-        r = pd.read_parquet(F[mod.lower()], columns=KEY + ['rv_pred']).rename(columns={'rv_pred': f'ref_{mod.lower()}'})
-        m = m.merge(r.drop_duplicates(KEY), on=KEY, how='left', validate='1:1')
     for c in ('har_raw', 'har_corr', 'F_d0', 'har_corr_bez_emb', 'F_d0_bez_emb'):
         if m[c].isna().any():
             raise Stop(f'h={h}: {int(m[c].isna().sum())} строк кадра без {c} (d0)')
@@ -268,7 +262,6 @@ def period_tables(fr, rule, out_tables, suffix, B, r2_hs=(), note=NOTE_R2):
 def periody(frames):
     rows = []
     mods = {**FTST.MODELS, F_NAME + ' (F_h(d0))': 'F_d0', 'HAR-CJ d0 (справочно)': 'harcj_d0',
-            **{f'{REF_NG[m]} (справочно)': f'ref_{m.lower()}' for m in REF_NG},
             'HAR-J (б) d0, s² без эмбарго — ВЫР-1 (справочно)': 'har_corr_bez_emb', 'F_h(d0), s² без эмбарго — ВЫР-1 (справочно)': 'F_d0_bez_emb'}
     for h, df in frames.items():
         for nm, (a, b) in PERIODY.items():
@@ -308,6 +301,52 @@ def dm_neperekr(df, ref, shag=SHAG22):
     g = df[pd.to_datetime(df.date).isin(t0)]
     d = FT.S.qloss(g.rv_actual.values, g[ref].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values)
     return FT.S.dm_series(FT.S.daily(g.date.values, d), 1), int(g.date.nunique())
+
+
+DM5_PER = {'kontrol': ('2022–2026 (контрольный)', 2022, 2026, ''),
+           'vse': ('2017–2026', 2017, 2026, 'годы 2017–2021 участвовали в отборе — не независимая оценка')}
+
+
+def holm(p):
+    """Поправка Холма (FWER) для односторонних p. -> скорректированные p в исходном порядке."""
+    p = np.asarray(p, float)
+    o = np.argsort(p)
+    adj = np.minimum(1.0, np.maximum.accumulate((len(p) - np.arange(len(p))) * p[o]))
+    out = np.empty_like(adj)
+    out[o] = adj
+    return out
+
+
+def dm5(fr, rlab):
+    """DM пятью способами (решение владельца 21:40) против HAR-J (б) и (а) по h и периодам:
+    (1) номинальный на пуле без HAC; (2) NW на пуле, лаг h−1; (3) основной панельный — дневной ряд средней по тикерам, NW лаг h−1
+    (1–3 — final_test.dm, как в первом отчёте); дополнительно (4) DM по тикерам (дневной ряд тикера, NW лаг h−1) с поправкой Холма;
+    (5) DM по непересекающимся точкам отсчёта (первая торговая дата периода и каждая h-я, средняя по тикерам, без NW)."""
+    rows = []
+    for h, df0 in fr.items():
+        for tag, (label, a, b, ogov) in DM5_PER.items():
+            df = df0[df0.year.between(a, b)].sort_values(['date', 'ticker']).reset_index(drop=True)
+            for rn, rc in FT.REFS.items():
+                base = dict(h=h, Период=label, правило=rlab, эталон=rn, оговорка=ogov)
+                with np.errstate(invalid='ignore', divide='ignore'):
+                    for r in FTST.dm(df, rc, h):
+                        rows.append({**base, **r, 'тикеров значимо лучше (Холм 5%)': np.nan, 'тикеров': np.nan})
+                    P, T = [], []
+                    for _, g in df.groupby('ticker'):
+                        d = FT.S.qloss(g.rv_actual.values, g[rc].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values)
+                        x = FT.S.dm_series(FT.S.daily(g.date.values, d), h)
+                        P.append(x['p_one']); T.append(x['t'])
+                    ph = holm(P)
+                    rows.append({**base, 'способ': 'по тикерам, NW лаг h−1, поправка Холма', 'n': len(P), 't': float(np.median(T)),
+                                 'p_two': np.nan, 'p_one_H1': float(ph.min()), 'mean_d': np.nan,
+                                 'тикеров значимо лучше (Холм 5%)': int((ph < 0.05).sum()), 'тикеров': len(P)})
+                    r5, nd = dm_neperekr(df, rc, shag=h)
+                    rows.append({**base, 'способ': f'непересекающиеся точки (каждая {h}-я торговая дата), без NW', 'n': nd, 't': r5['t'],
+                                 'p_two': float(2 * min(r5['p_one'], 1 - r5['p_one'])), 'p_one_H1': r5['p_one'], 'mean_d': r5['mean_d'],
+                                 'тикеров значимо лучше (Холм 5%)': np.nan, 'тикеров': np.nan})
+    D = pd.DataFrame(rows)
+    return D.assign(t=D.t.round(2), p_two=D.p_two.map(lambda v: FT.pf(v) if v == v else v), p_one_H1=D.p_one_H1.map(lambda v: FT.pf(v) if v == v else v),
+                    пометка='(1)–(3) — как в первом отчёте; (4), (5) — дополнительно (решение владельца 21:40); для (4) t — медиана по тикерам, p — минимальный по Холму')
 
 
 def vtorichnye22(fr, B, rlab):
@@ -430,6 +469,7 @@ def run_r2(src, locked, first_tables, out_tables, feat, B, lock=True, need_fd=Tr
         dm_vs_F(fr, r2_hs).to_csv(out_tables / f'table_3_dm_vs_F_{tag}.csv', index=False)
         with r2_env(hs, out_tables):
             vtorichnye22(fr, B, TD2.RULE[RULES[ver]]).to_csv(out_tables / f'table_3_h22_vtorichnye_{tag}.csv', index=False)
+            dm5(fr, TD2.RULE[RULES[ver]]).to_csv(out_tables / f'table_3_dm5_{tag}.csv', index=False)
         bad, n = [], 0
         if ftag3:
             b3, n3 = sverka(first_tables, out_tables, hs, tag_first=ftag3, tag_r2=tag)
@@ -484,12 +524,7 @@ def selftest():
         f2 = e2.har_corr.values if h == 22 else noise(fdv, 0.05)
         fd[KEY + ['year', 'leg_raw', 'design']].assign(rv_pred=f2, F_sm=1.12, F_sm_bez_emb=1.1).to_parquet(
             src / f'final_d0_s2emb_h{h}_test.parquet', index=False)
-        (lkd / 'ref_nn_garch').mkdir(exist_ok=True)
-        for i, mod in enumerate(REF_NG):  # справочные NN / GARCH: как есть; у GARCH — неполное покрытие
-            rf = g[KEY + ['year', 'rv_actual']].assign(rv_pred_raw=1.0, rv_pred=noise(g.har_corr.values, 0.2 + 0.05 * i))
-            (rf.drop(index=rf.index[2000:2100]) if 'GARCH' in mod or mod == 'GJR' else rf).to_parquet(
-                lkd / 'ref_nn_garch' / f'REF_{mod}_h{h}_test.parquet', index=False)
-    shas = {r: sha(lkd / r) for h in FTST.HS for r in frozen_files(h).values()}
+    shas ={r: sha(lkd / r) for h in FTST.HS for r in frozen_files(h).values()}
     g.loc[:, ['date', 'ticker']].to_parquet(tmp / 'data' / 'regen' / 'features_pit_v3.parquet', index=False)
     ft = {tk: (x[x < HALT[0]].max(), x[x > HALT[1]].min()) for tk, x in g.groupby('ticker').date}
     assert ft[late][1] == pd.Timestamp('2022-03-28') and ft['T0'][1] == pd.Timestamp('2022-03-24')
@@ -563,14 +598,6 @@ def selftest():
         assert (fh.loc[1] != q_f0.loc[1]).any(), 'F_h(d0) — из сборки'
         cjn = p[p['Модель'] == 'HAR-CJ d0 (справочно)']
         assert len(cjn) == 9 and (cjn.n < p[p['Модель'] == 'Гибридная'].n.values).any()
-        for mod, nm in REF_NG.items():  # справочные NN / GARCH — в таблице периодов, прямой счёт по файлу
-            rn = p[p['Модель'] == f'{nm} (справочно)']
-            assert len(rn) == 9, nm
-            rf = pd.read_parquet(lkd / 'ref_nn_garch' / f'REF_{mod}_h5_test.parquet').merge(D[5][KEY], on=KEY)
-            rf = rf[rf.year.between(2022, 2026) & (rf.rv_actual > 1e-12)]
-            q = FTST.fmt(FTST.metrics(rf.rv_actual.values, rf.rv_pred.values)['QLIKE'], 'QLIKE')
-            assert rn.set_index(['h', 'Период']).QLIKE.loc[(5, '2022–2026 (основной)')] == q, nm
-        assert not {f'MCS: {nm}' for nm in REF_NG.values()} & set(pd.read_csv(t2 / f'table_3_h22_vtorichnye_{TAG}.csv').metod), 'справочные — не в MCS'
         dmf = pd.read_csv(t2 / f'table_3_dm_vs_F_{TAG}.csv')
         assert set(dmf.H) == {5, 22}, 'DM против F_h(d0) — только h с победителем'
         mc = pd.read_csv(t2 / f'table_3_mcs_{TAG}.csv', sep=';', decimal=',')
@@ -605,6 +632,32 @@ def selftest():
         assert (t2 / f'table_3_h22_vtorichnye_{TAG_Z}.csv').exists()
         vz = pd.read_csv(t2 / f'table_3_h22_vtorichnye_{TAG_Z}.csv')
         assert set(vz.pravilo) == {TD2.RULE['s_zakrytiem']} and (vz.t.dropna() != v.t.dropna()).any()
+        # 3e. DM пятью способами: (1)–(3) = таблица 3.9 (final_test.dm) на 2017–2026; (4) по тикерам с Холмом; (5) непересекающиеся точки
+        d5 = pd.read_csv(t2 / f'table_3_dm5_{TAG}.csv')
+        assert (t2 / f'table_3_dm5_{TAG_Z}.csv').exists()
+        g5 = d5.groupby(['h', 'Период', 'эталон']).size()
+        assert (g5 == 5).all() and len(g5) == 3 * 2 * 2, g5
+        t39 = pd.read_csv(t2 / f'table_3_9_{TAG}.csv')
+        for h in (1, 5, 22):
+            a = d5[(d5.h == h) & (d5['Период'] == '2017–2026') & (d5['эталон'] == 'HAR-J (б)')].set_index('способ').t
+            b = t39[(t39.H == h) & (t39['эталон'] == FTST.ETALON_NAME)].set_index('способ').t
+            for s in b.index:
+                assert (np.isnan(a[s]) and np.isnan(b[s])) or abs(a[s] - b[s]) < 1e-9, (h, s, a[s], b[s])
+        K5 = frame_d0(src, lkd, 5)
+        K5 = K5[K5.year.between(2022, 2026)]
+        pp = []
+        for _, g in K5.groupby('ticker'):
+            d = FT.S.qloss(g.rv_actual.values, g[FTST.ETALON].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values)
+            pp.append(FT.S.dm_series(FT.S.daily(g.date.values, d), 5)['p_one'])
+        ps = np.sort(pp); hm = np.maximum.accumulate(np.minimum(1, (len(ps) - np.arange(len(ps))) * ps))
+        r4 = d5[(d5.h == 5) & d5['Период'].str.startswith('2022') & (d5['эталон'] == 'HAR-J (б)') & d5['способ'].str.startswith('по тикерам')]
+        assert r4['тикеров'].iloc[0] == 17 and r4['тикеров значимо лучше (Холм 5%)'].iloc[0] == int((hm < 0.05).sum())
+        u5 = np.sort(K5.date.unique())
+        g = K5[K5.date.isin(u5[::5])]
+        s = pd.Series(FT.S.qloss(g.rv_actual.values, g[FTST.ETALON].values) - FT.S.qloss(g.rv_actual.values, g.rv_pred.values),
+                      index=g.date.values).groupby(level=0).mean()
+        r5 = d5[(d5.h == 5) & d5['Период'].str.startswith('2022') & (d5['эталон'] == 'HAR-J (б)') & d5['способ'].str.startswith('непересек')]
+        assert r5.n.iloc[0] == len(s) and abs(r5.t.iloc[0] - round(s.mean() / np.sqrt(s.var(ddof=0) / len(s)), 2)) < 1e-9
         fpg = pd.read_csv(t2 / f'table_3_final_po_godam_{TAG}.csv')
         f1 = pd.read_csv(t1 / 'table_3_final_po_godam_test_raw.csv')
         a = fpg[(fpg['Модель'] == 'Гибридная') & (fpg.h == 5)].QLIKE.values
@@ -658,7 +711,7 @@ def selftest():
         if FD.exists() and PLACEHOLDER in FD.read_text():  # шаблон в репозитории открытие блокирует
             stop_before_lock(src4, PLACEHOLDER, fd=FD)
         z = frozen_sha()  # yaml: 12 замороженных до R2, SHA кадра = test_dop.SHA; собранные (sobrano) — после сборки
-        assert len([r for r in z if 's2emb' not in r]) == 24  # 12 ВЫР / кадр + 12 справочных NN / GARCH
+        assert len([r for r in z if 's2emb' not in r]) == 12
         # 7. строки, не менявшиеся в d0, не совпали с первым тестом — СТОП: в 3.x (основная) и в таблице периодов с правилом
         for nm, (fname, key, row, colname, srcx) in {
                 '3_4': ('table_3_4_test_raw.csv', 'Модель', 'XGBoost', 'H = 5', src2),
