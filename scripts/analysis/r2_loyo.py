@@ -426,18 +426,38 @@ def rv_daily(tickers=None):
     return d.rename(columns={c['rv_col']: 'rv'})
 
 
-def K_dizaina(design=None, features=None):
-    """Множество последних известных дней ряда (п. 2.6): по группам признаков дизайна (yaml sdvig.izvestnyy_den_grupp; иначе {0})."""
-    fs = features if features is not None else ((design or {}).get('features') or ['G0'])
+def K_dizaina(design=None, features=None, leg=None, h=None):
+    """Множество последних известных дней ряда (п. 2.6): по группам признаков дизайна (yaml sdvig.izvestnyy_den_grupp) и по типу ноги
+    (sdvig.izvestnyy_den_nog: у RVI_anchor коэффициенты k_i — из окна 252 с эмбарго h, последний известный день цели d−h). Иначе {0}."""
+    d = design or {}
+    fs = features if features is not None else (d.get('features') or ['G0'])
     gr = CFG['sdvig'].get('izvestnyy_den_grupp', {})
-    return tuple(sorted({k for g in fs for k in gr.get(g, [0])} | {0}))
+    K = {k for g in fs for k in gr.get(g, [0])} | {0}
+    lt = leg if leg is not None else (d.get('leg') or {}).get('type')
+    hh = h if h is not None else d.get('h')
+    for x in CFG['sdvig'].get('izvestnyy_den_nog', {}).get(lt, []):
+        K.add(-int(hh) if x == '-h' else int(x))
+    return tuple(sorted(K))
 
 
-def sdvig_ok(argmax, K=(0,)):
-    """Правило п. 2.6 с последним известным днём: ок, если min K ≤ argmax ≤ 0; +1 — заглядывание; < min K — отстаёт.
-    -> (ok, причина). При K = {0} — ровно «argmax = 0» протокола."""
+def sdvig_ok(argmax, K=(0,), corr=None, eps=None):
+    """Правило п. 2.6 с последним известным днём и допуском ε (умолчание дирижёра 26.10, ❓ 3 протокола):
+    - будущее: если corr дан — блок, если max_{s>0} corr(s) − corr(max K) > ε (заглядывание); иначе при argmax > 0 — ок с пометкой
+      «плоский профиль»; без corr — argmax > 0 всегда блок (как раньше);
+    - прошлое: argmax < min K — блок (отстаёт);
+    -> (ok, причина или пометка). При K = {0} и ε = 0 — ровно «argmax = 0» протокола."""
+    eps = CFG['sdvig'].get('eps', 0.0) if eps is None else eps
     if argmax is None:
         return False, 'нет пар'
+    if corr is not None:
+        fut = [corr[s] for s in corr if s > 0 and corr[s] == corr[s]]
+        c0 = corr.get(max(K))
+        if fut and c0 is not None and c0 == c0:
+            ex = max(fut) - c0
+            if ex > eps:
+                return False, f'заглядывание (+1): превышение {ex:.4f} > ε = {eps}'
+            if argmax > 0:
+                return True, f'плоский профиль: превышение +1 над днём {max(K)} = {ex:.4f} ≤ ε = {eps}'
     if argmax > 0:
         return False, 'заглядывание (+1)'
     if argmax < min(K):
@@ -469,14 +489,21 @@ def sdvig(pred, rv, sdvigi=None, K=(0,)):
                 res[s].append(pd.Series(ly[ok]).corr(pd.Series(lr[j[ok]]), method='spearman'))
     med = {s: float(np.nanmedian(v)) if v else np.nan for s, v in res.items()}
     am = None if all(np.isnan(list(med.values()))) else int(max(med, key=lambda s: -np.inf if np.isnan(med[s]) else med[s]))
-    ok, why = sdvig_ok(am, K)
+    ok, why = sdvig_ok(am, K, corr=med)
     return dict(n_tikerov=int(p.ticker.nunique()), n_strok=int(len(p)), **{f'corr_s{s:+d}': med[s] for s in sdvigi}, argmax=am,
-                ok=ok, blok=not ok, prichina=why, posledniy_izvestnyy_den=K_str(K))
+                ok=ok, blok=not ok, prichina='' if ok else why, pometka=why if ok else '', posledniy_izvestnyy_den=K_str(K))
+
+
+def sdvig_zapis(r, f=None):
+    """Строка проверки сдвига -> blok_sdvig.csv, если ряд заблокирован или прошёл с пометкой «плоский профиль» (ok = True).
+    r — словарь sdvig(...) + ryad, h, hash. Для r2_core.shift_check (S): вызывать вместо условия «if not ok»."""
+    if (not r.get('ok')) or r.get('pometka'):
+        blok_zapis([{k: v for k, v in r.items() if k not in ('blok', 'vremya')}], f)
 
 
 # формат blok_sdvig.csv — как r2_core.shift_check агента S, плюс поле «последний известный день» (дирижёр 26.10 после PR #163)
 BLOK_COLS = ['ryad', 'h', 'hash', 'n_tikerov', 'n_strok', 'corr_s-2', 'corr_s-1', 'corr_s+0', 'corr_s+1', 'argmax', 'ok', 'vremya', 'prichina',
-             'posledniy_izvestnyy_den']
+             'posledniy_izvestnyy_den', 'pometka']
 
 
 def blok_zapis(rows, f=None):
@@ -499,6 +526,32 @@ def blok_zapis(rows, f=None):
         fh.truncate()
         allr.to_csv(fh, index=False)
     print(f'БЛОК сдвига: {len(df)} рядов -> {f} (доклад дирижёру)', flush=True)
+
+
+def peresmotr_blok(zapis=True):
+    """Пересмотр заблокированных рядов кэша (строки blok_sdvig.csv с hash и ok = False) по действующему правилу sdvig_ok (K по метаданным
+    дизайна, допуск ε): корреляции — из строки, дизайн — R2/cache/<hash>/design.yaml. Новая строка с тем же hash дописывается
+    (последняя строка по (ryad, h, hash) — действующая). -> таблица пересмотра."""
+    f = R / CFG['sdvig']['out']
+    B = pd.read_csv(f)
+    B = B[B.hash.notna() & (B.hash.astype(str) != '') & ~B.ok.astype(str).str.lower().eq('true')]
+    B = B.drop_duplicates(['ryad', 'h', 'hash'], keep='last')
+    rows = []
+    for r in B.to_dict('records'):
+        dz = R / 'R2' / 'cache' / str(r['hash']) / 'design.yaml'
+        if not dz.exists():
+            continue
+        d = yaml.safe_load(dz.read_text())
+        K = K_dizaina(d, h=int(r['h']))
+        corr = {s: float(r[f'corr_s{s:+d}']) for s in CFG['sdvig']['sdvigi']}
+        ok, why = sdvig_ok(int(r['argmax']), K, corr=corr)
+        rows.append(dict(ryad=r['ryad'], h=int(r['h']), hash=r['hash'], n_tikerov=r.get('n_tikerov'), n_strok=r.get('n_strok'),
+                         **{f'corr_s{s:+d}': corr[s] for s in corr}, argmax=int(r['argmax']), ok=ok, prichina='' if ok else why,
+                         posledniy_izvestnyy_den=K_str(K), pometka=f'пересмотр (ε = {CFG["sdvig"]["eps"]}, K по ноге {d["leg"].get("type")})'
+                         + (f'; {why}' if ok and why else '')))
+    if zapis and rows:
+        blok_zapis(rows, f)
+    return pd.DataFrame(rows)
 
 
 def reshit_F(f_dir=None, zapis=True):
@@ -747,14 +800,14 @@ def series_tab(spec, ref, h, files_col='files', blok_rows=None, rv=None):
         agg = getattr(r, 'agg', 'mean') if isinstance(getattr(r, 'agg', None), str) else 'mean'
         dz = getattr(r, 'design_yaml', None)
         dzd = yaml.safe_load(Path(dz).read_text()) if isinstance(dz, str) and Path(dz).exists() else None
-        K = K_dizaina(dzd)  # последние известные дни входов (по группам признаков дизайна)
+        K = K_dizaina(dzd, leg=getattr(r, 'leg', None) if dzd is None else None, h=h)  # последние известные дни входов
         key = (fs, agg, K)
         if key not in cache:
             files = [x if Path(x).is_absolute() else R / x for x in str(fs).split(';')]
             s = series(files, agg=agg)
             sd = sdvig(s, rv, K=K) if rv is not None else None
             cache[key] = (s, sd)
-            if sd and sd['blok'] and blok_rows is not None:
+            if sd and (sd['blok'] or sd.get('pometka')) and blok_rows is not None:  # блок или «плоский профиль» (ok)
                 blok_rows.append(dict(ryad=f'{r.unit} / {r.variant}: {fs}', h=h, hash=sha(dz)[:16] if dzd is not None else '',
                                       **{k: v for k, v in sd.items() if k != 'blok'}))
         s, sd = cache[key]
@@ -1055,6 +1108,26 @@ def selftest():
     sl1 = sdvig(pred_from(-1), rvd, K=(-1, 0))
     assert not sl1['blok'] and sl1['posledniy_izvestnyy_den'] == '-1..0' and sdvig(pred_from(1), rvd, K=(-1, 0))['blok'], sl1
     assert sdvig_ok(-2, (-1, 0)) == (False, 'отстаёт (info_set < d0)') and sdvig_ok(0, (0,))[0]
+    # допуск ε (❓ 3): плоский профиль с +1 выше дня 0 на ≤ ε — проходит с пометкой; > ε — блок; RVI_anchor: K = {−h, 0}
+    ok_, why_ = sdvig_ok(1, (0,), corr={-2: 0.300, -1: 0.302, 0: 0.304, 1: 0.310})
+    assert ok_ and why_.startswith('плоский профиль')
+    assert not sdvig_ok(1, (0,), corr={-2: 0.30, -1: 0.30, 0: 0.30, 1: 0.32})[0]
+    assert not sdvig_ok(-1, (-1, 0), corr={-2: 0.30, -1: 0.40, 0: 0.30, 1: 0.39})[0]  # будущее > дня 0 на 0,09 — блок при любом argmax
+    assert K_dizaina({'h': 22, 'leg': {'type': 'RVI_anchor'}}) == (-22, 0) and K_dizaina(leg='RVI_anchor', h=5) == (-5, 0)
+    assert sdvig_ok(-2, K_dizaina(leg='RVI_anchor', h=5), corr={-2: 0.305, -1: 0.304, 0: 0.300, 1: 0.299})[0]
+    # детектор утечек с допуском: плоский ряд (окно 252 дня) проходит; тот же ряд с подложенной утечкой (RV_{d+1}) — блок
+    def ploskiy(leak=0.0):
+        out = []
+        for tk, g in rvd.groupby('ticker'):
+            g = g.sort_values('date').reset_index(drop=True)
+            base = np.log(g.rv).rolling(252, min_periods=60).mean()
+            lp = (1 - leak) * base + leak * np.log(g.rv.shift(-1))
+            out.append(pd.DataFrame(dict(date=g.date, ticker=tk, rv_pred=np.exp(lp))).dropna())
+        return pd.concat(out)
+    Ka = K_dizaina(leg='RVI_anchor', h=5)  # окно прошлого: профиль убывает к +1, K = {−5, 0}
+    sp0, sp1 = sdvig(ploskiy(0.0), rvd, K=Ka), sdvig(ploskiy(0.3), rvd, K=Ka)
+    assert sp0['ok'] and sp1['blok'] and sp1['argmax'] == 1, (sp0, sp1)
+    assert sdvig(pred_from(1), rvd)['blok'] and sdvig(pred_from(1), rvd, K=(-22, 0))['blok']
     bf = Path(tempfile.mkdtemp()) / 'blok.csv'
     pd.DataFrame([dict(ryad='core', h=1, argmax=-1, ok=False)]).to_csv(bf, index=False)  # строка ядра без нового поля
     blok_zapis([dict(ryad='O', h=1, argmax=1, ok=False, posledniy_izvestnyy_den='0')], f=bf)
@@ -1068,8 +1141,9 @@ def selftest():
             OUT = out0_
         d = rf.set_index('obekt').reshenie
         assert d['группа G1'] == 'ок' and d['столбец g1_pc1'] == 'ок' and d['столбец g1_pc2'] == 'ок' and d['столбец g1_pc3'] == 'ок'
-        assert (d[['столбец g7_ln_amihud_w', 'столбец g7_ln_amihud_m', 'столбец g4_jbig_n22']] == 'блок').all()
-        assert set(rf[rf.reshenie == 'блок'].obekt) == {'столбец g7_ln_amihud_w', 'столбец g7_ln_amihud_m', 'столбец g4_jbig_n22'}
+        tri = {'столбец g7_ln_amihud_w', 'столбец g7_ln_amihud_m', 'столбец g4_jbig_n22'}  # в F v2 (PR #170) столбцы уже убраны
+        est = tri & set(d.index)
+        assert (d[list(est)] == 'блок').all() and set(rf[rf.reshenie == 'блок'].obekt) == est
     # чтение: шаги 7+ не загружаются; OOS s²; заморозка множителей; median-агрегат
     tmp = Path(tempfile.mkdtemp())
     dd = pd.DataFrame([(pd.Timestamp(f'{2015 + st}-06-01') + pd.Timedelta(days=i), 'T', 2015 + st, st, 1.0, np.exp(-0.1 * st))
@@ -1136,7 +1210,7 @@ def selftest():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', nargs='?', choices=['proverka', 'level', 'gate-d', 'sdvig-f'])
+    ap.add_argument('cmd', nargs='?', choices=['proverka', 'level', 'gate-d', 'sdvig-f', 'sdvig-peresmotr'])
     ap.add_argument('--selftest', action='store_true')
     ap.add_argument('--h', type=int, nargs='*', default=[1, 5, 22])
     ap.add_argument('--level', type=int, default=1)
@@ -1150,6 +1224,9 @@ def main():
     if a.cmd == 'level':
         for h in a.h:
             run_level(a.level, h, tuple(a.v0))
+        return
+    if a.cmd == 'sdvig-peresmotr':  # пересмотр блоков кэша по правилу с K ноги и допуском ε (❓ 3)
+        print(peresmotr_blok().to_string(index=False), flush=True)
         return
     if a.cmd == 'sdvig-f':  # решение O по проверке сдвига агента F (PR #163) с последним известным днём
         print(reshit_F().to_string(index=False), flush=True)

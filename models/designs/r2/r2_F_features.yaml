@@ -2,16 +2,17 @@
 # Информационное множество d0: строка (d, ticker) — данные по день d включительно; RV_d до 18:50; без shift(1).
 # Ключи — features_pit_v3h (ISS_start); history_start = 2014 -> строки date >= 2014-06-09.
 agent: F
-version: features_r2_v2
+version: features_r2_v3
+changed_v3: "G1 (ln_rvm_imoex: флаг imoex_low_bars; строки внешних рядов как harx), G9 ln_rvi2_m — как R1"
 removed_v2: [g4_jbig_n22, g7_ln_amihud_w, g7_ln_amihud_m]  # блок O (PR #167), разбор — stage razbor
-combined: {file: data/regen/R2/features/features_r2_v2.parquet, sha256: cd78deb7fd38585a68fda06c38602d895821d8d40922adefa3b27ccad12288ca}
+combined: {file: data/regen/R2/features/features_r2_v3.parquet, sha256: 977a87d31f0474c5f4d113aa524f040fe3fe1a5f290da1c27c22ff1878af7a72}
 key: [date, ticker]
 history_start: {"2014": "date >= 2014-06-09 (ключи v3)", ISS_start: "все строки (v3h, с 2011-12-08)"}
 groups:
   G0: {file: data/regen/features_pit_v3.parquet, note: "база; в версии d0 — у агента S/L (rv_d, rv_w, rv_m, jump_lag* там сдвинуты на 1)"}
   G1:
     file: data/regen/R2/feat/G1.parquet
-    sha256: d72527dd3a5dd8fe200a3e90bff26c7adfd68dcc5ebfaf328c0f8c953f9f37b8
+    sha256: d8d259502c20a825d300d78acf50c3900edb14a17fe9a91f0c809209d4fe448a
     note: "внешние as-of: RVI (18:50), RV_m IMOEX, RV_m рынка d0, PC1–PC3 глобальной вол. (Yahoo — лаг доступности 1 в матрице)"
     columns: [g1_ln_rvi2, g1_ln_rvm_imoex, g1_ln_rvm_mkt, g1_pc1, g1_pc2, g1_pc3]
   G2:
