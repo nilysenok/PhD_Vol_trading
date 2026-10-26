@@ -87,7 +87,17 @@ SOURCES_V2 = {
     "naive_h5": (CH4 / "sigma_naive_dev.parquet", "sigma_pred_h1", "h5"),   # √RV_w от h не зависит
 }
 V2 = False
-POMETKA = "после аудита Н1–Н3; не проверены сигналы, сделки, B"
+POMETKA = "до завершения аудита сигналов, сделок, B"     # Ъ 26.10, 23:10, п. 5
+# Ъ 23:10, п. 3: проверка RVI на сдвиг (S0, PR #245) — пометка в таблицах выбора D
+D_RVI = ("RVI проверен на сдвиг (S0, PR #245): rvi_1850 снят до 18:50 дня d, на закрытии d известен; "
+         "D6lag1 берёт RVI_{d−1}; D фиксируется на «да» владельца")
+# Ъ 23:10, п. 1: H2 «лучший с лучшим» — отбор по С8 отдельно для каждой σ
+H2_GROUPS = (("гибрид", ("hyb_h1", "hyb_h5")), ("HAR-J (б)", ("harj_h1", "harj_h5")),
+             ("наивная", ("naive_h1", "naive_h5")))
+# Ъ 23:10, п. 2: устойчивость выбора C — точка первого FINAL и допуск по Шарпу
+C_FINAL1 = ("C1", "W504_p70", "hyb_h5")
+USTOY_TOL = 0.1
+TOL_S = "0,1"
 # Ъ 22:45: комиссия v2 — 0,04% за сторону «всё включено»; чувствительность 0,035 / 0,05 / 0,06%
 COMM_V2 = 0.0004
 T1_COMMS_V2 = (0.00035, 0.0004, 0.0005, 0.0006)
@@ -1202,6 +1212,9 @@ def run_all_experiments(reps: int) -> None:
                    "s9_vybor_C8_komissiya.csv")
         h2 = dfc3[(dfc3["design"] == k["C"][0]) & (dfc3["h"] == SOURCES[k["C"][1]][2])]
         to_csv(h2.assign(rol="H2 внутри выбранной точки C: без выбора"), "s9_H2_vybrannaya_C.csv")
+        if SUFFIX == "_v2":                # Ъ 23:10, п. 1–2: только основная комиссия 0,04%
+            to_csv(h2_luchshiy_v2(s9, dfc, cports, k["C"]), "s9_H2_luchshiy_s_luchshim.csv")
+            to_csv(ustoychivost_v2(dfc), "s9_C_ustoychivost.csv")
     print(log[-1], flush=True)
     dfp2, p2 = s9.run_p2(sel)
     to_csv(dfp2, "s9_P2_multistrategiya.csv")
@@ -1328,7 +1341,135 @@ def vybor_v2(s9: "S9", dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) 
             r["sharpe"] = best["sharpe_net"]
         r["fakt"] = ("прошёл С8" if best["passed"] else "лучший по С8, С8 не прошёл") + \
                     ("; положительный период" if best["positive"] else "; положительного периода нет")
+        if ap == "D":
+            r["proverka_RVI"] = D_RVI
         rows.append(r)
+    return pd.DataFrame(rows)
+
+
+def _ckey(row) -> str:
+    """Ключ портфеля C (как в run_c) по строке таблицы C."""
+    if row["family"].startswith("C основного"):
+        return "Cref"
+    return _key_of(row) if row["point"] == "семья" else f"{row['family']}:{row['point']}"
+
+
+_C8_COLS = ("sharpe", "sortino", "calmar", "ann_excess_pct", "mdd_excess_pct", "exposure_pct",
+            "turnover_y", "comm_pct_y", *[str(y) for y in YEARS], "worst", "win", "c_years",
+            "c_worst", "c_period", "passed", "positive", "n_met", "mean_delta", "d_vs_A", "p_vs_A",
+            "p_vs_A_iid")
+
+
+def h2_luchshiy_v2(s9: "S9", dfc: pd.DataFrame, cports: dict, ckey: tuple) -> pd.DataFrame:
+    """Ъ 23:10, п. 1: H2 «лучший с лучшим» — для каждой σ (гибрид, HAR-J (б), наивная) свой отбор
+    по С8 (rank_c8) по той же сетке C, включая --c-dop (у наивной C* нет: σ/√RV_w ≡ 1), кандидаты —
+    h=1 и h=5 этой σ; затем выбранные точки попарно: ΔШарп, p Ледуа–Вольфа (блок 5), IID справочно.
+    Первая таблица H2 (внутри точки гибрида) — s9_H2_vybrannaya_C, не меняется."""
+    from fastbt.s9_stats import lw_sharpe_diff
+    rows, sel = [], {}
+    for nm, srcs in H2_GROUPS:
+        c = dfc[dfc["sigma"].isin(srcs)].copy()
+        c["p_holm"] = _holm(c["p_vs_A"].values)
+        best = rank_c8(c).iloc[0]
+        key = (_ckey(best), best["sigma"])
+        if nm == "гибрид" and key != tuple(ckey):
+            raise SystemExit(f"H2: выбор на гибриде {key} ≠ выбору С8 {ckey}")
+        sel[nm] = (f"{best['family']}:{best['point']} на {best['sigma']}", cports[key][0])
+        r = dict(rol="выбор по С8 отдельно для σ", sigma_nabor=nm,
+                 design=f"{best['family']}:{best['point']}", sigma=best["sigma"], h=best["h"],
+                 n_kandidatov=len(c), n_proshli_C8=int(c["passed"].sum()))
+        r.update({col: best[col] for col in _C8_COLS if col in best.index})
+        r["p_holm"] = best["p_holm"]
+        r["fakt"] = ("прошёл С8" if best["passed"] else "лучший по С8, С8 не прошёл") + \
+                    ("; положительный период" if best["positive"] else "; положительного периода нет")
+        if nm == "наивная":
+            r["primechanie"] = ("naive_h1 и naive_h5 — один ряд √RV_w (C1/C2/C2W и семьи совпадают, "
+                                "при равенстве — первая по таблице, h1); C* не строится")
+        rows.append(r)
+    names = [nm for nm, _ in H2_GROUPS]
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            pa, pb = sel[a][1], sel[b][1]
+            d, se, p = lw_sharpe_diff(pa["excess"].values, pb["excess"].values, s9.reps, 5)
+            _, pi = s9.boot(pa, pb)
+            rows.append(dict(rol="попарно: выбранная − выбранная", sigma_nabor=f"{a} − {b}",
+                             design=f"{sel[a][0]} − {sel[b][0]}", sharpe=metrics(pa)["sharpe"],
+                             sharpe_2=metrics(pb)["sharpe"], d_sharpe=d, se_lw=se, p_lw=p,
+                             p_iid=pi))
+    return pd.DataFrame(rows)
+
+
+def _okno_porog(point: str) -> tuple:
+    import re
+    m = re.fullmatch(r"W(\d+)_p(\d+)(?:_(\d+))?", str(point))
+    if not m:
+        return "—", "—"
+    return int(m.group(1)), (m.group(2) if m.group(3) is None else f"{m.group(2)}/{m.group(3)}")
+
+
+def ustoychivost_v2(dfc: pd.DataFrame) -> pd.DataFrame:
+    """Ъ 23:10, п. 2: устойчивость выбора C на гибриде (кандидаты отбора — hyb_h1, hyb_h5).
+    (а) C1 W504 p70 h=5 (точка первого FINAL) на новых σ, 0,04% — все метрики, Δ к A, p, С8;
+    (б) точки, прошедшие С8, с |Шарп − Шарп выбранной| ≤ 0,1 (выбранная — первой строкой);
+    (в) вывод: соседи выбранной по окну (те же p, h, семья) и по порогу (те же W, h, семья).
+    Правило (объявлено до счёта): плато — оба ближайших соседа (следующее окно и следующий
+    порог) в пределах 0,1 и прошли С8; пик — ни одного из соседей; иначе — частичное плато."""
+    c = dfc[dfc["sigma"].isin(["hyb_h1", "hyb_h5"])].copy()
+    c["p_holm"] = _holm(c["p_vs_A"].values)
+    best = rank_c8(c).iloc[0]
+    sh0 = float(best["sharpe"])
+    rows = []
+    fam, pt, sg = C_FINAL1
+    a = c[(c["family"] == fam) & (c["point"] == pt) & (c["sigma"] == sg)]
+    if len(a) != 1:
+        raise SystemExit(f"устойчивость: строк {C_FINAL1} — {len(a)}")
+    r = dict(rol="(а) точка первого FINAL: C1 W504 p70 h=5 на гибриде (новые σ, 0,04%)")
+    r.update({k: v for k, v in a.iloc[0].items() if k != "pometka"})
+    r["p_holm"] = a.iloc[0]["p_holm"]
+    r["d_k_vybrannoy"] = float(a.iloc[0]["sharpe"]) - sh0
+    r["okno"], r["porog"] = _okno_porog(pt)
+    rows.append(r)
+    near = c[c["passed"].astype(bool) & ((c["sharpe"] - sh0).abs() <= USTOY_TOL + 1e-12)].copy()
+    near["_sel"] = (near["family"] == best["family"]) & (near["point"] == best["point"]) & \
+                   (near["sigma"] == best["sigma"])
+    near = near.sort_values(["_sel", "sharpe"], ascending=[False, False])
+    for _, x in near.iterrows():
+        w, p = _okno_porog(x["point"])
+        rows.append(dict(rol="(б) выбранная" if x["_sel"] else
+                         f"(б) прошла С8, Шарп в пределах {TOL_S} от выбранной",
+                         family=x["family"], point=x["point"], sigma=x["sigma"], h=x["h"],
+                         okno=w, porog=p, sharpe=x["sharpe"], d_k_vybrannoy=x["sharpe"] - sh0,
+                         win=x["win"], passed=x["passed"], d_vs_A=x["d_vs_A"], p_vs_A=x["p_vs_A"],
+                         p_holm=x["p_holm"]))
+    w0, p0 = _okno_porog(best["point"])
+    same = c[(c["family"] == best["family"]) & (c["sigma"] == best["sigma"])].copy()
+    same["okno"], same["porog"] = zip(*same["point"].map(_okno_porog))
+    by_w = same[(same["porog"] == p0) & (same["okno"] != w0)].sort_values("okno")
+    by_p = same[(same["okno"] == w0) & (same["porog"] != p0)].sort_values("porog")
+    nb = pd.concat([by_w.assign(os_="окно"), by_p.assign(os_="порог")])
+    ok = nb["passed"].astype(bool) & ((nb["sharpe"] - sh0).abs() <= USTOY_TOL + 1e-12)
+    for (_, x), o in zip(nb.iterrows(), ok):
+        rows.append(dict(rol=f"(в) сосед по оси «{x['os_']}»", family=x["family"], point=x["point"],
+                         sigma=x["sigma"], h=x["h"], okno=x["okno"], porog=x["porog"],
+                         sharpe=x["sharpe"], d_k_vybrannoy=x["sharpe"] - sh0, win=x["win"],
+                         passed=x["passed"], d_vs_A=x["d_vs_A"], p_vs_A=x["p_vs_A"],
+                         v_predelah_0_1=bool(o)))
+    nxt_w = by_w[by_w["okno"] > w0]["okno"].min() if len(by_w) else None
+    nxt_p = by_p["porog"].iloc[0] if len(by_p) else None
+    imm = nb[((nb["os_"] == "окно") & (nb["okno"] == nxt_w)) | ((nb["os_"] == "порог") &
+                                                               (nb["porog"] == nxt_p))]
+    imm_ok = ok.loc[imm.index]
+    n_w, n_p = int(ok[nb["os_"] == "окно"].sum()), int(ok[nb["os_"] == "порог"].sum())
+    verdict = ("плато" if len(imm) and bool(imm_ok.all()) else
+               "пик" if int(ok.sum()) == 0 else "частичное плато")
+    rows.append(dict(rol="(в) вывод", family=best["family"], point=best["point"], sigma=best["sigma"],
+                     h=best["h"], okno=w0, porog=p0, sharpe=sh0,
+                     vyvod=(f"{verdict}: соседей {best['family']} {best['point']} {best['h']} в пределах "
+                            f"{TOL_S} и с С8 — по окну {n_w} из {len(by_w)}, по порогу {n_p} из "
+                            f"{len(by_p)}; всего точек С8 в пределах {TOL_S} — "
+                            f"{int((~near['_sel']).sum())} из {len(c) - 1}"
+                            + "".join(f"; {x['family']} {x['point']} {x['h']} ({x['sharpe']:.3f})"
+                                      for _, x in near[~near["_sel"]].iterrows()))))
     return pd.DataFrame(rows)
 
 
@@ -1343,6 +1484,8 @@ def sravnenie_komissiy(v04: pd.DataFrame, v05: pd.DataFrame) -> pd.DataFrame:
                          vybor_0_05=f"{b['design']} на {b['sigma']}", sharpe_0_05=b["sharpe"],
                          passed_0_05=b["passed"], sovpal="да" if same else "нет",
                          primechanie="справочно: отбор — на 0,04%, по этой таблице не меняется"))
+        if ap == "D":
+            rows[-1]["proverka_RVI"] = D_RVI
     return pd.DataFrame(rows)
 
 

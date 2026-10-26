@@ -29,7 +29,7 @@ SIG = {"hyb_h1": ("sigma_hyb_h1_dev.parquet", "sigma_pred_h1", "h1"),
        "hyb_h5": ("sigma_hyb_h5_dev.parquet", "sigma_pred_h5", "h5"),
        "naive_h1": ("sigma_naive_dev.parquet", "sigma_pred_h1", "h1")}
 DET_DATES = ("2019-06-28", "2020-03-16", "2021-06-30")
-POMETKA = "до аудита; дымовой прогон, 3 тикера"
+POMETKA = "до завершения аудита сигналов, сделок, B; дымовой прогон, 3 тикера"   # Ъ 23:10, п. 5
 
 
 def check_sha():
