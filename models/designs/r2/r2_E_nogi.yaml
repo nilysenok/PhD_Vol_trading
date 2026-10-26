@@ -5,9 +5,16 @@ features: data/regen/features_pit_v3.parquet   # SHA-256 8c51bfa1eb6ee862…
 h: [1, 5, 22]
 steps: [1, 2, 3, 4, 5, 6]          # val 2016–2021; шаги 7–10 и тест не строятся
 seed: det                          # у HAR и HEAVY seed нет
+versii:   # суффикс имени ряда; решение дирижёра 26.10 (эмбарго) и PR #143 (RV дня d)
+  r1: {suffix: '', emb: false, d0: false}        # определение первого раунда — контроль
+  emb: {suffix: _emb, emb: true, d0: false}      # строки обучения с датой t+h >= 1 янв. vy исключены (и во внутренней валидации HAR-X)
+  d0: {suffix: _d0, emb: false, d0: true}        # rv_d = RV_d, rv_w = mean RV_{d−4..d}, rv_m = mean RV_{d−21..d}; нулевой RV — последним положительным
+  emb_d0: {suffix: _emb_d0, emb: true, d0: true} # ОСНОВНАЯ до решения владельца
+  HEAVY: все версии совпадают (целей в обучении нет; RV дня d уже на входе фильтра)
+  HARXreg: R1 (Д24.4 RX) был с эмбарго — его повторяет HARXreg_emb; HARXreg без суффикса — без эмбарго
 out:
   val: data/regen/R2/cache/E/<ryad>_h{h}_sdet_val.parquet          # date, ticker, year, step, rv_actual, rv_pred (сырой, без s²)
-  lnall: data/regen/R2/cache/E/lnall/<ryad>_h{h}_lnall.parquet     # date, ticker, year, ln_s1..ln_s6 (модель шага k на строках year <= 2015+k)
+  lnall: data/regen/R2/cache/E/<ryad>_h{h}_lnall.parquet           # date, ticker, step, part (tr/va), base_ln, emb_ok (образец D17/harx_base_h1)
   v0_F: data/regen/R2/cache/E/V0_F_h{h}.csv                        # множитель Б0.1 по (ряд, s², шаг)
   v0_q: data/regen/R2/cache/E/V0_q_h{h}.csv                        # QLIKE 2017–2021 по (ряд, s², год)
   index: data/regen/R2/cache/INDEX_E.csv
