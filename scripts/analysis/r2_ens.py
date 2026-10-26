@@ -99,8 +99,10 @@ def ens_cfg(design):
     out = {k: onoff(C.get(full, f'ens.{k}')) for k in ENS_KEYS}
     out.update({k: onoff(C.get(full, f'leg.{k}')) for k in MOE_KEYS})
     for k, v in out.items():
-        if isinstance(v, list):
+        if isinstance(v, list) and k != 'leg_w':  # leg_w (E8) — сетка внутри складки: варианты ens.leg_w=…
             raise C.DesignError(f'{k}: сетка внутри складки для ключей E не предусмотрена')
+    if isinstance(out.get('leg_w'), list):
+        out['leg_w'] = [onoff(x) for x in out['leg_w']]
     if out['leg_ens'].startswith('qlike_shrunk') and LAM.get(out['leg_ens'], 0) <= 0:
         raise C.DesignError('веса без усадки запрещены')
     return out
@@ -450,6 +452,77 @@ def range_guard(df, M, h, plant=False):
     return o[COLS], pd.concat(B, ignore_index=True)
 
 
+# ================================================================ E3 / E8: объединение ног и вес ноги (schema_v2: ens.leg_union, ens.leg_w)
+LEGW = {'0.3333': 1 / 3, '0.5': 0.5, '0.6667': 2 / 3}
+UNION = {'harj_harx': ('HARJ', 'HARX'), 'harj_harx_rvi': ('HARJ', 'HARX', 'RVI_anchor')}
+
+
+def w_of(v):
+    return LEGW[str(v)] if str(v) in LEGW else float(v)
+
+
+def union(dfs, w0=None, plant=False):
+    """Объединение рядов в уровнях без подбора весов: ŷ = w0·ŷ₀ + (1 − w0)/(K − 1)·Σ_{k≥1} ŷ_k; w0 = None — равные веса 1/K.
+    plant — подлог для детектора: ряд 0 берётся на день вперёд."""
+    dfs = [_plant_shift(dfs[0])] + list(dfs[1:]) if plant else list(dfs)
+    base, P = align(dfs)
+    Kn = P.shape[1]
+    w = np.full(Kn, 1.0 / Kn) if w0 is None else np.r_[w0, np.full(Kn - 1, (1 - w0) / (Kn - 1))]
+    return _out(base, P @ w)
+
+
+def econ_leg_series(h, typ, steps=None, tickers=None, seed=42):
+    """Нога L с поправкой s² (L3, ряды `<ряд>__cal`) дизайна econ_h{h}_{typ} драйвера S (driver_v1/econ_h{h}.yaml: d0, эмбарго h,
+    s2_embargo on) -> {вариант: ряд}. У HAR-X — все варианты сетки (S-набор × enet): выбор внутри складки делает O."""
+    E = yaml.safe_load((REPO / 'models' / 'designs' / 'r2' / 'driver_v1' / f'econ_h{h}.yaml').read_text())
+    d = next(x for x in E['designs'] if x['design'] == f'econ_h{h}_{typ}')
+    X = C.load_series(d, h=h, modul='L3', steps=steps)
+    if not len(X):
+        raise FileNotFoundError(f'нет рядов L3 дизайна econ_h{h}_{typ} (нужен DONE_L3)')
+    X = X[X.ryad.str.endswith('__cal') & (X.seed.astype(str) == str(seed))]
+    if tickers:
+        X = X[X.ticker.isin(tickers)]
+    X = X.assign(date=pd.to_datetime(X.date), ticker=X.ticker.astype(str))
+    out = {}
+    for ry, g in X.groupby('ryad'):
+        v = ry[len('leg'):-len('__cal')].strip('_')  # 'leg__leg.enet.alpha=…__leg.regressors=S1__cal' -> 'leg.enet.alpha=…__…'
+        out[v] = g.assign(year=g.date.dt.year).sort_values(KEY).reset_index(drop=True)[COLS]
+    assert all(o.year.max() <= MAXY for o in out.values())
+    return out
+
+
+def leg_union(mode, h, w=None, steps=None, tickers=None, legs=None):
+    """E3 -> {имя ряда: ряд}. Нога (вес w, по умолчанию 1/K) — HAR-J+s²; прочие — HAR-X+s² (каждый вариант сетки) и RVI-anchor+s².
+    legs — готовые {тип: {вариант: ряд}} (дым/детектор); иначе — econ_leg_series."""
+    L = legs or {t: econ_leg_series(h, t, steps, tickers) for t in UNION[mode]}
+    J, R_ = L['HARJ'][''], (L['RVI_anchor'][''] if 'RVI_anchor' in UNION[mode] else None)
+    out = {}
+    for vx, X in sorted(L['HARX'].items()):
+        nm = f'E3_{mode}' + (f'__{vx}' if vx else '')
+        out[nm] = union([J, X] + ([R_] if R_ is not None else []), w)
+    return out
+
+
+def leg_w_mix(cand, leg, w, plant=False):
+    """E8 без leg_union: ŷ = w·ŷ_ноги+s² + (1 − w)·ŷ_кандидата (уровни)."""
+    return union([leg, cand], w, plant)
+
+
+def design_leg_cal(design, h, steps, tickers):
+    """Нога дизайна с поправкой s²: ряд L3 `leg…__cal` в каталоге дизайна (r2_core.load_series), иначе None."""
+    try:
+        X = C.load_series(design, h=h, modul='L3', steps=steps, root=C.SHARED.get('E_root'))
+    except FileNotFoundError:
+        return None
+    X = X[X.ryad.str.startswith('leg') & X.ryad.str.endswith('__cal')] if len(X) else X
+    if not len(X) or X.ryad.nunique() != 1 or 'rv_actual' not in X:
+        return None
+    if tickers:
+        X = X[X.ticker.isin(tickers)]
+    X = X[X.seed.astype(str) == str(X.seed.iloc[0])].assign(date=lambda d: pd.to_datetime(d.date))
+    return X.assign(year=X.date.dt.year).sort_values(KEY).reset_index(drop=True)[COLS]
+
+
 # ================================================================ дизайн → ряды
 def post(cfg, h, hyb, leg=None, legs=(), src1=None, M=None):
     """Уровень итога. hyb: {(lib, seed): ряд}; leg — ряд ноги дизайна (uncert_shrink); legs — ряды для стека; src1 — ряд h=1 (ec).
@@ -546,6 +619,8 @@ def leak_posthoc(h, comps, leg, src1, M, Mp, cut, rng):
         'stack': (lambda C, L, S, MM, pl_: stack(C + [L], h, pl_)[0]),
         'ec_m5': (lambda C, L, S, MM, pl_: ec(agg(C), S, h, 5, pl_)[0]),
         'range_guard': (lambda C, L, S, MM, pl_: range_guard(agg(C), MM, h, pl_)),
+        'leg_union_E3': (lambda C, L, S, MM, pl_: union([L] + C, None, pl_)),
+        'leg_w_E8_0.6667': (lambda C, L, S, MM, pl_: leg_w_mix(C[0], L, 2 / 3, pl_)),
     }
     kmax = cut.year - 2015
     rows = []
@@ -618,11 +693,25 @@ def fn_E(design, seed, steps):
     seeds = SEEDS[int(cfg['seeds'])]
     if C.SHARED.get('E_seeds_only'):
         seeds = [s for s in seeds if s in C.SHARED['E_seeds_only']]
+    ws = cfg['leg_w'] if isinstance(cfg['leg_w'], list) else [cfg['leg_w']]
+    tagw = lambda w: f'__ens.leg_w={w}' if isinstance(cfg['leg_w'], list) else ''
+    if cfg['leg_union'] != 'off':  # E3: только объединение ног L (+ сетка веса ноги E8), гибрид дизайна не используется
+        res = {}
+        for w in ws:
+            for nm, v in leg_union(cfg['leg_union'], h, None if w == 'off' else w_of(w), list(steps), tk,
+                                   C.SHARED.get('E_legs')).items():
+                res[nm + tagw(w)] = v
+        return res
     getter = C.SHARED.get('E_inputs') or chain_inputs
     hyb, legs, src1 = getter(design, h, seeds, list(steps), tk)
     lref = legs[2] if h != 22 else legs[0]
     res = {f'E_{fname(k)}': v for k, v in post(cfg, h, hyb, lref, legs, src1, M).items()}
     res.update({f'E_{fname(k)}': v[0] for k, v in leg_level(cfg, design, h, M, legs, int(seed), list(steps), tk).items()})
+    if ws != ['off']:  # E8: вес ноги дизайна (+s²) в объединении с каждым рядом-кандидатом
+        lc = design_leg_cal(design, h, list(steps), tk)
+        if lc is None:
+            raise FileNotFoundError('ens.leg_w: нет ноги дизайна с поправкой (ряд L3 leg…__cal в каталоге дизайна)')
+        res = {f'{nm}__ens.leg_w={w}': leg_w_mix(v, lc, w_of(w)) for nm, v in res.items() for w in ws}
     return res
 
 
@@ -683,7 +772,10 @@ def chain_inputs(design, h, seeds, steps, tickers):
     X = X.assign(date=pd.to_datetime(X.date), ticker=X.ticker.astype(str))
     last = next(m for m in UPSTREAM + tuple(sorted(set(X.modul))) if m in set(X.modul))
     hyb = {}
-    for (ry, sd), g in X[X.modul == last].groupby(['ryad', 'seed']):
+    cand = X[X.modul == last]
+    if (~cand.ryad.str.startswith('leg')).any():  # у L3 рядом с итогом лежит и нога (leg…__cal) — она не компонента гибрида
+        cand = cand[~cand.ryad.str.startswith('leg')]
+    for (ry, sd), g in cand.groupby(['ryad', 'seed']):
         s = 42 if sd == 'det' else int(sd)
         if s in seeds or sd == 'det':
             key = (_lib_of(ry), s) if (_lib_of(ry), s) not in hyb else (ry, s)  # два ряда одной lib — отдельные «lib»
@@ -732,6 +824,19 @@ def dym():
                         a2 = [_auc(g.lab.values, g[['p0', 'p1']].values, 2) for _, g in PP[PP.lab >= 0].groupby('step')]
                         assert np.allclose(a2, tab.auc_calib.values, equal_nan=True), (a2, tab.auc_calib.values)
                         PP[PP.ticker.isin(tk)].to_csv(od / f'moe_proba_k2_h{h}.csv', index=False)
+        # E3 / E8: объединение ног L с поправкой (econ_h{h}, L3 __cal) и вес ноги ⅓, ½, ⅔; ref — HAR-J+s²
+        EL = {t: econ_leg_series(h, t, st, tk) for t in ('HARJ', 'HARX', 'RVI_anchor')}
+        jref = EL['HARJ']['']
+        for mode in UNION:
+            for w in ('off', '0.3333', '0.5', '0.6667'):
+                d = dict(DYM_DESIGN[22], h=h, ens={'leg_union': mode, 'leg_w': w})
+                ens_cfg(d)
+                U = leg_union(mode, h, None if w == 'off' else w_of(w), legs=EL)
+                for nm in sorted(U)[:2]:  # по два варианта HAR-X (S1 / S2 при enet α 0,5, λ 0,01) — механика
+                    rec(h, f'{nm}|w={w}', U[nm], jref, d)
+        w8 = leg_w_mix(ref, jref, 0.5)
+        assert np.allclose(w8.rv_pred.values, align([jref, ref])[1].mean(1))
+        rec(h, 'E8 leg_w=0.5 (HAR-J+s², гибрид)', w8, jref, dict(DYM_DESIGN[22], h=h, ens={'leg_w': '0.5'}))
         print(f'h={h} готов, {time.time() - t0:.0f} с', flush=True)
     Q = pd.DataFrame(Q); S = pd.DataFrame(SD); AU = pd.concat(AUC, ignore_index=True)
     Q.to_csv(od / 'dym_qlike.csv', index=False); S.to_csv(od / 'dym_sdvig.csv', index=False); AU.to_csv(od / 'dym_moe_auc.csv', index=False)
@@ -746,7 +851,8 @@ def dym():
     hc, _, _ = chain_inputs(d5, 5, [seed], st, tk)
     assert set(hc) == set(hy5) and all(np.allclose(hc[k].rv_pred.values, hy5[k].rv_pred.values) for k in hy5), 'chain_inputs'
     print('chain_inputs: гибрид h=5 взят из рядов модуля B каталога дизайна — OK', flush=True)
-    P = run({'designs': [dd, dict(dd, design='E_dym_b', ens=dict(dd['ens'], ec='m10'))]}, hs=CFG['dym']['h'], dym_scope=True,
+    e3 = dict(design='E_dym_E3', leg={'type': 'HARJ'}, ens={'leg_union': 'harj_harx_rvi', 'leg_w': [0.3333, 0.5, 0.6667]})
+    P = run({'designs': [dd, dict(dd, design='E_dym_b', ens=dict(dd['ens'], ec='m10')), e3]}, hs=CFG['dym']['h'], dym_scope=True,
             A=A, harj=harj, M=M)  # r2_core.run_phase на дыме: пакет из двух дизайнов
     L = leak(hs=CFG['dym']['h'], full=False, A=A, harj=harj)
     # пустой пакет (как в боевом прогоне): повтор того же пакета без снятия DONE — всё в кэше, задач 0, run_ok -> код 0
@@ -867,6 +973,18 @@ def selftest():
             ens_cfg(bad); raise AssertionError(bad)
         except C.DesignError:
             pass
+    # E3 / E8: равные веса и вес ноги; ключи schema_v2
+    assert np.allclose(union(comps).rv_pred, P.mean(1))
+    assert np.allclose(union(comps, 2 / 3).rv_pred, P @ np.r_[2 / 3, 1 / 6, 1 / 6])
+    assert np.allclose(leg_w_mix(comps[1], comps[0], 1 / 3).rv_pred, P[:, 0] / 3 + 2 * P[:, 1] / 3)
+    assert ens_cfg({'h': 5, 'ens': {'leg_w': [0.3333, 0.5, 0.6667]}})['leg_w'] == [0.3333, 0.5, 0.6667]
+    assert [w_of(x) for x in (0.3333, 0.5, 0.6667)] == [1 / 3, 0.5, 2 / 3]
+    assert ens_cfg({'h': 5, 'ens': {'leg_union': 'harj_harx_rvi'}})['leg_w'] == 'off'
+    try:
+        ens_cfg({'h': 5, 'ens': {'leg_w': 0.25}}); raise AssertionError('leg_w 0.25')
+    except C.DesignError:
+        pass
+    assert canon_hash({'h': 5, 'leg': {'type': 'HARJ'}}) == canon_hash({'h': 5, 'leg': {'type': 'HARJ'}, 'ens': {'leg_w': 'off', 'leg_union': 'off'}})
     cf = ens_cfg({'h': 1, 'leg': {'moe': 'k2', 'moe_hard': 0.7}, 'ens': {'range_guard': 'on', 'ec': 'off'}})
     assert ens_cfg({'h': 1})['agg'] == 'mean' and ens_cfg({'h': 1})['window_ens'] == 'off'
     assert cf['moe_hard'] == 0.7 and cf['range_guard'] == 'on' and cf['ec'] == 'off' and cf['moe'] == 'k2'
