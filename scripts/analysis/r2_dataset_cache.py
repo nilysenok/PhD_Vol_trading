@@ -3,7 +3,8 @@
 
 Ключ набора — SHA-256 канонического JSON частей: шаг, набор признаков (имена по порядку), h, цель, плюс всё, что меняет бины
 (max_bin, эмбарго, тикеры, версия данных — SHA матрицы, reference-ключ для бинов окна шага 1). Источник истины — data/;
-кэш — производный и одноразовый: RAM-диск /Volumes/RAMcache (если смонтирован) или локальный SSD (~/Library/Caches/phd_r2/r2_ds).
+кэш — производный и одноразовый: R2_DS_CACHE или (по умолчанию, дирижёр 18:40) SSD data/regen/R2/ds_cache; RAM-диск — только явно.
+Свободного места < 2 ГБ на томе кэша — proverka_mesta() останавливает счёт до старта задач (MestaNet).
 
   LightGBM: lgb_dataset(key, build) — Dataset строится один раз (construct + save_binary, атомарно, под файловой блокировкой: при
             одновременном запросе одного ключа строит ровно один процесс), дальше любой процесс читает бинарный файл.
@@ -53,16 +54,40 @@ _XQ = {}
 _SHA_MEMO = {}
 
 
+SSD_DEFAULT = C.REGEN / 'R2' / 'ds_cache'   # дирижёр 26.10, 18:40: по умолчанию — SSD (RAM-диск 8 ГБ переполнился в 18:34, 70 задач)
+MIN_FREE_GB = 2.0                          # меньше — стоп до старта задач (proverka_mesta)
+
+
 def cache_root():
+    """R2_DS_CACHE, иначе SSD data/regen/R2/ds_cache. RAM-диск — только явно через R2_DS_CACHE (8 ГБ не хватает на боевой счёт)."""
     env = os.environ.get('R2_DS_CACHE')
-    if env:
-        r = Path(env)
-    elif RAM.is_dir() and os.access(RAM, os.W_OK):
-        r = RAM / 'r2_ds'
-    else:
-        r = SSD / 'r2_ds'
+    r = Path(env) if env else SSD_DEFAULT
     r.mkdir(parents=True, exist_ok=True)
     return r
+
+
+class MestaNet(RuntimeError):
+    """Свободного места на томе кэша меньше порога — счёт не стартует."""
+
+
+def svobodno_gb(path):
+    import shutil
+    p = Path(path)
+    while not p.exists():
+        p = p.parent
+    return shutil.disk_usage(p).free / 2 ** 30
+
+
+def proverka_mesta(paths=None, min_gb=MIN_FREE_GB):
+    """Свободное место на томах кэша наборов (cache_root) и кэша рядов (r2_core.CACHE_ROOT): < min_gb — MestaNet с путём и объёмом.
+    -> {путь: свободно ГБ}."""
+    paths = paths or [cache_root(), C.CACHE_ROOT]
+    out = {str(p): round(svobodno_gb(p), 2) for p in paths}
+    bad = {p: v for p, v in out.items() if v < min_gb}
+    if bad:
+        raise MestaNet('мало места на томе кэша: ' + '; '.join(f'{p} — свободно {v} ГБ < {min_gb} ГБ' for p, v in bad.items())
+                       + '. Освободите место или задайте R2_DS_CACHE на другой том; счёт не запущен.')
+    return out
 
 
 def data_sha(path):
