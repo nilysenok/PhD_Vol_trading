@@ -142,14 +142,24 @@ def _norm(v):
     raise DesignError(f'тип значения не поддерживается: {type(v).__name__}')
 
 
+_BOOL_STR = {'on': True, 'yes': True, 'true': True, 'off': False, 'no': False, 'false': False}
+
+
 def _yaml_scalars(v):
-    """Строки дизайна из Python читаются как скаляры YAML 1.1, как и схема: 'on'/'off' -> true/false, 'null' -> None, '0.5' -> 0.5."""
+    """Единое правило R2 (совпадает с r2_loyo._n агента O): схема читается yaml.safe_load (YAML 1.1), поэтому off/on/yes/no в ней —
+    false/true; в дизайне те же слова в любом регистре -> bool; строка-число -> число ('0.5' = 0.5, '3' = 3); 'null' -> None;
+    'inf'/'nan' остаются строками (в схеме inf — строка)."""
     if isinstance(v, str):
-        try:
-            x = yaml.safe_load(v)
-        except yaml.YAMLError:
+        s = v.strip()
+        if s.lower() in _BOOL_STR:
+            return _BOOL_STR[s.lower()]
+        if s.lower() in ('inf', '-inf', '+inf', 'nan'):
             return v
-        return x if isinstance(x, (bool, int, float)) or x is None else v
+        try:
+            return float(s)  # _native: целое -> int
+        except ValueError:
+            pass
+        return None if s in ('null', 'Null', 'NULL', '~') else v
     if isinstance(v, (list, tuple)):
         return [_yaml_scalars(x) for x in v]
     if isinstance(v, dict):
@@ -263,8 +273,9 @@ def _nest(flat):
     return out
 
 
-def validate(design, schema=None):
-    """-> полный нормализованный дизайн (вложенный dict) с `schema` и `design`; ошибки — DesignError со списком."""
+def validate(design, schema=None, keep_scalar_grid=False):
+    """-> полный нормализованный дизайн (вложенный dict) с `schema` и `design`; ошибки — DesignError со списком.
+    Значение grid-листа (leg.enet.*) всегда список (одиночное -> [x]); keep_scalar_grid — оставить скаляр (для complexity)."""
     S = schema or load_schema()
     if isinstance(design, (str, Path)):
         design = yaml.safe_load(open(design))
@@ -297,12 +308,15 @@ def validate(design, schema=None):
             if nv != L.ndefault:
                 errs.append(f'{L.dotted}: фиксирован протоколом = {L.default!r}, в дизайне {v!r}')
         elif L.kind in ('list', 'grid'):
-            v, nv = (v, nv) if isinstance(v, list) else ([v], [nv])
+            scalar = not isinstance(v, list)
+            v, nv = ([v], [nv]) if scalar else (v, nv)
             bad = [x for x in nv if x not in L.nvalues]
             if bad or not nv or len(set(map(str, nv))) != len(nv):
                 errs.append(f'{L.dotted}: {v!r} — нужен непустой список без повторов из {L.values}')
             if L.dotted == 'features' and 'G0' not in nv:
                 errs.append('features: G0 обязательна')
+            if scalar and keep_scalar_grid and L.kind == 'grid':
+                v = v[0]
         else:
             if isinstance(v, list):  # сетка внутри складки
                 if len(nv) < 2 or len(set(map(str, nv))) != len(nv) or any(x not in L.nvalues for x in nv):
@@ -336,19 +350,25 @@ def get(design, dotted):
 
 
 def complexity(design):
-    """Число ключей со значением ≠ default (п. 2.4): fixed, h, seed, design не считаются; features — число групп сверх G0."""
+    """c(u), п. 2.4 — то же правило, что r2_loyo.slozhnost агента O: число ключей со значением ≠ default; не считаются fixed,
+    h, seed, ens.seeds (число seed задаёт протокол: скрининг 3, финалисты 10), design; features — число групп сверх G0;
+    сетка с default «вся сетка» (leg.enet) — выбор внутри складки: в счёт идёт один раз на группу и только если задано
+    одиночное значение (подсетка-список — не в счёт)."""
     S = load_schema()
-    flat = _flatten(validate(design))
-    c = 0
+    flat = _flatten(validate(design, keep_scalar_grid=True))
+    c, grids = 0, set()
     for p, L in S.leaves.items():
-        if L.kind in ('name', 'const') or L.fixed or L.dotted in ('h', 'seed') or L.default is _MISSING:
+        if L.kind in ('name', 'const') or L.fixed or L.dotted in ('h', 'seed', 'ens.seeds') or L.default is _MISSING:
             continue
         v = flat[p]
         if L.dotted == 'features':
             c += len(set(v) - {'G0'})
+        elif L.kind == 'grid':
+            if not isinstance(v, list):
+                grids.add(p[:-1])
         elif _norm(v) != L.ndefault:
             c += 1
-    return c
+    return c + len(grids)
 
 
 def grid_keys(design):
@@ -862,6 +882,10 @@ def cmd_smoke(a):
     if blk.exists():
         blk.unlink()
     rows = [dict(blok='схема', **r) for r in _schema_selftest()]
+    if FACTOR_DIR.exists():
+        ok_o, rows_o, mism = check_o(verbose=False)
+        rows.append(dict(blok='схема', proverka=f'дизайны O factor_v1 (3 × 64): проходят схему, хэши уникальны, сложность = r2_loyo.slozhnost; '
+                                                 f'нормализация = r2_loyo._n (расхождений {len(mism)})', ok=bool(ok_o)))
     log(f'схема: {sum(r["ok"] for r in rows)}/{len(rows)}')
     A, harj = load_d0(SMOKE_TICKERS)
     check_d0(A)
@@ -917,6 +941,74 @@ def cmd_smoke(a):
     return 0 if T.ok.all() else 1
 
 
+FACTOR_DIR = REPO / 'models' / 'designs' / 'r2' / 'factor_v1'
+
+
+def check_o(verbose=True):
+    """Сверка с агентом O: (1) все дизайны factor_v1/h{h}.yaml проходят validate; (2) complexity = r2_loyo.slozhnost = meta.slozhnost;
+    (3) правило нормализации совпадает с r2_loyo._n: для каждого листа и каждого значения (из схемы, из дизайнов O и пробных строк
+    on/ON/True/yes/off/'0.5'/'3'/3.0) принадлежность списку схемы одинакова. -> (ok, строки отчёта)."""
+    import r2_loyo as O
+    S = load_schema()
+    rows, ok = [], True
+    probes = ['on', 'ON', 'On', 'True', 'yes', 'off', 'OFF', 'False', 'no', '0.5', '3', 3.0, 1.0, '1', 'inf', 'x']
+    for h in HS:
+        f = FACTOR_DIR / f'h{h}.yaml'
+        Y = yaml.safe_load(open(f))
+        D, M = Y['dizainy'], Y['meta']
+        hashes, bad_v, bad_c = [], [], []
+        for d, m in zip(D, M):
+            try:
+                hashes.append(design_hash(d))
+            except DesignError as e:
+                bad_v.append((d.get('design'), str(e)))
+                continue
+            c, co = complexity(d), O.slozhnost(d)
+            if not (c == co == m['slozhnost']):
+                bad_c.append((d.get('design'), c, co, m['slozhnost']))
+        r = dict(h=h, dizainov=len(D), proshli_skhemu=len(D) - len(bad_v), unikalnyh_heshey=len(set(hashes)),
+                 slozhnost_sovpala=len(D) - len(bad_v) - len(bad_c), slozhnost_min=min(m['slozhnost'] for m in M),
+                 slozhnost_max=max(m['slozhnost'] for m in M))
+        r['ok'] = not bad_v and not bad_c
+        ok &= r['ok']
+        rows.append(r)
+        for x in (bad_v + bad_c)[:5]:
+            print('  расхождение:', x)
+    mism = []
+    for p, L in S.leaves.items():
+        if L.nvalues is None or L.kind == 'const':
+            continue
+        spec = O.SPECS.get(L.dotted)
+        if spec is None or 'values' not in spec:
+            continue
+        cand = list(L.values) + probes
+        for h in HS:
+            for d in yaml.safe_load(open(FACTOR_DIR / f'h{h}.yaml'))['dizainy']:
+                v = _flatten(d).get(p)
+                if v is not None and not isinstance(v, list):
+                    cand.append(v)
+        for x in cand:
+            if isinstance(x, (list, dict)):
+                continue
+            mine = _norm(_native(_yaml_scalars(x))) in L.nvalues
+            theirs = O._n(x) in list(map(O._n, spec['values']))
+            if mine != theirs:
+                mism.append((L.dotted, x, mine, theirs))
+    rows.append(dict(h='все', proverka='нормализация = r2_loyo._n', rasxozhdeniy=len(mism), ok=not mism))
+    ok &= not mism
+    if verbose:
+        print(pd.DataFrame(rows).to_string(index=False))
+        for x in mism[:10]:
+            print('  нормализация расходится:', x)
+    return ok, rows, mism
+
+
+def cmd_check_o(a):
+    ok, _, _ = check_o()
+    log('сверка с O: ' + ('OK' if ok else 'ЕСТЬ РАСХОЖДЕНИЯ'))
+    return 0 if ok else 1
+
+
 def cmd_show(a):
     full = validate(a.design)
     print(yaml.safe_dump(full, sort_keys=True, allow_unicode=True, default_flow_style=False))
@@ -935,7 +1027,10 @@ def main():
     p = sp.add_parser('show')
     p.add_argument('design')
     sp.add_parser('index')
+    sp.add_parser('check-o')
     a = ap.parse_args()
+    if a.cmd == 'check-o':
+        return cmd_check_o(a)
     if a.cmd == 'smoke':
         return cmd_smoke(a)
     if a.cmd == 'show':
