@@ -618,7 +618,7 @@ def fn_E(design, seed, steps):
     seeds = SEEDS[int(cfg['seeds'])]
     if C.SHARED.get('E_seeds_only'):
         seeds = [s for s in seeds if s in C.SHARED['E_seeds_only']]
-    getter = C.SHARED.get('E_inputs') or yaml_inputs
+    getter = C.SHARED.get('E_inputs') or chain_inputs
     hyb, legs, src1 = getter(design, h, seeds, list(steps), tk)
     lref = legs[2] if h != 22 else legs[0]
     res = {f'E_{fname(k)}': v for k, v in post(cfg, h, hyb, lref, legs, src1, M).items()}
@@ -635,6 +635,66 @@ def yaml_inputs(design, h, seeds, steps, tickers):
                    {('xgboost', s): inp('F_d0', h, s, **kw)})
     legs = [inp(n, h, **kw) for n in ('leg_HARJ', 'leg_HEAVY', 'leg_HARX')]
     src1 = inp('F_d0', 1, seeds[0], **kw) if h != 1 else hyb[sorted(hyb)[0]]
+    return hyb, legs, src1
+
+
+UPSTREAM = ('G', 'M', 'L3', 'BG', 'B', 'R', 'P', 'L')  # порядок «последний модуль цепочки первым» (r2_S_driver.yaml chain_order)
+
+
+def _lib_of(name):
+    s = name.lower()
+    return 'lightgbm' if ('lgb' in s or 'lightgbm' in s) else ('xgboost' if 'xgb' in s else 'single')
+
+
+def _input_series(spec, h, seed, steps, tickers):
+    """Вход дизайна (r2_core inputs): {file[, col]} (шаблон {seed}) или {design_sha, series} -> val-ряд COLS."""
+    if spec.get('design_sha'):
+        X = C.load_series(spec['design_sha'], ryad=spec.get('series'), h=h, steps=steps)
+        X = X[X.seed.astype(str) == str(seed)] if (X.seed.astype(str) == str(seed)).any() else X[X.seed == X.seed.iloc[0]]
+        X = X[COLS] if 'rv_actual' in X else X
+    else:
+        p = Path(str(spec['file']).format(seed=seed)); p = p if p.is_absolute() else R / p
+        X = pd.read_parquet(p, filters=[('step', '<=', MAXSTEP)])
+        if spec.get('col'):
+            X = X.assign(rv_pred=X[spec['col']])
+    X = X.assign(date=pd.to_datetime(X.date), ticker=X.ticker.astype(str))
+    X['year'] = X.date.dt.year
+    assert X.year.max() <= MAXY
+    X = X[X.step.isin(steps) & (X.step == X.year - 2015)]
+    if tickers:
+        X = X[X.ticker.isin(tickers)]
+    return X.sort_values(KEY).reset_index(drop=True)[COLS]
+
+
+def chain_inputs(design, h, seeds, steps, tickers):
+    """Входы E по контракту драйвера S: ряды предыдущих модулей цепочки в каталоге того же дизайна (r2_core.load_series).
+    Гибрид — ряды последнего модуля цепочки (по seed × lib, lib — по имени ряда); ноги — ряды L (если есть), иначе ноги yaml E;
+    ряд h = 1 для ec — inputs.base_1 дизайна (входит в хэш), иначе F_d0_h1 yaml. Если в каталоге ничего нет — inputs yaml E."""
+    root = C.SHARED.get('E_root')
+    try:
+        X = C.load_series(design, h=h, steps=steps, root=root)
+    except FileNotFoundError:
+        X = pd.DataFrame()
+    X = X[~X.modul.isin(['E'])] if len(X) else X
+    if not len(X) or 'rv_actual' not in X:
+        return yaml_inputs(design, h, seeds, steps, tickers)
+    if tickers:
+        X = X[X.ticker.isin(tickers)]
+    X = X.assign(date=pd.to_datetime(X.date), ticker=X.ticker.astype(str))
+    last = next(m for m in UPSTREAM + tuple(sorted(set(X.modul))) if m in set(X.modul))
+    hyb = {}
+    for (ry, sd), g in X[X.modul == last].groupby(['ryad', 'seed']):
+        s = 42 if sd == 'det' else int(sd)
+        if s in seeds or sd == 'det':
+            key = (_lib_of(ry), s) if (_lib_of(ry), s) not in hyb else (ry, s)  # два ряда одной lib — отдельные «lib»
+            hyb[key] = g.sort_values(KEY).reset_index(drop=True)[COLS]
+    _, ylegs, ysrc = yaml_inputs(design, h, seeds[:1], steps, tickers)
+    lx = X[X.modul == 'L']
+    legs = [g.sort_values(KEY).reset_index(drop=True)[COLS] for _, g in lx.groupby('ryad')] if len(lx) and last != 'L' else ylegs
+    if len(legs) < 3:
+        legs = (legs + ylegs)[:3]
+    inputs = design.get('inputs') or {}
+    src1 = hyb[sorted(hyb)[0]] if h == 1 else (_input_series(inputs['base_1'], 1, seeds[0], steps, tickers) if 'base_1' in inputs else ysrc)
     return hyb, legs, src1
 
 
@@ -676,7 +736,18 @@ def dym():
     Q = pd.DataFrame(Q); S = pd.DataFrame(SD); AU = pd.concat(AUC, ignore_index=True)
     Q.to_csv(od / 'dym_qlike.csv', index=False); S.to_csv(od / 'dym_sdvig.csv', index=False); AU.to_csv(od / 'dym_moe_auc.csv', index=False)
     print(Q.round(4).to_string()); print(S.round(3).to_string()); print(AU.round(3).to_string())
-    P = run(CFG['dym']['design'], hs=CFG['dym']['h'], dym_scope=True, A=A, harj=harj, M=M)  # r2_core.run_phase на дыме
+    dd = {k: v for k, v in CFG['dym']['design'].items() if k != 'h'}  # пакет: тот же дизайн на трёх h (без h — получает каждый h)
+    # контракт входов: ряды «предыдущего модуля» (B) в каталоге дизайна h = 5 -> chain_inputs берёт гибрид оттуда
+    root = OUT / 'dym' / 'cache'; d5 = C.validate(dict(dd, h=5))
+    hy5, _, _ = yaml_inputs(None, 5, [seed], st, tk)
+    for (lb, s), df in hy5.items():
+        C.write_series(d5, f'Bdym_{"lgbm" if lb == "lightgbm" else "xgb"}', df, 5, s, module='B', root=root)
+    C.share(E_root=root)
+    hc, _, _ = chain_inputs(d5, 5, [seed], st, tk)
+    assert set(hc) == set(hy5) and all(np.allclose(hc[k].rv_pred.values, hy5[k].rv_pred.values) for k in hy5), 'chain_inputs'
+    print('chain_inputs: гибрид h=5 взят из рядов модуля B каталога дизайна — OK', flush=True)
+    P = run({'designs': [dd, dict(dd, design='E_dym_b', ens=dict(dd['ens'], ec='m10'))]}, hs=CFG['dym']['h'], dym_scope=True,
+            A=A, harj=harj, M=M)  # r2_core.run_phase на дыме: пакет из двух дизайнов
     L = leak(hs=CFG['dym']['h'], full=False, A=A, harj=harj)
     ok = bool(L.ok.all()) and not S.blok.any() and bool(P.sdvig_ok.all()) and 'ОШИБКА' not in set(P.ryad)
     print(f'дым: рядов {len(Q)} + run_phase {len(P)}, блок сдвига {int(S.blok.sum())}, детектор {"OK" if L.ok.all() else "ОШИБКА"}, '
@@ -712,28 +783,47 @@ def leak(hs=(1, 5, 22), full=False, A=None, harj=None):
 
 
 # ================================================================ сервер: дизайн → r2_core.run_phase → кэш
-def run(path, hs=None, dym_scope=False, A=None, harj=None, M=None, seeds=None, workers=None):
-    """Дизайн yaml -> r2_core.run_phase('E', h, …, fn_E): запись в кэш по хэшу, shift_check каждого ряда, DONE.
-    dym_scope — объём дыма: 3 тикера × шаги 1–3 × seed 42, корень кэша R2/E/dym/cache, без ворот, блок — в R2/E/dym/."""
-    design = dict(path) if isinstance(path, dict) else yaml.safe_load(Path(path).read_text())
+def read_designs(src):
+    """Дизайны: dict, список, yaml-файл с одним дизайном или с ключом `designs: [...]` (контракт драйвера S, r2_S_driver.yaml)."""
+    if isinstance(src, dict):
+        return [dict(src['designs'][i]) for i in range(len(src['designs']))] if 'designs' in src else [dict(src)]
+    if isinstance(src, (list, tuple)):
+        return [dict(d) for d in src]
+    return read_designs(yaml.safe_load(Path(src).read_text()))
+
+
+def run(src, hs=None, dym_scope=False, A=None, harj=None, M=None, seeds=None, workers=None, steps=None, check_gate=None, faza='E'):
+    """Пакет дизайнов -> r2_core.run_phase(faza, h, [дизайны h], fn_E, seeds, steps, workers): кэш по хэшу (schema_v2 ядра),
+    shift_check каждого ряда, DONE_E_h{h}_s{seed}; готовое пропускается. Контракт драйвера:
+      r2_ens.py run --designs <yaml> --h <h> --seeds <…> --steps <…> --workers <N>
+    hs — горизонты (по умолчанию — h дизайнов; дизайн без h получает каждый из hs); дизайн другого h в пакете пропускается.
+    dym_scope — объём дыма: 3 тикера × шаги 1–3 × seed 42, корень R2/E/dym/cache, без ворот, блок — в R2/E/dym/."""
+    designs = read_designs(src)
     if A is None:
         A, harj = load_d0()
     M = M or prep(A, harj)
     c = CFG['dym']
-    C.share(A=A, E_M=M, E_tickers=list(c['tickers']) if dym_scope else None,
-            E_seeds_only=[int(c['seed'])] if dym_scope else None)
-    st = list(c['steps']) if dym_scope else list(STEPS)
     root = (OUT / 'dym' / 'cache') if dym_scope else None
+    C.share(A=A, E_M=M, E_tickers=list(c['tickers']) if dym_scope else None,
+            E_seeds_only=[int(c['seed'])] if dym_scope else None, E_root=root)
+    st = list(steps) if steps else (list(c['steps']) if dym_scope else list(STEPS))
+    for k in st:
+        C.assert_dev_step(k)
     if dym_scope:  # дым пересчитывается каждый раз: отметки DONE прошлого дыма снимаются (только в R2/E/dym/cache)
-        for f in root.glob('*/DONE_h*_s*'):
+        for f in root.glob('*/DONE_*'):
             f.unlink()
+    hs = [int(x) for x in (hs or sorted({int(d['h']) for d in designs if 'h' in d}))]
     T = []
-    for h in (hs or [design['h']]):
-        d = dict(design, h=int(h))
-        T.append(C.run_phase('E', int(h), [d], fn_E, seeds=tuple(seeds or (int(d.get('seed', 42)),)), steps=st, workers=workers or 1,
-                             module='E', root=root, block_file=(OUT / 'dym' / 'blok_sdvig_dym.csv') if dym_scope else None,
-                             check_gate=not dym_scope))
-    P = pd.concat(T, ignore_index=True)
+    for h in hs:
+        dh = [dict(d, h=h) if 'h' not in d else d for d in designs]
+        dh = [d for d in dh if int(d['h']) == h]
+        if not dh:
+            continue
+        sd = tuple(seeds or sorted({int(d.get('seed', 42)) for d in dh}))
+        T.append(C.run_phase(faza, h, dh, fn_E, seeds=sd, steps=st, workers=workers or 1, module='E', root=root,
+                             block_file=(OUT / 'dym' / 'blok_sdvig_dym.csv') if dym_scope else None,
+                             check_gate=(not dym_scope) if check_gate is None else check_gate))
+    P = pd.concat(T, ignore_index=True) if T else pd.DataFrame(columns=['ryad'])
     print(P.to_string())
     return P
 
@@ -809,19 +899,26 @@ def main():
     ap.add_argument('mode', choices=['selftest', 'dym', 'leak', 'run'])
     ap.add_argument('--h', type=int, nargs='*', default=None)
     ap.add_argument('--full', action='store_true')
-    ap.add_argument('--design')
+    ap.add_argument('--designs', help='yaml с ключом designs: [...] (пакет, контракт драйвера S) или один дизайн')
+    ap.add_argument('--design', help='один дизайн (прежний вызов драйвера, per_design)')
     ap.add_argument('--seeds', type=int, nargs='*', default=None)
+    ap.add_argument('--steps', type=int, nargs='*', default=None)
     ap.add_argument('--workers', type=int, default=None)
+    ap.add_argument('--faza', default='E', help='фаза ворот run_phase (по умолчанию E: нужны ворота D)')
+    ap.add_argument('--no-gate', action='store_true', help='без проверки ворот (только для ручных прогонов)')
     ap.add_argument('--dym', action='store_true', help='run: объём дыма, кэш в R2/E/dym/cache/, без ворот')
     a = ap.parse_args()
     if a.mode == 'selftest':
         selftest()
     elif a.mode == 'dym':
         sys.exit(0 if dym() else 1)
-    elif a.mode == 'leak':
+    elif a.mode == 'leak':  # --designs допускается (контракт), детектор — по контурам модуля
         sys.exit(0 if leak(tuple(a.h or (1, 5, 22)), a.full).ok.all() else 1)
     else:
-        P = run(a.design, a.h, a.dym, seeds=a.seeds, workers=a.workers)
+        src = a.designs or a.design
+        if not src:
+            ap.error('run: нужен --designs или --design')
+        P = run(src, a.h, a.dym, seeds=a.seeds, workers=a.workers, steps=a.steps, check_gate=False if a.no_gate else None, faza=a.faza)
         sys.exit(0 if 'ОШИБКА' not in set(P.ryad) else 1)
 
 

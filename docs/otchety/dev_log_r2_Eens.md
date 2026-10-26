@@ -23,6 +23,13 @@
   - ≡ AUC из `moe_proba` = `auc_calib` смеси (assert в дыме);
   - детектор 87/87 OK, в том числе `moe_proba_k2_iso`.
   - ↺ — дым снимает отметки DONE в `R2/E/dym/cache/` перед `run_phase`, иначе повтор дыма пропускает задачи · откат: убрать снятие (26.10).
+- 26.10 16:55 — дирижёр: драйвер S слит (PR #184), нужен пакетный `run`. Слита база @ 2430a0c: schema_v2 по умолчанию в ядре, DONE по модулю, `load_series`. Сделано:
+  - `run --designs <yaml> --h --seeds --steps --workers` по контракту `r2_S_driver.yaml` / `docs/server_r2.md` §10. yaml — `designs: [...]` или один дизайн. Один вызов `r2_core.run_phase(faza, h, [дизайны h], fn_E, …)`: пул на `--workers`, DONE_E, готовое пропускается, ворота E по умолчанию. `--design` (per_design) оставлен.
+  - Входы E по цепочке: `chain_inputs` берёт ряды последнего модуля цепочки в каталоге того же дизайна (`r2_core.load_series`), ноги — ряды L. Ряд h = 1 для ec — `inputs.base_1` дизайна. Если каталог пуст — inputs yaml E.
+  - ≡ дым rc = 0: 69 рядов + пакет run_phase из 2 дизайнов × 3 h = 48 рядов, сдвиг argmax = 0, детектор OK, 66 с.
+  - ≡ chain_inputs: гибрид h = 5 из рядов модуля B совпал со входом.
+  - ≡ CLI: 4 дизайна h = 5, `--workers 2` (fork), ошибок 0.
+  - ❓ (для S): в `r2_S_driver.yaml` у E по-прежнему `per_design: true, run: "run --design {design} --h {h}"` — можно перевести на пакетный шаблон. В `needs_h1_inputs` стоит добавить `ens.ec ≠ off` на h ≠ 1, потому что ec читает ряд h = 1. Умолчание: per_design работает как прежде.
 - Прочитанные данные:
   - `features_pit_v3` через `r2_core.load_d0` (строки ≤ 2021);
   - ряды val шагов ≤ 6: `R2/cache/VYR/F_d0_h{1,5,22}_s42`, `R2/cache/E/{HARJ,HEAVY,HARX_ols}_emb_d0_h*`, `R2/cache/B2/F5_D12_h5_{xgb,lgbm}_h5_s42`.
