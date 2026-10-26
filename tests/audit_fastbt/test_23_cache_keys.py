@@ -6,7 +6,7 @@
   σ-источника, файла баров (A и C строятся по OHLCV) и data/corporate_actions.csv (дизайн
   включает корпоративные события).
 - Кэш масок C / затворов D (fastbt.masks._cached): маски строятся из td.sigma — ключ обязан
-  различать σ (сейчас — td.digest() без σ; s9 вынужден чистить кэш вручную, s9.py:363).
+  различать σ (до исправления FA2b-Н2 — td.digest() без σ; s9 чистил кэш вручную).
 """
 import dataclasses
 import hashlib
@@ -84,7 +84,6 @@ def test_s9_key_tracks_sigma(tmp_path, monkeypatch):
     assert s9.cache_key() != k0
 
 
-@pytest.mark.xfail(strict=True, reason="FA2b-Н1: ключ кэша С9 без хэша баров и корп. событий")
 def test_s9_key_tracks_bars_and_corp(tmp_path, monkeypatch):
     _, ohlcv, corp = _s9_env(tmp_path, monkeypatch)
     k0 = s9.cache_key()
@@ -97,7 +96,6 @@ def test_s9_key_tracks_bars_and_corp(tmp_path, monkeypatch):
     assert s9.cache_key() != k1                                        # правка корп. события
 
 
-@pytest.mark.xfail(strict=True, reason="FA2b-Н2: ключ кэша масок C/D без хэша σ")
 def test_mask_cache_tracks_sigma(monkeypatch):
     from fastbt import design as dsg
     dsg.apply(())
@@ -126,8 +124,19 @@ def _key_no_sigma():
     return h.hexdigest()[:10]
 
 
+def _key_no_bars():
+    """Ключ до исправления FA2b-Н1: код, main.yaml, σ — без баров и корп. событий."""
+    from pathlib import Path
+    h = hashlib.sha1(_key_no_sigma().encode())
+    for lab, (p, _, _) in s9.SOURCES.items():
+        h.update(lab.encode() + hashlib.sha1(Path(p).read_bytes()).digest())
+    return h.hexdigest()[:10]
+
+
 MUTATIONS = {
     "sig_key_no_bars": lambda mp: mp.setattr(
         TickerData, "digest", lambda self: hashlib.sha1(self.ticker.encode()).hexdigest()),
     "s9_key_no_sigma": lambda mp: mp.setattr(s9, "cache_key", _key_no_sigma),
+    "s9_key_no_bars": lambda mp: mp.setattr(s9, "cache_key", _key_no_bars),
+    "mask_key_no_sigma": lambda mp: mp.setattr(masks, "_sigma_digest", lambda td: ""),
 }

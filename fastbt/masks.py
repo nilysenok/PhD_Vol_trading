@@ -100,8 +100,16 @@ def _c_mask(cat, pr, sig, thr, direction, s22, s1, term, hyst, n):
 _CACHE = {}
 
 
+def _sigma_digest(td) -> str:
+    """Маски C и затворы D строятся из td.sigma — σ входит в ключ (аудит FA2b-Н2)."""
+    h = hashlib.sha1()
+    for k in sorted(td.sigma):
+        h.update(k.encode() + np.ascontiguousarray(td.sigma[k], dtype=np.float64).tobytes())
+    return h.hexdigest()
+
+
 def _cached(name, td, *args):
-    k = (name, td.ticker, td.digest()) + args
+    k = (name, td.ticker, td.digest(), _sigma_digest(td)) + args
     if k not in _CACHE:
         _CACHE[k] = globals()[f"_{name}"](td, *args)
     return _CACHE[k]
