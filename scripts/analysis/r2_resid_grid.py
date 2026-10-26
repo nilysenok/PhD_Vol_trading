@@ -35,6 +35,27 @@ def lhs_table():
     return pd.DataFrame(rows)
 
 
+def core_fn(design, seed, steps):
+    """Для r2_core.run_phase (фаза D, владелец 16:25: 3 seed, LightGBM, ≤ 300 деревьев, ранняя остановка по QLIKE итога, patience 30):
+    дизайн ячейки с boost.grid = resid_small_v1 -> {B_<роль>_p<NN>: ряд} по точкам SHARED['B_grid_points'] (по умолчанию 1–61;
+    отсечение 60 → 30 → 15 → 8 решает O, r2_halving.py, и передаёт список точек следующей ступени). Точка — в имени ряда
+    (каталог кэша — хэш дизайна ячейки), поэтому ключ схемы для точки не нужен."""
+    import r2_core as C
+    import r2_roli as B
+    S = C.SHARED
+    d = dict(C.validate(design), seed=int(seed))
+    assert d['boost']['grid'] == 'resid_small_v1' and d['boost']['early_stop'] == 'qlike_total' and d['boost']['lib'] == 'lightgbm', \
+        'фаза D: grid = resid_small_v1, early_stop = qlike_total, lib = lightgbm'
+    h = int(d['h'])
+    out = {}
+    for pt in S.get('B_grid_points', range(1, 62)):
+        ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=S['leg_provider'](d, h), _lhs_point=int(pt))
+        if d['boost']['resid_source'] == 'cross_fit':
+            ctx['leg_refit'] = S['leg_refit_provider'](d, h, S['A'])
+        out[f'B_{d["boost"]["role"]}_p{int(pt):02d}'] = B.build(d, ctx, steps=steps)
+    return out
+
+
 def cmd_lhs(a):
     T = lhs_table()
     p = REPO / YB['lhs']['file']
@@ -49,12 +70,12 @@ def cmd_smoke(a):
     import r2_roli as B
     rows = []
     for h in a.h or YB['smoke']['hs']:
-        ctx = B.smoke_ctx(h)
+        ctx = B.d0_ctx(h)
         for pt in (1, 2, 61):
             ctx['_lhs_point'] = pt
             t0 = time.time()
             o = B.build(dict(design='grid_smoke', h=h, seed=42, boost=dict(role='residual', grid='resid_small_v1', early_stop='qlike_total',
-                                                                          lib='lightgbm'), data={}), ctx, steps=YB['smoke']['steps'])
+                                                                          lib='lightgbm')), ctx, steps=YB['smoke']['steps'])
             rows.append(dict(h=h, point=pt, rows=len(o), sec=round(time.time() - t0, 1)))
             print(time.strftime('%T'), f'сетка h={h} точка {pt}: строк {len(o)}, {time.time() - t0:.1f} с', flush=True)
     p = B.R / 'R2' / 'B' / 'smoke_grid_B.csv'

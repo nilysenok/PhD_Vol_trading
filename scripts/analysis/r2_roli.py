@@ -158,7 +158,11 @@ def split(ctx, d, step, before=None):
         trm = trm & (yr >= vy - 3)
     if d['data']['history_start'] == 2014:
         trm = trm & (pd.to_datetime(A['date']).values >= np.datetime64(ISS_FIRST))
-    return np.flatnonzero(trm), np.flatnonzero(vam), vy
+    tr = np.flatnonzero(trm)
+    if ctx.get('_half'):  # скрининг (владелец 16:25): 50% строк обучения, страты тикер × год, random_state 42 (как l2_lib half)
+        s = pd.DataFrame({'i': tr, 't': A['ticker'].values[tr], 'y': A['year'].values[tr]})
+        tr = np.sort(s.groupby(['t', 'y'], group_keys=False).sample(frac=.5, random_state=42)['i'].values)
+    return tr, np.flatnonzero(vam), vy
 
 
 # ---------------------------------------------------------------- нога
@@ -436,7 +440,7 @@ def fit_step(ctx, d, role, m, step, obj=None, label_fn=None):
     # бины окна шага 1 (R1) — для шагов >= 2
     ref = None
     if step > 1:
-        tr1, _, _ = split(ctx, d, 1)
+        tr1, _, _ = split(dict(ctx, _half=False), d, 1)   # бины — по полному окну шага 1 (как make_ref при подборе на 50%)
         l1 = leg_ln(ctx, 1, tr1, 'tr') if d['boost']['resid_source'] == 'in_sample' else cross_fit(ctx, 1, tr1, h)
         o1 = ~np.isnan(l1)
         X1 = design_X(ctx, d, role, m, 2, tr1[o1], l1[o1])[0]   # признаки как на шагах >= 2 (исключения шага 2)
@@ -674,7 +678,12 @@ def load_groups(A, h):
         if g != 'G0':
             groups[g] = list(spec['columns'])
             cols += groups[g]
-    F = pd.read_parquet(R / 'R2' / 'features' / 'features_r2_v1.parquet', columns=['date', 'ticker'] + cols)
+    fp = ROOT / FY['combined']['file']   # features_r2_v2 (PR #170): файл и SHA — из yaml F
+    if '_fsha' not in _EXC:
+        import r2_core as C
+        _EXC['_fsha'] = C.sha_file(fp)
+        assert _EXC['_fsha'] == FY['combined']['sha256'], f'{fp.name}: SHA не совпал с r2_F_features.yaml'
+    F = pd.read_parquet(fp, columns=['date', 'ticker'] + cols)
     F['date'] = pd.to_datetime(F['date'])
     F = F[F['date'].dt.year <= 2021]
     A2 = A2.assign(date=pd.to_datetime(A2['date'])).merge(F, on=['date', 'ticker'], how='left', validate='one_to_one')
@@ -697,16 +706,20 @@ def d0_ctx(h, legname=None, tickers=None):
 
 def core_fn(design, seed, steps):
     """Для r2_core.run_phase: fn(design, seed, steps) -> {ряд: DataFrame}. Данные — r2_core.SHARED (кладёт вызывающий до пула):
-    A (load_d0 + load_groups), B_groups, leg_provider(design, h) -> lnall ноги дизайна (L), leg_refit_provider(design, h, A) -> f (L; для cross_fit)."""
+    A (load_d0 + load_groups), B_groups, leg_provider(design, h) -> lnall ноги дизайна (L), leg_refit_provider(design, h, A) -> f (L; для cross_fit),
+    B_half — скрининг на 50% строк обучения (владелец 16:25; имя ряда с суффиксом _half).
+    Режим владельца 16:25: скрининг — 1 seed, lib = lightgbm, B_half = True; уровень 2 — 3 seed, LightGBM (r2_resid_grid.core_fn);
+    финалисты — 10 seed, lib = both_avg. num_threads = 1 в каждой модели; воркеры — r2_core.run_pool (fork).
+    ❓ (для S) бинарные Dataset / QuantileDMatrix из r2_dataset_cache.py: модуля в базе нет; до него Dataset строится в воркере."""
     import r2_core as C
     S = C.SHARED
     d = dict(C.validate(design), seed=int(seed))
     h = int(d['h'])
-    ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=S['leg_provider'](d, h))
+    ctx = dict(A=S['A'], h=h, groups=S['B_groups'], leg=S['leg_provider'](d, h), _half=bool(S.get('B_half', False)))
     if d['boost']['resid_source'] == 'cross_fit':
         ctx['leg_refit'] = S['leg_refit_provider'](d, h, S['A'])
     V = build(d, ctx, steps=steps)
-    return {f'B_{d["boost"]["role"]}': V}
+    return {f'B_{d["boost"]["role"]}' + ('_half' if ctx['_half'] else ''): V}
 
 
 def smoke_ctx(h, legname=None, tickers=None, matrix=None):
@@ -982,15 +995,62 @@ def cmd_shift(a):
     log(f'сдвиг: {int(T.ok.sum())}/{len(T)} рядов argmax = 0')
 
 
+def _smoke_leg_provider(design, h):
+    """Дым: нога дизайна из кэша L (версия _emb_d0): HARJ -> HARJ_emb_d0, HARX -> HARX_inner_emb_d0."""
+    import r2_core as C
+    nm = {'HARJ': 'HARJ_emb_d0', 'HARX': 'HARX_inner_emb_d0'}[design['leg']['type']]
+    g = pd.read_parquet(R / 'R2' / 'cache' / 'E' / f'{nm}_h{h}_lnall.parquet')
+    return g[g.ticker.isin(set(C.SHARED['A'].ticker))]
+
+
+def _smoke_refit_provider(design, h, A):
+    return leg_refit_harj_ols(dict(A=A, h=h, harj=C_harj()))
+
+
+def C_harj():
+    import r2_core as C
+    return C.SHARED.get('harj')
+
+
+def cmd_core_smoke(a):
+    """Дым через r2_core.run_phase (кэш — R2/B/smoke_cache, ворота не проверяются): режим владельца 16:25 — скрининг LightGBM на 50% строк
+    (h = 5, 22 — роль residual; h = 1 — feature с группами G0 + G1), уровень 2 — точки 1 и 61 сетки (r2_resid_grid.core_fn)."""
+    import r2_core as C
+    import r2_resid_grid as RG
+    sm = YB['smoke']
+    root = R / 'R2' / 'B' / 'smoke_cache'
+    rows = []
+    for h in sm['hs']:
+        A, harj = C.load_d0(tickers=sm['tickers'])
+        A, groups = load_groups(A, h)
+        C.share(A=A, harj=harj, B_groups=groups, leg_provider=_smoke_leg_provider, leg_refit_provider=_smoke_refit_provider, B_half=True,
+                B_grid_points=[1, 61])
+        leg = 'HARX' if h != 22 else 'HARJ'
+        role = 'feature' if h == 1 else 'residual'
+        scr = dict(design=f'smoke_B_h{h}', h=h, leg=dict(type=leg), boost=dict(role=role, lib='lightgbm'), features=['G0', 'G1'])
+        T = C.run_phase('B', h, [scr], core_fn, seeds=(42,), steps=sm['steps'], workers=2, module='B', root=root, check_gate=False,
+                        block_file=R / 'R2' / 'B' / 'blok_sdvig_smoke.csv')
+        rows.append(T.assign(faza='B'))
+        C.share(B_half=False)
+        grd = dict(scr, design=f'smoke_D_h{h}', boost=dict(role=role, lib='lightgbm', grid='resid_small_v1', early_stop='qlike_total'))
+        T = C.run_phase('D', h, [grd], RG.core_fn, seeds=(42,), steps=sm['steps'], workers=2, module='B', root=root, check_gate=False,
+                        block_file=R / 'R2' / 'B' / 'blok_sdvig_smoke.csv')
+        rows.append(T.assign(faza='D'))
+    T = pd.concat(rows, ignore_index=True)
+    T.to_csv(R / 'R2' / 'B' / 'core_smoke_B.csv', index=False)
+    log('дым ядра: ' + '; '.join(f'{r.faza} h={r.h} {r.ryad}: строк {r.stroki}, сдвиг ok={r.sdvig_ok}' for r in T.itertuples()))
+    assert (T.ryad != 'ОШИБКА').all(), 'ошибка задачи в run_phase'
+
+
 def main():
     ap = argparse.ArgumentParser()
     sp = ap.add_subparsers(dest='cmd', required=True)
     p = sp.add_parser('smoke'); p.add_argument('--hs', type=int, nargs='*')
     p = sp.add_parser('leak'); p.add_argument('--hs', type=int, nargs='*')
-    sp.add_parser('control'); sp.add_parser('leak_leg'); sp.add_parser('leak_xfit'); sp.add_parser('shift')
+    sp.add_parser('control'); sp.add_parser('leak_leg'); sp.add_parser('leak_xfit'); sp.add_parser('shift'); sp.add_parser('core_smoke')
     a = ap.parse_args()
     {'smoke': cmd_smoke, 'control': cmd_control, 'leak': cmd_leak, 'leak_leg': cmd_leak_leg, 'leak_xfit': cmd_leak_xfit,
-     'shift': cmd_shift}[a.cmd](a)
+     'shift': cmd_shift, 'core_smoke': cmd_core_smoke}[a.cmd](a)
 
 
 if __name__ == '__main__':
