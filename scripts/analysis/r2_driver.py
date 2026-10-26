@@ -454,6 +454,9 @@ class Runner:
         rc = subprocess.run(cmd, cwd=REPO).returncode
         net = self.done_missing(m, designs, h, seeds)
         zamer(m, h, tag, len(designs), len(seeds), len(steps), workers, time.time() - t0, rc, len(net))
+        if rc != 0 and designs and not net:  # все DONE на месте (повтор: «задач 0») — код ≠ 0 из-за пустой сводки модуля (E 18:36)
+            log(f'модуль {m} h={h}: код {rc}, но все {len(designs) * len(seeds)} отметок DONE_{m} есть — этап пройден (❓ автору: код 0 при 0 задач)')
+            return True, ''
         if rc != 0:
             return False, f'модуль {m}: код {rc}'
         if designs and len(net) == len(designs) * len(seeds):  # ни одной отметки DONE — модуль ничего не посчитал (P, M: код 0 и при ошибках)
