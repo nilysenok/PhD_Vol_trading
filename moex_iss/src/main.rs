@@ -11,6 +11,7 @@ mod range;
 mod report;
 mod rv;
 mod rv1850;
+mod rv5sub;
 mod rvcmp;
 mod session;
 mod store;
