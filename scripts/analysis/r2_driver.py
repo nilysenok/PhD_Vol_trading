@@ -74,9 +74,14 @@ def designs_file(name):
 
 
 def write_designs(name, designs, meta=None):
-    """Каждый дизайн — через r2_core.validate (ошибка схемы = стоп до счёта); в файле — design_sha и сложность."""
+    """Каждый дизайн — через r2_core.validate (ошибка схемы = стоп до счёта); в файле — design_sha и сложность.
+    Дирижёр 17:44: у бустинга (роль ≠ none) ранняя остановка — только на внутренней складке (boost.early_stop = qlike_total:
+    год vy−1 с эмбарго h, ≤ 300 деревьев, patience 30); native (val-год, ≤ 1000) запрещена и в validate."""
     rows = []
     for d in designs:
+        if str(C.get(C.validate(d, es_check=False), 'boost.role')) != 'none':
+            d.pop('boost.early_stop', None)
+            _set(d, 'boost.early_stop', 'qlike_total')
         full = C.validate(d)
         rows.append(dict(design=full.get('design', ''), design_sha=C.design_hash(d), slozhnost=C.complexity(d)))
     return ydump(dict(meta or {}, n=len(designs), designs=designs, index=rows), designs_file(name))
@@ -847,30 +852,40 @@ def pipeline(h, runner, smoke=False, once=False):
             st['zhdyot'] = f'финалисты 10 seed: {why}'
             save_state(h, st, smoke)
             return st
-        # boost_refit = monthly — последним и только для финалистов (дирижёр 17:28); упавший вариант в ворота не идёт
-        ml = CFG['E'].get('monthly_last')
-        if ml:
-            mon = {}
-            for u, d in fin.items():
-                dm = copy.deepcopy(d)
-                _set(dm, ml['key'], ml['value'])
-                dm['design'] = f'{d.get("design", u)}_{ml["key"]}={ml["value"]}'
-                try:
-                    C.validate(dm)
-                    mon[f'{u}_{ml["value"]}'] = _maybe_inputs(dm)
-                except C.DesignError as e:
-                    log(f'конвейер h={h}: {ml["value"]} для {u} не принят схемой: {e}')
-            okm, whym = stage('E_finalisty_monthly', lambda: chain(list(mon.values()), h, CFG['E']['seeds_final'], steps, W, 'Efin',
-                                                                   partial=True))
-            if not okm:
-                st['E_monthly_oshibki'] = whym
-            fin |= {u: d for u, d in mon.items() if final_series(d, h, [CFG['E']['seeds_final'][0]], root)}
         units = fin | v0
     stage('gate_E', lambda: gate_E(h, units, root, list(v0), runner, steps, W))
     report('E', CFG['hs'] if not smoke else SMOKE_HS, smoke)
+    if not smoke:  # дирижёр 17:50: boost_refit = monthly — НЕ в финалистах и не в воротах; только seed 42, для приложения, последним
+        prilozhenie_monthly(h, fin, runner, steps, W, root, st, chain, stage)
     st['zhdyot'] = 'СТОП: перед открытием теста (фаза F — агент A, «да» владельца)'
     save_state(h, st, smoke)
     return st
+
+
+def prilozhenie_monthly(h, fin, runner, steps, W, root, st, chain, stage):
+    """Приложение (дирижёр 17:50): вариант каждого финалиста E с boost.boost_refit = monthly, seed 42, после ворот E (последним).
+    В ворота и выбор не входит; таблица — R2/report/prilozhenie_monthly_h{h}.md."""
+    ml = CFG['E'].get('monthly_last')
+    if not ml or not fin:
+        return
+    mon = {}
+    for u, d in fin.items():
+        dm = copy.deepcopy(d)
+        _set(dm, ml['key'], ml['value'])
+        dm['design'] = f'{d.get("design", u)}_{ml["key"]}={ml["value"]}'
+        try:
+            C.validate(dm)
+            mon[u] = _maybe_inputs(dm)
+        except C.DesignError as e:
+            log(f'конвейер h={h}: {ml["value"]} для {u} не принят схемой: {e}')
+    ok, why = stage('E_prilozhenie_monthly', lambda: chain(list(mon.values()), h, ml.get('seeds', [42]), steps, W, 'Emon', partial=True))
+    rows = [f'| {u} | {C.design_hash(d)[:16]} | {"есть" if final_series(d, h, ml.get("seeds", [42]), root) else "нет"} |' for u, d in mon.items()]
+    REPORT.mkdir(parents=True, exist_ok=True)
+    (REPORT / f'prilozhenie_monthly_h{h}.md').write_text('\n'.join(
+        [f'# Приложение: boost_refit = monthly, h = {h} ({time.strftime("%F %T")})', '',
+         'Только seed 42, после ворот E; в выбор и ворота не входит (дирижёр 26.10, 17:50).', '',
+         '| финалист | хэш варианта | ряд |', '|---|---|---|'] + rows + ([f'', f'ошибки: {why}'] if not ok else [])), encoding='utf-8')
+    st['prilozhenie_monthly'] = dict(ok=ok, prichina=why, n=len(mon))
 
 
 def econ(h, runner, smoke=False, once=False):
@@ -1012,7 +1027,8 @@ def cmd_smoke(a):
     ok('D: отсечение r2_halving (O) на дымовых ступенях; трасса', all((SMOKE_O / f'halving_{c}_h{h}.csv').exists()
                                                                      for h in SMOKE_HS for c in yaml.safe_load(gate_path('C', h, True).read_text())['yacheyki']))
     # правило дирижёра: фактор B, неприменимый к модулю цепочки (yaml модуля), у ячейки остаётся off, ячейка не выбрасывается, пометка
-    cell = dict(design='C_h5_panel_residual', h=5, leg=dict(type='HARJ', panel='factor'), boost=dict(role='residual'), features=['G0', 'G1'])
+    cell = dict(design='C_h5_panel_residual', h=5, leg=dict(type='HARJ', panel='factor'), boost=dict(role='residual', early_stop='qlike_total'),
+                features=['G0', 'G1'])
     out = apply_gate_B([cell], dict(vklyucheny=['C', 'E', 'K', 'A']), 5)
     f0 = C.validate(out[0])
     ok('неприменимый фактор (P): C, E — off с пометкой, K (G5+G6) — off, A — включён; ячейка осталась',
@@ -1037,6 +1053,18 @@ def cmd_smoke(a):
     ok(f'категории мощности O: {kat}', kat == {0.85: 'znachimyy', 0.8: 'znachimyy', 0.6: 'granica', 0.5: 'granica', 0.3: 'noga'})
     ok('сдвиг: симметричный ε = 0,01 через r2_loyo.sdvig_ok (MIDAS h=22: 3 тик. 0,0113 — блок, 17 тик. 0,0082 — проходит)',
        C.SDVIG_EPS == 0.01 and not _ok_midas(3) and _ok_midas(17))
+    dz = C.validate(dict(design='smoke_params', h=5, leg=dict(type='HARJ')))
+    for m_ in ('L', 'M'):
+        C.params_path(dz, m_, root=SMOKE_ROOT).write_text(f'step,par\n1,{m_}\n', encoding='utf-8')
+    Pm = C.load_params(dz, root=SMOKE_ROOT)
+    ok('параметры: params_<модуль>.csv на модуль, load_params читает все (общий params.csv не используется)',
+       sorted(Pm.modul.unique()) == ['L', 'M'] and len(C.load_params(dz, modul='M', root=SMOKE_ROOT)) == 1,
+       f'общий params.csv ещё в коде: {params_obshchiy() or "нет"}')
+    ok('ранняя остановка: у бустинга native (год оценки) запрещена в validate; дизайны driver_v1 — qlike_total',
+       C._raises(lambda: C.validate(dict(h=5, boost=dict(role='residual'))))
+       and all(str(C.get(C.validate(d), 'boost.early_stop')) == 'qlike_total'
+               for f in ('B_h5', 'B_h22', 'B_h1', 'C_h5_shablon') for d in read_designs(f)
+               if str(C.get(C.validate(d), 'boost.role')) != 'none'))
     K = contract_check()
     ok(f'контракт подключённых модулей (опции шаблона есть в argparse модуля): {K}',
        all(v == 'OK' or v.endswith('ждёт') for v in K.values()) and all(K.get(m) == 'OK' for m in CFG['modules']))
@@ -1129,6 +1157,12 @@ def contract_check():
         miss = [o for o in sorted(opts) if f"'{o}'" not in src]
         out[m] = 'OK' if not miss else f'нет опций {miss}'
     return out
+
+
+def params_obshchiy():
+    """Модули, в коде которых ещё есть общий 'params.csv' (дирижёр 17:50: каждый — свой params_<модуль>.csv; r2_core.params_path)."""
+    return sorted({spec['file'] for spec in CFG['modules'].values()
+                   if (HERE / spec['file']).exists() and "'params.csv'" in (HERE / spec['file']).read_text(encoding='utf-8', errors='ignore')})
 
 
 def cmd_status(a):

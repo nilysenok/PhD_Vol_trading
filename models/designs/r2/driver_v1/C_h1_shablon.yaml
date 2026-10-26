@@ -10,6 +10,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -20,6 +21,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -30,6 +32,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -45,6 +48,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -60,6 +64,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -75,6 +80,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -85,6 +91,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -95,6 +102,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -105,6 +113,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -115,6 +124,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -125,6 +135,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -135,6 +146,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -145,6 +157,7 @@ designs:
   boost:
     role: feature
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -155,6 +168,7 @@ designs:
   boost:
     role: residual
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -165,6 +179,7 @@ designs:
   boost:
     role: offset
     lib: lightgbm
+    early_stop: qlike_total
   features:
   - G0
   - G1
@@ -187,50 +202,50 @@ designs:
     role: none
 index:
 - design: C_h1_HARJ_feature
-  design_sha: 8645f772f7d6db73186e416ea1ef6f97582bbf8d30391e010a238638caf8657e
-  slozhnost: 2
+  design_sha: bee7dc9a02e9f0a25857495b3df9ceafdcdde653505790d196558ff5179fe94f
+  slozhnost: 3
 - design: C_h1_HARJ_residual
-  design_sha: 0523104bb6af19b1ce626f70f2a52e77349d3a30ec2da080a21b2c471660eb3b
-  slozhnost: 2
+  design_sha: d8d21834c18b7fc5798b3a0d7ac6acfc8da5be1c8ab46d0c25c3bca1fb7c3ce1
+  slozhnost: 3
 - design: C_h1_HARJ_offset
-  design_sha: 2d92e9b3c06c0c86aaea0053c5bcfd8505dd25352905f13642275c4da0a4d562
-  slozhnost: 2
+  design_sha: 53dd2bbc5f31ba6016f6d6f0efbd7550c97b7b77fc99cd7f96e99601d4bf34e9
+  slozhnost: 3
 - design: C_h1_HARX_feature
-  design_sha: dd3428328f7dbbb614c892c69728d059e7ddcace69e4bd99c4a0599779f2be7f
-  slozhnost: 4
+  design_sha: 5ac6b24a542aa12bfb149e19c6e2096376a9d9d61c958525001d2de2951be533
+  slozhnost: 5
 - design: C_h1_HARX_residual
-  design_sha: 69db70e1b2075c6f7f0d8416cf371de40d98763df292f982f48d916dcc1592cc
-  slozhnost: 4
+  design_sha: 340016ebdfb60037dceab71aed6640f8d1f95fc6107c9c893ad03615e1b5b7fa
+  slozhnost: 5
 - design: C_h1_HARX_offset
-  design_sha: fd5aaa28299fd01d5ed3508aecd796bb1d9510311b198853788fa9b5af562887
-  slozhnost: 4
+  design_sha: 0ae19defab2caadc601764fd3c1068c8d2eed604999ac62efd93f52d139d5da8
+  slozhnost: 5
 - design: C_h1_HARX_regime_feature
-  design_sha: bc600fd3283078dd79887f380a64c0bf64efcca98980b2076d2f7a176566a5c5
-  slozhnost: 3
+  design_sha: 35d1a46028406d73c6f3ad1449112fdbcca57b5d9aec4d4723223716e4b3b3a1
+  slozhnost: 4
 - design: C_h1_HARX_regime_residual
-  design_sha: d9cf1467cdb786a4e1e13fa4524d33801fce260f1cc7cc2b17c9a2c27b93377e
-  slozhnost: 3
+  design_sha: d710061ae8a6b1411eed71dd06005eb398c3c8b2af1406f356526bf80be671e5
+  slozhnost: 4
 - design: C_h1_HARX_regime_offset
-  design_sha: 18092b759dafc7414f07f1191dd171f2c702e630ef02185fc9f0ac4e551afb5a
-  slozhnost: 3
+  design_sha: 981f56d711151792e50ad9834ae63c47a422f00be41fd3de04a62efabcdd0116
+  slozhnost: 4
 - design: C_h1_HEAVY_feature
-  design_sha: 39155f21bb8e90d8ae5c89227c7b7a1c4140a38b11cef53048765a31a74a8aa5
-  slozhnost: 3
+  design_sha: 845b20d20c3f48477b5b92b88d07caf7155bdf7d26a7209f621e80643694f5b4
+  slozhnost: 4
 - design: C_h1_HEAVY_residual
-  design_sha: a1fe77071c6b953e86ceff35b84f0831e7ba779276b9d1737ce5ef324b307be5
-  slozhnost: 3
+  design_sha: e52d16733c5bf0bb3b5b2d026aa420879cfad6fcade48d78d61def51ad7c28b3
+  slozhnost: 4
 - design: C_h1_HEAVY_offset
-  design_sha: d296d7f80d4ed9c977bf96f46be4c740834813e4498f65bfeaa90f1fc6431b77
-  slozhnost: 3
+  design_sha: 36263e9aeed7207da73f4af7776b8ade7258de3bd245c62ca991e1046453e30b
+  slozhnost: 4
 - design: C_h1_RVI_anchor_feature
-  design_sha: a06eec3a5392b5bd66628da480d0eab057118af4409603b317bd4e63e66524c5
-  slozhnost: 3
+  design_sha: 629180f86904e3288403c6351ddef75200c9d55fc518a16a6ceb36b4d60accc5
+  slozhnost: 4
 - design: C_h1_RVI_anchor_residual
-  design_sha: 939f5a2754e29864d7ca002de5695d5b1998626ddc6b4c431daafa688bdb2afb
-  slozhnost: 3
+  design_sha: 121e08338be89a0245aa5e2f8b8b73a7d5fd58de8269239a4f20733be0b7fa72
+  slozhnost: 4
 - design: C_h1_RVI_anchor_offset
-  design_sha: c43b6717e278378f4d1e4adf4580b099d356454d034519997bfdb05588436584
-  slozhnost: 3
+  design_sha: e69dced6cf89cef8cae6b2be07564235423df01c126a3047515736c31d63e9c0
+  slozhnost: 4
 - design: C_h1_HARX_V0
   design_sha: 942068b74735612f54221e0ec729485ab4d8fd9b46232c074a2c08c31c0a8ee8
   slozhnost: 2
