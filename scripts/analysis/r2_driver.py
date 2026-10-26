@@ -386,9 +386,9 @@ def route(design):
     if any(g(k) not in ('off', 'False', 'direct', 'None') for k in ('mh.scheme', 'mh.persist', 'mh.slope', 'mh.reconcile')) \
             or g('leg.struct') != 'single':
         need.add('M')
-    calib_def = dict(s2_est='sm', kappa='0.5', s2_state='const', c_qlike='off', mz='False', update='step')
-    if any(g(f'calib.{k}') not in (v, 'off') for k, v in calib_def.items()) or g('boost.prob') not in ('off', 'False'):
-        need.add('L3')
+    # дирижёр 26.10, 19:10 (находка O): L3 — ВСЕГДА, последним звеном, с calib дизайна (по умолчанию s2_est = sm, s2_embargo = on):
+    # эталон ворот (ETA_b_d0_s2emb) — с поправкой s², кандидаты обязаны сравниваться так же (сырые ряды L/B — на ~15% ниже)
+    need.add('L3')
     ens = f['ens']
     if any(str(ens[k]) not in ('False', 'off', 'mean', 'single', 'best_by_LOYO') for k in ens if k != 'seeds') or g('leg.moe') not in ('off', 'False'):
         need.add('E')
@@ -497,12 +497,18 @@ class Runner:
 def final_series(design, h, seeds, root=None, steps=None):
     """Итоговый ряд дизайна: ряды последнего модуля цепочки; варианты (сетка внутри складки) — по имени ряда; seed — среднее
     (медиана при ens.agg = median). -> {вариант: кадр val}."""
-    last = route(design)[-1]
+    ch = route(design)
+    last = ch[-1]
+    assert last == 'L3', f'{design.get("design")}: итог не прошёл L3 (цепочка {ch}) — сравнение с эталоном s² невозможно'
     stand_in = SMOKE_FLAG['on'] and not SMOKE_FLAG.get('real')  # дым с заменой модулей HAR-J — ряды smoke_<модуль>
     L = C.load_series(C.design_hash(design), modul=f'smoke_{last}' if stand_in else last, seed=[str(s) for s in seeds],
                       root=root, steps=steps)
     if L.empty:
         return {}
+    if not stand_in:
+        assert L['ryad'].astype(str).str.endswith('__cal').all(), f'{design.get("design")}: ряды L3 без __cal'
+        if len(ch) > 1 and ch[-2] == 'R':  # после R калибруется R_raw (R уже со своей поправкой — двойная калибровка), дирижёр 17:28
+            L = L[L['ryad'].astype(str).str.startswith('R_raw')]
     agg = 'median' if str(C.get(C.validate(design), 'ens.agg')) == 'median' else 'mean'
     out = {}
     for v, g in L.groupby('ryad'):
@@ -755,6 +761,8 @@ def report(phase, hs, smoke=False):
     out = (SMOKE_REPORT if smoke else REPORT) / f'gate_{phase}.md'
     out.parent.mkdir(parents=True, exist_ok=True)
     L = [f'# Ворота {phase} — {time.strftime("%F %T")}{" (дым, 3 тикера × шаги 1–3)" if smoke else ""}', '']
+    if REPORT_NOTE.get(phase):
+        L += [f'**{REPORT_NOTE[phase]}**', '']
     for h in hs:
         f = gate_path(phase, h, smoke)
         if not f.exists():
@@ -981,7 +989,36 @@ def stop_note(states, smoke):
     return f
 
 
+REPORT_NOTE = {}  # фаза -> пометка в отчёте (дирижёр 19:10: «пересчитано после исправления калибровки, 19:xx»)
+
+
+def arhiv_vorot(suffix, hs, smoke=False):
+    """Перед пересчётом ворот: gate_{B,C,D,E}_h*.yaml, каталоги gate_E_h*_dizainy, R2/O/factor/*.csv, halving_*.csv и отчёты
+    R2/report/*.md переименовываются с суффиксом (os.replace, не удаляются); при совпадении имени — ещё и время. -> [(было, стало)]."""
+    O_ = SMOKE_O if smoke else C.O_DIR
+    rep = SMOKE_REPORT if smoke else REPORT
+    pats = [O_.glob(f'gate_{p}_h{h}.yaml') for p in 'BCDE' for h in hs] + [O_.glob(f'gate_E_h{h}_dizainy') for h in hs] + \
+        [(O_ / 'factor').glob('*.csv'), O_.glob('halving_*.csv'), rep.glob('*.md')]
+    moved = []
+    for g in pats:
+        for f in list(g):
+            if suffix in f.name:
+                continue
+            t = f.with_name(f'{f.stem}{suffix}{f.suffix}')
+            if t.exists():
+                t = f.with_name(f'{f.stem}{suffix}_{time.strftime("%H%M%S")}{f.suffix}')
+            os.replace(f, t)
+            moved.append((str(f), str(t)))
+    log(f'архив ворот ({suffix}): {len(moved)} файлов/каталогов')
+    return moved
+
+
 def cmd_run(a, smoke=False):
+    if getattr(a, 'arhiv_vorot', None):
+        arhiv_vorot(a.arhiv_vorot, a.h or (SMOKE_HS if smoke else CFG['hs']), smoke)
+        for p in 'BC':
+            REPORT_NOTE[p] = f'пересчитано после исправления калибровки (L3 последним звеном, s² дизайна), {time.strftime("%H:%M")}; ' \
+                             f'прежние ворота — *{a.arhiv_vorot}'
     if not smoke:
         import r2_dataset_cache as DS
         log(f'место на томах кэша (ГБ): {DS.proverka_mesta()}')  # < 2 ГБ — MestaNet, драйвер не стартует
@@ -1126,6 +1163,13 @@ def cmd_smoke(a):
     ok('параметры: params_<модуль>.csv на модуль, load_params читает все (общий params.csv не используется)',
        sorted(Pm.modul.unique()) == ['L', 'M'] and len(C.load_params(dz, modul='M', root=SMOKE_ROOT)) == 1,
        f'общий params.csv ещё в коде: {params_obshchiy() or "нет"}')
+    allD = [d for f in sorted(DDIR.glob('*.yaml')) for d in (yaml.safe_load(f.read_text()).get('designs') or []) if isinstance(d, dict)]
+    ok(f'L3 — последнее звено у всех {len(allD)} дизайнов driver_v1 (калибровка s² дизайна, дирижёр 19:10)',
+       all(route(d)[-1] == 'L3' for d in allD))
+    mv = arhiv_vorot('_bez_s2', SMOKE_HS, smoke=True)
+    ok(f'архив ворот перед пересчётом: {len(mv)} переименовано (_bez_s2), исходных gate_* нет',
+       len(mv) >= 12 and not any(gate_path(p, h, True).exists() for p in 'BCDE' for h in SMOKE_HS)
+       and all(Path(t).exists() for _, t in mv))
     import r2_dataset_cache as DS
 
     def _mesta_stop():
@@ -1266,6 +1310,8 @@ def main():
     p = sp.add_parser('run')
     p.add_argument('--h', type=int, nargs='+')
     p.add_argument('--once', action='store_true', help='не ждать ворот/модулей (один проход)')
+    p.add_argument('--arhiv-vorot', dest='arhiv_vorot', metavar='SUFFIX',
+                   help='переименовать прежние ворота/эффекты/отчёты с суффиксом (напр. _bez_s2) и пересчитать ворота B–E')
     p = sp.add_parser('smoke')
     p.add_argument('--real', action='store_true', help='настоящие модули по контракту (3 тикера, шаги 1–3), замеры времени')
     p.add_argument('--h', type=int, nargs='+')
