@@ -17,8 +17,8 @@ SETKA = {"bloki": {
     "filtry": {"parametry": [
         {"imya": "adx_min", "ishodnoe": 20, "setka": [10, 20, 30], "pravka_znach": [10]},
         {"imya": "obyom_nizhe_sma5", "ishodnoe": "on", "setka": ["on", "off"], "dostup": "pravka"}]},
-    "rm_sqrt_rv": {"parametry": [{"imya": "k", "ishodnoe": 1, "setka": [1, 2]}]},
-    "rm_vybor": {"parametry": [{"imya": "rm_tip", "ishodnoe": "atr", "setka": ["atr", "pivot", "sqrt_rv"]}]},
+    "rm_zadel": {"parametry": [{"imya": "k", "ishodnoe": 1, "setka": [1, 2], "dostup": "pravka"}]},   # √RV с Э1-в не «вне v1»
+    "rm_vybor": {"parametry": [{"imya": "rm_tip", "ishodnoe": "atr", "setka": ["atr", "pivot", "sqrt_rv"], "pravka_znach": ["sqrt_rv"]}]},
 }}
 
 
@@ -59,8 +59,7 @@ def test_vne_v1_ne_popadaet_v_setku():
 
 
 def test_split_vne_v1_i_neizvestnyy_klyuch():
-    with pytest.raises(sp.VneV1):
-        sp.split("S5", {"rm_tip": "sqrt_rv"}, SIGN)
+    assert sp.split("S5", {"rm_tip": "sqrt_rv"}, SIGN)[0] == "sqrt_rv"                  # Э1-в: считается fastbt/rm_sqrt_rv.py
     with pytest.raises(sp.VneV1):
         sp.split("S3", {"trail_type": "off"}, SIGN)
     with pytest.raises(KeyError):

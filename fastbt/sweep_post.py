@@ -16,6 +16,7 @@ import threading
 
 import numpy as np
 
+from fastbt import rm_sqrt_rv as rms
 from fastbt import unit as unit_mod
 from fastbt.batch import trades_one
 from fastbt.engine import next_signal
@@ -46,9 +47,11 @@ def split(sid: str, p: dict, sig_names) -> tuple:
     """Плоские параметры -> (rm_type, rm dict, mask dict, exec dict). Сигнальные ключи пропускаются."""
     trend = sid in ("S3", "S4")
     rtype = "trend" if trend else p.get("rm_tip", "pivot" if sid == "S5" else "atr")
-    if rtype == "sqrt_rv" or p.get("rm_edinitsa", "atr14") == "sqrt_rv":
-        raise VneV1("RM в единицах √RV (ядро B kind=2) — вне v1")
-    rm, mask, ex = dict(RM_DEF[rtype]), {}, dict(EXEC)
+    if "sqrt_rv" in (rtype, p.get("rm_edinitsa")):                 # выходы в √RV (Э1-в): fastbt/rm_sqrt_rv.py
+        rm, rtype = {**RM_DEF["trend" if trend else "atr"], **rms.defaults(sid)}, "sqrt_rv"
+    else:
+        rm = dict(RM_DEF[rtype])
+    mask, ex = {}, dict(EXEC)
     for k, v in p.items():
         blk, _, name = k.rpartition(".")
         if k in sig_names or k in SELECT:
@@ -63,7 +66,7 @@ def split(sid: str, p: dict, sig_names) -> tuple:
             rm[name] = v
         elif blk or name not in sig_names:
             raise KeyError(f"неизвестный параметр {k!r} для {sid}/{rtype}")
-    if rm.get("trail_type") == "off":
+    if rm.get("trail_type") == "off" and rtype != "sqrt_rv":
         raise VneV1("trail_type=off — вне v1")
     return rtype, rm, mask, ex
 
@@ -131,6 +134,9 @@ def build_view(sid: str, u, td, ind, p: dict, sig_names):
         x = u.ss.extra
         e = ~np.isnan(x["vwap"][0]) & (np.abs(td.close - x["vwap"][0]) < mask["vyhod_dev"] * x["dev"][0])
         v.exl = v.exs = np.ascontiguousarray(e[None, :])
+    if rtype == "sqrt_rv":
+        rms.apply(v, rm)
+        return v, ex
     row = dict(rm, _rm_type=rtype if rtype in ("pivot", "vwap") else "atr")
     v.rm = [row]
     with LOCK:
