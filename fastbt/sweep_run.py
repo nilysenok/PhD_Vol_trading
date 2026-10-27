@@ -159,11 +159,13 @@ def main(argv=None):
     a.add_argument("yaml", nargs="+")
     a.add_argument("--out", default=str(OUT_DIR))
     a.add_argument("--jobs", type=int, default=MAX_JOBS)
-    a.add_argument("--mode", default="oat", choices=("oat", "factorial", "morris", "optuna"))
+    a.add_argument("--mode", default="oat", choices=("oat", "factorial", "morris", "optuna", "plato"))
     a.add_argument("--params", help="p1,p2,p3 или tornado:3 (факторный, Моррис); Optuna берёт всю сетку")
     a.add_argument("--paths", type=int, default=10, help="траектории Морриса")
     a.add_argument("--trials", type=int, default=100, help="пробы Optuna")
     a.add_argument("--n-jobs", type=int, default=1, help="потоки Optuna (≤ 6; > 1 нарушает побайтную повторяемость)")
+    a.add_argument("--min-sdelok-frac", type=float, default=0.5, help="предел активности: сделок/год ≥ доля × база tune 2018 (plato, optuna)")
+    a.add_argument("--params-from-tornado", type=float, default=None, help="только параметры с размахом цели ≥ порога (optuna; plato — 0,05)")
     ns = a.parse_args(argv)
     if ns.mode != "oat":
         from fastbt import sweep_run_iter
