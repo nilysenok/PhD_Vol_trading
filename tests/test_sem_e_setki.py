@@ -35,6 +35,8 @@ def test_n_c_is_324_recomputed_from_axes():
         assert per * len(spec["h"]) == spec["tochek"]
         tot += spec["tochek"]
     assert tot == d["N"]["itogo"] == 324
+    assert d["baza"]["A_prim"]["baza"] is True and d["baza"]["A_prim"]["v_N"] is False
+    assert "A_prim" not in d["semyi"] and "A_prim" not in d["N"]        # база в N не входит
 
 
 def test_n_e_recomputed_and_dsr_n_is_with_u():
