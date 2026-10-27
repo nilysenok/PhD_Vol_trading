@@ -68,7 +68,7 @@ def dopisat_reestr(sid: str, exp: dict, d: pd.DataFrame, best) -> None:
         base = dict(strategiya=sid, klyuch=k, rezhim=f"zh042_{r['rol']}", istochnik="zh042_konveyer",
                     tune_004=F(r.s2018), ctrl_004=F(r.s2019), tune_0035=F(r.s2018_0035), ctrl_0035=F(r.s2019_0035),
                     storon_god=F(r.storon_god_2018), plato=F(r.plato) if top else "", sosedey=F(r.sosedey) if top else "",
-                    aktivnost_ok=rs.flag(r.aktivnost_ok) if r["rol"] == "faktor" else "", plato_ok=rs.flag(r.sosedey >= MIN_NB) if top else "",
+                    aktivnost_ok=rs.flag(r.aktivnost_ok) if r["rol"] in ("faktor", "oat") else "", plato_ok=rs.flag(r.sosedey >= MIN_NB) if top else "",
                     vyrozhdena="", status="proba_zh042", prichina="проба этапа доводки Ж-042 (факторный 3³ или сосед плато)", ekviv_s9="da")
         if r.get("rang_plato") == 1:                     # итоговая точка — та же строка ключа, со статусом вердикта
             base.update(rezhim="zh042_itog", status=best.status, prichina=best.prichina)

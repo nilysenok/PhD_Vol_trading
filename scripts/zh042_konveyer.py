@@ -126,6 +126,13 @@ def dovodka(sid: str):
         p = fix({**base_m, **dict(zip(pick, vs))})
         if prichina_net(sid, p) is None:
             rows.append(dict(rol="faktor", p=p, **evalpt(sw, p)))
+    seen = {pkey(r["p"]) for r in rows}
+    oat = pd.read_csv(L.E1 / f"{sid}_oat_0.04.csv", comment="#")      # в пул — и точки OAT с эталоном (иначе центр уровней их теряет)
+    for _, o in oat.iterrows():
+        q = fix(L.point_from_row(exp, o))
+        if prichina_net(sid, q) is None and pkey(q) not in seen:
+            seen.add(pkey(q))
+            rows.append(dict(rol="oat", p=q, **evalpt(sw, q)))
     for r in rows:
         r["aktivnost_ok"] = int(r["storon_god_2018"] >= MIN_ACT * base_sd)
     pool = sorted([r for r in rows if r["aktivnost_ok"] and np.isfinite(r["obj"])], key=lambda r: -r["obj"])[:N_TOP]
