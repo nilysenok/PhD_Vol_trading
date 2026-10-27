@@ -18,14 +18,24 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import numpy as np
+import yaml
 from numba import njit, prange
 
 SEED = 20261027
 N_SHIFT = 1000
 MIN_LAG = 21
-RANGE_SIDS = ("S5", "S6")
+K3_YAML = Path(__file__).resolve().parent / "designs" / "s9" / "k3.yaml"
+
+
+def k3_sids(path=K3_YAML) -> tuple:
+    """Семьи, исключаемые из A в к3, — из конфига `designs/s9/k3.yaml` (не из кода)."""
+    return tuple(yaml.safe_load(Path(path).read_text(encoding="utf-8"))["isklyuchit_semyi"])
+
+
+RANGE_SIDS = k3_sids()
 
 
 def draw_lags(t_tick: np.ndarray, n_shift: int = N_SHIFT, seed: int = SEED,

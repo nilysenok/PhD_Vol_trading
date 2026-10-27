@@ -1,0 +1,12 @@
+# Эталоны С9 final3 после аудита Н1–Н5 (ЭТ, PR #256; код 9b85bff; σ final3_full, комиссия 0,05%, 1 000 повторов).
+# Заменены эталонами на коде после #259 и #260 (окна отбора платят выход на своём конце; ЭТ2, 27.10.2026). sha256sum:
+38d6f7013b9ee0aa777368f830121a87876ec9afb1011a085182f690a8d25f7e  s9_B_targetirovanie_final3.csv
+160b04dbce0209200051f08b016524e458959cba66038a5d9d44039068617c29  s9_C_rezhim_final3.csv
+422d3326ede3a4a748b4e3e9f28b27aed880feaced583f452454689bf53ada21  s9_C3_tochnost_v_rezultat_final3.csv
+748ea10b7864d4bb92b207c19c4424f7d2f60bc5a1d7ad4ab71a9db723007479  s9_D_zatvor_final3.csv
+600197ccd1428767deae8a91ada398c963c9185e3f76b1181eca3679c8f763df  s9_D_zatvor_harj_final3.csv
+3f2deedc03744ac717698314e94c03e3347054ee5d24956115e118a08a83a479  s9_P1_vesa_tikerov_final3.csv
+e7bca1a4009602efe78c1980f7fe8bc61043bdf7723861539a298a75a7ba8107  s9_P2_multistrategiya_final3.csv
+0bb8bc723f4de724f2a09ee4975404c77462b482a9698de0b67996145c367664  s9_P3_fko_final3.csv
+0c64a6b9e3a42de2ebe4e41e20849a57e9d41a8f5241edfeca6d15132d0b8322  s9_T1_komissii_final3.csv
+906e480d152194054fc89cbbb533ec92a683e261918d03f629f7fa7eb0787abb  s9_T2_podperiody_final3.csv
