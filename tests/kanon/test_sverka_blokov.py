@@ -39,6 +39,8 @@ def pogreshnosti(text):
     back = OK.replace("Ж-003 · 11:00", "Ж-003 · 09:00")
     if sb.sverka(back)[1] != 1:
         f.append("убывание времени не ловится")
+    if sb.sverka("")[1] != 1:
+        f.append("пустой журнал даёт 0")
     return f
 
 
@@ -63,8 +65,21 @@ class T(unittest.TestCase):
         with mock.patch.object(sb, "oshibki_poryadka", lambda blocks: []):
             self.assertTrue(pogreshnosti(OK))
 
-    def test_empty_log(self):
-        self.assertEqual(sb.sverka("")[0][0], "блоков всего: 0")
+    def test_empty_log_is_error(self):
+        for text in ("", "# Журнал без блоков\nтекст\n"):
+            lines, code = sb.sverka(text)
+            self.assertEqual(code, 1)
+            self.assertIn("журнал пуст или не найден", lines)
+
+    def test_missing_file_is_error(self):
+        self.assertEqual(sb.main(["x", "/nonexistent/resheniya.md"]), 1)
+
+    def test_mutant_empty_gives_zero(self):
+        # мутант: пустой журнал → 0; проверка пустоты должна это поймать
+        orig = sb.sverka
+        mutant = lambda t: (lambda r: (r[0], 0) if not sb.razobrat(t) else r)(orig(t))
+        with mock.patch.object(sb, "sverka", mutant):
+            self.assertTrue(pogreshnosti(OK))
 
     def test_tolerant_spaces(self):
         t = "##  Ж-001  ·  9:05\nтекст\nПринят  Ж-001 , 9:06\n"

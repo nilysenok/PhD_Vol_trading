@@ -3,7 +3,7 @@
 ## G1 — тесты трёх скриптов проходят на исправленном коде
 CHECK: /usr/bin/python3 -m unittest discover -s tests/kanon -p 'test_*.py'
 EXPECT: Ran 14 tests, OK
-EVIDENCE: Ran 14 tests in 0.058s, OK (код возврата 0)
+EVIDENCE: 17 tests, OK (код возврата 0); добавлено по Ж-025 п. 2.4: пустой/отсутствующий/без шапки журнал → код 1 «журнал пуст или не найден», мутант «пустой → 0» ловится. Ветки kanon-v24-e1-zhurnaly на origin нет (ls-remote пуст), G5 pending
 
 ## G2 — мутации в памяти роняют проверку (квитанция не засчитывается, правка старой строки проходит, PR без Blok проходит, пропуск номера не ловится)
 CHECK: те же тесты: test_mutant_receipt_not_counted, test_mutant_any_receipt_number, test_mutant_gap_not_caught, test_mutant_edit_passes, test_mutant_only_length_check, test_mutant_blok_not_required, test_mutant_no_check

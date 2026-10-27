@@ -49,6 +49,8 @@ def oshibki_poryadka(blocks):
 def sverka(text):
     """(строки отчёта, код выхода)."""
     blocks = razobrat(text)
+    if not blocks:  # Ж-025 п. 2.4: пустой вывод — ошибка, не успех
+        return ["блоков всего: 0", "журнал пуст или не найден"], 1
     bad = bez_kvitantsii(blocks)
     errs = oshibki_poryadka(blocks)
     retro = [b for b in blocks if b["retro"] and not b["receipt"]]
@@ -64,8 +66,12 @@ def sverka(text):
 
 def main(argv):
     path = argv[1] if len(argv) > 1 else DEFAULT
-    with open(path, encoding="utf-8") as f:
-        lines, code = sverka(f.read())
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        text = ""
+    lines, code = sverka(text)
     print("\n".join(lines))
     return code
 
