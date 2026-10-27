@@ -29,29 +29,39 @@ def top_of(rows: dict, n: int = TOP_N) -> list:
     return out[:n]
 
 
+def _build(r: dict, rows: dict, evaluate, neighbors, key) -> None:
+    ks = []
+    for q in neighbors(r["p"]):
+        k = key(q)
+        if k not in rows:
+            rows[k] = evaluate(q, "sosed")
+        if rows[k].get("sig") is None or rows[k]["sig"] != r.get("sig"):    # сосед с тем же результатом — тот же дизайн, не сосед
+            ks.append(k)
+    r["nb"] = ks
+
+
 def build_pool(rows: dict, evaluate, neighbors, key, n: int = TOP_N, max_rep: int = MAX_REP) -> list:
     """rows {key: строка с 'p','obj','aktivnost_ok','rol'} — посчитанные пробы; evaluate(p, rol) -> строка; neighbors(p) -> [p].
 
-    Круг: топ-n по пулу; у членов топа без соседей достраиваются соседи (рол 'sosed'). Повтор, пока в топ не входит
-    член без соседей; всего круг + max_rep повторов. Возвращает итоговый топ с плато (plato, sosedey, sosedey_pos, nb)."""
+    Круг: топ-n по пулу; у членов топа без соседей достраиваются соседи (рол 'sosed'). Повтор, пока в топ не входит член
+    без соседей; круг + max_rep повторов. Закрывающий проход: у членов итогового топа, всё ещё без соседей, соседи достраиваются
+    (zakryt=1), но топ уже не пересчитывается; `stab`=0, если после закрытия лидеры пула изменились. Возвращает топ с плато."""
     for _ in range(max_rep + 1):
         new = [r for r in top_of(rows, n) if "nb" not in r]
         if not new:
             break
         for r in new:
-            ks = []
-            for q in neighbors(r["p"]):
-                k = key(q)
-                if k not in rows:
-                    rows[k] = evaluate(q, "sosed")
-                if rows[k].get("sig") is None or rows[k]["sig"] != r.get("sig"):    # сосед с тем же результатом — тот же дизайн, не сосед
-                    ks.append(k)
-            r["nb"] = ks
+            _build(r, rows, evaluate, neighbors, key)
     top = top_of(rows, n)
     for r in top:
-        nb = [rows[k] for k in r.get("nb", [])]
-        v = [x["obj"] for x in nb if fin(x["obj"])]
+        r["zakryt"] = int("nb" not in r)
+        if "nb" not in r:
+            _build(r, rows, evaluate, neighbors, key)
+    ids = {id(r) for r in top}
+    stab = int(all(id(r) in ids for r in top_of(rows, n)))
+    for r in top:
+        v = [x["obj"] for x in (rows[k] for k in r["nb"]) if fin(x["obj"])]
         r["plato"] = sum([r["obj"], *v]) / (1 + len(v))
         r["sosedey"], r["sosedey_pos"] = len(v), sum(x > 0 for x in v)
-        r["kray"] = int("nb" not in r or len(v) < MIN_NB)
+        r["kray"], r["stab"] = int(len(v) < MIN_NB), stab
     return top

@@ -36,8 +36,9 @@ def test_sosedi_novyh_liderov_dostraivayutsya_do_stabilizatsii():
     f = lambda x: x                                     # цель растёт вправо: лидер каждый круг сдвигается
     rows, ev, nb = _pool(f, [0, 1])
     top = P.build_pool(rows, ev, nb, KEY, n=1, max_rep=2)
-    assert top[0]["p"] == {"x": 4}                      # круг + 2 повтора: 1 -> 2 -> 3 -> 4; дальше не идём
-    assert "nb" in rows[3] and "nb" not in rows[4] and top[0]["kray"] == 1
+    assert top[0]["p"] == {"x": 4}                      # круг + 2 повтора: 1 -> 2 -> 3 -> 4; дальше лидеров не ищем
+    assert "nb" in rows[3] and top[0]["zakryt"] == 1 and top[0]["stab"] == 0   # закрывающий проход достроил соседей x=4; лидер 5 появился после
+    assert top[0]["kray"] == 1
 
 
 def test_nedopustimye_ne_vhodyat_v_pul():
