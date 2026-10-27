@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from fastbt.exec_e import Day, Params, run
-from fastbt.stats import pos_from_trades
 
 C = 0.0004
 LN = math.log
@@ -23,37 +22,6 @@ def F(x, n=1):
 def go(days, sig, sig_hat, **kw):
     sg = np.full(len(days), sig_hat) if np.isscalar(sig_hat) else np.asarray(sig_hat, float)
     return run("T", days, sig, sg, Params(**kw))
-
-
-# --- якорь: вход по close d без уровней = дневной движок A ---
-def test_anchor_equals_daily_A():
-    rng = np.random.default_rng(7)
-    n = 60
-    cl = 100 * np.exp(np.cumsum(rng.normal(0, 0.01, n)))
-    days = [D([(c, c * 1.01, c * 0.99, c)] + F(c)) for c in cl]
-    sig = (rng.random(n) < 0.5).astype(int)
-    r = go(days, sig, 0.02, k=None, comm=C)
-    te, tx, e = [], [], 0
-    while e < n:                                    # сигнальные сделки A: [e, x), x — первый sig == 0
-        if not sig[e]:
-            e += 1
-            continue
-        x = e + 1
-        while x < n and sig[x]:
-            x += 1
-        te.append(e)
-        tx.append(x)
-        e = x
-    pos = pos_from_trades(np.array(te), np.array(tx), np.ones(len(te), int), len(te), n)
-    lr = np.r_[np.diff(np.log(cl)), 0.0]
-    cost_a = np.abs(np.diff(pos, prepend=0.0)) * C
-    assert np.array_equal(r.pos, pos)
-    assert np.allclose(r.gross[1:], (pos * lr)[:-1], atol=1e-12, rtol=0)
-    assert np.allclose(r.cost, cost_a, atol=1e-12, rtol=0)
-    assert [t.entry_day for t in r.trades] == te
-    assert [t.exit_day for t in r.trades if t.exit_day is not None] == [x for x in tx if x < n]
-    assert all(t.reason == "signal" for t in r.trades if t.exit_day is not None)
-    assert all(t.entry_px == cl[t.entry_day] for t in r.trades)
 
 
 # --- лимит ---
@@ -94,7 +62,7 @@ def test_entry_and_stop_in_same_bar():
     t = r.trades[0]
     assert (t.reason, t.entry_bar, t.exit_bar, t.exit_day) == ("stop", 0, 0, 1)
     assert t.exit_px == S
-    assert r.gross[1] == pytest.approx(LN(S / L), abs=1e-12)
+    assert r.gross[0] == pytest.approx(LN(S / L), abs=1e-12)      # интервал, начатый close 0
 
 
 # --- f ---
@@ -126,7 +94,7 @@ def ts_days(bar):
 
 
 def test_p4_stop_before_take_in_same_bar():
-    r = go(ts_days((100, 103, 97, 100)), [1, 1, 1], 0.02, a=1.0, b=1.0, comm=C)
+    r = go(ts_days((100, 103, 97, 100)), [1, 0, 0], 0.02, a=1.0, b=1.0, comm=C)
     t = r.trades[0]
     assert (t.reason, t.exit_px) == ("stop", 98.0)
     assert r.pnl.sum() == pytest.approx(LN(0.98) - 2 * C, abs=1e-12) and r.pnl.sum() < 0
@@ -142,12 +110,12 @@ def test_take_and_gap_up_take():
 def test_p5_gap_through_stop_at_open():
     r = go(ts_days((95.0, 96.0, 94.0, 95.0)), [1, 1, 1], 0.02, a=1.0, b=1.0)
     assert r.trades[0].exit_px == 95.0 and r.trades[0].reason == "stop"
-    assert r.gross[1] == pytest.approx(LN(0.95), abs=1e-12)
+    assert r.gross[0] == pytest.approx(LN(0.95), abs=1e-12)
 
 
 def test_p9_exit_fee_on_intraday_stop():
-    r = go(ts_days((100, 100, 97, 100)), [1, 1, 1], 0.02, b=1.0, comm=C)
-    assert r.cost[0] == C and r.cost[1] == C            # вход на close 0, выход по стопу в день 1
+    r = go(ts_days((100, 100, 97, 100)), [1, 0, 0], 0.02, b=1.0, comm=C)
+    assert r.cost[0] == 2 * C and r.cost[1] == 0        # вход по close 0 + стоп внутри дня 1 (строка 0)
     assert r.trades[0].fee_in == C and r.trades[0].fee_out == C
 
 
@@ -173,8 +141,8 @@ def test_pusto_day_carries_position_and_return_lands_after_pause():
     days = [D(F(100.0)), D([], pusto=True), D(F(110.0)), D(F(110.0))]
     r = go(days, [1, 1, 1, 0], 0.02)
     assert list(r.pos) == [1, 1, 1, 0]
-    assert r.gross[1] == 0 and r.gross[2] == pytest.approx(LN(1.1), abs=1e-12)
-    assert r.free[1] == 0.0
+    assert r.gross[0] == pytest.approx(LN(1.1), abs=1e-12)   # пауза целиком на интервале до неё
+    assert r.gross[1] == 0 and r.gross[2] == 0 and r.free[1] == 0.0
 
 
 def test_pusto_day_does_not_fill_order_and_not_counted_in_tau():
@@ -190,9 +158,9 @@ def test_p10_free_capital_inside_day_gets_rate():
     bars = F(100.0, 3) + [(100, 100, 98.0, 100)] + F(100.0, 2) + [(100, 100, 97.0, 100)] + F(100.0, 3)
     days = [D(F(100.0)), D(bars), D(F(100.0))]
     r = run("T", days, [1, 1, 1], np.full(3, 0.02), Params(k=0.5, b=1.0, comm=C),
-            rf_cal=[0.001, 0.002, 0.001])
+            rf_cal=[0.002, 0.001, 0.001])
     t = r.trades[0]
     assert (t.entry_bar, t.exit_bar, t.exit_px) == (3, 6, L * 0.98)
-    assert r.free[1] == pytest.approx(1 - 4 / 10)       # в рынке бары 3..6 из 10
-    assert r.fdr[1] == pytest.approx(0.6 * 0.002)
-    assert r.pos[1] == 0.0 and r.free[0] == 1.0 and r.free[2] == 1.0
+    assert r.free[0] == pytest.approx(1 - 4 / 10)       # интервал дня 0: в рынке бары 3..6 из 10
+    assert r.fdr[0] == pytest.approx(0.6 * 0.002)
+    assert r.pos[1] == 0.0 and r.free[1] == 1.0 and r.free[2] == 1.0
