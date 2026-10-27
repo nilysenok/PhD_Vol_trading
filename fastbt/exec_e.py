@@ -14,6 +14,7 @@ rf_cal[t] = rf/365·календарные дни [t, след. торговый
 Сигнал: sig == 0 на close любого дня удержания, включая день лимитного входа → выход по close
 (позиция не доживает до d+2); zakrytie_d1 и повтор — только при sig[d+1] == 1. Повторный вход как A:
 после stop/take/vremya/signal при sig == 1 — снова на том же close (cooldown A — параметр RM, тут 0).
+Н5: позиция, открытая на последней строке окна, платит комиссию выхода в cost последней строки.
 ↺ A не задаёт неисполненную заявку: вход блокируется до sig == 0. Тейк в баре входа не проверяется.
 """
 from __future__ import annotations
@@ -39,6 +40,8 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None) -> Result:
     for j, i in enumerate(r.ix):
         r.step(j, i)
     n = len(days)
+    if r.ix and r.tr is not None:                  # Н5: открытая на последней строке окна платит выход
+        r.cost[r.ix[-1]] += p.comm
     gross, free = np.zeros(n), np.zeros(n)
     for j, i in enumerate(r.ix):                   # день i → интервал, начатый предыдущим торговым днём
         if j:

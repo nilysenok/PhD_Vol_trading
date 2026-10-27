@@ -25,14 +25,15 @@ def a_trades(sig):
     return te, tx
 
 
-@pytest.mark.parametrize("seed", [7, 11])
-def test_anchor_equals_A_msp_portfolio(seed):
+@pytest.mark.parametrize("seed,last", [(7, 0), (11, 0), (3, 1), (5, 1)])
+def test_anchor_equals_A_msp_portfolio(seed, last):
     rng = np.random.default_rng(seed)
     n = 80
     cl = 100 * np.exp(np.cumsum(rng.normal(0, 0.01, n)))
     days = [D([(c, c * 1.01, c * 0.99, c)] + F(c)) for c in cl]
     sig = (rng.random(n) < 0.5).astype(int)
-    sig[-1] = 0                                     # A платит выход на последней строке окна (Н5)
+    sig[-1] = last                                  # last=1: открыта на конце, обе стороны платят выход (Н5)
+    sig[-2] = 1 if last else sig[-2]
     dates = pd.bdate_range("2021-03-01", periods=n)
     rate = pd.Series([0.07, 0.085], pd.to_datetime(["2021-01-01", "2021-05-10"]))
     rf_cal = rate.reindex(dates, method="ffill").values / 365.0 * msp.cal_days(dates)
@@ -47,7 +48,7 @@ def test_anchor_equals_A_msp_portfolio(seed):
     assert np.allclose(r.pnl, port["r"].values, **tol)
     assert np.allclose(r.fdr, port["fdr"].values, **tol)
     assert np.allclose(r.pnl + r.fdr - rf_cal, port["excess"].values, **tol)
-    assert [t.entry_day for t in r.trades] == te and [t.exit_day for t in r.trades] == tx
+    assert [t.entry_day for t in r.trades] == te and [t.exit_day for t in r.trades] == [x if x < n else None for x in tx]
 
 
 def test_no_rate_on_day_of_close_entry():
