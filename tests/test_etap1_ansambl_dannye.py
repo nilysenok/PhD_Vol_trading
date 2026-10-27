@@ -45,6 +45,52 @@ def test_ansambl_iz_dvukh_tochek_otlichaetsya_i_mutatsiya_golos(evr):
     assert not _same(s, g)                        # srednee ≠ golos: режим подменить нельзя незаметно
 
 
+def _spy_weights(monkeypatch):
+    from fastbt import etap1_ansambl_eval as E
+    W, real = [], E.run_e1
+
+    def spy(*a, **kw):
+        W.append(np.asarray(kw["w"], float))
+        return real(*a, **kw)
+    monkeypatch.setattr(E, "run_e1", spy)
+    return W
+
+
+def _two(evr):
+    from fastbt.etap1_eval import YAKOR
+    c = {**YAKOR, **PT, "razmer": "ravnyy"}
+    nb = dict(c)
+    for k in evr.sk.sig_names:
+        v = evr.full(c)[k]
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            nb[k] = int(round(v * 1.5)) if isinstance(v, int) else v * 1.5
+            break
+    return c, nb
+
+
+def test_ves_m_dohodit_do_dvizhka(evr, monkeypatch):
+    """Вес сделки в движке = размер центра × |среднее позиций|: при расхождении точек есть дробные веса."""
+    W = _spy_weights(monkeypatch)
+    c, nb = _two(evr)
+    evr.evaluate_ens(c, [c, nb], "srednee")
+    w = np.concatenate(W)
+    assert ((w > 0) & (w < 1)).any() and set(np.unique(w[(w == 0) | (w == 1)])) <= {0.0, 1.0}
+    assert np.allclose(w[(w > 0) & (w < 1)], 0.5)                     # две точки: |m| = 1/2 там, где одна из них не в позиции
+
+
+def test_mutatsiya_ves_m_poteryan_lovitsya(evr, monkeypatch):
+    from fastbt import etap1_ansambl_eval as E
+    c, nb = _two(evr)
+    ok = evr.evaluate_ens(c, [c, nb], "srednee")
+    real = E.combine
+    monkeypatch.setattr(E, "combine", lambda P, mode: (lambda d, w: (d, (w > 0).astype(float)))(*real(P, mode)))   # вес |m| → 1
+    W = _spy_weights(monkeypatch)
+    bad = evr.evaluate_ens(c, [c, nb], "srednee")
+    w = np.concatenate(W)
+    assert not ((w > 0) & (w < 1)).any()                              # первая проверка теста веса упала бы
+    assert not _same(ok, bad)                                         # и результат движка изменился
+
+
 def test_sverka_s9_tochki_vosproizvodyatsya(evr):
     from fastbt.etap1_ansambl_eval import sverka_s9
     from fastbt.etap1_eval import YAKOR

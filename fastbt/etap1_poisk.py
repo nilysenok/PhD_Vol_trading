@@ -110,16 +110,30 @@ def tolko_itog(sid: str, evaluate, s9_check, out: Path = OUT, run_id: str = "", 
     f = f[f.zapusk == old["zapusk"]] if (f.zapusk == old["zapusk"]).any() else f[f.zapusk == f.zapusk.max()]
     rows = [{**{k: _coerce(r[k], axes[k]) for k in axes}, "objective": float(r["objective"])} for _, r in f.iterrows()]
     fact = dict(rows=rows, keys=plan, grid={a: axes[a] for a in plan})
-    led, known = Ledger(evaluate), {pkey({k: r[k] for k in axes}) for r in rows}
+    led = Ledger(evaluate)       # Ж-051: Ledger восстанавливается ДО досчёта (Моррис с тем же seed + строки faktor), иначе N завышен
+    sd.morris_screen(led, axes, old["morris_period"], n_paths=S["r"], seed=S["seed"], objective=obj_morris)
+    for r in rows:
+        led({k: r[k] for k in axes}, "train")
+    if led.n_unique != int(old["N_do_dosheta"]):
+        raise ValueError(f"{sid}: Ledger не восстановлен: {led.n_unique} ≠ N_do_dosheta {int(old['N_do_dosheta'])}")
     picked = pick_center(led, fact, axes, float(old["pbo"]), s9_check, S["yakor"])
-    added = len({k for k, _ in led.cache} - known)
     head = {k: old[k] for k in ("N_morris", "N_faktor", "N_do_dosheta", "N_unikalnykh", "N_pbo", "pbo")}
-    head["N_unikalnykh"] += added
+    head["N_unikalnykh"] = led.n_unique         # все уникальные точки: Моррис + факторный + пробы плато, без двойного счёта
     psr = lambda x: dict(T=len(x), psr=nan, dsr=nan, N_dsr=head["N_unikalnykh"])        # noqa: E731  (справочно, нужен полный M)
     row = itog_row(sid, run_id, old["morris_period"], plan, axes, led, picked, head, psr, old.get("G4_osi", nan))
     p = out / f"{sid}_itog.csv"
     if p.exists() and next(ln for ln in p.read_text(encoding="utf-8").splitlines() if not ln.startswith("#")).split(",") != list(row):
         p = out / f"{sid}_itog_v2.csv"
+    append_csv(p, [row])
+    return row
+
+
+def popravka_N(sid: str, n: int, out: Path = OUT, run_id: str = "") -> dict:
+    """Ж-051: допишет копию последней строки S{k}_itog_v2.csv с исправленным N (N_unikalnykh, N_dsr); старые строки не трогаются."""
+    p = out / f"{sid}_itog_v2.csv"
+    p = p if p.exists() else out / f"{sid}_itog.csv"
+    row = pd.read_csv(p, comment="#").iloc[-1].to_dict()
+    row.update(zapusk=run_id, N_unikalnykh=int(n), N_dsr=int(n))
     append_csv(p, [row])
     return row
 
