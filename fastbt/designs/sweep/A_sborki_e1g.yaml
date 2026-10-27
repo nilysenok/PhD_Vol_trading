@@ -1,0 +1,29 @@
+# Сборки A для Э1-г (Ж-031#Э1-г), дискретный набор, без непрерывной оптимизации весов. Коммит до счёта.
+# Схема sweep-setka v1 (docs/otchety/2026-10-27_setki_e1b.md §2); obj.kind = A_sborka (контракт sweep_evaluate §2).
+v: 1
+format: sweep-setka
+punkt: "Ж-031#Э1-г"
+obekt: {tip: A_sborka, sostav: "топ-1 по плато каждой S1–S6 после Э1-в (или исходная, если не прошла)"}
+etalon: A_ishodnaya   # равные веса 1/cnt_d по парам (тикер, семья), лимитов нет, нетто не берётся (s9.py:567-582)
+period: {tsel: tune2018, kontrol: ctrl2019, validation: zakryto}
+komissiya: {otbor: 0.0004, pereschet: [0.00035]}
+rezhimy: [faktornyy_polnyy]   # 3 × 4 × 3 = 36 точек, все
+
+bloki:
+  sborka:
+    parametry:
+      - {imya: vesa, ishodnoe: ravnye, setka: [ravnye, obratnaya_vol, paritet_riska], dostup: obertka,
+         obosnovanie: "равные — как A; 1/σ пары за 60 дней до d; паритет риска — равный вклад в σ портфеля по ковариации 60 дней до d"}
+      - {imya: limit_pozitsiy, ishodnoe: "net", setka: ["net", 3, 5, 8], dostup: obertka,
+         obosnovanie: "одновременно открытых пар не больше L; новые сверх L не открываются (FIFO), при равенстве в день — по силе сигнала; вес слота 1/L"}
+      - {imya: limit_na_strategiyu, ishodnoe: "net", setka: ["net", 2, 4], dostup: obertka,
+         obosnovanie: "открытых пар одной стратегии не больше K; не даёт одной семье занять все слоты"}
+
+fiksirovano:
+  okno_vesov: 60          # дней; одно окно, чтобы не плодить N; данные только до d−1
+  netto: "net"            # как A: позиции пар по тикеру не суммируются
+  svobodnyy_kapital: "под ключевую ставку ЦБ, как A (s9.py:594-599)"
+  plecho: "нет; Σ|вес| ≤ 1"
+
+N: {faktornyy_polnyy: 36, itogo: 36}
+vybor: "топ-2 по цели на tune2018 при плато ≥ 3 соседей; ctrl2019 — контроль"
