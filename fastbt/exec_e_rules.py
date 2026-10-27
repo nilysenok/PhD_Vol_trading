@@ -12,11 +12,11 @@ EPS = 1e-6                                      # допуск на сетку �
 
 
 def ceil_tick(x: float, tick: float) -> float:
-    return math.ceil(x / tick - EPS) * tick
+    return math.ceil(x / tick - EPS) * tick if tick else x          # tick = 0 — без округления (касание)
 
 
 def floor_tick(x: float, tick: float) -> float:
-    return math.floor(x / tick + EPS) * tick
+    return math.floor(x / tick + EPS) * tick if tick else x
 
 
 def take_mult(p, sg: float) -> float | None:
