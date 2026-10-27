@@ -14,7 +14,9 @@ TOP_K = 3
 SHAPKA = "# реестр только дополняется (otbor_statistika п. 4); разработка, train 2018–2019; validation не открыта\n"
 POLYA = ["strategiya", "klyuch", "rezhim", "istochnik", "tune_004", "ctrl_004", "tune_0035",
          "ctrl_0035", "storon_god", "plato", "sosedey", "aktivnost_ok", "plato_ok",
-         "vyrozhdena", "status", "prichina"]
+         "vyrozhdena", "status", "prichina", "ekviv_s9"]
+STATUS_STARYJ = "nedeystvitelny_oshibka_otsenshchika"
+PRICHINA_STARYJ = "недействительны: ошибка оценщика (двойной знак, #326/#328)"
 FAJLY = [("oat_0.04", "004", "oat"), ("oat_0.035", "0035", "oat"),
          ("factorial_0.04", "004", "factorial"), ("factorial_0.035", "0035", "factorial"),
          ("optuna_0.04", "004", "optuna"), ("optuna_0.035", "0035", "optuna"),
@@ -54,11 +56,7 @@ def klyuch_str(kanon):
 
 
 def num(row, *names):
-    for n in names:
-        v = norm(row.get(n))
-        if isinstance(v, float):
-            return v
-    return None
+    return next((v for v in (norm(row.get(n)) for n in names) if isinstance(v, float)), None)
 
 
 def sobrat_tablicy(s, papka=NOVYE):
@@ -84,10 +82,8 @@ def sobrat_tablicy(s, papka=NOVYE):
 
 
 def baza_storon(s, papka=NOVYE):
-    for r in chitat(f"{papka}/{s}_oat_0.04.csv"):
-        if r.get("param") == "base":
-            return num(r, "tune_sdelok_y")
-    return None
+    return next((num(r, "tune_sdelok_y") for r in chitat(f"{papka}/{s}_oat_0.04.csv")
+                 if r.get("param") == "base"), None)
 
 
 def kandidaty(s, papka=NOVYE):
@@ -115,42 +111,45 @@ def ocenit(d, baza, kandidat, porog=POROG_AKT, min_sos=MIN_SOSEDEY):
             "status": status, "prichina": why}
 
 
-def godovoy(sr_dnevnoy):
-    """Ledger хранит дневной Шарп; в таблицах — годовой (проверено: отношение = sqrt(252))."""
-    return sr_dnevnoy * 252 ** 0.5
-
-
-flag = lambda x: "" if x is None else str(int(x))  # noqa: E731
+# ledger хранит дневной Шарп, таблицы — годовой (отношение = sqrt(252))
+godovoy = lambda sr: sr * 252 ** 0.5  # noqa: E731
+flag =lambda x: "" if x is None else str(int(x))  # noqa: E731
 fmt = lambda x: "" if x is None else repr(x)  # noqa: E731
 
 
-def stroki_novye(s):
-    tab, baza, kand = sobrat_tablicy(s), baza_storon(s), kandidaty(s)
-    led = json.load(open(f"{NOVYE}/_ledger/{s}/ledger.json", encoding="utf-8"))
-    out = []
+def stroka(s, k, d, istochnik):
+    return {"strategiya": s, "klyuch": klyuch_str(k), "istochnik": istochnik,
+            "rezhim": "|".join(sorted(d["rezhimy"], key=lambda m: PRIORITET.get(m, 9))),
+            "tune_004": fmt(d.get("tune_004")), "ctrl_004": fmt(d.get("ctrl_004")),
+            "tune_0035": fmt(d.get("tune_0035")), "ctrl_0035": fmt(d.get("ctrl_0035")),
+            "storon_god": fmt(d.get("storon")), "plato": fmt(d.get("plato")),
+            "sosedey": fmt(d.get("sos"))}
+
+
+def proby(s, papka):
+    """Уникальные пробы: таблицы папки плюс ключи ledger -> {kanon: сведения}."""
+    tab, path = sobrat_tablicy(s, papka), f"{papka}/_ledger/{s}/ledger.json"
+    led = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
     for key, obj in led.items():
-        k = kanon_ledger(key)
-        d = tab.get(k, {"rezhimy": {"ledger"}})
+        d = tab.setdefault(kanon_ledger(key), {"rezhimy": {"ledger"}})
         d.setdefault("tune_004", godovoy(obj))
-        row = {"strategiya": s, "klyuch": klyuch_str(k), "istochnik": "sweep_e1v2",
-               "rezhim": "|".join(sorted(d["rezhimy"], key=lambda m: PRIORITET.get(m, 9))),
-               "tune_004": fmt(d.get("tune_004")), "ctrl_004": fmt(d.get("ctrl_004")),
-               "tune_0035": fmt(d.get("tune_0035")), "ctrl_0035": fmt(d.get("ctrl_0035")),
-               "storon_god": fmt(d.get("storon")), "plato": fmt(d.get("plato")),
-               "sosedey": fmt(d.get("sos"))}
-        row.update(ocenit(d, baza, k in kand))
+    return tab
+
+
+def stroki_novye(s):
+    baza, kand = baza_storon(s), kandidaty(s)
+    out = []
+    for k, d in proby(s, NOVYE).items():
+        row = stroka(s, k, d, "sweep_e1v2")
+        row.update(ocenit(d, baza, k in kand), ekviv_s9="ozhidaet")
         out.append(row)
     return out
 
 
 def stroki_starye(s):
-    path = f"{STARYE}/_ledger/{s}/ledger.json"
-    if not os.path.exists(path):
-        return []
-    return [{"strategiya": s, "klyuch": klyuch_str(kanon_ledger(k)), "rezhim": "ledger",
-             "istochnik": "sweep_e1", "tune_004": fmt(godovoy(v)), "status": "do_ispravleniya_znaka",
-             "prichina": "до исправления знака, не используется (Ж-038)"}
-            for k, v in json.load(open(path, encoding="utf-8")).items()]
+    """Класс «недействительны: ошибка оценщика»: ledger и таблицы sweep_e1 (OAT, Моррис, факториал, Optuna)."""
+    return [dict(stroka(s, k, d, "sweep_e1"), status=STATUS_STARYJ, prichina=PRICHINA_STARYJ)
+            for k, d in proby(s, STARYE).items()]
 
 
 kluch_strok = lambda r: (r["strategiya"], r["istochnik"], r["klyuch"])  # noqa: E731

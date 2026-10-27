@@ -104,10 +104,30 @@ def test_vse_proby_ledger_v_reestre(reestr):
             assert ks == {R.klyuch_str(R.kanon_ledger(k)) for k in led}
 
 
-def test_starye_proby_otdelnyj_klass(reestr):
-    st = {r["status"] for r in reestr if r["istochnik"] == "sweep_e1"}
-    assert st == {"do_ispravleniya_znaka"}
-    assert all(r["status"] != "do_ispravleniya_znaka" for r in reestr if r["istochnik"] == "sweep_e1v2")
+def test_starye_proby_nedeystvitelny(reestr):
+    star = [r for r in reestr if r["istochnik"] == "sweep_e1"]
+    assert {r["status"] for r in star} == {R.STATUS_STARYJ}
+    assert all("двойной знак, #326/#328" in r["prichina"] for r in star)
+    assert all(r["status"] != R.STATUS_STARYJ and r["ekviv_s9"] == "ozhidaet"
+               for r in reestr if r["istochnik"] == "sweep_e1v2")
+
+
+def test_starye_tablicy_tozhe_v_reestre(reestr):
+    for s in R.STRATEGII:
+        ks = {r["klyuch"] for r in reestr if r["strategiya"] == s and r["istochnik"] == "sweep_e1"}
+        assert {R.klyuch_str(k) for k in R.sobrat_tablicy(s, R.STARYE)} <= ks
+    assert any(r["rezhim"] not in ("ledger",) for r in reestr if r["istochnik"] == "sweep_e1")
+
+
+def test_staryj_klass_ne_byvaet_kandidatom(reestr):
+    assert not [r for r in reestr if r["istochnik"] == "sweep_e1" and r["status"] == "kandidat_zamorozki"]
+    for s in R.STRATEGII:
+        assert all(r["status"] == R.STATUS_STARYJ for r in R.stroki_starye(s))
+
+
+def test_mutaciya_starye_cherez_ocenit_dayut_kandidata():
+    # мутация: старую пробу оценили бы по правилам v2 — стала бы кандидатом; тест выше такое ловит
+    assert R.ocenit(tochka(8.0, 20), BAZA, True)["status"] == "kandidat_zamorozki" != R.STATUS_STARYJ
 
 
 def test_kandidaty_proshli_pravila_i_net_dublej(reestr):
