@@ -116,3 +116,35 @@ def test_sdvig_reads_comma_and_semicolon(tmp_path):
     assert list(a["ryad"]) == list(b["ryad"]) == ["hyb_h1", "hyb_h5"]
     assert a["corr"].tolist() == b["corr"].tolist() == [0.87, 0.82]
     assert "допущены" in T.sdvig_line(a)
+
+
+def _raz_world():
+    eng, grid = world(seed=5), mini_grid()
+    df, gs, bases = C.run_setka(eng, "hyb", grid, 100, n_shift=60, log=lambda *_: None)
+    top = df.loc[df[f"sharpe_{C.tag(C.COMM_SEL)}"].idxmax()]
+    return eng, bases, eng.g_row(gs[(top["h"], top["family"], top["label"])]), top
+
+
+def test_razlozhenie_equals_setka_both_commissions():
+    eng, bases, g, top = _raz_world()
+    raz = T.razlozhenie(eng, bases, g, 100)
+    T.proverka_razlozheniya(raz, top)                                   # < 1e-6 при 0,035 и 0,04
+    for r in (x for x in raz if x["rezhim"] == "разложение"):
+        t = C.tag(r["comm_pct"] / 100)
+        assert r["chast1_k3_minus_A"] + r["chast2_C_minus_k3"] == pytest.approx(top[f"d_vs_A_{t}"], abs=1e-6)
+
+
+def test_mutation_swapped_series_in_razlozhenie_is_caught():
+    eng, bases, g, top = _raz_world()
+    b = bases[C.COMM_SEL]
+    b.pK = b.pK.assign(excess=b.pK["excess"] * 0.97 + 1e-4)             # подмена ряда к3 в разложении
+    with pytest.raises(AssertionError, match="не сходится"):
+        T.proverka_razlozheniya(T.razlozhenie(eng, bases, g, 100), top)
+
+
+def test_mutation_other_gate_in_razlozhenie_is_caught():
+    eng, bases, g, top = _raz_world()
+    g2 = 1.0 - g                                                        # другой затвор: ряд C не тот
+    assert not (g2 == g).all()
+    with pytest.raises(AssertionError):
+        T.proverka_razlozheniya(T.razlozhenie(eng, bases, g2, 100), top)
