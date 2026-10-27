@@ -51,7 +51,7 @@ class Sweep:
         comm = self.comm[0] if comm_pct is None else comm_pct / 100.0
         p = {**self.spec.base, **params}
         row = ss.metrics_row(self._df(p, comm, years), years)
-        if period != "validation" and comm == self.comm[0]:      # проба = точка при комиссии ОТБОРА (первая в comm_pct)
+        if period == "setup" and comm == self.comm[0]:           # проба = точка на периоде отбора (настройка 2018) при комиссии отбора (первая в comm_pct)
             with self._lock:
                 self.ledger[pkey(p)] = row["sr_d"]
         mult = self.n_mult() if period == "validation" else 1
