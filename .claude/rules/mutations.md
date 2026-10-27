@@ -7,7 +7,7 @@
 | № | Мутация (что подложить) | Тема | PR, где поймана | Тест-образец |
 |---|---|---|---|---|
 | 1 | σ̂ сдвинута на +1 день (используется прогноз, известный завтра) | сдвиг входа | #271 (шаг 4); раньше #234/#235 (S0), аудит #237 | `tests/test_s9_shag4.py::test_sdvig_sigma_plus_odin_lovitsya`; `tests/audit_fastbt/test_01_sigma_align.py::test_dev_align_never_uses_future_rows` |
-| 2 | Касание уровня (low = L) засчитано как исполнение лимита | касание уровня | постановка E §8 п. 3; PR с исполнением E ещё не слит | образца нет: появится в PR E0; ближайший по теме — `tests/audit_fastbt/test_14_stop_take_bar.py::test_take_only_no_cooldown` |
+| 2 | Касание уровня (low = L) засчитано как исполнение лимита | касание уровня | #290 (в работе) | `tests/test_exec_e.py` после слияния #290; ближайший по теме до слияния — `tests/audit_fastbt/test_14_stop_take_bar.py::test_take_only_no_cooldown` |
 | 3 | Тейк и стоп в одном баре — порядок перевёрнут | порядок событий в баре | #252 (аудит FA2a) | `tests/audit_fastbt/test_14_stop_take_bar.py::test_both_levels_in_bar_long_stop_wins` |
 | 4 | Гэп через стоп/тейк исполнен по уровню, а не по открытию | гэп | #252 (аудит FA2a) | `tests/audit_fastbt/test_15_gap.py::test_gap_down_through_stop_recovers_inside_bar` |
 | 5 | Комиссия выхода не взята на последнем баре позиции (граница окна, Н5) | комиссия на границе | #252 (xfail) → #254 (исправление) | `tests/audit_fastbt/test_04_commission.py::test_open_position_at_window_end_pays_entry_and_exit` |
@@ -19,11 +19,14 @@
 | 11 | Справочный выбор при 0,05 % берётся из данных 0,04 % | комиссия, выбор при другой ставке | #269 (шаг 3′, коммит 897352e) | `tests/test_s9_shag_db_run.py::test_run_ref_choice_differs_from_main_and_mutation_caught` |
 | 12 | ddof=0 вместо ddof=1 в основной колонке Шарпа | одно определение метрики | #279 | `tests/test_s9_shag_dsharpe.py::test_mutation_ddof0_in_main_column_caught` |
 | 13 | Δ Шарпа взята из бутстрапа ЛВ, а не как разность табличных Шарпов | одно определение метрики | #279 | `tests/test_s9_shag_dsharpe.py::test_mutation_lw_delta_caught` |
-| 14 | N в DSR подменён на 1 (DSR обязан вырасти) | N в поправке | #287 (на 27.10 открыт, не слит) | `tests/test_metriki_e.py::test_mutaciya_p12_N_v_edinicu_dsr_dolzhen_vyrasti` |
+| 14 | N в DSR подменён на 1 (DSR обязан вырасти) | N в поправке | #287 (метрики E, слит 27.10) | `tests/test_metriki_e.py::test_mutaciya_p12_N_v_edinicu_dsr_dolzhen_vyrasti` |
 | 15 | Цель (RV на горизонте h) с окном, заходящим за 31.12.2021 (утечка RV 2022) | цель за границей периода | шаг 4: #271 → #283, до слияния (коммит d62825e) | `tests/test_s9_shag4_boy.py::test_cut_target_mutatsii_lovyatsya` |
 | 16 | Ставка на 2018–2021 вытянута назад константой (`bfill`) | константа в данных | находка #236; исправление и тест #267 | `tests/test_stavka.py::test_restored_rate_backfilled_constant_is_caught` |
+| 17 | Чтение 5-минутных баров за пределами периода | чтение за границей периода | #288 | `tests/test_bars5m.py::test_mutatsiya_chteniya_za_predelami_lovitsya` |
+| 18 | E-const (σ̂ константой) считается с текущим днём | текущий день в σ̂ | #289 | `tests/test_sigma_e.py::test_mutaciya_const_s_tekushchim_dnem_lovitsya` |
+| 19 | Топ-10 по обороту текущего года вместо прошлого | текущий год в отборе | #289 | `tests/test_likvidnost_e.py::test_mutaciya_top10_tekushchego_goda_lovitsya` |
 
-Остальные мутации постановки E §8 (исполнение по барам дня d вместо d+1; E0 при q = 0 ≠ A побайтно; сила сигнала по d+1; комиссия при стопе внутри дня; ставка на капитал, освободившийся внутри дня; топ-10 по обороту текущего года) обязательны для PR семьи E с первого дня и вносятся в таблицу строками, когда появятся тесты.
+Слиты #288, #289; их мутации внесены в строки 17–19. Остальные мутации постановки E §8 (исполнение по барам дня d вместо d+1; E0 при q = 0 ≠ A побайтно; сила сигнала по d+1; комиссия при стопе внутри дня; ставка на капитал, освободившийся внутри дня) обязательны для PR семьи E с первого дня и вносятся в таблицу строками, когда появятся тесты.
 
 Правила пользования:
 - проверяющий подкладывает мутацию в отдельной копии, не в основном дереве (`testy.md` п. 2);
