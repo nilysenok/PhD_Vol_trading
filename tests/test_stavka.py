@@ -108,6 +108,55 @@ def test_restored_rate_backfilled_constant_is_caught():
         check_series(x)
 
 
+D0, D1 = pd.Timestamp("2021-12-30"), pd.Timestamp("2022-01-03")      # позиция d -> d_next через новогодние
+SEAM_DAILY = 4 * 0.085 / 365.0                                          # дни 30.12, 31.12, 01.01, 02.01
+
+
+def seam_accrual(r: pd.Series, days: pd.DatetimeIndex) -> float:
+    """Ставка за набор календарных дней по ряду r (ffill — как asof), доли."""
+    return float(sum(r.asof(d) for d in days) / 365.0)
+
+
+def check_seam(r: pd.Series, days: pd.DatetimeIndex) -> None:
+    """Стык 2021/2022: 8,50 на обеих датах; ряд без дубля и дыры; ровно 4 календарных дня [30.12, 03.01),
+    начисление = ряд владельца. У обеих сторон стыка значение одно (8,50), поэтому сдвиг на день ловится
+    числом дней (дыра/двойной учёт) и шагом 20.12 (test_each_decision_date...), а не значением на стыке."""
+    assert r.index.is_unique and r.index.is_monotonic_increasing, "дубль даты на стыке"
+    assert r.asof(D0) == pytest.approx(0.085) and r.asof(D1) == pytest.approx(0.085)
+    assert len(days) == 4 and days[0] == D0 and days[-1] == D1 - pd.Timedelta(days=1), "дыра или двойной учёт дня"
+    cal = msp.cal_days(pd.DatetimeIndex([D0, D1]), forward=True)
+    assert list(cal) == [4.0, 1.0], "дни ставки позиции 30.12 -> 03.01"
+    assert seam_accrual(r, days) == pytest.approx(SEAM_DAILY, abs=1e-15)
+    assert seam_accrual(r, days) == pytest.approx(seam_accrual(owner(), days), abs=1e-15)   # = ряд владельца
+    win = daily(r, pd.date_range("2021-12-20", "2022-01-10"))
+    assert win.notna().all() and (win == 0.085).all(), "дыра в ряду на стыке"
+
+
+def test_seam_2021_2022_values_and_accrual():
+    check_seam(msp.rate_cbr(), pd.date_range(D0, D1, inclusive="left"))
+
+
+def test_seam_mutations_are_caught():
+    r, ok = msp.rate_cbr(), pd.date_range(D0, D1, inclusive="left")
+    for bad in (pd.date_range(D0, D1),                                                       # оба края: 5 дней, двойной учёт
+                pd.date_range(D0, D1, inclusive="neither"),                                  # 3 дня, дыра
+                pd.date_range(D0 + pd.Timedelta(days=1), D1 + pd.Timedelta(days=1), inclusive="left")[1:],   # сдвиг +1: 3 дня
+                pd.date_range(D0 - pd.Timedelta(days=1), D1 - pd.Timedelta(days=1), inclusive="left")[:3]):  # сдвиг −1: 3 дня
+        with pytest.raises(AssertionError):
+            check_seam(r, bad)
+    k = pd.read_parquet(msp.KEY_RATE)
+    p = k.set_index(pd.to_datetime(k["date"]))["value"].sort_index() / 100.0
+    dup = pd.concat([owner(), p[p.index >= pd.Timestamp("2021-12-01")]])                      # разреза нет: дубль 20.12
+    with pytest.raises(AssertionError):
+        check_seam(dup, ok)
+    hole = r[(r.index < pd.Timestamp("2021-12-01")) | (r.index > pd.Timestamp("2022-02-01"))]  # ряд без 8,50
+    with pytest.raises(AssertionError):
+        check_seam(hole, ok)
+    const75 = pd.Series(0.075, index=r.index)
+    with pytest.raises(AssertionError):
+        check_seam(const75, ok)
+
+
 def test_dev_paths_use_rate_cbr_not_restored():
     for f in ("fastbt/s9.py", "fastbt/fast_grid.py", "scripts/analysis/s9_shag0.py"):
         src = (ROOT / f).read_text(encoding="utf-8")
