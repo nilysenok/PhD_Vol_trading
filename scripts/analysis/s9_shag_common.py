@@ -13,6 +13,7 @@ import yaml
 
 from fastbt import fast_kontrol as fk
 from fastbt import s9, shag0
+from fastbt.shag_c import USLOVIE1, usloviya
 from fastbt.s9_stats import lw_sharpe_diff
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -65,12 +66,18 @@ def check_k3(eng, k3_pos: np.ndarray, sids=None) -> None:
         raise AssertionError("к3: S5/S6 не выключены или тронуты прочие семьи")
 
 
-def make_base(eng, comm: float, reps: int) -> dict:
+def uslovie1_yaml(podhod: str) -> str:
+    """Условие 1 С8 из сетки (Ъ 27.10, 13:05: strogo); нет ключа — умолчание `fastbt.shag_c.USLOVIE1`."""
+    y = yaml.safe_load((DESIGNS / f"setka_{podhod}_v3.yaml").read_text(encoding="utf-8"))
+    return y.get("uslovie1", USLOVIE1)
+
+
+def make_base(eng, comm: float, reps: int, uslovie1: str = USLOVIE1) -> dict:
     A = eng.port(eng.A_row, comm=comm)
     k3 = fk.k3_positions(np.asarray(eng.A_row, float), eng.r["pair"], eng.pairs)
     check_k3(eng, k3)
     p3 = eng.port(k3, comm=comm)
-    return dict(A=A, k3=p3, mA=s9.metrics(A), m3=s9.metrics(p3), comm=comm, reps=reps)
+    return dict(A=A, k3=p3, mA=s9.metrics(A), m3=s9.metrics(p3), comm=comm, reps=reps, uslovie1=uslovie1)
 
 
 def eval_point(eng, K, base: dict, pos, g) -> dict:
@@ -89,10 +96,9 @@ def eval_point(eng, K, base: dict, pos, g) -> dict:
     pk2 = fk.p_perm(row["sharpe"], sh)
     row["sharpe_k2_med"], row["n_shift_k2"] = float(np.median(sh)), len(sh)
     row["p_vs_k2"] = pk2
-    row["usl1"] = bool(s9.c8(m, base["mA"])["passed"])
-    row["usl2"] = bool(row["sharpe"] > row["sharpe_k3"])
-    row["usl3"] = bool(pk2 < ALPHA)
-    row["passed_v2"] = bool(row["usl1"] and row["usl2"] and row["usl3"])
+    u = usloviya(m, base["mA"], base["m3"], pk2, base.get("uslovie1", USLOVIE1))
+    row.update(usl1=u["usl1_c8"], usl2=u["usl2_k3"], usl3=u["usl3_k2"], passed_v2=u["proshla_c8v2"],
+               u1_strogo=u["u1_strogo"], u1_odno_isklyuchenie=u["u1_odno_isklyuchenie"])  # u1_odno_* — справочно
     return row
 
 
