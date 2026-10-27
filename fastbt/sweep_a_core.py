@@ -122,12 +122,15 @@ def portfolio(pn: Panel, g: np.ndarray, w: np.ndarray, comm: float, we: np.ndarr
     gp, wp = np.vstack([np.zeros((1, g.shape[1])), g[:-1]]), np.vstack([np.zeros((1, g.shape[1])), w[:-1]])
     dev, devp = w - we, wp - np.vstack([np.zeros((1, g.shape[1])), we[:-1]])
     reb = np.where((g != 0) & (g == gp), np.abs(g) * np.abs(dev - devp), 0.0)   # платит только пересмотр по схеме, не смена 1/cnt
-    r = (g * w * pn.lr - (dg + ex) * w * comm - reb * comm).sum(axis=1)
+    # закрытая часть платит по весу дня выхода; пара, вышедшая из портфеля (w = 0, лимит), — по вчерашнему весу
+    trade = np.where((gp != 0) & (g != gp), np.abs(gp), 0.0) * np.where(w > 0, w, wp) + np.where((g != 0) & (g != gp), np.abs(g), 0.0) * w
+    turn = trade + ex * w
+    r = (g * w * pn.lr - turn * comm - reb * comm).sum(axis=1)
     expo = (np.abs(g) * w).sum(axis=1)
     assert expo.max(initial=0.0) <= 1.0 + 1e-9, "Σ|вес| > 1: плечо не предусмотрено"
     n_act = np.maximum(pn.act.sum(axis=1), 1)
     sides = ((dg > 0) | (ex > 0)).sum(axis=1) / n_act
-    return pd.DataFrame(dict(excess=r - expo * pn.rfc, exposure=expo, turnover=((dg + ex) * w + reb).sum(axis=1),
+    return pd.DataFrame(dict(excess=r - expo * pn.rfc, exposure=expo, turnover=(turn + reb).sum(axis=1),
                              sides=sides), index=pn.dates)
 
 

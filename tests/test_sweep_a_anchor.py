@@ -50,6 +50,31 @@ def ok_obr_vol_peresmotr_platit() -> bool:
     return bool(reb_turn.sum() > 0 and (pay["excess"] - free["excess"]).sum() < (eq["excess"] - core.assemble(pn, NET, 0.0)["excess"]).sum())
 
 
+def ok_vyhod_po_vcherashnemu_vesu() -> bool:
+    """Лимит 2: пара 1 выходит на день 1, её вес сегодня 0; выход платит по вчерашним 1/2. Оборот: 1 + 0,5 + 0,5 = 2."""
+    pn = mkpanel([[1, 1], [1, 0], [1, 0]])
+    r = core.assemble(pn, {**NET, "limit_pozitsiy": 2}, 0.01)
+    return bool(np.isclose(r["turnover"].sum(), 2.0) and np.isclose(r["excess"].sum(), -0.02))
+
+
+def test_vyhod_po_vcherashnemu_vesu():
+    assert ok_vyhod_po_vcherashnemu_vesu()
+
+
+def test_mut_komissiya_vyhoda_po_tekushchemu_vesu(monkeypatch):
+    orig = core.portfolio
+
+    def old(pn, g, w, comm, we=None):
+        df = orig(pn, g, w, comm, we)
+        gp, wp = np.vstack([np.zeros((1, g.shape[1])), g[:-1]]), np.vstack([np.zeros((1, g.shape[1])), w[:-1]])
+        lost = (np.where((gp != 0) & (g != gp) & (w == 0), np.abs(gp), 0.0) * wp).sum(axis=1)   # старое поведение: w = 0 -> 0
+        df["excess"] += lost * comm
+        df["turnover"] -= lost
+        return df
+    monkeypatch.setattr(core, "portfolio", old)
+    assert not ok_vyhod_po_vcherashnemu_vesu()
+
+
 def test_etalon_ravnye_net_net_raven_ruchnomu_A_pri_menyayushchemsya_act():
     assert ok_etalon_act()
 
