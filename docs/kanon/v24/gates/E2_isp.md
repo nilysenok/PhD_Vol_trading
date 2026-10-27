@@ -31,37 +31,37 @@ EVIDENCE: 194 строки; py_compile ok
 ## G5 — evaluate(obj, params, period, commission) возвращает ключи контракта (v, sharpe, by_year, sr_d, T, skew, kurt, msr, sortino, mdd, oborot_y, dni_v_rynke, sdelok_y, period, okno_s, okno_po, chestnaya, comm_pct, excess_d)
 CHECK: python3 -m pytest tests/test_sem_e.py -q -k "kontrakt"
 EXPECT: passed
-EVIDENCE: pending
+EVIDENCE: 2 passed. Отступление: сигнатура evaluate(obj, params, period, commission, inp) — пятый аргумент inp (данные), замыкание для драйверов — make_evaluate(obj, inp, commission)
 
 ## G6 — oat_sweep и factorial_sweep из sweep_drivers гоняют sem_e на синтетике (без правки sweep_drivers)
 CHECK: python3 -m pytest tests/test_sem_e.py -q -k "drivers"; git diff --stat origin/kanon-v22-pereschet -- fastbt/sweep_drivers.py
 EXPECT: passed; diff пуст
-EVIDENCE: pending
+EVIDENCE: 1 passed (oat n_trials 5, factorial 4); diff пуст
 
 ## G7 — E0 при q=0 побайтно равна A (позиции, pnl, fdr)
 CHECK: python3 -m pytest tests/test_sem_e.py -q -k "e0_q0"
 EXPECT: passed
-EVIDENCE: pending
+EVIDENCE: 1 passed. Оговорка: на уровне пары побайтно (test_exec_e_mut::test_m6, tobytes по gross/cost/pos/free/fdr); на уровне портфеля — allclose 1e-12 к msp.portfolio (порядок усреднения), не побайтно
 
 ## G8 — ключ кэша = хэш всех входов и кода (Д5): подмена σ, баров, силы, параметра, кода даёт другой ключ
 CHECK: python3 -m pytest tests/test_sem_e.py -q -k "kljuch or key"
 EXPECT: passed (мутация «ключ без σ» падает)
-EVIDENCE: pending
+EVIDENCE: 1 passed; мутации D5 (без σ̂), D5b (без баров), D5c (без obj), P5 (маска без q в ключе) — падают (19 из 19, см. PR)
 
 ## G9 — период ≥ 2022 и validation не открываются без метки: PermissionError
 CHECK: python3 -m pytest tests/test_sem_e.py -q -k "period"
 EXPECT: passed
-EVIDENCE: pending
+EVIDENCE: 1 passed; мутации P2 (без замка validation), P4 (даты 2022 допустимы), P1 (прогрев в PnL), P3 (bfill ставки) — падают
 
 ## G10 — к2 с лагом 0 равна исходному ряду σ (мутация 8) и сдвиг не нулевой даёт другой Шарп
 CHECK: python3 -m pytest tests/test_sem_e.py -q -k "k2"
 EXPECT: passed
-EVIDENCE: pending
+EVIDENCE: 1 passed; мутация 8 (лаг смещён на 1) падает в test_k2_lag0... и в test_exec_e_mut::test_m8
 
 ## G11 — проверка работоспособности на реальных данных: один тикер, train 2018–2019, без выбора точек и таблиц
-CHECK: python3 -m fastbt.sem_e --smoke (вывод: число строк, нет NaN в excess_d, пути данных < 2022)
-EXPECT: код 0; даты ≤ 2019-12-31
-EVIDENCE: pending
+CHECK: FASTBT_MAIN=$PWD python3 <scratchpad>/smoke.py $PWD SBER (скрипт вне репозитория: A из кэша s9 dev, 5-мин бары bars5m, σ̂ naive/const из sigma_e; данные подключены симлинками на чтение, после прогона сняты)
+EXPECT: код 0; даты ≤ 2019-12-31; NaN в excess_d = 0
+EVIDENCE: даты 2018-01-03…2019-12-30 (506 дн.), пустых дней 0; E/naive, E/const, C/naive: T 506, NaN 0, окно 2018-01-01…2019-12-31. Метрики не печатались и не сохранялись (выбора точек нет). q > 0 на реальных данных не гонялась: см. ABANDON G11b
 
 ## PR3 — сетки C/E
 
@@ -88,7 +88,7 @@ EXPECT: коды 0
 EVIDENCE: pending
 
 ## ABANDON
-(пусто на старте)
+ABANDON: G11b q > 0 на реальных данных — сила сигнала ансамбля A (голос 10 конфигураций) нигде не хранится: в кэше s9 только позиции; постановка §4 ⚑ «определение из кода A». Модуль требует Pair.strength и при q > 0 без неё падает ValueError («нет силы сигнала»), тихой подмены нет. Нужно решение: определение силы для ансамбля (❓ владельцу/T1, класс A, так как меняет точки E0).
 
 ## Реестр
 закрыто 0 из 15; ABANDON: 0; pending: 15
