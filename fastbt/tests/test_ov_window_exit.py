@@ -18,6 +18,7 @@ def _data():
     pos = np.zeros(n)
     pos[4:9] = 1.0
     pos[10:] = -1.0        # открыта на последнем баре окна (ve-1 = 11)
+    pos[10] = 0.5          # бары 10 и 11 различаются: сдвиг бара выхода ловится
     return lr, pos
 
 
@@ -101,3 +102,53 @@ def test_a_window_flat_at_end_unchanged():
     a = np.zeros((3, NF))
     seg_stats_pos(pos, lr, segb, seg_of, 0, 20, C, a)
     assert abs(window(a, nb, 1, C)[0] - _ref(pos, lr, 0, 12, C, False)) < 1e-9
+
+
+def _stats(kind, pos, te, tx, td):
+    from fastbt.stats import NF, seg_stats_pos, seg_stats_trades
+    lr, _ = _data()
+    segb, seg_of, nb = _segs()
+    out = np.zeros((3, NF))
+    if kind == "pos":
+        seg_stats_pos(pos, lr, segb, seg_of, 0, 20, C, out)
+    else:
+        seg_stats_trades(te, tx, td, len(te), lr, segb, seg_of, 20, C, out)
+    return out, nb
+
+
+def test_trades_entry_and_exit_on_segment_last_bar():
+    """Вход на последнем баре сегмента 1 (бар 11) платит выход при j=1; выход на последнем баре
+    сегмента 0 (бар 5, позиция там 0) не платит ничего лишнего при j=0."""
+    from fastbt.stats import window
+    lr, _ = _data()
+    pos = np.zeros(20)
+    pos[2:5] = 1.0                 # сделка [2,5): позиция на баре 5 уже 0
+    pos[11:15] = -1.0              # вход на баре 11 — последний бар сегмента 1
+    te, tx, td = np.array([2, 11]), np.array([5, 15]), np.array([1, -1], np.int8)
+    ot, nb = _stats("trades", pos, te, tx, td)
+    op, _ = _stats("pos", pos, te, tx, td)
+    assert np.allclose(ot, op, atol=1e-15)
+    for j, end in ((0, 6), (1, 12)):
+        assert abs(window(ot, nb, j, C)[0] - _ref(pos, lr, 0, end, C)) < 1e-9
+    # выход ровно на последнем баре сегмента 0 (x = 5): сделка [2,5), сегмент 0 = [0,6) -> бар 5
+    pos2 = np.zeros(20)
+    pos2[2:6] = 1.0                # x = 6 — первый бар сегмента 1, позиция на баре 5 held
+    ot2, _ = _stats("trades", pos2, np.array([2]), np.array([6]), np.array([1], np.int8))
+    assert abs(window(ot2, nb, 0, C)[0] - _ref(pos2, lr, 0, 6, C)) < 1e-9
+    pos3 = np.zeros(20)
+    pos3[2:5] = 1.0                # выход x = 5 = последний бар сегмента 0
+    ot3, _ = _stats("trades", pos3, np.array([2]), np.array([5]), np.array([1], np.int8))
+    assert abs(window(ot3, nb, 0, C)[0] - _ref(pos3, lr, 0, 6, C)) < 1e-9
+
+
+def test_a_window_drawdown_includes_exit_cost():
+    """Растущий ряд, позиция держится до конца окна: просадка = только плата выхода."""
+    from fastbt.stats import NF, seg_stats_pos, window
+    n = 20
+    lr = np.full(n, 0.01)
+    pos = np.ones(n)
+    segb, seg_of, nb = _segs(n)
+    out = np.zeros((3, NF))
+    seg_stats_pos(pos, lr, segb, seg_of, 0, n, C, out)
+    mdd = window(out, nb, 1, C)[1]
+    assert abs(mdd + C) < 1e-12
