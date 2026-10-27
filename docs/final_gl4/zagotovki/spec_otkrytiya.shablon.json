@@ -1,0 +1,68 @@
+{
+ "v": "1",
+ "status": "chernovik",
+ "zamorozheno_v": "",
+ "final_b": {"put": "docs/final_gl4/FINAL_B.md", "sha256": ""},
+ "kod": {
+  "scripts/otkrytie_gl4.py": "",
+  "fastbt/daily_1850.py": "",
+  "fastbt/s9_stats.py": "",
+  "fastbt/sweep_drivers.py": "",
+  "⟨оценщик A′, файл⟩": "",
+  "fastbt/sem_e.py": "",
+  "fastbt/konveyer_bcd.py": "",
+  "⟨проверка сдвига, файл⟩": ""
+ },
+ "fastbt_sha_vse": "",
+ "geity": {
+  "docs/kanon/v24/gates/E1_skripty.md": "",
+  "docs/kanon/v24/gates/E1_zhurnaly.md": "",
+  "⟨docs/kanon/v24/gates/E2_*.md⟩": "",
+  "⟨docs/kanon/v24/gates/E3_*.md⟩": "",
+  "docs/kanon/v24/gates/E4_otkrytie.md": ""
+ },
+ "vhody": {
+  "⟨метка: σ гибрид h, файл от data/regen/test_locked⟩": {"put": "", "sha256": ""},
+  "⟨метка: σ HAR-J (б) h⟩": {"put": "", "sha256": ""},
+  "⟨метка: признаки для наивной √RV⟩": {"put": "", "sha256": ""},
+  "⟨метка: 5-мин бары E (каталог 1-мин баров)⟩": {"put": "", "sha256": ""},
+  "⟨метка: ставка ЦБ⟩": {"put": "", "sha256": ""}
+ },
+ "svechi_10m": {
+  "katalog": "moex_discovery/data/raw/candles_10m",
+  "tikery": ["AFLT", "ALRS", "HYDR", "IRAO", "LKOH", "LSRG", "MGNT", "MOEX", "MTLR", "MTSS", "NVTK", "OGKB", "PHOR", "RTKM", "SBER", "TATN", "VTBR"],
+  "sha256": {"AFLT": "", "ALRS": "", "HYDR": "", "IRAO": "", "LKOH": "", "LSRG": "", "MGNT": "", "MOEX": "", "MTLR": "", "MTSS": "", "NVTK": "", "OGKB": "", "PHOR": "", "RTKM": "", "SBER": "", "TATN": "", "VTBR": ""}
+ },
+ "okno_testa": {"s": "⟨ГГГГ-ММ-ДД, ≥ 2022-01-01⟩", "po": "⟨ГГГГ-ММ-ДД, конец 02.2026⟩"},
+ "lag_ispolneniya_dney": 1,
+ "komissii_pct": [0.035, 0.04],
+ "pometka": "после аудита",
+ "lw": {"reps": null, "block": null, "seed": null},
+ "proverka_sdviga": "⟨файл.py:функция⟩",
+ "baza": {"ocenshchik": "⟨файл.py:функция⟩", "obj": {"kind": "A_sborka"}, "params": {}, "N": null, "var_sr_d": null},
+ "semi": {
+  "C": {"ocenshchik": "fastbt/sem_e.py:⟨функция⟩", "N": null, "var_sr_d": null,
+        "tochki": [{"id": "⟨id точки⟩", "obj": {}, "params": {}}],
+        "lestnica_sigma": ["konst", "naivnaya", "harj_b", "gibrid"],
+        "kontroli": {"k2": {"n": 1000, "seed": 20261027, "sposob": "sdvig_po_krugu", "stupeni": ["naivnaya", "harj_b", "gibrid"]}, "k3": true, "k3_sigma": "gibrid"}},
+  "E": {"ocenshchik": "fastbt/sem_e.py:⟨функция⟩", "N": null, "var_sr_d": null,
+        "tochki": [{"id": "⟨id точки⟩", "obj": {}, "params": {}}],
+        "lestnica_sigma": ["konst", "naivnaya", "harj_b", "gibrid"],
+        "kontroli": {"k2": {"n": 1000, "seed": 20261027, "sposob": "sdvig_po_krugu", "stupeni": ["naivnaya", "harj_b", "gibrid"]}, "k3": true, "k3_sigma": "gibrid"}},
+  "B": {"ocenshchik": "fastbt/konveyer_bcd.py:⟨функция⟩", "N": null, "var_sr_d": null,
+        "tochki": [{"id": "⟨id точки⟩", "obj": {}, "params": {}}],
+        "lestnica_sigma": ["konst", "naivnaya", "harj_b", "gibrid"],
+        "kontroli": {"k2": {"n": 1000, "seed": 20261027, "sposob": "sdvig_po_krugu", "stupeni": ["naivnaya", "harj_b", "gibrid"]}, "k3": true, "k3_sigma": "gibrid"}},
+  "D": {"ocenshchik": "fastbt/konveyer_bcd.py:⟨функция⟩", "N": null, "var_sr_d": null,
+        "tochki": [{"id": "⟨id точки⟩", "obj": {}, "params": {}}],
+        "lestnica_sigma": ["konst", "naivnaya", "harj_b", "gibrid"],
+        "kontroli": {"k2": {"n": 1000, "seed": 20261027, "sposob": "sdvig_po_krugu", "stupeni": ["naivnaya", "harj_b", "gibrid"]}, "k3": true, "k3_sigma": "gibrid"}}
+ },
+ "gipotezy": {
+  "H2a": {"formulirovka": "⟨владелец, класс A⟩", "a": "⟨id задания⟩", "b": "⟨id задания⟩", "metrika": "sharpe", "znak": "+", "alfa": null},
+  "H2b": {"formulirovka": "⟨владелец, класс A⟩", "a": "⟨id задания⟩", "b": "⟨id задания⟩", "metrika": "sharpe", "znak": "+", "alfa": null},
+  "H3": {"formulirovka": "⟨владелец, класс A⟩", "a": "⟨id задания⟩", "b": "⟨id задания⟩", "metrika": "sharpe", "znak": "+", "alfa": null},
+  "H4": {"formulirovka": "⟨владелец, класс A⟩", "a": "⟨id задания⟩", "b": "⟨id задания⟩", "metrika": "sharpe", "znak": "+", "alfa": null}
+ },
+ "da_vladeltsa": {"stroka": "", "data": "", "zhurnal": "", "sha_spec": ""}
+}

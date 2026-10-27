@@ -61,10 +61,17 @@ def test_m6_e0_q0_is_a_bytewise():
     m = q_mask(st, sig, 0.0)
     assert m.tobytes() == sig.astype(int).tobytes() and m is not sig
     sg = np.full(n, 0.02)
-    ra = run("T", days, sig, sg, Params(), rf_cal=np.full(n, 1e-4))
     rb = run("T", days, m, sg, Params(), rf_cal=np.full(n, 1e-4))
-    for f in ("gross", "cost", "pos", "free", "fdr"):
-        assert getattr(ra, f).tobytes() == getattr(rb, f).tobytes()
+    # эталон A — независимый путь msp.portfolio (не сам sig): позиции побайтно, pnl и ставка — до 1e-12
+    from fastbt import msp
+    import pandas as pd
+    dates = pd.bdate_range("2021-03-01", periods=n)
+    lr = np.r_[np.diff(np.log([d.c[-1] for d in days])), 0.0]
+    rate = pd.Series([0.0365], pd.to_datetime(["2021-01-01"]))
+    port = msp.portfolio(pd.DataFrame(dict(date=dates, ticker="T", strategy="S", position=sig * 1.0,
+                                           daily_gross_return=sig * lr)), rate, Params().comm)
+    assert rb.pos.tobytes() == port["exposure"].values.tobytes()
+    assert np.allclose(rb.pnl, port["r"].values, atol=1e-12, rtol=0)
 
 
 def test_m6_q_positive_filters_and_is_monotone():
