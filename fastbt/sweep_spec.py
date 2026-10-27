@@ -17,7 +17,7 @@ from fastbt import sweep_stat as ss
 class Spec:
     obj: dict                      # {kind: Sk, sid: S1, tickers: [...]}; сборка A и C/E/B/D — позже
     base: dict                     # исходные значения параметров
-    comm_pct: tuple = (0.035, 0.04)  # % на сторону; первая — основная
+    comm_pct: tuple = (0.04, 0.035)  # % на сторону; первая — комиссия ОТБОРА (контракт: otbor 0,04), остальные — пересчёт
     periods: ss.Periods = field(default_factory=ss.Periods)
     out: str | None = None         # папка: ledger.json (пробы), validation_flag.json
     reopen_note: str | None = None  # запись об изменении для повторного открытия validation
