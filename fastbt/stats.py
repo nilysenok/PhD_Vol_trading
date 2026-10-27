@@ -132,14 +132,20 @@ def sharpe_window(pos, lr, s, e, comm):
     prev = 0.0
     for t in range(s, e):
         p = pos[t]
-        tot += p * lr[t] - abs(p - prev) * comm
+        x = p * lr[t] - abs(p - prev) * comm
+        if t == e - 1:      # ОВ: окно отбора платит выход позиции на своём конце (как Н5)
+            x -= abs(p) * comm
+        tot += x
         prev = p
     m = tot / n
     ss = 0.0
     prev = 0.0
     for t in range(s, e):
         p = pos[t]
-        r = p * lr[t] - abs(p - prev) * comm - m
+        x = p * lr[t] - abs(p - prev) * comm
+        if t == e - 1:
+            x -= abs(p) * comm
+        r = x - m
         ss += r * r
         prev = p
     sd = math.sqrt(ss / (n - 1)) if n > 1 else 0.0

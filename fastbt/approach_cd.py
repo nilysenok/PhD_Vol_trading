@@ -40,6 +40,8 @@ def masked_eval(apos, masks, lr, vs, ve, comm, sh, ex, tpy):
             if t > vs and mk[t - 1]:
                 p = apos[t - 1]
             net = q * lr[t] - abs(q - p) * comm
+            if t == ve - 1:     # ОВ: окно отбора платит выход позиции на своём конце (как Н5)
+                net -= abs(q) * comm
             S += net
             Q += net * net
             if q != 0.0:
@@ -146,6 +148,8 @@ def scaled_eval(apos, scales, lr, vs, ve, comm, sh):
             q = apos[t] * sc[t]
             p = apos[t - 1] * sc[t - 1] if t > vs else 0.0
             net = q * lr[t] - abs(q - p) * comm
+            if t == ve - 1:     # ОВ: выход на конце окна отбора (как masked_eval)
+                net -= abs(q) * comm
             S += net
             Q += net * net
         var = max(Q - S * S / n_win, 0.0) / (n_win - 1)
