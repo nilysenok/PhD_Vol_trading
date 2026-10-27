@@ -126,8 +126,8 @@ TEST_C = ("C1:W504_p70", "hyb_h5")
 C_DOP_YAML = ROOT / "fastbt" / "designs" / "s9" / "setka_C.yaml"
 C_DOP = None
 # Ъ 27.10, 00:10 (агент К): флаг run --c8v2 — сетка C + p50/p60 (setka_C.yaml: dop.rassh, без семей
-# «выбор по валидации»), контроли без прогноза к1/к2 в каждой строке C (fastbt.fast_kontrol) и правило
-# С8 v2 = С8 И Шарп > Шарп к1 И p к к2 < 0,05; выбор — среди прошедших (rank_c8_v2). False — как было.
+# «выбор по валидации»), контроли без прогноза к2 (круговой сдвиг)/к3 (A без S5/S6) в каждой строке C (fastbt.fast_kontrol) и правило
+# С8 v2 = С8 И Шарп > Шарп к3 И p к к2 < 0,05 (Ъ 27.10, 01:30); выбор — среди прошедших (rank_c8_v2). False — как было.
 C8V2 = False
 C8V2_ALPHA = 0.05
 POMETKA_C8V2 = "после аудита; сетка и контроли добавлены после просмотра разработки"
@@ -1046,20 +1046,21 @@ class S9:
         return pd.DataFrame(rows), ports
 
     def kontrol(self, r: dict, pos: np.ndarray) -> None:
-        """Ъ 27.10, 00:10: контроли без прогноза (fastbt.fast_kontrol) и С8 v2 для строки C."""
+        """Ъ 27.10, 01:30: контроли без прогноза (fastbt.fast_kontrol) и С8 v2 для строки C:
+        к2 — круговой сдвиг маски точки, к3 — A без S5/S6; к1 снят (Шарп не зависит от масштаба)."""
         from fastbt import fast_kontrol as fk
         if getattr(self, "_k", None) is None or self._k.comm != COMM:
             self._k = fk.Kontrol(self.e, COMM)
+            self._p3 = self.e.port(self._k.k3_pos())
+            self._m3 = metrics(self._p3)
         k = self._k
-        c = k.k1_const(pos)
-        m1 = metrics(self.e.port(self.e.A_row * c))
-        r["c_k1"], r["sharpe_k1"] = c, m1["sharpe"]
-        r["d_vs_k1"] = r["sharpe"] - m1["sharpe"]
+        r["sharpe_k3"] = self._m3["sharpe"]
+        self.delta(r, "vs_k3", self.e.port(pos), self._p3)       # d_vs_k3, p_vs_k3 (Ледуа–Вольф, блок 5)
         if np.any(pos[self.e.A_row == 0] != 0):
             # C u02: позиция — не A × затвор (фильтр оборота после маски) — к2 не определён,
             # С8 v2 точка не проходит
             r["sharpe_k2_med"] = r["sharpe_k2_q95"] = r["p_vs_k2"] = np.nan
-            r["n_perm_k2"] = 0
+            r["n_shift_k2"] = 0
             r["k2_primechanie"] = (f"к2 не определён: позиция ≠ A × затвор ({int(np.sum(pos[self.e.A_row == 0] != 0))} "
                                    "строк с позицией при A = 0); С8 v2 не проходит")
             r["passed_v2"] = False
@@ -1069,16 +1070,9 @@ class S9:
         r["sharpe_k2_med"] = float(np.median(sh))
         r["sharpe_k2_q95"] = float(np.quantile(sh, 0.95))
         r["p_vs_k2"] = fk.p_perm(r["sharpe"], sh)
-        r["n_perm_k2"] = len(sh)
-        r["passed_v2"] = bool(r["passed"] and r["sharpe"] > m1["sharpe"]
+        r["n_shift_k2"] = len(sh)
+        r["passed_v2"] = bool(r["passed"] and r["sharpe"] > r["sharpe_k3"]
                               and r["p_vs_k2"] < C8V2_ALPHA)
-        # справочно (не в правиле): к2 без комиссии у точки и у перестановок — случайная маска
-        # переключается чаще, чем режимный затвор, и платит больше комиссии
-        if getattr(self, "_k0", None) is None:
-            self._k0 = fk.Kontrol(self.e, 0.0)
-        sh0 = self._k0.k2_sharpes(pos)
-        r["sharpe_gross"] = sharpe(self.e.port(pos)["excess_gross"].values)
-        r["p_vs_k2_bez_komissii"] = fk.p_perm(r["sharpe_gross"], sh0)
 
     # ---------- C3: точность прогноза → результат ----------
     def run_c3(self, c_ports, srcs=("hyb_h1", "harj_h1", "naive_h1")):
@@ -1410,7 +1404,7 @@ def vybor_v2(s9: "S9", dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) 
     rows = [dict(approach="A", design="main.yaml:A (эталон С8)", sigma="—", **s9.mA)]
     items = list(cand.items())
     if C8V2:                               # Ъ 27.10, 00:10: прежний выбор C — справочно, рядом
-        items.append(("C (прежнее правило С8, без к1/к2 — справочно)", cand["C"]))
+        items.append(("C (прежнее правило С8, без к2/к3 — справочно)", cand["C"]))
     for ap, c in items:
         c = c.copy()
         c["p_holm"] = _holm(c["p_vs_A"].values)
@@ -1433,7 +1427,7 @@ def vybor_v2(s9: "S9", dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) 
         r["fakt"] = ("прошёл С8" if best["passed"] else "лучший по С8, С8 не прошёл") + \
                     ("; положительный период" if best["positive"] else "; положительного периода нет")
         if v2:
-            r["fakt"] = ("прошёл С8 v2 (С8, Шарп > к1, p к к2 < 0,05); выбор среди прошедших"
+            r["fakt"] = ("прошёл С8 v2 (С8, Шарп > к3, p к к2 < 0,05); выбор среди прошедших"
                          if best["passed_v2"] else "С8 v2 не прошла ни одна точка; лучший по С8") + \
                         ("; положительный период" if best["positive"] else "; положительного периода нет")
         if ap == "D":
@@ -1443,8 +1437,8 @@ def vybor_v2(s9: "S9", dfd: pd.DataFrame, dfb: pd.DataFrame, dfc: pd.DataFrame) 
 
 
 # Ъ 27.10, 00:10: столбцы контролей без прогноза (S9.kontrol)
-K_COLS = ("c_k1", "sharpe_k1", "d_vs_k1", "sharpe_k2_med", "sharpe_k2_q95", "p_vs_k2", "n_perm_k2",
-          "passed_v2", "sharpe_gross", "p_vs_k2_bez_komissii")
+K_COLS = ("sharpe_k2_med", "sharpe_k2_q95", "p_vs_k2", "n_shift_k2", "sharpe_k3", "d_vs_k3", "p_vs_k3",
+          "passed_v2")
 
 
 def _ckey(row) -> str:
@@ -1589,7 +1583,7 @@ def ustoychivost_c8v2(dfc: pd.DataFrame) -> pd.DataFrame:
     """Ъ 27.10, 00:10 (--c8v2): устойчивость выбора C по правилу С8 v2 на сетке с p50/p60.
     (а) C1 W504 p70 h=5 (точка первого FINAL); (б) точки, прошедшие С8 v2, с |Шарп − Шарп выбранной|
     ≤ 0,1 (выбранная — первой); (в) соседи выбранной по окну (тот же порог) и по порогу (то же окно)
-    той же семьи и σ — все, с к1/к2. Вывод (правило объявлено до счёта, обобщение прежнего на
+    той же семьи и σ — все, с к2/к3. Вывод (правило объявлено до счёта, обобщение прежнего на
     двусторонних соседей): плато — все ближайшие соседи (по одному с каждой стороны на каждой оси)
     в пределах 0,1 и прошли С8 v2; пик — ни один сосед; иначе — частичное плато."""
     c = dfc[dfc["sigma"].isin(["hyb_h1", "hyb_h5"])].copy()
@@ -1741,7 +1735,7 @@ def main(argv=None):
     p.add_argument("--c-dop", nargs="?", const=str(C_DOP_YAML), default=None,
                    help="новые точки сетки C (Ъ 22:30) из yaml, раздел dop; без флага — как было")
     p.add_argument("--c8v2", action="store_true",
-                   help="Ъ 27.10, 00:10: сетка C + p50/p60 (setka_C.yaml: dop.rassh), контроли к1/к2, "
+                   help="Ъ 27.10, 00:10: сетка C + p50/p60 (setka_C.yaml: dop.rassh), контроли к2/к3, "
                         "правило С8 v2; только с --sigma-set v2 и --c-dop")
     a = p.parse_args(argv)
     from fastbt import dev
