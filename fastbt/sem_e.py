@@ -52,7 +52,10 @@ class Inputs:
         parts = [p.dates.values.astype("int64") for p in self.pairs] + [p.pos for p in self.pairs]
         parts += [p.strength for p in self.pairs if p.strength is not None]
         parts += [np.concatenate([np.stack([d.o, d.h, d.l, d.c]).ravel() for d in p.days]) for p in self.pairs if p.days]
-        parts += [self.sigma[n][t] for n in sorted(self.sigma) for t in sorted(self.sigma[n])]
+        for n in sorted(self.sigma):
+            for t in sorted(self.sigma[n]):
+                s = self.sigma[n][t]
+                parts += [np.asarray(s, float)] + ([np.asarray(s.index.astype(str), "U40")] if isinstance(s, pd.Series) else [])
         return cache.key("sem_e_inputs", *parts, self.rate.values, {y: sorted(v) for y, v in self.top10.items()},
                          [(p.ticker, p.sid) for p in self.pairs])
 
@@ -101,19 +104,31 @@ def _sig_e(p: Pair, inp: Inputs, obj: dict, q: float) -> np.ndarray:
     return _MASKS[k]
 
 
-def _excess_e(inp: Inputs, obj: dict, par: dict, comm: float, end: pd.Timestamp):
+def pair_e(p: Pair, inp: Inputs, obj: dict, par: dict, comm: float, end, t0=None):
+    """Одна пара: длинная сторона A — через exec_e (σ-правила E), короткая — как в A (close→close, без правил E:
+    толкование Ж-036 T2 п. 3). → (избыточная серия, позиция ±1 по дням, число сторон в окне [t0; end])."""
     pr = Params(**{k: par[k] for k in ("k", "f", "a", "b", "tau", "s") if k in par}, comm=comm / 100)
-    cols, fills, expo = {}, 0, {}
+    n = int(p.dates.searchsorted(end, side="right"))
+    d, rf = p.dates[:n], _rf_cal(p.dates[:n], inp.rate)
+    r = run(p.ticker, p.days[:n], _sig_e(p, inp, obj, par.get("q", 0.0))[:n],
+            inp.sigma[obj["sigma"]][p.ticker][:n], pr, rf_cal=rf)
+    sh = -1.0 * (p.pos[:n] < 0) * _u_mask(p, inp, obj.get("u", "all"))[:n]   # короткая позиция A: −1 (подвыборка u — та же)
+    sides = np.abs(np.diff(sh, prepend=0.0))
+    sides[-1] += abs(sh[-1])                                   # Н5: выход на конце окна
+    ex = r.pnl + r.fdr - rf + sh * p.lr[:n] - sides * pr.comm - np.abs(sh) * rf
+    m = d >= (d[0] if t0 is None else t0)
+    cnt = sides[m].sum() + sum((d[t.entry_day] >= d[m][0]) + (t.exit_day is None or d[t.exit_day] >= d[m][0])
+                               for t in r.trades) if m.any() else 0.0
+    return pd.Series(ex, d), r.pos + sh, float(cnt)
+
+
+def _excess_e(inp: Inputs, obj: dict, par: dict, comm: float, t0, end):
+    cols, expo, sd = {}, {}, 0.0
     for p in inp.pairs:
-        n = int(p.dates.searchsorted(end, side="right"))
-        d = p.dates[:n]
-        rf = _rf_cal(d, inp.rate)
-        r = run(p.ticker, p.days[:n], _sig_e(p, inp, obj, par.get("q", 0.0))[:n],
-                inp.sigma[obj["sigma"]][p.ticker][:n], pr, rf_cal=rf)
-        cols[(p.ticker, p.sid)] = pd.Series(r.pnl + r.fdr - rf, d)
-        expo[(p.ticker, p.sid)] = pd.Series(r.pos, d)
-        fills += sum(2 if t.exit_day is not None else 1 for t in r.trades)
-    return pd.DataFrame(cols).mean(axis=1), pd.DataFrame(expo).mean(axis=1), fills
+        ex, pos, c = pair_e(p, inp, obj, par, comm, end, t0)
+        cols[(p.ticker, p.sid)], expo[(p.ticker, p.sid)] = ex, pd.Series(np.abs(pos), ex.index)
+        sd += c
+    return pd.DataFrame(cols).mean(axis=1), pd.DataFrame(expo).mean(axis=1), sd, sd   # сторона = единица позиции
 
 
 def _gate(sg: np.ndarray, par: dict, cat: int) -> np.ndarray:
@@ -123,17 +138,21 @@ def _gate(sg: np.ndarray, par: dict, cat: int) -> np.ndarray:
     return _c_gate(R[:, None], (par["p1"], par["p2"]) if "p1" in par else par["p"])[cat][:, 0]
 
 
-def _excess_c(inp: Inputs, obj: dict, par: dict, comm: float, end: pd.Timestamp):
-    rows = []
+def _excess_c(inp: Inputs, obj: dict, par: dict, comm: float, t0, end):
+    rows, ob, sd = [], 0.0, 0.0
     for p in inp.pairs:
         n = int(p.dates.searchsorted(end, side="right"))
         sg = inp.sigma[obj["sigma"]][p.ticker][:n]
         sg = sg / inp.rvw[p.ticker][:n] if par.get("star") else sg
         pos = p.pos[:n] * _gate(sg, par, p.cat)
+        dp = np.abs(np.diff(pos, prepend=0.0))
+        dp[-1] += abs(pos[-1])
+        w = dp[p.dates[:n] >= t0]                              # прогрев в счёт не входит
+        ob, sd = ob + w.sum(), sd + (w > 0).sum()
         rows.append(pd.DataFrame(dict(date=p.dates[:n], ticker=p.ticker, strategy=p.sid, position=pos,
                                       daily_gross_return=pos * p.lr[:n])))
     port = msp.portfolio(pd.concat(rows), inp.rate, comm / 100)
-    return port["excess"], port["exposure"], int(port["turnover"].sum() * len(inp.pairs))
+    return port["excess"], port["exposure"], ob, sd
 
 
 def evaluate(obj: dict, params: dict, period: str, commission: float, inp: Inputs) -> dict:
@@ -142,7 +161,7 @@ def evaluate(obj: dict, params: dict, period: str, commission: float, inp: Input
     f = {"E": _excess_e, "C": _excess_c}.get(obj["kind"])
     if f is None:
         raise ValueError(f"kind {obj['kind']!r}: допустимо E, C")
-    ex, expo, fills = f(inp, obj, params, commission, t1)
+    ex, expo, ob, sd = f(inp, obj, params, commission, t0, t1)
     ex, expo = ex[(ex.index >= t0) & (ex.index <= t1)], expo[(expo.index >= t0) & (expo.index <= t1)]
     if ex.empty or not np.isfinite(ex.values).all():
         raise ValueError("пустой или нечисловой ряд избыточной доходности")
@@ -152,8 +171,8 @@ def evaluate(obj: dict, params: dict, period: str, commission: float, inp: Input
             "by_year": {int(y): me.sr_dnevnoy(x[yrs == y]) * np.sqrt(252) for y in sorted(set(yrs))},
             "sr_d": me.sr_dnevnoy(x), "T": len(x), "skew": me.asimmetriya(x), "kurt": me.ekscess(x) + 3.0,
             "msr": me.msr(x), "sortino": me.sortino_e(x), "mdd": me.mdd(x),
-            "oborot_y": fills / yr / len(inp.pairs), "dni_v_rynke": float((expo.values > 0).mean()),
-            "sdelok_y": fills / yr / len(inp.pairs), "period": period, "okno_s": str(t0.date()),
+            "oborot_y": ob / yr / len(inp.pairs), "dni_v_rynke": float((expo.values > 0).mean()),
+            "sdelok_y": sd / yr / len(inp.pairs), "period": period, "okno_s": str(t0.date()),
             "okno_po": str(t1.date()), "chestnaya": HONEST[period], "comm_pct": commission, "excess_d": list(x)}
 
 

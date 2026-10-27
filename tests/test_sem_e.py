@@ -68,14 +68,42 @@ def test_drivers_oat_and_factorial_run_on_sem_e():
     assert fac["n_trials"] == 4 and all("sharpe_2018" in r for r in fac["rows"])
 
 
-def test_e0_q0_equals_a_on_long_side():
+def _a_port(inp, end="2019-12-31"):
+    rows = [pd.DataFrame(dict(date=p.dates, ticker=p.ticker, strategy=p.sid, position=p.pos,
+                              daily_gross_return=p.pos * p.lr)) for p in inp.pairs]
+    return msp.portfolio(pd.concat(rows), inp.rate, 0.0004)
+
+
+def test_e0_q0_equals_full_a_with_shorts():
     inp = build()
+    assert all((p.pos < 0).mean() >= 0.10 for p in inp.pairs)          # шорты ≥ 10 % дней в синтетике
     r = evaluate(OBJ, {"q": 0.0}, "train", 0.04, inp)
-    rows = [pd.DataFrame(dict(date=p.dates, ticker=p.ticker, strategy=p.sid, position=(p.pos > 0) * 1.0,
-                              daily_gross_return=(p.pos > 0) * p.lr)) for p in inp.pairs]
-    ex = msp.portfolio(pd.concat(rows), inp.rate, 0.0004)["excess"]
-    ex = ex[ex.index >= "2018-01-01"]
-    assert np.allclose(r["excess_d"], ex.values, atol=1e-12, rtol=0)
+    ex = _a_port(inp)["excess"]
+    assert np.allclose(r["excess_d"], ex[ex.index >= "2018-01-01"].values, atol=1e-12, rtol=0)
+    for p in inp.pairs:                                                 # позиции A (±1) побайтно
+        _, pos, _ = sem_e.pair_e(p, inp, OBJ, {"q": 0.0}, 0.04, pd.Timestamp("2019-12-31"))
+        assert pos.tobytes() == p.pos.astype(float).tobytes()
+
+
+def test_turnover_counts_period_only_and_differs_in_c():
+    inp = build()
+    p0 = pd.Timestamp("2018-01-01")
+    exp = 0.0
+    for p in inp.pairs:                          # независимый счёт: |Δpos| A в 2018 + выход на конце окна (Н5)
+        pos = p.pos[p.dates <= "2018-12-31"]
+        dp = np.abs(np.diff(pos, prepend=0.0))
+        dp[-1] += abs(pos[-1])
+        exp += dp[p.dates[: len(pos)] >= p0].sum()
+    r = evaluate(OBJ, {"q": 0.0}, "tune2018", 0.04, inp)
+    assert np.isclose(r["sdelok_y"], exp / len(inp.pairs))              # прогрев 2017 не в счёте
+    allw = sum(np.abs(np.diff(p.pos[p.dates <= "2018-12-31"], prepend=0.0)).sum() for p in inp.pairs)
+    assert allw > exp * 1.1 * len(inp.pairs) / len(inp.pairs)           # с прогревом было бы заметно больше
+    c = evaluate({"kind": "C", "sigma": "naive"}, {"W": 126, "p1": 0.6, "p2": 0.8}, "tune2018", 0.04, inp)
+    nan = {**inp.sigma, "naive": {t: np.full(len(v), np.nan) for t, v in inp.sigma["naive"].items()}}
+    a = evaluate({"kind": "C", "sigma": "naive"}, {"W": 126, "p": 0.8}, "tune2018", 0.04,
+                 dataclasses.replace(inp, sigma=nan))                   # ранг NaN → g = 1: C ≡ A
+    assert np.isclose(a["oborot_y"], exp / len(inp.pairs)) and a["sdelok_y"] < a["oborot_y"]   # разворот long→short: 2 в обороте, 1 в смене
+    assert c["oborot_y"] != c["sdelok_y"] and c["oborot_y"] < c["sdelok_y"]   # шаги 0,5: объём меньше числа сторон
 
 
 def test_q_positive_needs_strength_and_changes_result():
@@ -121,6 +149,20 @@ def test_kljuch_cache_changes_with_every_input_and_code(monkeypatch):
     assert cache_key(OBJ, {**par, "q": 0.67}, inp, 0.04) != k0 and cache_key(OBJ, par, inp, 0.035) != k0
     monkeypatch.setattr(cache, "code_hash", lambda: "другой код")
     assert cache_key(OBJ, par, build(), 0.04) != k0                                      # код
+
+
+def test_kljuch_sees_series_sigma_value_and_index():
+    inp = build()
+    ser = {"naive": {t: pd.Series(v, inp.pairs[0].dates) for t, v in inp.sigma["naive"].items()}, "const": inp.sigma["const"]}
+    a = dataclasses.replace(inp, sigma=ser)
+    k0 = cache_key(OBJ, {}, a)
+    v = ser["naive"]["AAA"].copy()
+    v.iloc[100] += 1e-6
+    b = dataclasses.replace(inp, sigma={**ser, "naive": {**ser["naive"], "AAA": v}})
+    assert cache_key(OBJ, {}, b) != k0                                  # подменили одно значение
+    c = dataclasses.replace(inp, sigma={**ser, "naive": {**ser["naive"], "AAA": pd.Series(
+        ser["naive"]["AAA"].values, ser["naive"]["AAA"].index + pd.Timedelta(days=1))}})
+    assert cache_key(OBJ, {}, c) != k0                                  # сдвинули индекс
 
 
 def test_period_guards():
