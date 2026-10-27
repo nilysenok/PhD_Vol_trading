@@ -15,7 +15,7 @@ from fastbt.s9_stats import fko_fee, lw_sharpe_diff
 
 SIDS = ("S1", "S2", "S3", "S4", "S5", "S6")
 YEARS = (2018, 2019, 2020, 2021)
-POMETKA = "разработка 2018–2021, после аудита"
+POMETKA = "разработка 2018–2021, после аудита, v3.1 (ddof=1)"
 NAN = float("nan")
 
 
