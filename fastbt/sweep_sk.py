@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from fastbt import cache, grids, msp, s9
-from fastbt.batch import trades_one
+from fastbt.sweep_post import build_view, positions
 from fastbt.data import TICKERS, load_ticker, year_bounds
 from fastbt.indicators import compute_base
 from fastbt.signals.interface import get_family
@@ -62,23 +62,15 @@ class SkEvaluator:
         return {t: Unit(t, self.sid, td, ind, fam.generate(td, ind, [dict(sp)]))
                 for t, (td, ind) in self._td.items()}
 
-    def _rm_index(self, u: Unit, p: dict) -> int:
-        rm = {k: v for k, v in p.items() if k not in self.sig_names}
-        need = {k for k in u.rm[0] if not k.startswith("_")}
-        if need - set(rm):
-            raise KeyError(f"не заданы параметры RM: {sorted(need - set(rm))}")
-        for i, d in enumerate(u.rm):
-            if all(d[k] == rm[k] for k in need):
-                return i
-        raise KeyError(f"точка RM не узел сетки {self.sid}: {rm}")
-
     def pnl(self, sigs: dict, p: dict, comm: float, end: pd.Timestamp) -> pd.DataFrame:
+        """p — плоские параметры (sweep_post.split): RM любыми значениями, маски, q_sily, исполнение, фильтр оборота."""
         pos, lr, tick, bar, date = [], [], [], [], []
         for ti, (t, u) in enumerate(sigs.items()):
             i0 = year_bounds(u.dates, START_YEAR)[0]
             i1 = int(np.searchsorted(u.dates, np.datetime64(end)))
-            te, tx, td = trades_one(u, 0, u.rmP[self._rm_index(u, p)], u.trend, end=i1)
-            full = pos_from_trades(te, tx, td, len(te), u.n)
+            td_, ind = self._td[t]
+            v, ex = build_view(self.sid, u, td_, ind, p, self.sig_names)
+            full = positions(v, ex, i1)
             b = np.arange(i0, i1)
             pos.append(full[b])
             lr.append(u.lr[b])
