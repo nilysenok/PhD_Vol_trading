@@ -25,6 +25,7 @@ SETKI = Path(__file__).parent / "designs" / "sweep"
 OUT = Path("docs/tables/zh047")
 SHAPKA = "# статус: разработка, train 2018–2019; validation не открыта; Ж-047\n"
 POTOLOK, TOPK, MAX_JOBS = 5000, 20, 6
+GATE_COLS = ("G1_pbo", "G2_sdelki", "G3_plato", "G5_s9", "G4_osi", "osi_pos", "ok")      # порядок ключей gates()
 
 
 def load_setka(sid: str, d: Path = SETKI) -> dict:
@@ -84,15 +85,17 @@ def run_strategy(sid: str, evaluate, s9_check, out: Path = OUT, morris_2019: boo
     M, n_mf = matrix(led), led.n_unique
     pb = pbo(M)
     c, pt = pick_center(led, fact, axes, pb, s9_check)
+    nan = float("nan")
     res = led(pt(c), "train") if c else {}
-    x = np.concatenate(list(series(res).values())) if c else np.zeros(2)
+    x = np.concatenate(list(series(res).values())) if c else None
     m = res.get("msr_by_year", {})
     row = dict(strategiya=sid, zapusk=run_id, morris_period=mper, osi_plana=" ".join(plan), N_morris=mo["n_evaluations"],
                N_faktor=fact["n_trials"], N_do_dosheta=n_mf, N_unikalnykh=led.n_unique, N_pbo=M.shape[1], pbo=pb,
-               **({f"p_{k}": v for k, v in pt(c).items()} if c else {}), obj_min_msr=c["objective"] if c else float("nan"),
-               msr_2018=m.get(2018), msr_2019=m.get(2019), plateau=c["plateau"] if c else float("nan"),
-               sigma126=c["sigma126"] if c else float("nan"), **(c["gates"] if c else {}), **psr_dsr(x, M, led.n_unique),
-               verdikt="кандидат на validation" if c and c["gates"]["ok"] else "не дошла: ворота")
+               **{f"p_{k}": (pt(c)[k] if c else nan) for k in axes}, obj_min_msr=c["objective"] if c else nan,
+               msr_2018=m.get(2018, nan), msr_2019=m.get(2019, nan), plateau=c["plateau"] if c else nan,
+               sigma126=c["sigma126"] if c else nan, **{k: (c["gates"][k] if c else nan) for k in GATE_COLS},
+               **(psr_dsr(x, M, led.n_unique) if c else dict(T=nan, psr=nan, dsr=nan, N_dsr=led.n_unique)),
+               verdikt=("кандидат на validation" if c["gates"]["ok"] else "не дошла: ворота") if c else "не дошла: нет кандидата")
     append_csv(out / f"{sid}_morris.csv", [dict(strategiya=sid, zapusk=run_id, period=mper, os=a, rang=i, mu_star=e["mu_star"],
                sigma=e["sigma"], n=e["n"], v_plane=a in plan) for i, (a, e) in enumerate(mo["effects"].items(), 1)])
     append_csv(out / f"{sid}_faktor.csv", [dict(strategiya=sid, zapusk=run_id, **{k: r[k] for k in axes}, objective=r["objective"])
