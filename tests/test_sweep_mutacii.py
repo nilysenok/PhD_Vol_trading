@@ -1,6 +1,8 @@
 """Э1-а (Ж-034): подложенные ошибки в оценщике в памяти (monkeypatch); дерево `fastbt/` не меняется.
 Для каждой: детектор на правильном коде True (тесты в engine/drivers), на мутации — False / сработала защита движка.
 Мутации модуля владельца — `test_sweep_modul_mut.py`. Именование: test_mut_<N>_<что подложено>."""
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -11,7 +13,7 @@ from fastbt.sweep import Sweep
 from fastbt.sweep_spec import SignalCache
 from fastbt.sweep_synth import SynthEvaluator
 from test_sweep_drivers import (ok_cache_keys, ok_cache_miss_end_to_end, ok_cache_separate_from_pnl,
-                                ok_dsr_from_ledger)
+                                ok_dsr_from_ledger, ok_ledger_only_selection_comm)
 from test_sweep_engine import (Tiny, ok_2022_closed, ok_commission_lowers_sharpe, ok_commission_two_sides, ok_ddof1,
                                ok_end_cut, ok_param_pnl, ok_param_signal, ok_periods_raise, ok_reopen_doubles_n,
                                ok_validation_closed, ok_validation_independent)
@@ -154,6 +156,18 @@ def test_mut_18_kesh_signalov_zavisit_ot_pnl_parametra(monkeypatch):
     assert ok_cache_separate_from_pnl()
     monkeypatch.setattr(SynthEvaluator, "sig_names", {"a", "w"})
     assert not ok_cache_separate_from_pnl()
+
+
+def test_mut_25_ledger_pishet_pri_lyuboy_komissii(monkeypatch):
+    assert ok_ledger_only_selection_comm()
+    orig = Sweep.evaluate
+
+    def ev(self, params, period="train", comm_pct=None):
+        r = orig(self, params, period, comm_pct)
+        self.ledger[json.dumps(sorted({**self.spec.base, **params}.items()), default=str)] = r["sr_d"]
+        return r
+    monkeypatch.setattr(Sweep, "evaluate", ev)
+    assert not ok_ledger_only_selection_comm()
 
 
 def test_mut_24_povtornoe_otkrytie_ne_udvaivaet_N(tmp_path, monkeypatch):

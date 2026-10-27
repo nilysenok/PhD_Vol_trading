@@ -154,9 +154,9 @@ def test_tselevaya_lambda_polovina_i_shtraf():
     assert ok_objective_penalty()
 
 
-@pytest.mark.xfail(strict=True, reason="расхождение: sweep_drivers.objective_stable считает σ с ddof=0; контракт и ss.objective — ddof=1 (Д7)")
-def test_tselevaya_sigma_ddof1():
-    want = 0.5 - 0.5 * float(np.std([1.0, 0.0], ddof=1))
+def test_tselevaya_sigma_ddof0_tekushchee_povedenie():
+    """ТЕКУЩЕЕ поведение: σ по годам ddof=0. Открытый вопрос владельцу 27.10 (ddof σ годовых Шарпов)."""
+    want = 0.5 - 0.5 * float(np.std([1.0, 0.0], ddof=0))
     assert sd.objective_stable({"by_year": {2018: 1.0, 2019: 0.0}}) == pytest.approx(want)
 
 

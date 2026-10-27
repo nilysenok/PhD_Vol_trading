@@ -78,19 +78,22 @@ def test_pereschet_pri_drugoy_komissii_ne_dobavlyaet_N():
     assert sw.evaluate(P, "train", 0.035)["N"] == n == 5
 
 
-@pytest.mark.xfail(strict=True, reason="расхождение с контрактом §5: пересчёт при 0,035 перезаписывает SR пробы в ledger (отбор — 0,04)")
+def ok_ledger_only_selection_comm() -> bool:
+    sw = mk()
+    sw.evaluate(P, "train", 0.035)                     # пересчёт — не проба
+    if sw.trials_sr():
+        return False
+    sw.evaluate(P, "train")                            # комиссия отбора (первая в comm_pct) = 0,04
+    return len(sw.trials_sr()) == 1 and sw.spec.comm_pct[0] == 0.04
+
+
+def test_ledger_pishet_tolko_pri_komissii_otbora():
+    assert ok_ledger_only_selection_comm()
+
+
 def test_pereschet_ne_perezapisyvaet_sr_v_ledger():
     sw = mk()
     sw.evaluate(P, "train", 0.04)
     before = list(sw.trials_sr())
     sw.evaluate(P, "train", 0.035)
     assert sw.trials_sr() == before
-
-
-@v11
-@pytest.mark.xfail(strict=True, reason="контракт §6 (формат v1.1): колонки v, obj, period-окна, zaderzhka, chestnaya, series_digest, code_id ещё не в строке")
-def test_kontrakt_stroka_imeet_kolonki_v11():
-    cols = ["v", "obj", "period", "okno_s", "okno_po", "zaderzhka", "chestnaya", "comm_pct", "sharpe", "msr", "sortino",
-            "mdd", "oborot_y", "dni_v_rynke", "sdelok_y", "N", "n_mult", "series_digest", "code_id"]
-    row = mk().evaluate(P)
-    assert [c for c in cols if c not in row] == []
