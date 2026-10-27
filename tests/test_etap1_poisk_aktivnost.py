@@ -83,6 +83,25 @@ def test_plato_net_rovnye_sosedi_prohodyat_provalnaya_k_s_4_net():
     assert not g["ok"] and g["per"]["k_s_net"] is False and g["per"]["tau_net"] is True
 
 
+def test_konechnye_znacheniya_ostayutsya_3_soseda_v_summe():
+    pt = {**PT, "k_s": 2.0}                                            # 2 соседа по k_s, остальные оси «нет» -> сумма 2 < 3
+    g = V.gate_osi(net_led(0.0), pt, AX)
+    assert g["per"]["k_s"] == 2 and not g["ok"]                       # правило min(3, n) пропустило бы
+    pt2 = {**PT, "k_s": 2.0, "tau": 3}                                 # k_s: 2, tau: 2 соседа (1 и 10) -> сумма 4, R «нет» односторонне
+    assert V.gate_osi(net_led(0.0), pt2, AX)["ok"]
+
+
+def test_kray_plana_s_net_ne_otsekaetsya():
+    from fastbt import sweep_drivers as sd
+    ax = {**{k: v[:1] for k, v in AX.items()}, "k_s": [1.0, 2.0, NET]}
+    ev = lambda p, per: dict(msr_by_year={2018: 1.0 + (p["k_s"] == NET), 2019: 1.0 + (p["k_s"] == NET)},    # noqa: E731
+                             excess_d={2018: [0.0, 1.0], 2019: [0.0, 1.0]}, sdelok_y={2018: 40, 2019: 40})
+    led = V.Ledger(ev)
+    fact = sd.factorial_sweep(led, {k: v[0] for k, v in ax.items()}, {"k_s": ax["k_s"]}, "train", objective=V.obj)
+    c, pt, _ = P.pick_center(led, fact, ax, 0.0, lambda p: True, {k: v[0] for k, v in ax.items()})
+    assert c is not None and pt(c)["k_s"] == NET                       # у «нет» соседей < 3, но это не край по Ж-048
+
+
 def test_mutaciya_porog_plato_net_beskonechnost_lovitsya(monkeypatch):
     monkeypatch.setattr(V, "PLATO_NET", math.inf)
     assert V.gate_osi(net_led(0.5), PT, AX)["ok"]                      # с порогом ∞ провал k_s = 4 пропущен

@@ -19,7 +19,7 @@ import pandas as pd
 import yaml
 
 from fastbt import sweep_drivers as sd
-from fastbt.etap1_poisk_vorota import (Ledger, dopustima, gates, matrix, obj, obj_morris, pbo, pick_best, po_godam,
+from fastbt.etap1_poisk_vorota import (OSI, Ledger, dopustima, gates, matrix, obj, obj_morris, pbo, pick_best, po_godam,
                                        pkey, psr_dsr, series, sigma126)
 
 SETKI = Path(__file__).parent / "designs" / "sweep"
@@ -53,7 +53,8 @@ def pick_center(led: Ledger, fact: dict, axes: dict, pb: float, s9_check, yakor:
     ничья <= 0,05 — меньшая σ126. Возвращает (кандидат | None, pt, число допустимых)."""
     sc = sd.pick_by_plateau(fact, k=len(fact["rows"]), radius=1, min_neighbors=3)
     pt = lambda r: {k: r[k] for k in axes}                                       # noqa: E731
-    ok = [r for r in sc if not r["edge"] and math.isfinite(r["objective"]) and not led(pt(r), "train").get("vyrozhdena")
+    net_osi = lambda r: any(r[a] == "net" for a in OSI if a in fact["keys"])     # noqa: E731  «нет» на оси — край по Ж-048, не отсев
+    ok = [r for r in sc if (not r["edge"] or net_osi(r)) and math.isfinite(r["objective"]) and not led(pt(r), "train").get("vyrozhdena")
           and dopustima(led, pt(r), yakor)]
     cands = ok[:TOPK]
     for c in cands:

@@ -105,17 +105,17 @@ def net_plato(led: Ledger, pt: dict, a: str, axes: dict) -> bool:
 
 
 def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:
-    """Плато по k_s, R, τ: конечное значение — >= 3 положительных соседей всего (или все, если их меньше) и по оси >= 1;
-    «нет» — одностороннее плато net_plato."""
-    per, net, n_nb = {}, {}, 0
+    """Плато по k_s, R, τ: конечные значения — >= 3 положительных соседей в сумме и >= 1 на оси (без изменений, Ж-048);
+    ось с «нет» — одностороннее плато net_plato, в счёт >= 3 не входит."""
+    per, net = {}, {}
     for a in OSI:
         if a == "R" and pt.get("k_s") == NET:
             continue                                                                  # R при k_s = нет вырождена
         if pt.get(a) == NET:
             net[a] = net_plato(led, pt, a, axes)
         elif nb := neighbors(pt, [a], axes):
-            per[a], n_nb = n_pos(led, nb), n_nb + len(nb)
-    ok = bool(per or net) and all(net.values()) and all(v >= 1 for v in per.values()) and sum(per.values()) >= min(3, n_nb)
+            per[a] = n_pos(led, nb)
+    ok = bool(per or net) and all(net.values()) and all(v >= 1 for v in per.values()) and (not per or sum(per.values()) >= 3)
     return dict(per={**per, **{f"{a}_net": v for a, v in net.items()}}, ok=ok)
 
 
