@@ -34,7 +34,8 @@ class Stop(SystemExit):
         print(f"СТОП: {msg}", file=sys.stderr, flush=True)
 
 
-def koren_repo(root=Path(__file__).resolve().parent.parent) -> Path:
+def koren_repo(root=None) -> Path:
+    root = Path(__file__).resolve().parent.parent if root is None else Path(root)
     r = subprocess.run(["git", "-C", str(root), "rev-parse", "--git-common-dir"], capture_output=True, text=True, timeout=20)
     if r.returncode != 0 or not r.stdout.strip():
         raise Stop(f"{root}: не git-репозиторий — путь замка не определить")
@@ -49,6 +50,11 @@ class Puti:
     lock: Path | None = None
     reestr: Path | None = None
     out: Path | None = None
+
+    @classmethod
+    def default(cls, root=None) -> "Puti":
+        """Замок и реестр — от корня основной копии (git common-dir), а не от рабочей копии worktree."""
+        return cls(koren=koren_repo(root))
 
     def __post_init__(self):
         k = Path(self.koren)
@@ -68,6 +74,8 @@ def _t(s: str) -> datetime:
 
 def check_da(spec: dict, sha: str, P: Puti) -> None:
     """Образец — `scripts/otkrytie_gl4.check_da`: строка «да» в журнале под Ж-номером, позже заморозки, с полным sha."""
+    if spec.get("zamorozheno_sha") != sha:
+        raise Stop("список кандидатов изменён после заморозки (sha не равен zamorozheno_sha): новая заморозка, не перевыпуск «да»")
     d = spec.get("da_vladeltsa") or {}
     stroka, zh = str(d.get("stroka") or "").strip(), str(d.get("zhurnal") or "")
     if not stroka or not re.search(r"(?<![А-Яа-яЁё])да(?![А-Яа-яЁё])", stroka, re.I):

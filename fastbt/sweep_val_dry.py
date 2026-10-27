@@ -40,7 +40,7 @@ def make_spec(tmp: Path, meta: list, note=None) -> tuple:
     P.zhurnal.parent.mkdir(parents=True, exist_ok=True)
     stroka = f"да, открыть validation A′, sha {sv.sha_kandidatov(meta)}"
     P.zhurnal.write_text(f"### Ж-099 · 28.10.2026, 09:30\n{stroka}\n", "utf-8")
-    return P, dict(zamorozheno_v="2026-10-28 09:00", reopen_note=note,
+    return P, dict(zamorozheno_v="2026-10-28 09:00", zamorozheno_sha=sv.sha_kandidatov(meta), reopen_note=note,
                    da_vladeltsa=dict(stroka=stroka, zhurnal="Ж-099"))
 
 
