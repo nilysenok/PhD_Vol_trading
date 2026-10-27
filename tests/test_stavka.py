@@ -161,3 +161,30 @@ def test_dev_paths_use_rate_cbr_not_restored():
     for f in ("fastbt/s9.py", "fastbt/fast_grid.py", "scripts/analysis/s9_shag0.py"):
         src = (ROOT / f).read_text(encoding="utf-8")
         assert "rate_restored()" not in src.replace("rate_restored», ", ""), f
+
+
+def pq_series() -> pd.Series:
+    k = pd.read_parquet(msp.KEY_RATE)
+    return k.set_index(pd.to_datetime(k["date"]))["value"].sort_index() / 100.0
+
+
+def check_tail_equals_parquet(x: pd.Series) -> None:
+    """С 2022-01-01 по последнюю дату parquet ряд равен parquet день в день (календарные дни, ffill)."""
+    p = pq_series()
+    days = pd.date_range("2022-01-01", p.index[-1])
+    assert (daily(x, days) - daily(p, days)).abs().max() < 1e-12, "ряд ≥ 2022 расходится с parquet"
+
+
+def test_rate_cbr_from_2022_equals_parquet():
+    check_tail_equals_parquet(msp.rate_cbr())
+
+
+def test_tail_mutations_are_caught():
+    o, p = owner(), pq_series()
+    cut = pd.Timestamp("2022-03-01")
+    shifted = pd.concat([o[o.index < cut], p[p.index >= cut]])                 # разрез внутри 19.12.2021–28.02.2022
+    with pytest.raises(AssertionError):
+        check_tail_equals_parquet(shifted)
+    whole = pd.concat([o[o.index < pd.Timestamp("2023-01-01")], p[p.index >= pd.Timestamp("2023-01-01")]])
+    with pytest.raises(AssertionError):                                        # ряд владельца на весь 2022
+        check_tail_equals_parquet(whole)
