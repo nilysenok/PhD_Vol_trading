@@ -157,6 +157,19 @@ def evaluate(obj: dict, params: dict, period: str, commission: float, inp: Input
             "okno_po": str(t1.date()), "chestnaya": HONEST[period], "comm_pct": commission, "excess_d": list(x)}
 
 
+def point_params(point: dict) -> dict:
+    """Точка сетки (оси C_setka_e2 / E_setka_e2.yaml) → params оценщика: p в % → доля, pary → p1, p2, ab → a = b.
+    Ось sigma — не параметр, а obj['sigma'] (её берёт вызывающий)."""
+    out = {k: v for k, v in point.items() if k not in ("sigma", "pary", "ab", "p")}
+    if "p" in point:
+        out["p"] = point["p"] / 100
+    if "pary" in point:
+        out["p1"], out["p2"] = (x / 100 for x in point["pary"])
+    if "ab" in point:
+        out["a"] = out["b"] = point["ab"]
+    return out
+
+
 def make_evaluate(obj: dict, inp: Inputs, commission: float):
     """Замыкание (params, period) → row для oat_sweep / factorial_sweep (sweep_drivers)."""
     return lambda params, period: evaluate(obj, params, period, commission, inp)

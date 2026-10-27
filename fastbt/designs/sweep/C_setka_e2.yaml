@@ -1,0 +1,38 @@
+# Сетка C (Ж-036, T2). До счёта; N фиксируется этим коммитом. Формат — как S*_setka_e1b.yaml (sweep-setka v1).
+# Источник точек: fastbt/designs/s9/setka_C_v3.yaml и docs/otchety/2026-10-27_gl4_parametry_setki.md §3 (C 324) — без изменений.
+# Оценщик: fastbt/sem_e.py, obj {kind: C, sigma: <ряд>}; база на время разработки — текущий A (не A′).
+v: 1
+format: sweep-setka
+punkt: "Ж-036#T2"
+obekt: {kind: C, tip: zatvor_po_rangu_sigma, baza: A_tekushchiy}
+tochka: odna_konfiguratsiya   # затвор g и σ-ряд общие для всех 17 тикеров; без внутреннего выбора на тикер/год
+period: {tsel: tune2018, kontrol: ctrl2019, validation: zakryto}   # имена — контракт sweep_evaluate §4
+komissiya: {otbor: 0.0004, pereschet: [0.00035]}
+
+semyi:   # osi — оси перебора; mnozhitel — множитель точек; bez_naive — семья не строится на наивной σ
+  C1:
+    opisanie: "затвор 1[R > 1−p] (тренд) / 1[R < p] (контртренд) / 1[1−p ≤ R ≤ p] (диапазон) по рангу σ̂ в окне W"
+    osi: {W: [126, 252, 504], p: [50, 60, 70, 80, 90]}                      # 3×5 = 15
+  C2W:
+    opisanie: "частичная 1 → 0,5 → 0 по двум порогам (p1 < p2)"
+    osi: {W: [126, 252, 504], pary: [[50, 60], [60, 70], [70, 80], [80, 90], [50, 70], [60, 80], [70, 90]]}   # 3×7 = 21
+  Cstar_filtr:
+    opisanie: "C*: ранг σ̂/√RV_w, фильтр"
+    osi: {W: [126, 252, 504], p: [50, 60, 70, 80, 90]}                      # 15
+    bez_naive: true
+  Cstar_chastichnaya:
+    opisanie: "C*: ранг σ̂/√RV_w, частичная"
+    osi: {W: [126, 252, 504], pary: [[50, 60], [60, 70], [70, 80], [80, 90], [50, 70], [60, 80], [70, 90]]}   # 21
+    bez_naive: true
+
+min_periods: {126: 50, 252: 50, 504: 252}   # W504 — растущее окно 252 → 504; ранг строго по прошлому (Н1)
+okno_rv_w: 5                                 # √RV_w для C*
+
+sigmy:   # ряды σ̂ и горизонты; на наивной C* исключена (ранг σ̂/√RV_w ≡ 1), h = 5 исключён (совпадает с h = 1 побайтно)
+  hyb:   {h: [1, 5], tochek: 144}   # (15 + 21 + 15 + 21) × 2
+  harj:  {h: [1, 5], tochek: 144}
+  naive: {h: [1],    tochek: 36}    # (15 + 21) × 1
+
+kontroli: {k2: {sdvigov: 1000, seed: 20261027, lag: "[21, T−21] по тикеру"}, k3: "A без S5/S6", lestnitsa: [const, naive, harj, hyb]}
+
+N: {C1: 15, C2W: 21, Cstar_filtr: 15, Cstar_chastichnaya: 21, itogo: 324}

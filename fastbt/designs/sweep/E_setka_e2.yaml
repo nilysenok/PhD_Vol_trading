@@ -1,0 +1,37 @@
+# Сетка E (Ж-036, T2; постановка docs/zadaniya/2026-10-27_semya_E.md §4). До счёта; N фиксируется этим коммитом.
+# Формат — как S*_setka_e1b.yaml (sweep-setka v1). Оценщик: fastbt/sem_e.py, obj {kind: E, sigma: <ступень>, u: <подвыборка>}.
+# База на время разработки — текущий A (не A′). Исполнение — fastbt/exec_e.py по 5-мин барам (§2); длинная сторона A.
+v: 1
+format: sweep-setka
+punkt: "Ж-036#T2"
+obekt: {kind: E, tip: tsena_po_sigma, baza: A_tekushchiy}
+tochka: odna_konfiguratsiya
+period: {tsel: tune2018, kontrol: ctrl2019, validation: zakryto}
+komissiya: {otbor: 0.0004, pereschet: [0.00035]}
+
+stupeni_sigma: [const, naive, harj_h1, hyb_h1]   # sigma_e: E-const σ̄252, E-naive √RV_5, HAR-J (б) h1 d0, гибрид h1 d0
+
+semyi:
+  E0:
+    opisanie: "сила сигнала без прогноза: сделки при силе выше квантиля q её истории (окно 252, строго прошлое); q = 0 ≡ A"
+    osi: {q: [0.0, 0.50, 0.67, 0.75]}                                       # 4 (σ не участвует)
+  E1:
+    opisanie: "лимит входа L = P_d·(1 − k·σ̂₁); f — что делать при неисполнении за d+1; выход как в A"
+    osi: {q: [0.0, 0.50, 0.67, 0.75], k: [0.25, 0.50, 0.75, 1.00], f: [propusk, zakrytie_d1, povtor],
+          sigma: [const, naive, harj_h1, hyb_h1]}                           # 4×4×3×4 = 192
+  E2:
+    opisanie: "вход как в A (close d); T = P·(1 + a·σ̂), S = P·(1 − b·σ̂), a = b; τ — временной стоп; s — σ̂ уровней"
+    osi: {q: [0.0, 0.67], ab: [1.0, 1.5, 2.0], tau: [1, 5], s: [fiks, ezhedn],
+          sigma: [const, naive, harj_h1, hyb_h1]}                           # 2×3×2×2×4 = 96 (первый круг, §4 ⚑)
+  E3:
+    opisanie: "лучшие по С8 v2 точки E1 × E2 (не более 3 × 3 на ступень σ), без нового перебора; N — потолок"
+    osi: {top_E1: [1, 2, 3], top_E2: [1, 2, 3], sigma: [const, naive, harj_h1, hyb_h1]}   # 3×3×4 = 36 (потолок)
+
+podvyborka_u: [vse_17, top10_oborot_proshlogo_goda]   # ex-ante, раз в год (likvidnost_e); без отбора по результату
+
+N:   # E0 + E1 + E2 + E3
+  bez_u: 328      # 4 + 192 + 96 + 36
+  s_u: 656        # × 2 подвыборки u — N в DSR (консервативно, больше N — строже)
+  v_dsr: 656
+# Не входит в N: σ̂₅/√5 (sigma_e: harj_h5d, hyb_h5d) для многодневного удержания (§2) и полная сетка E2 864 вокруг прошедших —
+# появятся расширением с датой и причиной, N обновляется (otbor_statistika.md п. 1).

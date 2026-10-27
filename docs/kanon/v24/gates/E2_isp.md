@@ -66,29 +66,32 @@ EVIDENCE: даты 2018-01-03…2019-12-30 (506 дн.), пустых дней 0;
 ## PR3 — сетки C/E
 
 ## G12 — C_setka_e2.yaml: 324 точки по setka_C_v3.yaml и gl4_parametry_setki
-CHECK: python3 -I <scratchpad>/count_setki.py fastbt/designs/sweep/C_setka_e2.yaml
+CHECK: python3 <scratchpad>/count_setki.py fastbt/designs/sweep/C_setka_e2.yaml (без -I: PyYAML в пользовательском site-packages); python3 -m pytest tests/test_sem_e_setki.py -q
 EXPECT: N_C = 324
-EVIDENCE: pending
+EVIDENCE: hyb 144, harj 144, naive 36, N_C = 324, код 0; тест N из осей passed
 
 ## G13 — E_setka_e2.yaml: E0 4, E1 192, E2 96, E3 ≤ 36, подвыборка u ×2; N задан в файле и в отчёте
-CHECK: python3 -I <scratchpad>/count_setki.py fastbt/designs/sweep/E_setka_e2.yaml
+CHECK: python3 <scratchpad>/count_setki.py fastbt/designs/sweep/E_setka_e2.yaml
 EXPECT: E0=4, E1=192, E2=96, E3=36, u=2; N_без_u = 328, N_с_u = 656
-EVIDENCE: pending
+EVIDENCE: {'E0': 4, 'E1': 192, 'E2': 96, 'E3': 36}, N_без_u = 328, u = 2, N_с_u = 656, код 0; все значения осей E0/E1/E2 и C принимаются sem_e (tests/test_sem_e_setki.py, 19 passed вместе с test_sem_e)
 
 ## G14 — отчёт docs/otchety/2026-10-27_sem_e_setki.md с N до счёта
 CHECK: grep -c "N_E" docs/otchety/2026-10-27_sem_e_setki.md
 EXPECT: ≥ 1
-EVIDENCE: pending
+EVIDENCE: 2 (строк с N_E)
 
 ## Общие
 
-## G15 — узкая проверка: fmt/py_compile, cargo xtask check красных 0, git status чист
-CHECK: python3 -m py_compile fastbt/exec_e.py fastbt/sem_e.py; cargo xtask check
+## G15 — узкая проверка: py_compile, весь набор T2 проходит, git status чист
+CHECK: python3 -m py_compile fastbt/exec_e.py fastbt/sem_e.py; FASTBT_MAIN=$PWD python3 -m pytest tests/test_exec_e.py tests/test_exec_e_anchor.py tests/test_exec_e_mut.py tests/test_sem_e.py tests/test_sem_e_setki.py -q
 EXPECT: коды 0
-EVIDENCE: pending
+EVIDENCE: py_compile ок; 60 passed; мутации 21 из 21 падают (скрипт вне репозитория)
 
 ## ABANDON
 ABANDON: G11b q > 0 на реальных данных — сила сигнала ансамбля A (голос 10 конфигураций) нигде не хранится: в кэше s9 только позиции; постановка §4 ⚑ «определение из кода A». Модуль требует Pair.strength и при q > 0 без неё падает ValueError («нет силы сигнала»), тихой подмены нет. Нужно решение: определение силы для ансамбля (❓ владельцу/T1, класс A, так как меняет точки E0).
 
+ABANDON: G15b `cargo xtask check` — в этом репозитории (Python, база `kanon-v22-pereschet`) команды xtask нет (`error: no such command: xtask`); CLAUDE.md проекта: «не применяется». Замена — py_compile и pytest в G15.
+
 ## Реестр
-закрыто 0 из 15; ABANDON: 0; pending: 15
+закрыто 15 из 15 (G1–G15); ABANDON: 2 (G11b — сила A для q > 0 на реальных данных; G15b — xtask отсутствует); pending: 0
+Отчёт — «передача», а не «готово» (polnota.md п. 12): есть ABANDON.
