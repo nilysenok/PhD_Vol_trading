@@ -38,9 +38,23 @@ class Fastbt(V4):
         self.mask_old = mask_old
         self.name = 'fastbt' + ('_mask_old' if mask_old else '')
 
+    def _load_new_series(self):
+        """Новый ряд до 18:50, только ≤ 2021 (fastbt.daily_1850); σ_pred тоже ≤ 2021 (фильтр на чтении).
+        Детектор утечек не читает тестовый период (≥ 2022) для fastbt-стратегии."""
+        import pyarrow.parquet as pq
+        sys.path.insert(0, str(REPO))
+        from fastbt import daily_1850 as D
+        end = D.END.to_pydatetime()
+        d = pq.read_table(D.ensure(D.out_path(REPO), REPO), filters=[('date', '<', end), ('ticker', '=', self.ticker)]).to_pandas()
+        d['date'] = pd.to_datetime(d['date'])
+        vp = pq.read_table(data_dir() / 'vpred_aligned.parquet', filters=[('date', '<', end)]).to_pandas()
+        vp['date'] = pd.to_datetime(vp['date'])
+        assert d['date'].max() < D.END and vp['date'].max() < D.END
+        return dict(bars=d.sort_values('date').reset_index(drop=True), vp=vp)
+
     def load(self):
         src = fastbt_src()
-        base = super().load()
+        base = self._load_new_series()
         tmp = Path(tempfile.mkdtemp(prefix='leak_fb_smoke_'))
         try:
             self._write(base, tmp)
@@ -55,7 +69,7 @@ class Fastbt(V4):
     @staticmethod
     def _write(wd, d):
         bars = wd['bars'].copy()
-        bars.to_parquet(d / 'ohlcv_daily_full.parquet', index=False)
+        bars.to_parquet(d / 'ohlcv_daily_1850.parquet', index=False)
         wd['vp'].to_parquet(d / 'vpred_aligned.parquet', index=False)
 
     def run(self, wd, h, steps, tag=''):

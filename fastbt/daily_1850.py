@@ -39,7 +39,8 @@ def default_main() -> Path:
 
 
 def aggregate(bars: pd.DataFrame, ticker: str, cut_min: int = CUT_MIN) -> pd.DataFrame:
-    """Дневные OHLCV из 10-минуток (колонки timestamp, open, high, low, close, volume)."""
+    """Дневные OHLCV из 10-минуток (колонки timestamp, open, high, low, close, volume).
+    Нижняя граница — константа модуля OPEN_MIN (тесты-мутации подменяют её в памяти)."""
     b = bars.sort_values("timestamp")
     mod = b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute
     b = b[(mod >= OPEN_MIN) & (mod < cut_min)]
@@ -73,16 +74,56 @@ def out_path(main: Path | None = None) -> Path:
     return (main or default_main()) / "data" / "fastbt" / "daily" / "ohlcv_daily_1850.parquet"
 
 
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def marker(path: Path) -> Path:
+    return path.with_name(path.name + ".sha256")
+
+
+def is_ready(path: Path) -> bool:
+    """Готов = файл есть, маркер завершения есть и его хэш равен хэшу файла (не просто «существует»)."""
+    m = marker(path)
+    return path.exists() and m.exists() and m.read_text().strip() == sha256(path)
+
+
+def _atomic_write(path: Path, data: bytes) -> None:
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_bytes(data)
+    os.replace(tmp, path)
+
+
 def ensure(path: Path, main: Path | None = None) -> Path:
-    """Собрать ряд, если файла нет (data/fastbt в git не идёт); существующий не перезаписывается."""
-    if not path.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-        build(main).to_parquet(path, index=False)
+    """Собрать ряд, если он не готов (data/fastbt в git не идёт). Запись: временный файл в той же папке,
+    os.replace, затем маркер с хэшем; параллельные процессы идут по очереди под flock."""
+    import fcntl
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path.with_name(f".{path.name}.lock"), "w") as lk:
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        if not is_ready(path):
+            marker(path).unlink(missing_ok=True)
+            tmp = path.with_name(f".{path.name}.{os.getpid()}.parquet.tmp")
+            build(main).to_parquet(tmp, index=False)
+            os.replace(tmp, path)
+            _atomic_write(marker(path), sha256(path).encode())
     return path
 
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def check_data_root(root: str | Path) -> Path:
+    """--data-root: только копия НОВОГО ряда (ohlcv_daily_1850.parquet, даты ≤ 2021). Старый ряд
+    ohlcv_daily_full (вечерняя сессия) — режим «как до Н6», Ж-019 п. 11 его запрещает. Возвращает путь к ряду."""
+    r = Path(root)
+    f = r if r.is_file() else r / "ohlcv_daily_1850.parquet"
+    if f.name == "ohlcv_daily_full.parquet" or (r.is_dir() and (r / "ohlcv_daily_full.parquet").exists()):
+        raise SystemExit(f"--data-root {root}: старый ряд ohlcv_daily_full (с вечерней сессией) запрещён (Ж-019 п. 11); "
+                         "нужна копия ohlcv_daily_1850.parquet")
+    if f.name != "ohlcv_daily_1850.parquet" or not f.exists():
+        raise SystemExit(f"--data-root {root}: нет ohlcv_daily_1850.parquet (копии нового ряда)")
+    mx = pd.read_parquet(f, columns=["date"])["date"].max()
+    if pd.Timestamp(mx) >= END:
+        raise SystemExit(f"--data-root {root}: ряд содержит даты ≥ 2022 ({mx}) — это не новый ряд")
+    return f
 
 
 if __name__ == "__main__":

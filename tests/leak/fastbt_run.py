@@ -1,6 +1,6 @@
 """Внутренний раннер fastbt (выполняется ПОД cwd = каталог с пакетом fastbt, отдельным процессом):
 python3 fastbt_run.py --root DIR --year Y --ticker SBER --sid S3 --out FILE.parquet [--mask-old]
-Данные берёт из FASTBT_DATA_ROOT=DIR (ohlcv_daily_full.parquet, vpred_aligned.parquet) — как `fastbt.dev --data-root`.
+Данные берёт из FASTBT_DATA_ROOT=DIR (копия нового ряда ohlcv_daily_1850.parquet, vpred_aligned.parquet) — как `fastbt.dev --data-root`.
 Конфигурация: по умолчанию маска [0] (Config()), --mask-old = Config.gate() (маска [1], поведение c22a4b3)."""
 import argparse, dataclasses, os, sys
 
