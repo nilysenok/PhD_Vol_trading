@@ -72,6 +72,26 @@
 | 29 | Хэши для скрипта открытия: SHA кода, SHA входов, SHA спецификации, ключи дизайнов | `scripts/otkrytie_gl4.py`, `docs/final_gl4/chisla_gl4.schema.json`, `docs/final_gl4/zagotovki/` (T4 архитектор) | pending |
 | 30 | Строка «да» владельца с датой и временем; без неё скрипт отказывает | владелец; по графику Ж-036 — «да» 28.10 12:00, открытие 12:30 | pending |
 
+## H. Дополнения координатора (#307 слит; ветка `final-b-cheklist-2`, 27.10)
+
+Источники: сообщение координатора (проверяющий T4) и документы, на которые оно ссылается. Толкования дирижёра 27.10 не сверены с текстом `docs/resheniya/tolkovaniya.md` — сверить до заморозки.
+
+| № | Что зафиксировать | Откуда берётся | Статус |
+|---|---|---|---|
+| 31 | Окно теста `okno_testa` и срез: умолчание — последний день данных 02.2026; точную дату фиксирует скрипт открытия. Заменяет умолчание 03.02.2026 в `docs/final_gl4/FINAL_B.md` §13 и §16 | толкование 27.10 (`docs/resheniya/tolkovaniya.md`, сверить); `scripts/otkrytie_gl4.py` (T4) | pending |
+| 32 | `zamorozheno_v` и порядок: заморозка раньше «да» (спецификация замораживается до строки «да», скрипт проверяет `zamorozheno`) | `templates/FINAL_DESIGN.md` п. 3 и 17; толкование 27.10 (сверить) | pending |
+| 33 | Строка «да» (п. 30) содержит Ж-номер блока владельца и `sha_spec` — SHA спецификации, зафиксированной до «да» | `templates/FINAL_DESIGN.md` п. 17; `docs/resheniya/resheniya.md` (номер блока) | pending |
+| 34 | `var_sr_d` и N на каждую семью (C, E, B, D) и на A′: значение `var_sr_d` и число дизайнов в поправке DSR | `.claude/rules/otbor_statistika.md` п. 5 (DSR с фактическим N); определение `var_sr_d` — pending, сверить с `fastbt/sweep_drivers.py` (Ж-035) | pending |
+| 35 | Ледуа–Вольф: `seed`, `reps` = 10000, `block` = 5 | `docs/otchety/FINAL_DESIGN_strategies_v2_chernovik.md` п. 5 (блок 5, 10 000 повторов); `seed` — pending | pending |
+| 36 | Ступени к2 и `k3_sigma`: список ступеней контроля к2 и σ-уровень к3 | `docs/resheniya/resheniya.md` Ж-031 Э2; `.claude/rules/otbor_statistika.md` п. 2; определение к2 — `❓!` (см. ниже) | pending |
+| 37 | По каждой гипотезе H2a, H2b, H3, H4: id заданий, знак эффекта, `alfa`, поправка Холма | `.claude/rules/otbor_statistika.md` п. 5, 8; формулировки гипотез — `❓!` владелец | pending · ❓! |
+| 38 | Оценщики (id) и id точек: какой оценщик считает какую точку | `docs/zadaniya/2026-10-27_komandy_T1_T4.md` (T2 `fastbt/sem_e.py`, T1 `sweep_drivers`); `docs/resheniya/resheniya.md` Ж-035 | pending |
+| 39 | Функция проверки сдвига: имя, вход, критерий (argmax, ε = 0,01 для уровня, по приращениям для оконных) | `docs/otchety/FINAL_DESIGN_strategies_v2_chernovik.md` п. 2 (`r2_features.shift_table`, `r2_loyo.sdvig_ok`); `.claude/rules/dannye.md` Д1 | pending |
+| 40 | SHA-256: `FINAL_B.md`, гейтов E1–E4, агрегата `fastbt/**`, 10-минуток по 17 тикерам | `docs/final_gl4/FINAL_B.md` (этот PR); гейты — `docs/kanon/v24/gates/E*_*.md` (T2–T3); агрегат — `git ls-files fastbt`; 10-минутки — путь ❓ дирижёр | pending |
+| 41 | Лаг исполнения d+1: решение на закрытии d исполняется не раньше d+1 | `.claude/rules/dannye.md` Д2; `docs/zadaniya/2026-10-27_semya_E.md` §8 (мутация «исполнение по барам дня d вместо d+1») | pending |
+| 42 | Пометка «после аудита» (ключ `audit_zakryt`) — проставляется только после завершения аудита сигналов, сделок и B | `docs/otchety/FINAL_DESIGN_strategies_v2_chernovik.md` п. 10; `.claude/rules/otchety.md` п. 1 | pending |
+| 43 | Правило validation дословно из Ж-031: «открывается один раз на этап; повторный взгляд — максимум один, с заранее записанным изменением и удвоением N в DSR» | `docs/resheniya/resheniya.md` Ж-031, блок «Период» | pending |
+
 ## Вопросы, ожидающие ответа (вне таблиц)
 
 - `❓!` 27.10 формулировки гипотез H2a, H2b, H3, H4 (предикат, тест, основная метрика) не заданы в источниках · срок: 28.10 09:00 (владелец). Относится к пп. 21–24.
