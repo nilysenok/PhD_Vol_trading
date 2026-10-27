@@ -56,7 +56,7 @@ CHECK: ... -k plato
 EXPECT: passed, 0 failed
 EVIDENCE: 3 passed, 67 deselected
 
-## G11 — Шарп ddof=1 (мутация № 12); σ в objective_stable — ddof=1 (xfail strict: модуль считает ddof=0)
+## G11 — Шарп ddof=1 (мутация № 12); σ в objective_stable — ddof=0, тест текущего поведения (вопрос владельцу 27.10)
 CHECK: ... -k ddof
 EXPECT: passed, 0 failed; 1 xfailed
 EVIDENCE: 3 passed, 66 deselected, 1 xfailed
@@ -84,4 +84,4 @@ EVIDENCE: 196 / 96 / 200 / 103 / 162; py_compile ok
 ## ABANDON
 
 ## Реестр
-закрыто 15 из 15; ABANDON: 0 (G11, G12 содержат по 1 xfail strict — расхождение модуля с ddof=1, названо в PR)
+закрыто 15 из 15; ABANDON: 0 (остались 2 xfail strict v11: Моррис σ, Optuna n_jobs)
