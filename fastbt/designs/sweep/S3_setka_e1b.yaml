@@ -1,0 +1,84 @@
+# Сетка Э1-б (Ж-031#Э1-б), S3 Donchian. До счёта; N фиксируется этим коммитом.
+# Схема sweep-setka v1, значения dostup и правила счёта N — docs/otchety/2026-10-27_setki_e1b.md §2–3.
+v: 1
+format: sweep-setka
+punkt: "Ж-031#Э1-б"
+obekt: {tip: strategiya, sid: S3, semya: Trend}
+tochka: odna_konfiguratsiya
+etalon: A_ishodnaya
+period: {tsel: tune2018, kontrol: ctrl2019, validation: zakryto}
+komissiya: {otbor: 0.0004, pereschet: [0.00035]}
+rezhimy: [oat, faktornyy, optuna]
+
+bloki:
+  signal:
+    parametry:
+      - {imya: dc_window, edinitsa: dni, ishodnoe: 20, v_A: [10, 15, 20, 25], setka: [5, 10, 15, 20, 30, 40, 60], dostup: kod,
+         obosnovanie: "горизонт пробоя: недельный … квартальный экстремум (20 — классика «черепах»)"}
+
+  filtry_zashity:   # константы s34.py:109-111; ужесточение — маска на sig в sweep.py, ослабление — правка
+    parametry:
+      - {imya: adx_min, ishodnoe: 20, setka: ["off", 15, 20, 25, 30], dostup: obertka, pravka_znach: ["off", 15],
+         obosnovanie: "сила тренда для пробоя: off — пробой без подтверждения тренда"}
+      - {imya: obyom_mnozh_sma20, ishodnoe: 1.0, setka: ["off", 0.8, 1.0, 1.2, 1.5], dostup: obertka, pravka_znach: ["off", 0.8],
+         obosnovanie: "пробой на повышенном объёме: доля SMA20"}
+      - {imya: vf_porog, edinitsa: dolya_SMA20_obyoma, ishodnoe: 0.5, setka: [0.25, 0.5, 0.75, 1.0], dostup: obertka, pravka_znach: [0.25],
+         obosnovanie: "ликвидность дня"}
+
+  rm:
+    edinitsa: atr14   # тейка и временного стопа у тренда в A нет (spec п. 3, 6)
+    parametry:
+      - {imya: rm_edinitsa, ishodnoe: atr14, setka: [atr14, sqrt_rv], dostup: obertka, obosnovanie: "переключатель на выходы в √RV"}
+      - {imya: initial_sl_mult, ishodnoe: 2.5, v_A: [2.0, 2.5, 3.0], setka: [1.5, 2.0, 2.5, 3.0, 4.0], dostup: kod,
+         obosnovanie: "начальный стоп в ATR: пробой ложный, если цена вернулась на столько"}
+      - {imya: trail_type, ishodnoe: fixed_atr, v_A: [fixed_atr, chandelier, parabolic_step, "off"], setka: [fixed_atr, chandelier, parabolic_step, "off"], dostup: kod,
+         obosnovanie: "форма трейла; off = trail_atr_mult 99 (варианты «OFF max_hold» A)"}
+      - {imya: trail_n, edinitsa: dni, ishodnoe: 15, v_A: [10, 15, 20, 30, 50, 100, 200], setka: [5, 10, 15, 20, 30, 60], dostup: kod,
+         obosnovanie: "окно максимума для трейла: неделя … квартал"}
+      - {imya: trail_atr_mult, ishodnoe: 3.0, v_A: [2.0, 3.0, 4.0, 5.0], setka: [1.5, 2.0, 3.0, 4.0, 5.0, 6.0], dostup: kod,
+         obosnovanie: "дистанция трейла в ATR: узкий режет тренд, широкий отдаёт прибыль"}
+      - {imya: breakeven_thresh, edinitsa: atr14, ishodnoe: null, v_A: [null, 1.0], setka: [null, 0.5, 1.0, 1.5, 2.0], dostup: kod,
+         obosnovanie: "трейл не ниже цены входа после хода k·ATR"}
+      - {imya: cooldown_bars, edinitsa: dni, ishodnoe: 0, v_A: [0, 5], setka: [0, 2, 5, 10, 20], dostup: kod,
+         obosnovanie: "пауза после стопа: серия ложных пробоев"}
+
+  rm_parabolic:
+    uslovie: {trail_type: parabolic_step}
+    parametry:
+      - {imya: parabolic_step, ishodnoe: 0.02, v_A: [0.01, 0.02], setka: [0.01, 0.02, 0.03], dostup: kod, obosnovanie: "шаг ускорения SAR (Уайлдер 0,02)"}
+      - {imya: parabolic_max, ishodnoe: 0.15, v_A: [0.10, 0.15], setka: [0.10, 0.15, 0.20], dostup: kod, obosnovanie: "предел ускорения SAR"}
+
+  rm_sqrt_rv:   # задел под E: ядро B kind=2 (тренд), в слот σ — наивная √RV_w
+    uslovie: {rm_edinitsa: sqrt_rv}
+    parametry:
+      - {imya: k_sl, edinitsa: sqrt_rv, ishodnoe: 3.0, setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0], dostup: obertka, obosnovanie: "начальный стоп в σ; 3,0 ≈ 2,5 ATR (оценка)"}
+      - {imya: k_trail, edinitsa: sqrt_rv, ishodnoe: 3.0, setka: [1.0, 1.5, 2.0, 3.0, 4.0, 5.0], dostup: obertka, obosnovanie: "трейл в σ"}
+      - {imya: k_be, edinitsa: sqrt_rv, ishodnoe: null, setka: [null, 0.5, 1.0, 1.5, 2.0], dostup: obertka, obosnovanie: "безубыток в σ"}
+      - {imya: gamma_hold, ishodnoe: null, setka: [null, 0.5, 1.0], dostup: obertka, obosnovanie: "временной стоп 30 дней ∝ (σ̄/σ)^γ; null — без него, как A"}
+      - {imya: okno_rv, edinitsa: dni, ishodnoe: 20, setka: [5, 10, 20, 60], dostup: obertka, obosnovanie: "окно реализованной σ"}
+
+  ispolnenie:
+    parametry:
+      - {imya: consec_entry, edinitsa: dni, ishodnoe: 1, v_A: [1, 2], setka: [1, 2, 3], dostup: kod, obosnovanie: "подтверждение пробоя днями подряд"}
+      - {imya: min_strength, ishodnoe: 0.0, v_A: [0.0, 0.3, 0.5], setka: [0.0, 0.1, 0.2, 0.3, 0.5, 0.7], dostup: kod,
+         obosnovanie: "порог силы min(ADX/35,1)"}
+      - {imya: q_sily, ishodnoe: 0.0, okno: 252, setka: [0.0, 0.5, 0.67, 0.75], dostup: obertka, obosnovanie: "квантиль силы по своей истории (как E0)"}
+      - {imya: exec_cooldown, edinitsa: dni, ishodnoe: 0, v_A: [0, 10], setka: [0, 3, 5, 10, 20], dostup: kod, obosnovanie: "пауза после выхода"}
+      - {imya: exec_min_hold, edinitsa: dni, ishodnoe: 0, v_A: [0, 5], setka: [0, 3, 5, 10], dostup: kod, obosnovanie: "по spec п. 13 почти не действует"}
+      - {imya: tf_min_hold, edinitsa: dni, ishodnoe: 0, v_A: [3, 5], setka: [0, 3, 5, 10, 20], dostup: kod, obosnovanie: "фильтр оборота: удержание; 0 — выкл"}
+      - {imya: tf_reentry, edinitsa: dni, ishodnoe: 0, v_A: [0, 1, 3, 5, 10], setka: [0, 1, 3, 5, 10], dostup: kod, obosnovanie: "запрет повторного входа"}
+
+zashito_bez_setki:
+  - "окно выхода = окно входа dc_window (s34.py:101-106); раздельное окно выхода («черепахи» 20/10) — только правкой"
+  - "временного стопа у тренда нет (engine_trend.py); есть только в √RV-блоке через gamma_hold"
+  - "ADX14, ATR14, SMA20 объёма — периоды в indicators.py:100-116; нормировка силы ADX/35"
+
+faktornyy:
+  dc_window: [10, 20, 40]
+  trail_atr_mult: [2.0, 3.0, 5.0]
+  trail_n: [10, 15, 30]
+
+optuna: {n_trials: 100, sampler: TPE, seed: 20261027, prostranstvo: vse_bloki,
+         tsel: "контракт sweep_evaluate §4: среднее годовых Шарпов tune2018 − 0,5·σ (= Шарп 2018)"}
+
+N: {oat: 92, faktornyy: 27, optuna: 100, itogo: 219}
