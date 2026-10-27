@@ -50,9 +50,21 @@ def year_mask(p: pd.DataFrame, y: int):
     return p.index.year == y
 
 
+def d_sharpe(p1: pd.DataFrame, p0: pd.DataFrame) -> float:
+    """Единственное определение Δ в таблицах гл. 4 (владелец 27.10): Шарп(ddof=1) p1 − Шарп(ddof=1) p0."""
+    return sharpe(p1["excess"].values) - sharpe(p0["excess"].values)
+
+
+def delta_p(p1: pd.DataFrame, p0: pd.DataFrame, reps: int) -> tuple:
+    """(Δ = `d_sharpe`, p Ледуа–Вольфа, блок 5). ЛВ даёт только p; его оценка Δ (ddof=0) в таблицы не идёт."""
+    _, _, pv = lw_sharpe_diff(p1["excess"].values, p0["excess"].values, reps, 5)
+    return d_sharpe(p1, p0), pv
+
+
 def delta(p1: pd.DataFrame, p0: pd.DataFrame, reps: int) -> dict:
-    """Δ Шарпа к p0 (d_vs_A), p ЛВ (блок 5, p_vs_A), знак Δ по годам, ФКО-плата γ = 3 (% год)."""
-    d, _, pv = lw_sharpe_diff(p1["excess"].values, p0["excess"].values, reps, 5)
+    """Δ Шарпа к p0 (d_vs_A, разность табличных Шарпов), p ЛВ (блок 5, p_vs_A), знак Δ по годам
+    (по годовым Шарпам ddof=1), ФКО-плата γ = 3 (% год)."""
+    d, pv = delta_p(p1, p0, reps)
     out = dict(d_vs_A=d, p_vs_A=pv)
     n = 0
     for y in YEARS:

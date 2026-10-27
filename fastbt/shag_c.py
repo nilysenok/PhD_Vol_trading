@@ -96,9 +96,9 @@ def znaki(p1, p0) -> dict:
 
 
 def lw(p1, p0, reps: int) -> tuple:
-    """(Δ Шарпа, p Ледуа–Вольфа, блок 5)."""
-    d, _, pv = fast_boot.lw_sharpe_diff(p1["excess"].values, p0["excess"].values, reps, 5)
-    return d, pv
+    """(Δ = разность Шарпов ddof=1 — `shag0.d_sharpe`; p Ледуа–Вольфа, блок 5, быстрый бутстрап)."""
+    _, _, pv = fast_boot.lw_sharpe_diff(p1["excess"].values, p0["excess"].values, reps, 5)
+    return shag0.d_sharpe(p1, p0), pv
 
 
 class Base:
