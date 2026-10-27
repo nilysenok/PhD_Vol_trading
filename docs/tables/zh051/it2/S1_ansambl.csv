@@ -1,0 +1,8 @@
+# статус: разработка, train 2018–2019; итерация 2 Ж-051; validation не открыта
+strategiya,zapusk,nabor,rezhim_ans,osi,n_tochek,n_signal,sverka_s9,objective,sharpe_2018,sharpe_2019,msr_2018,msr_2019,storon_2018,storon_2019,sdelok_2018,sdelok_2019
+S1,2026-10-28T01:46:22,top2,srednee,vhod proverka,3,1,"{'sovpalo': 1, 'net_etalona': 0, 'rashozhdeniy': []}",0.5371080754740012,0.6893963092427666,1.815362270306967,0.5371080754740012,1.9444463040864632,71.0,77.0,35.5,38.5
+S1,2026-10-28T01:46:22,top2,golos,vhod proverka,3,1,"{'sovpalo': 1, 'net_etalona': 0, 'rashozhdeniy': []}",0.5371080754740012,0.6893963092427666,1.815362270306967,0.5371080754740012,1.9444463040864632,71.0,77.0,35.5,38.5
+S1,2026-10-28T01:46:22,top3,srednee,vhod proverka z_entry,5,3,"{'sovpalo': 3, 'net_etalona': 0, 'rashozhdeniy': []}",0.9801935716868478,1.047263500798546,1.9182210958101122,0.9801935716868478,3.0242497242779804,111.0,103.0,55.5,51.5
+S1,2026-10-28T01:46:22,top3,golos,vhod proverka z_entry,5,3,"{'sovpalo': 3, 'net_etalona': 0, 'rashozhdeniy': []}",0.9822400968063252,1.0734931434219712,1.815362270306967,0.9822400968063252,1.9444463040864632,69.0,77.0,34.5,38.5
+S1,2026-10-28T01:46:22,vse,srednee,ma_window z_entry z_exit q_sily sigma vhod k_s R k_tr bezubytok tau proverka razmer rezhim sobytiya,20,10,"{'sovpalo': 9, 'net_etalona': 1, 'rashozhdeniy': []}",0.8732638507961447,0.988760803119547,2.2819085602791547,0.8732638507961447,13.66221031870332,115.0,93.0,57.5,46.5
+S1,2026-10-28T01:46:22,vse,golos,ma_window z_entry z_exit q_sily sigma vhod k_s R k_tr bezubytok tau proverka razmer rezhim sobytiya,20,10,"{'sovpalo': 9, 'net_etalona': 1, 'rashozhdeniy': []}",0.6021349760334371,0.7692757249317144,1.815362270306967,0.6021349760334371,1.9444463040864632,69.0,77.0,34.5,38.5
