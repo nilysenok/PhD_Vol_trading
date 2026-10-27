@@ -17,12 +17,19 @@ MAIN = Path(os.environ.get("FASTBT_MAIN",
                            "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading"))
 STRAT = MAIN / "moex_volatility" / "results" / "final" / "strategies"
 DATA_ROOT = Path(os.environ.get("FASTBT_DATA_ROOT", STRAT / "data"))   # --data-root
-OHLCV = DATA_ROOT / "ohlcv_daily_full.parquet"
+# Н6: дневной ряд — до 18:50 (fastbt/daily_1850.py), 2018–2021; старый ohlcv_daily_full — только
+# при явном --data-root / FASTBT_DATA_ROOT (внешняя подмена данных, не режим движка).
+OHLCV = (DATA_ROOT / "ohlcv_daily_full.parquet" if "FASTBT_DATA_ROOT" in os.environ
+         else MAIN / "data" / "fastbt" / "daily" / "ohlcv_daily_1850.parquet")
 VPRED = Path(os.environ.get("FASTBT_VPRED", DATA_ROOT / "vpred_aligned.parquet"))
 POS_PRE2026 = STRAT / "walkforward_v4" / "daily_positions_pre2026.parquet"
 
 TICKERS = sorted(["AFLT", "ALRS", "HYDR", "IRAO", "LKOH", "LSRG", "MGNT", "MOEX",
                   "MTLR", "MTSS", "NVTK", "OGKB", "PHOR", "RTKM", "SBER", "TATN", "VTBR"])
+
+if "FASTBT_DATA_ROOT" not in os.environ:
+    from fastbt.daily_1850 import ensure as _ensure
+    _ensure(OHLCV, MAIN)            # нет файла — собрать из candles_10m (≤ 2021)
 
 
 @lru_cache(maxsize=1)
