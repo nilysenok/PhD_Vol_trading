@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import s9_shag_common as C  # noqa: E402
 
-POMETKA = "разработка 2018–2021, после аудита"
+POMETKA = "разработка 2018–2021, после аудита, v3.2 (Н6, ряд до 18:50)"
 
 
 def sdvig_zhurnal(podhod: str, sg: str, path=None) -> str:
