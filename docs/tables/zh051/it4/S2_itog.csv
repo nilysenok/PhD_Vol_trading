@@ -1,0 +1,4 @@
+# статус: разработка, train 2018–2019; Ж-051; validation не открыта
+# PnL без дивидендов (находка #362): цены не поправлены, дивиденды не начисляются — цифры не для диссертации
+strategiya,zapusk,iteraciya,N_do,pbo_do,proshla,net_sosedey,verdikt,pbo_obshchaya,pbo_tolko_it,N_obshchee,N_pbo,N_novyh
+S2,2026-10-28T02:44:05,4,1807,0.6285714285714286,False,True,не прошла: нет допустимой точки,0.6571428571428571,0.3,1867,1709,60
