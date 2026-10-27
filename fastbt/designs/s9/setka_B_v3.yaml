@@ -19,3 +19,4 @@ tochek_vsego: 54
 tochek_razlichnyh: 45
 usloviya_C8v2: {1: "прежний С8 (4 года Δ к A > 0 и др.)", 2: "Шарп > Шарп к3", 3: "не применяется (решение владельца)"}
 komissii: {osnovnaya_otbor: 0.0004, pereschet: 0.00035, prilozhenie: [0.0005, 0.0006]}
+uslovie1: strogo  # Ъ 27.10, 13:05

@@ -55,7 +55,7 @@ def points(podhod: str, eng, src: str, s9):
 
 def run_grid(podhod, eng, s9, series, comm, reps):
     from fastbt import fast_kontrol as fk
-    base, K = C.make_base(eng, comm, reps), fk.Kontrol(eng, comm)
+    base, K = C.make_base(eng, comm, reps, C.uslovie1_yaml(podhod)), fk.Kontrol(eng, comm)
     C.check_exit_fee(eng, eng.A_row, comm)
     C.check_shift(K)                                  # лаги; сдвиг 0 — внутри eval_point на каждой точке
     rows, setka = [], []
@@ -105,10 +105,10 @@ def extra(podhod, eng, s9, best, chosen, series, base, reps, tag, sg) -> None:
     g = eng.g_row(G)
     rows = []
     for comm in (C.COMM_MAIN, C.COMM_ALT, *C.COMM_APP):
-        b = C.make_base(eng, comm, reps)
+        b = C.make_base(eng, comm, reps, C.uslovie1_yaml(podhod))
         r = C.eval_point(eng, fk.Kontrol(eng, comm), b, eng.A_row * g, g)
         rows.append(dict(family=best["family"], point=best["point"], sigma=best["sigma"], vybrana=chosen,
-                         comm_pct=comm * 100, **{k: r[k] for k in r if k.startswith(("sharpe", "d_vs", "p_vs", "usl", "passed"))}))
+                         comm_pct=comm * 100, **{k: r[k] for k in r if k.startswith(("sharpe", "d_vs", "p_vs", "usl", "u1_", "passed"))}))
     write(rows, f"{tag}_komissiya_{sg}.csv")
     p = eng.port(eng.A_row * g, comm=C.COMM_MAIN)
     rz = C.razlozhenie(base, best, p, reps)
