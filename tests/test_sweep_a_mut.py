@@ -5,7 +5,8 @@ from fastbt import sweep_a as sa
 from fastbt import sweep_a_core as core
 from fastbt.sweep_a import SynthPanelSource
 from test_sweep_a import (ok_etalon, ok_fifo, ok_limit_soblyudaetsya, ok_obratnaya_vol_izvestnyy_otvet,
-                          ok_sila_pri_ravenstve, ok_ves_bez_tekushchego_dnya)
+                          ok_peresmotr_vesov_platit, ok_sila_pri_ravenstve, ok_stavka_bez_bfill, ok_ves_bez_tekushchego_dnya,
+                          ok_ves_limit_bez_tekushchego_dnya)
 from test_sweep_a_run import ok_n36
 
 
@@ -76,6 +77,42 @@ def test_mut_7_ves_volatilnost_vmesto_obratnoy(monkeypatch):
         return w
     monkeypatch.setattr(core, "slot_weights", sw)
     assert not ok_obratnaya_vol_izvestnyy_otvet()
+
+
+def test_mut_9_okno_vesov_s_limitom_sdvinuto_na_d_plus_1(monkeypatch):
+    def weights(pn, scheme, g, limit, full=None):
+        w = np.zeros(g.shape)
+        for d in range(len(pn.dates)):
+            idx = np.flatnonzero(g[d] != 0)
+            if len(idx):
+                w[d, idx] = core.slot_weights(scheme, pn.lr[max(0, d - core.OKNO_VESOV):d + 1][:, idx]) * len(idx) / limit
+        return w
+    monkeypatch.setattr(core, "weights", weights)
+    assert not ok_ves_limit_bez_tekushchego_dnya()
+
+
+def test_mut_10_peresmotr_vesov_besplaten(monkeypatch):
+    orig = core.portfolio
+    monkeypatch.setattr(core, "portfolio", lambda pn, g, w, comm: _no_reb(orig, pn, g, w, comm))
+    assert not ok_peresmotr_vesov_platit()
+
+
+def _no_reb(orig, pn, g, w, comm):
+    """Комиссия на |Δw| не берётся: добавляем её обратно по формуле."""
+    df = orig(pn, g, w, comm)
+    wp = np.vstack([np.zeros((1, g.shape[1])), w[:-1]])
+    gp = np.vstack([np.zeros((1, g.shape[1])), g[:-1]])
+    reb = np.where((g != 0) & (g == gp), np.abs(g) * np.abs(w - wp), 0.0).sum(axis=1)
+    df["excess"] += reb * comm
+    df["turnover"] -= reb
+    return df
+
+
+def test_mut_11_stavka_s_bfill(monkeypatch):
+    def rate_on(rate, dts):
+        return rate.reindex(rate.index.union(dts)).sort_index().ffill().bfill().reindex(dts).values
+    monkeypatch.setattr(sa, "rate_on", rate_on)
+    assert not ok_stavka_bez_bfill()
 
 
 def test_mut_8_sbornok_ne_36(monkeypatch):
