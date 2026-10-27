@@ -159,7 +159,7 @@ def positions(v, ex: dict, end: int) -> np.ndarray:
     pos = pos_from_trades(te, tx, td, len(te), v.n)
     if ex["consec_entry"] > 1 or ex["exec_min_hold"] > 0 or ex["exec_cooldown"] > 0 or ex["min_strength"] > 0:
         pos = exec_layer(pos, v.strength[0], int(ex["consec_entry"]), int(ex["exec_min_hold"]),
-                         int(ex["exec_cooldown"]), float(ex["min_strength"]), end) * np.where(pos < 0, -1.0, 1.0)
+                         int(ex["exec_cooldown"]), float(ex["min_strength"]), end)
     if ex["tf_min_hold"] > 0 or ex["tf_reentry"] > 0:
         pos = tfilter(pos.astype(np.float64), int(ex["tf_min_hold"]), int(ex["tf_reentry"]))
     return pos

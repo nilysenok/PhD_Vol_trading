@@ -40,8 +40,6 @@ def test_pauza_ne_menyaet_lonh(monkeypatch):
     assert list(a) == list(b) == [0, 0, 1, 1, 1, 1] + [0] * 6
 
 
-@pytest.mark.xfail(strict=True, reason="Ж-038: sweep_post.positions умножает результат exec_layer на знак повторно: "
-                                       "шорт при паузе ≥ 1 становится лонгом (sweep_post.py:162)")
 def test_pauza_ne_menyaet_znak_shorta(monkeypatch):
     a = _positions(monkeypatch, [(2, 6, -1)], 0)
     b = _positions(monkeypatch, [(2, 6, -1)], 1)
