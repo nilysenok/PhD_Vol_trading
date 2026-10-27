@@ -50,8 +50,8 @@ def sverka(eng, comm: float) -> list:
         b = b.reindex(a.index)
         sa = pd.DataFrame([shag0.stats(a, np.ones(len(a), bool))]).to_csv(sep=";", float_format="%.4f", index=False)
         sb = pd.DataFrame([shag0.stats(b, np.ones(len(b), bool))]).to_csv(sep=";", float_format="%.4f", index=False)
-        rows.append(dict(pometka=shag0.POMETKA, row=lab, comm_pct=comm * 100, sovpalo_pobaytno=sa == sb,
-                         max_abs_excess=float(np.abs(a["excess"].values - b["excess"].values).max())))
+        rows.append(dict(pometka=shag0.POMETKA, row=lab, comm_pct=comm * 100, metriki_do_4_znaka=sa == sb,
+                         max_abs_excess="%.1e" % float(np.abs(a["excess"].values - b["excess"].values).max())))
     return rows
 
 
@@ -73,7 +73,7 @@ def run(reps: int) -> None:
     write(shag0.semyi(eng), "shag0_semyi_dni.csv")
     sv = sverka(eng, COMMS[0])
     write(sv, "shag0_sverka_sloy.csv")
-    print("сверка слоёв:", [(r["row"], r["sovpalo_pobaytno"]) for r in sv])
+    print("сверка слоёв:", [(r["row"], r["metriki_do_4_znaka"], r["max_abs_excess"]) for r in sv])
 
 
 def selftest() -> None:
@@ -90,6 +90,14 @@ def selftest() -> None:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--sverka", action="store_true", help="только сверка слоёв")
     ap.add_argument("--reps", type=int, default=10000)
     a = ap.parse_args()
-    selftest() if (a.selftest or len(sys.argv) == 1) else run(a.reps)
+    if a.sverka:
+        from fastbt import s9
+        s9.use_v2(COMMS[0])
+        sv = sverka(s9.Engine(s9.load_cache()), COMMS[0])
+        write(sv, "shag0_sverka_sloy.csv")
+        print(sv)
+    else:
+        selftest() if (a.selftest or len(sys.argv) == 1) else run(a.reps)

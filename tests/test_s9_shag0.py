@@ -147,3 +147,38 @@ def test_scale_half_keeps_sharpe_and_semyi_sums():
 def test_empty_a_gives_nan_not_crash(pos_scale):
     p = s9.Engine.port(_world(), np.zeros(12000), comm=COMM)
     assert np.isfinite(shag0.stats(p, np.ones(len(p), bool))["expo_pct"])
+
+
+def _bad_s3_world():
+    """Семья S3 заведомо убыточна: её выключение улучшает A, значит вклад S3 = Шарп A − Шарп «A без S3» < 0."""
+    ns = _world()
+    s3 = shag0.sid_row(ns) == "S3"
+    ns.lr_row = np.where(s3, -np.abs(ns.lr_row) - 0.01, ns.lr_row)
+    return ns
+
+
+def _vklad_s3(mod, ns):
+    res = mod.build(ns, COMM, reps=50)
+    return next(r["vklad_sharpe"] for r in res["loo"] if r["row"] == "A без S3")
+
+
+def test_vklad_sharpe_sign_negative_for_harmful_family():
+    ns = _bad_s3_world()
+    sh_a, sh_wo = _sh(ns, ns.A_row), _sh(ns, _ref_pos(ns, ("S3",)))
+    assert sh_wo > sh_a                                              # синтетика: без S3 лучше
+    assert _vklad_s3(shag0, ns) == pytest.approx(sh_a - sh_wo, abs=1e-10) and _vklad_s3(shag0, ns) < 0
+
+
+def test_mutation_vklad_sharpe_sign_flipped(monkeypatch):
+    """Мутация в памяти: знак вклада наоборот → тест знака ловит (файл не тронут)."""
+    import types
+    src = Path(shag0.__file__).read_text(encoding="utf-8")
+    old = 'wo["vklad_sharpe"] = sh_a - wo["sharpe"]'
+    assert src.count(old) == 1
+    mod = types.ModuleType("fastbt.shag0")
+    mod.__file__, mod.__package__ = shag0.__file__, "fastbt"
+    monkeypatch.setitem(sys.modules, "fastbt.shag0", mod)
+    exec(compile(src.replace(old, 'wo["vklad_sharpe"] = wo["sharpe"] - sh_a'), shag0.__file__, "exec"), mod.__dict__)
+    ns = _bad_s3_world()
+    assert _vklad_s3(mod, ns) > 0                                    # мутант даёт неверный знак
+    assert _vklad_s3(shag0, ns) < 0                                  # оригинал — верный
