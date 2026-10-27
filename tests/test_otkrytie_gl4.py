@@ -8,7 +8,9 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -77,6 +79,26 @@ def evaluate_sboy(obj, params, period, commission):
     raise RuntimeError("сбой оценщика")
 
 
+def evaluate_bez_dat(obj, params, period, commission):
+    r = evaluate(obj, params, period, commission)
+    del r["daty"]
+    return r
+
+
+def evaluate_sdvig_dat(obj, params, period, commission):
+    """Та же длина, другой набор дней: первый день заменён субботой внутри окна."""
+    r = evaluate(obj, params, period, commission)
+    r["daty"] = ["2022-01-08"] + r["daty"][1:]
+    return r
+
+
+def evaluate_perestanovka(obj, params, period, commission):
+    """Те же дни и значения в обратном порядке: Δ по датам обязана совпасть с evaluate."""
+    r = evaluate(obj, params, period, commission)
+    r["daty"], r["excess_d"] = r["daty"][::-1], r["excess_d"][::-1]
+    return r
+
+
 def proverka(ctx):
     s = pd.read_parquet(ctx["vhody"]["sigma"])
     return [{"ryad": "sigma", "ok": bool(len(s) > 0), "argmax": 0}]
@@ -85,6 +107,12 @@ def proverka(ctx):
 def proverka_plohaya(ctx):
     pd.read_parquet(ctx["vhody"]["sigma"])
     return [{"ryad": "sigma", "ok": False, "argmax": 1}]
+
+
+def proverka_plohaya_2022(ctx):
+    """2018–2021 проходит, 2022+ — нет."""
+    pd.read_parquet(ctx["vhody"]["sigma"])
+    return [{"ryad": "sigma", "ok": ctx["zamok"] is None, "argmax": 0 if ctx["zamok"] is None else 1}]
 '''
 
 
@@ -122,18 +150,26 @@ class Mir:
         self.geit.write_text("# GATES\n\n## G1 — x\nCHECK: true\nEXPECT: 0\nEVIDENCE: ok (код 0)\n\n"
                              "## ABANDON (только с причиной; гейт не удалять и не переписывать)\n"
                              "ABANDON: <id> <причина>\n\n## Реестр\nзакрыто 1 из 1; ABANDON: 0; pending: 0\n")
-        kat = self.main / "candles_10m"
+        kat = self.main / "data" / "candles_10m"           # всё «тестовое» — под main/data/, разработка — data/dev/
         kat.mkdir(parents=True)
         for i, t in enumerate(TIKERY):
             svechi(t, i).to_parquet(kat / f"{t}.parquet", index=False)
-        (self.main / "vhody").mkdir()
+        (self.main / "data" / "vhody").mkdir()
         pd.DataFrame({"date": pd.bdate_range("2022-01-03", "2022-01-31"), "sigma": 0.02}).to_parquet(
-            self.main / "vhody" / "sigma.parquet", index=False)
+            self.main / "data" / "vhody" / "sigma.parquet", index=False)
+        sp = importlib.util.spec_from_file_location("d1850_test", ROOT / "fastbt" / "daily_1850.py")
+        d1850 = importlib.util.module_from_spec(sp)
+        sp.loader.exec_module(d1850)
+        dev_ryad = d1850.out_path(self.main)             # ряд разработки ≤ 2021 (не трогается открытием, Н5)
+        dev_ryad.parent.mkdir(parents=True)
+        pd.concat([d1850.aggregate(svechi(t, i)[lambda x: x["timestamp"] < "2022-01-01"], t)
+                   for i, t in enumerate(TIKERY)]).to_parquet(dev_ryad, index=False)
+        (self.main / "data" / "dev").mkdir()
+        pd.DataFrame({"date": pd.bdate_range("2018-01-03", "2021-12-30"), "sigma": 0.02}).to_parquet(
+            self.main / "data" / "dev" / "sigma_dev.parquet", index=False)
         self.zhurnal = self.root / "docs" / "resheniya" / "resheniya.md"
         self.zhurnal.parent.mkdir(parents=True)
-        self.da = "Владелец 28.10, 12:00: да — открывайте тест главы 4 по FINAL-B."
-        self.zhurnal.write_text("# Журнал\n\n### Ж-998 · 28.10.2026, 11:00 · другое\n\n> «нет»\n\n"
-                                f"### Ж-999 · 28.10.2026, 12:00 · «да» на открытие\n\n> «{self.da}»\n")
+        self.da = ""
         self.P = O.Puti(root=self.root, main=self.main, spec=self.root / "docs" / "final_gl4" / "spec_otkrytiya.json",
                         zhurnal=self.zhurnal, schema=ROOT / "docs" / "final_gl4" / "chisla_gl4.schema.json",
                         lock=self.main / "test_locked" / "gl4_b" / "OPENED_GL4_B.json", out_data=self.out / "data",
@@ -149,8 +185,9 @@ class Mir:
             "final_b": {"put": "docs/final_gl4/FINAL_B.md", "sha256": ""},
             "kod": {}, "fastbt_sha_vse": "",
             "geity": {"docs/kanon/v24/gates/E9_test.md": ""},
-            "vhody": {"sigma": {"put": "vhody/sigma.parquet", "sha256": ""}},
-            "svechi_10m": {"katalog": "candles_10m", "tikery": TIKERY, "sha256": {t: "" for t in TIKERY}},
+            "vhody": {"sigma": {"put": "data/vhody/sigma.parquet", "sha256": ""}},
+            "vhody_dev": {"sigma": {"put": "data/dev/sigma_dev.parquet", "sha256": ""}},
+            "svechi_10m": {"katalog": "data/candles_10m", "tikery": TIKERY, "sha256": {t: "" for t in TIKERY}},
             "okno_testa": dict(OKNO), "lag_ispolneniya_dney": 1, "komissii_pct": [0.035, 0.04],
             "pometka": "после аудита", "lw": {"reps": 30, "block": 5, "seed": 42},
             "proverka_sdviga": "fastbt/sint.py:proverka",
@@ -166,18 +203,29 @@ class Mir:
         }
         self.zamorozit()
 
-    def zamorozit(self, da=True):
+    def zamorozit(self, da=True, kod=True):
         s = self.spec
         s["final_b"]["sha256"] = _sha(self.final_b)
-        s["kod"] = {p: _sha(self.root / p) for p in sorted(O.moduli(s))}
+        if kod:
+            s["kod"] = {p: _sha(self.root / p) for p in sorted(O.moduli(s))}
         s["fastbt_sha_vse"] = O.fastbt_agg(self.root)
         s["geity"] = {p: _sha(self.root / p) for p in s["geity"]}
-        for v in s["vhody"].values():
-            v["sha256"] = O.sha_put(self.main / v["put"])
-        s["svechi_10m"]["sha256"] = {t: _sha(self.main / "candles_10m" / f"{t}.parquet") for t in TIKERY}
+        for grp in ("vhody", "vhody_dev"):
+            for v in s[grp].values():
+                v["sha256"] = O.sha_put(self.main / v["put"])
+        s["svechi_10m"]["sha256"] = {t: _sha(self.main / "data" / "candles_10m" / f"{t}.parquet") for t in TIKERY}
         if da:
-            s["da_vladeltsa"]["sha_spec"] = O.sha_spec_bez_da(s)
+            ss = O.sha_spec_bez_da(s)
+            self.da = f"Владелец 28.10, 12:00: да — открывайте тест главы 4 по FINAL-B, sha_spec {ss}."
+            s["da_vladeltsa"].update(stroka=self.da, sha_spec=ss)
+            self.zhurnal_zapisat()
         self.P.spec.write_text(json.dumps(s, ensure_ascii=False, indent=1))
+
+    def zhurnal_zapisat(self, staraya=""):
+        """Ж-997 (10:00, до заморозки) — место для подделки; Ж-998 — другое; Ж-999 (12:00) — настоящее «да»."""
+        self.zhurnal.write_text(f"# Журнал\n\n### Ж-997 · 28.10.2026, 10:00 · старое\n\n> «{staraya}»\n\n"
+                                "### Ж-998 · 28.10.2026, 11:00 · другое\n\n> «нет»\n\n"
+                                f"### Ж-999 · 28.10.2026, 12:00 · «да» на открытие\n\n> «{self.da}»\n")
 
     def zapisat_bez_zamorozki(self):
         self.P.spec.write_text(json.dumps(self.spec, ensure_ascii=False, indent=1))
@@ -288,7 +336,9 @@ def test_komissii_i_struktura_spec_otkaz(mir, pravka, msg):
     (lambda m: m.spec["da_vladeltsa"].update(stroka="Владелец: подождём"), "нет строки «да»"),
     (lambda m: m.spec["da_vladeltsa"].update(data=""), "без даты"),
     (lambda m: m.spec["da_vladeltsa"].update(data="28.10 12:00"), "без даты"),
-    (lambda m: m.spec["da_vladeltsa"].update(data="2026-10-28 11:00"), "раньше заморозки"),
+    (lambda m: m.spec["da_vladeltsa"].update(data="2026-10-28 11:00"), "не позже заморозки"),
+    (lambda m: m.spec["da_vladeltsa"].update(data="2026-10-28 11:30"), "не позже заморозки"),
+    (lambda m: m.spec["da_vladeltsa"].update(data="2026-10-28 12:05"), "≠ времени записи"),
     (lambda m: m.spec["da_vladeltsa"].update(zhurnal="Ж-998"), "нет в журнале"),
     (lambda m: m.spec["da_vladeltsa"].update(stroka=m.da + " (дописано)"), "нет в журнале"),
 ])
@@ -297,6 +347,33 @@ def test_bez_da_otkaz(mir, pravka, msg):
     mir.zapisat_bez_zamorozki()
     stop(mir.P, msg)
     assert not mir.P.lock.exists() and not mir.P.out_json.exists()
+
+
+def test_bez_da_staraya_zapis_poddelka(mir):
+    """Подделка: строка «да» с верным sha_spec вписана в старую запись журнала (до заморозки)."""
+    mir.zhurnal_zapisat(staraya=mir.da)
+    mir.spec["da_vladeltsa"].update(zhurnal="Ж-997", data="2026-10-28 10:00")
+    mir.zapisat_bez_zamorozki()
+    stop(mir.P, "не позже заморозки")
+    mir.spec["da_vladeltsa"].update(data="2026-10-28 12:00")
+    mir.zapisat_bez_zamorozki()
+    stop(mir.P, "не позже заморозки")
+    assert not mir.P.lock.exists()
+
+
+def test_bez_da_staroe_da_bez_sha_spec(mir):
+    """«Да» без sha_spec этой спецификации (например, старое «да» на прошлую версию) — отказ."""
+    mir.da = "Владелец 28.10, 12:00: да — открывайте тест главы 4."
+    mir.zhurnal_zapisat()
+    mir.spec["da_vladeltsa"]["stroka"] = mir.da
+    mir.zapisat_bez_zamorozki()
+    stop(mir.P, "не содержит sha_spec")
+    mir.da = f"Владелец: да, sha_spec {'0' * 64}"
+    mir.zhurnal_zapisat()
+    mir.spec["da_vladeltsa"]["stroka"] = mir.da
+    mir.zapisat_bez_zamorozki()
+    stop(mir.P, "не содержит sha_spec")
+    assert not mir.P.lock.exists()
 
 
 def test_bez_da_spec_pravili_posle_da(mir):
@@ -323,7 +400,8 @@ def test_podmena_koda_final_b_geitov(mir, chto):
     assert not mir.P.lock.exists()
 
 
-@pytest.mark.parametrize("chto", ["vhody/sigma.parquet", "candles_10m/BBB.parquet"])
+@pytest.mark.parametrize("chto", ["data/vhody/sigma.parquet", "data/candles_10m/BBB.parquet",
+                                  "data/dev/sigma_dev.parquet"])
 def test_podmena_vhoda(mir, chto):
     p = mir.main / chto
     p.write_bytes(p.read_bytes() + b"\0")
@@ -339,8 +417,7 @@ def test_podmena_novyy_fayl_fastbt(mir):
 
 def test_podmena_ispolnyaemyy_kod_bez_sha(mir):
     mir.spec["kod"].pop("fastbt/s9_stats.py")
-    mir.spec["da_vladeltsa"]["sha_spec"] = O.sha_spec_bez_da(mir.spec)
-    mir.zapisat_bez_zamorozki()
+    mir.zamorozit(kod=False)                 # «да» на спецификацию без этого модуля — отказ по SHA, не по «да»
     stop(mir.P, "исполняемый код без SHA")
     assert not mir.P.lock.exists()
 
@@ -365,28 +442,72 @@ def test_geity_net_fayla(mir):
 # ---------------------------------------------------------------- замок до чтения, повтор
 
 def test_zamok_do_chteniya(mir, monkeypatch):
+    """Любое чтение файла под main/data/ (кроме рядов 2018–2021: data/dev/, data/fastbt/daily/) и выходов:
+    парсеры (pq.read_table, pq.ParquetFile, pd.read_parquet, pd.read_csv) — только при замке «начато»;
+    побайтное чтение (open, io.open, Path.read_bytes, Path.read_text) до замка — только из O.sha (хэш, не разбор)."""
+    import builtins
+    import io
     import pyarrow.parquet as pq
-    zhurnal = []
-    rt, rp = pq.read_table, pd.read_parquet
+    zhurnal, v_zapisi = [], [False]
+    orig_open = builtins.open
+    data, dev = mir.main / "data", (mir.main / "data" / "dev", mir.main / "data" / "fastbt" / "daily")
 
     def sostoyanie():
         lk = mir.P.lock
-        return json.loads(lk.read_text()).get("status") if lk.exists() else None
+        if not lk.exists():
+            return None
+        with orig_open(lk) as f:
+            return json.load(f).get("status")
 
-    def rt2(src, *a, **k):
-        zhurnal.append((str(src), sostoyanie()))
-        return rt(src, *a, **k)
+    def iz_sha():
+        f = sys._getframe(2)
+        while f is not None:
+            if f.f_code is O.sha.__code__:
+                return True
+            f = f.f_back
+        return False
 
-    def rp2(src, *a, **k):
-        zhurnal.append((str(src), sostoyanie()))
-        return rp(src, *a, **k)
+    def obertka(fn, vid):
+        def w(src, *a, **k):
+            if not v_zapisi[0]:
+                v_zapisi[0] = True
+                try:
+                    s = src if isinstance(src, (str, os.PathLike)) else getattr(src, "name", None)
+                    p = Path(os.fspath(s)) if isinstance(s, (str, os.PathLike)) else None
+                    if p is not None:
+                        rez = str(p.resolve()) if p.is_absolute() else str(p)
+                        zhurnal.append((rez, sostoyanie(), vid, iz_sha()))
+                finally:
+                    v_zapisi[0] = False
+            return fn(src, *a, **k)
+        return w
 
-    monkeypatch.setattr(pq, "read_table", rt2)
-    monkeypatch.setattr(pd, "read_parquet", rp2)
+    def obertka_path(fn):
+        def w(self, *a, **k):
+            return obertka(lambda s, *x, **y: fn(s, *x, **y), "bytes")(self, *a, **k)
+        return w
+
+    monkeypatch.setattr(builtins, "open", obertka(builtins.open, "bytes"))
+    monkeypatch.setattr(io, "open", obertka(io.open, "bytes"))
+    monkeypatch.setattr(Path, "read_bytes", obertka_path(Path.read_bytes))
+    monkeypatch.setattr(Path, "read_text", obertka_path(Path.read_text))
+    monkeypatch.setattr(pq, "read_table", obertka(pq.read_table, "parser"))
+    monkeypatch.setattr(pq, "ParquetFile", obertka(pq.ParquetFile, "parser"))
+    monkeypatch.setattr(pd, "read_parquet", obertka(pd.read_parquet, "parser"))
+    monkeypatch.setattr(pd, "read_csv", obertka(pd.read_csv, "parser"))
     assert O.run_test(mir.P) == 0
-    chteniya = [z for z in zhurnal if str(mir.main) in z[0] or str(mir.out) in z[0]]
-    assert any("candles_10m" in z[0] for z in chteniya) and any("sigma.parquet" in z[0] for z in chteniya)
-    assert all(s == "начато" for _, s in chteniya), chteniya
+
+    def pod(p, base):
+        return str(p).startswith(str(Path(base).resolve()) + os.sep)
+
+    test_f = [z for z in zhurnal if (pod(z[0], data) and not any(pod(z[0], d) for d in dev)) or pod(z[0], mir.out)]
+    dev_f = [z for z in zhurnal if any(pod(z[0], d) for d in dev)]
+    parsery = [z for z in test_f if z[2] == "parser"]
+    assert any("candles_10m" in z[0] for z in parsery) and any("sigma.parquet" in z[0] for z in parsery)
+    assert all(z[1] == "начато" for z in parsery), [z for z in parsery if z[1] != "начато"]
+    do_zamka = [z for z in test_f if z[1] is None]
+    assert do_zamka and all(z[2] == "bytes" and z[3] for z in do_zamka), [z for z in do_zamka if not z[3]]
+    assert any(z[2] == "parser" and z[1] is None and "sigma_dev" in z[0] for z in dev_f)   # сдвиг 2018–2021 до замка
 
 
 def test_povtor_zapreshchen(mir):
@@ -416,14 +537,121 @@ def test_povtor_zamok_o_excl(mir):
 
 
 def test_proverka_sdviga_otkaz_pod_zamkom(mir):
-    mir.spec["proverka_sdviga"] = "fastbt/sint.py:proverka_plohaya"
+    """Провал только на 2022+ — единственный случай, когда проверка сдвига тратит открытие."""
+    mir.spec["proverka_sdviga"] = "fastbt/sint.py:proverka_plohaya_2022"
     mir.zamorozit()
-    stop(mir.P, "проверка сдвига")
-    assert json.loads(mir.P.lock.read_text())["status"] == "отказ: проверка сдвига"
+    stop(mir.P, "проверка сдвига 2022+")
+    assert json.loads(mir.P.lock.read_text())["status"] == "отказ: проверка сдвига 2022+"
     assert not mir.P.out_json.exists()
 
 
+def test_proverka_sdviga_2018_2021_do_zamka(mir):
+    """Провал на 2018–2021 — отказ до замка, открытие не тратится; функция получает только пути 2018–2021."""
+    mir.spec["proverka_sdviga"] = "fastbt/sint.py:proverka_plohaya"
+    mir.zamorozit()
+    stop(mir.P, "2018–2021 не прошла (до замка)")
+    assert not mir.P.lock.exists() and not mir.P.out_data.exists()
+
+
+def test_proverka_sdviga_2018_2021_kontekst(mir, monkeypatch):
+    vyzovy = []
+    f0 = O.zagruzit
+
+    def z(P, ref):
+        f = f0(P, ref)
+        if ref == mir.spec["proverka_sdviga"]:
+            return lambda ctx: (vyzovy.append((dict(ctx), mir.P.lock.exists())), f(ctx))[1]
+        return f
+    monkeypatch.setattr(O, "zagruzit", z)
+    assert O.run_test(mir.P) == 0
+    (c0, l0), (c1, l1) = vyzovy
+    assert not l0 and c0["zamok"] is None and c0["ryad_1850"] is None and c0["okno"] == O.OKNO_DEV
+    assert all("dev" in v for v in c0["vhody"].values())
+    assert l1 and c1["okno"] == OKNO and "dev" not in c1["vhody"]["sigma"]
+
+
+def test_proverka_sdviga_ne_vse_metki_otkaz(mir):
+    mir.spec["vhody"]["rv"] = {"put": "data/vhody/sigma.parquet", "sha256": ""}
+    mir.spec["vhody_dev"]["rv"] = {"put": "data/dev/sigma_dev.parquet", "sha256": ""}
+    mir.zamorozit()
+    stop(mir.P, "нужно ['rv', 'sigma']")
+    assert not mir.P.lock.exists()
+
+
+# ---------------------------------------------------------------- даты строк, путь замка
+
+def test_daty_obyazatelny(mir):
+    mir.spec["semi"]["B"]["ocenshchik"] = "fastbt/sint.py:evaluate_bez_dat"
+    mir.zamorozit()
+    with pytest.raises(RuntimeError, match="daty"):
+        O.run_test(mir.P)
+    assert json.loads(mir.P.lock.read_text())["status"] == "прервано"
+
+
+def test_daty_sdvinutye_ravnoy_dliny_otkaz(mir):
+    """Равная длина, другой набор дней — Ледуа–Вольф по позиции дал бы число; по датам — отказ."""
+    mir.spec["semi"]["D"]["ocenshchik"] = "fastbt/sint.py:evaluate_sdvig_dat"
+    mir.zamorozit()
+    with pytest.raises(RuntimeError, match="разные дни"):
+        O.run_test(mir.P)
+
+
+def test_daty_vyravnivanie_po_datam_a_ne_po_pozicii(tmp_path):
+    a, b = Mir(tmp_path / "a"), Mir(tmp_path / "b")
+    b.spec["semi"]["E"]["ocenshchik"] = "fastbt/sint.py:evaluate_perestanovka"
+    b.zamorozit()
+    O.run_test(a.P)
+    O.run_test(b.P)
+    da = {r["id"]: r for r in json.loads(a.P.out_json.read_text())["osnovnaya"] if r["semya"] == "E"}
+    db = {r["id"]: r for r in json.loads(b.P.out_json.read_text())["osnovnaya"] if r["semya"] == "E"}
+    assert da.keys() == db.keys() and da
+    for k in da:
+        assert db[k]["delta_k_baze"] == pytest.approx(da[k]["delta_k_baze"], abs=1e-12)
+        assert db[k]["se_delta"] == pytest.approx(da[k]["se_delta"], abs=1e-12)
+
+
+def test_zamok_ne_zavisit_ot_fastbt_main(tmp_path, monkeypatch):
+    monkeypatch.setenv("FASTBT_MAIN", str(tmp_path / "chuzhoy_main"))
+    sp = importlib.util.spec_from_file_location("otkr_env", ROOT / "scripts" / "otkrytie_gl4.py")
+    M = importlib.util.module_from_spec(sp)
+    monkeypatch.setitem(sys.modules, "otkr_env", M)          # dataclass ищет модуль в sys.modules
+    sp.loader.exec_module(M)
+    assert M.MAIN == tmp_path / "chuzhoy_main"
+    lk = M.Puti().lock
+    koren = M.koren_repo(ROOT)
+    assert lk == koren / "data" / "regen" / "test_locked" / "gl4_b" / "OPENED_GL4_B.json"
+    assert (koren / ".git").is_dir()                       # основная копия, а не рабочая (worktree)
+    assert str(tmp_path) not in str(lk)
+    assert lk == O.Puti().lock
+
+
+def test_zamok_ne_git_otkaz(tmp_path):
+    with pytest.raises(O.Stop) as e:
+        O.koren_repo(tmp_path)
+    assert "не git" in e.value.msg
+
+
 # ---------------------------------------------------------------- ряд 18:50
+
+def test_ryad_do_2021_pobaytno_tot_zhe(mir):
+    """Н5: доходность последнего дня окна берёт close следующего бара — ряд ≤ 2021 продлевать нельзя.
+    Ряд 2022+ — отдельный файл; ряд разработки после открытия побайтно тот же и без дат ≥ 2022."""
+    dev = mir.main / "data" / "fastbt" / "daily" / "ohlcv_daily_1850.parquet"
+    s0 = _sha(dev)
+    assert O.run_test(mir.P) == 0
+    assert _sha(dev) == s0
+    assert pd.read_parquet(dev)["date"].max() < pd.Timestamp("2022-01-01")
+    test = mir.P.out_data / "ohlcv_daily_1850_test.parquet"
+    assert test.resolve() != dev.resolve() and test.exists()
+
+
+def test_ryad_2022_v_fayl_razrabotki_otkaz(mir):
+    mir.P.out_data = mir.main / "data" / "fastbt" / "daily"
+    dev = mir.P.out_data / "ohlcv_daily_1850.parquet"
+    s0 = _sha(dev)
+    with pytest.raises(O.Stop):
+        O.run_test(mir.P)
+    assert _sha(dev) == s0
 
 def test_ryad_1850_bez_vechera_i_po_konec_okna(mir):
     O.run_test(mir.P)

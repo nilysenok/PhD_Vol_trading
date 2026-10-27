@@ -28,6 +28,9 @@
   "⟨метка: 5-мин бары E (каталог 1-мин баров)⟩": {"put": "", "sha256": ""},
   "⟨метка: ставка ЦБ⟩": {"put": "", "sha256": ""}
  },
+ "vhody_dev": {
+  "⟨те же метки, что vhody: ряд за 2018–2021 для проверки сдвига до замка, путь от MAIN⟩": {"put": "", "sha256": ""}
+ },
  "svechi_10m": {
   "katalog": "moex_discovery/data/raw/candles_10m",
   "tikery": ["AFLT", "ALRS", "HYDR", "IRAO", "LKOH", "LSRG", "MGNT", "MOEX", "MTLR", "MTSS", "NVTK", "OGKB", "PHOR", "RTKM", "SBER", "TATN", "VTBR"],
@@ -64,5 +67,5 @@
   "H3": {"formulirovka": "⟨владелец, класс A⟩", "a": "⟨id задания⟩", "b": "⟨id задания⟩", "metrika": "sharpe", "znak": "+", "alfa": null},
   "H4": {"formulirovka": "⟨владелец, класс A⟩", "a": "⟨id задания⟩", "b": "⟨id задания⟩", "metrika": "sharpe", "znak": "+", "alfa": null}
  },
- "da_vladeltsa": {"stroka": "", "data": "", "zhurnal": "", "sha_spec": ""}
+ "da_vladeltsa": {"stroka": "⟨дословно из журнала; содержит sha_spec, который печатает --proverki⟩", "data": "⟨ГГГГ-ММ-ДД ЧЧ:ММ = время заголовка записи журнала, строго позже zamorozheno_v⟩", "zhurnal": "⟨Ж-NNN⟩", "sha_spec": ""}
 }
