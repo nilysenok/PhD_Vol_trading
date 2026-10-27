@@ -23,6 +23,8 @@ RUNS = {(True, .004, False, "old", False): "R0", (True, .0005, False, "old", Fal
         (True, .0005, True, "old", False): "Q1c", (False, .0005, False, "old", False): "Q2",
         (False, .0005, True, "old", False): "Q3", (False, .0005, True, "new", False): "Q4",
         (False, .0005, True, "new", True): "Q5", (False, .004, False, "old", False): "P1",(False, .0004, True, "new", True): "R5"}
+NOTE0 = ("строка 0 на 2018–2021 гипотетическая: ряд ставки предзащиты (CSV) начинается с 2022 (03.01.2022), "
+         "на 2018–2021 ставка = значение первой даты CSV, протянутое назад (msp.rate_restored + bfill в portfolio)")
 STEPS = [  # (код, текст, изменение состояния | None — не выполнено/вклад 0 по построению, пояснение)
     ("б1", "комиссия отбора 0,40 % → 0,05 % (так в кэше A: main.yaml comm; не 0,04)", dict(sel=.0005), ""),
     ("а", "критерий отбора: без ставки → избыточный над ставкой", None, "не выполнено: нужен флаг в stats.window (движок, запрещено)"),
@@ -55,12 +57,34 @@ def evaluate(d: Path, st: dict, cache: dict) -> tuple:
     return S.sharpe(p["excess"]), S.by_year(p), n
 
 
+def ladder(ev, base: dict, steps, target: float) -> dict:
+    """ev(состояние) -> кортеж, [0] — Шарп. Возвращает строку 0, шаги с Δ по порядку и остаток к target."""
+    st = dict(base)
+    first = ev(st)
+    prev, out = first[0], []
+    for code, text, chg, note in steps:
+        if chg:
+            st.update(chg)
+        res = ev(st)
+        out.append((code, text, chg, note, res, res[0] - prev))
+        prev = res[0]
+    return dict(first=first, steps=out, rest=target - prev, last=prev, state=st)
+
+
+def check_rest(lad: dict, target: float, tol: float = 1e-3) -> None:
+    """Остаток лестницы должен быть ≈ 0, а Σ Δ + остаток = итог − строка 0."""
+    total = sum(s[5] for s in lad["steps"]) + lad["rest"]
+    assert abs(total - (target - lad["first"][0])) < 1e-9, "лестница не сходится: Σ Δ + остаток ≠ итог − строка 0"
+    assert abs(lad["rest"]) < tol, f"остаток лестницы {lad['rest']:+.4f} ≥ {tol}: слой не сходится с «сейчас»"
+
+
 def main() -> None:
     d = Path(sys.argv[1])
     cache, rows = {}, []
-    st = dict(BASE)
-    sh0, y0, n0 = evaluate(d, st, cache)
+    lad = ladder(lambda s: evaluate(d, s, cache), BASE, STEPS, TARGET)
+    sh0, y0, n0 = lad["first"]
     prev, prev_y = sh0, y0
+    st = lad["state"]
 
     def row(code, text, sh, y, run, note):
         r = dict(shag=code, izmenenie=text, run=run, sharpe=sh, d_sharpe=sh - prev if rows else np.nan, zametka=note)
@@ -68,16 +92,13 @@ def main() -> None:
             r[f"sharpe_{k}"] = y[k]
             r[f"d_{k}"] = y[k] - prev_y[k] if rows else np.nan
         return r
-    rows.append(row("0", "A как на предзащите: маска [1], отбор 0,40 %, ряд без комиссии, ставка back, 1/102", sh0, y0, n0, ""))
+    rows.append(row("0", "A как на предзащите: маска [1], отбор 0,40 %, ряд без комиссии, ставка back, 1/102", sh0, y0, n0, NOTE0))
     deltas = {}
-    for code, text, chg, note in STEPS:
-        if chg:
-            st.update(chg)
-        sh, y, n = evaluate(d, st, cache)
+    for code, text, chg, note, (sh, y, n), _ in lad["steps"]:
         rows.append(row(code, text, sh, y, n, note))
         deltas[code] = (sh - prev, chg)
         prev, prev_y = sh, y
-    rest = TARGET - prev
+    rest = lad["rest"]
     rows.append(dict(shag="к", izmenenie="остаток: Шарп «сейчас» (−0,8767, PR #264) − последний шаг", sharpe=TARGET, d_sharpe=rest,
                      zametka="ожидается ≈ 0"))
     # порядок: самый крупный шаг, поставленный первым (если нужная пара позиций посчитана)
@@ -103,6 +124,7 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT, sep=";", decimal=",", index=False, float_format="%.4f", encoding="utf-8-sig")
     print(df[["shag", "run", "sharpe", "d_sharpe", "d_2018", "d_2019", "d_2020", "d_2021"]].to_string(float_format=lambda v: "%.4f" % v))
+    check_rest(lad, TARGET)        # ненулевой код выхода, если остаток ≥ 1e-3 (файл уже записан для разбора)
 
 
 if __name__ == "__main__":
