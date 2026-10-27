@@ -2,9 +2,9 @@
 
     python3 scripts/analysis/s9_shag4.py --tochki tochki.yaml [--reps 10000] [--dry-run]
 tochki.yaml — три точки выбора шагов 1–3 (ключ s9: [семья:метка, источник σ]), по одной на σ:
-    C_naive: ["C1:W252_p70", "naive_h1"]
-    C_harj:  ["C1:W252_p70", "harj_h1"]
-    C_hyb:   ["C1:W504_p70", "hyb_h5"]
+    C_naive: ["C1:W252_p50", "naive_h1"]
+    C_harj:  ["C1:W252_p50", "harj_h1"]
+    C_hyb:   ["C1:W252_p50", "hyb_h5"]
 Комиссии 0,035 и 0,04 % — обе основные колонки (Ъ 12:05). Портфель точки — fastbt.shag4.portfel (заглушка до
 слияния s9_shag_c.py). σ — только data/regen/ch4_dev (s9.use_v2 сверяет SHA); цель QLIKE — rv_target из
 features_pit_v3 с фильтром date ≤ 2021-12-31 при чтении; цель с окном t+h за 2021-12-31 — NaN (g3.cut_target).
@@ -25,11 +25,12 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from fastbt import shag0, shag4, shag4_gl3 as g3  # noqa: E402
+from fastbt import shag0, shag4, shag4_gl3 as g3, shag4_td as tdl  # noqa: E402
 from fastbt.fast_kontrol import k3_sids  # noqa: E402
 from s9_shag0 import write  # noqa: E402
 
-TABLES = ("shag4_luchshiy.csv", "shag4_odna_tochka.csv", "shag4_lestnitsa.csv", "shag4_svyazka_gl3.csv")
+TABLES = ("shag4_luchshiy.csv", "shag4_odna_tochka.csv", "shag4_lestnitsa.csv", "shag4_svyazka_gl3.csv",
+          "shag4_svyazka_gl3_spravochno.csv")
 LAST = pd.Timestamp("2021-12-31")
 
 
@@ -76,7 +77,7 @@ def feature_matrix(eng, col: str, h: int = 0, path=None) -> np.ndarray:
 
 
 def svyazka(eng, T: dict, razr: bool = False) -> list:
-    """4.D: корреляция σ по тикерам, доля расхождений решений фильтра, QLIKE открыт/закрыт (точка гибрида)."""
+    """4.D → (основная таблица, справочная): корреляция σ, расхождения решений, QLIKE по тикер-дням (shag4_td)."""
     valid = g3.dev_mask(years_matrix(eng))
     S = {nm: eng.sigma(src) for nm, (_, src) in T.items()}
     rows = g3.corr_sigma(S, valid, eng.tickers)
@@ -94,21 +95,16 @@ def svyazka(eng, T: dict, razr: bool = False) -> list:
                 v = np.nan if G[a] is None or G[b] is None else g3.share_diff(G[a], G[b], valid)
                 rows.append(dict(pometka=shag4.POMETKA, rezhim="решения фильтра", para=f"{a} – {b}",
                                  tochka=f"{pn}: {pk} ({h})", dolya_raznykh=v))
-    ck, src = T["C_hyb"]
-    h = src[-2:]
-    y = target_matrix(eng, h)
-    G = shag4.gate(eng, ck, src, razr)
-    r_ = eng.r
-    has, op = g3.exposure_open(eng.A_row, G, r_["tick"], r_["bar"], r_["cat"], valid.shape)
-    f = lambda sg: eng.sigma(shag4.src_of(sg, h)) ** 2                    # noqa: E731
-    tk = f"C_hyb: {ck} ({h})"
-    for rez, o, v in (("QLIKE, дни с позицией A (открыт = затвор пропускает позицию)", op, valid & has),
-                      ("QLIKE, все тикер-дни (открыт = пропускает позицию A)", op, valid),
-                      ("QLIKE, тренд: затвор категории открыт", G[0] > 0, valid),
-                      ("QLIKE, контртренд: затвор категории открыт", G[1] > 0, valid)):
-        for r in g3.qlike_split(y, f("harj"), f("hyb"), o, v):
-            rows.append({**r, "rezhim": rez, "tochka": tk})
-    return rows
+    main, ref = tdl.qlike_rows(eng, T, valid, years_matrix(eng), days_matrix(eng), lambda h: target_matrix(eng, h), razr)
+    return rows + main, ref
+
+
+def days_matrix(eng) -> np.ndarray:
+    """Номер календарного дня бара [тикер, бар] (для дневного ряда DM)."""
+    D = np.zeros((len(eng.tickers), eng.nmax), np.int64)
+    for ti, t in enumerate(eng.tickers):
+        D[ti, :eng.n_t[ti]] = pd.DatetimeIndex(eng.cache[t]["dates"]).values.astype("datetime64[D]").astype(np.int64)
+    return D
 
 
 def sdvig(eng, T: dict) -> None:
@@ -148,7 +144,9 @@ def run(T: dict, reps: int, razr: bool = False) -> None:
     write(shag4.luchshiy(P_l, reps), TABLES[0])
     write(shag4.odna_tochka(P_o, A_by, reps), TABLES[1])
     write(lest, TABLES[2])
-    write(svyazka(eng, T, razr), TABLES[3])
+    main, ref = svyazka(eng, T, razr)
+    write(main, TABLES[3])
+    write(ref, TABLES[4])
     print("записано:", ", ".join(TABLES))
 
 
