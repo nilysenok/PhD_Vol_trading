@@ -68,6 +68,7 @@ def tables(eng, sigma: str, grid: dict, reps: int, n_shift: int = 1000, with_sve
     top = best if best is not None else df.loc[df[f"sharpe_{C.tag(C.COMM_SEL)}"].idxmax()]
     g = eng.g_row(gs[(top["h"], top["family"], top["label"])])
     raz = T.razlozhenie(eng, bases, g, reps)
+    T.proverka_razlozheniya(raz, top)
     for r in raz:
         r["vybrana"] = best is not None
     res = dict(setka=df, otbor=otb, ustoychivost=T.ustoychivost(df, best), razlozhenie=raz,
@@ -168,6 +169,8 @@ if __name__ == "__main__":
     ap.add_argument("--shag", type=int, choices=(1, 2, 3))
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--tolko-razlozhenie", action="store_true",
+                    help="пересчитать только shagN_razlozhenie.csv (сетка и отбор — из готовых файлов)")
     ap.add_argument("--reps", type=int, default=10000)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--c8-uslovie1", choices=C.USLOVIYA1, default=None,
@@ -179,5 +182,8 @@ if __name__ == "__main__":
         ap.error("нужны --sigma и --shag в паре: naive-1, harj-2, hyb-3")
     elif a.dry_run:
         dry_run(a.sigma, a.shag)
+    elif a.tolko_razlozhenie:
+        import s9_shag_c_raz
+        s9_shag_c_raz.run(a.sigma, a.shag, a.reps, a.workers, OUT)
     else:
         real(a.sigma, a.shag, a.reps, a.workers, OUT, a.c8_uslovie1)

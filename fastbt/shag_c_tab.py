@@ -67,16 +67,15 @@ def ustoychivost(df: pd.DataFrame, best, c: float = COMM_SEL, tol: float = 0.1) 
 
 def razlozhenie(eng, bases: dict, g: np.ndarray, reps: int) -> list:
     """Δ к A = (к3 − A) + (C − к3), обе части с p ЛВ; экспозиция и оборот против A и к3; доля закрытых дней
-    A по каждой семье S1–S6 (A ≠ 0 и затвор 0) и средний недобор веса (1 − g)."""
+    A по каждой семье S1–S6 (A ≠ 0 и затвор 0) и средний недобор веса (1 − g).
+    Δ — та же оценка ЛВ (`lw`: Шарп с ddof=0), что в сетке; раньше брался Шарп с ddof=1 (s9.sharpe) — расхождение ~3e-4."""
     rows = []
     for c in COMM_MAIN:
         b = bases[c]
         pC = eng.port(b.A * g, comm=c)
-        sA, sK, sC = (s9.sharpe(x["excess"].values) for x in (b.pA, b.pK, pC))
-        (_, p1), (_, p2), (_, p3) = lw(b.pK, b.pA, reps), lw(pC, b.pK, reps), lw(pC, b.pA, reps)
-        rows.append(dict(rezhim="разложение", comm_pct=c * 100, d_vs_A=sC - sA, p_vs_A=p3, chast1_k3_minus_A=sK - sA,
-                         p_chast1=p1, chast2_C_minus_k3=sC - sK, p_chast2=p2,
-                         summa_chastey_minus_d=(sK - sA) + (sC - sK) - (sC - sA)))
+        (d1, p1), (d2, p2), (d3, p3) = lw(b.pK, b.pA, reps), lw(pC, b.pK, reps), lw(pC, b.pA, reps)
+        rows.append(dict(rezhim="разложение", comm_pct=c * 100, d_vs_A=d3, p_vs_A=p3, chast1_k3_minus_A=d1,
+                         p_chast1=p1, chast2_C_minus_k3=d2, p_chast2=p2, summa_chastey_minus_d=d1 + d2 - d3))
         for lab, p in (("A", b.pA), ("к3", b.pK), ("точка C", pC)):
             st = shag0.stats(p, np.ones(len(p), bool))
             rows.append(dict(rezhim="экспозиция/оборот", comm_pct=c * 100, row=lab, sharpe=st["sharpe"],
@@ -88,6 +87,16 @@ def razlozhenie(eng, bases: dict, g: np.ndarray, reps: int) -> list:
                          zakryto_dnei_pct=float(np.mean(g[m] == 0) * 100) if m.any() else np.nan,
                          nedobor_vesa_pct=float(np.mean(1 - g[m]) * 100) if m.any() else np.nan))
     return [dict(pometka=shag0.POMETKA, **r) for r in rows]
+
+
+def proverka_razlozheniya(raz: list, setka_row, tol: float = 1e-6) -> None:
+    """(к3 − A) + (C − к3) = Δ к A из сетки, а C − к3 = Δ к к3 из сетки, при обеих комиссиях (|разница| < tol)."""
+    for r in (x for x in raz if x.get("rezhim") == "разложение"):
+        t = tag(r["comm_pct"] / 100)
+        summa, d_a, d_k3 = r["chast1_k3_minus_A"] + r["chast2_C_minus_k3"], setka_row[f"d_vs_A_{t}"], setka_row[f"d_vs_k3_{t}"]
+        if not (abs(summa - d_a) < tol and abs(r["chast2_C_minus_k3"] - d_k3) < tol):
+            raise AssertionError(f"разложение при {r['comm_pct']:.3f} % не сходится с сеткой: части {summa:.6f} "
+                                 f"против Δ к A {d_a:.6f}; C − к3 {r['chast2_C_minus_k3']:.6f} против {d_k3:.6f}")
 
 
 def komissiya(eng, g: np.ndarray, reps: int, comms=(0.00035, 0.0004, 0.0005, 0.0006), uslovie1: str = "strogo") -> list:
