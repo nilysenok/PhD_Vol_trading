@@ -1,0 +1,132 @@
+"""Шаг 4 разработки главы 4 (v3): сравнение прогнозов (H2), 2018–2021. Чистые функции; движок — `s9.Engine`.
+
+Точка C — ключ s9: ("C1:W252_p70", "hyb_h5") = (семья:метка, источник σ). Заглушка-интерфейс до слияния
+`s9_shag_c.py`: `portfel(eng, ckey, src, comm)` — «точка × σ → дневной ряд портфеля» поверх fastbt.s9.
+Лестница, «лучший с лучшим», связка с главой 3 — на готовых рядах/матрицах [тикер, бар], движок не нужен.
+"""
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+
+from fastbt import shag0
+from fastbt.msp import sharpe
+from fastbt.s9_stats import lw_sharpe_diff
+
+YEARS = shag0.YEARS
+POMETKA = shag0.POMETKA
+COMMS = (0.00035, 0.0004)                     # Ъ 12:05: обе — основные колонки; H2 принимается, если держится на обеих
+SIGMAS = ("naive", "harj", "hyb")
+NAMES = ("C_naive", "C_harj", "C_hyb")
+STEPS = ("A", "к3") + NAMES
+NAN = float("nan")
+
+
+def parse_label(label: str):
+    """'W252_p70' → (252, 0.70); 'W252_p70_90' → (252, (0.70, 0.90))."""
+    w, *ps = label.split("_")
+    p = [int(x.lstrip("p")) / 100 for x in ps]
+    if not w.startswith("W") or len(p) not in (1, 2):
+        raise ValueError(f"метка точки не разобрана: {label}")
+    return int(w[1:]), (p[0] if len(p) == 1 else tuple(p))
+
+
+def src_of(sigma: str, h: str) -> str:
+    return f"{sigma}_{h}"
+
+
+def gate(eng, ckey: str, src: str) -> np.ndarray:
+    """G[3, тикер, бар] точки ckey на σ-источнике src. C* (σ/√RV_w) — не на наивной (там σ/√RV_w ≡ 1)."""
+    from fastbt import s9
+    from fastbt.s9_stats import past_rank
+    fam, label = ckey.split(":", 1)
+    W, par = parse_label(label)
+    S = eng.sigma(src)
+    if fam.startswith("C*"):
+        if src.startswith("naive"):
+            raise ValueError("C* не строится на наивной σ")
+        S = S / eng.rvw()
+    R = np.full(S.shape, np.nan)
+    for ti in range(S.shape[0]):
+        n = eng.n_t[ti]
+        R[ti, :n] = past_rank(np.ascontiguousarray(S[ti, :n]), W, s9._minp(W))
+    return s9._c_gate(R, par)
+
+
+def portfel(eng, ckey: str, src: str, comm: float) -> pd.DataFrame:
+    """Заглушка-интерфейс: дневной ряд портфеля точки ckey на σ src (A × затвор), комиссия comm."""
+    return eng.port(eng.A_row * eng.g_row(gate(eng, ckey, src)), comm=comm)
+
+
+def compare(p1: pd.DataFrame, p0: pd.DataFrame, reps: int) -> dict:
+    """Δ Шарпа p1 − p0 (разность Шарпов, поэтому ступени лестницы складываются), p ЛВ (блок 5), знак по годам."""
+    x1, x0 = p1["excess"].values, p0["excess"].values
+    out = dict(sharpe=sharpe(x1), sharpe_baza=sharpe(x0), d_sharpe=sharpe(x1) - sharpe(x0),
+               p_lw=lw_sharpe_diff(x1, x0, reps, 5)[2])
+    n = 0
+    for y in YEARS:
+        m = shag0.year_mask(p1, y)
+        dy = sharpe(x1[m]) - sharpe(x0[m])
+        out[f"znak_{y}"] = "+" if dy > 0 else "−"
+        n += dy > 0
+    out["n_let_plyus"] = int(n)
+    return out
+
+
+def _row(comm, **kw) -> dict:
+    return dict(pometka=POMETKA, comm_pct=round(comm * 100, 6), **kw)
+
+
+def luchshiy(P: dict, reps: int) -> list:
+    """4.A. P[comm][имя точки] → ряд. 3 × 3: клетка (a, b) = Δ(a − b); диагональ — Шарп точки."""
+    rows = []
+    for comm, ports in P.items():
+        for a in NAMES:
+            for b in NAMES:
+                if a == b:
+                    rows.append(_row(comm, a=a, b=b, sharpe=sharpe(ports[a]["excess"].values)))
+                else:
+                    rows.append(_row(comm, a=a, b=b, **compare(ports[a], ports[b], reps)))
+    return rows
+
+
+def odna_tochka(P: dict, A: dict, reps: int) -> list:
+    """4.B. P[comm][(имя точки, σ)] → ряд или None (C* на наивной); A[comm] — ряд A. Точка × σ, Δ к A."""
+    rows = []
+    for comm, ports in P.items():
+        for (nm, sg), p in ports.items():
+            r = _row(comm, tochka=nm, sigma=sg)
+            rows.append({**r, "primechanie": "C* на наивной σ не строится"} if p is None
+                        else {**r, **compare(p, A[comm], reps)})
+    return rows
+
+
+def lestnitsa(P: dict, reps: int) -> list:
+    """4.C. P[comm][STEPS] → ряд. Каждая ступень: Δ к предыдущей, p, знаки по годам; d_k_A — накопленная Δ к A."""
+    rows = []
+    for comm, ports in P.items():
+        sA = sharpe(ports["A"]["excess"].values)
+        rows.append(_row(comm, stupen="A", sharpe=sA, d_k_A=0.0))
+        for prev, cur in zip(STEPS[:-1], STEPS[1:]):
+            c = compare(ports[cur], ports[prev], reps)
+            rows.append(_row(comm, stupen=f"{prev} → {cur}", **c, d_k_A=c["sharpe"] - sA))
+    return rows
+
+
+def check_lestnitsa(rows: list, tol: float = 1e-9) -> None:
+    """Сумма Δ по ступеням = итог − A (по каждой комиссии); иначе AssertionError."""
+    for comm in {r["comm_pct"] for r in rows}:
+        rs = [r for r in rows if r["comm_pct"] == comm]
+        tot = sum(r["d_sharpe"] for r in rs if "d_sharpe" in r)
+        assert abs(tot - rs[-1]["d_k_A"]) < tol, f"лестница не сложилась при {comm}%: {tot} ≠ {rs[-1]['d_k_A']}"
+
+
+def check_odna_tochka(P_o: dict, P_l: dict) -> None:
+    """В 4.B клетка (точка, своя σ) обязана быть тем же рядом, что точка в 4.A/4.C — иначе σ перепутана."""
+    for comm, ports in P_o.items():
+        for nm, sg in zip(NAMES, SIGMAS):
+            own = ports[(nm, sg)]
+            assert own is not None and np.array_equal(own["excess"].values, P_l[comm][nm]["excess"].values), \
+                f"4.B: клетка {nm} × {sg} не равна ряду точки {nm} при {comm * 100}%"
+
+
