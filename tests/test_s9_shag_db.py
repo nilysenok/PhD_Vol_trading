@@ -126,7 +126,7 @@ def _noise_scale_blocked(ns, K, base) -> bool:
 
 
 def test_k2_scale_shift_invariants():
-    """Сдвиг ряда масштаба: сдвиг 0 — исходный ряд; распределение масштаба, переключения (оборот) и длины серий сохранены."""
+    """Сдвиг ряда масштаба: сдвиг 0 — исходный ряд; распределение масштаба и число серий (±1 на шве круга) сохранены; длины серий не сравниваются."""
     ns = _world()
     K = fk.Kontrol(ns, COMM, n_shift=20)
     g =np.concatenate([np.repeat(np.random.RandomState(p).choice([1.0, 0.6, 0.3], 60), 20)[:np.sum(ns.r["pair"] == p)]
@@ -136,9 +136,9 @@ def test_k2_scale_shift_invariants():
     src = K.src(3)
     for p in np.unique(ns.r["pair"]):
         m = ns.r["pair"] == p
-        run_len = lambda x: sorted(np.diff(np.flatnonzero(np.r_[True, x[1:] != x[:-1], True])))   # noqa: E731
+        n_runs = lambda x: int(np.sum(x[1:] != x[:-1])) + 1   # noqa: E731  число серий
         a, s = g[m], g[src][m]
-        assert sorted(a) == sorted(s) and abs(len(run_len(a)) - len(run_len(s))) <= 1
+        assert sorted(a) == sorted(s) and abs(n_runs(a) - n_runs(s)) <= 1
 
 
 def test_select_max_sharpe_among_passed_only():

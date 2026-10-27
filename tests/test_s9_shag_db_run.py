@@ -77,3 +77,31 @@ def test_select_ref_independent_and_flag():
     assert diff["sovpal"] is False and diff["obe_na_test"] is True and diff["vybor_005"] == "D1:b:s"
     none = C.select_ref(_frame("b", passed=False), sel)
     assert none["sovpal"] is False and none["vybor_005"] == "нет прошедших"
+
+
+def _run_distinct(monkeypatch, tmp_path):
+    """run() с подложенными таблицами: при 0,04 лучший x1 (Шарп 2), при 0,05 — x2 (Шарп 3). Возвращает vybor005."""
+    ns = _eng()
+    g = np.ones(len(ns.A_row))
+    monkeypatch.setattr(C, "OUT", tmp_path)
+    monkeypatch.setattr(DB, "points", lambda *a: [("D1", "x1", g, False, 0.3, True), ("D1", "x2", g, False, 0.3, True)])
+    orig = DB.run_grid
+
+    def fake(p, e, s, ser, comm, reps):
+        _, setka, base = orig(p, e, s, ser, comm, reps)
+        sh = (1.0, 3.0) if comm == 0.0005 else (2.0, 1.0)
+        df = pd.DataFrame([dict(family="D1", point=f"x{i + 1}", sigma="naive_h1", sharpe=sh[i], passed_v2=True,
+                                comm_pct=comm * 100, d_vs_A=0.0, p_vs_A=1.0) for i in range(2)])
+        return df, setka, base
+    monkeypatch.setattr(DB, "run_grid", fake)
+    DB.run("D", "naive", 50, eng=ns)
+    return pd.read_csv(tmp_path / "shag3D_vybor005_naive.csv", sep=";", decimal=",", encoding="utf-8-sig").iloc[0]
+
+
+def test_run_ref_choice_differs_from_main_and_mutation_caught(monkeypatch, tmp_path):
+    ref = _run_distinct(monkeypatch, tmp_path)
+    assert ref["vybor_005"] == "D1:x2:naive_h1" and ref["sharpe_005"] == 3.0
+    assert not ref["sovpal"] and ref["obe_na_test"]                     # основной выбор при 0,04 — x1
+    monkeypatch.setattr(C, "COMM_REF", C.COMM_MAIN)                     # мутация: «0,05» из данных 0,04
+    bad = _run_distinct(monkeypatch, tmp_path)
+    assert bad["vybor_005"] == "D1:x1:naive_h1" and bad["sovpal"] and not bad["obe_na_test"]   # тест выше упал бы
