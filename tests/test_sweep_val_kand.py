@@ -118,6 +118,14 @@ def test_tablitsa_sborok_A():
     assert ok_tablitsa_sborok(t)
 
 
+def test_realnyy_fayl_zamorozki_zakommichen_i_raven_fabrike(spisok):
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    z = kd.load_zamorozka(sv.Puti(koren=root))                       # с git-проверкой: файл в коммите и не правлен
+    assert z["spisok"] == json.loads(json.dumps(spisok[0])) and z["sha"] == sv.sha_kandidatov(spisok[0])
+    assert z["N_vsego"] == spisok[2] and len(z["spisok"]) == 24
+
+
 def test_sostav_spiska(spisok):
     assert ok_spisok_sostav(spisok)
 
