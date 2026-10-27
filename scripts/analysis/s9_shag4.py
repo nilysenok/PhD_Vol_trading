@@ -97,10 +97,17 @@ def svyazka(eng, T: dict, razr: bool = False) -> list:
     ck, src = T["C_hyb"]
     h = src[-2:]
     y = target_matrix(eng, h)
-    op = g3.open_mask(shag4.gate(eng, ck, src, razr))
+    G = shag4.gate(eng, ck, src, razr)
+    r_ = eng.r
+    has, op = g3.exposure_open(eng.A_row, G, r_["tick"], r_["bar"], r_["cat"], valid.shape)
     f = lambda sg: eng.sigma(shag4.src_of(sg, h)) ** 2                    # noqa: E731
-    for r in g3.qlike_split(y, f("harj"), f("hyb"), op, valid):
-        rows.append({**r, "tochka": f"C_hyb: {ck} ({h})"})
+    tk = f"C_hyb: {ck} ({h})"
+    for rez, o, v in (("QLIKE, дни с позицией A (открыт = затвор пропускает позицию)", op, valid & has),
+                      ("QLIKE, все тикер-дни (открыт = пропускает позицию A)", op, valid),
+                      ("QLIKE, тренд: затвор категории открыт", G[0] > 0, valid),
+                      ("QLIKE, контртренд: затвор категории открыт", G[1] > 0, valid)):
+        for r in g3.qlike_split(y, f("harj"), f("hyb"), o, v):
+            rows.append({**r, "rezhim": rez, "tochka": tk})
     return rows
 
 
