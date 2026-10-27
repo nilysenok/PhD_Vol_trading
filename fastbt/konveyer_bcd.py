@@ -4,8 +4,7 @@
 
 Выбора точек нет: только таблицы. Период — только train 2018–2019 (`dev_train` подменяет годы, обрезку σ и дизайн A).
 Считает готовый код: к2/к3 — `fast_kontrol`, условия и Δ — `shag_c`, точки D/B — `s9.S9.d_points`/`b_weights`, p ЛВ —
-`shag0.delta_p`. Свой код — сборка: ступень «константная σ», лестница, шапки таблиц, ключ кэша (Д5).
-"""
+`shag0.delta_p`; N, DSR, Холм — `konveyer_bcd_n`. Здесь: ступень const, лестница, шапки, ключ (Д5)."""
 from __future__ import annotations
 
 import argparse
@@ -23,6 +22,7 @@ from fastbt import fast_kontrol as fk
 from fastbt import metriki_e as me
 from fastbt import s9, shag0
 from fastbt import shag_c as C
+from fastbt.konveyer_bcd_n import add_n, light_rows, sr_stats
 
 ROOT = Path(__file__).resolve().parent.parent
 SWEEP, OUT = ROOT / "fastbt" / "designs" / "sweep", ROOT / "docs" / "tables" / "konveyer_bcd" / "chernovik"
@@ -91,15 +91,13 @@ PTS = {"B": pts_b, "C": pts_c, "D": pts_d}
 
 
 def eval_point(bases: dict, g, approach: str, reps: int) -> dict:
-    """{комиссия: (строка, портфель)}: Шарп и метрики, к2, к3, Δ к A, p ЛВ; у B условие 3 (к2) не применяется."""
+    """{комиссия: (строка, портфель)}: Шарп и метрики, к2, к3, Δ к A, p ЛВ; условие 3 (к2) — и у B (Ж-009)."""
     out = {}
     for c, b in bases.items():
         r = C.evaluate(b, g, reps)
         p = b.eng.port(b.A * g, comm=c)
         ex = p["excess"].values
-        r.update(msr=me.msr(ex), sortino=me.sortino_e(ex))
-        if approach == "B":
-            r["proshla_c8v2"] = bool(r["usl1_c8"] and r["usl2_k3"])
+        r.update(msr=me.msr(ex), sortino=me.sortino_e(ex), **sr_stats(ex))
         out[c] = (r, p)
     return out
 
@@ -114,7 +112,7 @@ def run_approach(eng, approach, grid, bases, reps, log=print):
                 cc = eng.calib_closed(G) if approach == "D" and kind == "mask" else np.nan
                 meta.update(calib_closed=cc, screened_in=bool(np.isnan(cc) or SCREEN[0] <= cc <= SCREEN[1]))
                 if not meta["screened_in"]:
-                    rows.append(dict(meta, comm_pct=np.nan))
+                    rows += light_rows(eng, bases, G, meta)      # выпавшая по экрану — тоже проба (N)
                     continue
                 g = eng.g_row(G)
                 if kind == "mask":
@@ -181,14 +179,15 @@ def run(a_yaml, out=OUT, reps=10000, n_shift=fk.N_SHIFT, workers=2, c_grid=None,
             bases = {c: C.Base(eng, c, n_shift) for c in COMMS}
             for ap in "BCD":
                 df, ports = run_approach(eng, ap, cfg[ap], bases, reps, log)
+                df = add_n(df, C.load_grid(SWEEP / f"{ap}_setka_e3.yaml")["tochek_razlichnyh"])
                 paths += [write_table(df, Path(out) / f"{ap}_tochki.csv", head),
                           write_table(lestnitsa(ports, reps), Path(out) / f"{ap}_lestnitsa.csv", head)]
     return paths
 
 
 def main(argv=None) -> None:
-    ap = argparse.ArgumentParser(description="конвейер B/C/D: к2, к3, лестница σ, Δ к A, p ЛВ (train 2018–2019)")
-    ap.add_argument("a_yaml", help="yaml сборки A (текущий A или A′)")
+    ap = argparse.ArgumentParser(description="конвейер B/C/D (train 2018–2019)")
+    ap.add_argument("a_yaml")
     for k, v in (("out", str(OUT)), ("reps", 10000), ("n-shift", fk.N_SHIFT), ("workers", 2), ("c-grid", None), ("pometka", HEAD)):
         ap.add_argument(f"--{k}", default=v, type=type(v) if v is not None else str)   # c-grid: C_setka_e2.yaml после T2
     a = ap.parse_args(argv)

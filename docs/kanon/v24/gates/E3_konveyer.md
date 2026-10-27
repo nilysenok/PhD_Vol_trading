@@ -52,8 +52,25 @@ CHECK: python3 -m py_compile fastbt/konveyer_bcd.py; wc -l; git diff --stat orig
 EXPECT: компиляция без ошибок; ≤ 200 строк; пустой diff
 EVIDENCE: compiled; konveyer_bcd.py 200, test 200; diff пуст
 
+## G11 — у B условие 3 (к2) применяется (Ж-009); мутация «B без к2» ловится
+CHECK: python3 -m pytest -q tests/test_konveyer_bcd_n.py -k "b_condition3 or b_without_k2"
+EXPECT: 2 passed
+EVIDENCE: 2 passed
+
+## G12 — N: C с const = 360 объявлено; выпавшие по экрану D входят в N; DSR через sweep_drivers.dsr, Холм по всем пробам
+CHECK: python3 -m pytest -q tests/test_konveyer_bcd_n.py -k "n_"
+EXPECT: passed
+EVIDENCE: все тесты tests/test_konveyer_bcd_n.py (5) passed; суммарно 23 passed в двух файлах
+
+## G13 — таблицы перегенерированы: колонки n_prob, dsr, holm_p_vs_A; строк на комиссию = объявленному N (B 54, C 360, D 396)
+CHECK: scripts/konveyer_bcd.sh fastbt/designs/final/main.yaml; wc -l docs/tables/konveyer_bcd/chernovik/*.csv
+EXPECT: код 0 (add_n падает при расхождении N); D_tochki 5 шапка + 1 + 792 строк
+EVIDENCE: код 0; D_tochki.csv 798 строк = 6 + 2×396; колонки n_prob;dsr;holm_p_vs_A есть
+
+## Отмена п. 3 вердикта (срез последней доходности окна) — по указанию координатора: правило Н5, срез не делается.
+
 ## ABANDON
 (нет)
 
 ## Реестр
-закрыто 10 из 10; ABANDON: 0; pending: 0
+закрыто 13 из 13; ABANDON: 0; pending: 0

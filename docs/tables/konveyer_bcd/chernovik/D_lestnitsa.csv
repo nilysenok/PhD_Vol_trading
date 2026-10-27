@@ -1,6 +1,6 @@
 # черновик, текущий A, train 2018–2019, без выбора точек
-# код: 224f207 · fastbt 894a72f2d94c
-# входы: A-yaml main.yaml 690aa10d01aa; сетки B_setka_e3.yaml 098c2cc2e2c0, setka_C_v3.yaml 4519f9610a49, D_setka_e3.yaml c2c04660b09a; σ (SHA256.txt ch4_dev) bdea1dd5066e
+# код: f9533db · fastbt 7d173ab73515
+# входы: A-yaml main.yaml 690aa10d01aa; сетки B_setka_e3.yaml 93808ec96891, setka_C_v3.yaml 4519f9610a49, D_setka_e3.yaml c03b646b4690; σ (SHA256.txt ch4_dev) bdea1dd5066e
 # период 2018–2019; комиссии 0.035, 0.04 %; к2: 1000 сдвигов, seed 20261027; ЛВ блок 5; Δ = разность табличных Шарпов (ddof=1)
 # сдвиг σ: проверка сдвига σ (k = −2…+1, максимум на последнем известном дне): 2 рядов с дневной целью, все допущены
 approach;comm_pct;family;point;h;ot;k;sharpe_ot;sharpe_k;d_sharpe;p_lw;znak_2018;znak_2019

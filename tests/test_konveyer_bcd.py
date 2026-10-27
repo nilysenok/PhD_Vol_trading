@@ -185,16 +185,10 @@ def test_konveyer_columns_ladder_no_selection(ap, tmp_path):
         assert not ((lad["family"] == "C*") & (lad["ot"] == "naive")).any()   # у const/naive нет C*: цепочка harj → hyb
 
 
-def test_konveyer_b_ignores_k2_in_passed():
-    ns = eng()
-    df, _ = K.run_approach(ns, "B", BAND, bases(ns), 100, log=lambda *_: None)
-    assert (df["proshla_c8v2"] == (df["usl1_c8"] & df["usl2_k3"])).all()
-
-
 def test_konveyer_d_screen_drops_points():
     ns = eng()
     ns.calib_closed = lambda G: 0.9                                       # экран [0,10; 0,50]: все маски выпали
     df, _ = K.run_approach(ns, "D", {}, bases(ns), 100, log=lambda *_: None)
     masks = df[df["family"] != "D7"]
-    assert not masks["screened_in"].any() and masks["sharpe"].isna().all()
+    assert not masks["screened_in"].any() and masks["sharpe"].isna().all() and masks["sr_d"].notna().all()
     assert df[df["family"] == "D7"]["screened_in"].all()                  # D7 (масштаб) — без экрана
