@@ -68,6 +68,8 @@ def grid_val_sharpe(A, lr, job_t, job_c, job_vs, job_ve, fam, scale, comm, out):
                     q = A[j, t] * fam[m, ci, ti, t]
                     p = A[j, t - 1] * fam[m, ci, ti, t - 1] if t > vs else 0.0
                 net = q * lr[ti, t] - abs(q - p) * comm
+                if t == ve - 1:     # ОВ: выход на конце окна отбора (как masked_eval)
+                    net -= abs(q) * comm
                 S += net
                 Q += net * net
             var = max(Q - S * S / n_win, 0.0) / (n_win - 1)

@@ -21,3 +21,4 @@
 - Numba-функции, вызванные из других numba-функций, monkeypatch не видят (замороженные глобалы): подменять надо точку входа из Python (`engine.lvl_run`, `batch.trades_one`, `execlayer.exec_layer`). Помощник `tests/audit_fastbt/_eng.py: mutant()`.
 - Окно обучения A `[WARMUP, s_Y)` включает доходность последнего бара Y−1 до close первого бара Y (lr[s_Y−1]). Это не утечка: первая позиция года Y ставится на close того же первого бара. Но «строго до 1 января» нарушается на один close — стоит зафиксировать тестом.
 - B главы 4 — `s9.S9.b_weights` (min(cap, past_median(σ, 252)/σ) + `s9_stats.band_hold`), а не `approach_b.py` (σ-уровни стопов, конвейер v4).
+- 27.10 ОВ (владелец: «окна отбора платят выход»): окна отбора (sharpe_window, masked_eval, scaled_eval, grid_val_sharpe) платят |поз|·c за позицию на своём последнем баре, как Н5; флага «как раньше» нет; тест fastbt/tests/test_ov_window_exit.py. Эталоны final3 и strat_dev_v2 устарели — пересчёт в следующем PR.
