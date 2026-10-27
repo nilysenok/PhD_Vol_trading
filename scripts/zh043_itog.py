@@ -1,9 +1,9 @@
 """Конвейер Ж-043, итог: ворота для кандидатов пула плато + дозапись в реестр отбора A (только дописывать).
 
-Ворота: G1 min(mSR 2018, mSR 2019) > 0 (mSR не определён -> не пройдено); G2 сделок ≥ 30 в каждом году (стороны/2, 17 тикеров);
-G3 соседей с min mSR > 0 не меньше 3 и активность ≥ 0,5 базы; G4 s9 (`ekviv_s9.run_sk`: позиции побайтно, PnL ≤ 1e-12);
-G5 DSR ≥ 0,9 (`sweep_val_stat.dsr_n`): var — по всем пробам стратегии в реестре + эта доводка, N накопленное, SR/T/skew/kurt — 2018
-(как `kand_a.csv`: ledger проб считается на setup 2018). Цель mSR ≥ 1 в каждом году — уровень, не ворота. Validation не читается.
+Ворота (Ж-044, правка 27.10 22:20): G1 PBO по CSCV < 0,2 (по стратегии); G2 сделок ≥ 30 в каждом году (стороны/2, 17 тикеров);
+G3 соседей с min mSR > 0 не меньше 3 и активность ≥ 0,5 базы; G4 s9 (`ekviv_s9.run_sk`: позиции побайтно, PnL ≤ 1e-12).
+DSR (`sweep_val_stat.dsr_n`: var — по пробам реестра, N накопленное, SR/T/skew/kurt — 2018) — справочно, не ворота; min mSR > 0 — не ворота,
+целевая min mSR — критерий выбора (ничья по `obj`, Ж-043 п. 4). Цель mSR ≥ 1 в каждом году — уровень. Validation не читается.
 """
 from __future__ import annotations
 
@@ -21,11 +21,11 @@ from fastbt.ekviv_s9 import PNL_TOL                     # noqa: E402
 from fastbt.sweep_spec import pkey                      # noqa: E402
 from fastbt.sweep_val_stat import dsr_n                 # noqa: E402
 
-MIN_TRADES, MIN_NB, DSR_MIN, TOP = 30, 3, 0.9, 3
+MIN_TRADES, MIN_NB, PBO_MAX, TOP = 30, 3, 0.2, 3
 ST_OK, ST_NO = "kandidat_A_prim_zh043", "ne_doshla_zh043"
 OLD_SRC = ("sweep_e1", "sweep_e1v2", "sweep_e1v2_dostroyka")
-NAMES = {"G1": "min mSR ≤ 0 или не определён", "G2": "сделок < 30 в год", "G3": "соседей с min mSR > 0 меньше 3 или мала активность",
-         "G4": "не воспроизводится s9", "G5": "DSR < 0,9"}
+NAMES = {"G1": "PBO ≥ 0,2", "G2": "сделок < 30 в год", "G3": "соседей с min mSR > 0 меньше 3 или мала активность",
+         "G4": "не воспроизводится s9"}
 
 
 def key_of(exp, r) -> str:
@@ -49,16 +49,18 @@ def trials_n(sid: str, exp: dict, d: pd.DataFrame) -> tuple:
     return list(tr.values()), n0 + len(new - old)
 
 
-def gates(c: dict, ref: list, dsr: float) -> dict:
-    g = {"G1": L.fin(c["obj"]) and c["obj"] > 0, "G2": all(r["sdelok_god"] >= MIN_TRADES for r in ref),
+def gates(c: dict, ref: list, dsr: float, pbo: float | None = None) -> dict:
+    """Ворота train по Ж-044: G1 PBO < 0,2 (по стратегии; None — не применяется), G2 сделок, G3 плато, G4 s9. DSR — справочно, не ворота;
+    min mSR > 0 — не ворота (критерий выбора). `dsr` оставлен в сигнатуре для вызова Ж-043, на ворота не влияет."""
+    g = {"G1": pbo is None or (L.fin(pbo) and pbo < PBO_MAX), "G2": all(r["sdelok_god"] >= MIN_TRADES for r in ref),
          "G3": c["sosedey_pos"] >= MIN_NB and bool(c["aktivnost_ok"]),
-         "G4": all(r["sverka_s9"] == "sovpalo" and r["max_dpnl"] <= PNL_TOL and r["bar_poz_razl"] == 0 for r in ref), "G5": dsr >= DSR_MIN}
-    why = {"G1": f"{NAMES['G1']}: mSR {c['msr_2018']:.3f} / {c['msr_2019']:.3f}", "G2": f"{NAMES['G2']}: " + " / ".join(f"{r['sdelok_god']:.1f}" for r in ref),
-           "G3": f"{NAMES['G3']}: {c['sosedey_pos']} из {c['sosedey']}", "G5": f"DSR {dsr:.3f} < 0,9"}
+         "G4": all(r["sverka_s9"] == "sovpalo" and r["max_dpnl"] <= PNL_TOL and r["bar_poz_razl"] == 0 for r in ref)}
+    why = {"G1": f"{NAMES['G1']}: {pbo}", "G2": f"{NAMES['G2']}: " + " / ".join(f"{r['sdelok_god']:.1f}" for r in ref),
+           "G3": f"{NAMES['G3']}: {c['sosedey_pos']} из {c['sosedey']}"}
     return dict({k: int(v) for k, v in g.items()}, ok=all(g.values()), prichina="; ".join(why.get(k, NAMES[k]) for k, v in g.items() if not v) or "все ворота пройдены")
 
 
-def itog(sid: str):
+def itog(sid: str, pbo: float | None = None):
     sw, exp = L.open_sweep(sid)
     d = pd.read_csv(L.OUT / f"{sid}_dovodka.csv", comment="#")
     trials, n = trials_n(sid, exp, d)
@@ -67,21 +69,21 @@ def itog(sid: str):
         p = L.point_from_row(exp, r)
         ref = L.ref_rows(sid, sw.ev, p, f"{sid}_pul{i}", "zh043")
         ds = dsr_n(float(r["sr_d"]), trials, n, int(r["T"]), float(r["skew"]), float(r["kurt"]))
-        cands.append(dict(r.to_dict(), p=p, ref=ref, dsr=ds["dsr"], var_sr=ds["var_sr"], N=n, **gates(r, ref, ds["dsr"])))
+        cands.append(dict(r.to_dict(), p=p, ref=ref, dsr=ds["dsr"], var_sr=ds["var_sr"], N=n, **gates(r, ref, ds["dsr"], pbo)))
     full = [c for c in cands if c["ok"] and not c["kray"]]
-    first = L.pick_best(full, "plato") or L.pick_best([c for c in cands if not c["kray"]] or cands, "plato")
+    first = L.pick_best(full, "obj") or L.pick_best([c for c in cands if not c["kray"]] or cands, "obj")
     order = [first] + sorted((c for c in cands if c is not first), key=lambda c: (c["kray"], -c["plato"]))[:TOP - 1]
     out = []
     for i, c in enumerate(order, 1):
         ref, st = c["ref"], (ST_OK if c["ok"] else ST_NO) if i == 1 else "informatsionno_ne_luchshaya"
-        out.append(dict(rang=i, status=st, **{k: c[k] for k in ("G1", "G2", "G3", "G4", "G5")}, prichina=c["prichina"], rol=c["rol"],
+        out.append(dict(rang=i, status=st, **{k: c[k] for k in ("G1", "G2", "G3", "G4")}, prichina=c["prichina"], rol=c["rol"],
                         msr_2018=c["msr_2018"], msr_2019=c["msr_2019"], obj_min_msr=c["obj"], cel_msr_ge1_oba_goda=int(c["cel_ge1"]),
                         **{f"{m}_{g}": c[f"{m}_{g}"] for g in (2018, 2019) for m in ("sharpe", "sortino", "kalmar", "mdd")},
                         sdelok_2018=ref[0]["sdelok_god"], sdelok_2019=ref[1]["sdelok_god"], plato=c["plato"], sosedey=c["sosedey"],
                         sosedey_min_msr_pos=c["sosedey_pos"], sigma126=c["sigma126"], dsr=c["dsr"], N=c["N"], var_sr=c["var_sr"],
                         max_dpnl=max(x["max_dpnl"] for x in ref), **{f"p.{k}": v for k, v in c["p"].items()}))
     t = pd.DataFrame(out)
-    L.write_csv(t, f"{sid}_itog.csv", "# строка ранга 1 — вердикт; ранги 2–3 — справка; ворота G1–G5, цель mSR ≥ 1 — уровень (Ж-043 п. 3)\n")
+    L.write_csv(t, f"{sid}_itog.csv", "# строка ранга 1 — вердикт; ранги 2–3 — справка; ворота G1–G4 (Ж-044), цель mSR ≥ 1 — уровень (Ж-043 п. 3)\n")
     print(t.drop(columns=[c for c in t if c.startswith("p.")]).T.to_string())
     dopisat_reestr(sid, exp, d, t.iloc[0], rs.klyuch_str(rs.kanon_ledger(pkey(first["p"]))))
 
