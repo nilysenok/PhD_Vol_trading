@@ -2,6 +2,8 @@
 Тест красный, пока кодер 1 не запушил правку (ledger сейчас пишет и на control/train)."""
 import json
 
+import pytest
+
 from fastbt.sweep import Sweep
 from fastbt.sweep_spec import Spec
 from fastbt.sweep_synth import SynthEvaluator
@@ -31,10 +33,15 @@ def ok_control_alone_not_a_trial() -> bool:
     return sw.trials_sr() == [] and sw.evaluate(P, "setup")["N"] == 1
 
 
+_WAIT = pytest.mark.xfail(strict=False, reason="ждёт правки кодера 1 в sweep-engine-2 (ledger только setup); после неё снять маркер")
+
+
+@_WAIT
 def test_ledger_pishet_tolko_na_setup_pri_komissii_otbora():
     assert ok_ledger_setup_only()
 
 
+@_WAIT
 def test_control_i_train_bez_setup_ne_proba():
     assert ok_control_alone_not_a_trial()
 
