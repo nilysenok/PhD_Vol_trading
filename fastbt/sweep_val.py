@@ -1,6 +1,6 @@
 """Validation A′ (Ж-031 Э1-д, Ж-037): один взгляд на 2020–2021 под замком. Реальный прогон запускает лид после «да»; здесь `--dry`.
 
-Порядок: (1) сверка «да»: строка в `resheniya.md` под Ж-номером, позже заморозки списка кандидатов, с полным sha списка;
+Порядок: (1) сверка «да»: список и время заморозки — из закоммиченного `docs/otbor/zamorozka_A_prim.json` (не из spec); строка в журнале под Ж-номером, позже заморозки, с полным sha;
 (2) замок `O_EXCL` от корня основной копии ДО любого чтения рядов 2020–2021; повтор — только с `reopen_note` (один раз, N×2);
 (3) реестр `docs/otbor/validation_reestr.csv` — первая строка пишется под замком; (4) кандидаты и таблицы — в отдельный каталог,
 которого до взгляда нет; (5) сбой — каталог удаляется без чтения, в реестр «прервано до просмотра».
@@ -50,6 +50,8 @@ class Puti:
     lock: Path | None = None
     reestr: Path | None = None
     out: Path | None = None
+    zamorozka: Path | None = None
+    git_proverka: bool = True        # файл заморозки обязан быть закоммичен и не правлен после коммита
 
     @classmethod
     def default(cls, root=None) -> "Puti":
@@ -62,6 +64,7 @@ class Puti:
         self.lock = self.lock or k / "data" / "fastbt" / "VALIDATION_A_OPENED.json"
         self.reestr = self.reestr or k / "docs" / "otbor" / "validation_reestr.csv"
         self.out = self.out or k / "docs" / "tables" / "validation_a"
+        self.zamorozka = self.zamorozka or k / "docs" / "otbor" / "zamorozka_A_prim.json"
 
 
 def sha_kandidatov(meta: list) -> str:
@@ -74,7 +77,10 @@ def _t(s: str) -> datetime:
 
 def check_da(spec: dict, sha: str, P: Puti) -> None:
     """Образец — `scripts/otkrytie_gl4.check_da`: строка «да» в журнале под Ж-номером, позже заморозки, с полным sha."""
-    if spec.get("zamorozheno_sha") != sha:
+    from fastbt.sweep_val_kand import load_zamorozka
+    z = load_zamorozka(P)
+    spec = {**spec, "zamorozheno_sha": z["sha"], "zamorozheno_v": z["zamorozheno_v"]}      # заморозка — из файла, не из spec
+    if spec["zamorozheno_sha"] != sha:
         raise Stop("список кандидатов изменён после заморозки (sha не равен zamorozheno_sha): новая заморозка, не перевыпуск «да»")
     d = spec.get("da_vladeltsa") or {}
     stroka, zh = str(d.get("stroka") or "").strip(), str(d.get("zhurnal") or "")
@@ -162,8 +168,16 @@ def run(P: Puti, spec: dict, meta: list, factory, reps_lw: int = vs.REPS_LW, rep
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dry", action="store_true", help="синтетика во временном каталоге; реальные данные не читаются")
-    if not ap.parse_args(argv).dry:
-        raise Stop("реальный прогон запускает лид после «да» владельца (список кандидатов и фабрика данных — вне этого PR)")
+    ap.add_argument("--zhurnal", help="Ж-NNN строки «да»")
+    ap.add_argument("--da", help="точный текст строки «да» из журнала")
+    ap.add_argument("--reopen-note", default=None)
+    ns = ap.parse_args(argv)
+    if not ns.dry:                           # реальный путь: пути от корня основной копии, список — из файла заморозки
+        from fastbt.sweep_val_kand import load_zamorozka, make_factory
+        P = Puti.default()
+        spec = dict(da_vladeltsa=dict(stroka=ns.da or "", zhurnal=ns.zhurnal or ""), reopen_note=ns.reopen_note)
+        print(run(P, spec, load_zamorozka(P)["spisok"], make_factory(P))["reshenie"])
+        return 0
     from fastbt.sweep_val_dry import dry_run
     with tempfile.TemporaryDirectory() as td:
         res = dry_run(Path(td))
