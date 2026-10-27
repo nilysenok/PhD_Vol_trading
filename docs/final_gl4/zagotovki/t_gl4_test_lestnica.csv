@@ -1,0 +1,6 @@
+# таблица: t_gl4_test_lestnica — лестница σ: соседние ступени konst → naivnaya → harj_b → gibrid, Δ Шарпа и p Ледуа–Вольфа
+# статус: тест
+# окно данных: ⟨okno_testa.s⟩ — ⟨okno_testa.po⟩; исполнение d+1; честная половина: тест 2022+, одно открытие
+# код: ⟨git HEAD⟩; спецификация: ⟨SHA spec_otkrytiya.json⟩; хэш входов: ⟨vhody_agg_sha256⟩
+# источник: scripts/otkrytie_gl4.py (v1); числа — docs/final_gl4/chisla_gl4.json
+semya,tochka,komissiya_pct,ot,k,sharpe_ot,sharpe_k,delta,se_delta,p_lw,status
