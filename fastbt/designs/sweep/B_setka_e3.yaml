@@ -1,0 +1,20 @@
+# Сетка B этапа Э3 (T3, конвейер fastbt/konveyer_bcd.py). Объявлена и закоммичена до счёта; точки не выбираются.
+# Основа — #296 (docs/otchety/2026-10-27_gl4_parametry_setki.md §5, fastbt/designs/s9/setka_B_v3.yaml); формула
+# w = min(cap, медиана_252(σ) / σ), полоса удержания band, позиция = A × w — s9.S9.b_weights (не меняется).
+# Лестница σ: константная → наивная √RV_w → HAR-J (б) → гибрид. Константная — sigma_e «const» (σ̄ за 252 дня,
+# окно оканчивается днём d−1), от h не зависит. Наивная h5 ≡ наивная h1 — на счёт идёт один раз.
+# Условие 3 (к2) для B не применяется (решение владельца): к2 в таблице справочно.
+pometka: черновик, текущий A, train 2018–2019, без выбора точек
+cap: [1.0, 1.5, 2.0]
+band: [0.0, 0.10, 0.20]
+tochek_na_ryad_sigma: 9
+lestnitsa: [const, naive, harj, hyb]
+ryady_sigma: [const, naive_h1, naive_h5, harj_h1, harj_h5, hyb_h1, hyb_h5]
+# N: #296 — 6 рядов × 9 = 54 (различных 45); ступень const добавлена этим этапом: +9
+tochek_vsego: 63
+tochek_vsego_296: 54
+tochek_razlichnyh: 54
+komissii: {osnovnaya_otbor: 0.0004, pereschet: 0.00035}
+period_chernovika: [2018, 2019]
+usloviya_C8v2: {1: "Δ к A > 0 во всех годах периода и худший год", 2: "Шарп > Шарп к3", 3: "не применяется (решение владельца)"}
+uslovie1: strogo

@@ -1,0 +1,25 @@
+# Сетка D этапа Э3 (T3, конвейер fastbt/konveyer_bcd.py). Объявлена и закоммичена до счёта; точки не выбираются.
+# Основа — #296 (docs/otchety/2026-10-27_gl4_parametry_setki.md §4, fastbt/designs/s9/setka_D_v3.yaml); семьи и формулы —
+# s9.S9.d_points (не меняются). D6 с RVI_d (lag 0) в сетку не входит (только мутация-тест); D6lag1 — RVI_{d−1}.
+# Лестница σ: константная → наивная √RV_w → HAR-J (б) → гибрид. Константная — sigma_e «const», от h не зависит.
+# Наивная h5 ≡ наивная h1 — на счёт идёт один раз. Экран доли закрытых дней [0,10; 0,50] применяется при счёте
+# к маскам (D7 — без экрана) и в число объявленных точек не входит.
+pometka: черновик, текущий A, train 2018–2019, без выбора точек
+okna: [126, 252, 504]
+semyi:
+  D1:     {tochek: 9,  opisanie: "ранг σ в окне W > p → 0; W × p ∈ {70, 80, 90}"}
+  D2:     {tochek: 18, opisanie: "гистерезис: выход выше p, возврат ниже p − g; W × p × g ∈ {10, 20}"}
+  D4:     {tochek: 27, opisanie: "ранг EMA(σ, span) в окне W; span ∈ {3, 5, 10} × W × p"}
+  D5:     {tochek: 3,  opisanie: "рост σ за 5 дней > x → 0; x ∈ {20, 30, 50} %"}
+  D6lag1: {tochek: 3,  opisanie: "ранг σ/RVI_{d−1} в окне 252 > p → 0; p ∈ {70, 80, 90}"}
+  D7:     {tochek: 6,  opisanie: "масштаб min(1, (медиана σ в окне W / σ)^γ); W × γ ∈ {1, 2}"}
+tochek_na_ryad_sigma: 66
+lestnitsa: [const, naive, harj, hyb]
+ryady_sigma: [const, naive_h1, naive_h5, harj_h1, harj_h5, hyb_h1, hyb_h5]
+# N: #296 — 6 рядов × 66 = 396 (различных 330); ступень const добавлена этим этапом: +66
+tochek_vsego: 462
+tochek_vsego_296: 396
+tochek_razlichnyh: 396
+komissii: {osnovnaya_otbor: 0.0004, pereschet: 0.00035}
+period_chernovika: [2018, 2019]
+uslovie1: strogo
