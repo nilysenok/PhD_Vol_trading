@@ -1,21 +1,26 @@
 """Итерация 10 Ж-051: сочетание прошедших элементов 2 (ансамбль), 3 (топ-k), 4 (сектор/ширина) — план «вкл/выкл».
 
-Вход: ledger 2, 3, 4 (sha256 сверяется), таблицы `it{2,3,4}/{S}_itog.csv`. Точек не больше 2³ − 1 = 7 новых (одиночный
-ансамбль уже в ledger 2). Общий PBO и N — по объединённой матрице 1 + 2 + 3 + 4 + 10. Центр плато по факторному плану
-не строится (3 оси «вкл/выкл» — решётка без соседей по шагу) — выбор по целевой с ничьей по σ126, G3 не применяется.
+Вход: ledger 2, 3, 4 (sha256 сверяется), таблицы `it{2,3,4}/{S}_itog.csv`. Кандидаты — сочетания из ≥ 2 элементов; соседи
+сочетания — наборы, отличающиеся одним включённым элементом (Хэмминг 1), одиночные элементы и P1 — тоже. Выбор и ворота — как в
+итерации 1 (Ж-051 п. 3): плато (среднее целевой по соседям), ничья ≤ 0,05 — меньшая σ126; G3 — ≥ 3 соседей с min mSR > 0;
+G4 по k_s, R, τ — `gate_osi`. Соседей меньше 3 → «нет соседей», плато не пройдено. Общий PBO и N — по объединённой матрице
+1 + 2 + 3 + 4 + 10.
 """
 from __future__ import annotations
 
 import datetime as dt
 import itertools
 import math
+from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from fastbt import etap1, etap1_ansambl as A, etap1_poisk as P, etap1_poisk_vorota as V, zh051_kriteriy as K
 from fastbt.etap1_eval import YAKOR
 from fastbt.etap1_plus_eval import PlusEvaluator
-from fastbt.zh051_iter import OUT, PLUS_KEYS
+from fastbt.zh051_iter import OUT
+from fastbt.zh051_plato import GATES, PLUS_KEYS, PlusLedger
 
 NUM = {"top_k": int, "ma_n": int, "porog_shiriny": float}
 
@@ -50,52 +55,82 @@ def elementy(sid: str) -> dict:
 
 
 def kombinacii(E: list) -> list:
-    """Непустые подмножества E, кроме одного ансамбля (он уже в ledger 2); порядок — по числу включённых."""
-    sub = [c for n in range(1, len(E) + 1) for c in itertools.combinations(E, n)]
-    return [c for c in sub if c != ("ans",)]
+    """Кандидаты: сочетания из ≥ 2 прошедших элементов."""
+    return [c for n in range(2, len(E) + 1) for c in itertools.combinations(E, n)]
+
+
+def sosedi(c: tuple, E: list) -> list:
+    """Наборы, отличающиеся от c одним элементом (включён/выключен); пустой набор — это P1."""
+    return [tuple(x for x in E if (x in c) != (x == e)) for e in E]
 
 
 def run_10(sid: str) -> dict:
     S, run_id = P.load_setka(sid), dt.datetime.now().isoformat(timespec="seconds")
     evr = PlusEvaluator(sid, etap1.build_inputs(sid), etap1.base_point(sid), 0.0004)
-    ev = lambda p, per: evr.evaluate({**YAKOR, **p}, per)                    # noqa: E731
-    led = K.load_ledger(sid, "ledger_it2.pkl", ev)
+    row = pd.read_csv(Path("docs/tables/zh047") / f"{sid}_itog_v2.csv", comment="#").iloc[-1]
+    p1 = {k: P._coerce(str(row[f"p_{k}"]), S["axes"][k]) for k in S["axes"]}
+    E, sigpts = elementy(sid), None
+    ens = E.get("ans")
+    if ens:
+        a = pd.read_csv(OUT / "it2" / f"{sid}_ansambl.csv", comment="#", dtype=str)
+        osi = a[(a.nabor == ens["nabor"]) & (a.rezhim_ans == ens["rezhim_ans"])].iloc[-1]["osi"].split()
+        sigpts = A.signal_points(A.tochki(p1, osi, S["axes"]), evr.sk.sig_names)
+
+    def ev(p, per):                                        # точка с меткой ans — ансамбль вокруг P1, прочие оси — точки p
+        q = {k: v for k, v in p.items() if k != "ans"}
+        return evr.evaluate_ens({**YAKOR, **q}, sigpts, p["ans"].split("|")[1], per) if "ans" in p else evr.evaluate({**YAKOR, **q}, per)
+    led = K.load_ledger(sid, "ledger_it2.pkl", ev, cls=PlusLedger)
     for n in (3, 4):
-        K.merge(led, K.load_ledger(sid, f"ledger_it{n}.pkl", ev))
+        K.merge(led, K.load_ledger(sid, f"ledger_it{n}.pkl", ev, cls=PlusLedger))
     if K.sverka_ledger(led, ev):
         raise SystemExit(f"{sid}: СТОП, строки ledger не воспроизведены текущим кодом")
-    row = pd.read_csv(OUT.parent / "zh047" / f"{sid}_itog_v2.csv", comment="#").iloc[-1]
-    p1 = {k: P._coerce(str(row[f"p_{k}"]), S["axes"][k]) for k in S["axes"]}
-    pb0, n0, E = V.pbo(V.matrix(led)), led.n_unique, elementy(sid)
-    r1, base = led(p1, "train"), V.storony(led(S["yakor"], "train")).get(2018)
-    cfg, ens = {}, E.get("ans")
-    for c in kombinacii(list(E)):
+    pb0, n0, names = V.pbo(V.matrix(led)), led.n_unique, list(E)
+
+    def point(c):
         ext = {k: v for n in c if n != "ans" for k, v in E[n].items()}
-        if "ans" in c:
-            osi = pd.read_csv(OUT / "it2" / f"{sid}_ansambl.csv", comment="#", dtype=str)
-            osi = osi[(osi.nabor == ens["nabor"]) & (osi.rezhim_ans == ens["rezhim_ans"])].iloc[-1]["osi"].split()
-            sig = A.signal_points(A.tochki(p1, osi, S["axes"]), evr.sk.sig_names)
-            res = evr.evaluate_ens({**p1, **ext}, sig, ens["rezhim_ans"])
-            K.add_cfg(led, ("kombo", c), {"kombo": c, **ext}, res)
-        else:
-            res = led({**p1, **ext}, "train")
-        cfg[c] = (res, ext)
-    itog = dict(strategiya=sid, zapusk=run_id, iteraciya=10, N_do=n0, pbo_do=pb0, elementy=" ".join(E) or "нечего сочетать")
-    cand = [dict(c=c, objective=V.obj(r), sigma126=V.sigma126(r)) for c, (r, _) in cfg.items()
-            if all(v >= 0.5 * base for v in V.storony(r).values()) and all(v >= V.MIN_SDELOK for v in r["sdelok_y"].values())]
-    best = V.pick_best(cand, "objective")
+        return {**p1, **ext, **({"ans": f"{ens['nabor']}|{ens['rezhim_ans']}"} if "ans" in c else {})}
+
+    def res(c):
+        if not c:
+            return led(p1, "train")
+        if c == ("ans",):
+            return led.cache[(A.cfg_key(ens["nabor"], ens["rezhim_ans"]), "train")][1]
+        return led(point(c), "train")
+    cands = kombinacii(names)
+    itog = dict(strategiya=sid, zapusk=run_id, iteraciya=10, N_do=n0, pbo_do=pb0, elementy=" ".join(names) or "нечего сочетать")
+    rows = []
+    for c in cands:
+        nb = sosedi(c, names)
+        o = [V.obj(res(x)) for x in (c, *nb)]
+        r = res(c)
+        rows.append(dict(c=c, nb=nb, objective=o[0], plateau=float(np.mean(o)) if all(map(math.isfinite, o)) else float("nan"),
+                         n=len(o), sigma126=V.sigma126(r), edge=len(o) < 3,
+                         adm=math.isfinite(o[0]) and V.dopustima(led, point(c), S["yakor"]) and not r.get("vyrozhdena")))
     M = V.matrix(led)
-    itog.update(pbo_obshchaya=V.pbo(M), N_obshchee=led.n_unique, N_pbo=M.shape[1], G1_pbo=bool(V.pbo(M) < V.PBO_MAX))
+    pb, s9 = V.pbo(M), max(etap1.anchor_s9_diff(sid, evr).values()) <= 1e-12
+    for c in rows:
+        if not c["adm"]:
+            continue
+        pt, sdy = point(c["c"]), res(c["c"]).get("sdelok_y") or {}
+        o = V.gate_osi(led, pt, S["axes"])
+        g = dict(G1_pbo=bool(pb < V.PBO_MAX), G2_sdelki=bool(sdy) and all(v >= V.MIN_SDELOK for v in sdy.values()),
+                 G3_plato=sum(1 for x in c["nb"] if V.obj(res(x)) > 0) >= 3, G4_osi=o["ok"], G5_s9=bool(s9))
+        c["net_sosedey"] = len(c["nb"]) < 3
+        c["gates"] = {**g, "ok": all(g[k] for k in GATES), "osi_pos": str(o["per"])}
+    good = [c for c in rows if c.get("gates") and math.isfinite(c["plateau"])]
+    best = V.pick_best([c for c in good if c["gates"]["ok"]], "plateau") or V.pick_best(good, "plateau")
+    M = V.matrix(led)
+    itog.update(pbo_obshchaya=V.pbo(M), N_obshchee=led.n_unique, N_pbo=M.shape[1], N_novyh=led.n_unique - n0)
     if best is None:
-        itog.update(proshla=False, G4_osi=False, G5_s9=False, verdikt="нечего сочетать" if not E else "не прошла: нет допустимой")
+        itog.update(proshla=False, net_sosedey=True, verdikt="нечего сочетать" if len(names) < 2 else "не прошла: нет допустимой")
     else:
-        rb, ext = cfg[best["c"]]
-        g4 = V.gate_osi(led, {**p1, **ext}, S["axes"])
-        s9 = max(etap1.anchor_s9_diff(sid, evr).values()) <= 1e-12
-        d = best["objective"] - V.obj(r1)
-        ok = itog["G1_pbo"] and g4["ok"] and s9 and d >= K.DELTA - 1e-12 and math.isfinite(d)
-        itog.update(kombo=" ".join(best["c"]), obj=best["objective"], obj_p1=V.obj(r1), delta=d, **V.po_godam(rb),
-                    G4_osi=g4["ok"], G5_s9=bool(s9), proshla=bool(ok), verdikt="кандидат" if ok else "не прошла")
+        d = best["objective"] - V.obj(res(()))
+        g = best["gates"]
+        ok = g["ok"] and math.isfinite(d) and d >= K.DELTA - 1e-12
+        itog.update(kombo=" ".join(best["c"]), obj=best["objective"], obj_p1=V.obj(res(())), delta=d, plateau=best["plateau"],
+                    **V.po_godam(res(best["c"])), **{k: g[k] for k in (*GATES, "osi_pos")}, net_sosedey=best["net_sosedey"],
+                    proshla=bool(ok), verdikt="кандидат" if ok else ("не прошла: нет соседей, плато не пройдено"
+                                                                     if best["net_sosedey"] else "не прошла"))
     K.write_table(OUT / "it10" / f"{sid}_itog.csv", [itog])
     K.save_ledger(sid, led, "ledger_it10.pkl")
     return itog

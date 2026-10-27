@@ -77,7 +77,7 @@ def sums_read(led: Path | None = None) -> dict:
     return out
 
 
-def load_ledger(sid: str, name: str, evaluate, led: Path | None = None):
+def load_ledger(sid: str, name: str, evaluate, led: Path | None = None, cls=V.Ledger):
     """Ledger из pickle со сверкой sha256 до использования; хэша нет или не совпал — SystemExit."""
     led = Path(led or LED)
     p, key = led / sid / name, f"{sid}/{name}"
@@ -86,7 +86,7 @@ def load_ledger(sid: str, name: str, evaluate, led: Path | None = None):
         raise SystemExit(f"{key}: нет файла или строки в SHA256SUMS — восстановить etap1_ansambl_run (restore), не считать молча")
     if sha(p) != s[0]:
         raise SystemExit(f"{key}: sha256 не совпал с SHA256SUMS.txt")
-    L = V.Ledger(evaluate)
+    L = cls(evaluate)
     L.cache = pickle.loads(p.read_bytes())
     return L
 

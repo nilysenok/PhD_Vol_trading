@@ -5,17 +5,17 @@
 `self.ens`) и фильтр входа по стороне; (2) распределитель по всем тикерам; затем `run_e1`. Фильтры только запрещают вход
 (сделка Sk пропускается целиком), открытую позицию не закрывают. `etap1_eval.py` не правится.
 
-Интерфейс модулей (проект #360, §2.3–2.4); модуль не слит — ленивый импорт, при вызове `NotImplementedError`:
- - `fastbt.e1_sektor.allow(pt, t, dates) -> (long: bool[n], short: bool[n])`, n = len(dates); разрешение входа по close d;
-   контроль (к2) — по `pt["kontrol"] = ("krug_sdvig", lag)`;
- - `fastbt.e1_portfel.raspredelit(sig, ball, k, sektor=None, n_sek=None, dates=None) -> dict`: `sig`, `ball`, `dates` —
-   словари тикер → массив; возвращает словарь тикер → позиции после слотов (без вытеснения, вес не меняется).
+Модули К3/К4 (#363, #364), ленивый импорт:
+ - `e1_sektor.allow(pt, t, dates, ctx) -> (long, short)`; `ctx` — `Ctx` из индексов секторов и close Н6 (`_ctx`).
+   Контроль к2 (`pt["kontrol"] = ("krug_sdvig", lag)`) делает оценщик: маски разрешения сдвигаются циклически;
+ - `e1_portfel.raspredelit(sig, ball, k)` — массивы (T, n) на общем календаре тикеров (`_slots`), балл — `ball_sily`.
 """
 from __future__ import annotations
 
 import importlib
 
 import numpy as np
+import pandas as pd
 
 from fastbt import rezhim_e1
 from fastbt.etap1_ansambl_eval import AnsamblEvaluator
@@ -70,7 +70,43 @@ class PlusEvaluator(AnsamblEvaluator):
 
     def _ball(self, pt: dict, t: str, sp: dict, q: float, s0: int, b: int, sg) -> np.ndarray:
         """Балл |strength| / σ на close d (σ известна на close d). Контроль: перемешивание между тикерами делает `_rows`."""
-        return np.abs(self._strength(t, sp, q, s0, b)) / np.maximum(np.asarray(sg, float), 1e-12)
+        return modul("e1_portfel").ball_sily(self._strength(t, sp, q, s0, b), sg)
+
+    def _ctx(self):
+        """Ряды К4: индексы секторов (< 2022), close Н6 17 тикеров, карта тикер → индекс. Строится один раз."""
+        if getattr(self, "_c", None) is None:
+            E = modul("e1_sektor")
+            idx = E.load_indexes(sorted(set(pd.read_csv(E.SEKTORY_CSV).indeks)))
+            close = {}
+            for t in self.sk.tickers:
+                d, c = self.inp.meta[t]["dates"], self.inp.close_n6[t]
+                n = min(len(d), len(c))
+                close[t] = pd.Series(np.asarray(c, float)[:n], index=pd.DatetimeIndex(d[:n]))
+            self._c = E.Ctx(idx, close, E.sektor_map(E.SEKTORY_CSV, idx))
+        return self._c
+
+    @staticmethod
+    def _kontrol_sdvig(pt: dict, lg, sh):
+        """Контроль к2 «krug_sdvig»: маски разрешения циклически сдвинуты на lag дней (≥ 63)."""
+        k = pt.get("kontrol")
+        if k and k[0] == "krug_sdvig":
+            return np.roll(lg, int(k[1])), np.roll(sh, int(k[1]))
+        return lg, sh
+
+    @staticmethod
+    def _slots(S: dict, tickers: list, ball: dict, k: int) -> None:
+        """Распределитель К3 на общем календаре: массивы (T, n); результат возвращается в S[t]['d'] по датам тикера."""
+        cal = np.unique(np.concatenate([S[t]["dates"] for t in tickers]))
+        pos = {t: np.searchsorted(cal, S[t]["dates"]) for t in tickers}
+
+        def col(fill, get):
+            out = np.full((len(cal), len(tickers)), fill, float)
+            for j, t in enumerate(tickers):
+                out[pos[t], j] = get(t)
+            return out
+        new = modul("e1_portfel").raspredelit(col(0.0, lambda t: S[t]["d"]), col(np.nan, lambda t: ball[t]), k)
+        for j, t in enumerate(tickers):
+            S[t]["d"] = new[pos[t], j]
 
     def _rows(self, pt: dict, period: str, anchor: bool):
         if not plus_on(pt):
@@ -86,17 +122,15 @@ class PlusEvaluator(AnsamblEvaluator):
             dates = m["dates"][:b + 1]
             d, mag = self._signal(pt, t, sp, q, dates, s0, b)
             if pt["sektor_trend"] != NET or pt["shirina"] != NET:
-                lg, sh = modul("e1_sektor").allow(pt, t, dates)
-                d = side_gate(d, np.asarray(lg, bool), np.asarray(sh, bool))
+                lg, sh = modul("e1_sektor").allow(pt, t, dates, self._ctx())
+                lg, sh = self._kontrol_sdvig(pt, np.asarray(lg, bool), np.asarray(sh, bool))
+                d = side_gate(d, lg, sh)
             sg = inp.sigma[pt["sigma"]][t][:b + 1]
             S[t] = dict(d=d, mag=mag, dates=dates, b=b, s0=s0, sg=sg)
         if pt["top_k"] != NET:                                # проход 2: слоты по всем тикерам
             ball = {t: self._ball(pt, t, sp, q, s["s0"], s["b"], s["sg"]) for t, s in S.items()}
             ball = self._kontrol_rang(pt, ball)
-            new = modul("e1_portfel").raspredelit({t: s["d"] for t, s in S.items()}, ball, int(pt["top_k"]),
-                                                  dates={t: s["dates"] for t, s in S.items()})
-            for t, s in S.items():
-                s["d"] = np.asarray(new[t], float)
+            self._slots(S, list(self.sk.tickers), ball, int(pt["top_k"]))
         out = []
         for ti, t in enumerate(self.sk.tickers):
             s, inp = S[t], self.inp

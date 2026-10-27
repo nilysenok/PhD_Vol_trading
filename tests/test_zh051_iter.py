@@ -65,4 +65,6 @@ def test_plan_chislo_tochek_iz_yaml():
 
 
 def test_kombinacii_iteracii_10():
-    assert len(I10.kombinacii(["ans", "top_k", "sektor"])) == 6 and I10.kombinacii([]) == [] and I10.kombinacii(["ans"]) == []
+    E = ["ans", "top_k", "sektor"]
+    assert len(I10.kombinacii(E)) == 4 and I10.kombinacii(["ans"]) == [] and I10.kombinacii(E[:2]) == [("ans", "top_k")]
+    assert I10.sosedi(("ans", "top_k"), E) == [("top_k",), ("ans",), ("ans", "top_k", "sektor")]       # Хэмминг 1

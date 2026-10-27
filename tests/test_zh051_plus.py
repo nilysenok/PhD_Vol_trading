@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from fastbt.e1_portfel import ball_sily
+from fastbt.e1_portfel import ball_sily
 from fastbt import etap1_ansambl_eval as AE, etap1_eval as EE, etap1_plus_eval as PE
 from fastbt.etap1_eval import YAKOR
 
@@ -46,6 +48,9 @@ class Fake:
 
     def _strength(self, t, sp, q, s0, b):
         return STR[t][s0:s0 + b + 1]
+
+    def _ctx(self):
+        return getattr(self, "ctx", None)
 
     def _ens_signal(self, t, pts, mode, dates, s0, b):
         return POS[t][:b + 1] * 1.0, np.full(b + 1, 0.5)
@@ -103,7 +108,7 @@ def test_side_gate_otvet_izvesten_i_mutatsiya_storony():
 
 
 def test_sektor_filtruet_vkhod_po_storone(spy, monkeypatch):
-    def allow(pt, t, dates):
+    def allow(pt, t, dates, ctx):
         n = len(dates)
         return np.zeros(n, bool), np.ones(n, bool)                 # лонг везде запрещён, шорт разрешён
     monkeypatch.setattr(PE, "modul", lambda n: types.SimpleNamespace(allow=allow))
@@ -116,16 +121,18 @@ def test_sektor_filtruet_vkhod_po_storone(spy, monkeypatch):
 def test_top_k_vyzyvaetsya_na_vseh_tickerah_ball_sovpadaet_s_formuloy(spy, monkeypatch):
     seen = {}
 
-    def rasp(sig, ball, k, sektor=None, n_sek=None, dates=None):
-        seen.update(sig=sig, ball=ball, k=k, dates=dates)
-        return {t: (np.zeros_like(v) if t == "BBB" else v) for t, v in sig.items()}
-    monkeypatch.setattr(PE, "modul", lambda n: types.SimpleNamespace(raspredelit=rasp))
+    def rasp(sig, ball, k):
+        seen.update(sig=sig, ball=ball, k=k)
+        out = sig.copy()
+        out[:, 1] = 0.0                                            # BBB (колонка 1) вытеснен
+        return out
+    monkeypatch.setattr(PE, "modul", lambda n: types.SimpleNamespace(raspredelit=rasp, ball_sily=ball_sily))
     _rows(FakePlus, {**PT, "top_k": 5})
-    assert set(seen["sig"]) == set(TICKS) and seen["k"] == 5 and set(seen["dates"]) == set(TICKS)
+    assert seen["sig"].shape[1] == 3 and seen["k"] == 5 and seen["ball"].shape == seen["sig"].shape
     b = int(np.searchsorted(DATES, np.datetime64("2020-01-01")))
     sg = FakeInp().sigma["ewma094"]["AAA"][:b + 1]
-    assert np.allclose(seen["ball"]["AAA"], np.abs(STR["AAA"][:b + 1]) / sg)           # σ того же дня d
-    assert not np.allclose(seen["ball"]["AAA"][:-1], np.abs(STR["AAA"][:b])[:] / sg[1:])   # σ из завтра — другое число
+    assert np.allclose(seen["ball"][:b + 1, 0], np.abs(STR["AAA"][:b + 1]) / sg)           # σ того же дня d
+    assert not np.allclose(seen["ball"][:b, 0], np.abs(STR["AAA"][:b]) / sg[1:])           # σ из завтра — другое число
     assert not {c["t"]: c["sig"] for c in spy}["BBB"].any()        # результат распределителя дошёл до движка
 
 
@@ -141,7 +148,7 @@ def test_kontrol_rang_peremeshivaet_mezhdu_tikerami_po_dnyam():
 
 
 def test_ansambl_ves_umnozhen_na_velichinu(spy, monkeypatch):
-    monkeypatch.setattr(PE, "modul", lambda n: types.SimpleNamespace(allow=lambda pt, t, d: (np.ones(len(d), bool),) * 2))
+    monkeypatch.setattr(PE, "modul", lambda n: types.SimpleNamespace(allow=lambda pt, t, d, c: (np.ones(len(d), bool),) * 2))
     _rows(FakePlus, {**PT, "shirina": "po_trendu"}, ens=([PT], "srednee"))
     assert all(np.allclose(c["w"], 0.5) for c in spy)
 
