@@ -8,7 +8,7 @@ EVIDENCE: 1 passed
 ## G2 — веса обратной волатильности и паритета риска не зависят от текущего дня; известный ответ: диагональная ковариация -> 1/σ
 CHECK: python3 -m pytest tests/test_sweep_a.py -k "ves" -q
 EXPECT: passed
-EVIDENCE: 3 passed
+EVIDENCE: 4 passed (3 веса + слот 1/L)
 
 ## G3 — лимит позиций L и лимит на стратегию K соблюдаются в каждый день; FIFO и сила сигнала при равенстве
 CHECK: python3 -m pytest tests/test_sweep_a.py -k "limit" -q
