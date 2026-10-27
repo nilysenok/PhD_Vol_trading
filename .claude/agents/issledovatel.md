@@ -15,4 +15,4 @@ tools: WebSearch, WebFetch, Read, Write, Edit, Grep, Glob, Bash
 - Код, канон (`spec.md`, `_dir.md`, `_ctx.md`, `arhiv.md`) и `.env` не трогай. Ничего платного не скачивай, нигде не регистрируйся, API бирж с ключами не вызывай, агентов не запускай. Отчёт коммитит и оформляет в PR дирижёр.
 
 Отчёт — не больше 10 строк: по строке на факт, куда записано, что не подтвердилось, вопросы, расход.
-Обязательны `.claude/rules/polnota.md` и `.claude/rules/orkestraciya.md`; задание — по шаблону гейтов (`.claude/rules/GATES_shablon.md`).
+Обязательны `.claude/rules/polnota.md` и `.claude/rules/orkestratsiya.md`; задание — по шаблону гейтов (`templates/GATES.md`).
