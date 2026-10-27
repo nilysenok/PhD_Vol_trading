@@ -20,7 +20,7 @@ EVIDENCE: pending (хук и проверка в CI — kodir, PR #294)
 ## G4 — сверка блоков находит квитанцию у каждого блока
 CHECK: /usr/bin/python3 scripts/kanon/sverka_blokov.py | tail -1
 EXPECT: `блоков без квитанции: 0`
-EVIDENCE: pending (скрипт — kodir, PR #294; в этой ветке `scripts/kanon/sverka_blokov.py` нет). Замена до слияния — G9 ниже
+EVIDENCE: скрипт взят из `origin/kanon-v24-e1-skripty` (в этой ветке его нет), запущен на `resheniya.md` этой ветки: `блоков всего: 87 (с номером: 26, без номера: 61)`; `блоков без квитанции: 0`; `ретроспективно не дошедших: 83`; код возврата 0. До первого прогона была ошибка «время убывает: Ж-002 раньше Ж-016» — исправлена переносом Ж-002 по времени
 
 ## G5 — все блоки владельца 26–27.10 из плана перенесены дословно
 CHECK: /usr/bin/python3 -I -c "import re;r=open('docs/resheniya/resheniya.md',encoding='utf-8').read();L=[l.split('- ',1)[1].rstrip('\n') for l in open('docs/zadaniya/2026-10-25_pereschet.md',encoding='utf-8') if re.match(r'^\s*- Ъ Владелец 2[67]\.10',l)];print(len(L),'в плане; не найдено:',sum(1 for t in L if t not in r))"
@@ -61,4 +61,4 @@ EVIDENCE: `1`, `21`, `2`, `1` (в `plan_etapov.md` строк с `| N |` ров�
 ABANDON: нет. G2, G3, G4 не закрыты и не отменены: pending до слияния PR #294 (kodir); причина — файлы вне владения этого задания.
 
 ## Реестр
-закрыто 8 из 11; ABANDON: 0; pending: 3 (G2, G3, G4 — ждут #294)
+закрыто 9 из 11; ABANDON: 0; pending: 2 (G2, G3 — хуки, ждут #294)
