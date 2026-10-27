@@ -14,7 +14,7 @@ import pandas as pd
 
 from fastbt import sweep_drivers as sd
 
-TIE, WIN, NBLK, PBO_MAX, MIN_SDELOK = 0.05, 126, 8, 0.2, 30
+TIE, WIN, NBLK, PBO_MAX, MIN_SDELOK, PLATO_NET = 0.05, 126, 8, 0.2, 30, 0.1
 OSI, NET = ("k_s", "R", "tau"), "net"
 
 
@@ -96,14 +96,27 @@ def n_pos(led: Ledger, pts: list) -> int:
     return sum(1 for q in pts if obj(led(q, "train")) > 0)       # nan > 0 ложно
 
 
+def net_plato(led: Ledger, pt: dict, a: str, axes: dict) -> bool:
+    """Ж-048 п. 1: при «нет» на оси плато одностороннее — два ближайших конечных значения оси (k_s 4,3; R 4,3; τ 20,10)
+    не хуже точки больше чем на PLATO_NET по целевой. Недосчитанные соседи досчитываются через Ledger (идут в N)."""
+    fin = [v for v in axes[a] if v != NET][-2:]
+    o = obj(led(pt, "train"))
+    return bool(fin) and all(obj(led({**pt, a: v}, "train")) >= o - PLATO_NET for v in fin)     # nan -> ложь
+
+
 def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:
-    """Плато по k_s, R, τ отдельно (досчёт соседей в N): >= 3 положительных соседей всего и по каждой оси >= 1."""
-    per = {}
+    """Плато по k_s, R, τ: конечные значения — >= 3 положительных соседей в сумме и >= 1 на оси (без изменений, Ж-048);
+    ось с «нет» — одностороннее плато net_plato, в счёт >= 3 не входит."""
+    per, net = {}, {}
     for a in OSI:
-        nb = [] if (a == "R" and pt.get("k_s") == NET) else neighbors(pt, [a], axes)   # R при k_s = нет вырождена
-        if nb:
+        if a == "R" and pt.get("k_s") == NET:
+            continue                                                                  # R при k_s = нет вырождена
+        if pt.get(a) == NET:
+            net[a] = net_plato(led, pt, a, axes)
+        elif nb := neighbors(pt, [a], axes):
             per[a] = n_pos(led, nb)
-    return dict(per=per, ok=bool(per) and sum(per.values()) >= 3 and all(v >= 1 for v in per.values()))
+    ok = bool(per or net) and all(net.values()) and all(v >= 1 for v in per.values()) and (not per or sum(per.values()) >= 3)
+    return dict(per={**per, **{f"{a}_net": v for a, v in net.items()}}, ok=ok)
 
 
 def gates(led: Ledger, pt: dict, axes: dict, plan: list, pbo: float, s9_check) -> dict:
@@ -114,6 +127,29 @@ def gates(led: Ledger, pt: dict, axes: dict, plan: list, pbo: float, s9_check) -
     g.update(G4_osi=o["ok"], osi_pos=str(o["per"]))
     g["ok"] = all(g[k] for k in ("G1_pbo", "G2_sdelki", "G3_plato", "G4_osi", "G5_s9"))
     return g
+
+
+def storony(res: dict) -> dict:
+    """Сторон в год; если драйвер оценки не отдал storony_y — 2 × сделок (так считает etap1_eval)."""
+    s = res.get("storony_y")
+    return dict(s) if s else {y: 2 * v for y, v in (res.get("sdelok_y") or {}).items()}
+
+
+def dopustima(led: Ledger, pt: dict, yakor: dict) -> bool:
+    """Толкование 27.10 19:35: сторон/год в каждом году >= 0,5 × сторон якоря на 2018; плюс Ж-044: сделок >= MIN_SDELOK в год."""
+    base = storony(led(yakor, "train")).get(2018)
+    res = led(pt, "train")
+    st, sdy = storony(res), res.get("sdelok_y") or {}
+    if base is None or not math.isfinite(base) or not st or not sdy:
+        return False
+    return all(v >= 0.5 * base for v in st.values()) and all(v >= MIN_SDELOK for v in sdy.values())
+
+
+def po_godam(res: dict) -> dict:
+    """Колонки метрик по годам для факторного файла и итога: sharpe, msr, storon, sdelok."""
+    nan, st, sdy = float("nan"), storony(res), res.get("sdelok_y") or {}
+    cols = {"sharpe": res.get("by_year") or {}, "msr": res.get("msr_by_year") or {}, "storon": st, "sdelok": sdy}
+    return {f"{n}_{y}": d.get(y, nan) for n, d in cols.items() for y in (2018, 2019)}
 
 
 def matrix(led: Ledger) -> np.ndarray:
