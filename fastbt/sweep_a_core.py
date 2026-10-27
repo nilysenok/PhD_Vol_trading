@@ -4,8 +4,8 @@
 strength[D,P] — сила сигнала (для равенства в день), rfc[D] — ставка ЦБ × календарные дни до следующей строки.
 Веса на день d считаются только по строкам < d (окно OKNO_VESOV); текущий день и будущее в вес не входят.
 Расчёт портфеля — как `s9.Engine.port` (комиссия с обеих сторон на текущий вес, плата за выход на последнем баре
-пары, свободный капитал под ставку ЦБ) плюс комиссия на |Δw| при каждой смене веса удерживаемой позиции
-(обр. волатильность, паритет риска, смена 1/cnt и n_open/L): у A без смены cnt она равна нулю.
+пары, свободный капитал под ставку ЦБ) плюс комиссия на |Δ(w − w_равный)| удерживаемой позиции: платит только пересмотр по схеме
+(обр. волатильность, паритет риска); смена 1/cnt и n_open/L не платится — у A её нет (якорь).
 """
 from __future__ import annotations
 
@@ -108,8 +108,11 @@ def weights(pn: Panel, scheme: str, g: np.ndarray, limit, full: np.ndarray | Non
     return w
 
 
-def portfolio(pn: Panel, g: np.ndarray, w: np.ndarray, comm: float) -> pd.DataFrame:
-    """[excess, exposure, turnover, sides] по дням. Σ|вес| ≤ 1: плечо запрещено (AssertionError)."""
+def portfolio(pn: Panel, g: np.ndarray, w: np.ndarray, comm: float, we: np.ndarray | None = None) -> pd.DataFrame:
+    """[excess, exposure, turnover, sides] по дням. Σ|вес| ≤ 1: плечо запрещено (AssertionError).
+    we — равный вес того же дня (без лимита 1/cnt_d по act, с лимитом 1/L); по умолчанию 1/cnt_d."""
+    if we is None:
+        we = pn.act / np.maximum(pn.act.sum(axis=1, keepdims=True), 1)
     dg = np.abs(np.diff(g, axis=0, prepend=0.0))
     last = np.zeros(g.shape, bool)
     for p in range(g.shape[1]):
@@ -118,7 +121,8 @@ def portfolio(pn: Panel, g: np.ndarray, w: np.ndarray, comm: float) -> pd.DataFr
             last[a[-1], p] = True
     ex = np.where(last, np.abs(g), 0.0)
     gp, wp = np.vstack([np.zeros((1, g.shape[1])), g[:-1]]), np.vstack([np.zeros((1, g.shape[1])), w[:-1]])
-    reb = np.where((g != 0) & (g == gp), np.abs(g) * np.abs(w - wp), 0.0)     # пересмотр веса удерживаемой позиции платит комиссию
+    dev, devp = w - we, wp - np.vstack([np.zeros((1, g.shape[1])), we[:-1]])
+    reb = np.where((g != 0) & (g == gp), np.abs(g) * np.abs(dev - devp), 0.0)   # платит только пересмотр по схеме, не смена 1/cnt
     r = (g * w * pn.lr - (dg + ex) * w * comm - reb * comm).sum(axis=1)
     expo = (np.abs(g) * w).sum(axis=1)
     assert expo.max(initial=0.0) <= 1.0 + 1e-9, "Σ|вес| > 1: плечо не предусмотрено"
@@ -137,4 +141,5 @@ def assemble(pn: Panel, p: dict, comm: float, cache: dict | None = None) -> pd.D
     if lim is None and p["vesa"] not in cache:
         cache[p["vesa"]] = full_weights(pn, p["vesa"])       # без лимита веса от сигналов не зависят: один раз на схему
     full = cache.get(p["vesa"]) if lim is None else None
-    return portfolio(pn, g, weights(pn, p["vesa"], g, lim, full), comm)
+    we = None if lim is None else (g != 0) / lim
+    return portfolio(pn, g, weights(pn, p["vesa"], g, lim, full), comm, we)

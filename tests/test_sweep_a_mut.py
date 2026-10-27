@@ -29,8 +29,8 @@ def test_mut_2_limit_ne_soblyudaetsya(monkeypatch):
 def test_mut_3_net_komissii_vyhoda_na_poslednem_bare(monkeypatch):
     orig = core.portfolio
 
-    def pf(pn, g, w, comm):
-        df = orig(pn, g, w, comm)
+    def pf(pn, g, w, comm, we=None):
+        df = orig(pn, g, w, comm, we)
         df.iloc[-1, 0] += (np.abs(g[-1]) * w[-1] * comm).sum()       # вернули плату за выход
         return df
     monkeypatch.setattr(core, "portfolio", pf)
@@ -39,7 +39,7 @@ def test_mut_3_net_komissii_vyhoda_na_poslednem_bare(monkeypatch):
 
 def test_mut_4_komissiya_tolko_s_odnoy_storony(monkeypatch):
     orig = core.portfolio
-    monkeypatch.setattr(core, "portfolio", lambda pn, g, w, comm: orig(pn, g, w, comm / 2))
+    monkeypatch.setattr(core, "portfolio", lambda pn, g, w, comm, we=None: orig(pn, g, w, comm / 2, we))
     assert not ok_etalon()
 
 
@@ -100,9 +100,10 @@ def test_mut_10_peresmotr_vesov_besplaten(monkeypatch):
 def _no_reb(orig, pn, g, w, comm):
     """Комиссия на |Δw| не берётся: добавляем её обратно по формуле."""
     df = orig(pn, g, w, comm)
-    wp = np.vstack([np.zeros((1, g.shape[1])), w[:-1]])
-    gp = np.vstack([np.zeros((1, g.shape[1])), g[:-1]])
-    reb = np.where((g != 0) & (g == gp), np.abs(g) * np.abs(w - wp), 0.0).sum(axis=1)
+    z = np.zeros((1, g.shape[1]))
+    dev = w - pn.act / np.maximum(pn.act.sum(axis=1, keepdims=True), 1)
+    gp, devp = np.vstack([z, g[:-1]]), np.vstack([z, dev[:-1]])
+    reb = np.where((g != 0) & (g == gp), np.abs(g) * np.abs(dev - devp), 0.0).sum(axis=1)
     df["excess"] += reb * comm
     df["turnover"] -= reb
     return df
