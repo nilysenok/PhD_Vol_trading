@@ -18,12 +18,14 @@ def mk(ev=None, mode="oat", period="train", **kw):
 
 
 def varies(sw):
-    return sw.run()["table"]["sharpe"].nunique() > 1
+    t = sw.run()["table"]
+    return t[t.comm_pct == 0.035]["sharpe"].nunique() > 1
 
 
 def test_param_changes_result(monkeypatch):
     assert varies(mk())
-    monkeypatch.setattr(SynthEvaluator, "signals", lambda self, sp: SynthEvaluator.signals(self, {"a": 5}))
+    orig = SynthEvaluator.signals
+    monkeypatch.setattr(SynthEvaluator, "signals", lambda self, sp: orig(self, {"a": 5}))
     assert not varies(mk())          # мутация: параметр сигнала игнорируется -> тест видит
 
 

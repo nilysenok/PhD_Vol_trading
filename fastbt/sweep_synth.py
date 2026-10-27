@@ -39,6 +39,6 @@ class SynthEvaluator:
         m = self.dates < end
         pos = sigs[m] * p.get("w", 1.0)
         d = np.abs(np.diff(pos, prepend=0.0))
-        net = pos * self.ret[m] - d * comm
+        net = pos * self.ret[m] - d * comm - 0.0001 * pos**2    # плата за удержание: Шарп зависит от w
         return pd.DataFrame(dict(excess=net, exposure=np.abs(pos), turnover=d, sides=(d > 0).astype(float)),
                             index=self.dates[m])

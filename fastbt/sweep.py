@@ -206,6 +206,23 @@ class Sweep:
         self._save(table, extra)
         return dict(table=table, pbo=pbo, N=n * mult, **extra)
 
+    def evaluate(self, params: dict, comm_pct: float | None = None) -> dict:
+        """Одна строка стандартной таблицы для точки: метрики периода spec.period, плато, N, DSR(N).
+        Строка не включает PBO (он по набору точек — драйверы режимов)."""
+        comm = self.comm[0] if comm_pct is None else comm_pct / 100.0
+        p = {**self.spec.base, **params}
+        r = self._row(p, comm)
+        r["plateau"], r["n_sosedey"] = self._plateau(r)
+        mult = 2 ** max(len(self._opens()) - 1, 0) if self.spec.mode == "validation" else 1
+        r["N"], r["n_mult"] = len(self.ledger) * mult, mult
+        r["dsr"] = ss.dsr_n(self._df(p, comm, self.spec.years)["excess"].values, list(self.ledger.values()), mult)
+        r.pop("_p")
+        return r
+
+    def _opens(self) -> list:
+        f = self.out / "validation_flag.json" if self.out else None
+        return json.loads(f.read_text("utf-8"))["opens"] if f and f.exists() else []
+
     def _row(self, p, comm) -> dict:
         df = self._df(p, comm, self.spec.years)
         if comm == self.comm[0]:
