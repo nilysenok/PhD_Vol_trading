@@ -69,7 +69,7 @@ def run(root=".", out=None) -> pd.DataFrame:
     t["top2"] = t["top2"].astype(int)
     h = hashlib.sha1(json.dumps(new, sort_keys=True, default=str).encode()).hexdigest()[:12]
     head = (f"# статус: {STATUS}; объект A_sborki; {datetime.now():%d.%m.%Y %H:%M}\n"
-            f"# точки (топ-1 по плато из S{{k}}_top3.csv) {h}; N сборок {res['n']} (модуль {res['n_modul']}); S_centr_ravnye — исходные точки Sk, НЕ A; A_boevaya_s9 — боевая A\n"
+            f"# точки (топ-1 по плато из kand_a.csv: только воспроизводимые боевым путём s9, вариант (а)) {h}; N сборок {res['n']} (модуль {res['n_modul']}); S_centr_ravnye — исходные точки Sk, НЕ A; A_boevaya_s9 — боевая A\n"
             f"# top2 — две лучшие по цели setup при плато ≥ 3 соседей; нетто «net» = лимитов нет\n")
     f = Path(out or Path(root) / TABLES / "A_sborki.csv")
     f.write_text(head + t.to_csv(index=False), "utf-8")
