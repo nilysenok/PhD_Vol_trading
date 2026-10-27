@@ -54,5 +54,10 @@ CHECK: wc -l fastbt/sweep_run.py
 EXPECT: ≤ 200
 EVIDENCE: 165
 
+## G11 — старт OAT (oat-e1-v1): обход «восстановить SR после ctrl» убран (после 44b9172 лишний); S1–S6 посчитаны; тесты
+CHECK: python3 -m fastbt.sweep_run fastbt/designs/sweep/S{1..6}_setka_e1b.yaml; pytest tests/test_sweep*.py; gates_v3.py
+EXPECT: exit 0; 24 файла; passed; гейты G1–G8 зелёные
+EVIDENCE: exit 0; 24 файла; 100 passed, 2 xfailed; gates_v3 ok. Время (с)/проб: S1 3/72, S2 3/68, S3 3/66, S4 3/70, S5 4/71, S6 4/83
+
 ## Реестр
-закрыто 10 из 10; ABANDON: 0; pending: 0
+закрыто 11 из 11; ABANDON: 0; pending: 0
