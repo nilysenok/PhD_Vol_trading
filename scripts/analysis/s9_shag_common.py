@@ -14,7 +14,6 @@ import yaml
 from fastbt import fast_kontrol as fk
 from fastbt import s9, shag0
 from fastbt.shag_c import USLOVIE1, usloviya
-from fastbt.s9_stats import lw_sharpe_diff
 
 ROOT = Path(__file__).resolve().parents[2]
 DESIGNS = ROOT / "fastbt" / "designs" / "s9"
@@ -89,7 +88,7 @@ def eval_point(eng, K, base: dict, pos, g) -> dict:
     row = shag0.stats(p, np.ones(len(p), bool))
     row.update({f"sharpe_{y}": m[str(y)] for y in s9.YEARS})
     row.update(shag0.delta(p, base["A"], base["reps"]))
-    d3, _, p3 = lw_sharpe_diff(p["excess"].values, base["k3"]["excess"].values, base["reps"], 5)
+    d3, p3 = shag0.delta_p(p, base["k3"], base["reps"])
     row.update(sharpe_k3=base["m3"]["sharpe"], d_vs_k3=d3, p_vs_k3=p3)
     check_shift(K, g, m["sharpe"])                      # обязательно для каждой точки
     sh = K.k2_sharpes(g)
@@ -164,9 +163,8 @@ def closed_by_sid(eng, g: np.ndarray) -> list:
 
 def razlozhenie(base: dict, row_p: dict, p_pt: pd.DataFrame, reps: int) -> list:
     """Δ к A = (к3 − A) + (точка − к3); обе части с p (ЛВ, блок 5)."""
-    ex = lambda q: q["excess"].values  # noqa: E731
-    d1, _, p1 = lw_sharpe_diff(ex(base["k3"]), ex(base["A"]), reps, 5)
-    d2, _, p2 = lw_sharpe_diff(ex(p_pt), ex(base["k3"]), reps, 5)
+    d1, p1 = shag0.delta_p(base["k3"], base["A"], reps)
+    d2, p2 = shag0.delta_p(p_pt, base["k3"], reps)
     return [dict(chast="к3 − A", d_sharpe=d1, p=p1), dict(chast="точка − к3", d_sharpe=d2, p=p2),
             dict(chast="точка − A", d_sharpe=row_p["d_vs_A"], p=row_p["p_vs_A"])]
 

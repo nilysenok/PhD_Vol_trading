@@ -68,7 +68,7 @@ def ustoychivost(df: pd.DataFrame, best, c: float = COMM_SEL, tol: float = 0.1) 
 def razlozhenie(eng, bases: dict, g: np.ndarray, reps: int) -> list:
     """Δ к A = (к3 − A) + (C − к3), обе части с p ЛВ; экспозиция и оборот против A и к3; доля закрытых дней
     A по каждой семье S1–S6 (A ≠ 0 и затвор 0) и средний недобор веса (1 − g).
-    Δ — та же оценка ЛВ (`lw`: Шарп с ddof=0), что в сетке; раньше брался Шарп с ddof=1 (s9.sharpe) — расхождение ~3e-4."""
+    Δ — разность Шарпов ddof=1 (`lw` → `shag0.d_sharpe`), как в сетке и в столбце sharpe; ЛВ — только p."""
     rows = []
     for c in COMM_MAIN:
         b = bases[c]
@@ -89,7 +89,7 @@ def razlozhenie(eng, bases: dict, g: np.ndarray, reps: int) -> list:
     return [dict(pometka=shag0.POMETKA, **r) for r in rows]
 
 
-def proverka_razlozheniya(raz: list, setka_row, tol: float = 1e-6) -> None:
+def proverka_razlozheniya(raz: list, setka_row, tol: float = 1e-12) -> None:
     """(к3 − A) + (C − к3) = Δ к A из сетки, а C − к3 = Δ к к3 из сетки, при обеих комиссиях (|разница| < tol)."""
     for r in (x for x in raz if x.get("rezhim") == "разложение"):
         t = tag(r["comm_pct"] / 100)
