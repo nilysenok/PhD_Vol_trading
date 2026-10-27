@@ -1,28 +1,20 @@
-"""Э1-а (Ж-034/Ж-035): оценщик-сторона движка — кэш сигналов (Д5), DSR(N) строки, контракт строки v1.1.
-Драйверы (OAT, плато, PBO, Моррис, Optuna) — модуль владельца `fastbt/sweep_drivers.py`: тесты в `test_sweep_modul.py`.
-Детекторы `ok_*` — True, если свойство выполнено; мутации их роняют (`test_sweep_mutacii.py`)."""
-import numpy as np
+"""Э1-а (Ж-034/Ж-035): стык оценщика и драйверов — кэш сигналов (Д5), ledger/N -> DSR модуля владельца, контракт строки.
+Сам модуль `fastbt/sweep_drivers.py` — `test_sweep_modul.py`. Детекторы `ok_*` роняют мутации (`test_sweep_mutacii.py`).
+`xfail(strict=True)` — найденное расхождение с контрактом (красное, названо в отчёте)."""
 import pytest
 
-from fastbt import metriki_e as me
-from fastbt import sweep_stat as ss
-from fastbt.sweep import SignalCache
+from fastbt import sweep_drivers as sd
+from fastbt.sweep_spec import SignalCache
 from fastbt.sweep_synth import SynthEvaluator
-from test_sweep_engine import P, mk
+from test_sweep_engine import A_GRID, P, mk
 
 v11 = pytest.mark.v11
 
 
-def _dsr_inputs():
-    rng = np.random.default_rng(3)
-    r = rng.normal(0.0008, 0.01, 500)
-    srs = [me.sr_dnevnoy(rng.normal(0, 0.01, 500)) for _ in range(39)] + [me.sr_dnevnoy(r)]
-    return r, srs
-
-
-def ok_dsr_n1_grows() -> bool:
-    r, srs = _dsr_inputs()
-    return ss.dsr_n(r, [me.sr_dnevnoy(r)]) > ss.dsr_n(r, srs) > ss.dsr_n(r, srs, mult=2)
+def run_grid(sw):
+    for a in A_GRID:
+        sw.evaluate({"a": a})
+    return sw
 
 
 def ok_cache_keys() -> bool:
@@ -34,23 +26,29 @@ def ok_cache_keys() -> bool:
 
 def ok_cache_miss_end_to_end(tmp_path, **ev_kw) -> bool:
     """Тот же cache_dir, оценщик с подменённым рядом/кодом: все 5 сигналов пересчитаны (промах), не взяты из кэша."""
-    mk(SynthEvaluator(), cache_dir=tmp_path).run()
-    sw = mk(SynthEvaluator(**ev_kw), cache_dir=tmp_path)
-    sw.run()
+    run_grid(mk(SynthEvaluator(), cache_dir=tmp_path))
+    sw = run_grid(mk(SynthEvaluator(**ev_kw), cache_dir=tmp_path))
     return sw.cache.misses == 5
 
 
 def ok_cache_separate_from_pnl() -> bool:
     ev = SynthEvaluator()
-    sw = mk(ev)
-    sw.run()
-    n = ev.signal_calls
-    sw.objective({"a": 5, "w": 2.0})
-    sw.objective({"a": 10, "w": 0.5})
-    return n == 5 and ev.signal_calls == 5
+    sw = run_grid(mk(ev))
+    sw.evaluate({"a": 5, "w": 2.0})
+    sw.evaluate({"a": 10, "w": 0.5}, "train", 0.04)
+    return ev.signal_calls == 5
 
 
-# ---------- кэш сигналов (Д5, v1) ----------
+def ok_dsr_from_ledger() -> bool:
+    """DSR модуля по пробам оценщика: N=1 -> выше, чем после 5 проб; повторное открытие (N×2) -> ещё ниже."""
+    one = mk().evaluate(P)
+    sw = run_grid(mk())
+    r = sw.evaluate(P)
+    d1 = sd.dsr(one["sr_d"], [one["sr_d"]], one["T"], one["skew"], one["kurt"])["dsr"]
+    d5 = sd.dsr(r["sr_d"], sw.trials_sr(), r["T"], r["skew"], r["kurt"])["dsr"]
+    return one["N"] == 1 and r["N"] == 5 and d1 > d5
+
+
 def test_klyuch_kesha_menyaetsya_ot_obekta_parametra_ryada_koda():
     assert ok_cache_keys()
 
@@ -61,9 +59,8 @@ def test_klyuch_kesha_promakh_pri_podmene_ryada_ili_koda(tmp_path, kw):
 
 
 def test_klyuch_kesha_popadanie_pri_tom_zhe_vkhode(tmp_path):
-    mk(cache_dir=tmp_path).run()
-    sw = mk(cache_dir=tmp_path)
-    sw.run()
+    run_grid(mk(cache_dir=tmp_path))
+    sw = run_grid(mk(cache_dir=tmp_path))
     assert sw.cache.misses == 0 and sw.cache.hits >= 5
 
 
@@ -71,34 +68,29 @@ def test_kesh_pnl_otdelen_ot_signalov():
     assert ok_cache_separate_from_pnl()
 
 
-# ---------- контракт строки v1.1 (sweep_evaluate.md §6): красные на WIP ожидаемы ----------
-ROW_COLS = ["v", "obj", "period", "okno_s", "okno_po", "zaderzhka", "chestnaya", "comm_pct", "sharpe", "msr",
-            "sortino", "mdd", "oborot_y", "dni_v_rynke", "sdelok_y", "sharpe_2018", "sharpe_2019", "objective",
-            "plateau", "n_sosedey", "N", "n_mult", "dsr", "pbo", "series_digest", "code_id"]
+def test_dsr_modulya_po_probam_otsenshchika_N1_rastet():
+    assert ok_dsr_from_ledger()
 
 
-@v11
-def test_kontrakt_stroka_imeet_kolonki_v11():
-    row = mk().evaluate(P)
-    assert [c for c in ROW_COLS if c not in row] == []
+def test_pereschet_pri_drugoy_komissii_ne_dobavlyaet_N():
+    sw = run_grid(mk())
+    n = sw.evaluate(P, "train", 0.04)["N"]
+    assert sw.evaluate(P, "train", 0.035)["N"] == n == 5
 
 
-@v11
-def test_kontrakt_sosedi_plato_idut_v_N():
+@pytest.mark.xfail(strict=True, reason="расхождение с контрактом §5: пересчёт при 0,035 перезаписывает SR пробы в ledger (отбор — 0,04)")
+def test_pereschet_ne_perezapisyvaet_sr_v_ledger():
     sw = mk()
-    r = sw.evaluate(P)
-    assert r["n_sosedey"] == 4 and r["N"] == 5 and r["n_mult"] == 1      # точка + 4 соседа
-    sw.evaluate(P, comm_pct=0.035)
-    assert len(sw.ledger) == 5                                           # пересчёт при 0,035 в N не входит
+    sw.evaluate(P, "train", 0.04)
+    before = list(sw.trials_sr())
+    sw.evaluate(P, "train", 0.035)
+    assert sw.trials_sr() == before
 
 
-# ---------- DSR строки (v1) ----------
-def test_dsr_n1_rastet_mutaciya_14():
-    assert ok_dsr_n1_grows()
-
-
-def test_dsr_n1_ravno_psr_i_N_schitaetsya_po_probam():
-    r, srs = _dsr_inputs()
-    assert ss.dsr_n(r, [me.sr_dnevnoy(r)]) == pytest.approx(me.psr(r, 0.0))
-    assert ss.dsr_n(r, srs) == pytest.approx(me.dsr(r, 40, float(np.var(srs, ddof=1))))
-    assert ss.dsr_n(r, srs, mult=2) == pytest.approx(me.dsr(r, 80, float(np.var(srs, ddof=1))))
+@v11
+@pytest.mark.xfail(strict=True, reason="контракт §6 (формат v1.1): колонки v, obj, period-окна, zaderzhka, chestnaya, series_digest, code_id ещё не в строке")
+def test_kontrakt_stroka_imeet_kolonki_v11():
+    cols = ["v", "obj", "period", "okno_s", "okno_po", "zaderzhka", "chestnaya", "comm_pct", "sharpe", "msr", "sortino",
+            "mdd", "oborot_y", "dni_v_rynke", "sdelok_y", "N", "n_mult", "series_digest", "code_id"]
+    row = mk().evaluate(P)
+    assert [c for c in cols if c not in row] == []

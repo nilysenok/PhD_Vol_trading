@@ -1,23 +1,24 @@
-"""Э1-а (Ж-034): тестировщик движка перебора. Ядро v1 на синтетике (`fastbt.sweep_synth`), известный ответ.
-
-Детекторы `ok_*` возвращают True, если свойство выполнено; их же роняют мутации в `test_sweep_mutacii.py`.
+"""Э1-а (Ж-034/035): оценщик движка (`fastbt.sweep.Sweep.evaluate`) на синтетике `fastbt.sweep_synth`, известный ответ.
+Детекторы `ok_*` возвращают True, если свойство выполнено; их роняют мутации в `test_sweep_mutacii.py`.
 Реальных данных не читает (≥ 2022 — тем более)."""
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from fastbt import sweep_stat as ss
-from fastbt.sweep import Spec, Sweep
+from fastbt.sweep import Sweep
+from fastbt.sweep_spec import Spec
 from fastbt.sweep_synth import SynthEvaluator
 
-GRIDS = {"a": [3, 5, 10, 20, 40], "w": [0.5, 1.0, 2.0]}
 BASE = {"a": 5, "w": 1.0}
 P = dict(BASE)
+A_GRID = [3, 5, 10, 20, 40]
 
 
-def mk(ev=None, grids=None, cache_dir=None, **kw):
-    spec = Spec(obj={"kind": "Synth"}, base=dict(BASE), grids=grids or GRIDS, **kw)
-    return Sweep(spec, ev or SynthEvaluator(), cache_dir)
+def mk(ev=None, cache_dir=None, **kw):
+    return Sweep(Spec(obj={"kind": "Synth"}, base=dict(BASE), **kw), ev or SynthEvaluator(), cache_dir)
 
 
 class Tiny:
@@ -47,23 +48,23 @@ class Tiny:
 # ---------- детекторы ----------
 def ok_param_signal() -> bool:
     sw = mk()
-    return sw.objective({"a": 3, "w": 1.0}) != sw.objective({"a": 40, "w": 1.0})
+    return sw.evaluate({"a": 3})["sharpe"] != sw.evaluate({"a": 40})["sharpe"]
 
 
 def ok_param_pnl() -> bool:
     sw = mk()
-    return sw.objective({"a": 5, "w": 0.5}) != sw.objective({"a": 5, "w": 2.0})
+    return sw.evaluate({"w": 0.5})["sharpe"] != sw.evaluate({"w": 2.0})["sharpe"]
 
 
 def ok_validation_independent() -> bool:
-    """Целевая на train не зависит от доходностей 2020–2021 (late меняет только их)."""
-    objs = [mk(SynthEvaluator(late=k)).objective(P) for k in (1.0, 6.0)]
-    return objs[0] == objs[1]
+    """Строка на train не зависит от доходностей 2020–2021 (late меняет только их)."""
+    r = [mk(SynthEvaluator(late=k)).evaluate(P) for k in (1.0, 6.0)]
+    return r[0]["sharpe"] == r[1]["sharpe"] and r[0]["by_year"] == r[1]["by_year"]
 
 
 def ok_validation_closed() -> bool:
     try:
-        mk()._df(P, 0.0004, (2018, 2020))
+        mk().evaluate(P, "validation")
     except PermissionError:
         return True
     return False
@@ -80,7 +81,7 @@ def ok_2022_closed() -> bool:
 def ok_end_cut() -> bool:
     """В оценщик на train запрашиваются данные строго до 01.01.2020."""
     log = []
-    mk(Tiny(log)).objective(P)
+    mk(Tiny(log)).evaluate(P)
     return bool(log) and max(log) == pd.Timestamp("2020-01-01")
 
 
@@ -96,46 +97,37 @@ def ok_commission_two_sides() -> bool:
     sw = mk(Tiny())
     for pct in (0.035, 0.04):
         c = pct / 100
-        got = sw.evaluate(P, comm_pct=pct)
-        net = sw._df(P, c, (2018, 2019))["excess"].sum()
-        if not np.isclose(net, -4 * c, atol=1e-12) or not np.isclose(got["comm_pct"], pct):
+        if not np.isclose(sw._df(P, c, (2018, 2019))["excess"].sum(), -4 * c, atol=1e-12):
             return False
-    net0 = sw._df(P, sw.comm[0], (2018, 2019))["excess"].sum()      # комиссия, пересчитанная движком из % в долю
+        if not np.isclose(sw.evaluate(P, "train", pct)["comm_pct"], pct):
+            return False
+    net0 = sw._df(P, sw.comm[0], (2018, 2019))["excess"].sum()      # комиссия по умолчанию: % -> доля движком
     return bool(np.isclose(net0, -4 * sw.spec.comm_pct[0] / 100, atol=1e-12))
 
 
-def ok_oat_count() -> bool:
-    pts = mk().points()
-    base = [p for p in pts if p == BASE]
-    one_off = all(sum(p[k] != BASE[k] for k in BASE) <= 1 for p in pts)
-    return len(pts) == sum(len(v) - 1 for v in GRIDS.values()) + 1 and len(base) == 1 and one_off
-
-
-def ok_plateau() -> bool:
+def ok_commission_lowers_sharpe() -> bool:
     sw = mk()
-    row = sw.evaluate(P)
-    sh = []
-    for n, v in GRIDS.items():
-        i = v.index(P[n])
-        for j in (i - 1, i + 1):
-            if 0 <= j < len(v):
-                sh.append(ss.metrics_row(sw._df({**P, n: v[j]}, sw.comm[0], (2018, 2019)), (2018, 2019))["sharpe"])
-    return row["n_sosedey"] == 4 and np.isclose(row["plateau"], np.mean(sh), atol=1e-12)
+    return all(sw.evaluate({"a": a}, "train", 0.04)["sharpe"] < sw.evaluate({"a": a}, "train", 0.035)["sharpe"] for a in A_GRID)
 
 
 def ok_ddof1() -> bool:
     x = np.random.default_rng(0).normal(0.001, 0.01, 250)
-    df = pd.DataFrame(dict(excess=x), index=pd.bdate_range("2018-01-01", periods=250))
-    got = ss.yearly_sharpes(df, (2018,))[2018]
-    return bool(np.isclose(got, x.mean() / x.std(ddof=1) * np.sqrt(252), rtol=1e-12))
+    df = pd.DataFrame(dict(excess=x, exposure=1.0, turnover=0.0, sides=0.0), index=pd.bdate_range("2018-01-01", periods=250))
+    want = x.mean() / x.std(ddof=1) * np.sqrt(252)
+    return bool(np.isclose(ss.yearly_sharpes(df, (2018,))[2018], want, rtol=1e-12)
+                and np.isclose(ss.metrics_row(df, (2018,))["sharpe"], want, rtol=1e-12))
 
 
-def ok_objective_formula() -> bool:
-    sw = mk()
-    sh = ss.yearly_sharpes(sw._df(P, sw.comm[0], (2018, 2019)), (2018, 2019))
-    v = np.array(list(sh.values()))
-    want = v.mean() - 0.5 * v.std(ddof=1)
-    return bool(np.isclose(sw.objective(P), want, rtol=1e-12) and np.isclose(ss.objective({2018: 1.0, 2019: 0.0}), 0.5 - 0.5 * np.sqrt(0.5)))
+def ok_reopen_doubles_n(tmp_path) -> bool:
+    sw = mk(out=str(tmp_path))
+    for a in A_GRID:
+        sw.evaluate({"a": a})
+    sw.save()
+    sw.open_validation()
+    first = sw.evaluate(P, "validation")
+    again = mk(out=str(tmp_path), reopen_note="сменили порог")
+    again.open_validation()
+    return first["N"] == 5 and again.evaluate(P, "validation")["n_mult"] == 2 and again.evaluate(P, "validation")["N"] == 10
 
 
 # ---------- тесты ----------
@@ -153,7 +145,7 @@ def test_eng_validation_zakryta_i_ne_vliyaet_na_tselevuyu():
 
 def test_eng_podmeshali_2020_v_train_menyaet_rezultat():
     per = ss.Periods(setup=(2018, 2020), control=(2019,), validation=(2021,))
-    r = [mk(SynthEvaluator(late=k), periods=per).objective(P) for k in (1.0, 6.0)]
+    r = [mk(SynthEvaluator(late=k), periods=per).evaluate(P)["sharpe"] for k in (1.0, 6.0)]
     assert r[0] != r[1]
 
 
@@ -163,33 +155,42 @@ def test_eng_granitsy_periodov():
     assert ok_periods_raise(control=(2018,)) and ok_periods_raise(validation=(2019, 2020))
     assert ok_periods_raise(validation=(2021, 2022)) and ok_periods_raise(setup=(2020,), validation=(2018,))
     assert ok_end_cut()
-    with pytest.raises(ValueError):
-        Spec(obj={}, base={}, grids={}, period="validation", mode="oat")
+    assert set(mk().evaluate(P)["by_year"]) == {2018, 2019} and set(mk().evaluate(P, "setup")["by_year"]) == {2018}
 
 
 def test_eng_2022_ne_chitaetsya():
     assert ok_2022_closed()
-    assert mk(Tiny()).run()["table"] is not None
 
 
 def test_eng_komissiya_obe_storony():
-    assert ok_commission_two_sides()
-
-
-def test_eng_oat_chislo_tochek():
-    assert ok_oat_count()
-    pts = mk(grids={"a": [3, 5, 10]}).points()
-    assert len(pts) == 3          # (3−1)+1, базовая a=5 — узел сетки
-
-
-def test_eng_plato_srednee_sosedey():
-    assert ok_plateau()
+    assert ok_commission_two_sides() and ok_commission_lowers_sharpe()
 
 
 def test_eng_ddof1():
     assert ok_ddof1()
 
 
-def test_eng_tselevaya_srednee_minus_pol_sigmy():
-    assert ok_objective_formula()
-    assert np.isnan(ss.objective({2018: float("nan"), 2019: 1.0}))
+def test_eng_N_po_raznym_tochkam_a_ne_vyzovam():
+    sw = mk()
+    for a in A_GRID:
+        sw.evaluate({"a": a})
+    sw.evaluate({"a": 3})                       # повтор точки — не новая проба
+    assert sw.evaluate(P)["N"] == 5 and len(sw.trials_sr()) == 5
+
+
+def test_eng_validation_ne_pishetsya_v_probi(tmp_path):
+    sw = mk(out=str(tmp_path))
+    sw.evaluate(P)
+    sw.open_validation()
+    sw.evaluate({"a": 10}, "validation")
+    assert len(sw.ledger) == 1
+    assert json.loads((tmp_path / "validation_flag.json").read_text())["opens"][0]["text"].startswith("validation открыта: ")
+
+
+def test_eng_povtornoe_otkrytie_trebuet_zapisi_i_udvaivaet_N(tmp_path):
+    sw = mk(out=str(tmp_path))
+    sw.evaluate(P)
+    sw.open_validation()
+    with pytest.raises(PermissionError):
+        mk(out=str(tmp_path)).open_validation()
+    assert ok_reopen_doubles_n(tmp_path / "x")

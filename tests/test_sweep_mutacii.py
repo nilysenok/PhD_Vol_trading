@@ -1,38 +1,20 @@
-"""Э1-а (Ж-034): подложенные ошибки в памяти (monkeypatch); дерево `fastbt/` не меняется.
-Для каждой: детектор на правильном коде True (проверено в engine/drivers), на мутации — False / тест падает.
-Именование: test_mut_<N>_<что подложено>. Таблица «мутация → тест» — в описании PR."""
+"""Э1-а (Ж-034): подложенные ошибки в оценщике в памяти (monkeypatch); дерево `fastbt/` не меняется.
+Для каждой: детектор на правильном коде True (тесты в engine/drivers), на мутации — False / сработала защита движка.
+Мутации модуля владельца — `test_sweep_modul_mut.py`. Именование: test_mut_<N>_<что подложено>."""
 import numpy as np
 import pandas as pd
 import pytest
 
 from fastbt import metriki_e as me
-from fastbt import sweep_modes as sm
 from fastbt import sweep_stat as ss
-from fastbt.sweep import SignalCache, Sweep
+from fastbt.sweep import Sweep
+from fastbt.sweep_spec import SignalCache
 from fastbt.sweep_synth import SynthEvaluator
-from test_sweep_drivers import ok_cache_keys, ok_cache_miss_end_to_end, ok_cache_separate_from_pnl, ok_dsr_n1_grows
-from test_sweep_engine import (Tiny, ok_2022_closed, ok_commission_two_sides, ok_ddof1, ok_end_cut,
-                               ok_objective_formula, ok_oat_count, ok_param_pnl, ok_param_signal, ok_periods_raise,
-                               ok_plateau, ok_validation_closed, ok_validation_independent)
-
-
-def fails(fn, *a):
-    with pytest.raises(AssertionError):
-        fn(*a)
-
-
-def test_mut_01_param_signala_ignoriruetsya(monkeypatch):
-    assert ok_param_signal()
-    orig = SynthEvaluator.signals
-    monkeypatch.setattr(SynthEvaluator, "signals", lambda self, sp: orig(self, {"a": 5}))
-    assert not ok_param_signal()
-
-
-def test_mut_02_param_pnl_ignoriruetsya(monkeypatch):
-    assert ok_param_pnl()
-    orig = SynthEvaluator.pnl
-    monkeypatch.setattr(SynthEvaluator, "pnl", lambda self, s, p, c, e: orig(self, s, {**p, "w": 1.0}, c, e))
-    assert not ok_param_pnl()
+from test_sweep_drivers import (ok_cache_keys, ok_cache_miss_end_to_end, ok_cache_separate_from_pnl,
+                                ok_dsr_from_ledger)
+from test_sweep_engine import (Tiny, ok_2022_closed, ok_commission_lowers_sharpe, ok_commission_two_sides, ok_ddof1,
+                               ok_end_cut, ok_param_pnl, ok_param_signal, ok_periods_raise, ok_reopen_doubles_n,
+                               ok_validation_closed, ok_validation_independent)
 
 
 def caught(fn) -> bool:
@@ -52,12 +34,26 @@ def _open_guard(monkeypatch):
     monkeypatch.setattr(Sweep, "__init__", init)
 
 
+def test_mut_01_param_signala_ignoriruetsya(monkeypatch):
+    assert ok_param_signal()
+    orig = SynthEvaluator.signals
+    monkeypatch.setattr(SynthEvaluator, "signals", lambda self, sp: orig(self, {"a": 5}))
+    assert not ok_param_signal()
+
+
+def test_mut_02_param_pnl_ignoriruetsya(monkeypatch):
+    assert ok_param_pnl()
+    orig = SynthEvaluator.pnl
+    monkeypatch.setattr(SynthEvaluator, "pnl", lambda self, s, p, c, e: orig(self, s, {**p, "w": 1.0}, c, e))
+    assert not ok_param_pnl()
+
+
 @pytest.mark.parametrize("guard_off", [False, True])
 def test_mut_03_2020_podmeshan_v_train(monkeypatch, guard_off):
     assert ok_validation_independent()
     monkeypatch.setattr(ss.Periods, "train", property(lambda self: tuple(self.setup) + tuple(self.control) + (2020,)))
     if guard_off:
-        _open_guard(monkeypatch)      # без защиты движка целевая меняется от доходностей 2020 — детектор это видит
+        _open_guard(monkeypatch)      # без защиты движка строка меняется от доходностей 2020 — детектор это видит
     assert caught(ok_validation_independent)
     if guard_off:
         assert not ok_validation_independent()
@@ -67,12 +63,7 @@ def test_mut_04_zashchita_validation_snyata(monkeypatch):
     assert ok_validation_closed() and ok_periods_raise(validation=(2019, 2020))
     monkeypatch.setattr(ss.Periods, "__post_init__", lambda self: None)
     assert not ok_periods_raise(validation=(2019, 2020))          # периоды пересекаются, а ошибки нет
-    orig = Sweep.__init__
-
-    def init(self, *a, **k):
-        orig(self, *a, **k)
-        self._val_open = True
-    monkeypatch.setattr(Sweep, "__init__", init)
+    _open_guard(monkeypatch)
     assert not ok_validation_closed()
 
 
@@ -103,11 +94,8 @@ def test_mut_07_komissiya_odna_storona_v_dvizhke(monkeypatch):
 
 def test_mut_08_komissiya_tolko_na_vkhode(monkeypatch):
     orig = Tiny.pnl
-
-    def pnl(self, sigs, p, comm, end):
-        return orig(self, sigs, p, comm / 2, end)               # выход бесплатен: 2 стороны из 4
-    monkeypatch.setattr(Tiny, "pnl", pnl)
-    assert not ok_commission_two_sides()
+    monkeypatch.setattr(Tiny, "pnl", lambda self, sigs, p, comm, end: orig(self, sigs, p, comm / 2, end))
+    assert not ok_commission_two_sides()                          # выход бесплатен: 2 стороны из 4
 
 
 def test_mut_09_komissiya_sk_odna_storona(monkeypatch):
@@ -123,23 +111,24 @@ def test_mut_09_komissiya_sk_odna_storona(monkeypatch):
     assert net(eng) != pytest.approx(-2 * 0.0004, abs=1e-12)
 
 
+def test_mut_10_komissiya_argument_ignoriruetsya(monkeypatch):
+    assert ok_commission_lowers_sharpe()
+    orig = Sweep.evaluate
+    monkeypatch.setattr(Sweep, "evaluate", lambda self, params, period="train", comm_pct=None: orig(self, params, period, None))
+    assert not ok_commission_lowers_sharpe()
+
+
 def test_mut_12_ddof0_v_sharpe(monkeypatch):
     assert ok_ddof1()
     monkeypatch.setattr(me, "sharpe", lambda x, *a, **k: float(np.mean(x) / np.std(x, ddof=0) * np.sqrt(252)))
     assert not ok_ddof1()
 
 
-def test_mut_14_N_v_dsr_podmenen_na_1(monkeypatch):
-    assert ok_dsr_n1_grows()
-    orig = me.dsr
-    monkeypatch.setattr(me, "dsr", lambda r, n, v: orig(r, 1, v))
-    assert not ok_dsr_n1_grows()
-
-
-def test_mut_15_mult_v_dsr_ignoriruetsya(monkeypatch):
-    orig = ss.dsr_n
-    monkeypatch.setattr(ss, "dsr_n", lambda r, s, mult=1: orig(r, s, 1))
-    assert not ok_dsr_n1_grows()
+def test_mut_13_ledger_ne_nakaplivaet_probi(monkeypatch):
+    assert ok_dsr_from_ledger()
+    orig = Sweep.trials_sr
+    monkeypatch.setattr(Sweep, "trials_sr", lambda self: orig(self)[-1:])          # N схлопнулось до 1
+    assert not ok_dsr_from_ledger()
 
 
 @pytest.mark.parametrize("drop", ["obj", "params", "digest", "code"])
@@ -167,28 +156,7 @@ def test_mut_18_kesh_signalov_zavisit_ot_pnl_parametra(monkeypatch):
     assert not ok_cache_separate_from_pnl()
 
 
-def test_mut_19_oat_stanovitsya_polnym_perebirom(monkeypatch):
-    assert ok_oat_count()
-    monkeypatch.setattr(sm, "oat_points", lambda base, grids: sm.factorial_points(base, grids, names=list(grids)))
-    assert not ok_oat_count()
-
-
-@pytest.mark.parametrize("variant", ["bez_sosedey", "s_soboy"])
-def test_mut_20_plato_ne_srednee_sosedey(monkeypatch, variant):
-    assert ok_plateau()
-    orig = Sweep.neighbors
-    monkeypatch.setattr(Sweep, "neighbors", (lambda self, p: []) if variant == "bez_sosedey"
-                        else (lambda self, p: orig(self, p) + [p]))
-    assert not ok_plateau()
-
-
-@pytest.mark.parametrize("variant", ["lam_1", "std_ddof0"])
-def test_mut_21_tselevaya_ne_ta(monkeypatch, variant):
-    assert ok_objective_formula()
-    orig = ss.objective
-    bad = (lambda d, lam=0.5: orig(d, 1.0)) if variant == "lam_1" else \
-        (lambda d, lam=0.5: float(np.mean(list(d.values())) - lam * np.std(list(d.values()))))
-    monkeypatch.setattr(ss, "objective", bad)
-    assert not ok_objective_formula()
-
-
+def test_mut_24_povtornoe_otkrytie_ne_udvaivaet_N(tmp_path, monkeypatch):
+    assert ok_reopen_doubles_n(tmp_path / "ok")
+    monkeypatch.setattr(Sweep, "n_mult", lambda self: 1)
+    assert not ok_reopen_doubles_n(tmp_path / "bad")

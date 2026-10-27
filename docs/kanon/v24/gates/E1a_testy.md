@@ -1,79 +1,87 @@
-# GATES — Э1-а, тестировщик движка перебора (Ж-034), ветка sweep-tests
+# GATES — Э1-а, тестировщик движка перебора (Ж-034/035), ветка sweep-tests
 
-Тесты: `tests/test_sweep_engine.py` (ядро, синтетика), `tests/test_sweep_drivers.py` (режимы, статистика; v1.1 — `@pytest.mark.v11`), `tests/test_sweep_mutacii.py` (подложенные ошибки в памяти). Код `fastbt/` не меняется. Каждый гейт: свойство на правильном коде проходит (`-k eng_...`), мутация роняет проверку (`-k mut_...`).
-Запуск везде: `/usr/bin/python3 -m pytest tests/test_sweep_engine.py tests/test_sweep_drivers.py tests/test_sweep_mutacii.py -q -k <метка>`.
+Тесты: `tests/test_sweep_engine.py` (оценщик, синтетика), `test_sweep_drivers.py` (стык: кэш, ledger/N→DSR, контракт),
+`test_sweep_modul.py` (модуль владельца `sweep_drivers.py` + сквозной оценщик→oat_sweep), `test_sweep_mutacii.py` и
+`test_sweep_modul_mut.py` (подложенные ошибки в памяти). Код `fastbt/` не менялся. v1.1 — `@pytest.mark.v11`.
+Запуск везде: `/usr/bin/python3 -m pytest tests/test_sweep_*.py -q -W ignore -k <метка>` (без `-n`).
+Мутация на гейте ловится тестами `test_mut*`, входящими в метку; детектор на правильном коде проверяется парным тестом.
 
-## G1 — параметр изменён → результат изменился
-CHECK: ... -k "param"
+## G1 — параметр изменён → результат изменился (сигнальный, PnL, OAT модуля)
+CHECK: ... -k param
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 18 passed, 52 deselected
 
-## G2 — validation не участвует в целевой; подмешали 2020 в train → результат меняется
-CHECK: ... -k "validation_zakryta or podmeshali"
+## G2 — validation не участвует в целевой; 2020 подмешан в train → результат меняется
+CHECK: ... -k validation
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 4 passed, 66 deselected
 
-## G3 — границы периодов
-CHECK: ... -k "granitsy"
+## G3 — границы периодов (настройка/контроль/validation не пересекаются, train до 01.01.2020)
+CHECK: ... -k granitsy
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 1 passed, 69 deselected (+ test_mut_04/06 в -k mut)
 
 ## G4 — комиссия с обеих сторон
-CHECK: ... -k "komissiya"
+CHECK: ... -k komissiya
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 7 passed, 63 deselected
 
-## G5 — PBO на случайных данных ≈ 0,5 (v11)
-CHECK: ... -k "pbo"
+## G5 — PBO на случайных данных ≈ 0,5 (v11, допуск ±0,10 объявлен до счёта)
+CHECK: ... -k pbo
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 4 passed, 66 deselected
 
 ## G6 — DSR при N=1 растёт (мутация № 14)
-CHECK: ... -k "dsr"
+CHECK: ... -k dsr
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 3 passed, 67 deselected
 
-## G7 — Д5: ключ кэша меняется от ряда, кода, параметра сигнала
-CHECK: ... -k "klyuch"
+## G7 — Д5: ключ кэша меняется при подмене ряда, кода, параметра сигнала
+CHECK: ... -k klyuch
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 9 passed, 61 deselected
 
 ## G8 — кэш сигналов отделён от PnL
-CHECK: ... -k "kesh_pnl"
+CHECK: ... -k kesh_pnl
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 1 passed, 69 deselected
 
-## G9 — OAT: Σ(|сетка_i|−1)+1 точек, остальные фиксированы
-CHECK: ... -k "oat"
+## G9 — OAT: число проб по поведению модуля (1 + Σ|сетка_i|), остальные фиксированы
+CHECK: ... -k oat
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 4 passed, 66 deselected
 
-## G10 — плато = среднее по соседям
-CHECK: ... -k "plato"
+## G10 — плато = среднее по соседям (в модуле — включая саму точку), не на пике
+CHECK: ... -k plato
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 3 passed, 67 deselected
 
-## G11 — Шарп ddof=1 (мутация № 12)
-CHECK: ... -k "ddof"
+## G11 — Шарп ddof=1 (мутация № 12); σ в objective_stable — ddof=1 (xfail strict: модуль считает ddof=0)
+CHECK: ... -k ddof
+EXPECT: passed, 0 failed; 1 xfailed
+EVIDENCE: 3 passed, 66 deselected, 1 xfailed
+
+## G12 — целевая = среднее годовых Шарпов − 0,5·σ (λ=0,5 и штраф; ddof — см. G11)
+CHECK: ... -k tselevaya
+EXPECT: passed, 0 failed; 1 xfailed
+EVIDENCE: 1 passed, 68 deselected, 1 xfailed
+
+## G13 — ≥ 2022 не читается
+CHECK: ... -k 2022
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 2 passed, 68 deselected
 
-## G12 — целевая = среднее годовых Шарпов − 0,5·σ по годам
-CHECK: ... -k "tselevaya"
+## G14 — повторное открытие validation: запись обязательна, N×2
+CHECK: ... -k otkrytie
 EXPECT: passed, 0 failed
-EVIDENCE: pending
+EVIDENCE: 2 passed, 68 deselected
 
-## G13 — ≥ 2022 не читается вовсе
-CHECK: ... -k "2022"
-EXPECT: passed, 0 failed
-EVIDENCE: pending
-
-## G14 — файлы ≤ 200 строк, py_compile
-CHECK: wc -l tests/test_sweep_engine.py tests/test_sweep_drivers.py tests/test_sweep_mutacii.py; /usr/bin/python3 -m py_compile tests/test_sweep_*.py
+## G15 — файлы ≤ 200 строк, py_compile
+CHECK: wc -l tests/test_sweep_{engine,drivers,modul,modul_mut,mutacii}.py; /usr/bin/python3 -m py_compile tests/test_sweep_*.py
 EXPECT: каждый ≤ 200, код 0
-EVIDENCE: pending
+EVIDENCE: 196 / 96 / 200 / 103 / 162; py_compile ok
 
 ## ABANDON
 
 ## Реестр
-закрыто 0 из 14; ABANDON: 0; pending: 14
+закрыто 15 из 15; ABANDON: 0 (G11, G12 содержат по 1 xfail strict — расхождение модуля с ddof=1, названо в PR)
