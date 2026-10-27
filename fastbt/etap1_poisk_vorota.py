@@ -16,6 +16,7 @@ from fastbt import sweep_drivers as sd
 
 TIE, WIN, NBLK, PBO_MAX, MIN_SDELOK, PLATO_NET = 0.05, 126, 8, 0.2, 30, 0.1
 OSI, NET = ("k_s", "R", "tau"), "net"
+OUTER = {"k_s": (0.75, 0.5), "R": (0.75, 0.5)}      # Ж-049: шаг наружу от края сетки; у τ = 1 день его нет
 
 
 def canon(p: dict) -> dict:
@@ -104,19 +105,31 @@ def net_plato(led: Ledger, pt: dict, a: str, axes: dict) -> bool:
     return bool(fin) and all(obj(led({**pt, a: v}, "train")) >= o - PLATO_NET for v in fin)     # nan -> ложь
 
 
+def kray_plato(led: Ledger, pt: dict, a: str) -> bool | None:
+    """Ж-049: крайнее конечное значение (k_s, R, τ = 1). True — наружу шагнуть можно (OUTER): внешние точки — обычные соседи
+    оси в общем правиле «>= 3 в сумме, >= 1 на оси», отдельного условия нет; None — нельзя (τ = 1 день), плато не проходит."""
+    return None if a not in OUTER else True
+
+
 def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:
-    """Плато по k_s, R, τ: конечные значения — >= 3 положительных соседей в сумме и >= 1 на оси (без изменений, Ж-048);
-    ось с «нет» — одностороннее плато net_plato, в счёт >= 3 не входит."""
-    per, net = {}, {}
+    """Плато по k_s, R, τ: конечные значения — >= 3 положительных соседей в сумме и >= 1 на оси (Ж-048; крайнее значение —
+    метка kray, соседи включают шаг наружу, Ж-049); ось с «нет» — одностороннее плато net_plato, в счёт >= 3 не входит."""
+    per, net, kray = {}, {}, {}
     for a in OSI:
         if a == "R" and pt.get("k_s") == NET:
             continue                                                                  # R при k_s = нет вырождена
         if pt.get(a) == NET:
             net[a] = net_plato(led, pt, a, axes)
         elif nb := neighbors(pt, [a], axes):
+            edge = pt[a] == axes[a][0]
+            if edge:
+                kray[a] = kray_plato(led, pt, a)
+                nb += [{**pt, a: v} for v in OUTER.get(a, ())]
             per[a] = n_pos(led, nb)
     ok = bool(per or net) and all(net.values()) and all(v >= 1 for v in per.values()) and (not per or sum(per.values()) >= 3)
-    return dict(per={**per, **{f"{a}_net": v for a, v in net.items()}}, ok=ok)
+    ok = ok and all(v is True for v in kray.values())
+    out = {**per, **{f"{a}_net": v for a, v in net.items()}, **{f"{a}_kray": (v if v is not None else "край сетки τ = 1") for a, v in kray.items()}}
+    return dict(per=out, ok=ok, kray=" ".join(kray) or "-")
 
 
 def gates(led: Ledger, pt: dict, axes: dict, plan: list, pbo: float, s9_check) -> dict:
@@ -124,7 +137,7 @@ def gates(led: Ledger, pt: dict, axes: dict, plan: list, pbo: float, s9_check) -
     g = dict(G1_pbo=bool(pbo < PBO_MAX), G2_sdelki=bool(sdy) and all(v >= MIN_SDELOK for v in sdy.values()),
              G3_plato=n_pos(led, neighbors(pt, plan, axes)) >= 3, G5_s9=bool(s9_check(pt)))
     o = gate_osi(led, pt, axes)
-    g.update(G4_osi=o["ok"], osi_pos=str(o["per"]))
+    g.update(G4_osi=o["ok"], osi_pos=str(o["per"]), kray_setki=o["kray"])
     g["ok"] = all(g[k] for k in ("G1_pbo", "G2_sdelki", "G3_plato", "G4_osi", "G5_s9"))
     return g
 

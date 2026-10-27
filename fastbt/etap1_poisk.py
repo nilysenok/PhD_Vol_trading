@@ -26,7 +26,7 @@ SETKI = Path(__file__).parent / "designs" / "sweep"
 OUT = Path("docs/tables/zh047")
 SHAPKA = "# статус: разработка, train 2018–2019; validation не открыта; Ж-047\n"
 POTOLOK, TOPK, MAX_JOBS = 5000, 20, 6
-GATE_COLS = ("G1_pbo", "G2_sdelki", "G3_plato", "G5_s9", "G4_osi", "osi_pos", "ok")      # порядок ключей gates()
+GATE_COLS = ("G1_pbo", "G2_sdelki", "G3_plato", "G5_s9", "G4_osi", "osi_pos", "kray_setki", "ok")      # порядок ключей gates()
 
 
 def load_setka(sid: str, d: Path = SETKI) -> dict:
