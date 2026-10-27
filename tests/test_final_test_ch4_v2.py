@@ -174,3 +174,38 @@ def test_boot_reps_fixed(fake, monkeypatch):
     with pytest.raises(F.Stop) as ei:
         F.run_test(P, workers=1, reps_override=1000)
     assert 'бутстрап' in ei.value.msg and not P.lock.exists()
+
+
+# --- две основные ставки (Ъ 27.10 12:05): 0,035 и 0,04 — в основных таблицах, 0,05 и 0,06 — в приложении ---
+def _tabs(dup=False, p_pril=False):
+    import pandas as pd
+    rows = []
+    for pct, tb in ((0.035, 'osnovnaya'), (0.04, 'osnovnaya'), (0.05, 'prilozhenie'), (0.06, 'prilozhenie')):
+        for k in ('A', 'C'):
+            sh = 1.0 + (0.5 if k == 'C' else 0) - (0.1 * (0.04 if dup else pct) * 100)
+            p = 0.3 if (k != 'A' and (tb == 'osnovnaya' or p_pril)) else float('nan')
+            rows.append(dict(podhod=k, okno='w', pravilo='bez', komissiya_pct=pct, sharpe=sh, p_lw_vs_A=p, tablitsa=tb))
+    return F.split_prilozhenie(pd.DataFrame(rows))
+
+
+def test_dve_osnovnye_ok():
+    o, p = _tabs()
+    assert F.osn_ok(o, p, {'komissiya': 0.0004})
+
+
+@pytest.mark.parametrize('kw', [dict(dup=True), dict(p_pril=True)])
+def test_dve_osnovnye_lovit_oshibku(kw):
+    o, p = _tabs(**kw)          # колонка 0,035 дублирует 0,04 / p посчитан в приложении
+    assert not F.osn_ok(o, p, {'komissiya': 0.0004})
+
+
+def test_otbor_ne_pri_035():
+    o, p = _tabs()
+    assert not F.osn_ok(o, p, {'komissiya': 0.00035})      # отбор по С8 v2 — при 0,04
+
+
+def test_spec_dve_osnovnye_v_yaml():
+    s = yaml.safe_load((ROOT / 'models/designs/ch4_v2/ch4_v2_sborka.yaml').read_text())['test']
+    assert [c['stavka'] for c in s['komissiya_osnovnye']] == [0.00035, 0.0004]
+    assert [c['stavka'] for c in s['komissiya_chuvstv']] == [0.0005, 0.0006]
+    assert s['komissiya'] == 0.0004

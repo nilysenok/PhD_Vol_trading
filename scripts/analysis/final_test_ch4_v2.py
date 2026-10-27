@@ -656,7 +656,7 @@ def opis(d: dict) -> str:
     return ' '.join(f'{k}={v}' for k, v in d.items() if k not in ('kod_sha256',))
 
 
-def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, root, pometka, dop=None) -> tuple:
+def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, root, pometka, dop=None, osn=None) -> tuple:
     """Таблица подходов (A + по одному дизайну на подход [+ dop — только псевдотест]) и таблица H2."""
     R = Raschet(e, root)
     order = ['B', 'C', 'D'] + [k for k in diz if k not in ('B', 'C', 'D', 'MSP')] + (['MSP'] if 'MSP' in diz else [])
@@ -673,10 +673,13 @@ def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, ro
     main_c, main_podpis = comm if isinstance(comm, tuple) else (comm, 'основная')
     comm = main_c
     podpis = {main_c: main_podpis}
-    for c in comm_ch:                       # [{stavka, podpis}] (Ъ 22:55) или числа
+    for c in (osn or []):                   # Ъ 27.10 12:05: обе основные ставки — в основных таблицах
+        podpis[float(c['stavka'])] = f"основная: {c['podpis']}"
+    glavnye = list(podpis)
+    for c in comm_ch:                       # [{stavka, podpis}] — приложение (0,05 и 0,06)
         s, pp = (float(c['stavka']), c['podpis']) if isinstance(c, dict) else (float(c), 'чувствительность')
-        if abs(s - main_c) > 1e-12:
-            podpis[s] = f'чувствительность (без p): {pp}'
+        if all(abs(s - x) > 1e-12 for x in podpis):
+            podpis[s] = f'приложение (без p): {pp}'
     comms = list(podpis)
     for pr, eng in engines.items():
         for cm in comms:
@@ -688,18 +691,20 @@ def run_tables(e, diz: dict, h2: dict, okna: dict, zakr, comm, comm_ch, reps, ro
                     d = diz.get(k) or dop.get(k.replace('dop:', '')) or {}
                     r = dict(podhod=k, dizayn=opis(d) if d else 'main.yaml:A (ансамбль + фильтр оборота)',
                              okno=ok, pravilo=pr, komissiya_pct=cm * 100,
-                             komissiya_rol=podpis[cm],
+                             komissiya_rol=podpis[cm], tablitsa='osnovnaya' if cm in glavnye else 'prilozhenie',
                              rol='справочно (псевдотест, не в тест)' if k.startswith('dop:') else
                              ('эталон' if k == 'A' else 'один дизайн на подход'))
                     r.update(m)
                     r['sharpe_A'] = mA['sharpe']
-                    if k != 'A' and cm == comm:
+                    if k != 'A' and cm in glavnye:
                         dd, se, pv = lw(q['excess'].values, qA['excess'].values, reps)
                         r.update(d_vs_A=dd, se_lw_vs_A=se, p_lw_vs_A=pv)
                     r['pometka'] = pometka
                     rows.append(r)
     tab = pd.DataFrame(rows)
-    h2t = run_h2(R, engines, diz, h2, okna, comm, reps, pometka)
+    h2s = [run_h2(R, engines, diz, h2, okna, c, reps, pometka) for c in glavnye]
+    h2t = pd.concat([x for x in h2s if len(x)], ignore_index=True) if any(len(x) for x in h2s) else pd.DataFrame()
+    R.glavnye = glavnye
     return tab, h2t, hit, R
 
 
@@ -765,6 +770,28 @@ def synthetic_bench(dates) -> None:
 
 def komissiya_main(tst: dict) -> tuple:
     return float(tst['komissiya']), str(tst.get('komissiya_podpis') or 'основная')
+
+
+def split_prilozhenie(tab: pd.DataFrame) -> tuple:
+    """Основная таблица — обе основные ставки (0,035 и 0,04); приложение — 0,05 и 0,06 (отдельный файл)."""
+    return (tab[tab['tablitsa'] == 'osnovnaya'].reset_index(drop=True),
+            tab[tab['tablitsa'] == 'prilozhenie'].reset_index(drop=True))
+
+
+def run_h3_glavnye(R, diz, okna, reps, pometka) -> pd.DataFrame:
+    return pd.concat([run_h3(R, R.engines, diz, okna, c, reps, pometka) for c in R.glavnye], ignore_index=True)
+
+
+def osn_ok(tab_osn: pd.DataFrame, tab_pril: pd.DataFrame, tst: dict) -> bool:
+    """Обе основные ставки есть и различаются; p только на основных; 0,05 и 0,06 — только в приложении."""
+    def pct(t):
+        return sorted(t['komissiya_pct'].round(4).unique().tolist())
+    a, b = (tab_osn[tab_osn.komissiya_pct.round(4) == c] for c in (0.035, 0.04))
+    m = a.merge(b, on=['podhod', 'okno', 'pravilo'], suffixes=('_a', '_b'))
+    return bool(abs(float(tst['komissiya']) - 0.0004) < 1e-12 and pct(tab_osn) == [0.035, 0.04]
+                and pct(tab_pril) == [0.05, 0.06] and len(m) == len(a) == len(b) > 0
+                and (m['sharpe_a'] != m['sharpe_b']).any() and tab_pril['p_lw_vs_A'].isna().all()
+                and tab_osn.loc[tab_osn.podhod != 'A', 'p_lw_vs_A'].notna().all())
 
 
 def fastbt_sha(root: Path) -> dict:
@@ -860,29 +887,30 @@ def selftest(P: Puti, reps: int) -> int:
     zakr = ('2020-03-28', '2020-03-29')          # псевдозакрытие (выходные): проверка механики правила
     tst = spec['test']
     tab, h2t, hit, R = run_tables(e, diz, spec.get('h2') or {}, okna, zakr, komissiya_main(tst), tst['komissiya_chuvstv'],
-                                  reps, P.root, 'псевдотест 2018–2021, заглушки; ' + POMETKA, dop)
+                                  reps, P.root, 'псевдотест 2018–2021, заглушки; ' + POMETKA, dop,
+                                  tst['komissiya_osnovnye'])
+    tab_osn, tab_pril = split_prilozhenie(tab)
     synthetic_bench(e.dates)
-    h3t = run_h3(R, R.engines, diz, okna, float(tst['komissiya']), reps, 'псевдотест, СИНТЕТИЧЕСКИЕ индексы; ' + POMETKA)
+    h3t = run_h3_glavnye(R, diz, okna, reps, 'псевдотест, СИНТЕТИЧЕСКИЕ индексы; ' + POMETKA)
     to_csv(h3t, out / 'selftest_h3_sintetika.csv')
     leaks = leak_check(R, diz, dop)
-    to_csv(tab, out / 'selftest_podhody.csv')
+    to_csv(tab_osn, out / 'selftest_podhody.csv')
+    to_csv(tab_pril, out / 'selftest_podhody_prilozhenie.csv')
     to_csv(h2t, out / 'selftest_h2.csv')
     checks = dict(
         net_let_2022=bool(e.dates.max() <= DEV_CUT),
         zamok_ne_tronut=Path(P.lock).exists() == lock_before,
         po_odnomu_na_podhod=sorted(diz) == sorted(PODHODY),
-        stroki=len(tab) == len(['A'] + list(diz) + list(dop)) * 2 * 2 * (1 + len(tst['komissiya_chuvstv'])),
-        komissiya_osnovnaya_004=abs(float(tst['komissiya']) - 0.0004) < 1e-12 and
-        sorted(tab['komissiya_pct'].round(4).unique().tolist()) == [0.035, 0.04, 0.05, 0.06] and
-        bool(tab.loc[tab.komissiya_pct.round(4) != 0.04, 'p_lw_vs_A'].isna().all()),
-        h2=len(h2t) == 2 * 2 and all(f'p_lw_{a}' in h2t for a in ('hyb−harj_b', 'hyb−naive', 'harj_b−naive')),
+        stroki=len(tab) == len(['A'] + list(diz) + list(dop)) * 2 * 2 * (len(tst['komissiya_osnovnye']) + len(tst['komissiya_chuvstv'])),
+        komissii_dve_osnovnye=osn_ok(tab_osn, tab_pril, tst),
+        h2=len(h2t) == 2 * 2 * 2 and all(f'p_lw_{a}' in h2t for a in ('hyb−harj_b', 'hyb−naive', 'harj_b−naive')),
         p_v_0_1=bool(tab['p_lw_vs_A'].dropna().between(0, 1).all()),
         pravilo_srabotalo=len(hit) > 0 and bool((tab[tab.pravilo == 's_pravilom']['sharpe'].values
                                                   != tab[tab.pravilo == 'bez']['sharpe'].values).any()),
         detektor=all(r['ok'] for r in leaks),
         sdvig=bool(sdv['proshel'].all()) and len(sdv) == 3 * len(src),
         kod_posle_642f084=_ok(lambda: require_base(P.root, KOD_NE_RANSHE)),
-        h3=len(h3t) == len(['A'] + list(diz)) * 2 * 2 * 6 and bool(h3t['p_boot'].dropna().between(0, 1).all()),
+        h3=len(h3t) == len(['A'] + list(diz)) * 2 * 2 * 6 * 2 and bool(h3t['p_boot'].dropna().between(0, 1).all()),
         A_sovpadaet_s_s9=None)
     # A той же математикой, что разработка S9 (Engine.port по позиции A) — Шарп по годам ≠ NaN
     mA = s9.metrics(e.port(e.A_row))
@@ -929,13 +957,16 @@ def run_test(P: Puti, workers: int, reps_override: int | None = None) -> int:
     okna = {k: tuple(v) for k, v in tst['okna'].items()}
     pom = POMETKA if not spec.get('audit_zakryt') else 'после аудита'
     tab, h2t, hit, R = run_tables(e, spec['dizayny'], spec.get('h2') or {}, okna, tuple(tst['zakrytie']),
-                                  komissiya_main(tst), tst['komissiya_chuvstv'], reps, P.root, pom)
-    h3t = run_h3(R, R.engines, spec['dizayny'], okna, float(tst['komissiya']), reps, pom)
-    outs = [to_csv(tab, out_t / 'ch4_v2_podhody_test.csv'), to_csv(h2t, out_t / 'ch4_v2_h2_test.csv'),
+                                  komissiya_main(tst), tst['komissiya_chuvstv'], reps, P.root, pom, None, tst['komissiya_osnovnye'])
+    h3t = run_h3_glavnye(R, spec['dizayny'], okna, reps, pom)
+    tab_osn, tab_pril = split_prilozhenie(tab)
+    outs = [to_csv(tab_osn, out_t / 'ch4_v2_podhody_test.csv'),
+            to_csv(tab_pril, out_t / 'ch4_v2_podhody_test_prilozhenie.csv'), to_csv(h2t, out_t / 'ch4_v2_h2_test.csv'),
             to_csv(h3t, out_t / 'ch4_v2_tabl_4_9_h3_test.csv'), p_sdv]
     for k in R.pos:
         if not k.startswith('h2:'):
-            R.port(e, k, tst['komissiya']).to_parquet(out_d / f'port_{k}_test.parquet')
+            for c in R.glavnye:
+                R.port(e, k, c).to_parquet(out_d / f'port_{k}_k{round(c * 1e5)}_test.parquet')
     finish_lock(P, dict(vyhody={str(p): sha(p) for p in outs}, pravilo_bary=hit))
     print('ТЕСТ v2 завершён →', out_t)
     return 0
