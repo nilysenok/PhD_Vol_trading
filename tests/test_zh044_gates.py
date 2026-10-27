@@ -62,21 +62,23 @@ def test_gate_plato_mutation_threshold_caught(monkeypatch):
     assert I.MIN_NB == 3 and I.gates(cand(sosedey_pos=2), ref(), 0.95)["G3"] == 0
 
 
-@pytest.mark.xfail(strict=True, reason="ворота Ж-044 — правка кода: DSR больше не ворота")
 def test_dsr_001_does_not_cut_when_others_pass():
     assert I.gates(cand(), ref(), 0.01)["ok"] is True
 
 
-@pytest.mark.xfail(strict=True, reason="ворота Ж-044 — правка кода: ворот «min mSR > 0» больше нет")
 def test_negative_min_msr_does_not_cut():
     assert I.gates(cand(obj=-0.2, msr_2018=-0.2), ref(), 0.01)["ok"] is True
 
 
-@pytest.mark.xfail(strict=True, reason="ворота Ж-044 — правка кода: ворот PBO < 0,2 в gates() нет")
 def test_gate_pbo_at_least_02_cuts():
     assert "pbo" in inspect.signature(I.gates).parameters
-    p = inspect.signature(I.gates).parameters
-    kw = {"pbo": 0.2}
-    assert I.gates(cand(), ref(), 0.95, **kw)["ok"] is False
+    assert I.gates(cand(), ref(), 0.95, pbo=0.2)["ok"] is False
     assert I.gates(cand(), ref(), 0.95, pbo=0.19)["ok"] is True
-    assert p
+    assert I.gates(cand(), ref(), 0.95, pbo=float("nan"))["ok"] is False
+
+
+def test_gate_pbo_mutation_threshold_caught(monkeypatch):
+    monkeypatch.setattr(I, "PBO_MAX", 0.5)
+    assert I.gates(cand(), ref(), 0.95, pbo=0.3)["ok"] is True
+    monkeypatch.undo()
+    assert I.gates(cand(), ref(), 0.95, pbo=0.3)["ok"] is False

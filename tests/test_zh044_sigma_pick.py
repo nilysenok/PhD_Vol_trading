@@ -126,7 +126,6 @@ def test_tie_constant_is_005():
     assert L.TIE == 0.05
 
 
-@pytest.mark.xfail(strict=True, reason="↺ Ж-043 #342: ничья по плато")
 def test_itog_compares_by_target_not_plato():
     """Толкование Ж-043 п. 4: ничья и выбор — по целевой точки (`obj`), а не по плато."""
     src = inspect.getsource(I.itog)
