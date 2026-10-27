@@ -39,6 +39,7 @@ def _pts(ns):
 def ran(monkeypatch, tmp_path):
     ns = _eng()
     monkeypatch.setattr(C, "OUT", tmp_path)
+    monkeypatch.setattr(DB, "sdvig_zhurnal", lambda *a, **k: "сдвиг: заглушка")   # проверка сдвига — в test_s9_shag3d_sverka
     monkeypatch.setattr(DB, "points", _pts(ns))
     comms = []
     orig = DB.run_grid
@@ -84,6 +85,7 @@ def _run_distinct(monkeypatch, tmp_path):
     ns = _eng()
     g = np.ones(len(ns.A_row))
     monkeypatch.setattr(C, "OUT", tmp_path)
+    monkeypatch.setattr(DB, "sdvig_zhurnal", lambda *a, **k: "сдвиг: заглушка")
     monkeypatch.setattr(DB, "points", lambda *a: [("D1", "x1", g, False, 0.3, True), ("D1", "x2", g, False, 0.3, True)])
     orig = DB.run_grid
 

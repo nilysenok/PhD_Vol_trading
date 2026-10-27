@@ -27,6 +27,20 @@ POMETKA = "разработка 2018–2021, после аудита"
 SCREEN = (0.10, 0.50)
 
 
+def sdvig_zhurnal(podhod: str, sg: str, path=None) -> str:
+    """Обязательная проверка сдвига σ перед счётом: тот же `sdvig_line`, то же правило #274 (блокирует только
+    дневная цель), что в s9_shag_3b_dop.py. Строка — первой в журнале shag3{D|B}_zhurnal_{sg}.txt; «НЕ ПРОЙДЕНА» — стоп."""
+    import os
+    from fastbt import shag_c_tab as T
+    p = path or Path(os.environ.get("FASTBT_MAIN", C.ROOT)) / "data" / "regen" / "ch4_dev" / "proverka_sdvig.csv"
+    line = T.sdvig_line(T.sdvig(p, sg))
+    C.OUT.mkdir(parents=True, exist_ok=True)
+    (C.OUT / f"shag3{podhod}_zhurnal_{sg}.txt").write_text(line + "\n", encoding="utf-8")
+    if "НЕ ПРОЙДЕНА" in line:
+        raise SystemExit(line)
+    return line
+
+
 def write(rows, name: str) -> Path:
     C.OUT.mkdir(parents=True, exist_ok=True)
     p = C.OUT / name
@@ -79,6 +93,7 @@ def run(podhod: str, sigma: str | None, reps: int, eng=None) -> None:
         eng = s9.Engine(s9.load_cache())
     tag = f"shag3{podhod}"
     for sg in ([sigma] if sigma else list(C.SIGMAS)):
+        print(sdvig_zhurnal(podhod, sg), flush=True)      # первой строкой журнала, до счёта
         series = C.SIGMAS[sg]
         d4, setka, base = run_grid(podhod, eng, s9, series, C.COMM_MAIN, reps)
         d35, _, _ = run_grid(podhod, eng, s9, series, C.COMM_ALT, reps)
@@ -147,9 +162,13 @@ if __name__ == "__main__":
     ap.add_argument("--sigma", choices=list(C.SIGMAS))
     ap.add_argument("--reps", type=int, default=10000)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--tolko-zhurnal", action="store_true", help="только проверка сдвига → zhurnal, без счёта")
     a = ap.parse_args()
     if a.podhod is None:
         selftest()
+    elif a.tolko_zhurnal:
+        for s in ([a.sigma] if a.sigma else list(C.SIGMAS)):
+            print(s, sdvig_zhurnal(a.podhod, s))
     elif a.dry_run:
         dry_run(a.podhod, a.sigma)
     else:
