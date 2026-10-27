@@ -39,6 +39,36 @@ def test_rank_matrix_sovpadaet_s_zatvorom_kontrtrenda():
     assert (G[0][defined & (R != 0.5)] == (~op)[defined & (R != 0.5)]).all()    # затвор тренда — дополнение
 
 
+def _brute_rank(s, W, minp, lo_off, hi_off):
+    """Независимый перебор: окно [d−W+lo_off, d−1+hi_off]; NaN в окне пропускаются."""
+    out = np.full(len(s), np.nan)
+    for d, v in enumerate(s):
+        if np.isnan(v):
+            continue
+        win = [x for x in s[max(d - W + lo_off, 0):d + hi_off] if not np.isnan(x)]
+        if len(win) >= minp:
+            out[d] = sum(x < v for x in win) / len(win)   # ничья (x == v) не считается меньшей
+    return out
+
+
+def test_rank_matrix_sovpadaet_s_nezavisimym_perebororom_okna():
+    """R(d) = доля значений σ̂ в [d−W, d−1] строго меньше σ̂_d (s9_stats.past_rank: x < v, ничьи не в
+    числителе, NaN вне знаменателя, NaN при < minp=50 значений окна). Мутации «окно с d» и «сдвиг на 1» падают."""
+    rng = np.random.default_rng(5)
+    W, minp = 252, 50
+    S = np.round(np.exp(np.cumsum(rng.normal(0, 0.1, (2, 400)), axis=1)), 1)   # округление → ничьи
+    S[0, rng.integers(0, 400, 10)] = np.nan
+    R = td.rank_matrix(S, [400, 400], W)
+    for ti in range(2):
+        ok = _brute_rank(S[ti], W, minp, 0, 0)
+        assert np.isfinite(ok).sum() > 100
+        np.testing.assert_array_equal(np.isnan(R[ti]), np.isnan(ok))
+        np.testing.assert_allclose(R[ti], ok, equal_nan=True, atol=1e-12)
+        for lo_off, hi_off in [(0, 1), (1, 0)]:    # [d−W, d] и [d−W+1, d−1]
+            bad = _brute_rank(S[ti], W, minp, lo_off, hi_off)
+            assert not np.allclose(R[ti], bad, equal_nan=True, atol=1e-12)
+
+
 def _data(n=4000, seed=3):
     rng = np.random.default_rng(seed)
     y = np.exp(rng.normal(-9, 0.5, (2, n)))
