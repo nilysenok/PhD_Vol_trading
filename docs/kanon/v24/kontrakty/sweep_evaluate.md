@@ -5,10 +5,7 @@
 ## Функции
 - Оценщик: `evaluate(obj: dict, params: dict, period: str, commission: float) -> row: dict`.
 - Драйверам (`oat_sweep`, `factorial_sweep`, `morris_screen`, `optuna_search`) передаётся замыкание `lambda params, period: evaluate(obj, params, period, commission)`, то есть `Evaluate = (params, period) -> dict`.
-- `obj`:
-  - `{kind: Sk, sid: S1…S6, tickers: 17}` (`SkEvaluator`);
-  - `{kind: A_sborka, …}`;
-  - `{kind: C|E|B|D, sigma: …}` — адаптеры этапов Э1-г, Э2, Э3.
+- `obj`: `{kind: Sk, sid: S1…S6, tickers: 17}` (`SkEvaluator`); `{kind: A_sborka, …}` и `{kind: C|E|B|D, sigma: …}` — адаптеры этапов Э1-г, Э2, Э3.
 - `params`: сигнал — ключи `sigprov.SIG_GRIDS[sid]`, входят в ключ кэша; остальное — PnL (RM, исполнение, сборка), в ключ не входит.
 - `commission`: % на сторону, 0,04 (отбор) или 0,035 (пересчёт). Списывается при входе и при выходе; позиция на последнем баре платит выход.
 
@@ -34,13 +31,7 @@
 | `train` | 2018–2019 | отчёт |
 | `validation` | 2020–2021 | один взгляд на этап, в цель не входит никогда; повторный — с записью изменения, N × 2 |
 
-- В коде имена `setup`/`control` — псевдонимы.
-- Ряд дневной до 18:50 (Н6). Сигнал по close t, доход t → t+1. Прогрев читает историю до периода, PnL — только дни периода.
-- Даты ≥ 2022 — `PermissionError`.
+В коде имена `setup`/`control` — псевдонимы. Ряд дневной до 18:50 (Н6); сигнал по close t, доход t → t+1; прогрев читает историю до периода, PnL — только дни периода; даты ≥ 2022 — `PermissionError`.
 
 ## Ключ кэша
-`sha1(json([obj, sorted(sig_params), series_digest, code_id]))`:
-- `series_digest` — sha1 склейки дайджестов рядов тикеров;
-- `code_id` — `cache.code_hash()`.
-
-Кэшируются только сигналы; мемо PnL — на прогон, по ключу `(params, comm, годы)`.
+`sha1(json([obj, sorted(sig_params), series_digest, code_id]))`; `series_digest` — sha1 склейки дайджестов рядов тикеров, `code_id` — `cache.code_hash()`. Кэшируются только сигналы; мемо PnL — на прогон, по ключу `(params, comm, годы)`.
