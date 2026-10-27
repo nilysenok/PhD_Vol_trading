@@ -106,10 +106,9 @@ def net_plato(led: Ledger, pt: dict, a: str, axes: dict) -> bool:
 
 
 def kray_plato(led: Ledger, pt: dict, a: str) -> bool | None:
-    """Ж-049: крайнее конечное значение (k_s, R, τ = 1) — шаг наружу на train (OUTER); точки идут в N через Ledger.
-    Возвращает True/False (оба внешних соседа имеют положительную целевую) или None, если наружу шагнуть нельзя (τ = 1 день)."""
-    outer = OUTER.get(a)
-    return None if outer is None else all(obj(led({**pt, a: v}, "train")) > 0 for v in outer)
+    """Ж-049: крайнее конечное значение (k_s, R, τ = 1). True — наружу шагнуть можно (OUTER): внешние точки — обычные соседи
+    оси в общем правиле «>= 3 в сумме, >= 1 на оси», отдельного условия нет; None — нельзя (τ = 1 день), плато не проходит."""
+    return None if a not in OUTER else True
 
 
 def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:

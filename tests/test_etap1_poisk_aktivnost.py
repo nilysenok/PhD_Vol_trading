@@ -106,20 +106,27 @@ AXK = {**AX, "k_s": [1.0, 2.0, 3.0, 4.0, NET], "R": [1.0, 2.0, 3.0, 4.0, NET]}
 KRAY = {**PT, "k_s": 1.0, "R": 2.0, "tau": 3}                          # k_s = 1 — край сетки; R, τ внутри
 
 
-def kray_led(outer_msr: float = 1.0):
-    """Целевая 1,0 везде; за краем (k_s < 1) — outer_msr; считает вызовы."""
-    s = lambda p: outer_msr if p["k_s"] < 1.0 else 1.0                                              # noqa: E731
+KRAY1 = {**PT, "k_s": 1.0}                                              # единственная конечная ось — k_s (край), R и τ «нет»
+
+
+def kray_led(m075: float = 1.0, m05: float = 1.0):
+    """Целевая 1,0 везде; k_s = 0,75 -> m075, k_s = 0,5 -> m05."""
+    s = lambda p: {0.75: m075, 0.5: m05}.get(p["k_s"], 1.0)                                         # noqa: E731
     return V.Ledger(lambda p, per: dict(msr_by_year={2018: s(p), 2019: s(p)}, sdelok_y={2018: 40, 2019: 40}))
 
 
 def test_kray_setki_bez_rasshireniya_ne_prohodit_s_rasshireniem_prohodit():
     led = kray_led()
-    g = V.gate_osi(led, KRAY, AXK)
-    assert g["ok"] and g["kray"] == "k_s" and g["per"]["k_s_kray"] is True
+    g = V.gate_osi(led, KRAY1, AXK)                                      # соседи k_s: 2,0 + 0,75 + 0,5 = 3
+    assert g["ok"] and g["kray"] == "k_s" and g["per"]["k_s"] == 3 and g["per"]["k_s_kray"] is True
     assert {0.75, 0.5} <= {p["k_s"] for p, _ in led.cache.values()}      # наружные точки посчитаны и вошли в N
-    bad = V.gate_osi(kray_led(-1.0), KRAY, AXK)                          # за краем целевая отрицательная -> плато не держится
-    assert not bad["ok"] and bad["per"]["k_s_kray"] is False
-    assert V.gate_osi(led, {**KRAY, "k_s": 2.0}, AXK)["kray"] == "-"
+    assert not V.gate_osi(kray_led(-1.0, -1.0), KRAY1, AXK)["ok"]        # наружные не положительны -> соседей 1 < 3
+    assert V.gate_osi(led, {**KRAY1, "k_s": 2.0}, AXK)["kray"] == "-"
+
+
+def test_kray_odin_naruzhnyy_nepolozhitelnyy_obshchee_pravilo_bez_usloviya_oba():
+    g = V.gate_osi(kray_led(1.0, -1.0), KRAY, AXK)                       # 0,5 не положительна; сумма по осям 1+1+... >= 3
+    assert g["ok"] and g["per"]["k_s"] == 2
 
 
 def test_kray_tau_1_ne_prohodit_prichina():
@@ -133,9 +140,10 @@ def test_mutaciya_kray_ne_pomechaetsya_i_rasshirenie_ne_schitaetsya(monkeypatch)
     with pytest.raises(AssertionError):
         test_kray_setki_bez_rasshireniya_ne_prohodit_s_rasshireniem_prohodit()
     monkeypatch.undo()
-    monkeypatch.setattr(V, "kray_plato", lambda led, pt, a: True)        # край не помечается строго: любое «внешнее» True
+    monkeypatch.setattr(V, "kray_plato", lambda led, pt, a: (None if a not in V.OUTER else
+                        all(V.obj(led({**pt, a: v}, "train")) > 0 for v in V.OUTER[a])))   # «оба наружных > 0 обязательны»
     with pytest.raises(AssertionError):
-        test_kray_setki_bez_rasshireniya_ne_prohodit_s_rasshireniem_prohodit()
+        test_kray_odin_naruzhnyy_nepolozhitelnyy_obshchee_pravilo_bez_usloviya_oba()
 
 
 def test_tolko_itog_rasshirenie_schitaet_tolko_naruzhnye(tmp_path):
