@@ -76,7 +76,7 @@ class PlusEvaluator(AnsamblEvaluator):
         """Ряды К4: индексы секторов (< 2022), close Н6 17 тикеров, карта тикер → индекс. Строится один раз."""
         if getattr(self, "_c", None) is None:
             E = modul("e1_sektor")
-            idx = E.load_indexes(sorted(set(pd.read_csv(E.SEKTORY_CSV).indeks)))
+            idx = E.load_indexes(sorted(set(pd.read_csv(E.SEKTORY_CSV).indeks)), end=pd.Timestamp("2020-02-01"))   # 2020–2021 в память не идут
             close = {}
             for t in self.sk.tickers:
                 d, c = self.inp.meta[t]["dates"], self.inp.close_n6[t]
@@ -89,9 +89,17 @@ class PlusEvaluator(AnsamblEvaluator):
     def _kontrol_sdvig(pt: dict, lg, sh):
         """Контроль к2 «krug_sdvig»: маски разрешения циклически сдвинуты на lag дней (≥ 63)."""
         k = pt.get("kontrol")
-        if k and k[0] == "krug_sdvig":
-            return np.roll(lg, int(k[1])), np.roll(sh, int(k[1]))
-        return lg, sh
+        if not (k and k[0] == "krug_sdvig"):
+            return lg, sh
+        ok = lg | sh
+        v = int(np.argmax(ok)) if ok.any() else len(ok)      # начало валидной части: до него — прогрев MA (запрет), его не двигаем
+        out = []
+        for m in (lg, sh):
+            m = m.copy()
+            if len(m) - v > 0:
+                m[v:] = np.roll(m[v:], int(k[1]) % (len(m) - v))
+            out.append(m)
+        return tuple(out)
 
     @staticmethod
     def _slots(S: dict, tickers: list, ball: dict, k: int) -> None:

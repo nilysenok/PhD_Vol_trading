@@ -57,6 +57,24 @@ def test_sektor_po_trendu_i_protiv_nastoyaschiy_modul(spy):
     assert (by["BBB"][20:26] == -1).all() and not by["AAA"].any()
 
 
+def test_kontrol_sdvig_ne_dvigaet_progrev_dolya_dney_sohranyaetsya():
+    n, warm = 700, 200
+    lg = np.r_[np.zeros(warm, bool), np.tile([True, True, False, True, False, False, True, False, True, False], 50)]
+    sh = np.r_[np.zeros(warm, bool), ~lg[warm:]]
+    pt = {"kontrol": ("krug_sdvig", 63)}
+    a, b = PE_sdvig(pt, lg, sh)
+    win = slice(warm, n)
+    assert abs(lg[win].mean() - a[win].mean()) < 0.01 and abs(sh[win].mean() - b[win].mean()) < 0.01
+    assert not a[:warm].any() and not b[:warm].any() and not np.array_equal(a, lg)
+    old = np.roll(lg, 63)                                          # мутация «сдвиг от начала»: прогрев въезжает в окно
+    assert abs(lg[win].mean() - old[win].mean()) > 0.01
+
+
+def PE_sdvig(pt, lg, sh):
+    from fastbt.etap1_plus_eval import PlusEvaluator
+    return PlusEvaluator._kontrol_sdvig(pt, lg, sh)
+
+
 def test_kontrol_sdvig_menyaet_maski(spy):
     base = _run(spy, "po_trendu", up=True)["AAA"].copy()
     spy[:] = []
@@ -64,5 +82,5 @@ def test_kontrol_sdvig_menyaet_maski(spy):
     e.ctx = _ctx(True)
     e._rows(e.full({**PT, "sektor_trend": "po_trendu", "ma_n": 5, "kontrol": ("krug_sdvig", 60)}), "train", False)
     got = _sig(spy)["AAA"]
-    assert (base[60:66] == 1).all() and not got[60:66].any()        # запрет прогрева переехал на день 60
-    assert not base[:6].any() and (got[:6] == 1).all()              # а день 0 стал разрешён
+    assert not base[:6].any() and not got[:6].any()                 # прогрев остаётся запретом (не едет в окно)
+    assert (got[60:66] == 1).all()                                  # валидная часть (всегда «вверх») сдвигом не меняется
