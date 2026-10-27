@@ -110,15 +110,16 @@ class SkPanelSource:
                 td_, ind = ev._td[t]
                 v, ex = build_view(sid, u, td_, ind, self.points[sid], ev.sig_names)
                 b = np.arange(i0, i1)
-                cols.append((sid, u.dates[b], positions(v, ex, i1)[b], u.lr[b], v.strength[0][b]))
+                cols.append((sid, u.dates[b], positions(v, ex, i1)[b], u.lr[b], v.strength[0][b], t))
         dts = pd.DatetimeIndex(np.unique(np.concatenate([c[1] for c in cols])))
         D, P = len(dts), len(cols)
         pos, lr, st, act = np.zeros((D, P)), np.zeros((D, P)), np.zeros((D, P)), np.zeros((D, P), bool)
-        for j, (_, d, ps, l, s) in enumerate(cols):
+        for j, (_, d, ps, l, s, _t) in enumerate(cols):
             k = dts.get_indexer(pd.DatetimeIndex(d))
             pos[k, j], lr[k, j], st[k, j], act[k, j] = ps, l, s, True
         kr = rate_on(msp.rate_cbr(), dts)
-        return Panel(dts, np.array([c[0] for c in cols]), pos, lr, act, st, kr / 365.0 * msp.cal_days(dts))
+        return Panel(dts, np.array([c[0] for c in cols]), pos, lr, act, st, kr / 365.0 * msp.cal_days(dts),
+                     np.array([c[5] for c in cols]))
 
 
 class SynthPanelSource:
@@ -129,6 +130,7 @@ class SynthPanelSource:
         r, D = np.random.default_rng(seed), len(self.dates)
         P = n_t * len(sids)
         self.sid = np.array([s for s in sids for _ in range(n_t)])
+        self.tick = np.tile(np.arange(n_t), len(sids))
         self.lr = r.normal(drift, 0.01, (D, P))
         sign = np.sign(r.normal(size=(D // 7 + 1, P)))
         self.pos = np.repeat(sign, 7, axis=0)[:D] * (r.random((D, P)) < 0.6)
@@ -143,7 +145,8 @@ class SynthPanelSource:
     def panel(self, end) -> Panel:
         m = self.dates < pd.Timestamp(end)
         pos = self.pos[m].copy()
-        return Panel(self.dates[m], self.sid, pos, self.lr[m], np.ones(pos.shape, bool), self.st[m], np.zeros(m.sum()))
+        return Panel(self.dates[m], self.sid, pos, self.lr[m], np.ones(pos.shape, bool), self.st[m], np.zeros(m.sum()),
+                     self.tick)
 
 
 def make_sweep(source, out=None, reopen_note=None) -> Sweep:
