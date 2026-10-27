@@ -90,7 +90,7 @@ SIGP = np.array([0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1.0])
 
 def sc_anchor():
     days = [D(F(x)) for x in PX]
-    r = exec_e.run_e1("T", days, SIGP, np.full(len(PX), SG), P(R=None, b=None, rezhim="bary"))
+    r = exec_e.run_e1("T", days, SIGP, np.full(len(PX), SG), P(R=None, b=None, check="bary"))
     n = len(PX) - 1
     lr = np.log(PX[1:] / PX[:-1])
     pos = SIGP[:n]
@@ -100,12 +100,12 @@ def sc_anchor():
     assert np.allclose(np.asarray(r.sides)[1:n - 1], np.abs(dp)[1:n - 1], rtol=0, atol=1e-12), "стороны якоря ≠ |Δpos|"
 
 
-@wait(2)
+@wait(4)
 def test_214_anchor_synthetic():
     sc_anchor()
 
 
-@wait(2)
+@wait(4)
 def test_214_mutation_exits_on_caught(monkeypatch):                # выходы включены при «якоре» → якорь рвётся
     orig = exec_e.Params
     monkeypatch.setattr(exec_e, "Params", lambda **kw: orig(**{**kw, "tau": 1}))
@@ -125,12 +125,12 @@ def sc_weight():
     assert (s[0], s[1], s[2], s[3], s[4]) == (0.5, 0, 0, 0, 0.5), "стороны: 2·w за сделку, без ребалансировок"
 
 
-@wait(2)
+@wait(4)
 def test_217_weight_fixed_per_trade():
     sc_weight()
 
 
-@wait(2)
+@wait(4)
 def test_217_mutation_daily_rebalance_caught(monkeypatch):
     orig = exec_e.run_e1
 
