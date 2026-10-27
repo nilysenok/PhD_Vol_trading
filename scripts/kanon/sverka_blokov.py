@@ -49,8 +49,16 @@ def razobrat(text):
     return blocks
 
 
+RETRO_DO = (2026, 10, 27, 15, 40)  # с этого момента «не дошёл» не принимается
+
+
+def retro_dopustima(b):
+    """Пометка допустима только для блока со временем раньше RETRO_DO."""
+    return b["retro"] and b["t"] is not None and b["t"] < RETRO_DO
+
+
 def bez_kvitantsii(blocks):
-    return [b for b in blocks if not b["receipt"] and not b["retro"]]
+    return [b for b in blocks if not b["receipt"] and not retro_dopustima(b)]
 
 
 def oshibki_kvitantsii(blocks):
@@ -88,7 +96,7 @@ def sverka(text):
     out = [
         f"блоков всего: {len(blocks)} (с номером: {a}, без номера: {len(blocks) - a})",
         f"блоков без квитанции: {len(bad)}",
-        f"ретроспективно не дошедших: {sum(1 for b in blocks if b['retro'])}",
+        f"ретроспективно не дошедших: {sum(1 for b in blocks if retro_dopustima(b))}",
     ]
     out += [f"без квитанции: {b['id']}" for b in bad]
     out += errs
