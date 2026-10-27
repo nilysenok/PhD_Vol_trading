@@ -3,15 +3,15 @@
 Ключ параметра: `имя` в безусловных блоках и `<блок>.<имя>` в блоках с `uslovie` (в S5/S6 max_hold и cooldown_bars
 есть в нескольких RM-блоках). OAT по параметру условного блока идёт с подставленным условием (`oat_base`).
 В `vne_v1` попадает всё, что нужно править в fastbt: dostup=pravka, значения из pravka_znach (ослабление зашитых порогов),
-RM в √RV (sqrt_rv), trail_type=off. Они в base/grid не попадают; N в отчёте — верхняя граница.
+trail_type=off (RM в √RV с Э1-в считается: fastbt/rm_sqrt_rv.py). Они в base/grid не попадают; N в отчёте — верхняя граница.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-DROP_BLOCKS = ("rm_sqrt_rv",)
-DROP_PARAMS = ("rm_edinitsa",)
-DROP_VALUES = {"rm_tip": ["sqrt_rv"], "trail_type": ["off"]}
+DROP_BLOCKS = ()                     # rm_sqrt_rv считает fastbt/rm_sqrt_rv.py (Э1-в) — из «вне v1» снят
+DROP_PARAMS = ()
+DROP_VALUES = {"trail_type": ["off"]}
 
 
 def expand(setka) -> dict:
