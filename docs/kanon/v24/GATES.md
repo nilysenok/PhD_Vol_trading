@@ -170,7 +170,7 @@ Blok: Ж-025, Ж-026 · составил arhitektor, 27.10.2026 (этап 0, т�
 
 - [ ] G30: отчёт мутаций по `[КРИТИЧНЫЕ_МОДУЛИ]` — доля выживших ≤ 5 %
   CHECK: $PY scripts/kanon/mutanty.py --itog docs/otchety/mutatsii/kriticheskie.md | tail -1
-  EXPECT: `выжило: k из M (≤ 5 %)`
+  EXPECT: `выжило: k из M (≤ 5 %)`. Замена mutmut: свой прогон мутантов `scripts/kanon/mutanty.py` (операторы из `mutations.md`: `shift(1)→shift(0)`, `ddof 1↔0`, `<=↔<`, выброс составляющей ключа кэша, `bfill`); mutmut не установлен, сеть агенту закрыта (`plan_etapov.md`, (ii)). Если владелец поставит mutmut — G30 считается им, формат строки тот же
   EVIDENCE: pending
 
 - [ ] G31: PR без `docs/otchety/mutatsii/<pr>.md` не сливается (CI и `scripts/sliyanie.sh`)
@@ -299,8 +299,8 @@ Blok: Ж-025, Ж-026 · составил arhitektor, 27.10.2026 (этап 0, т�
   EVIDENCE: pending
 
 - [ ] G53: (8) `STATUS.md` обновляется: не старше 30 мин в рабочие часы
-  CHECK: test $(( $(date +%s) - $(git log -1 --format=%ct -- STATUS.md) )) -le 1800 && echo svezh
-  EXPECT: `svezh`
+  CHECK: h=$(date +%H); if [ "$h" -ge 9 ] && [ "$h" -lt 22 ]; then test $(( $(date +%s) - $(git log -1 --format=%ct -- STATUS.md) )) -le 1800 && echo svezh; else echo vne_chasov; fi
+  EXPECT: `svezh` в рабочие часы (09:00–22:00 по часам машины); вне их — `vne_chasov` (проверка не применяется, гейт не красный). Окно часов — решение класса B, можно изменить в `tolkovaniya.md`
   EVIDENCE: pending
 
 - [ ] G54: (8) вопросов владельцу за сутки ≤ 5, все класса A
