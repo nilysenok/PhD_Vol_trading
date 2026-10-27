@@ -35,7 +35,8 @@ class Run:
     def _enter(s, i, j, b, px, i0, sg, d_sig, sd=1):
         s.tr = Trade(s.t, d_sig, i, b, px, side=sd, fee_in=s.p.comm)
         s.trades.append(s.tr)
-        s.cost[s._row(i, j, i0 >= len(s.days[i].c))] += s.p.comm
+        s.tr.row0 = s._row(i, j, i0 >= len(s.days[i].c))
+        s.cost[s.tr.row0] += s.p.comm
         s.ref, s.i0, s.sg, s.ej = px, i0, sg, j
         s.ext, s.be_on = px, False
 

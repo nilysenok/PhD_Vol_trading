@@ -101,3 +101,9 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None) -> Result:
             r.pos[i] = r.pos[i - 1] if i else 0.0
     rf = np.zeros(n) if rf_cal is None else np.asarray(rf_cal, float)
     return Result(r.trades, gross, r.cost, r.pos, free, free * rf, r.n_orders, r.n_fills)
+
+
+def run_e1(*a, **kw):
+    """Ж-047 этап 1: строки портфеля (g, sides, expo) с весом на сделку — fastbt/etap1_run.py."""
+    from fastbt.etap1_run import run_e1 as f
+    return f(*a, **kw)
