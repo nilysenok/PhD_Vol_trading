@@ -591,6 +591,19 @@ class Engine:
             turn = np.bincount(di, sides, nd)
         return self._finish(r, gross, exp_, turn, cap)
 
+    def port_rows(self, g, sides, expo, comm=None, cap=1.0):
+        """Ж-047 (приёмка #345): портфель по готовым строкам — g = доходность×вес, sides = стороны×вес (с Н5 на
+        границах окна), expo = вес×доля баров в рынке. Арифметика `port` (wgt=None): pos·lr → g, |dp|+last·|pos|
+        → sides, |pos| → expo; деление на cnt и `_finish` те же. `port` не менялся."""
+        comm = COMM if comm is None else comm
+        di, nd = self.r["date"], len(self.dates)
+        net = g - sides * comm
+        r = np.bincount(di, net, nd) / self.cnt
+        gross = np.bincount(di, g, nd) / self.cnt
+        exp_ = np.bincount(di, expo, nd) / self.cnt
+        turn = np.bincount(di, sides, nd) / self.cnt
+        return self._finish(r, gross, exp_, turn, cap)
+
     def _finish(self, r, gross, exp_, turn, cap):
         used = cap * exp_
         fdr = np.maximum(0.0, 1.0 - used) * self.rf * self.cal

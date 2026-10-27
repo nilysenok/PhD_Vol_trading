@@ -51,6 +51,7 @@ class Trade:
     side: int = 1                 # +1 лонг, −1 шорт
     fee_in: float = 0.0
     fee_out: float = 0.0
+    row0: int = -1                # строка комиссии входа (день по close или начало интервала); для весов на сделку (К4)
 
 
 @dataclass

@@ -1,0 +1,133 @@
+"""Движок этапа 1 (К4, Ж-047): входы, ключ кэша (Д5), сборка из данных, фабрика для драйвера К5.
+
+evaluate(params, period) → строка v1.0 (fastbt/etap1_eval.py); `fabrika(sid)` → (evaluate, s9_check) для
+`python -m fastbt.etap1_poisk --fabrika fastbt.etap1:fabrika`. Только 2017…2019 (train); validation не открывается.
+Расхождения с контрактом §1: `evaluate_e1(...)` заменён методом `Evaluator.evaluate(point, period)` (K5 так просит);
+`sdelok_y` — словарь по годам (К5), не число.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+import numpy as np
+import pandas as pd
+
+from fastbt import cache, ekviv_s9
+from fastbt.etap1_data import LIMIT, START, align_f, build_days, load_events, load_rezhim, load_sigma
+from fastbt.etap1_eval import YAKOR, Evaluator
+
+END_TRAIN = pd.Timestamp("2020-01-01")                 # окно train — до 2019-12-31; строка b−1 берёт close 2020-01-09 (Н5)
+
+
+def _flat(x):
+    """Всё, что влияет на результат, → список «частей» для cache.key."""
+    if isinstance(x, dict):
+        return [p for k in sorted(x, key=str) for p in ([str(k)] + _flat(x[k]))]
+    if isinstance(x, (list, tuple)):
+        return [p for v in x for p in _flat(v)]
+    if isinstance(x, pd.Series):
+        return [np.asarray(x.to_numpy()), np.asarray(x.index.astype("int64"))] if x.dtype != object else [str(x.tolist())]
+    if hasattr(x, "o") and hasattr(x, "pusto"):                     # Day
+        return [np.stack([x.o, x.h, x.l, x.c]) if len(x.c) else np.empty(0), bool(x.pusto)]
+    if isinstance(x, np.ndarray):
+        return [np.ascontiguousarray(x)]
+    return [x]
+
+
+@dataclass
+class E1Inputs:
+    sk: object                       # SkEvaluator (сигналы Sk) или None
+    sigma: dict                      # {имя: {тикер: σ по датам тикера s0…i1}}
+    bars: dict                       # {тикер: [Day]}
+    close_n6: dict                   # {тикер: close Н6 по датам}
+    rezhim: dict                     # {имя: флаг входа}
+    sobytiya: dict                   # {имя: {тикер: bool «вход запрещён»}}
+    tick: dict                       # {тикер: шаг цены}
+    rate: pd.Series
+    validation_open: bool = False
+    meta: dict = field(default_factory=dict)      # {тикер: dates, s0, i1, a18}
+
+    def digest(self) -> str:
+        """Д5: хэш всех входов (σ, бары, close, режим, события, тик, ставка, даты, ряды Sk) и кода."""
+        parts = _flat([self.sigma, self.bars, self.close_n6, self.rezhim, self.sobytiya, self.tick,
+                       self.rate, {t: m["dates"].astype("int64") for t, m in self.meta.items()}])
+        return cache.key("etap1_inputs", *parts, self.sk.series_digest() if self.sk is not None else "")
+
+
+def load_ticker_nf(ticker: str):
+    """`data.load_ticker` без прогнозов σ: дневной ряд Н6 и всё; vpred_aligned.parquet не открывается (Ж-047 п. 1)."""
+    from fastbt import data
+    from fastbt.signals.interface import TickerData
+    x = data.daily_df()
+    x = x[x["ticker"] == ticker].sort_values("date").reset_index(drop=True)
+    c, h, l, o, v = [x[k].values.astype(np.float64) for k in ("close", "high", "low", "open", "volume")]
+    lr = np.zeros(len(c))
+    lr[:-1] = np.log(c[1:] / np.maximum(c[:-1], 1e-12))
+    return TickerData(ticker, pd.to_datetime(x["date"].values).values, o, h, l, c, v, lr, {})
+
+
+def sk_evaluator(sid: str):
+    """SkEvaluator без прогнозных рядов: тот же класс, `load_ticker` заменён на `load_ticker_nf` на время сборки."""
+    from fastbt import sweep_sk
+    old = sweep_sk.load_ticker
+    sweep_sk.load_ticker = load_ticker_nf
+    try:
+        return sweep_sk.SkEvaluator(sid)
+    finally:
+        sweep_sk.load_ticker = old
+
+
+def build_inputs(sid: str, ev=None, end: pd.Timestamp = END_TRAIN) -> E1Inputs:
+    from fastbt import msp
+    if end >= LIMIT or end > END_TRAIN:
+        raise PermissionError("этап 1: только окна до 2019-12-31; validation открывает дирижёр")
+    ev = ev or sk_evaluator(sid)
+    meta, bars, close, tick = {}, {}, {}, {}
+    for t in ev.tickers:
+        td = ev._td[t][0]
+        s0, i1 = int(np.searchsorted(td.dates, np.datetime64(START))), int(np.searchsorted(td.dates, np.datetime64(end)))
+        a18 = int(np.searchsorted(td.dates, np.datetime64("2018-01-01")))
+        meta[t] = dict(dates=td.dates[s0:i1 + 1], s0=s0, i1=i1, a18=a18)
+        close[t] = td.close[s0:i1 + 1].astype(float)
+        bars[t], tick[t] = build_days(t, td.dates, td.close, s0, i1, end)
+    sg = load_sigma(ev.tickers, end)
+    sigma = {n: {t: align_f(sg[n][t], meta[t]["dates"]) for t in ev.tickers} for n in sg}
+    ev_ = load_events({t: pd.DatetimeIndex(meta[t]["dates"]) for t in ev.tickers}, end)
+    return E1Inputs(ev, sigma, bars, close, load_rezhim(end), ev_, tick, msp.rate_cbr(), meta=meta)
+
+
+def base_point(sid: str) -> dict:
+    """Плоские параметры центра сетки: ekviv_20.yaml#S{k}_a (поле fiks в zh047_S{k}.yaml)."""
+    return next(p["p"] for p in ekviv_s9.load_points()["tochki"] if p["id"] == f"{sid}_a")
+
+
+def anchor_s9_diff(sid: str, evr: Evaluator, comm: float = 0.0004) -> dict:
+    """Якорь: макс |Δ excess| режима «якорь» против SkEvaluator.pnl (= ekviv_s9.run_sk), годы 2018 и 2019."""
+    ev, p = evr.sk, base_point(sid)
+    sp = {k: v for k, v in p.items() if k in ev.sig_names}
+    sigs = ev.signals(sp)
+    out = {}
+    for god, per in ((2018, "tune2018"), (2019, "train")):
+        ref = ev.pnl(sigs, p, comm, pd.Timestamp(f"{god + 1}-01-01"))["excess"]
+        mine = evr.excess(sp, per)[0]["excess"]
+        m = ref.index.year == god
+        ref, mine = ref[m], mine[mine.index.year == god]
+        out[god] = float(np.abs(mine.to_numpy() - ref.to_numpy()).max()) if mine.index.equals(ref.index) else float("inf")
+    return out
+
+
+def fabrika(sid: str, commission: float = 0.0004):
+    """sid → (evaluate(params, period), s9_check(point)); s9_check — якорь ≤ 1e-12 к s9 (считается один раз на sid)."""
+    inp = build_inputs(sid)
+    evr = Evaluator(sid, inp, base_point(sid), commission)
+    state = {}
+
+    def evaluate(params: dict, period: str) -> dict:
+        return evr.evaluate({**YAKOR, **params}, period)
+
+    def s9_check(point: dict) -> bool:
+        if "ok" not in state:
+            d = anchor_s9_diff(sid, evr, commission)
+            state["ok"] = bool(max(d.values()) <= 1e-12)
+        return state["ok"]
+    return evaluate, s9_check
