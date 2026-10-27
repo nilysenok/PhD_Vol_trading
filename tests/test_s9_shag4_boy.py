@@ -16,7 +16,7 @@ sys.path.insert(0, str(HERE.parents[0] / "scripts" / "analysis"))
 from test_s9_kontrol import _engine  # noqa: E402
 
 import s9_shag4 as sc  # noqa: E402
-from fastbt import s9, shag4, shag4_gl3 as g3  # noqa: E402
+from fastbt import s9, shag4, shag4_gl3 as g3, shag4_td as tdl  # noqa: E402
 
 ENGINE = s9.Engine                                         # настоящий класс (s9.Engine в тестах подменяется)
 LAST = pd.Timestamp("2021-12-31")
@@ -155,19 +155,22 @@ def test_gate_cherez_shag_c(stend):
 # ---------------- 4.D на Engine ----------------
 
 def test_svyazka_okno_i_chislo_nan(stend):
-    rows = sc.svyazka(stend, T3, True)
-    q = {r["filtr"]: r for r in rows if r.get("rezhim") == "QLIKE"}
+    rows, ref = sc.svyazka(stend, T3, True)
+    q = {r["gruppa"]: r for r in rows if r.get("period") == "2018–2021" and r.get("baza") == "HAR-J (б)"}
     ndev = len(pd.bdate_range("2018-01-01", LAST))
     assert q["все"]["n_nan_celi"] == 3 * 5                 # h5: последние 5 дней × 3 тикера
-    assert q["все"]["n"] == 3 * (ndev - 5)
+    assert q["все"]["n"] + q["все"]["n_bez_ranga"] == 3 * (ndev - 5)
     assert q["открыт"]["n"] + q["закрыт"]["n"] == q["все"]["n"]
-    assert {r["rezhim"] for r in rows} == {"корреляция σ", "решения фильтра", "QLIKE"}
+    assert q["открыт"]["dolya"] + q["закрыт"]["dolya"] == pytest.approx(1)
+    assert {r["rezhim"] for r in rows} == {"корреляция σ", "решения фильтра", tdl.REZ}
+    assert {r["rezhim"] for r in ref} >= {tdl.REZ, "4.D портфельное: затвор тренда"}
 
 
-def test_svyazka_mutatsiya_dannye_vne_okna(stend, monkeypatch):
-    monkeypatch.setattr(g3, "dev_mask", lambda yrs: np.ones(yrs.shape, bool))
-    q = {r["filtr"]: r for r in sc.svyazka(stend, T3, True) if r.get("rezhim") == "QLIKE"}
-    assert q["все"]["n_nan_celi"] != 3 * 5                 # 2022-бары вошли в окно — таблица это показывает
+def test_svyazka_gody_summiruyutsya(stend):
+    rows, _ = sc.svyazka(stend, T3, True)
+    q = [r for r in rows if r.get("baza") == "HAR-J (б)" and r["gruppa"] == "все"]
+    assert sum(r["n"] for r in q if r["period"] != "2018–2021") == next(r["n"] for r in q if r["period"] == "2018–2021")
+    assert {r["period"] for r in q} == {"2018", "2019", "2020", "2021", "2018–2021"}
 
 
 def test_sdvig_boevoy_put_i_sigma_plus_odin(stend, monkeypatch):
