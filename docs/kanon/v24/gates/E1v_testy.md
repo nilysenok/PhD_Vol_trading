@@ -16,7 +16,7 @@
 | G8 | Неактивный условный параметр не раздувает N (optuna, morris) | `test_neaktivnyi_...`; мутация: `make_fix` не сводит к базе |
 | G9 | Validation без `open_validation` — отказ во всех трёх режимах (флаг сетки → `ValueError`; чтение 2020–2021 → `PermissionError`) | `test_validation_*`; мутации: `periods` игнорирует флаг, `_val_open=True` |
 
-Мутаций поймано 12 из 12 (по одной на тест `test_mut_*`; validation — по 3 режима на каждую из двух).
+Мутаций поймано 13 из 13 (17 прогонов `test_mut_*`: validation — по 3 режима на каждую из двух мутаций).
 Не покрыто: Optuna при `n_jobs>1` (по докстрингу недетерминирована), реальный `SkEvaluator`.
 
 ## Реестр
