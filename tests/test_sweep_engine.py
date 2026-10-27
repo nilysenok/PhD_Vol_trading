@@ -121,7 +121,7 @@ def ok_ddof1() -> bool:
 def ok_reopen_doubles_n(tmp_path) -> bool:
     sw = mk(out=str(tmp_path))
     for a in A_GRID:
-        sw.evaluate({"a": a})
+        sw.evaluate({"a": a}, "setup")
     sw.save()
     sw.open_validation()
     first = sw.evaluate(P, "validation")
@@ -173,14 +173,14 @@ def test_eng_ddof1():
 def test_eng_N_po_raznym_tochkam_a_ne_vyzovam():
     sw = mk()
     for a in A_GRID:
-        sw.evaluate({"a": a})
-    sw.evaluate({"a": 3})                       # повтор точки — не новая проба
-    assert sw.evaluate(P)["N"] == 5 and len(sw.trials_sr()) == 5
+        sw.evaluate({"a": a}, "setup")
+    sw.evaluate({"a": 3}, "setup")              # повтор точки — не новая проба
+    assert sw.evaluate(P, "setup")["N"] == 5 and len(sw.trials_sr()) == 5
 
 
 def test_eng_validation_ne_pishetsya_v_probi(tmp_path):
     sw = mk(out=str(tmp_path))
-    sw.evaluate(P)
+    sw.evaluate(P, "setup")
     sw.open_validation()
     sw.evaluate({"a": 10}, "validation")
     assert len(sw.ledger) == 1
@@ -189,7 +189,7 @@ def test_eng_validation_ne_pishetsya_v_probi(tmp_path):
 
 def test_eng_povtornoe_otkrytie_trebuet_zapisi_i_udvaivaet_N(tmp_path):
     sw = mk(out=str(tmp_path))
-    sw.evaluate(P)
+    sw.evaluate(P, "setup")
     sw.open_validation()
     with pytest.raises(PermissionError):
         mk(out=str(tmp_path)).open_validation()

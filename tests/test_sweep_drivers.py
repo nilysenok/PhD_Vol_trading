@@ -13,7 +13,7 @@ v11 = pytest.mark.v11
 
 def run_grid(sw):
     for a in A_GRID:
-        sw.evaluate({"a": a})
+        sw.evaluate({"a": a}, "setup")
     return sw
 
 
@@ -41,9 +41,9 @@ def ok_cache_separate_from_pnl() -> bool:
 
 def ok_dsr_from_ledger() -> bool:
     """DSR модуля по пробам оценщика: N=1 -> выше, чем после 5 проб; повторное открытие (N×2) -> ещё ниже."""
-    one = mk().evaluate(P)
+    one = mk().evaluate(P, "setup")
     sw = run_grid(mk())
-    r = sw.evaluate(P)
+    r = sw.evaluate(P, "setup")
     d1 = sd.dsr(one["sr_d"], [one["sr_d"]], one["T"], one["skew"], one["kurt"])["dsr"]
     d5 = sd.dsr(r["sr_d"], sw.trials_sr(), r["T"], r["skew"], r["kurt"])["dsr"]
     return one["N"] == 1 and r["N"] == 5 and d1 > d5
@@ -74,16 +74,16 @@ def test_dsr_modulya_po_probam_otsenshchika_N1_rastet():
 
 def test_pereschet_pri_drugoy_komissii_ne_dobavlyaet_N():
     sw = run_grid(mk())
-    n = sw.evaluate(P, "train", 0.04)["N"]
-    assert sw.evaluate(P, "train", 0.035)["N"] == n == 5
+    n = sw.evaluate(P, "setup", 0.04)["N"]
+    assert sw.evaluate(P, "setup", 0.035)["N"] == n == 5
 
 
 def ok_ledger_only_selection_comm() -> bool:
     sw = mk()
-    sw.evaluate(P, "train", 0.035)                     # пересчёт — не проба
+    sw.evaluate(P, "setup", 0.035)                     # пересчёт — не проба
     if sw.trials_sr():
         return False
-    sw.evaluate(P, "train")                            # комиссия отбора (первая в comm_pct) = 0,04
+    sw.evaluate(P, "setup")                          # комиссия отбора (первая в comm_pct) = 0,04
     return len(sw.trials_sr()) == 1 and sw.spec.comm_pct[0] == 0.04
 
 
@@ -93,7 +93,7 @@ def test_ledger_pishet_tolko_pri_komissii_otbora():
 
 def test_pereschet_ne_perezapisyvaet_sr_v_ledger():
     sw = mk()
-    sw.evaluate(P, "train", 0.04)
+    sw.evaluate(P, "setup", 0.04)
     before = list(sw.trials_sr())
-    sw.evaluate(P, "train", 0.035)
+    sw.evaluate(P, "setup", 0.035)
     assert sw.trials_sr() == before

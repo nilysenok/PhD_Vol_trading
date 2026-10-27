@@ -163,7 +163,7 @@ def test_mut_25_ledger_pishet_pri_lyuboy_komissii(monkeypatch):
     orig = Sweep.evaluate
 
     def ev(self, params, period="train", comm_pct=None):
-        r = orig(self, params, period, comm_pct)
+        r = orig(self, params, period, comm_pct)          # запись пробы на любом периоде и при любой комиссии
         self.ledger[json.dumps(sorted({**self.spec.base, **params}.items()), default=str)] = r["sr_d"]
         return r
     monkeypatch.setattr(Sweep, "evaluate", ev)
