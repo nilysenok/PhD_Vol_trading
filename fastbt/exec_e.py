@@ -26,6 +26,31 @@ import numpy as np
 from fastbt.exec_e_types import Day, Params, Result, Trade  # noqa: F401
 
 
+def q_mask(strength, sig, q: float, window: int = 252, min_obs: int = 20) -> np.ndarray:
+    """E0 (§4): sig' = sig ∧ (сила[d] > квантиль q силы за дни сигнала окна [d−window, d−1]).
+    Окно строго прошлое (Н1), как A при min_strength — обнуляет и посреди сделки (spec п. 13).
+    q = 0 — sig как есть (побайтно). Истории меньше min_obs — нет сделки (консервативно)."""
+    sig, st = np.asarray(sig).astype(int), np.asarray(strength, float)
+    if len(sig) != len(st):
+        raise ValueError("sig и strength разной длины")
+    if q == 0:
+        return sig.copy()
+    if not 0 < q < 1:
+        raise ValueError("q вне [0; 1)")
+    out = np.zeros(len(sig), int)
+    for d in np.flatnonzero(sig):
+        h = st[max(0, d - window):d]
+        h = h[(sig[max(0, d - window):d] == 1) & np.isfinite(h)]
+        out[d] = int(h.size >= min_obs and np.isfinite(st[d]) and st[d] > np.quantile(h, q))
+    return out
+
+
+def shift_krug(x, lag: int) -> np.ndarray:
+    """к2: x'[j] = x[(j − lag) mod T]; lag = 0 — исходный ряд (мутация 8)."""
+    x = np.asarray(x)
+    return x[(np.arange(len(x)) - lag) % len(x)] if len(x) else x.copy()
+
+
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None) -> Result:
     """rf_cal[t] — ставка/365·календарные дни [t, следующий торговый день) (msp.cal_days, Н2)."""
     sig, sigma = np.asarray(sig), np.asarray(sigma, float)
