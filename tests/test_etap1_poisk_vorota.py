@@ -58,7 +58,7 @@ def test_osi_dosschet_do_6_tochek_i_R_vyrozhdena_pri_ks_net():
     pt = dict(PT, k_s=NET)
     ax = dict(AX, k_s=[1.0, 2.0, NET])
     g2 = V.gate_osi(led_for(lambda p: True), pt, ax)
-    assert "R" not in g2["per"] and g2["per"]["k_s"] == 1
+    assert "R" not in g2["per"] and g2["per"]["k_s_net"] is True          # Ж-048 п. 1: «нет» — одностороннее плато
 
 
 def gate_cases():

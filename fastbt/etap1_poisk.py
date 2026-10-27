@@ -19,7 +19,8 @@ import pandas as pd
 import yaml
 
 from fastbt import sweep_drivers as sd
-from fastbt.etap1_poisk_vorota import Ledger, gates, matrix, obj, obj_morris, pbo, pick_best, psr_dsr, series, sigma126
+from fastbt.etap1_poisk_vorota import (Ledger, dopustima, gates, matrix, obj, obj_morris, pbo, pick_best, po_godam,
+                                       pkey, psr_dsr, series, sigma126)
 
 SETKI = Path(__file__).parent / "designs" / "sweep"
 OUT = Path("docs/tables/zh047")
@@ -47,14 +48,17 @@ def choose_axes(ranked: list, axes: dict, potolok: int = POTOLOK) -> list:
     raise ValueError("ни одна ось не помещается в потолок")
 
 
-def pick_center(led: Ledger, fact: dict, axes: dict, pb: float, s9_check) -> tuple:
-    """Центр плато (среднее целевой по соседям), а не пик; затем ворота; ничья <= 0,05 — меньшая σ126 точки."""
+def pick_center(led: Ledger, fact: dict, axes: dict, pb: float, s9_check, yakor: dict) -> tuple:
+    """Центр плато, а не пик; только допустимые по активности (dopustima); затем ворота;
+    ничья <= 0,05 — меньшая σ126. Возвращает (кандидат | None, pt, число допустимых)."""
     sc = sd.pick_by_plateau(fact, k=len(fact["rows"]), radius=1, min_neighbors=3)
     pt = lambda r: {k: r[k] for k in axes}                                       # noqa: E731
-    cands = [r for r in sc if not r["edge"] and math.isfinite(r["objective"]) and not led(pt(r), "train").get("vyrozhdena")][:TOPK]
+    ok = [r for r in sc if not r["edge"] and math.isfinite(r["objective"]) and not led(pt(r), "train").get("vyrozhdena")
+          and dopustima(led, pt(r), yakor)]
+    cands = ok[:TOPK]
     for c in cands:
         c.update(sigma126=sigma126(led(pt(c), "train")), gates=gates(led, pt(c), axes, fact["keys"], pb, s9_check))
-    return pick_best([c for c in cands if c["gates"]["ok"]], "plateau") or pick_best(cands, "plateau"), pt
+    return pick_best([c for c in cands if c["gates"]["ok"]], "plateau") or pick_best(cands, "plateau"), pt, len(ok)
 
 
 def append_csv(path: Path, rows: list) -> None:
@@ -71,6 +75,54 @@ def append_csv(path: Path, rows: list) -> None:
         df.to_csv(path, mode="a", index=False)
 
 
+def itog_row(sid, run_id, mper, plan, axes, led, picked, head, psr_fn, plato_staroe=float("nan")) -> dict:
+    """Строка itog; без допустимой точки — те же колонки, поля точки nan. plato_staroe/novoe — ворота плато по осям (Ж-048)."""
+    (c, pt, n_dop), nan = picked, float("nan")
+    res = led(pt(c), "train") if c else {}
+    yr, m = po_godam(res), res.get("msr_by_year", {})
+    psr = psr_fn(np.concatenate(list(series(res).values()))) if c else dict(T=nan, psr=nan, dsr=nan, N_dsr=head["N_unikalnykh"])
+    return dict(strategiya=sid, zapusk=run_id, morris_period=mper, osi_plana=" ".join(plan), **head,
+                **{f"p_{k}": (pt(c)[k] if c else nan) for k in axes}, obj_min_msr=c["objective"] if c else nan,
+                msr_2018=m.get(2018, nan), msr_2019=m.get(2019, nan), sharpe_2018=yr["sharpe_2018"],
+                sharpe_2019=yr["sharpe_2019"], N_dopustimykh=n_dop, plateau=c["plateau"] if c else nan,
+                sigma126=c["sigma126"] if c else nan, **{k: (c["gates"][k] if c else nan) for k in GATE_COLS}, **psr,
+                plato_staroe=plato_staroe, plato_novoe=c["gates"]["G4_osi"] if c else nan,
+                verdikt=("кандидат на validation" if c["gates"]["ok"] else "не дошла: ворота") if c else "не дошла: нет допустимой точки")
+
+
+def _coerce(s: str, axis: list):
+    """Значение из CSV-текста -> значение оси (1.0, 20, net, zakrytie)."""
+    for v in axis:
+        if str(v) == s or (not isinstance(v, str) and s.replace(".", "", 1).lstrip("-").isdigit() and float(s) == float(v)):
+            return v
+    raise ValueError(f"значение {s!r} вне оси {axis}")
+
+
+def tolko_itog(sid: str, evaluate, s9_check, out: Path = OUT, run_id: str = "", setka: dict | None = None) -> dict:
+    """Ж-048 п. 3: вердикт заново по готовым S{k}_faktor/itog.csv, без новой сетки; считаются только недостающие точки
+    (активность, плато). itog дописывается; если шапка старого файла иная — в S{k}_itog_v2.csv. N_unikalnykh = старое + досчитанное (потолок)."""
+    S = setka or load_setka(sid)
+    axes, nan = S["axes"], float("nan")
+    old = pd.read_csv(out / f"{sid}_itog.csv", comment="#").iloc[-1]
+    plan = str(old["osi_plana"]).split()
+    f = pd.read_csv(out / f"{sid}_faktor.csv", comment="#", dtype=str)
+    f = f[f.zapusk == old["zapusk"]] if (f.zapusk == old["zapusk"]).any() else f[f.zapusk == f.zapusk.max()]
+    rows = [{**{k: _coerce(r[k], axes[k]) for k in axes}, "objective": float(r["objective"])} for _, r in f.iterrows()]
+    fact = dict(rows=rows, keys=plan, grid={a: axes[a] for a in plan})
+    led, known = Ledger(evaluate), {pkey({k: r[k] for k in axes}) for r in rows}
+    picked = pick_center(led, fact, axes, float(old["pbo"]), s9_check, S["yakor"])
+    added = len({k for k, _ in led.cache} - known)
+    head = {k: old[k] for k in ("N_morris", "N_faktor", "N_do_dosheta", "N_unikalnykh", "N_pbo", "pbo")}
+    head["N_unikalnykh"] += added
+    psr = lambda x: dict(T=len(x), psr=nan, dsr=nan, N_dsr=head["N_unikalnykh"])        # noqa: E731  (справочно, нужен полный M)
+    row = itog_row(sid, run_id, old["morris_period"], plan, axes, led, picked, head, psr, old.get("G4_osi", nan))
+    p = out / f"{sid}_itog.csv"
+    if p.exists() and next(ln for ln in p.read_text(encoding="utf-8").splitlines() if not ln.startswith("#")).split(",") != list(row):
+        p = out / f"{sid}_itog_v2.csv"
+    append_csv(p, [row])
+    return row
+
+
 def run_strategy(sid: str, evaluate, s9_check, out: Path = OUT, morris_2019: bool = False, run_id: str = "",
                  setka: dict | None = None) -> dict:
     S = setka or load_setka(sid)
@@ -84,22 +136,14 @@ def run_strategy(sid: str, evaluate, s9_check, out: Path = OUT, morris_2019: boo
     fact = sd.factorial_sweep(led, base, {a: axes[a] for a in plan}, "train", objective=obj)
     M, n_mf = matrix(led), led.n_unique
     pb = pbo(M)
-    c, pt = pick_center(led, fact, axes, pb, s9_check)
-    nan = float("nan")
-    res = led(pt(c), "train") if c else {}
-    x = np.concatenate(list(series(res).values())) if c else None
-    m = res.get("msr_by_year", {})
-    row = dict(strategiya=sid, zapusk=run_id, morris_period=mper, osi_plana=" ".join(plan), N_morris=mo["n_evaluations"],
-               N_faktor=fact["n_trials"], N_do_dosheta=n_mf, N_unikalnykh=led.n_unique, N_pbo=M.shape[1], pbo=pb,
-               **{f"p_{k}": (pt(c)[k] if c else nan) for k in axes}, obj_min_msr=c["objective"] if c else nan,
-               msr_2018=m.get(2018, nan), msr_2019=m.get(2019, nan), plateau=c["plateau"] if c else nan,
-               sigma126=c["sigma126"] if c else nan, **{k: (c["gates"][k] if c else nan) for k in GATE_COLS},
-               **(psr_dsr(x, M, led.n_unique) if c else dict(T=nan, psr=nan, dsr=nan, N_dsr=led.n_unique)),
-               verdikt=("кандидат на validation" if c["gates"]["ok"] else "не дошла: ворота") if c else "не дошла: нет кандидата")
+    c, pt, n_dop = pick_center(led, fact, axes, pb, s9_check, S["yakor"])
+    head = dict(N_morris=mo["n_evaluations"], N_faktor=fact["n_trials"], N_do_dosheta=n_mf, N_unikalnykh=led.n_unique,
+                N_pbo=M.shape[1], pbo=pb)
+    row = itog_row(sid, run_id, mper, plan, axes, led, (c, pt, n_dop), head, lambda x: psr_dsr(x, M, led.n_unique))
     append_csv(out / f"{sid}_morris.csv", [dict(strategiya=sid, zapusk=run_id, period=mper, os=a, rang=i, mu_star=e["mu_star"],
                sigma=e["sigma"], n=e["n"], v_plane=a in plan) for i, (a, e) in enumerate(mo["effects"].items(), 1)])
-    append_csv(out / f"{sid}_faktor.csv", [dict(strategiya=sid, zapusk=run_id, **{k: r[k] for k in axes}, objective=r["objective"])
-                                           for r in fact["rows"]])
+    append_csv(out / f"{sid}_faktor.csv", [dict(strategiya=sid, zapusk=run_id, **{k: r[k] for k in axes}, objective=r["objective"],
+                                                **po_godam(led({k: r[k] for k in axes}, "train"))) for r in fact["rows"]])
     append_csv(out / f"{sid}_itog.csv", [row])
     return row
 
@@ -108,6 +152,10 @@ def _worker(a: tuple) -> dict:
     sid, fab, setki, kw = a
     mod, fn = fab.split(":")
     ev, s9 = getattr(importlib.import_module(mod), fn)(sid)
+    kw = dict(kw)
+    if kw.pop("tolko_itog", False):
+        kw.pop("morris_2019", None)
+        return tolko_itog(sid, ev, s9, setka=load_setka(sid, Path(setki)), **kw)
     return run_strategy(sid, ev, s9, setka=load_setka(sid, Path(setki)), **kw)
 
 
@@ -117,10 +165,11 @@ def main(argv=None) -> list:
     ap.add_argument("--fabrika", required=True)
     ap.add_argument("--jobs", type=int, default=2)
     ap.add_argument("--morris-2019", action="store_true", help="Моррис только на 2019, факторный — на обоих годах (Ж-047 п. 6)")
+    ap.add_argument("--tolko-itog", action="store_true", help="новый вердикт по готовым faktor/itog без новой сетки (Ж-048 п. 3)")
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--setki", default=str(SETKI))
     a = ap.parse_args(argv)
-    kw = dict(out=Path(a.out), morris_2019=a.morris_2019, run_id=dt.datetime.now().isoformat(timespec="seconds"))
+    kw = dict(out=Path(a.out), morris_2019=a.morris_2019, tolko_itog=a.tolko_itog, run_id=dt.datetime.now().isoformat(timespec="seconds"))
     with ProcessPoolExecutor(max_workers=max(1, min(a.jobs, MAX_JOBS))) as ex:
         return list(ex.map(_worker, [(s, a.fabrika, a.setki, kw) for s in a.strategii]))
 
