@@ -27,6 +27,9 @@
     {"put": "fastbt/final_test.py", "modul": "fastbt.final_test", "bezopasno": ["--scope dev", "--scope=dev"]},
     {"put": "scripts/analysis/r2_sborka_test.py", "bezopasno": []}
   ],
+  "tolko_dopisyvanie": ["docs/resheniya/resheniya.md"],
+  "proverka_append": "scripts/kanon/proverka_append.py",
+  "zhurnal": ["docs/resheniya/resheniya.md", "docs/kanon_v23/zhurnal_resheniy.md"],
   "da_fail": ".claude/hooks/da/OTKRYTIE_DA.json",
   "obshchie_vetki": ["main", "kanon-v22-pereschet", "figures-final"],
   "test_timeout_post": 60,

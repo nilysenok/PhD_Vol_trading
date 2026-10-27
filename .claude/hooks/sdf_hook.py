@@ -4,6 +4,9 @@
 Вызов: sdf_hook.py pre | post | stop | precompact | start   (JSON события — на stdin).
 Отказ PreToolUse / замечание PostToolUse / запрет остановки — код 2 и сообщение в stderr.
 Списки путей и команд — zamki.json рядом (формат "v": 1).
+Сбой самого хука (нет или битый zamki.json, битый JSON события, исключение): PreToolUse с признаками
+опасного действия — код 2 «хук не смог проверить — отказ» (fail-closed); остальное — код 0 и запись
+об ошибке в audit.jsonl.
 """
 import json
 import os
@@ -13,14 +16,21 @@ import time
 import hashlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(HERE, 'zamki.json'), encoding='utf-8') as _f:
-    K = json.load(_f)
-MAIN = os.path.realpath(K['osnovnaya_kopiya'])
-AUD = os.path.join(MAIN, '.claude', 'audit')
-HANDOFF = os.path.join(MAIN, '.claude', 'handoff')
-RX_ZAKR = [re.compile(x) for x in K['zakryto_chtenie']]
-RX_ZAM = [re.compile(x) for x in K['zamorozheno']]
 PREF = '[хук v23] '
+K = MAIN = AUD = HANDOFF = RX_ZAKR = RX_ZAM = None
+
+
+def zagruzit():
+    global K, MAIN, AUD, HANDOFF, RX_ZAKR, RX_ZAM
+    with open(os.path.join(HERE, 'zamki.json'), encoding='utf-8') as f:
+        K = json.load(f)
+    if K.get('v') != 1:
+        raise ValueError('zamki.json: ожидалась версия "v": 1')
+    MAIN = os.path.realpath(K['osnovnaya_kopiya'])
+    AUD = os.path.join(MAIN, '.claude', 'audit')
+    HANDOFF = os.path.join(MAIN, '.claude', 'handoff')
+    RX_ZAKR = [re.compile(x) for x in K['zakryto_chtenie']]
+    RX_ZAM = [re.compile(x) for x in K['zamorozheno']]
 
 
 # ---------- пути ----------
@@ -88,9 +98,9 @@ def otkaz(chto, pravilo, kak=''):
 R_DANNYE = '.claude/rules/dannye.md п. 2–4 (данные ≥ 2022, test_locked/, замки OPENED_*)'
 R_ZAM = '.claude/rules/polnota.md п. 7 (замки не снимаются); dannye.md п. 4–5; pravki.md п. 11 (эталоны — только в архив)'
 R_PRAVKI = 'CLAUDE.md «Запреты»: файлы правятся только инструментами правки (Edit/Write); задания: «без sed -i, heredoc, cat >»'
-R_KOPIYA = 'orkestraciya.md абз. 2 (писать только в своём списке файлов); dev_log_ET2 27.10 11:02 — запись в основную копию'
+R_KOPIYA = 'orkestratsiya.md абз. 2 (писать только в своём списке файлов); dev_log_ET2 27.10 11:02 — запись в основную копию'
 R_NEOBR = 'CLAUDE.md «Когда останавливаться»: необратимое; задания: «без rm -rf», force-push запрещён правом'
-R_TESTY = 'testy.md п. 7 и orkestraciya.md абз. 3 (автор не меняет тесты и их конфиг)'
+R_TESTY = 'testy.md п. 7 и orkestratsiya.md абз. 3 (автор не меняет тесты и их конфиг)'
 
 
 # ---------- «да» владельца на открытие ----------
@@ -144,17 +154,19 @@ MSG_OPTS = {'-m', '--message', '--title', '-t', '--body', '-b', '-F', '--file', 
 
 
 def razbor(cmd):
-    """-> (сегменты, есть_heredoc). Сегмент — список слов shlex."""
+    """-> (сегменты, тела heredoc). Сегмент — список слов shlex."""
     import shlex
-    lines, out, i, hd = cmd.split('\n'), [], 0, False
+    lines, out, i, hd = cmd.split('\n'), [], 0, []
     while i < len(lines):
         out.append(lines[i])
         ms = list(HEREDOC.finditer(lines[i]))
         i += 1
         for m in ms:
-            hd = True
+            body = []
             while i < len(lines) and lines[i].strip() != m.group(2):
+                body.append(lines[i])
                 i += 1
+            hd.append('\n'.join(body))
             i += 1
     s = ' ; '.join(out)
     try:
@@ -300,6 +312,14 @@ def proverit_pytest(args, cwd, own):
                           'указать файлы тестов явно или добавить --ignore=%s.' % zt)
 
 
+def git_sub(words):
+    """-> (подкоманда git, её аргументы) с пропуском -C/-c и прочих общих флагов."""
+    i = 1
+    while i < len(words) and words[i].startswith('-'):
+        i += 2 if words[i] in ('-C', '-c', '--git-dir', '--work-tree') else 1
+    return (words[i], words[i + 1:]) if i < len(words) else ('', [])
+
+
 def git_proverka(words, cwd, own):
     i, gcwd = 1, cwd
     while i < len(words) and words[i].startswith('-'):
@@ -323,7 +343,7 @@ def git_proverka(words, cwd, own):
             otkaz('git push %s — переписывание или удаление истории.' % ' '.join(bad), R_NEOBR,
                   'обычный git push своей ветки; ошибку исправлять новым коммитом.')
         if own != MAIN and any(a.split(':')[-1] in K['obshchie_vetki'] for a in args if not a.startswith('-')):
-            otkaz('push агента прямо в общую ветку.', 'orkestraciya.md абз. 3 (сливает только главная сессия после перепроверки)',
+            otkaz('push агента прямо в общую ветку.', 'orkestratsiya.md абз. 3 (сливает только главная сессия после перепроверки)',
                   'push своей ветки и PR.')
     if sub == 'reset' and '--hard' in args:
         otkaz('git reset --hard — необратимая потеря незакоммиченного.', R_NEOBR,
@@ -337,9 +357,62 @@ def git_proverka(words, cwd, own):
                 if zamorozheno(p):
                     otkaz('git %s перезапишет %s (%s).' % (sub, rel(p), zamorozheno(p)),
                           R_ZAM + '; план 26.10 10:30 — `git checkout origin/... -- scripts/analysis/` в скрипте запуска')
+                if tolko_dop(p):
+                    otkaz('git %s перезапишет %s — файл только для дописывания.' % (sub, rel(p)), R_DOP)
 
 
-def proverka_bash(cmd, cwd, own):
+R_DOP = 'Ж-025 п. 1.1: журнал решений — только дописывание в конец (Edit/Write, проверка scripts/kanon/proverka_append.py)'
+# запись файлов из кода, переданного интерпретатору (python -c, python - <<EOF)
+PY_PISHET = re.compile(
+    r"open\(\s*(?:[^,()]|\([^()]*\))+,\s*(mode\s*=\s*)?['\"][rbt]*[wax]|mode\s*=\s*['\"][rbt]*[wax]"
+    r"|\.write_(text|bytes)\(|\.to_(csv|parquet|pickle|json|feather|excel|hdf|sql)\("
+    r"|\b(os|shutil)\.(remove|unlink|rename|replace|rmdir|removedirs|makedirs|mkdir|rmtree|copy\w*|move|truncate|chmod|symlink|link|system)\("
+    r"|\.(unlink|rmdir|mkdir|touch|symlink_to)\(|\b(np|numpy)\.save\w*\(|\.savefig\(|\b(pickle|json|yaml|joblib)\.dump\("
+    r"|\bsubprocess\.|\bos\.popen\(")
+SHELLS = {'bash', 'sh', 'zsh', 'dash', 'ksh'}
+PODSTANOVKA = re.compile(r"\$\(([^()]*)\)|`([^`]*)`")
+
+
+def tolko_dop(p):
+    return rel(p) in K.get('tolko_dopisyvanie', [])
+
+
+def proverka_obkhoda(words, hd, ecwd, own, glub):
+    """bash -c / sh -c / eval / python -c / python - <<EOF / find -exec sed -i / $(...) внутри кавычек."""
+    c0 = os.path.basename(words[0])
+    if c0 in SHELLS:
+        if '-c' in words[1:]:
+            k = words.index('-c')
+            if k + 1 < len(words):
+                proverka_bash(words[k + 1], ecwd, own, glub + 1)
+        elif hd and (len(words) == 1 or words[1] in ('-', '-s')):
+            for b in hd:
+                proverka_bash(b, ecwd, own, glub + 1)
+    if c0 == 'eval':
+        proverka_bash(' '.join(words[1:]), ecwd, own, glub + 1)
+    if PYRX.match(c0):
+        kod = None
+        if '-c' in words[1:]:
+            k = words.index('-c')
+            kod = words[k + 1] if k + 1 < len(words) else ''
+        elif hd and (len(words) == 1 or words[1] == '-'):
+            kod = '\n'.join(hd)
+        if kod is not None and PY_PISHET.search(kod):
+            otkaz('python -c / python - <<EOF пишет файлы или запускает команды оболочки.', R_PRAVKI,
+                  'Write/Edit; расчёт — скриптом в своём списке файлов.')
+    if c0 == 'find':
+        for k, w in enumerate(words):
+            if w in ('-exec', '-execdir', '-ok') and k + 1 < len(words):
+                proverka_bash(' '.join(x for x in words[k + 1:] if x not in ('{}', ';', '\\;', '+')), ecwd, own, glub + 1)
+    for w in words:
+        if '$(' in w or '`' in w:
+            for m in PODSTANOVKA.finditer(w):
+                proverka_bash(m.group(1) or m.group(2) or '', ecwd, own, glub + 1)
+
+
+def proverka_bash(cmd, cwd, own, glub=0):
+    if glub > 3:
+        otkaz('вложенность bash -c / eval / $(...) глубже 3 уровней — не проверить.', R_PRAVKI, 'упростить команду.')
     segs, hd = razbor(cmd)
     ecwd, eenv = cwd, {}
     for seg in segs:
@@ -372,6 +445,7 @@ def proverka_bash(cmd, cwd, own):
             otkaz('tee в файл.', R_PRAVKI, 'Write/Edit.')
         if c0 in AVTOR and redir_p:
             otkaz('%s > файл — запись текста оболочкой.' % c0, R_PRAVKI, 'Write/Edit; вывод программ (pytest, скрипты) в файл — можно.')
+        proverka_obkhoda(words, hd, ecwd, own, glub)
 
         # 2. необратимое
         if c0 == 'rm' and any(a == '--recursive' or re.match(r'^-[A-Za-z]*[rR]', a) for a in words[1:]):
@@ -464,10 +538,21 @@ def proverka_bash(cmd, cwd, own):
         if c0 in WRITE:
             nonopt = [w for w in words[1:] if not w.startswith('-')]
             pisat = nonopt[-1:] if c0 in DEST_ONLY else nonopt
+        # только имена и счётчики, без содержимого: ls, du, stat, find без -exec, git log/ls-files/status, diff/show --stat
+        gsub, gargs = git_sub(words) if c0 == 'git' else ('', [])
+        imena = (c0 in ('ls', 'du', 'stat', 'echo', 'printf')
+                 or (c0 == 'find' and not any(w in ('-exec', '-execdir', '-ok', '-delete') for w in words))
+                 or gsub in ('ls-files', 'ls-tree', 'status')
+                 or (gsub in ('log', 'shortlog') and not any(a in ('-p', '--patch', '-u', '--word-diff') or a.startswith('-L')
+                                                             for a in gargs))
+                 or (gsub in ('diff', 'show') and any(a.startswith(('--stat', '--name-only', '--name-status', '--numstat',
+                                                                    '--shortstat', '--dirstat')) for a in gargs)))
         for k, w in enumerate(words):
-            if k in skip:
+            if k in skip or imena:
                 continue
             for x in kandidaty(w):
+                if any(c.isspace() for c in x):
+                    continue  # строка с пробелами — текст, не путь
                 if '/' not in x and not any(c in x for c in '*?[') and not os.path.exists(os.path.join(ecwd, x)):
                     continue
                 for p in raskryt(x, ecwd):
@@ -481,6 +566,8 @@ def proverka_bash(cmd, cwd, own):
                 z = zamorozheno(p)
                 if z:
                     otkaz('запись в %s (%s).' % (rel(p), z), R_ZAM if z != 'конфиг тестов' else R_TESTY)
+                if tolko_dop(p):
+                    otkaz('запись оболочкой в %s — файл только для дописывания.' % rel(p), R_DOP, 'Edit с дописыванием в конец.')
                 if v_osnovnoy(p, own):
                     otkaz('запись в основную копию: %s.' % p, R_KOPIYA, 'писать в свою рабочую копию.')
         # рекурсивный grep с выводом строк над закрытыми папками
@@ -533,6 +620,37 @@ def pre(inp):
         if v_osnovnoy(p, own):
             otkaz('запись в основную копию из рабочей копии агента: %s.' % p, R_KOPIYA,
                   'писать в свою рабочую копию %s.' % own)
+        if tolko_dop(p):
+            proverit_dopisyvanie(p, tool, ti)
+
+
+def proverit_dopisyvanie(p, tool, ti):
+    """Ж-025 п. 1.1: новый текст = старый + строки в конце. Проверка — proverit(old, new) из базы (#294)."""
+    import importlib.util
+    mod = os.path.join(koren(p) or MAIN, K['proverka_append'])
+    if not os.path.exists(mod):
+        mod = os.path.join(MAIN, K['proverka_append'])
+    spec = importlib.util.spec_from_file_location('proverka_append', mod)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)  # нет модуля — исключение, main() отказывает (fail-closed)
+    try:
+        with open(p, encoding='utf-8') as f:
+            old = f.read()
+    except FileNotFoundError:
+        old = ''
+    if tool == 'Write':
+        new = ti.get('content', '')
+    elif tool in ('Edit', 'MultiEdit'):
+        new = old
+        for e in (ti.get('edits') or [ti]):
+            a, b = e.get('old_string', ''), e.get('new_string', '')
+            new = new.replace(a, b) if e.get('replace_all') else new.replace(a, b, 1)
+    else:
+        otkaz('%s для файла только для дописывания.' % tool, R_DOP, 'Edit с дописыванием в конец.')
+    ok, msg = m.proverit(old, new)
+    if not ok:
+        otkaz('правка старых строк %s: %s' % (rel(p), msg), R_DOP,
+              'Edit: old_string = последняя строка файла, new_string = она же + новые строки.')
 
 
 def klyuch(inp):
@@ -732,7 +850,7 @@ def stop(inp):
         zhurnal({'v': 1, 't': time.strftime('%Y-%m-%dT%H:%M:%S%z'), 'sid': inp.get('session_id'),
                  'sobytie': 'stop_blok', 'n': st['stop_blok'], 'probl': [x[:200] for x in probl]})
         if st['stop_blok'] > K['stop_povtory']:
-            print(json.dumps({'systemMessage': PREF + 'остановка пропущена после %d отказов подряд (orkestraciya.md: '
+            print(json.dumps({'systemMessage': PREF + 'остановка пропущена после %d отказов подряд (orkestratsiya.md: '
                               'не более 3 повторов). Отчёт — только «передача» с перечнем незакрытого.' % K['stop_povtory']},
                              ensure_ascii=False))
             return
@@ -813,8 +931,8 @@ def start(inp):
         if c:
             with open(os.path.join(HANDOFF, c[-1]), encoding='utf-8') as f:
                 out.append('## Последняя передача ветки %s (%s)\n' % (v, c[-1]) + ''.join(f.readlines()[:80]))
-    j = os.path.join(own, 'docs', 'kanon_v23', 'zhurnal_resheniy.md')
-    if os.path.exists(j):
+    j = next((os.path.join(own, x) for x in K.get('zhurnal', []) if os.path.exists(os.path.join(own, x))), '')
+    if j:
         with open(j, encoding='utf-8') as f:
             ln = f.readlines()
         out.append('## Журнал решений владельца (последние 25 строк, %s)\n' % rel(j) + ''.join(ln[-25:]))
@@ -838,16 +956,63 @@ def start(inp):
         print('\n\n'.join(out))
 
 
+OPASNO_BASH = re.compile(
+    r">|<<|\b(rm|mv|cp|ln|dd|tee|sed|perl|awk|truncate|chmod|install|rsync|eval|push|reset|clean|checkout|restore)\b"
+    r"|-delete|\b(ba|z|da|k)?sh\s+-c|python[\d.]*\s+(-c|-)(\s|$)|test_locked|OPENED_|strat_test|_test\.")
+PISHUSHCHIE = ('Edit', 'Write', 'MultiEdit', 'NotebookEdit')
+
+
+def opasno(raw):
+    """Признаки опасного действия в событии PreToolUse, которое хук не смог разобрать или проверить."""
+    try:
+        d = json.loads(raw)
+        tool = d.get('tool_name', '')
+        cmd = (d.get('tool_input') or {}).get('command', '') if isinstance(d.get('tool_input'), dict) else str(d.get('tool_input'))
+    except Exception:
+        m = re.search(r'"tool_name"\s*:\s*"(\w+)"', raw or '')
+        tool, cmd = (m.group(1) if m else ''), (raw or '')
+    if tool in PISHUSHCHIE:
+        return True
+    return tool == 'Bash' and bool(OPASNO_BASH.search(cmd or ''))
+
+
+def sboy(ev, raw, e):
+    err = '%s: %s' % (type(e).__name__, e)
+    try:
+        d = AUD or os.path.join(os.path.dirname(HERE), 'audit')
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, 'audit.jsonl'), 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'v': 1, 't': time.strftime('%Y-%m-%dT%H:%M:%S%z'), 'sobytie': 'sboy_huka', 'ev': ev,
+                                'oshibka': err[:500], 'vhod': (raw or '')[:300]}, ensure_ascii=False) + '\n')
+    except Exception:
+        pass
+    if ev == 'pre' and opasno(raw):
+        sys.stderr.write(PREF + 'ОТКАЗ: хук не смог проверить — отказ (%s).\nПравило: канон §0 — опасное действие без '
+                         'проверки не выполняется (fail-closed).\nКак законно: владелец чинит .claude/hooks или '
+                         'откатывает settings.json; чтение и прочие события работают.\n' % err[:300])
+        sys.exit(2)
+    sys.exit(0)
+
+
 def main():
     ev = sys.argv[1] if len(sys.argv) > 1 else ''
-    if ev == 'fon':
-        fon_run(sys.argv[2], sys.argv[3])
-        return
+    raw = ''
     try:
-        inp = json.load(sys.stdin)
-    except ValueError:
-        inp = {}
-    {'pre': pre, 'post': post, 'stop': stop, 'precompact': precompact, 'start': start}[ev](inp)
+        if ev == 'fon':
+            zagruzit()
+            fon_run(sys.argv[2], sys.argv[3])
+            return
+        raw = sys.stdin.read()
+        zagruzit()
+        inp = json.loads(raw)
+        if not isinstance(inp, dict):
+            raise ValueError('событие — не объект JSON')
+        fn = {'pre': pre, 'post': post, 'stop': stop, 'precompact': precompact, 'start': start}.get(ev)
+        if fn is None:
+            raise ValueError('неизвестное событие %r' % ev)
+        fn(inp)
+    except Exception as e:  # SystemExit (отказ, код 2) сюда не попадает
+        sboy(ev, raw, e)
 
 
 if __name__ == '__main__':

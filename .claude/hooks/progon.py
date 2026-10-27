@@ -1,26 +1,85 @@
 #!/usr/bin/env python3
-"""Прогон хуков v23 на тестовой копии (без данных). Команды не исполняются — хук получает JSON события,
+"""Прогон хуков v23 на самодельной временной копии. Команды не исполняются — хук получает JSON события,
 как от Claude Code, и решает: пропустить (код 0) или отказать (код 2).
 
-Запуск:  python3 .claude/hooks/progon.py <копия> [--tsv <файл>]
-<копия> — корень облегчённой копии («основная»), в ней .claude/hooks/{sdf_hook.py,zamki.json} с
-"osnovnaya_kopiya" = <копия>, и рабочая копия агента <копия>/.claude/worktrees/agent-test.
-Код выхода 0 — все ожидания совпали.
+Запуск:  python3 .claude/hooks/progon.py [--papka <где создать копию>] [--tsv <файл>] [--ostavit]
+Самодостаточен: копия собирается из заглушек (без данных и без git), в неё кладутся sdf_hook.py и zamki.json
+из папки этого скрипта ("osnovnaya_kopiya" → копия) и scripts/kanon/proverka_append.py из репозитория.
+«Основная» копия — <tmp>/m, рабочая копия агента — <tmp>/m/.claude/worktrees/agent-test. Код выхода 0 — все ожидания совпали.
 """
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
-M = os.path.realpath(sys.argv[1])
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(os.path.dirname(HERE))
+
+
+def arg(name, default=None):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+
+
+SCR = os.path.realpath(tempfile.mkdtemp(prefix='huki_v23_', dir=arg('--papka')))
+M = os.path.join(SCR, 'm')
 A = os.path.join(M, '.claude', 'worktrees', 'agent-test')
 HOOK = os.path.join(M, '.claude', 'hooks', 'sdf_hook.py')
-SCR = os.path.dirname(M)
 SID = 'progon-%d' % int(time.time())
 AG = 'kodir-test'
 rows = []
+
+
+def put(p, txt):
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, 'w', encoding='utf-8') as f:
+        f.write(txt)
+
+
+ZAGLUSHKI = {
+    'fastbt/__init__.py': '', 'fastbt/s9.py': 'import fastbt\n', 'fastbt/final_test.py': 'import fastbt\n',
+    'fastbt/designs/final/main.yaml': 'v: 1\n', 'fastbt/tests/test_core.py': 'def test_core():\n    pass\n',
+    'fastbt/tests/test_fast.py': 'def test_fast():\n    pass\n', 'tests/test_s9_shag4.py': '', 'tests/test_s9_scope.py': '',
+    'scripts/analysis/s9_shag4.py': 'import fastbt\n', 'scripts/analysis/s9_shag_c.py': 'import fastbt\n',
+    'scripts/analysis/sverka_A_lestnica.py': 'import fastbt\n', 'scripts/analysis/final_test_ch4_v2.py': 'import fastbt\n# заглушка\n',
+    'docs/tables/strat_dev/s9_C_rezhim.csv': 'a\n', 'docs/tables/strat_dev/s9_B_targetirovanie_final3.csv': 'a\n',
+    'docs/zadaniya/_shablon.md': '#\n', 'docs/zadaniya/2026-10-25_pereschet.md': 'test_locked/ не трогать\n',
+    'docs/resheniya/resheniya.md': '# Решения\n\nЖ-001 первая\nКвитанция: принят Ж-001\n',
+    'data/regen/ch4_dev/sigma_dev.parquet': '', 'data/regen/fake_h1_test.parquet': '', 'data/regen/OPENED_R2.json': '{}',
+    'data/regen/test_locked/R2/x.parquet': '', 'docs/tables/strat_test/fake_2022_2026.csv': '', 'data/fastbt/.keep': '',
+}
+
+
+def kopiya(root, vetka):
+    for rel_, txt in ZAGLUSHKI.items():
+        put(os.path.join(root, rel_), txt)
+    put(os.path.join(root, '.git', 'HEAD'), 'ref: refs/heads/%s\n' % vetka)  # хуку нужен только .git/HEAD
+    shutil.copy(os.path.join(REPO, 'scripts', 'kanon', 'proverka_append.py'), os.path.join(root, 'scripts', 'kanon', 'proverka_append.py'))
+
+
+def postroit():
+    os.makedirs(os.path.join(M, 'scripts', 'kanon'))
+    os.makedirs(os.path.join(A, 'scripts', 'kanon'))
+    kopiya(M, 'kanon-v22-pereschet')
+    kopiya(A, 'agent-test')
+    hk = os.path.join(M, '.claude', 'hooks')
+    os.makedirs(hk)
+    shutil.copy(os.path.join(HERE, 'sdf_hook.py'), hk)
+    with open(os.path.join(HERE, 'zamki.json'), encoding='utf-8') as f:
+        z = json.load(f)
+    z['osnovnaya_kopiya'] = M
+    put(os.path.join(hk, 'zamki.json'), json.dumps(z, ensure_ascii=False, indent=1))
+    put(os.path.join(A, 'tests', 'test_huk_demo.py'),
+        "import importlib.util, os\n_p = os.path.join(os.path.dirname(__file__), '..', 'fastbt', 'huk_demo.py')\n"
+        "_s = importlib.util.spec_from_file_location('huk_demo', _p)\nhuk_demo = importlib.util.module_from_spec(_s)\n"
+        "_s.loader.exec_module(huk_demo)\n\n\ndef test_plus():\n    assert huk_demo.plus(2, 2) == 4\n")
+    put(os.path.join(SCR, 'zametka.txt'), 'x')
+
+
+postroit()
 
 
 def call(ev, inp, cwd=A):
@@ -43,12 +102,6 @@ def bash(c):
 
 def tool(name, **kw):
     return {'tool_name': name, 'tool_input': kw}
-
-
-def put(p, txt):
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, 'w', encoding='utf-8') as f:
-        f.write(txt)
 
 
 DEMO = os.path.join(A, 'fastbt', 'huk_demo.py')
@@ -110,7 +163,7 @@ F = [
     ('F06', 'heredoc в файл', bash("cat > fastbt/x.py <<'EOF'\nprint(1)\nEOF"), 'heredoc'),
     ('F07', 'rm -rf вне scratchpad', bash('rm -rf build/'), 'необратимое'),
     ('F08', 'git push --force', bash('git push --force origin agent-test'), 'необратимое'),
-    ('F09', 'Write в основную копию из рабочей', tool('Write', file_path=M + '/fastbt/s9.py', content='x'), 'orkestraciya'),
+    ('F09', 'Write в основную копию из рабочей', tool('Write', file_path=M + '/fastbt/s9.py', content='x'), 'orkestratsiya'),
     ('F10', 'cat test_locked/ из Bash', bash('cat data/regen/test_locked/R2/x.parquet | head'), 'dannye'),
     ('F11', 'pytest test_core.py (позиции 2022+)', bash('python3 -m pytest fastbt/tests/test_core.py -q'), 'test_core'),
     ('F12', 'pytest без целей (соберёт test_core)', bash('python3 -m pytest -q'), 'test_core'),
@@ -189,7 +242,7 @@ put(GATES, G_PEND.replace('EVIDENCE: pending', 'EVIDENCE: 0 (код 0)'))
 sc('S04', 'законное', 'Stop: все гейты закрыты, тесты зелёные', 'stop', {}, 0)
 put(GATES, G_PEND)
 codes = [call('stop', {})[0] for _ in range(4)]
-rows.append(('S05', 'законное', 'stop', 'предел 3 отказа подряд, 4-й пропускает (orkestraciya: ≤ 3 повторов)', '2,2,2,0',
+rows.append(('S05', 'законное', 'stop', 'предел 3 отказа подряд, 4-й пропускает (orkestratsiya: ≤ 3 повторов)', '2,2,2,0',
              ','.join(map(str, codes)), 0, 'OK' if codes == [2, 2, 2, 0] else 'ПРОВАЛ', ''))
 os.remove(GATES)
 sc('S06', 'законное', 'Stop дирижёра: GATES.md в основной копии нет — не ошибка', 'stop',
@@ -213,12 +266,92 @@ ok = code == 0 and 'Последняя передача ветки agent-test' i
 rows.append(('C03', 'законное', 'start', 'SessionStart: последняя передача ветки + журнал решений', 0, code, round(ms),
              'OK' if ok else 'ПРОВАЛ', out.splitlines()[0][:110] if out else ''))
 
+# ---------------- обход через интерпретатор ----------------
+for cid, opis, c in [
+    ('B01', 'python3 -c с open(..., "w")', 'python3 -c "open(\'f\',\'w\').write(\'x\')"'),
+    ('B02', 'python3 - <<EOF с записью', 'python3 - <<EOF\nopen("f","w").write("x")\nEOF'),
+    ('B03', 'bash -c "sed -i"', 'bash -c "sed -i s/a/b/ f"'),
+    ('B04', 'eval "sed -i"', 'eval "sed -i s/a/b/ f"'),
+    ('B05', 'sh -c "rm -rf"', "sh -c 'rm -rf build'"),
+    ('B06', 'find -exec sed -i', 'find . -name "*.py" -exec sed -i s/a/b/ {} \\;'),
+    ('B07', '"$(sed -i …)" в кавычках', 'echo "$(sed -i s/a/b/ f)"'),
+    ('B08', 'python3 -c с df.to_csv', 'python3 -c "import pandas as pd; pd.read_csv(\'x\').to_csv(\'y\')"'),
+    ('B09', 'bash <<EOF с sed -i', 'bash <<EOF\nsed -i s/a/b/ f\nEOF'),
+    ('B10', 'python3 -c с os.system', 'python3 -c "import os; os.system(\'rm -rf x\')"'),
+    ('B16', 'python3 -c open(os.path.join(...), "a")', 'python3 -c "import os; open(os.path.join(\'a\',\'b\'), \'a\').write(\'x\')"'),
+]:
+    sc(cid, 'запрещённое', opis, 'pre', bash(c), 2, need='Правило')
+for cid, opis, c in [
+    ('B11', 'python3 -c только печать (str.replace, json.dumps)', 'python3 -c "import json; print(json.dumps({}), \'a\'.replace(\'a\',\'b\'))"'),
+    ('B12', 'bash -c "ls docs"', 'bash -c "ls docs && git status --short"'),
+    ('B13', 'python3 - <<EOF только чтение', "python3 - <<'EOF'\nprint(open('docs/zadaniya/_shablon.md').read()[:10])\nEOF"),
+    ('B14', 'eval "$(…)" без записи', 'eval "$(echo ls)"'),
+    ('B15', 'find -exec grep', 'find scripts -name "*.py" -exec grep -l fastbt {} +'),
+]:
+    sc(cid, 'законное', opis, 'pre', bash(c), 0)
+
+# ---------------- resheniya.md — только дописывание ----------------
+RES = os.path.join(A, 'docs/resheniya/resheniya.md')
+star = open(RES, encoding='utf-8').read()
+posl = star.splitlines()[-1]
+sc('D01', 'законное', 'Edit resheniya.md: дописывание в конец', 'pre',
+   tool('Edit', file_path=RES, old_string=posl, new_string=posl + '\nЖ-002 вторая\nКвитанция: принят Ж-002'), 0)
+sc('D02', 'законное', 'Write resheniya.md: старый текст + новые строки', 'pre', tool('Write', file_path=RES, content=star + 'Ж-002\n'), 0)
+sc('D03', 'запрещённое', 'Edit resheniya.md: правка старой строки', 'pre',
+   tool('Edit', file_path=RES, old_string='Ж-001 первая', new_string='Ж-001 исправлено'), 2, need='Ж-025')
+sc('D04', 'запрещённое', 'Write resheniya.md: удаление строки', 'pre', tool('Write', file_path=RES, content=star.replace('Ж-001 первая\n', '')), 2, need='Ж-025')
+sc('D05', 'запрещённое', 'git checkout -- resheniya.md (откат дописанного)', 'pre', bash('git checkout -- docs/resheniya/resheniya.md'), 2, need='Ж-025')
+sc('D06', 'запрещённое', 'cp поверх resheniya.md', 'pre', bash('cp /dev/null docs/resheniya/resheniya.md'), 2, need='Ж-025')
+pa = os.path.join(A, 'scripts/kanon/proverka_append.py')
+os.rename(pa, pa + '.net')
+os.rename(os.path.join(M, 'scripts/kanon/proverka_append.py'), os.path.join(M, 'scripts/kanon/proverka_append.py.net'))
+sc('D07', 'запрещённое', 'нет proverka_append.py → fail-closed', 'pre',
+   tool('Edit', file_path=RES, old_string=posl, new_string=posl + '\nx'), 2, need='не смог проверить')
+os.rename(pa + '.net', pa)
+os.rename(os.path.join(M, 'scripts/kanon/proverka_append.py.net'), os.path.join(M, 'scripts/kanon/proverka_append.py'))
+
+# ---------------- сбой хука: fail-closed для опасного, 0 + аудит для прочего ----------------
+ZJ = os.path.join(M, '.claude/hooks/zamki.json')
+os.rename(ZJ, ZJ + '.net')
+sc('Z01', 'запрещённое', 'нет zamki.json: Bash rm', 'pre', bash('rm fastbt/x.py'), 2, need='не смог проверить')
+sc('Z02', 'запрещённое', 'нет zamki.json: Edit', 'pre', tool('Edit', file_path=DEMO, old_string='a', new_string='b'), 2, need='не смог проверить')
+sc('Z03', 'законное', 'нет zamki.json: Read → 0 и запись в аудит', 'pre', tool('Read', file_path=A + '/fastbt/s9.py'), 0)
+sc('Z04', 'законное', 'нет zamki.json: Bash ls → 0', 'pre', bash('ls docs'), 0)
+sc('Z05', 'законное', 'нет zamki.json: PostToolUse → 0', 'post', tool('Edit', file_path=DEMO), 0)
+os.rename(ZJ + '.net', ZJ)
+zj = open(ZJ, encoding='utf-8').read()
+put(ZJ, zj[:len(zj) // 2])
+sc('Z06', 'запрещённое', 'битый zamki.json: git push', 'pre', bash('git push origin agent-test'), 2, need='не смог проверить')
+sc('Z07', 'законное', 'битый zamki.json: Grep → 0', 'pre', tool('Grep', pattern='x', path=A), 0)
+put(ZJ, zj)
+
+
+def syroy(ev, raw):
+    t0 = time.perf_counter()
+    r = subprocess.run([sys.executable, HOOK, ev], input=raw, capture_output=True, text=True, env=dict(os.environ, CLAUDE_PROJECT_DIR=M))
+    return r.returncode, (r.stderr or r.stdout).strip(), round((time.perf_counter() - t0) * 1000)
+
+
+for cid, kind, opis, ev, raw, want in [
+    ('Z08', 'запрещённое', 'битый JSON события с Bash rm -rf', 'pre', '{"tool_name": "Bash", "tool_input": {"command": "rm -rf x"', 2),
+    ('Z09', 'запрещённое', 'исключение: tool_input строкой, Bash git push --force', 'pre',
+     json.dumps({'tool_name': 'Bash', 'tool_input': 'git push --force', 'cwd': A}), 2),
+    ('Z10', 'законное', 'мусор на stdin → 0', 'pre', 'not json', 0),
+    ('Z11', 'законное', 'битый JSON события с Read → 0', 'pre', '{"tool_name": "Read", "tool_input": {"file_path": "x"', 0),
+    ('Z12', 'законное', 'неизвестное событие → 0', 'zzz', '{}', 0),
+]:
+    code, msg, ms = syroy(ev, raw)
+    ok = code == want and (want == 0 or 'не смог проверить' in msg)
+    rows.append((cid, kind, ev, opis, want, code, ms, 'OK' if ok else 'ПРОВАЛ', msg.splitlines()[0][:110] if msg else ''))
+aud = os.path.join(M, '.claude/audit/audit.jsonl')
+n = sum(1 for ln in open(aud, encoding='utf-8') if '"sboy_huka"' in ln)
+rows.append(('Z13', 'законное', 'аудит', 'сбои хука записаны в audit.jsonl', '≥10', n, 0, 'OK' if n >= 10 else 'ПРОВАЛ', ''))
+
 # ---------------- итог ----------------
 put(DEMO, DEMO_OK)
-w = [len(str(max((r[i] for r in rows), key=lambda v: len(str(v))))) for i in range(9)]
 tsv = None
-if '--tsv' in sys.argv:
-    tsv = open(sys.argv[sys.argv.index('--tsv') + 1], 'w', encoding='utf-8')
+if arg('--tsv'):
+    tsv = open(arg('--tsv'), 'w', encoding='utf-8')
     tsv.write('id\tвид\tхук\tсценарий\tждали\tкод\tмс\tитог\tсообщение\n')
 for r in rows:
     print('%-4s %-11s %-10s %-4s %-4s %5s мс  %-6s %s | %s' % (r[0], r[1], r[2], r[4], r[5], r[6], r[7], r[3], r[8]))
@@ -230,4 +363,8 @@ pre_post = [r[6] for r in rows if r[2] in ('pre', 'post')]
 print('законных проходят: %d из %d; запрещённых блокируются: %d из %d; ложных срабатываний: %d; max pre/post: %d мс; max stop: %d мс'
       % (sum(r[7] == 'OK' for r in leg), len(leg), sum(r[7] == 'OK' for r in zap), len(zap),
          sum(r[7] != 'OK' for r in leg), max(pre_post), max([r[6] for r in rows if r[2] == 'stop'] or [0])))
+if '--ostavit' in sys.argv:
+    print('копия оставлена:', SCR)
+else:
+    shutil.rmtree(SCR)
 sys.exit(0 if all(r[7] == 'OK' for r in rows) else 1)
