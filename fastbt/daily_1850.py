@@ -38,13 +38,12 @@ def default_main() -> Path:
     return Path(os.environ.get("FASTBT_MAIN", "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading"))
 
 
-def aggregate(bars: pd.DataFrame, ticker: str, cut_min: int = CUT_MIN,
-              open_min: int = OPEN_MIN) -> pd.DataFrame:
+def aggregate(bars: pd.DataFrame, ticker: str, cut_min: int = CUT_MIN) -> pd.DataFrame:
     """Дневные OHLCV из 10-минуток (колонки timestamp, open, high, low, close, volume).
-    open_min/cut_min — только для тестов-мутаций; в работе берутся константы модуля."""
+    Нижняя граница — константа модуля OPEN_MIN (тесты-мутации подменяют её в памяти)."""
     b = bars.sort_values("timestamp")
     mod = b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute
-    b = b[(mod >= open_min) & (mod < cut_min)]
+    b = b[(mod >= OPEN_MIN) & (mod < cut_min)]
     g = b.groupby(b["timestamp"].dt.normalize(), sort=True)
     out = pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
                         "close": g["close"].last(), "volume": g["volume"].sum().astype("int64")})

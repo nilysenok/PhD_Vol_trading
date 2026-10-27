@@ -29,9 +29,9 @@ def synth_morning(morning: bool) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=COLS).assign(timestamp=lambda x: pd.to_datetime(x["timestamp"]))
 
 
-def check_morning_invariant(open_min=D.OPEN_MIN):
-    a = D.aggregate(synth_morning(False), "X", open_min=open_min)
-    b = D.aggregate(synth_morning(True), "X", open_min=open_min)
+def check_morning_invariant():
+    a = D.aggregate(synth_morning(False), "X")
+    b = D.aggregate(synth_morning(True), "X")
     pd.testing.assert_frame_equal(a, b)
     r = b.iloc[0]
     assert (r["open"], r["high"], r["low"], r["close"], r["volume"]) == (100, 102, 99, 101.5, 40)
@@ -42,9 +42,10 @@ def test_morning_bars_do_not_change_day():
 
 
 @pytest.mark.parametrize("open_min", [9 * 60 + 40, 6 * 60 + 50])      # «окно с 09:40», «окно с 06:50»
-def test_mutation_open_is_caught(open_min):
+def test_mutation_open_is_caught(open_min, monkeypatch):
+    monkeypatch.setattr(D, "OPEN_MIN", open_min)          # мутация: подмена константы в памяти
     with pytest.raises(AssertionError):
-        check_morning_invariant(open_min=open_min)
+        check_morning_invariant()
 
 
 def test_mutation_le_1850_is_caught():
@@ -60,7 +61,7 @@ def test_mutation_le_1850_is_caught():
 
 
 @pytest.mark.parametrize("ticker", ["SBER", "LKOH", "LSRG"])
-def test_december_2021_open_is_bar_0950(ticker):
+def test_december_2021_open_is_bar_0950(ticker, monkeypatch):
     if not (CANDLES / f"{ticker}.parquet").exists():
         pytest.skip("нет общих данных")
     bars = D.read_bars(CANDLES / f"{ticker}.parquet")
@@ -72,7 +73,8 @@ def test_december_2021_open_is_bar_0950(ticker):
     assert len(days) >= 15
     new = D.aggregate(bars, ticker).set_index("date")
     np.testing.assert_array_equal(new.loc[days, "open"].to_numpy(), b950["open"].to_numpy())
-    mut = D.aggregate(bars, ticker, open_min=9 * 60 + 40).set_index("date")        # мутация «окно с 09:40»
+    monkeypatch.setattr(D, "OPEN_MIN", 9 * 60 + 40)                                # мутация «окно с 09:40»
+    mut = D.aggregate(bars, ticker).set_index("date")
     assert not np.array_equal(mut.loc[days, "open"].to_numpy(), b950["open"].to_numpy())
 
 
@@ -147,18 +149,35 @@ def test_truncated_file_is_not_ready(tmp_path, monkeypatch):
     assert not D.is_ready(p)
 
 
-def _worker(path):
+def _worker(path, no_flock):
+    import fcntl
     import time
-    D.build = lambda main=None, tickers=None: (time.sleep(1.0), tiny())[1]
+    if no_flock:
+        fcntl.flock = lambda *a, **k: None            # мутация «без flock»
+    def slow_build(main=None, tickers=None):
+        with open(path + ".builds", "a") as f:        # одна строка на каждую сборку
+            f.write("b\n")
+        time.sleep(1.0)                               # искусственная задержка записи
+        return tiny()
+    D.build = slow_build
     D.ensure(Path(path))
     pd.read_parquet(path)                             # после ensure файл читается целиком
 
 
-def test_parallel_ensure_never_reads_partial(tmp_path):
+def run_two(tmp_path, no_flock):
     p = tmp_path / "s.parquet"
     ctx = mp.get_context("fork")
-    ps = [ctx.Process(target=_worker, args=(str(p),)) for _ in range(2)]
+    ps = [ctx.Process(target=_worker, args=(str(p), no_flock)) for _ in range(2)]
     [x.start() for x in ps]
     [x.join(30) for x in ps]
     assert [x.exitcode for x in ps] == [0, 0]
     assert D.is_ready(p)
+    return len((tmp_path / "s.parquet.builds").read_text().split())
+
+
+def test_parallel_ensure_builds_once_under_flock(tmp_path):
+    assert run_two(tmp_path, no_flock=False) == 1     # второй процесс ждёт и находит готовый файл
+
+
+def test_mutation_without_flock_is_caught(tmp_path):
+    assert run_two(tmp_path, no_flock=True) == 2      # без блокировки оба строят одновременно: тест выше упал бы
