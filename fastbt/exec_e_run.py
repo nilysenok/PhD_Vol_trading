@@ -22,6 +22,11 @@ class Run:
         s.blocked = 0                               # сторона, пока не сменится сигнал (0 — нет блока)
         s.ext, s.be_on, s.n_orders, s.n_fills = None, False, 0, 0
         s.zak = p.check == "zakrytie"
+        s.sr = "stop"
+
+    def dir(s, i):
+        """Сторона по сигналу дня i: Params.side · знак sig (side = −1 разворачивает сигнал 0/1 в шорт)."""
+        return s.p.side * int(np.sign(s.sig[i]))
 
     def close_of(s, i):
         return float(s.cn6[i]) if s.cn6 is not None else s.days[i].c[-1]
@@ -61,7 +66,8 @@ class Run:
         if sg is None:
             return None, None
         tr = s.tr
-        return stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on), take_level(tr.side, tr.entry_px, sg, s.p)
+        S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on)    # sr: stop | trail | bu
+        return S, take_level(tr.side, tr.entry_px, sg, s.p)
 
     def _after_bar(s, j, hi, lo):
         """Экстремум и безубыток обновляются ПОСЛЕ бара: действуют со следующего (внутри бара уровни не меняются)."""
@@ -82,7 +88,7 @@ class Run:
             if S is not None:
                 hit, px = stop_hit(sd, o, h, l, S, s.p.stop_touch)
                 if hit:
-                    return s._exit(i, j, b, px, "stop")
+                    return s._exit(i, j, b, px, s.sr)
             if T is not None:
                 hit, px = take_hit(sd, o, h, l, T, s.p.tick)
                 if hit:
@@ -95,7 +101,7 @@ class Run:
         C, nb, sd = s.close_of(i), len(d.c), s.tr.side
         S, T = s._levels(j)
         if S is not None and stop_hit(sd, C, C, C, S, s.p.stop_touch)[0]:
-            return s._exit(i, j, nb - 1, C, "stop")
+            return s._exit(i, j, nb - 1, C, s.sr)
         if T is not None and take_hit(sd, C, C, C, T, s.p.tick)[0]:
             return s._exit(i, j, nb - 1, C, "take")
         s._after_bar(j, C, C)
@@ -113,14 +119,14 @@ class Run:
         if s.tr is not None:                        # сигнал дня входа тоже: sig[d+1] != стороне → выход по close d+1
             if s.p.tau is not None and j - s.ej >= s.p.tau and j > s.ej:
                 s._exit(i, j, nb - 1, close, "vremya")
-            elif s.p.exit_signal and np.sign(s.sig[i]) != s.tr.side:
+            elif s.p.exit_signal and s.dir(i) != s.tr.side:
                 s._exit(i, j, nb - 1, close, "signal")
         if s.tr is not None:
             s.gross[i] += s.tr.side * math.log(close / s.ref)
             s.ref = close
             s.used[i] += nb - s.i0
             s.i0 = nb
-        if s.blocked and np.sign(s.sig[i]) != s.blocked:
+        if s.blocked and s.dir(i) != s.blocked:
             s.blocked = 0
         s._decide(i, j, close, nb)
         s.pos[i] = float(s.tr.side) if s.tr is not None else 0.0
@@ -131,7 +137,7 @@ class Run:
         s.order = dict(L=limit_level(sd, close, s.p.k, sg, s.p.tick), due=j + 1, sd=sd, d_sig=i, **kw)
 
     def _decide(s, i, j, close, nb):
-        sg, sd = s.sigma[i], int(np.sign(s.sig[i]))
+        sg, sd = s.sigma[i], s.dir(i)
         if s.tr is not None or s.order is not None or s.blocked or not sd or not np.isfinite(sg):
             return
         if s.p.k is None:
@@ -150,12 +156,12 @@ class Run:
             s._enter(i, j, b, px, b, s.sigma[o["d_sig"]] if not o["retry"] else o["sgo"], o["d_sig"], sd)
             S, _ = s._levels(j)
             if not s.zak and S is not None and stop_hit(sd, d.o[b], d.h[b], d.l[b], S, s.p.stop_touch)[0]:
-                s._exit(i, j, b, S, "stop")
+                s._exit(i, j, b, S, s.sr)
             else:
                 s._scan(i, j, d, b + 1)
             return
         close, nb = s.close_of(i), len(d.c)
-        live = bool(np.sign(s.sig[i]) == sd)        # без сигнала на d+1 вход по close / повтор не ставятся
+        live = bool(s.dir(i) == sd)        # без сигнала на d+1 вход по close / повтор не ставятся
         if o["retry"] or s.p.f == "propusk":
             s.blocked = sd
         elif s.p.f == "zakrytie_d1":

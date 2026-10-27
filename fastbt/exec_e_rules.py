@@ -28,15 +28,20 @@ def take_mult(p, sg: float) -> float | None:
 
 def stop_level(sd, px, sg, p, ext, be_on):
     """Стоп P(1 − sd·k_s σ); трейлинг ужесточает: экстремум с входа ∓ k_tr σ; безубыток — не хуже цены входа.
-    k_s = нет (b is None) — стопа нет вообще, ни трейла, ни безубытка."""
+    k_s = нет (b is None) — стопа нет вообще, ни трейла, ни безубытка.
+    Возвращает (уровень, причина): "stop" | "trail" (трейл строже базового стопа) | "bu" (безубыток строже всех)."""
     if p.b is None:
-        return None
-    c = [px * (1 - sd * p.b * sg)]
+        return None, None
+    c = [(px * (1 - sd * p.b * sg), "stop")]
     if p.k_tr is not None:
-        c.append(ext * (1 - sd * p.k_tr * sg))
+        c.append((ext * (1 - sd * p.k_tr * sg), "trail"))
     if be_on:
-        c.append(px)
-    return max(c) if sd > 0 else min(c)
+        c.append((px, "bu"))
+    best = c[0]
+    for x in c[1:]:
+        if (x[0] > best[0]) if sd > 0 else (x[0] < best[0]):
+            best = x
+    return best
 
 
 def ext_next(sd, ext, hi, lo):

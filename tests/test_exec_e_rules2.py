@@ -24,10 +24,10 @@ TR = dict(b=2.0, k_tr=1.0, stop_touch=True)                # S = 96; трейл 
 
 def check_trail():
     t = seq([(100, 110, 100, 105), (108, 108, 107, 108)], **TR).trades[0]       # трейл 107.8, low 107 → выход
-    assert (t.reason, t.exit_day, t.exit_px) == ("stop", 2, pytest.approx(107.8))
+    assert (t.reason, t.exit_day, t.exit_px) == ("trail", 2, pytest.approx(107.8))
     assert seq([(100, 120, 101, 110)], **TR).trades[0].exit_day != 1            # внутри бара уровень не растёт (117.6 — со след. дня)
     t = seq([(100, 100, 90, 95), (91, 92, 90.5, 91)], sig=[-1] * 4, **TR).trades[0]   # шорт: min low · 1.02
-    assert (t.reason, t.exit_px) == ("stop", pytest.approx(91.8))
+    assert (t.reason, t.exit_px) == ("trail", pytest.approx(91.8))
 
 
 def test_trailing_from_max_high():
@@ -47,7 +47,7 @@ BE = dict(b=2.0, be=True, stop_touch=True)
 
 def check_be():
     t = seq([(100, 102.5, 99.9, 101), (101, 101, 99.9, 100)], **BE).trades[0]   # +1σ в баре 1 → стоп 100 с бара 2
-    assert (t.reason, t.exit_day, t.exit_px) == ("stop", 2, pytest.approx(100.0))
+    assert (t.reason, t.exit_day, t.exit_px) == ("bu", 2, pytest.approx(100.0))
     assert seq([(100, 101.2, 99.9, 100.5), (101, 101, 99.9, 100)], **BE).trades[0].reason is None   # до +1σ — нет
 
 

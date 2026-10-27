@@ -63,8 +63,10 @@ def _check_params(p: Params) -> None:
         raise ValueError("R требует h или tau (❓1)")
     if p.check not in ("bary", "zakrytie"):
         raise ValueError("check: bary | zakrytie")
-    if p.tick is not None and not p.tick > 0:
-        raise ValueError("tick должен быть > 0")
+    if p.side not in (1, -1):
+        raise ValueError("side: +1 | −1")
+    if p.tick is not None and not p.tick >= 0:
+        raise ValueError("tick должен быть ≥ 0 (0 — касание)")
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None) -> Result:
