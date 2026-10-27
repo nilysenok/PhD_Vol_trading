@@ -11,6 +11,7 @@ import numpy as np
 
 MAX_JOBS = 8
 MORRIS_R = 10
+MAX_FACTORIAL = 20000
 
 
 def oat_points(base: dict, grids: dict) -> list:
@@ -33,6 +34,9 @@ def factorial_points(base: dict, grids: dict, names=None, points=None) -> list:
     names = list(names or [])
     if not names:
         raise ValueError("факторный режим: нужен список параметров (names) или точек (points)")
+    size = int(np.prod([len(grids[n]) for n in names], dtype=float))
+    if size > MAX_FACTORIAL:
+        raise ValueError(f"факторный план {size} точек > {MAX_FACTORIAL}: сузьте names (N уходит в DSR целиком)")
     return [{**base, **dict(zip(names, c))} for c in product(*(grids[n] for n in names))]
 
 

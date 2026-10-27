@@ -53,9 +53,9 @@ EVIDENCE: ok; 162 строки
 ## v1.1 (вторым PR)
 
 ## G10 — факторный план, Моррис, Optuna, PBO (pbo_cscv в sweep_pbo.py)
-CHECK: pending (v1.1)
-EXPECT: PBO случайных данных ≈ 0,5; на данных с лидером ≈ 0; Optuna воспроизводима при n_jobs=1; n_jobs>8 → ValueError
-EVIDENCE: pending
+CHECK: FASTBT_MAIN=$PWD python3 -m pytest tests/test_sweep_modes.py tests/test_sweep_stat.py -q   # тесты кодера 1/тестировщика, в т.ч. PBO ≈ 0,5 / лидер < 0,1 / крайности; Моррис; Optuna seed, pruning, n_jobs>8
+EXPECT: все passed
+EVIDENCE: 13 passed in 0.64s. Прочее: `ss.pbo_cscv` остался доступен реэкспортом; факторный план > 20000 точек → ValueError. Мимо моих файлов: tests/test_sweep.py::test_param_changes_result (RecursionError, лямбда в monkeypatch вызывает сама себя) и test_param_pnl_side_changes_result падают — не мои, до v1.1 тоже.
 
 ## Реестр
-v1: закрыто 9 из 9; v1.1: pending 1; ABANDON: 0
+v1: закрыто 9 из 9; v1.1: закрыто 1 из 1; ABANDON: 0
