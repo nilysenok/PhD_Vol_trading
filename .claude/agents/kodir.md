@@ -17,5 +17,4 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - Финиш: коммит в свою ветку (производные не коммить), `git status` чистый, `scripts/finish.sh "<название>" <описание.md>`; описание — по `.github/pull_request_template.md` в файл своей папки сессии; в описании — какие команды прошли. Конфликт при слиянии — разреши и повтори; конфликт в `_ctx.md` или `docs/*.md` — версия `main` целиком плюс свои строки. PR не сливай.
 
 Отчёт — не больше 10 строк: ссылка на PR, что сделано (файлы), итог проверки, что не сделано и почему, вопросы; последняя строка — расход: токены · минуты · чтения. Красное называй красным; цифру без честной половины называй потолком.
-Обязательны `.claude/rules/polnota.md` и `.claude/rules/orkestraciya.md`; задание — по шаблону гейтов (`.claude/rules/GATES_shablon.md`).
-Указатель канона v23: оркестрация — `.claude/rules/orkestratsiya.md`, шаблон гейтов — `templates/GATES.md`.
+Действующие правила v23: `.claude/rules/polnota.md`, `.claude/rules/orkestratsiya.md`, `templates/GATES.md`.

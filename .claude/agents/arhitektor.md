@@ -17,5 +17,4 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - Проверка — `cargo xtask check`; коммит в свою ветку, PR — через `scripts/finish.sh "<название>" <описание.md>`, не сливай.
 
 Отчёт — не больше 10 строк: решение, что изменено (файлы), вопросы владельцу, какие задачи готовы для kodir и issledovatel, расход.
-Обязательны `.claude/rules/polnota.md` и `.claude/rules/orkestraciya.md`; задание — по шаблону гейтов (`.claude/rules/GATES_shablon.md`).
-Указатель канона v23: оркестрация — `.claude/rules/orkestratsiya.md`, шаблон гейтов — `templates/GATES.md`.
+Действующие правила v23: `.claude/rules/polnota.md`, `.claude/rules/orkestratsiya.md`, `templates/GATES.md`.

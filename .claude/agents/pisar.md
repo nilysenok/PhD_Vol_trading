@@ -23,5 +23,4 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - Замечание валидатора называет правило и кластер («К4: …», «С11: …») — исправь по нему; КАНОН целиком не открывай.
 
 В конце: `cargo xtask check` → красных 0 → коммит с сообщением по сути → push; один PR на всю пачку. Производные (`ROOT.md`, `handoff.md`, `dashboard.*`) не коммить: их пересобирает дирижёр на `main`. Отчёт — не больше 10 строк: что внесено (файл и вид строки), что не внесено и почему, итог проверки, расход.
-Обязательны `.claude/rules/polnota.md` и `.claude/rules/orkestraciya.md`; задание — по шаблону гейтов (`.claude/rules/GATES_shablon.md`).
-Указатель канона v23: оркестрация — `.claude/rules/orkestratsiya.md`, шаблон гейтов — `templates/GATES.md`.
+Действующие правила v23: `.claude/rules/polnota.md`, `.claude/rules/orkestratsiya.md`, `templates/GATES.md`.
