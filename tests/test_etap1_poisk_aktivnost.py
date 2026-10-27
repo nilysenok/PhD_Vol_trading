@@ -102,6 +102,51 @@ def test_kray_plana_s_net_ne_otsekaetsya():
     assert c is not None and pt(c)["k_s"] == NET                       # у «нет» соседей < 3, но это не край по Ж-048
 
 
+AXK = {**AX, "k_s": [1.0, 2.0, 3.0, 4.0, NET], "R": [1.0, 2.0, 3.0, 4.0, NET]}
+KRAY = {**PT, "k_s": 1.0, "R": 2.0, "tau": 3}                          # k_s = 1 — край сетки; R, τ внутри
+
+
+def kray_led(outer_msr: float = 1.0):
+    """Целевая 1,0 везде; за краем (k_s < 1) — outer_msr; считает вызовы."""
+    s = lambda p: outer_msr if p["k_s"] < 1.0 else 1.0                                              # noqa: E731
+    return V.Ledger(lambda p, per: dict(msr_by_year={2018: s(p), 2019: s(p)}, sdelok_y={2018: 40, 2019: 40}))
+
+
+def test_kray_setki_bez_rasshireniya_ne_prohodit_s_rasshireniem_prohodit():
+    led = kray_led()
+    g = V.gate_osi(led, KRAY, AXK)
+    assert g["ok"] and g["kray"] == "k_s" and g["per"]["k_s_kray"] is True
+    assert {0.75, 0.5} <= {p["k_s"] for p, _ in led.cache.values()}      # наружные точки посчитаны и вошли в N
+    bad = V.gate_osi(kray_led(-1.0), KRAY, AXK)                          # за краем целевая отрицательная -> плато не держится
+    assert not bad["ok"] and bad["per"]["k_s_kray"] is False
+    assert V.gate_osi(led, {**KRAY, "k_s": 2.0}, AXK)["kray"] == "-"
+
+
+def test_kray_tau_1_ne_prohodit_prichina():
+    g = V.gate_osi(kray_led(), {**KRAY, "k_s": 2.0, "tau": 1}, AXK)
+    assert not g["ok"] and g["kray"] == "tau" and g["per"]["tau_kray"] == "край сетки τ = 1"
+    assert V.gates(kray_led(), {**KRAY, "tau": 1}, AXK, ["a"], 0.0, lambda p: True)["kray_setki"] == "k_s tau"
+
+
+def test_mutaciya_kray_ne_pomechaetsya_i_rasshirenie_ne_schitaetsya(monkeypatch):
+    monkeypatch.setitem(V.OUTER, "k_s", ())                              # расширение не считается: за край не шагаем
+    with pytest.raises(AssertionError):
+        test_kray_setki_bez_rasshireniya_ne_prohodit_s_rasshireniem_prohodit()
+    monkeypatch.undo()
+    monkeypatch.setattr(V, "kray_plato", lambda led, pt, a: True)        # край не помечается строго: любое «внешнее» True
+    with pytest.raises(AssertionError):
+        test_kray_setki_bez_rasshireniya_ne_prohodit_s_rasshireniem_prohodit()
+
+
+def test_tolko_itog_rasshirenie_schitaet_tolko_naruzhnye(tmp_path):
+    ax = {**SETKA_A["axes"], "k_s": [1.0, 2.0, NET]}
+    setka = {**SETKA_A, "axes": ax, "yakor": {**SETKA_A["yakor"]}}
+    P.run_strategy("S9", World().evaluate, lambda p: True, out=tmp_path, run_id="1", setka=setka)
+    w = World()
+    row = P.tolko_itog("S9", w.evaluate, lambda p: True, out=tmp_path, run_id="2", setka=setka)
+    assert "kray_setki" in row and set(w.calls) == {"train"}
+
+
 def test_mutaciya_porog_plato_net_beskonechnost_lovitsya(monkeypatch):
     monkeypatch.setattr(V, "PLATO_NET", math.inf)
     assert V.gate_osi(net_led(0.5), PT, AX)["ok"]                      # с порогом ∞ провал k_s = 4 пропущен
