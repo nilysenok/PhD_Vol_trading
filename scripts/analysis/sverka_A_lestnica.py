@@ -1,10 +1,12 @@
 """Лестница сверки A «предзащита → сейчас», 2018–2021: по одному изменению за шаг → shag0_sverka_predzashchita.csv.
 
-  SDF_CODE=<любое дерево с fastbt> FASTBT_MAIN=<копия> python3 sverka_A_lestnica.py <папка с R0/Q*.parquet> [--print-only]
+  SDF_CODE=<любое дерево с fastbt> FASTBT_MAIN=<копия> python3 sverka_A_lestnica.py <папка с R0/Q*.parquet> [--rate0 cbr|back] [--out файл.csv]
+--rate0 cbr (по умолчанию) — строка 0 на 2018–2021 берёт ряд владельца; back — прежняя константа 8,50 % (сравнение).
 Позиции — sverka_A_predzashchita.py pos (деревья кода до/после #259); слой портфеля — portfolio() оттуда.
 """
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -25,6 +27,8 @@ RUNS = {(True, .004, False, "old", False): "R0", (True, .0005, False, "old", Fal
         (False, .0005, True, "new", True): "Q5", (False, .004, False, "old", False): "P1",(False, .0004, True, "new", True): "R5"}
 NOTE0 = ("строка 0 на 2018–2021 гипотетическая: ряд ставки предзащиты (CSV) начинается с 2022 (03.01.2022), "
          "на 2018–2021 ставка = значение первой даты CSV, протянутое назад (msp.rate_restored + bfill в portfolio)")
+NOTE0_CBR = ("ставка 2018–2021 — фактический ряд владельца (rate_cbr), не константа (Ъ 27.10, 12:00); "
+             "печатная ставка-костыль (rate_restored + bfill) — только --rate0 back")
 STEPS = [  # (код, текст, изменение состояния | None — не выполнено/вклад 0 по построению, пояснение)
     ("б1", "комиссия отбора 0,40 % → 0,05 % (так в кэше A: main.yaml comm; не 0,04)", dict(sel=.0005), ""),
     ("а", "критерий отбора: без ставки → избыточный над ставкой", None, "не выполнено: нужен флаг в stats.window (движок, запрещено)"),
@@ -79,9 +83,17 @@ def check_rest(lad: dict, target: float, tol: float = 1e-3) -> None:
 
 
 def main() -> None:
-    d = Path(sys.argv[1])
+    ap = argparse.ArgumentParser()
+    ap.add_argument("dir", type=Path)
+    ap.add_argument("--rate0", choices=("cbr", "back"), default="cbr",
+                    help="ставка строки 0: cbr — ряд владельца (msp.rate_cbr, по умолчанию); back — прежняя "
+                         "константа 8,50 % (rate_restored + bfill; на 2018–2021 ошибка данных, только для сравнения)")
+    ap.add_argument("--out", type=Path, default=OUT)
+    a = ap.parse_args()
+    d, out_path = a.dir, a.out
+    base = dict(BASE, rate=a.rate0)
     cache, rows = {}, []
-    lad = ladder(lambda s: evaluate(d, s, cache), BASE, STEPS, TARGET)
+    lad = ladder(lambda s: evaluate(d, s, cache), base, STEPS, TARGET)
     sh0, y0, n0 = lad["first"]
     prev, prev_y = sh0, y0
     st = lad["state"]
@@ -92,7 +104,9 @@ def main() -> None:
             r[f"sharpe_{k}"] = y[k]
             r[f"d_{k}"] = y[k] - prev_y[k] if rows else np.nan
         return r
-    rows.append(row("0", "A как на предзащите: маска [1], отбор 0,40 %, ряд без комиссии, ставка back, 1/102", sh0, y0, n0, NOTE0))
+    r0 = "ставка back (константа 8,50 %)" if a.rate0 == "back" else "ставка 2018–2021 — ряд владельца"
+    rows.append(row("0", f"A как на предзащите: маска [1], отбор 0,40 %, ряд без комиссии, {r0}, 1/102", sh0, y0, n0,
+                    NOTE0 if a.rate0 == "back" else NOTE0_CBR))
     deltas = {}
     for code, text, chg, note, (sh, y, n), _ in lad["steps"]:
         rows.append(row(code, text, sh, y, n, note))
@@ -105,7 +119,7 @@ def main() -> None:
     for code, (dl, chg) in sorted(deltas.items(), key=lambda kv: -abs(kv[1][0])):
         if not chg:
             continue
-        s1 = dict(BASE)
+        s1 = dict(base)
         s1.update(chg)
         e = evaluate(d, s1, cache)
         if e is None:
@@ -121,8 +135,8 @@ def main() -> None:
         rows.append(dict(shag="чувств.: отбор 0,04 %", izmenenie="последняя строка с комиссией отбора 0,04 %", run=e[2],
                          sharpe=e[0], d_sharpe=e[0] - prev, zametka="задание: 0,04; в кэше A — 0,05"))
     df = pd.DataFrame(rows)
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(OUT, sep=";", decimal=",", index=False, float_format="%.4f", encoding="utf-8-sig")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_path, sep=";", decimal=",", index=False, float_format="%.4f", encoding="utf-8-sig")
     print(df[["shag", "run", "sharpe", "d_sharpe", "d_2018", "d_2019", "d_2020", "d_2021"]].to_string(float_format=lambda v: "%.4f" % v))
     check_rest(lad, TARGET)        # ненулевой код выхода, если остаток ≥ 1e-3 (файл уже записан для разбора)
 

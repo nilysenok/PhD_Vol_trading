@@ -20,7 +20,8 @@ from fastbt import shag0  # noqa: E402
 from fastbt.fast_kontrol import k3_sids  # noqa: E402
 
 OUT = ROOT / "docs" / "tables" / "strat_dev_v3"
-COMMS = (0.0004, 0.0005)
+COMMS = (0.00035, 0.0004)          # институциональный инвестор; «Премиум» Т-Банка (Ъ 27.10, 12:05)
+COMMS_PRIL = (0.0005, 0.0006)      # чувствительность — приложение
 
 
 def write(rows: list, name: str) -> Path:
@@ -55,23 +56,31 @@ def sverka(eng, comm: float) -> list:
     return rows
 
 
+def write_pair(eng, pair: tuple, reps: int, suffix: str, res: dict) -> None:
+    """Таблицы для пары комиссий; suffix — "" (основные) или "_prilozhenie"."""
+    c0, c1 = pair
+    cat = lambda k: res[c0][k] + res[c1][k]          # noqa: E731
+    write(cat("metriki"), f"shag0_A_metriki{suffix}.csv")
+    write(cat("godam"), f"shag0_A_po_godam{suffix}.csv")
+    t0, t1 = res[c0]["tikeram"], res[c1]["tikeram"]
+    for a, b in zip(t0, t1):
+        a[f"sharpe_k{c1 * 1e5:.0f}"], a[f"sharpe_k3_k{c1 * 1e5:.0f}"] = b["sharpe"], b["sharpe_k3"]
+    write(t0, f"shag0_A_po_tikeram{suffix}.csv")
+    write(cat("loo"), f"shag0_signaly_LOO{suffix}.csv")
+    write(cat("k3"), f"shag0_k3{suffix}.csv")
+    write(cat("spravochno"), f"shag0_spravochno{suffix}.csv")
+
+
 def run(reps: int) -> None:
+    """Основные колонки — 0,035 % и 0,04 % (Ъ 27.10, 12:05); 0,05 и 0,06 % — файлы *_prilozhenie."""
     from fastbt import s9
-    s9.use_v2(COMMS[0])
+    s9.use_v2(0.0004)
     eng = s9.Engine(s9.load_cache())
-    res = {c: shag0.build(eng, c, reps) for c in COMMS}
-    cat = lambda k: res[COMMS[0]][k] + res[COMMS[1]][k]          # noqa: E731
-    write(cat("metriki"), "shag0_A_metriki.csv")
-    write(cat("godam"), "shag0_A_po_godam.csv")
-    t4, t5 = res[COMMS[0]]["tikeram"], res[COMMS[1]]["tikeram"]
-    for a, b in zip(t4, t5):
-        a["sharpe_k0050"], a["sharpe_k3_k0050"] = b["sharpe"], b["sharpe_k3"]
-    write(t4, "shag0_A_po_tikeram.csv")
-    write(cat("loo"), "shag0_signaly_LOO.csv")
-    write(cat("k3"), "shag0_k3.csv")
-    write(cat("spravochno"), "shag0_spravochno.csv")
+    res = {c: shag0.build(eng, c, reps) for c in COMMS + COMMS_PRIL}
+    write_pair(eng, COMMS, reps, "", res)
+    write_pair(eng, COMMS_PRIL, reps, "_prilozhenie", res)
     write(shag0.semyi(eng), "shag0_semyi_dni.csv")
-    sv = sverka(eng, COMMS[0])
+    sv = sverka(eng, COMMS[1])
     write(sv, "shag0_sverka_sloy.csv")
     print("сверка слоёв:", [(r["row"], r["metriki_do_4_znaka"], r["max_abs_excess"]) for r in sv])
 
@@ -95,8 +104,8 @@ if __name__ == "__main__":
     a = ap.parse_args()
     if a.sverka:
         from fastbt import s9
-        s9.use_v2(COMMS[0])
-        sv = sverka(s9.Engine(s9.load_cache()), COMMS[0])
+        s9.use_v2(0.0004)
+        sv = sverka(s9.Engine(s9.load_cache()), COMMS[1])
         write(sv, "shag0_sverka_sloy.csv")
         print(sv)
     else:

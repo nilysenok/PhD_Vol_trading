@@ -14,6 +14,7 @@ cal_days — дни [d, d_next) периода позиции d→d+1 (ауди�
 from __future__ import annotations
 
 from math import sqrt
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -22,7 +23,9 @@ from fastbt.data import MAIN, STRAT
 
 MSP_CSV = STRAT / "msp" / "perstrat_daily_returns"
 KEY_RATE = MAIN / "moex_discovery" / "data" / "external" / "macro" / "raw" / "key_rate_cbr.parquet"
-PRINTS = {"A": 1.32, "B": 1.47, "C": 2.51, "D": 2.54}
+RATE_OWNER = Path(__file__).resolve().parent / "rates" / "key_rate_cbr_vladelec.csv"
+RATE_SPLICE = pd.Timestamp("2022-01-01")
+PRINTS ={"A": 1.32, "B": 1.47, "C": 2.51, "D": 2.54}
 # комиссия, с которой собраны печатные ряды (спецификация п. 8: A, D — без вычета; B — 0,05%)
 PRINT_COMM = {"A": 0.0, "B": 0.0005, "C": 0.0, "D": 0.0}
 
@@ -52,9 +55,19 @@ def cal_days(index, forward: bool = True) -> np.ndarray:
     return cal
 
 
+def rate_vladelec() -> pd.Series:
+    """Ключевая ставка по датам вступления в силу (Ъ владельца 27.10, 12:00), доли; 40 решений."""
+    d = pd.read_csv(RATE_OWNER, comment="#", parse_dates=["data_vstupleniya"])
+    return d.set_index("data_vstupleniya")["stavka_pct"].sort_index() / 100.0
+
+
 def rate_cbr() -> pd.Series:
+    """Ставка разработки и теста: до 2022-01-01 — ряд владельца (parquet ЦБ ставил 09.02.2018 вместо
+    12.02 и 29.10.2019 вместо 28.10); с 2022-01-01 — parquet ЦБ как был (≥ 2022 не пересчитывается)."""
     k = pd.read_parquet(KEY_RATE)
-    return k.set_index(pd.to_datetime(k["date"]))["value"].sort_index() / 100.0
+    p = k.set_index(pd.to_datetime(k["date"]))["value"].sort_index() / 100.0
+    o = rate_vladelec()
+    return pd.concat([o[o.index < RATE_SPLICE], p[p.index >= RATE_SPLICE]])
 
 
 def portfolio(pos: pd.DataFrame, rate: pd.Series, comm: float, agg: str = "pairs",
