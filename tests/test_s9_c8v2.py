@@ -329,6 +329,37 @@ def test_s9_kontrol_columns_and_rule(monkeypatch):
     assert r2["passed_v2"] is False
 
 
+def _v2(monkeypatch, d_sharpe, p):
+    """passed_v2 при Шарпе точки = Шарп к3 + d_sharpe и подставленном p_vs_k2 = p (граничные случаи)."""
+    ns = _engine(seed=11, D=400)
+    ns.pairs = _pairs_sids()
+    ns.port = lambda pos, comm=None, cap=1.0, wgt=None: s9.Engine.port(ns, pos, comm=comm, cap=cap, wgt=wgt)
+    monkeypatch.setattr(s9, "V2", True)
+    monkeypatch.setattr(s9, "SCOPE", "dev")
+    monkeypatch.setattr(fk, "p_perm", lambda *a: p)
+    st = types.SimpleNamespace(e=ns, reps=50)
+    st.delta = lambda *a: s9.S9.delta(st, *a)
+    st.boot = lambda p1, p0: s9.S9.boot(st, p1, p0)
+    k3 = s9.metrics(ns.port(fk.k3_positions(ns.A_row, ns.r["pair"], ns.pairs)))["sharpe"]
+    r = dict(sharpe=k3 + d_sharpe, passed=True)
+    s9.S9.kontrol(st, r, ns.A_row * _regime_gate(ns))
+    assert r["sharpe_k3"] == k3
+    return r["passed_v2"]
+
+
+def test_c8v2_boundary_sharpe_equal_k3_fails(monkeypatch):
+    """Шарп точки ровно равен Шарпу к3 — строгое «>»: не проходит (мутация «>=» краснеет)."""
+    assert _v2(monkeypatch, 0.0, 0.001) is False
+    assert _v2(monkeypatch, 1e-9, 0.001) is True
+
+
+def test_c8v2_boundary_p_equal_alpha_fails(monkeypatch):
+    """p_vs_k2 ровно 0,05 — строгое «<»: не проходит (мутация «<=» краснеет)."""
+    assert s9.C8V2_ALPHA == 0.05
+    assert _v2(monkeypatch, 1.0, 0.05) is False
+    assert _v2(monkeypatch, 1.0, 0.0499) is True
+
+
 def test_gate_outside_A_rejected():
     ns = _engine(seed=2)
     k = fk.Kontrol(ns, 0.0004, n_shift=5)
