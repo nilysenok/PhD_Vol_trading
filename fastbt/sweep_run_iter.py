@@ -17,19 +17,12 @@ import pandas as pd
 
 from fastbt import sweep_drivers as sd
 from fastbt.sweep import Sweep, make_evaluator
-from fastbt.sweep_run import MAX_JOBS, METR, header, ledger_dir, load, periods
+from fastbt.sweep_pts import MIN_NB, RADIUS, levels, make_fix, optuna_limits, plateau_sparse, point_cols
+from fastbt.sweep_run import MAX_JOBS, header, ledger_dir, load, periods
 from fastbt.sweep_spec import Spec, pkey
 
-SEED, TOP_K, RADIUS, MIN_NB = 20261027, 3, 1, 3
-MODES = ("factorial", "morris", "optuna")
-
-
-def levels(vals: list, v) -> list:
-    """Три узла: база в центре, на краю сетки — три ближайших узла."""
-    if len(vals) < 3 or v not in vals:
-        raise ValueError(f"факторный 3 уровня: в сетке {vals} нужно ≥ 3 узлов и база {v!r}")
-    j = min(max(vals.index(v), 1), len(vals) - 2)
-    return vals[j - 1:j + 2]
+SEED, TOP_K = 20261027, 3
+MODES = ("factorial", "morris", "optuna", "plato")
 
 
 def pick_params(arg: str, out: Path, name: str, c0: float) -> list:
@@ -52,37 +45,15 @@ def forced(exp: dict, keys: list) -> dict:
     return cond
 
 
-def make_fix(exp: dict):
-    base, usl = exp["base"], exp["uslovie"]
-
-    def fix(p: dict) -> dict:
-        q = dict(p)
-        for k, cond in usl.items():
-            if k in q and any(q.get(ck) != cv for ck, cv in cond.items()):
-                q[k] = base[k]
-        return q
-    return fix
-
-
 def closure(sw: Sweep, c: float, pre: dict, fix):
     return lambda p, per: sw.evaluate(fix({**pre, **p}), per, c)
 
 
-def point_cols(sw: Sweep, p: dict, per: tuple, c: float) -> dict:
-    t, k = sw.evaluate(p, per[0], c), sw.evaluate(p, per[1], c)
-    d = dict(objective=sd.objective_stable(t), sr_d=t["sr_d"], T=t["T"], skew=t["skew"], kurt=t["kurt"],
-             **{f"tune_{m}": t[m] for m in METR}, tune_sharpe_2018=t["by_year"][2018])
-    return dict(d, **{f"ctrl_{m}": k[m] for m in METR}, ctrl_sharpe_2019=k["by_year"][2019])
-
-
-def plateau_sparse(rows: list, keys: list, grid: dict) -> list:
-    """Плато Optuna: среднее цели по посчитанным точкам в ±RADIUS узлов сетки по каждому ключу (с самой точкой, как у модуля)."""
-    ix = [[grid[k].index(r[k]) if r[k] in grid[k] else -99 for k in keys] for r in rows]
-    for i, r in enumerate(rows):
-        nb = [o["objective"] for j, o in enumerate(rows)
-              if all(abs(a - b) <= RADIUS for a, b in zip(ix[i], ix[j])) and o["objective"] == o["objective"]]
-        r.update(plateau=sum(nb) / len(nb) if nb else float("nan"), neighbors=len(nb), edge=len(nb) < MIN_NB)
-    return sorted(rows, key=lambda r: -(r["plateau"] if r["plateau"] == r["plateau"] else -1e9))
+def penalized(min_sd):
+    """Цель Optuna: проба с sdelok_y < min_sd (предел активности) получает −inf; ledger пишет её как есть."""
+    if not min_sd:
+        return sd.objective_stable
+    return lambda r: sd.objective_stable(r) if r["sdelok_y"] >= min_sd else float("-inf")
 
 
 def search(sw, exp, mode, o, per, c0, fix):
@@ -97,8 +68,11 @@ def search(sw, exp, mode, o, per, c0, fix):
         res = sd.factorial_sweep(closure(sw, c0, {}, fix), base, grid, per[0])
         return [{k: r[k] for k in base} for r in res["rows"]], keys, grid, res["n_trials"]
     grid = {k: list(v) for k, v in exp["grid"].items()}
-    res = sd.optuna_search(closure(sw, c0, {}, fix), exp["base"], grid, per[0], o["trials"], SEED, n_jobs=o["n_jobs"])
-    pts = {pkey(q): q for q in (fix({k: r[k] for k in exp["base"]}) for r in res["rows"])}
+    space = {k: grid[k] for k in o.get("space") or grid}          # space — параметры с эффектом (--params-from-tornado)
+    res = sd.optuna_search(closure(sw, c0, {}, fix), exp["base"], space, per[0], o["trials"], SEED, n_jobs=o["n_jobs"],
+                           objective=penalized(o.get("min_sd")))
+    ok = [r for r in res["rows"] if r["objective"] != float("-inf")]
+    pts = {pkey(q): q for q in (fix({k: r[k] for k in exp["base"]}) for r in ok)}
     return list(pts.values()), list(grid), grid, res["n_trials"]
 
 
@@ -137,7 +111,7 @@ def write(out: Path, name: str, mode: str, h: str, done: dict, comms: tuple):
     for c, rows in done.items():
         t = pd.DataFrame(rows)
         (out / f"{name}_{mode}_{c:g}.csv").write_text(h + t.drop(columns="_pk", errors="ignore").to_csv(index=False), "utf-8")
-    if mode != "morris":
+    if mode != "morris" and done[comms[0]]:                      # нет допустимых проб (предел активности) — топ-3 нечем дополнять
         f, new = out / f"{name}_top3.csv", top3_table(done, comms)
         old = pd.read_csv(f, comment="#") if f.exists() else pd.DataFrame()
         old = old[old["mode"] != mode] if len(old) else old
@@ -145,6 +119,9 @@ def write(out: Path, name: str, mode: str, h: str, done: dict, comms: tuple):
 
 
 def run_mode(name: str, setka, mode: str, o: dict, out_dir, evaluator=None) -> dict:
+    if mode == "plato":
+        from fastbt.sweep_plato import run_plato
+        return run_plato(name, setka, o, out_dir, evaluator)
     spec_d, exp, raw = load(setka)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -152,6 +129,8 @@ def run_mode(name: str, setka, mode: str, o: dict, out_dir, evaluator=None) -> d
     sw = Sweep(spec, evaluator or make_evaluator(spec))
     per, comms, fix, n0, t0 = periods(raw), spec.comm_pct, make_fix(exp), len(sw.ledger), time.time()
     o = dict(o, params_list=pick_params(o["params"], out, name, comms[0]) if o.get("params") else [])
+    if mode == "optuna":
+        o = dict(o, **optuna_limits(sw, exp, o, per, out, name, comms[0]))
     if mode == "morris":
         pre = forced(exp, o["params_list"]) if o["params_list"] else {}
         mr = {c: morris_rows(sw, exp, o, per, c, pre, fix) for c in comms}
@@ -179,7 +158,8 @@ def run_cli(ns):
         raise ValueError(f"--jobs и --n-jobs в 1..{MAX_JOBS}")
     if ns.mode == "factorial" and not ns.params:
         raise ValueError("--mode factorial: нужен --params p1,p2,p3 или tornado:3")
-    o = dict(params=ns.params, paths=ns.paths, trials=ns.trials, n_jobs=ns.n_jobs)
+    o = dict(params=ns.params, paths=ns.paths, trials=ns.trials, n_jobs=ns.n_jobs, min_frac=getattr(ns, "min_sdelok_frac", None),
+             tornado_min=getattr(ns, "params_from_tornado", None))
     with ProcessPoolExecutor(min(ns.jobs, len(ns.yaml))) as ex:
         for line in ex.map(_job, [(p, ns.mode, o, ns.out) for p in ns.yaml]):
             print(line)
