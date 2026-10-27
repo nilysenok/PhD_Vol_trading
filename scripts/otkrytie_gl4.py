@@ -7,26 +7,34 @@
 
 Запуск (только дирижёр, один раз, после «да» владельца):
     python3 scripts/otkrytie_gl4.py --scope test
-    python3 scripts/otkrytie_gl4.py --proverki      # шаги 1–5 без замка и без данных: что ещё не готово
+    python3 scripts/otkrytie_gl4.py --proverki      # шаги 1–6 без замка и без данных 2022+: что ещё не готово
 
-Порядок; отказ на шагах 1–5 открытие не тратит (код 2, замок не создаётся):
+Порядок; отказ на шагах 1–6 открытие не тратит (код 2, замок не создаётся):
   1) спецификация `docs/final_gl4/spec_otkrytiya.json` (v = 1): status = zamorozheno, все SHA заполнены, семьи ровно
      C/E/B/D, комиссии ровно {0,035; 0,04} % на сторону, лестница σ ровно konst → naivnaya → harj_b → gibrid, к2 и к3
-     объявлены, гипотезы ссылаются на объявленные задания;
-  2) «да» владельца: строка со словом «да», дата-время не раньше заморозки, строка дословно стоит в журнале
-     `docs/resheniya/resheniya.md` под своим Ж-номером, SHA спецификации без поля «да» совпадает с записанным при «да»;
-  3) замок `test_locked/gl4_b/OPENED_GL4_B.json` отсутствует (одно открытие);
+     объявлены, гипотезы ссылаются на объявленные задания, vhody_dev — те же метки, что vhody;
+  2) «да» владельца: строка со словом «да» и полным sha_spec (его печатает --proverki) стоит дословно в журнале
+     `docs/resheniya/resheniya.md` под своим Ж-номером; время заголовка записи («### Ж-NNN · ДД.ММ.ГГГГ, ЧЧ:ММ»)
+     = da_vladeltsa.data и строго позже zamorozheno_v; SHA спецификации без поля «да» = sha_spec. Старая запись
+     «да» (до заморозки или без sha_spec этой спецификации) открытие не даёт;
+  3) замок отсутствует (одно открытие). Путь замка — `<корень основной копии репо>/data/regen/test_locked/gl4_b/
+     OPENED_GL4_B.json`, корень — родитель общего .git (`git rev-parse --git-common-dir`): один из любой рабочей копии,
+     FASTBT_MAIN на него не влияет;
   4) гейты из спецификации: файл есть, SHA совпал, нет `EVIDENCE: pending` и строк `ABANDON: <id>`;
-  5) SHA-256: FINAL-B, код (каждый файл spec.kod и все *.py/*.yaml fastbt одним агрегатом), входы (файл или каталог),
-     10-минутки ряда 18:50. Хэш читает байты файла, значения не разбирает — как в главе 3 и во втором открытии;
-     каждый модуль, который скрипт исполняет, обязан стоять в spec.kod;
-  6) замок пишется (O_CREAT | O_EXCL, 0444) ДО чтения рядов теста;
-  7) ряд 18:50 по spec.okno_testa.po — `daily_1850.read_bars` + `daily_1850.aggregate` (история до теста — прогрев);
-  8) проверка сдвига каждого ряда (spec.proverka_sdviga); не прошла — отказ, замок «отказ: проверка сдвига»;
-  9) все задания одним прогоном, без выбора: база A′ × комиссии; семья × точка × ступень σ × комиссия (основа);
-     к2 (объявленные ступени) и к3 × комиссии; Δ к A′, лестница, к3 — Ледуа–Вольф `fastbt/s9_stats.lw_sharpe_diff`;
+  5) SHA-256: FINAL-B, код (каждый файл spec.kod и все *.py/*.yaml fastbt одним агрегатом), входы теста и 2018–2021
+     (файл или каталог), 10-минутки ряда 18:50. Хэш читает байты файла, значения не разбирает (ни один парсер к
+     файлам теста до замка не обращается) — как в главе 3 и во втором открытии; каждый исполняемый модуль — в spec.kod;
+  6) проверка сдвига, часть 1 (до замка): та же функция spec.proverka_sdviga на тех же рядах за 2018–2021
+     (spec.vhody_dev, окно OKNO_DEV); каждая метка входа обязана быть проверена. Значений 2022+ функция не получает;
+  7) замок пишется (O_CREAT | O_EXCL, 0444) ДО чтения рядов теста;
+  8) ряд 18:50 по spec.okno_testa.po — `daily_1850.read_bars` + `daily_1850.aggregate` (история до теста — прогрев);
+  9) проверка сдвига, часть 2 (после замка): только ряды 2022+ — единственное, что нельзя проверить, не открыв тест;
+     не прошла — отказ, замок «отказ: проверка сдвига 2022+» (это открытие потрачено);
+ 10) все задания одним прогоном, без выбора: база A′ × комиссии; семья × точка × ступень σ × комиссия (основа);
+     к2 (объявленные ступени) и к3 × комиссии; Δ к A′, лестница, к3 — Ледуа–Вольф `fastbt/s9_stats.lw_sharpe_diff`
+     по совпавшим датам (row.daty обязательны; разные множества дат — отказ, не усечение);
      PSR/DSR — `fastbt/sweep_drivers.psr` / `expected_max_sharpe` с N и V из FINAL-B; гипотезы — Холм по всем;
- 10) таблицы (шапки = `docs/final_gl4/zagotovki/`), JSON чисел (схема `chisla_gl4.schema.json` проверяется до записи),
+ 11) таблицы (шапки = `docs/final_gl4/zagotovki/`), JSON чисел (схема `chisla_gl4.schema.json` проверяется до записи),
      журнал SHA; замок дописывается: «завершено» и SHA выходов. Исключение после замка — замок «прервано: …»,
      повтор запрещён (решает владелец).
 
@@ -57,7 +65,7 @@ LESTNICA = ("konst", "naivnaya", "harj_b", "gibrid")     # константна�
 BAZA = "A′"
 STATUS = "тест"
 ROW_KEYS = ("v", "sharpe", "by_year", "sr_d", "T", "skew", "kurt", "msr", "sortino", "mdd", "kalmar",
-            "oborot_y", "dni_v_rynke", "sdelok_y", "period", "okno_s", "okno_po", "chestnaya", "comm_pct", "excess_d")
+            "oborot_y", "dni_v_rynke", "sdelok_y", "period", "okno_s", "okno_po", "chestnaya", "comm_pct", "excess_d", "daty")
 
 COLS = {
     "osnovnaya": ["id", "semya", "tochka", "sigma", "komissiya_pct", "sharpe", "msr", "sortino", "kalmar", "mdd", "psr",
@@ -79,6 +87,9 @@ OPIS = {
     "po_godam": "Шарп по годам теста для каждой строки основной таблицы",
 }
 
+OKNO_DEV = {"s": "2018-01-01", "po": "2021-12-31"}       # проверка сдвига до замка (разработка, Ж-031)
+ZAMOK_OT_KORNYA = Path("data") / "regen" / "test_locked" / "gl4_b" / "OPENED_GL4_B.json"
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 MAIN = Path(os.environ.get("FASTBT_MAIN", "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading"))
@@ -93,15 +104,30 @@ class Stop(SystemExit):
         print(f"СТОП: {msg}", file=sys.stderr, flush=True)
 
 
+def koren_repo(root: Path = ROOT) -> Path:
+    """Корень основной копии репозитория (родитель общего .git): один и тот же из любой рабочей копии (worktree)
+    и не зависит от FASTBT_MAIN — два открытия из разных копий или с разным FASTBT_MAIN видят один замок."""
+    r = subprocess.run(["git", "-C", str(root), "rev-parse", "--git-common-dir"], capture_output=True, text=True,
+                       timeout=20)
+    if r.returncode != 0 or not r.stdout.strip():
+        raise Stop(f"{root}: не git-репозиторий — путь замка не определить")
+    g = Path(r.stdout.strip())
+    return (g if g.is_absolute() else Path(root) / g).resolve().parent
+
+
+def zamok_po_umolchaniyu() -> Path:
+    return koren_repo(ROOT) / ZAMOK_OT_KORNYA
+
+
 @dataclasses.dataclass
 class Puti:
-    """Все пути одним объектом — тесты подменяют их временной папкой."""
+    """Все пути одним объектом — тесты подменяют их временной папкой. Замок — от корня репо, не от FASTBT_MAIN."""
     root: Path = ROOT
     main: Path = MAIN
     spec: Path = ROOT / "docs" / "final_gl4" / "spec_otkrytiya.json"
     zhurnal: Path = ROOT / "docs" / "resheniya" / "resheniya.md"
     schema: Path = ROOT / "docs" / "final_gl4" / "chisla_gl4.schema.json"
-    lock: Path = MAIN / "data" / "regen" / "test_locked" / "gl4_b" / "OPENED_GL4_B.json"
+    lock: Path = dataclasses.field(default_factory=zamok_po_umolchaniyu)
     out_data: Path = MAIN / "data" / "fastbt" / "test_gl4_b"
     out_tables: Path = ROOT / "docs" / "tables" / "gl4_test_b"
     out_json: Path = ROOT / "docs" / "final_gl4" / "chisla_gl4.json"
@@ -221,9 +247,12 @@ def check_spec(spec: dict) -> None:
                 bad.append(f"нет SHA {grp}: {p}")
     if not spec.get("fastbt_sha_vse"):
         bad.append("нет fastbt_sha_vse")
-    for k, v in (spec.get("vhody") or {}).items():
-        if not (v or {}).get("sha256") or not (v or {}).get("put"):
-            bad.append(f"вход {k}: нет put или sha256")
+    for grp in ("vhody", "vhody_dev"):
+        for k, v in (spec.get(grp) or {}).items():
+            if not (v or {}).get("sha256") or not (v or {}).get("put"):
+                bad.append(f"{grp} {k}: нет put или sha256")
+    if not spec.get("vhody") or set(spec.get("vhody_dev") or {}) != set(spec.get("vhody") or {}):
+        bad.append("vhody_dev: те же метки, что vhody (проверка сдвига до замка — на тех же рядах за 2018–2021)")
     sv = spec.get("svechi_10m") or {}
     if not sv.get("tikery") or set(sv.get("sha256") or {}) != set(sv.get("tikery") or ()) \
             or not all((sv.get("sha256") or {}).values()):
@@ -293,16 +322,27 @@ def check_da(spec: dict, P: Puti) -> None:
         t_da = parse_dt(data)
     except ValueError:
         raise Stop("«да» без даты: da_vladeltsa.data — ГГГГ-ММ-ДД ЧЧ:ММ") from None
-    if t_da < parse_dt(spec["zamorozheno_v"]):
-        raise Stop("«да» раньше заморозки спецификации — «да» относится к другой версии")
     if not re.fullmatch(r"Ж-\d{3,}", zh):
         raise Stop("da_vladeltsa.zhurnal — номер вида Ж-NNN")
     txt = Path(P.zhurnal).read_text() if Path(P.zhurnal).exists() else ""
     m = re.search(rf"^### {re.escape(zh)}\b.*?(?=^### |\Z)", txt, re.M | re.S)
     if not m or stroka not in m.group(0):
         raise Stop(f"строки «да» нет в журнале {P.zhurnal} под {zh}")
-    if d.get("sha_spec") != sha_spec_bez_da(spec):
+    t = re.match(rf"### {re.escape(zh)}\s*·\s*(\d{{2}})\.(\d{{2}})\.(\d{{4}}),\s*(\d{{1,2}}):(\d{{2}})", m.group(0))
+    if not t:
+        raise Stop(f"заголовок {zh} в журнале без времени «ДД.ММ.ГГГГ, ЧЧ:ММ»")
+    t_zh = parse_dt(f"{t[3]}-{t[2]}-{t[1]} {int(t[4]):02d}:{t[5]}")
+    t_zam = parse_dt(spec["zamorozheno_v"])
+    if t_zh <= t_zam or t_da <= t_zam:
+        raise Stop(f"«да» не позже заморозки ({zh}: {time.strftime('%Y-%m-%d %H:%M', t_zh)}; "
+                   f"zamorozheno_v {spec['zamorozheno_v']}) — «да» относится к другой версии")
+    if t_da != t_zh:
+        raise Stop("da_vladeltsa.data ≠ времени записи журнала")
+    s_now = sha_spec_bez_da(spec)
+    if d.get("sha_spec") != s_now:
         raise Stop("спецификация менялась после «да» (sha_spec ≠ SHA спецификации без поля «да»)")
+    if s_now not in stroka:
+        raise Stop("строка «да» не содержит sha_spec (печатает --proverki) — «да» не привязано к этой спецификации")
 
 
 # ======================= 3–5. замок, гейты, SHA =======================
@@ -364,6 +404,8 @@ def verify_sha(spec: dict, P: Puti) -> dict:
         one(Path(P.root) / p, s, f"гейты {p}")
     for k, v in spec["vhody"].items():
         one(Path(P.main) / v["put"], v["sha256"], f"вход {k}")
+    for k, v in spec["vhody_dev"].items():
+        one(Path(P.main) / v["put"], v["sha256"], f"вход 2018–2021 {k}")
     sv = spec["svechi_10m"]
     for t in sv["tikery"]:
         one(Path(P.main) / sv["katalog"] / f"{t}.parquet", sv["sha256"][t], f"10м {t}")
@@ -372,14 +414,29 @@ def verify_sha(spec: dict, P: Puti) -> dict:
     return got
 
 
+def sdvig_dev(spec: dict, P: Puti) -> list:
+    """Шаг 6: проверка сдвига ДО замка — та же функция spec.proverka_sdviga на тех же рядах за 2018–2021
+    (spec.vhody_dev, окно OKNO_DEV). Значений 2022+ не видит: ни замка, ни ряда 18:50 теста, ни путей vhody.
+    Не прошла — отказ, открытие не тратится."""
+    ctx = {"zamok": None, "ryad_1850": None, "okno": dict(OKNO_DEV),
+           "vhody": {k: str(Path(P.main) / v["put"]) for k, v in spec["vhody_dev"].items()}, "main": str(P.main)}
+    res = zagruzit(P, spec["proverka_sdviga"])(ctx)
+    plohie = [x.get("ryad") for x in res if not x.get("ok")]
+    if not res or plohie or {x.get("ryad") for x in res} != set(spec["vhody_dev"]):
+        raise Stop(f"проверка сдвига на 2018–2021 не прошла (до замка): не прошли {plohie}; "
+                   f"проверено {sorted(x.get('ryad') for x in res)}, нужно {sorted(spec['vhody_dev'])}")
+    return res
+
+
 def precheck(P: Puti) -> tuple:
-    """Шаги 1–5 без чтения данных теста; возвращает (spec, SHA)."""
+    """Шаги 1–6 без чтения данных теста; возвращает (spec, SHA, проверка сдвига 2018–2021)."""
     spec = load_spec(P)
     check_spec(spec)
     check_da(spec, P)
     check_lock_free(P)
     check_geity(spec, P)
-    return spec, verify_sha(spec, P)
+    got = verify_sha(spec, P)
+    return spec, got, sdvig_dev(spec, P)
 
 
 def acquire_lock(P: Puti, info: dict) -> None:
@@ -431,6 +488,10 @@ def ryad_1850(spec: dict, P: Puti, zhurnal: list) -> Path:
     d = pd.concat(parts, ignore_index=True)
     d = d[d["date"] <= po].sort_values(["ticker", "date"]).reset_index(drop=True)
     out = Path(P.out_data) / "ohlcv_daily_1850_test.parquet"
+    dev = Path(d1850.out_path(P.main))
+    if out.resolve().parent == dev.resolve().parent:
+        # Н5: lr последнего дня берёт close следующего бара — ряд ≤ 2021 не продлевается и не соседствует с 2022+
+        raise Stop(f"ряд 2022+ ({out}) — только отдельным файлом вне {dev.parent} (ряд разработки ≤ 2021 не трогается)")
     out.parent.mkdir(parents=True, exist_ok=True)
     d.to_parquet(out, index=False)
     zhurnal.append(dict(vremya=now(), etap="posle_zamka", chto="ряд 18:50", put=str(out), sha256=sha(out),
@@ -450,8 +511,11 @@ def check_row(row: dict, spec: dict, c: float, jid: str, kontrol) -> None:
     ok = spec["okno_testa"]
     if str(row["v"]) != ROW_V or row["period"] != "test" or row["chestnaya"] != "test" \
             or str(row["okno_s"]) != ok["s"] or str(row["okno_po"]) != ok["po"] \
-            or abs(float(row["comm_pct"]) - c) > 1e-12 or len(row["excess_d"]) != int(row["T"]):
-        raise RuntimeError(f"{jid}: строка не по контракту v{ROW_V} (v, period/chestnaya = test, окно, комиссия, T)")
+            or abs(float(row["comm_pct"]) - c) > 1e-12 or len(row["excess_d"]) != int(row["T"]) \
+            or len(row["daty"]) != int(row["T"]) or len(set(map(str, row["daty"]))) != len(row["daty"]) \
+            or not all(ok["s"] <= str(x) <= ok["po"] for x in row["daty"]):
+        raise RuntimeError(f"{jid}: строка не по контракту v{ROW_V} (v, period/chestnaya = test, окно, комиссия, "
+                           "T = len(excess_d) = len(daty), даты уникальны и в окне)")
     if kontrol == "k2" and not {"p_k2", "n_k2"} <= set(row):
         raise RuntimeError(f"{jid}: к2 без p_k2 / n_k2")
 
@@ -488,9 +552,14 @@ def schitat(spec: dict, P: Puti, ctx: dict) -> dict:
         rows[jid] = dict(r, _semya=semya, _tochka=tochka, _sigma=sigma, _c=c, _kontrol=kontrol)
 
     def lwd(a, b):
-        xa, xb = rows[a]["excess_d"], rows[b]["excess_d"]
-        if len(xa) != len(xb) or rows[a].get("daty", None) != rows[b].get("daty", None):
-            raise RuntimeError(f"{a} и {b}: разные дни — Ледуа–Вольф невозможен")
+        """Ледуа–Вольф по совпавшим дням: ряды выравниваются по датам, не по позиции. Множества дат обязаны
+        совпасть — день, который есть у одной стороны и нет у другой, — отказ (а не тихое усечение)."""
+        da = dict(zip(map(str, rows[a]["daty"]), rows[a]["excess_d"]))
+        db = dict(zip(map(str, rows[b]["daty"]), rows[b]["excess_d"]))
+        if set(da) != set(db):
+            raise RuntimeError(f"{a} и {b}: разные дни ({len(set(da) ^ set(db))} несовпавших) — Ледуа–Вольф невозможен")
+        dni = sorted(da)
+        xa, xb = [da[x] for x in dni], [db[x] for x in dni]
         d, se, p = lwf(xa, xb, reps=lw["reps"], block=lw["block"], seed=lw["seed"])
         return fnum(d), fnum(se), fnum(p)
 
@@ -664,19 +733,21 @@ def zapisat(spec: dict, P: Puti, res: dict, sha_do: dict, zhurnal: list) -> dict
 
 
 def run_test(P: Puti) -> int:
-    spec, sha_do = precheck(P)
+    spec, sha_do, sdv0 = precheck(P)
     zhurnal = [dict(vremya=now(), etap="do_zamka", chto=k, sha256=v) for k, v in sorted(sha_do.items())]
+    zhurnal.append(dict(vremya=now(), etap="do_zamka", chto="проверка сдвига 2018–2021",
+                        ryady=sorted(x.get("ryad") for x in sdv0), ne_proshli=[]))
     acquire_lock(P, dict(v=V, spec=str(P.spec), spec_sha256=sha(P.spec), git_head=git_head(P.root), sha_do_zamka=sha_do))
     try:
         ryad = ryad_1850(spec, P, zhurnal)
         ctx = kontekst(spec, P, ryad)
-        sdv = zagruzit(P, spec["proverka_sdviga"])(ctx)
+        sdv = zagruzit(P, spec["proverka_sdviga"])(ctx)          # только ряды 2022+: единственное, что не проверить до замка
         plohie = [x for x in sdv if not x.get("ok")]
-        zhurnal.append(dict(vremya=now(), etap="posle_zamka", chto="проверка сдвига",
+        zhurnal.append(dict(vremya=now(), etap="posle_zamka", chto="проверка сдвига 2022+",
                             ryady=[x.get("ryad") for x in sdv], ne_proshli=[x.get("ryad") for x in plohie]))
         if not sdv or plohie:
-            finish_lock(P, {"proverka_sdviga": sdv}, "отказ: проверка сдвига")
-            raise Stop(f"проверка сдвига не прошла: {[x.get('ryad') for x in plohie] or 'пусто'}")
+            finish_lock(P, {"proverka_sdviga": sdv}, "отказ: проверка сдвига 2022+")
+            raise Stop(f"проверка сдвига 2022+ не прошла: {[x.get('ryad') for x in plohie] or 'пусто'}")
         res = schitat(spec, P, ctx)
         vyhod = zapisat(spec, P, res, sha_do, zhurnal)
     except Stop:
@@ -690,7 +761,7 @@ def run_test(P: Puti) -> int:
 
 
 def run_proverki(P: Puti) -> int:
-    """Шаги 1, 3–5 и состояние «да» — без замка и без данных. Для заморозки FINAL-B до «да»."""
+    """Шаги 1, 3–6 и состояние «да» — без замка и без данных 2022+. Для заморозки FINAL-B до «да»."""
     spec = load_spec(P)
     check_spec(spec)
     try:
@@ -701,7 +772,8 @@ def run_proverki(P: Puti) -> int:
     check_lock_free(P)
     check_geity(spec, P)
     verify_sha(spec, P)
-    print(f"проверки до замка пройдены; sha_spec без «да» = {sha_spec_bez_da(spec)}")
+    sdvig_dev(spec, P)
+    print(f"проверки до замка пройдены (вкл. проверку сдвига 2018–2021); sha_spec без «да» = {sha_spec_bez_da(spec)}")
     return 0
 
 
