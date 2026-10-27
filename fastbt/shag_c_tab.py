@@ -22,7 +22,8 @@ def _line(r, c: float, rol: str) -> dict:
     t = tag(c)
     out = {k: r[k] for k in KEY}
     return dict(pometka=shag0.POMETKA, rol=rol, comm_pct=c * 100, sharpe=r[f"sharpe_{t}"],
-                usl1_c8=r[f"usl1_c8_{t}"], usl2_k3=r[f"usl2_k3_{t}"], usl3_k2=r[f"usl3_k2_{t}"],
+                usl1_c8=r[f"usl1_c8_{t}"], u1_strogo=r[f"u1_strogo_{t}"],
+                u1_odno_isklyuchenie=r[f"u1_odno_isklyuchenie_{t}"], usl2_k3=r[f"usl2_k3_{t}"], usl3_k2=r[f"usl3_k2_{t}"],
                 itog_c8v2=r[f"proshla_c8v2_{t}"], p_vs_k2=r[f"p_vs_k2_{t}"], **out)
 
 
@@ -89,12 +90,12 @@ def razlozhenie(eng, bases: dict, g: np.ndarray, reps: int) -> list:
     return [dict(pometka=shag0.POMETKA, **r) for r in rows]
 
 
-def komissiya(eng, g: np.ndarray, reps: int, comms=(0.00035, 0.0004, 0.0005, 0.0006)) -> list:
+def komissiya(eng, g: np.ndarray, reps: int, comms=(0.00035, 0.0004, 0.0005, 0.0006), uslovie1: str = "strogo") -> list:
     """Выбранная точка, A и к3 при 0,035 / 0,04 / 0,05 / 0,06 (0,05 и 0,06 — приложение)."""
     rows = []
     for c in comms:
         b = Base(eng, c)
-        full = evaluate(b, g, reps)
+        full = evaluate(b, g, reps, uslovie1=uslovie1)
         for lab, p in (("A", b.pA), ("к3", b.pK)):
             rows.append(dict(row=lab, **shag0.stats(p, np.ones(len(p), bool))))
             rows[-1]["comm_pct"] = c * 100

@@ -25,6 +25,21 @@ SEED_K2 = 20261027
 ALPHA = 0.05
 SRC = {"naive": {1: "naive_h1"}, "harj": {1: "harj_h1", 5: "harj_h5"}, "hyb": {1: "hyb_h1", 5: "hyb_h5"}}
 SHAG = {"naive": 1, "harj": 2, "hyb": 3}
+USLOVIYA1 = ("strogo", "odno_isklyuchenie")
+USLOVIE1 = "strogo"                    # умолчание дирижёра (до ответа владельца), дублируется в yaml
+
+
+def check_sigma_distinct(eng, labels=None) -> None:
+    """Рантайм: ряды двух разных σ-источников не должны совпадать побайтно (иначе шаг считал бы одну σ дважды).
+    Исключение — naive_h1 и naive_h5: совпадают по построению (в сетке naive_h5 не используется)."""
+    labels = sorted(labels or {s for d in SRC.values() for s in d.values()})
+    arr = {s: np.ascontiguousarray(np.asarray(eng.sigma(s), float)) for s in labels}
+    for i, a in enumerate(labels):
+        for b in labels[i + 1:]:
+            if a.startswith("naive") and b.startswith("naive"):
+                continue
+            if arr[a].shape == arr[b].shape and arr[a].tobytes() == arr[b].tobytes():
+                raise ValueError(f"σ-источники {a} и {b} совпадают побайтно — шаг читает один и тот же ряд")
 
 
 def tag(c: float) -> str:
@@ -100,17 +115,30 @@ class Base:
             raise ValueError("к2: лаг сдвига меньше 21 (сдвиг 0 даёт исходную маску)")
 
 
-def evaluate(b: Base, g: np.ndarray, reps: int = 10000, light: bool = False) -> dict:
-    """Метрики точки A·g на комиссии b.comm; условия С8 v2 по отдельности (§0.5): 1 — прежний С8,
-    2 — Шарп > Шарп к3, 3 — p к к2 < 0,05. light — без бутстрапа и доп. метрик (справочный отбор)."""
+def usloviya(m: dict, mA: dict, mK: dict, p2: float, uslovie1: str = USLOVIE1) -> dict:
+    """Условия С8 v2 по отдельности (§0.5). 1 — прежний С8 против A: `strogo` — Δ к A > 0 во всех 4 годах (и худший
+    год, и период); `odno_isklyuchenie` — как s9.c8 (3/4). 2 — Шарп > Шарп к3. 3 — p к к2 < 0,05."""
+    if uslovie1 not in USLOVIYA1:
+        raise ValueError(f"uslovie1: {uslovie1!r} не из {USLOVIYA1}")
+    r = s9.c8(m, mA)
+    rest = bool(r["c_worst"] and r["c_period"])
+    all_years = all(m[str(y)] > mA[str(y)] for y in s9.YEARS)
+    u1 = {"strogo": all_years and rest, "odno_isklyuchenie": bool(r["passed"])}
+    c1, c2, c3 = u1[uslovie1], bool(m["sharpe"] > mK["sharpe"]), bool(p2 < ALPHA)
+    return dict(u1_strogo=u1["strogo"], u1_odno_isklyuchenie=u1["odno_isklyuchenie"], usl1_c8=c1, usl2_k3=c2,
+                usl3_k2=c3, proshla_c8v2=c1 and c2 and c3)
+
+
+def evaluate(b: Base, g: np.ndarray, reps: int = 10000, light: bool = False, uslovie1: str = USLOVIE1) -> dict:
+    """Метрики точки A·g на комиссии b.comm и условия `usloviya` (usl1_c8 — по выбранному `uslovie1`, оба варианта —
+    в u1_*). light — без бутстрапа и доп. метрик (справочный отбор)."""
     p = b.eng.port(b.A * g, comm=b.comm)
     m = s9.metrics(p)
     b.kon.check(g)
     sh2 = b.kon.k2_sharpes(g)
     p2 = fk.p_perm(m["sharpe"], sh2)
-    c1, c2, c3 = bool(s9.c8(m, b.mA)["passed"]), bool(m["sharpe"] > b.mK["sharpe"]), bool(p2 < ALPHA)
     r = dict(sharpe=m["sharpe"], sharpe_A=b.mA["sharpe"], sharpe_k3=b.mK["sharpe"], p_vs_k2=p2,
-             sharpe_k2_med=float(np.median(sh2)), usl1_c8=c1, usl2_k3=c2, usl3_k2=c3, proshla_c8v2=c1 and c2 and c3)
+             sharpe_k2_med=float(np.median(sh2)), **usloviya(m, b.mA, b.mK, p2, uslovie1))
     if light:
         return r
     r.update(shag0.stats(p, np.ones(len(p), bool)))
@@ -120,18 +148,20 @@ def evaluate(b: Base, g: np.ndarray, reps: int = 10000, light: bool = False) -> 
     return r
 
 
-def point_row(eng, bases: dict, pt: dict, G: np.ndarray, sigma: str, ref: float, reps: int) -> dict:
+def point_row(eng, bases: dict, pt: dict, G: np.ndarray, sigma: str, ref: float, reps: int,
+              uslovie1: str = USLOVIE1) -> dict:
     g = eng.g_row(G)
     row = dict(pometka=shag0.POMETKA, sigma=sigma, point=f"{pt['family']}:{pt['label']}", **pt)
     row.update(eng.gate_stats(g))
     for c, b in bases.items():
-        row.update({f"{k}_{tag(c)}": v for k, v in evaluate(b, g, reps, light=(c == ref)).items()})
+        row.update({f"{k}_{tag(c)}": v for k, v in evaluate(b, g, reps, light=(c == ref), uslovie1=uslovie1).items()})
     return row
 
 
 def run_setka(eng, sigma: str, grid: dict, reps: int = 10000, comms=COMM_MAIN, ref=COMM_REF, log=print,
               n_shift: int = fk.N_SHIFT):
     """Все точки сетки на σ: DataFrame (основные комиссии — полно, ref — только условия отбора) и словарь затворов."""
+    u1 = grid.get("uslovie1", USLOVIE1)
     bases = {c: Base(eng, c, n_shift) for c in (*comms, ref)}
     rows, gs = [], {}
     pts = plan(sigma, grid)
@@ -139,6 +169,6 @@ def run_setka(eng, sigma: str, grid: dict, reps: int = 10000, comms=COMM_MAIN, r
         G = gates(eng, src, grid, sigma == "naive")
         for pt in (q for q in pts if q["src"] == src):
             gs[(pt["h"], pt["family"], pt["label"])] = G[(pt["family"], pt["label"])]
-            rows.append(point_row(eng, bases, pt, gs[(pt["h"], pt["family"], pt["label"])], sigma, ref, reps))
+            rows.append(point_row(eng, bases, pt, gs[(pt["h"], pt["family"], pt["label"])], sigma, ref, reps, u1))
         log(f"{src}: {len(rows)} точек")
     return pd.DataFrame(rows), gs, bases

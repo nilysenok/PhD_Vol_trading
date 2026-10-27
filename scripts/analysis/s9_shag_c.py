@@ -71,7 +71,7 @@ def tables(eng, sigma: str, grid: dict, reps: int, n_shift: int = 1000, with_sve
     for r in raz:
         r["vybrana"] = best is not None
     res = dict(setka=df, otbor=otb, ustoychivost=T.ustoychivost(df, best), razlozhenie=raz,
-               komissiya=T.komissiya(eng, g, reps), best=best, top=top)
+               komissiya=T.komissiya(eng, g, reps, uslovie1=grid.get("uslovie1", C.USLOVIE1)), best=best, top=top)
     if with_sverka:
         idx = np.linspace(0, len(df) - 1, 5).round().astype(int)
         pts = [(df.loc[i, "point"] + f" h{df.loc[i, 'h']}", np.asarray(eng.A_row) * eng.g_row(
@@ -114,9 +114,10 @@ def otchet(shag: int, sigma: str, res: dict, sd_line: str) -> str:
 """
 
 
-def real(sigma: str, shag: int, reps: int, workers: int, out: Path) -> None:
+def real(sigma: str, shag: int, reps: int, workers: int, out: Path, uslovie1: str | None = None) -> None:
     from fastbt import fast_grid, fast_signals, s9
     grid = C.load_grid()
+    grid["uslovie1"] = uslovie1 or grid.get("uslovie1", C.USLOVIE1)
     sd = T.sdvig(SDVIG, sigma)
     line = T.sdvig_line(sd)
     if "НЕ ПРОЙДЕНА" in line:
@@ -128,6 +129,7 @@ def real(sigma: str, shag: int, reps: int, workers: int, out: Path) -> None:
     cache = fast_signals.build(workers)
     with fast_grid.patched():
         eng = s9.Engine(cache)
+        C.check_sigma_distinct(eng, {pt["src"] for pt in C.plan(sigma, grid)})
         res = tables(eng, sigma, grid, reps)
     save(res, sigma, shag, out, sd, line)
 
@@ -168,6 +170,8 @@ if __name__ == "__main__":
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--reps", type=int, default=10000)
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--c8-uslovie1", choices=C.USLOVIYA1, default=None,
+                    help="условие 1 С8 v2: strogo (4/4, умолчание yaml) | odno_isklyuchenie (3/4)")
     a = ap.parse_args()
     if a.smoke or len(sys.argv) == 1:
         smoke()
@@ -176,4 +180,4 @@ if __name__ == "__main__":
     elif a.dry_run:
         dry_run(a.sigma, a.shag)
     else:
-        real(a.sigma, a.shag, a.reps, a.workers, OUT)
+        real(a.sigma, a.shag, a.reps, a.workers, OUT, a.c8_uslovie1)

@@ -38,7 +38,8 @@ def _df(rows):
     for i, (s40, ok40, s35, s50, ok50) in enumerate(rows):
         r = dict(sigma="hyb", h=1, family="C1", W=126, p1=60 + 10 * i, p2=0, point=f"C1:p{i}")
         for t, s, ok in (("040", s40, ok40), ("035", s35, ok40), ("050", s50, ok50)):
-            r.update({f"sharpe_{t}": s, f"proshla_c8v2_{t}": ok, f"usl1_c8_{t}": True, f"usl2_k3_{t}": True,
+            r.update({f"sharpe_{t}": s, f"proshla_c8v2_{t}": ok, f"usl1_c8_{t}": True, f"u1_strogo_{t}": True,
+                      f"u1_odno_isklyuchenie_{t}": True, f"usl2_k3_{t}": True,
                       f"usl3_k2_{t}": ok, f"p_vs_k2_{t}": 0.01 if ok else 0.3})
         out.append(r)
     return pd.DataFrame(out)
