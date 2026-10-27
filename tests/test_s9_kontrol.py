@@ -172,6 +172,32 @@ def test_all_strategies_of_ticker_share_one_lag():
     assert not np.array_equal(shb[k.pair == 0], shb[k.pair == 1])
 
 
+def test_kernel_nonzero_lag_equals_engine_port():
+    """shift_sharpe при ненулевом LAG = Шарп Engine.port(A · g[src(b)]) до 1e-12; лаг по паре в ядре
+    дал бы другое число (подложенная ошибка ловится сравнением с вариантом «лаг по паре»)."""
+    ns = _engine(seed=8)
+    k = fk.Kontrol(ns, 0.0004, n_shift=6)
+    g = _gate_blocky(ns, 5)
+    assert (k.LAG > 0).all()
+    sh = k.k2_sharpes(g)
+    for b in range(6):
+        ref = s9.metrics(ns.port(ns.A_row * g[k.src(b)], comm=0.0004))["sharpe"]
+        assert abs(sh[b] - ref) < 1e-12, b
+        lag_pair = k.LAG[b][k.tick[k.pstart]][np.arange(18)] + np.arange(18)     # лаг по паре
+        bad = k.pstart + (k.loc - lag_pair[k.pair]) % k.plen
+        bad_sh = s9.metrics(ns.port(ns.A_row * g[bad], comm=0.0004))["sharpe"]
+        assert abs(sh[b] - bad_sh) > 1e-6, b
+
+
+def test_seed_and_min_lag_match_declaration():
+    """Константы кода = объявлению в setka_C.yaml (seed 20261027, лаг от 21, 1 000 повторов)."""
+    import yaml
+    kon = yaml.safe_load(s9.C_DOP_YAML.read_text())["dop"]["kontroli"]
+    assert fk.SEED == 20261027 == kon["seed"]
+    assert fk.MIN_LAG == 21 == kon["min_shift_dney"]
+    assert fk.N_SHIFT == 1000 == kon["n_shift"]
+
+
 # ---------------- к2: размер критерия и сила ----------------
 
 def _p_list(ns, k, gates, comm=0.0004):
