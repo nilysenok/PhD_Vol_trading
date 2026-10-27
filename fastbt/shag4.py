@@ -1,7 +1,7 @@
 """Шаг 4 разработки главы 4 (v3): сравнение прогнозов (H2), 2018–2021. Чистые функции; движок — `s9.Engine`.
 
-Точка C — ключ s9: ("C1:W252_p70", "hyb_h5") = (семья:метка, источник σ). Заглушка-интерфейс до слияния
-`s9_shag_c.py`: `portfel(eng, ckey, src, comm)` — «точка × σ → дневной ряд портфеля» поверх fastbt.s9.
+Точка C — ключ s9: ("C1:W252_p70", "hyb_h5") = (семья:метка, источник σ). Затвор — только из `fastbt.shag_c`
+(PR #270); без флага `--razreshayu-shag4` и пока его нет — отказ. Определение: C = A × затвор.
 Лестница, «лучший с лучшим», связка с главой 3 — на готовых рядах/матрицах [тикер, бар], движок не нужен.
 """
 from __future__ import annotations
@@ -35,27 +35,41 @@ def src_of(sigma: str, h: str) -> str:
     return f"{sigma}_{h}"
 
 
-def gate(eng, ckey: str, src: str) -> np.ndarray:
-    """G[3, тикер, бар] точки ckey на σ-источнике src. C* (σ/√RV_w) — не на наивной (там σ/√RV_w ≡ 1)."""
-    from fastbt import s9
-    from fastbt.s9_stats import past_rank
+def _has_shag_c() -> bool:
+    import importlib.util
+    return importlib.util.find_spec("fastbt.shag_c") is not None
+
+
+def shag_c(razreshayu: bool):
+    """Модуль затвора C (PR #270). Отказ: без флага --razreshayu-shag4 или пока fastbt/shag_c.py нет в репозитории."""
+    if not razreshayu:
+        raise PermissionError("реальный запуск шага 4 закрыт: нужен флаг --razreshayu-shag4")
+    if not _has_shag_c():
+        raise RuntimeError("fastbt/shag_c.py нет в репозитории (PR #270 не слит): затвор и портфель не из чего брать")
+    from fastbt import shag_c as mod
+    return mod
+
+
+def gate(eng, ckey: str, src: str, razreshayu: bool = False) -> np.ndarray:
+    """G[3, тикер, бар] точки ckey на σ-источнике src — из fastbt.shag_c.gates (своего кода затвора здесь нет).
+    C* на наивной σ не строится (ValueError)."""
+    C = shag_c(razreshayu)
     fam, label = ckey.split(":", 1)
-    W, par = parse_label(label)
-    S = eng.sigma(src)
-    if fam.startswith("C*"):
-        if src.startswith("naive"):
-            raise ValueError("C* не строится на наивной σ")
-        S = S / eng.rvw()
-    R = np.full(S.shape, np.nan)
-    for ti in range(S.shape[0]):
-        n = eng.n_t[ti]
-        R[ti, :n] = past_rank(np.ascontiguousarray(S[ti, :n]), W, s9._minp(W))
-    return s9._c_gate(R, par)
+    parse_label(label)
+    if fam.startswith("C*") and src.startswith("naive"):
+        raise ValueError("C* не строится на наивной σ")
+    cache = eng.__dict__.setdefault("_shag4_gates", {})
+    if src not in cache:
+        cache[src] = C.gates(eng, src, C.load_grid(), src.startswith("naive"))
+    try:
+        return cache[src][(fam, label)]
+    except KeyError:
+        raise ValueError(f"точки {ckey} нет в сетке shag_c для {src}") from None
 
 
-def portfel(eng, ckey: str, src: str, comm: float) -> pd.DataFrame:
-    """Заглушка-интерфейс: дневной ряд портфеля точки ckey на σ src (A × затвор), комиссия comm."""
-    return eng.port(eng.A_row * eng.g_row(gate(eng, ckey, src)), comm=comm)
+def portfel(eng, ckey: str, src: str, comm: float, razreshayu: bool = False) -> pd.DataFrame:
+    """Дневной ряд портфеля точки ckey на σ src: A × затвор (затвор — fastbt.shag_c), комиссия comm."""
+    return eng.port(eng.A_row * eng.g_row(gate(eng, ckey, src, razreshayu)), comm=comm)
 
 
 def compare(p1: pd.DataFrame, p0: pd.DataFrame, reps: int) -> dict:

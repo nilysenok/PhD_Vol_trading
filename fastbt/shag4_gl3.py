@@ -45,6 +45,16 @@ def check_shift(prof: dict) -> None:
     assert k == 0, f"сдвиг σ: максимум корреляции на k={k}: {prof}"
 
 
+def cut_target(d, h: int, last):
+    """Цель строки t смотрит на t+1…t+h торговых дней. Допустима, только если день t+h (по календарю дат d) ≤ last;
+    иначе NaN — значение обнуляется сразу при чтении. d: [date, ticker, sigma], уже date ≤ last."""
+    d = d[d["date"] <= last].copy()
+    cal = np.sort(d["date"].unique())
+    pos = np.searchsorted(cal, d["date"].values)
+    d.loc[pos + h > len(cal) - 1, "sigma"] = np.nan
+    return d
+
+
 def dev_mask(years: np.ndarray) -> np.ndarray:
     return (years >= YEARS[0]) & (years <= YEARS[-1])
 
@@ -88,11 +98,14 @@ def qlike_split(y, f_harj, f_hyb, open_, valid, qlike=None) -> list:
     """QLIKE гибрида и HAR-J (б) в днях «фильтр открыт» / «закрыт»; выигрыш = QLIKE(HAR-J) − QLIKE(гибрид) > 0 —
     гибрид лучше. y — цель (дисперсия), f — прогноз дисперсии (σ²). Окно — valid (2018–2021)."""
     ql = qlike or qlike_ch3()
-    ok = valid & np.isfinite(y) & np.isfinite(f_harj) & np.isfinite(f_hyb) & (y > 1e-12)
+    fin = valid & np.isfinite(f_harj) & np.isfinite(f_hyb)
+    ok = fin & np.isfinite(y) & (y > 1e-12)
+    nan_y = fin & np.isnan(y)                         # цель с окном за 2021 (cut_target) — из QLIKE исключена
     rows = []
     for lab, m in (("открыт", ok & open_), ("закрыт", ok & ~open_), ("все", ok)):
         n = int(m.sum())
+        n_nan = int((nan_y & (open_ if lab == "открыт" else ~open_ if lab == "закрыт" else True)).sum())
         qh, qy = (ql(y[m], f_harj[m]), ql(y[m], f_hyb[m])) if n else (NAN, NAN)
-        rows.append(dict(pometka=POMETKA, rezhim="QLIKE", filtr=lab, n=n, qlike_harj=qh, qlike_gibrid=qy,
+        rows.append(dict(pometka=POMETKA, rezhim="QLIKE", filtr=lab, n=n, n_nan_celi=n_nan, qlike_harj=qh, qlike_gibrid=qy,
                          vyigrysh=qh - qy, otn_vyigrysh=(qh - qy) / qh if n and qh else NAN))
     return rows

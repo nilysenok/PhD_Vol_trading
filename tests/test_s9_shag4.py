@@ -145,16 +145,34 @@ def test_share_diff_i_label():
         shag4.parse_label("p70")
 
 
-def test_gate_na_fake_dvizhke():
-    import types
-    rng = np.random.default_rng(5)
-    S = np.exp(rng.normal(0, 0.3, (2, 400)))
-    eng = types.SimpleNamespace(sigma=lambda src: S, n_t=np.array([400, 400]), rvw=lambda: S * 2.0)
-    G = shag4.gate(eng, "C1:W126_p70", "hyb_h1")
-    assert G.shape == (3, 2, 400) and set(np.unique(G)) <= {0.0, 1.0}
-    assert G[:, :, :20].min() == 1.0                     # прогрев: ранг NaN → затвор 1
-    G2 = shag4.gate(eng, "C2W:W126_p70_90", "harj_h1")
-    assert set(np.unique(G2)) <= {0.0, 0.5, 1.0}
-    with pytest.raises(ValueError):
-        shag4.gate(eng, "C*1:W126_p70", "naive_h1")
-    assert shag4.gate(eng, "C*1:W126_p70", "hyb_h1").shape == G.shape
+def _p(x):
+    return pd.DataFrame(dict(excess=x, total=x, exposure=1.0, turnover=0.0), index=IDX)
+
+
+def test_znak_po_godam_i_comm_pct():
+    base = np.random.default_rng(0).normal(0, 0.01, len(IDX))
+    sg = np.where(IDX.year <= 2019, 0.002, -0.002)
+    c = shag4.compare(_p(base + sg), _p(base), 30)
+    assert [c[f"znak_{y}"] for y in shag4.YEARS] == ["+", "+", "−", "−"] and c["n_let_plyus"] == 2
+    r = shag4.compare(_p(base), _p(base + sg), 30)
+    assert [r[f"znak_{y}"] for y in shag4.YEARS] == ["−", "−", "+", "+"]
+    P = {cm: {nm: _p(base + 0.0003 * i) for i, nm in enumerate(shag4.NAMES)} for cm in shag4.COMMS}
+    L = shag4.luchshiy(P, 20)
+    assert len(L) == 18 and {r["comm_pct"] for r in L} == {0.035, 0.04}
+    assert sum("d_sharpe" in r for r in L) == 12 and all(r["pometka"] == shag4.POMETKA for r in L)
+    O = shag4.odna_tochka({cm: {("C_naive", "naive"): _p(base), ("C_naive", "hyb"): None} for cm in shag4.COMMS},
+                          {cm: _p(base - 0.001) for cm in shag4.COMMS}, 20)
+    assert {r["comm_pct"] for r in O} == {0.035, 0.04}
+    assert [("primechanie" in r) for r in O[:2]] == [False, True] and O[0]["d_sharpe"] > 0
+
+
+def test_share_diff_valid_rezhet_vne_okna():
+    Ga, Gb = np.ones((3, 1, 10)), np.ones((3, 1, 10))
+    Gb[0, 0, 5:] = 0.0                                     # различия только в «не окне»
+    valid = np.zeros((1, 10), bool)
+    valid[0, :5] = True
+    assert g3.share_diff(Ga, Gb, valid) == 0.0
+    valid[0, 5:7] = True
+    assert g3.share_diff(Ga, Gb, valid) == pytest.approx(2 / 7)
+    assert np.isnan(g3.share_diff(Ga, Gb, np.zeros((1, 10), bool)))
+
