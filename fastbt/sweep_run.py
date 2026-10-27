@@ -13,6 +13,7 @@ import hashlib
 import json
 import re
 import subprocess
+import time
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path
@@ -23,10 +24,10 @@ import yaml
 from fastbt import sweep_drivers as sd
 from fastbt import sweep_setka as sk
 from fastbt.sweep import Sweep, make_evaluator
-from fastbt.sweep_spec import Spec, pkey
+from fastbt.sweep_spec import Spec
 
 MAX_JOBS = 6                       # Ж-036: у T1 не больше 6 процессов
-STATUS = "разработка, цель tune 2018, контроль ctrl 2019 (вне цели)"
+STATUS = "разработка, train 2018 (tune) / 2019 (ctrl)"
 OUT_DIR = Path("docs/tables/sweep_e1")
 PERIOD_MAP = {"tune2018": "setup", "ctrl2019": "control"}   # имена периодов сетки #305 -> имена оценщика
 
@@ -126,8 +127,6 @@ def run_setka(name: str, setka, evaluator=None, out_dir=OUT_DIR) -> dict:
     sw = Sweep(spec, ev)
     per = periods(raw)
     raw_rows = {c: oat_rows(sw, exp, c, per) for c in spec.comm_pct}
-    for r in raw_rows[spec.comm_pct[0]][0]:      # ctrl затёр SR пробы контролем: в ledger — SR цели (setup)
-        sw.ledger[pkey({k[2:]: v for k, v in r.items() if k.startswith("p.")})] = r["sr_d"]
     trials, out, got = sw.trials_sr(), Path(out_dir), {}
     out.mkdir(parents=True, exist_ok=True)
     h = header(name, raw, ev, sw)
@@ -144,8 +143,9 @@ def _job(args) -> str:
     path, out_dir = args
     m = re.match(r"S\d+", Path(path).name)
     name = m.group(0) if m else Path(path).stem
+    t0 = time.time()
     got = run_setka(name, path, None, out_dir)
-    return f"{name}: проб {len(got['ledger'])}, строк {len(got[0.04][0])} × {len(got) - 1} комиссий"
+    return f"{name}: время {time.time() - t0:.0f} с, проб {len(got['ledger'])}, строк {len(got[0.04][0])} × {len(got) - 1} комиссий"
 
 
 def main(argv=None):
