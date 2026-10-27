@@ -60,14 +60,14 @@ EVIDENCE: копия scratchpad/mut (fastbt — ссылка, скрипт по�
 ## G12 — изменены только файлы владения
 CHECK: git diff --name-only kanon-v22-pereschet...HEAD
 EXPECT: только пути из «Владение»
-EVIDENCE: pending
+EVIDENCE: 10 путей: docs/final_gl4/chisla_gl4.schema.json, docs/final_gl4/zagotovki/ (5 CSV + spec_otkrytiya.shablon.json), docs/kanon/v24/gates/E4_otkrytie.md, scripts/otkrytie_gl4.py, tests/test_otkrytie_gl4.py
 
 ## G13 — PR в `kanon-v22-pereschet` открыт, не слит
-CHECK: gh pr view --json baseRefName,state
+CHECK: gh pr view 313 --json baseRefName,state
 EXPECT: baseRefName = kanon-v22-pereschet, state = OPEN
-EVIDENCE: pending
+EVIDENCE: {"baseRefName":"kanon-v22-pereschet","state":"OPEN"} — PR #313
 
 ## ABANDON (только с причиной; гейт не удалять и не переписывать)
 
 ## Реестр
-закрыто 0 из 13; ABANDON: 0; pending: 13
+закрыто 13 из 13; ABANDON: 0; pending: 0
