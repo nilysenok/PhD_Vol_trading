@@ -24,7 +24,16 @@ class Params:
     tau: int | None = None        # временной стоп, торговых дней
     s: str = "fiks"               # fiks | ezhedn
     comm: float = 0.0004          # за сторону, доля
-    exit_signal: bool = True      # выход по close первого дня с sig == 0
+    exit_signal: bool = True      # выход по close первого дня с sig != стороне сделки
+    # --- Ж-047 (контракт §1.1); всё выключено по умолчанию, E не меняется ни на байт ---
+    tick: float | None = None     # шаг цены: тейк и лимит — на 1 тик сквозь уровень; None — строго (E §2)
+    stop_touch: bool = False      # стоп при касании (l <= S), иначе l < S
+    R: float | None = None        # цель P(1 + R·b·σ√h); требует b; несовместимо с a
+    h: float | None = None        # h в √h; None — τ (❓1)
+    k_tr: float | None = None     # трейлинг: экстремум с входа ∓ k_tr·σ (нужен b)
+    be: bool = False              # безубыток после +1σ, со следующего бара
+    check: str = "bary"           # bary | zakrytie (выходы только по close Н6)
+    reentry: bool = True          # False — блок повторного входа до sig == 0 или смены знака
 
 
 @dataclass
@@ -38,6 +47,7 @@ class Trade:
     exit_bar: int | None = None
     exit_px: float | None = None
     reason: str | None = None     # stop | take | vremya | signal; None — открыта на конце
+    side: int = 1                 # +1 лонг, −1 шорт
     fee_in: float = 0.0
     fee_out: float = 0.0
 
@@ -50,7 +60,13 @@ class Result:
     pos: np.ndarray
     free: np.ndarray
     fdr: np.ndarray
+    n_orders: int = 0             # лимитных заявок поставлено
+    n_fills: int = 0              # из них исполнено
 
     @property
     def pnl(self):
         return self.gross - self.cost
+
+    @property
+    def fill_rate(self):
+        return self.n_fills / self.n_orders if self.n_orders else float("nan")
