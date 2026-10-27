@@ -119,16 +119,22 @@ def header(name: str, s: dict, ev, sw: Sweep) -> str:
             f"# вход: сетка {inp}; ряд {ev.series_digest()[:12]}; проб в ledger (N в DSR) {len(sw.ledger)}\n")
 
 
+def ledger_dir(out_dir, name: str) -> str:
+    """Постоянный ledger стратегии: пробы копятся между запусками режимов (OAT -> factorial -> optuna)."""
+    return str(Path(out_dir) / "_ledger" / name)
+
+
 def run_setka(name: str, setka, evaluator=None, out_dir=OUT_DIR) -> dict:
     """Одна стратегия: отбор 0,04 наполняет ledger, затем пересчёт 0,035; DSR — по полному ledger. {comm: (таблица, торнадо)}."""
     spec_d, exp, raw = load(setka)
-    spec = Spec(**spec_d)
+    spec = Spec(**spec_d, out=ledger_dir(out_dir, name))
     ev = evaluator or make_evaluator(spec)
     sw = Sweep(spec, ev)
     per = periods(raw)
     raw_rows = {c: oat_rows(sw, exp, c, per) for c in spec.comm_pct}
     trials, out, got = sw.trials_sr(), Path(out_dir), {}
     out.mkdir(parents=True, exist_ok=True)
+    sw.save()
     h = header(name, raw, ev, sw)
     for c, (rows, n_mod) in raw_rows.items():
         t, tor = finish(rows, exp, trials, n_mod, c)
@@ -153,7 +159,15 @@ def main(argv=None):
     a.add_argument("yaml", nargs="+")
     a.add_argument("--out", default=str(OUT_DIR))
     a.add_argument("--jobs", type=int, default=MAX_JOBS)
+    a.add_argument("--mode", default="oat", choices=("oat", "factorial", "morris", "optuna"))
+    a.add_argument("--params", help="p1,p2,p3 или tornado:3 (факторный, Моррис); Optuna берёт всю сетку")
+    a.add_argument("--paths", type=int, default=10, help="траектории Морриса")
+    a.add_argument("--trials", type=int, default=100, help="пробы Optuna")
+    a.add_argument("--n-jobs", type=int, default=1, help="потоки Optuna (≤ 6; > 1 нарушает побайтную повторяемость)")
     ns = a.parse_args(argv)
+    if ns.mode != "oat":
+        from fastbt import sweep_run_iter
+        return sweep_run_iter.run_cli(ns)
     if not 1 <= ns.jobs <= MAX_JOBS:
         raise ValueError(f"--jobs в 1..{MAX_JOBS}")
     with ProcessPoolExecutor(min(ns.jobs, len(ns.yaml))) as ex:
