@@ -1,11 +1,12 @@
-"""К (Ъ владельца 27.10, 00:10): сетка C + p50/p60 и контроли без прогноза к1/к2 (fastbt.fast_kontrol).
+"""К (Ъ владельца 27.10, 00:10; контроли v3 — 01:30): сетка C + p50/p60 и контроли без прогноза
+к2 (круговой сдвиг) и к3 (A без S5/S6) (fastbt.fast_kontrol).
 
 (а) расширение сетки (setka_C.yaml: dop.rassh): число точек = yaml; формулы = C1/C2 (S9.c_points);
     детектор утечек — σ после t → шум не меняет затворы на барах ≤ t, сдвиг +1 ловится;
-(б) к2: перестановки внутри пар, доля и уровни 1 / 0,5 / 0 сохраняются; Шарп ядра на тождественной
-    перестановке = s9.Engine.port → metrics; p = (1 + #≥) / (N + 1);
-(в) синтетика: маска C случайная (та же доля) → p к к2 распределён равномерно;
-(г) мутация: маска к2 берёт другую долю → ловится (check_share и неравномерность p).
+(б) к2: круговой сдвиг внутри пар, |k| ≥ 22; доля, уровни и число переключений (оборот) сохраняются;
+    Шарп ядра на тождественном сдвиге = s9.Engine.port → metrics; p = (1 + #≥) / (N + 1);
+(в) синтетика: маска C случайная (та же доля) → p к к2 равномерно; информативная маска → p мал;
+(г) мутации: сдвиг без круга и неверная доля ловятся; к3 обнуляет ровно S5/S6 (не только S5).
 Данные не читаются. python3 -m pytest tests/test_s9_c8v2.py -q
 """
 import types
@@ -142,80 +143,197 @@ def _gate_like_C(ns, seed, share0=0.3, share_half=0.1):
     return g
 
 
-def test_perm_index_within_groups():
-    groups = np.repeat(np.arange(5), [7, 1, 30, 12, 50])[np.random.RandomState(1).permutation(100)]
-    P = fk.perm_index(groups, 50, 3)
-    assert P.shape == (50, 100)
-    for b in range(50):
-        assert np.array_equal(np.sort(P[b]), np.arange(100))
-        assert np.array_equal(groups[P[b]], groups)
-    assert np.array_equal(P, fk.perm_index(groups, 50, 3))          # seed фиксирован
-    assert not np.array_equal(P, fk.perm_index(groups, 50, 4))
+def _blocky_gate(ns, seed, block=15):
+    """Затвор с сериями (блоки по 15 дней, доля нулей ~ 0,3) — для проверки оборота."""
+    rng = np.random.RandomState(seed)
+    g = np.ones(len(ns.A_row))
+    for p in np.unique(ns.r["pair"]):
+        idx = np.flatnonzero((ns.r["pair"] == p) & (ns.A_row != 0))
+        v = np.where(rng.random_sample(len(idx) // block + 1) < 0.3, 0.0, 1.0).repeat(block)
+        g[idx] = v[:len(idx)]
+    return g
 
 
-def test_identity_perm_equals_engine_port():
-    ns = _engine(seed=5)
-    k = fk.Kontrol(ns, 0.0004, n_perm=20)
-    pos = ns.A_row * _gate_like_C(ns, 9)
-    ref = s9.metrics(s9.Engine.port(ns, pos, comm=0.0004))["sharpe"]
-    assert abs(k.identity_sharpe(pos) - ref) < 1e-10
-    # к1: константа — отношение средних |позиций|
-    assert abs(k.k1_const(pos) - np.abs(pos).mean() / np.abs(ns.A_row).mean()) < 1e-15
-    fk.check_share(k.gate_act(pos), k.P, k.groups)
-    assert fk.p_perm(1.0, np.array([0.5, 1.0, 2.0])) == 3 / 4
+def _switches(x, circular):
+    n = int(np.sum(x[1:] != x[:-1]))
+    return n + int(x[0] != x[-1]) if circular else n
 
 
-def _p_null(ns, k, reps, mutate=False):
-    ps = []
-    for s in range(reps):
-        pos = ns.A_row * _gate_like_C(ns, 100 + s)
-        P = k.P
-        if mutate:
-            P = _mutated_P(k, pos)
-        ps.append(fk.p_perm(s9.metrics(s9.Engine.port(ns, pos, comm=k.comm))["sharpe"],
-                            k.k2_sharpes(pos, P)))
-    return np.array(ps)
-
-
-def _mutated_P(k, pos):
-    """Мутация: маска к2 берёт другую долю — половина нулевых дней заменена днями с g = 1."""
-    gr = k.gate_act(pos)
-    P = k.P.copy()
-    rng = np.random.RandomState(0)
-    for gi in np.unique(k.groups):
-        loc = np.flatnonzero(k.groups == gi)
-        ones = loc[gr[loc] == 1.0]
-        for b in range(P.shape[0]):
-            row = P[b, loc]
-            z = np.flatnonzero(gr[row] == 0.0)
-            z = z[rng.random_sample(len(z)) < 0.5]
-            P[b, loc[z]] = rng.choice(ones, len(z))
+def _linear_shift_P(groups, k=30):
+    """Мутация: сдвиг без круга — хвост замещается первым элементом группы (края не заворачиваются)."""
+    P = np.arange(len(groups), dtype=np.int32)[None, :].copy()
+    for g in np.unique(groups):
+        idx = np.flatnonzero(groups == g)
+        P[0, idx] = idx[np.maximum(np.arange(len(idx)) - k, 0)]
     return P
 
 
+# ---------------- (б) к2: круговой сдвиг ----------------
+
+def test_shift_index_circular_within_groups():
+    rng = np.random.RandomState(1)
+    sizes = [7, 1, 300, 120, 50, 44]
+    groups = np.repeat(np.arange(6), sizes)[rng.permutation(sum(sizes))]
+    P = fk.shift_index(groups, 40, 3)
+    assert P.shape == (40, len(groups))
+    assert np.array_equal(P, fk.shift_index(groups, 40, 3))         # seed фиксирован
+    assert not np.array_equal(P, fk.shift_index(groups, 40, 4))
+    for b in range(40):
+        assert np.array_equal(np.sort(P[b]), np.arange(len(groups)))
+        assert np.array_equal(groups[P[b]], groups)                  # внутри своей пары
+    for g, m in enumerate(sizes):
+        idx = np.flatnonzero(groups == g)                            # время — по возрастанию индекса
+        ks = set()
+        for b in range(40):
+            src = np.searchsorted(idx, P[b, idx])                    # позиция источника внутри группы
+            k = int((0 - src[0]) % m)                                # src[j] = (j − k) mod m
+            assert np.array_equal(src, (np.arange(m) - k) % m)       # именно круг, а не перестановка
+            ks.add(k)
+        if m >= 44:
+            assert all(22 <= k <= m - 22 for k in ks), (m, sorted(ks)[:3])
+            assert len(ks) > 1 or m == 44                             # m = 44: единственный сдвиг 22
+        else:
+            assert ks == {0}                                          # допустимых сдвигов нет — на месте
+
+
+def test_shift_keeps_share_and_turnover():
+    ns = _engine(seed=3, D=400)
+    k = fk.Kontrol(ns, 0.0004, n_shift=60)
+    g = _blocky_gate(ns, 4)
+    pos = ns.A_row * g
+    ga = k.gate_act(pos)
+    fk.check_share(ga, k.P, k.groups)
+    for b in range(60):
+        sh = ga[k.P[b]]
+        for p in np.unique(k.groups):
+            m = k.groups == p
+            assert np.sum(sh[m] == 1) == np.sum(ga[m] == 1)           # доля дней
+            assert _switches(sh[m], True) == _switches(ga[m], True)   # число переключений на круге
+            assert abs(_switches(sh[m], False) - _switches(ga[m], False)) <= 1
+
+
+def test_linear_shift_mutation_caught():
+    """Сдвиг без круга меняет долю дней — check_share падает."""
+    ns = _engine(seed=3, D=400)
+    k = fk.Kontrol(ns, 0.0004, n_shift=5)
+    ga = k.gate_act(ns.A_row * _blocky_gate(ns, 4))
+    fk.check_share(ga, k.P, k.groups)
+    with pytest.raises(AssertionError):
+        fk.check_share(ga, np.repeat(_linear_shift_P(k.groups), 3, axis=0), k.groups)
+
+
+def test_identity_equals_engine_port():
+    ns = _engine(seed=5)
+    k = fk.Kontrol(ns, 0.0004, n_shift=20)
+    pos = ns.A_row * _gate_like_C(ns, 9)
+    ref = s9.metrics(s9.Engine.port(ns, pos, comm=0.0004))["sharpe"]
+    assert abs(k.identity_sharpe(pos) - ref) < 1e-10
+    assert fk.p_perm(1.0, np.array([0.5, 1.0, 2.0])) == 3 / 4
+
+
+def _p_null(ns, k, reps, informative=False):
+    ps = []
+    for s in range(reps):
+        pos = ns.A_row * (_regime_gate(ns) if informative else _gate_like_C(ns, 100 + s))
+        ps.append(fk.p_perm(s9.metrics(s9.Engine.port(ns, pos, comm=k.comm))["sharpe"],
+                            k.k2_sharpes(pos)))
+    return np.array(ps)
+
+
+def _regime_gate(ns, block=60):
+    """Режим ±1 блоками по 60 дней, общий для всех пар; затвор = 1 в «хорошем» режиме."""
+    D = len(ns.dates)
+    reg = np.where(np.sign(np.sin(np.arange(D) // block * 2.3)) > 0, 1.0, 0.0)
+    return reg[ns.r["date"]]
+
+
 def test_k2_p_uniform_under_random_mask():
-    """Маска C — случайная той же доли: p к к2 ~ U(0, 1) (KS), доля p < 0,05 около 5 %."""
+    """Маска C случайная той же доли: p к к2 ~ U(0, 1) (KS), доля p < 0,05 около 5 %."""
     ns = _engine(seed=11, drift=0.002)
-    k = fk.Kontrol(ns, 0.0004, n_perm=199, seed=fk.SEED)
+    k = fk.Kontrol(ns, 0.0004, n_shift=199)
     ps = _p_null(ns, k, 300)
     assert stats.kstest(ps, "uniform").pvalue > 0.01
     assert 0.01 <= np.mean(ps < 0.05) <= 0.10
 
 
-def test_mutation_other_share_caught():
-    ns = _engine(seed=11, drift=0.002)
-    k = fk.Kontrol(ns, 0.0004, n_perm=199, seed=fk.SEED)
-    pos = ns.A_row * _gate_like_C(ns, 100)
-    with pytest.raises(AssertionError):
-        fk.check_share(k.gate_act(pos), _mutated_P(k, pos), k.groups)
-    ps = _p_null(ns, k, 60, mutate=True)
-    assert stats.kstest(ps, "uniform").pvalue < 1e-3
+def test_k2_informative_gate_has_small_p():
+    """Затвор, совпадающий с режимом доходности, сдвиг ломает → p мал (контроль имеет силу)."""
+    ns = _engine(seed=11, D=600)
+    ns.lr_row = ns.lr_row + 0.004 * ns.A_row * np.where(_regime_gate(ns) > 0, 1.0, -1.0)
+    k = fk.Kontrol(ns, 0.0004, n_shift=199)
+    assert _p_null(ns, k, 1, informative=True)[0] < 0.05
+
+
+# ---------------- к3: A без S5/S6 ----------------
+
+def _pairs_sids(G=12):
+    return [(f"T{i // 6}", f"S{i % 6 + 1}") for i in range(G)]
+
+
+def test_k3_zeroes_exactly_s5_s6():
+    ns = _engine(seed=2)
+    pairs = _pairs_sids()
+    k3 = fk.k3_positions(ns.A_row, ns.r["pair"], pairs)
+    for pid, (_, sid) in enumerate(pairs):
+        m = ns.r["pair"] == pid
+        if sid in ("S5", "S6"):
+            assert np.all(k3[m] == 0)
+        else:
+            assert np.array_equal(k3[m], ns.A_row[m])
+    assert np.sum(ns.A_row[np.isin(ns.r["pair"], [4, 5, 10, 11])] != 0) > 0     # было что обнулять
+
+
+def test_k3_mutation_s6_left_caught():
+    """k3, не выключающий S6, отличается от верного — и тест выше падает на нём."""
+    ns = _engine(seed=2)
+    pairs = _pairs_sids()
+    bad = fk.k3_positions(ns.A_row, ns.r["pair"], pairs, sids=("S5",))
+    good = fk.k3_positions(ns.A_row, ns.r["pair"], pairs)
+    assert not np.array_equal(bad, good)
+    m6 = np.isin(ns.r["pair"], [5, 11])
+    assert np.any(bad[m6] != 0) and np.all(good[m6] == 0)
+
+
+def test_k3_commission_and_rate_as_A():
+    """k3 считается тем же Engine.port: при A без S5/S6 = A доходность и комиссия идентичны (контроль знака)."""
+    ns = _engine(seed=7)
+    ref = s9.Engine.port(ns, ns.A_row, comm=0.0004)["excess"].values
+    same = s9.Engine.port(ns, fk.k3_positions(ns.A_row, ns.r["pair"], [("T", "S1")] * 12),
+                          comm=0.0004)["excess"].values
+    assert np.array_equal(ref, same)
+
+
+def test_s9_kontrol_columns_and_rule(monkeypatch):
+    """S9.kontrol на синтетическом движке: столбцы v3 есть, k1 нет, passed_v2 = С8 И Шарп > к3 И p < 0,05."""
+    ns = _engine(seed=11, D=400)
+    ns.pairs = _pairs_sids()
+    ns.port = lambda pos, comm=None, cap=1.0, wgt=None: s9.Engine.port(ns, pos, comm=comm, cap=cap, wgt=wgt)
+    monkeypatch.setattr(s9, "V2", True)
+    monkeypatch.setattr(s9, "SCOPE", "dev")
+    st = types.SimpleNamespace(e=ns, reps=50)
+    st.delta = lambda *a: s9.S9.delta(st, *a)
+    st.boot = lambda p1, p0: s9.S9.boot(st, p1, p0)
+    pos = ns.A_row * _regime_gate(ns)
+    pt = s9.metrics(ns.port(pos))
+    r = dict(sharpe=pt["sharpe"], passed=True)
+    s9.S9.kontrol(st, r, pos)
+    for c in ("sharpe_k3", "d_vs_k3", "p_vs_k3", "p_vs_k2", "n_shift_k2", "passed_v2"):
+        assert c in r, c
+    assert not {"c_k1", "sharpe_k1", "d_vs_k1"} & set(r)
+    assert r["n_shift_k2"] == fk.N_SHIFT
+    k3 = s9.metrics(ns.port(fk.k3_positions(ns.A_row, ns.r["pair"], ns.pairs)))["sharpe"]
+    assert r["sharpe_k3"] == k3
+    assert r["passed_v2"] == bool(r["sharpe"] > k3 and r["p_vs_k2"] < 0.05)
+    r2 = dict(sharpe=pt["sharpe"], passed=False)
+    s9.S9.kontrol(st, r2, pos)
+    assert r2["passed_v2"] is False
 
 
 def test_gate_outside_A_rejected():
     ns = _engine(seed=2)
-    k = fk.Kontrol(ns, 0.0004, n_perm=5)
+    k = fk.Kontrol(ns, 0.0004, n_shift=5)
     pos = ns.A_row.copy()
     pos[np.flatnonzero(ns.A_row == 0)[0]] = 1.0
     with pytest.raises(AssertionError):
         k.gate_act(pos)
+

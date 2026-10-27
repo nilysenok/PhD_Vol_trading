@@ -1,15 +1,17 @@
-"""К (Ъ владельца 27.10, 00:10): контроли без прогноза для точек C С9 v2 — быстрый слой.
+"""К3 (Ъ владельца 27.10, блок 01:30): контроли без прогноза для точек C С9 v2 — быстрый слой.
 
-к1 — A × c, c = mean|позиция точки| / mean|позиция A| по всем строкам пара-день 2018–2021;
-     считается обычным `s9.Engine.port` (здесь — только константа).
-к2 — A × g', g' — случайная перестановка значений затвора точки g = позиция / A по дням с A ≠ 0
-     внутри каждой пары тикер × стратегия (значит, и внутри тикера): доля дней, которые точка
-     обнуляет или уменьшает, и распределение уровней 1 / 0,5 / 0 сохраняются точно. Перестановки
-     одни и те же для всех точек (индексы строятся один раз, seed фиксирован).
-     p = (1 + #{Шарп перестановки ≥ Шарп точки}) / (N + 1).
+к1 снят: Шарп не зависит от масштаба позиции (A × c даёт Шарп A) — контроль вырожден.
+к2 — круговой сдвиг собственной маски точки: внутри каждой пары тикер × стратегия ряд затвора
+     g = позиция / A на днях с A ≠ 0 сдвигается по кругу на случайное k; k равномерно по допустимым
+     сдвигам, |k| < MIN_SHIFT дней исключены. Серии и оборот сохраняются (до шва круга). Сдвиги одни
+     и те же для всех точек (индексы строятся один раз, seed фиксирован).
+     p = (1 + #{Шарп сдвига ≥ Шарп точки}) / (N + 1). Пара с числом дней A ≠ 0 меньше 2·MIN_SHIFT
+     допустимого сдвига не имеет — остаётся на месте (консервативно: p не занижается).
+к3 — A без диапазонных стратегий S5/S6: позиции A, в которых S5 и S6 обнулены на всех днях;
+     комиссия и ставка — как у A (обычный `s9.Engine.port`); здесь — только маска позиций.
 
-Шарп перестановки — ядро `perm_sharpe`: арифметика `s9.Engine.port` (wgt=None, cap=1) →
-`Engine._finish` → `msp.sharpe` (ddof=1) в том же порядке операций; на тождественной перестановке
+Шарп сдвига — ядро `perm_sharpe`: арифметика `s9.Engine.port` (wgt=None, cap=1) →
+`Engine._finish` → `msp.sharpe` (ddof=1) в том же порядке операций; на тождественном сдвиге
 совпадает с Шарпом точки до ~1e-12 (тест `tests/test_s9_c8v2.py`). Старые пути не меняются.
 """
 from __future__ import annotations
@@ -20,32 +22,32 @@ import numpy as np
 from numba import njit, prange
 
 SEED = 20261027
-N_PERM = 1000
+N_SHIFT = 1000
+MIN_SHIFT = 22
+RANGE_SIDS = ("S5", "S6")
 
 
-def perm_index(groups: np.ndarray, n_perm: int = N_PERM, seed: int = SEED,
-               chunk: int = 100) -> np.ndarray:
-    """P[b, j] — индекс в массиве активных строк: перестановка внутри каждой группы (пары).
-    groups — номер группы активной строки (неубывающий не обязателен). int32 [n_perm, n_act]."""
+def shift_index(groups: np.ndarray, n_shift: int = N_SHIFT, seed: int = SEED,
+                min_shift: int = MIN_SHIFT) -> np.ndarray:
+    """P[b, j] — индекс в массиве активных строк: круговой сдвиг на k_b внутри каждой группы (пары).
+    Порядок внутри группы — по возрастанию индекса (время). k ∈ [min_shift, m − min_shift], m — размер
+    группы (это все сдвиги по модулю m с |k| ≥ min_shift), равномерно. int32 [n_shift, n_act]."""
     groups = np.asarray(groups, np.int64)
-    n = len(groups)
-    order0 = np.argsort(groups, kind="stable")            # строки, сгруппированные по паре
+    order0 = np.argsort(groups, kind="stable")
     gs = groups[order0]
+    cuts = np.flatnonzero(np.r_[True, gs[1:] != gs[:-1], True])
     rng = np.random.Generator(np.random.PCG64(seed))
-    P = np.empty((n_perm, n), np.int32)
-    for b0 in range(0, n_perm, chunk):
-        b1 = min(n_perm, b0 + chunk)
-        u = rng.random((b1 - b0, n))
-        # сортировка по (группа, случайный ключ): внутри группы — случайный порядок
-        key = gs[None, :] * 2.0 + u                       # u ∈ [0, 1): группы не перемешиваются
-        o = np.argsort(key, axis=1, kind="stable")        # o[b, k] — позиция в order0
-        # активная строка order0[k] получает значение строки order0[o[b, k]]
-        P[b0:b1][:, order0] = order0[o].astype(np.int32)
+    P = np.empty((n_shift, len(groups)), np.int32)
+    for s, e in zip(cuts[:-1], cuts[1:]):
+        idx, m = order0[s:e], e - s
+        lo, hi = min_shift, m - min_shift
+        k = rng.integers(lo, hi + 1, n_shift) if hi >= lo else np.zeros(n_shift, np.int64)
+        P[:, idx] = idx[(np.arange(m)[None, :] - k[:, None]) % m]
     return P
 
 
 def check_share(g_act: np.ndarray, P: np.ndarray, groups: np.ndarray) -> None:
-    """Перестановка сохраняет мультимножество уровней затвора в каждой группе (паре) — иначе ошибка."""
+    """Сдвиг сохраняет мультимножество уровней затвора в каждой группе (паре) — иначе ошибка."""
     lv = np.round(np.asarray(g_act, float) * 2).astype(np.int64)      # 0, 1 (=0,5), 2 (=1)
     G = int(groups.max()) + 1
     want = np.zeros((G, 3), np.int64)
@@ -54,7 +56,13 @@ def check_share(g_act: np.ndarray, P: np.ndarray, groups: np.ndarray) -> None:
         got = np.zeros((G, 3), np.int64)
         np.add.at(got, (groups, np.clip(lv[P[b]], 0, 2)), 1)
         if not np.array_equal(got, want):
-            raise AssertionError(f"к2: перестановка {b} меняет долю/уровни затвора внутри пар")
+            raise AssertionError(f"к2: сдвиг {b} меняет долю/уровни затвора внутри пар")
+
+
+def k3_positions(A: np.ndarray, pair: np.ndarray, pairs: list, sids=RANGE_SIDS) -> np.ndarray:
+    """A с обнулёнными позициями стратегий S5/S6 (по номеру пары → (тикер, sid)); остальное — как есть."""
+    drop = np.array([sid in sids for _, sid in pairs], bool)
+    return np.where(drop[np.asarray(pair, np.int64)], 0.0, np.asarray(A, np.float64))
 
 
 @njit(cache=True, parallel=True)
@@ -101,18 +109,18 @@ def perm_sharpe(A, gr, act, P, lr, first, last, date, nd, cnt, rf, kr, cal, comm
 
 
 class Kontrol:
-    """Общие для всех точек данные к2 на движке s9.Engine (строки пара-день 2018–2021)."""
+    """Общие для всех точек данные к2/к3 на движке s9.Engine (строки пара-день 2018–2021)."""
 
-    def __init__(self, eng, comm: float, n_perm: int = N_PERM, seed: int = SEED):
+    def __init__(self, eng, comm: float, n_shift: int = N_SHIFT, seed: int = SEED,
+                 min_shift: int = MIN_SHIFT):
         self.e = eng
         self.comm = float(comm)
         A = np.ascontiguousarray(eng.A_row, np.float64)
         self.A = A
         self.act = np.flatnonzero(A != 0).astype(np.int64)
         self.groups = eng.r["pair"][self.act].astype(np.int64)
-        self.P = perm_index(self.groups, n_perm, seed)
-        self.n_perm, self.seed = n_perm, seed
-        self.mean_absA = float(np.abs(A).mean())
+        self.P = shift_index(self.groups, n_shift, seed, min_shift)
+        self.n_shift, self.seed = n_shift, seed
         first = np.asarray(eng.first, bool)
         self.first = first
         self.last = np.r_[first[1:], True]
@@ -133,8 +141,8 @@ class Kontrol:
             raise AssertionError("к2: позиция точки ≠ 0 там, где A = 0 — затвор не выделяется")
         return pos[self.act] / self.A[self.act]
 
-    def k1_const(self, pos: np.ndarray) -> float:
-        return float(np.abs(pos).mean()) / self.mean_absA
+    def k3_pos(self) -> np.ndarray:
+        return k3_positions(self.A, self.e.r["pair"], self.e.pairs)
 
     def k2_sharpes(self, pos: np.ndarray, P: np.ndarray | None = None) -> np.ndarray:
         gr = np.ascontiguousarray(self.gate_act(pos))
@@ -150,6 +158,6 @@ class Kontrol:
 
 
 def p_perm(sh_point: float, sh_perm: np.ndarray) -> float:
-    """p = (1 + #{Шарп перестановки ≥ Шарп точки}) / (N + 1)."""
+    """p = (1 + #{Шарп сдвига ≥ Шарп точки}) / (N + 1)."""
     sh_perm = np.asarray(sh_perm, float)
     return float((1 + np.sum(sh_perm >= sh_point)) / (len(sh_perm) + 1))
