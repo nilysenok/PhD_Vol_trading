@@ -3,6 +3,7 @@ git и журнал — во временном каталоге. Детекто
 import json
 import os
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -42,11 +43,23 @@ def ok_spisok_sostav(spisok_) -> bool:
 
 
 def ok_dubli_svedeny(sid="S5") -> bool:
-    """У S5 ранги 2 и 3 различаются только неактивным параметром: в списке один из них, добран следующий различный."""
-    c = kd.kandidaty(sid)["cands"]
+    """Синтетика: в пул kand_a.csv вставлена копия ранга 1 с другим значением НЕАКТИВНОГО параметра (подпись результата та же).
+    Дубль сведён: в списке три различные точки, копии нет, добран следующий различный ранг."""
+    import tempfile
+    from pathlib import Path
+    import pandas as pd
+    t = pd.read_csv(Path(kd.TABLES) / "kand_a.csv", comment="#")
+    pool = t[t["strategiya"] == sid].sort_values("rank").reset_index(drop=True)
+    dup = pool.iloc[[0]].copy()
+    dup["p.rm_sqrt_rv.k_sl"] = 99.0                                    # неактивен при rm_tip != sqrt_rv
+    new = pd.concat([pool.iloc[[0]], dup, pool.iloc[1:]], ignore_index=True)
+    new["rank"] = range(1, len(new) + 1)
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / kd.TABLES).mkdir(parents=True)
+        new.to_csv(Path(d) / kd.TABLES / "kand_a.csv", index=False)
+        c = kd.kandidaty(sid, d)["cands"]
     keys = {kd.eff_key(sid, x["point"]) for x in c}
-    ranks = [x["rank"] for x in c]
-    return bool(len(c) == 3 and len(keys) == 3 and not ({2, 3} <= set(ranks)) and max(ranks) >= 4)
+    return bool(len(c) == 3 and len(keys) == 3 and 2 not in [x["rank"] for x in c] and [x["rank"] for x in c] == [1, 3, 4])
 
 
 def ok_otkaz_posle_kommita(tmp, spisok_) -> bool:
@@ -139,8 +152,12 @@ def test_dsr_N_otdelno_var_po_novym():
 
 def test_N_dlya_A_i_Sk_iz_zamorozki(spisok):
     n = spisok[2]
-    assert kd.n_a(n) == 36 + sum(n[s] for s in kd.SIDS) == 36 + 582 + 566 + 616 + 619 + 588 + 652
-    assert len(kd.ledger_sk("S1", ".")[0]) == 392 < n["S1"]               # новые пробы без дополнения; N — отдельно
+    z = json.loads(Path("docs/otbor/zamorozka_A_prim.json").read_text("utf-8"))["N_vsego"]       # числа — из файла заморозки
+    assert n == z and kd.n_a(n) == 36 + sum(z[s] for s in kd.SIDS)
+    k = kd.kandidaty("S1")["cands"][0]
+    import pandas as pd
+    nov = int(pd.read_csv("docs/tables/sweep_e1v2/kand_a.csv", comment="#").query("strategiya == 'S1'")["N_novye"].iloc[0])
+    assert len(kd.ledger_sk("S1", ".")[0]) == nov < k["n_vsego"] == n["S1"]     # все новые пробы в ledger (без дополнения); N — отдельно
 
 
 def test_tablitsa_sborok_A():

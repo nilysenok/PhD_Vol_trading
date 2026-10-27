@@ -26,8 +26,6 @@ DIR = Path(__file__).parent / "designs" / "sweep"
 TABLES = Path("docs/tables/sweep_e1v2")
 NET = {"vesa": "ravnye", "limit_pozitsiy": "net", "limit_na_strategiyu": "net"}
 TOP_K, N_A = 3, 36
-REN = {"rang": "rank", "plato": "plateau", "sosedey": "neighbors", "tune_004": "tune_sharpe", "ctrl_004": "ctrl_sharpe",
-       "storon_god": "storon_y"}                                      # S1–S3 и S4–S6 пишут шапки по-разному
 
 
 def _typed(v, key, grid):
@@ -53,26 +51,23 @@ def eff_key(sid: str, p: dict) -> str:
 def _sig(r) -> tuple:
     """Подпись результата на train: точки с одинаковыми tune/ctrl/сторонами — одна и та же торговля (параметр, различающий
     их, на этих данных не действует, напр. tf_reentry 3 и 10 у S5): дубль."""
-    return tuple(round(float(r[c]), 9) for c in ("tune_sharpe", "ctrl_sharpe", "storon_y"))
+    return tuple(round(float(r[c]), 9) for c in ("tune_004", "ctrl_004", "storon_y"))
 
 
 def kandidaty(sid: str, root=".", k: int = TOP_K) -> dict:
-    """{base: исходная точка, cands: [{rank, point, neighbors, plateau, n_vsego}]} — топ-k различных из `S{k}_kandidaty_plato.csv`."""
+    """{base: исходная точка, cands: [{rank, point, neighbors, plateau, n_vsego}]} — топ-k различных из `kand_a.csv` (вариант (а):
+    пул воспроизводимых боевым путём точек, `ekviv_kand`). Допустимых меньше k — cands короче: стратегия без точки остаётся в центре."""
     exp = sk.expand(DIR / f"{sid}_setka_e1b.yaml")
-    base, grid, d = exp["base"], exp["grid"], Path(root) / TABLES
-    pool = pd.read_csv(d / f"{sid}_kandidaty_plato.csv", comment="#").rename(columns=REN).sort_values("rank")
-    top = pd.read_csv(d / f"{sid}_top3.csv", comment="#")
-    top = top[top["mode"] == "plato"].sort_values("rank")
+    base, grid = exp["base"], exp["grid"]
+    t = pd.read_csv(Path(root) / TABLES / "kand_a.csv", comment="#")
+    pool = t[t["strategiya"] == sid].sort_values("rank")
 
     def pt(r):
-        extra = [c for c in r.index if c.startswith("p.") and c[2:] not in base]
+        extra = [c for c in r.index if c.startswith("p.") and c[2:] not in base and pd.notna(r[c])]     # столбцы других стратегий пусты
         if extra:
             raise ValueError(f"{sid}: параметры вне сетки {extra}")
         return {key: _typed(r[f"p.{key}"], key, grid) if f"p.{key}" in r.index else base[key] for key in base}
 
-    for j in range(len(top)):                        # топ-3 файла и начало пула — одни и те же точки
-        if pt(top.iloc[j]) != pt(pool.iloc[j]):
-            raise ValueError(f"{sid}: top3.csv и kandidaty_plato.csv расходятся на ранге {j + 1}")
     seen, out = set(), []
     for _, r in pool.iterrows():
         p = pt(r)
@@ -82,8 +77,10 @@ def kandidaty(sid: str, root=".", k: int = TOP_K) -> dict:
             out.append(dict(rank=int(r["rank"]), point=p, neighbors=int(r["neighbors"]), plateau=float(r["plateau"]),
                             n_vsego=int(r["N_vsego"])))
         if len(out) == k:
-            return dict(base=dict(base), cands=out)
-    raise ValueError(f"{sid}: различных кандидатов {len(out)} < {k}")
+            break
+    if not out:
+        raise ValueError(f"{sid}: пул kand_a.csv пуст — N_vsego неизвестен")
+    return dict(base=dict(base), cands=out, n_vsego=out[0]["n_vsego"])
 
 
 def top2_sborki(root=".") -> list:
@@ -105,9 +102,9 @@ def build_spisok(root=".") -> tuple:
     for j, sb in enumerate(top2_sborki(root), 1):
         for i in range(TOP_K):
             sp.append(dict(id=f"A:{i + 1}:{j}", kind="A", params={k: sb[k] for k in NET}, orig_params=NET,
-                           tochki={s: kd[s]["cands"][i]["point"] for s in SIDS}, baza=bz.baza_ref("A"),
-                           neighbors=sb["plateau_neighbors"], plateau=None, rank_tablitsy=i + 1))
-    n = {s: kd[s]["cands"][0]["n_vsego"] for s in SIDS}
+                           tochki={s: (kd[s]["cands"][i]["point"] if i < len(kd[s]["cands"]) else kd[s]["base"]) for s in SIDS},
+                           baza=bz.baza_ref("A"), neighbors=sb["plateau_neighbors"], plateau=None, rank_tablitsy=i + 1))
+    n = {s: kd[s]["n_vsego"] for s in SIDS}
     return sp, {b: bz.baza_ref(b) for b in ("A", *SIDS)}, dict(n, A=N_A)
 
 
