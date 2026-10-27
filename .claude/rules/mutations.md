@@ -25,6 +25,17 @@
 | 17 | Чтение 5-минутных баров за пределами периода | чтение за границей периода | #288 | `tests/test_bars5m.py::test_mutatsiya_chteniya_za_predelami_lovitsya` |
 | 18 | E-const (σ̂ константой) считается с текущим днём | текущий день в σ̂ | #289 | `tests/test_sigma_e.py::test_mutaciya_const_s_tekushchim_dnem_lovitsya` |
 | 19 | Топ-10 по обороту текущего года вместо прошлого | текущий год в отборе | #289 | `tests/test_likvidnost_e.py::test_mutaciya_top10_tekushchego_goda_lovitsya` |
+| 20 | Знак позиции умножен повторно после слоя исполнения (шорт → лонг) | знак позиции | #326 → #328 | `tests/test_sweep_post_znak.py::test_mutaciya_dvoynoy_znak_lovitsya` |
+| 21 | Квантиль силы `q_sily` считается с текущим днём | текущий день в отборе | #308 / #310 | `tests/test_sweep_post_mut.py::test_mutp_01_q_sily_s_tekushchim_dnem_ili_budushchim` |
+| 22 | RV для уровней √RV берётся с текущим днём | текущий день в σ | #319 | `tests/test_rm_sqrt_rv.py::test_mutatsiya_rv_s_tekushchim_dnem_lovitsya` |
+| 23 | Уровень √RV строится по σ дня d+1 | сдвиг входа | #319 | `tests/test_rm_sqrt_rv.py::test_mutatsiya_sigma_d_plus_1_lovitsya` |
+| 24 | Ledger пишет пробу на любом периоде или при любой комиссии | N в поправке | #308 / #310 | `tests/test_sweep_post_ledger.py::test_mut_ledger_pishet_na_lyubom_periode` |
+| 25 | Пересчёт при другой комиссии перезаписывает SR пробы | N в поправке | #304 / #306 | тест: см. файл `tests/test_sweep_mutacii.py` ❓ (точного теста на перезапись SR нет) |
+| 26 | Повторное открытие validation без удвоения N | N в поправке | #304 / #310 | `tests/test_sweep_mutacii.py::test_mut_24_povtornoe_otkrytie_ne_udvaivaet_N` |
+| 27 | Плато заменено пиком | отбор | #310 | `tests/test_sweep_modul_mut.py::test_mutm_07_plato_zamenyeno_pikom` |
+| 28 | Шорты A выброшены в E (E0 при q = 0 ≠ A) | E0 ≡ A | #311 | `tests/test_sem_e.py::test_e0_q0_equals_full_a_with_shorts` |
+| 29 | B без условия 3 (к2) | отбор B | #314 | тест: см. файл `tests/test_konveyer_bcd.py` ❓ (точного теста нет; ближайший `test_k2_lag_zero_caught`) |
+| 30 | Замок открытия теста ставится после чтения данных | открытие | #313 / #320 | `tests/test_otkrytie_gl4.py::test_zamok_do_chteniya` |
 
 Слиты #288, #289; их мутации внесены в строки 17–19. Остальные мутации постановки E §8 (исполнение по барам дня d вместо d+1; E0 при q = 0 ≠ A побайтно; сила сигнала по d+1; комиссия при стопе внутри дня; ставка на капитал, освободившийся внутри дня) обязательны для PR семьи E с первого дня и вносятся в таблицу строками, когда появятся тесты.
 
