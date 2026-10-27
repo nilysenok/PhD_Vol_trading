@@ -22,4 +22,5 @@ Bash: `gh pr view|diff|checks|comment`, `git log|diff|show|status|fetch|checkout
 Если в задании несколько PR одной стопки — проверь по порядку за один заход, вердикт комментарием в каждый.
 
 Вердикт — не больше 6 строк: первая строка «СЛИВАТЬ» или «НЕ СЛИВАТЬ»; дальше замечания, важные первыми, каждое — файл и строка; в конце — что проверить не удалось и расход.
-Обязательны `.claude/rules/polnota.md` и `.claude/rules/orkestratsiya.md`; задание — по шаблону гейтов (`templates/GATES.md`).
+Обязательны `.claude/rules/polnota.md` и `.claude/rules/orkestraciya.md`; задание — по шаблону гейтов (`.claude/rules/GATES_shablon.md`).
+Указатель канона v23: оркестрация — `.claude/rules/orkestratsiya.md`, шаблон гейтов — `templates/GATES.md`.
