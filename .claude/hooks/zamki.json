@@ -1,0 +1,35 @@
+{
+  "v": 1,
+  "osnovnaya_kopiya": "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading",
+  "zakryto_chtenie": [
+    "(^|/)test_locked(/|$)",
+    "(^|/)OPENED_[^/]*\\.json$",
+    "^docs/tables/strat_test(/|$)",
+    "^data/(.+/)?[^/]*_(test|202[2-9])([_.][^/]*)?$",
+    "^data/(.+/)?test(/|$)"
+  ],
+  "zakrytye_papki": ["data", "docs/tables/strat_test"],
+  "zamorozheno": [
+    "^fastbt/designs/final/main\\.yaml$",
+    "^fastbt/final_test\\.py$",
+    "^scripts/analysis/final_test_r2\\.py$",
+    "^docs/tables/strat_dev/[^/]*_final3\\.csv$",
+    "(^|/)arhiv_[^/]*/",
+    "(^|/)OPENED_[^/]*\\.json$",
+    "^\\.claude/hooks/",
+    "^\\.claude/settings[^/]*\\.json$"
+  ],
+  "konfig_testov": ["pytest.ini", "conftest.py", "tox.ini"],
+  "zakrytye_testy": ["fastbt/tests/test_core.py"],
+  "skripty_otkrytiya": [
+    {"put": "scripts/analysis/final_test_ch4_v2.py", "bezopasno": ["--selftest", "--sha-fastbt"]},
+    {"put": "scripts/analysis/final_test_r2.py", "bezopasno": ["--selftest"]},
+    {"put": "fastbt/final_test.py", "modul": "fastbt.final_test", "bezopasno": ["--scope dev", "--scope=dev"]},
+    {"put": "scripts/analysis/r2_sborka_test.py", "bezopasno": []}
+  ],
+  "da_fail": ".claude/hooks/da/OTKRYTIE_DA.json",
+  "obshchie_vetki": ["main", "kanon-v22-pereschet", "figures-final"],
+  "test_timeout_post": 60,
+  "test_timeout_stop": 300,
+  "stop_povtory": 3
+}
