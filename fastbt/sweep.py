@@ -51,14 +51,15 @@ class Sweep:
         comm = self.comm[0] if comm_pct is None else comm_pct / 100.0
         p = {**self.spec.base, **params}
         row = ss.metrics_row(self._df(p, comm, years), years)
-        if period != "validation":
+        if period != "validation" and comm == self.comm[0]:      # проба = точка при комиссии ОТБОРА (первая в comm_pct)
             with self._lock:
                 self.ledger[pkey(p)] = row["sr_d"]
         mult = self.n_mult() if period == "validation" else 1
-        return {**p, "comm_pct": comm * 100, "period": period, **row, "N": len(self.ledger) * mult, "n_mult": mult}
+        return {**p, "comm_pct": comm * 100, "period": period, **row, "N": len(self.trials_sr()) * mult, "n_mult": mult}
 
     def trials_sr(self) -> list:
-        """Дневные SR всех накопленных проб (train/настройка/контроль) — для sweep_drivers.dsr."""
+        """Дневные SR накопленных проб (настройка/контроль/train) при комиссии отбора — для sweep_drivers.dsr.
+        Пересчёт при другой комиссии (справочный) пробой не считается и SR пробы не перезаписывает."""
         return list(self.ledger.values())
 
     def _opens(self) -> list:
