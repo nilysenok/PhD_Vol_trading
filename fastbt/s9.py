@@ -1027,7 +1027,7 @@ class S9:
                     r, p = self.row(e.A_row * g, fam, lab, h, src,
                                     dict(calib_closed=e.calib_closed(G)), g, cref)
                     if C8V2:
-                        self.kontrol(r, e.A_row * g)
+                        self.kontrol(r, e.A_row * g, g)
                     rows.append(r)
                     ports[(f"{fam}:{lab}", src)] = (p, e.A_row * g)
                 if len(item) > 2:          # расширение: семья «выбор по валидации» не строится
@@ -1040,14 +1040,14 @@ class S9:
                 r, p = self.row(e.A_row * g, f"{fam} (выбор по валидации)", "семья", h, src,
                                 dict(choice=ch), g, cref)
                 if C8V2:
-                    self.kontrol(r, e.A_row * g)
+                    self.kontrol(r, e.A_row * g, g)
                 rows.append(r)
                 ports[(f"{fam} семья", src)] = (p, e.A_row * g)
         return pd.DataFrame(rows), ports
 
-    def kontrol(self, r: dict, pos: np.ndarray) -> None:
+    def kontrol(self, r: dict, pos: np.ndarray, g: np.ndarray | None = None) -> None:
         """Ъ 27.10, 01:30: контроли без прогноза (fastbt.fast_kontrol) и С8 v2 для строки C:
-        к2 — круговой сдвиг маски точки, к3 — A без S5/S6; к1 снят (Шарп не зависит от масштаба)."""
+        к2 — круговой сдвиг маски точки g по тикеру (v3 §0.4), к3 — A без S5/S6; к1 снят."""
         from fastbt import fast_kontrol as fk
         if getattr(self, "_k", None) is None or self._k.comm != COMM:
             self._k = fk.Kontrol(self.e, COMM)
@@ -1056,17 +1056,18 @@ class S9:
         k = self._k
         r["sharpe_k3"] = self._m3["sharpe"]
         self.delta(r, "vs_k3", self.e.port(pos), self._p3)       # d_vs_k3, p_vs_k3 (Ледуа–Вольф, блок 5)
-        if np.any(pos[self.e.A_row == 0] != 0):
-            # C u02: позиция — не A × затвор (фильтр оборота после маски) — к2 не определён,
+        if g is None:
+            # C u02: позиция — не A × затвор (фильтр оборота после маски), маски нет — к2 не определён,
             # С8 v2 точка не проходит
             r["sharpe_k2_med"] = r["sharpe_k2_q95"] = r["p_vs_k2"] = np.nan
             r["n_shift_k2"] = 0
-            r["k2_primechanie"] = (f"к2 не определён: позиция ≠ A × затвор ({int(np.sum(pos[self.e.A_row == 0] != 0))} "
-                                   "строк с позицией при A = 0); С8 v2 не проходит")
+            r["k2_primechanie"] = "к2 не определён: позиция ≠ A × затвор (u02); С8 v2 не проходит"
             r["passed_v2"] = False
             return
-        fk.check_share(k.gate_act(pos), k.P, k.groups)
-        sh = k.k2_sharpes(pos)
+        if not np.array_equal(pos, self.e.A_row * g):
+            raise AssertionError("к2: позиция точки ≠ A × затвор g")
+        k.check(g)
+        sh = k.k2_sharpes(g)
         r["sharpe_k2_med"] = float(np.median(sh))
         r["sharpe_k2_q95"] = float(np.quantile(sh, 0.95))
         r["p_vs_k2"] = fk.p_perm(r["sharpe"], sh)

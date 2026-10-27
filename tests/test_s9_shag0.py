@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_s9_c8v2 import _engine  # noqa: E402
+from test_s9_kontrol import _engine  # noqa: E402
 
 from fastbt import fast_kontrol as fk  # noqa: E402
 from fastbt import s9, shag0  # noqa: E402
@@ -19,7 +19,7 @@ SIDS = shag0.SIDS
 
 
 def _world(seed=3):
-    ns = _engine(G=12, D=1000, drift=0.003, seed=seed)
+    ns = _engine(Ds=(1000, 1000), drift=0.003, seed=seed)
     ns.pairs = [(f"T{i // 6}", SIDS[i % 6]) for i in range(12)]
     ns.tickers = ["T0", "T1"]
     ns.r["tick"] = ns.r["pair"] // 6

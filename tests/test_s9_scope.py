@@ -117,21 +117,44 @@ def test_configs_vpred_final3_full():
         assert p.read_bytes() == (s9.REGEN / "sigma_pred_h1_final3.parquet").read_bytes()
 
 
-def test_frozen_keys_equal_dev_choice(unlocked, fresh_s9):
-    """Тест не перевыбирает: ключи из таблиц разработки final3 = выбор журнала run_log_final3."""
-    if not (s9.TABLES_DEV / "s9_D_zatvor_final3.csv").exists():
-        pytest.skip("нет таблиц разработки final3")
+ARHIV_N5 = ROOT / "docs" / "otchety" / "arhiv_do_audita" / "posle_N5"
+
+
+def _frozen_choice(tables_dir, monkeypatch):
+    monkeypatch.setattr(s9, "TABLES_DEV", tables_dir)
     s9.set_scope("test")
     s9.use_sigma_h1("final3")
     k = s9.frozen_keys()
     choice = dict(D=f"{k['D'][0]} на {k['D'][1]}", B=f"{k['B'][0]} на {k['B'][1]}",
                   C=f"{k['C'][0]} на {k['C'][1]}")
+    return choice, (k["D1"], k["B1"])
+
+
+def test_frozen_keys_equal_archive_choice(unlocked, fresh_s9, monkeypatch):
+    """Ключи v1 (main.yaml, заморожены) = выбор по эталонам final3 того периода, которому они
+    соответствовали, — архив posle_N5 (код 9b85bff, до #259). Правило владельца 26.10, 23:15."""
+    if not (ARHIV_N5 / "s9_D_zatvor_final3.csv").exists():
+        pytest.skip("нет архива posle_N5")
+    choice, (d1, b1) = _frozen_choice(ARHIV_N5, monkeypatch)
     assert choice == {"D": "D6 на hyb_h1", "B": "cap1_band20 на hyb_h1",
+                      "C": "C1:W504_p70 на hyb_h5"}
+    assert (d1, b1) == ("D6", "cap1_band20")
+
+
+def test_frozen_keys_equal_dev_choice(unlocked, fresh_s9, monkeypatch):
+    """Текущие эталоны final3 (после #259/#260): выбор D сменился D6 → D6lag1 на hyb_h1. Смена — на
+    слиянии #259 (78dd9b7, окна отбора платят выход): меняется ряд A (Шарп A −0,9297 → −0,92), у D6
+    число лет с выигрышем у A 3/4 → 2/4 и C8 не проходит, у D6lag1 3/4 — проходит; Шарп D6 и D6lag1
+    не изменился (−0,7908 / −0,7896). B и C прежние. Тест не перевыбирает: ключи = журнал run_log_final3."""
+    if not (s9.TABLES_DEV / "s9_D_zatvor_final3.csv").exists():
+        pytest.skip("нет таблиц разработки final3")
+    choice, (d1, b1) = _frozen_choice(s9.TABLES_DEV, monkeypatch)
+    assert choice == {"D": "D6lag1 на hyb_h1", "B": "cap1_band20 на hyb_h1",
                       "C": "C1:W504_p70 на hyb_h5"}
     log = s9.OUT / "run_log_final3.json"
     if log.exists():
         assert choice == json.loads(log.read_text())["choice"]
-    assert (k["D1"], k["B1"]) == ("D6", "cap1_band20")
+    assert (d1, b1) == ("D6lag1", "cap1_band20")
 
 
 def test_split_c_one_main_point():
