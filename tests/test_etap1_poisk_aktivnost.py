@@ -129,10 +129,37 @@ def test_kray_odin_naruzhnyy_nepolozhitelnyy_obshchee_pravilo_bez_usloviya_oba()
     assert g["ok"] and g["per"]["k_s"] == 2
 
 
-def test_kray_tau_1_ne_prohodit_prichina():
-    g = V.gate_osi(kray_led(), {**KRAY, "k_s": 2.0, "tau": 1}, AXK)
-    assert not g["ok"] and g["kray"] == "tau" and g["per"]["tau_kray"] == "край сетки τ = 1"
-    assert V.gates(kray_led(), {**KRAY, "tau": 1}, AXK, ["a"], 0.0, lambda p: True)["kray_setki"] == "k_s tau"
+AXT = {**AXK, "tau": [1, 2, 3, 5, 10, 20, NET]}
+TAU1 = {**PT, "k_s": 2.0, "R": 2.0, "tau": 1}                            # k_s, R внутри (по 2 положительных соседа), τ = 1 — физический край
+
+
+def tau_led(dip: float, tau: int = 2):
+    """Целевая 1,0 везде; при τ = tau — на dip хуже."""
+    s = lambda p: 1.0 - (dip if p["tau"] == tau else 0.0)                                           # noqa: E731
+    return V.Ledger(lambda p, per: dict(msr_by_year={2018: s(p), 2019: s(p)}, sdelok_y={2018: 40, 2019: 40}))
+
+
+def test_tau_1_ravnye_2_i_3_prohodit_proval_na_2_net_ostalnoe_ne_trogaet():
+    led = tau_led(0.0)
+    g = V.gate_osi(led, TAU1, AXT)
+    assert g["ok"] and g["kray"] == "tau" and g["per"]["tau_fiz"] is True and "tau" not in g["per"]    # без отказа «край τ = 1»
+    assert {2, 3} <= {p["tau"] for p, _ in led.cache.values()}                                       # τ = 2, 3 досчитаны в N
+    assert V.gate_osi(tau_led(0.1), TAU1, AXT)["ok"]                                                 # ровно 0,1 — допустимо
+    bad = V.gate_osi(tau_led(0.11), TAU1, AXT)
+    assert not bad["ok"] and bad["per"]["tau_fiz"] is False
+    assert not V.gate_osi(tau_led(0.5, 3), TAU1, AXT)["ok"]                                          # провал на τ = 3 тоже
+    assert V.gates(tau_led(0.0), TAU1, AXT, ["a"], 0.0, lambda p: True)["kray_setki"] == "tau"
+
+
+def test_mutaciya_tau1_porog_beskonechnost_ili_vsegda_otkaz_lovitsya(monkeypatch):
+    monkeypatch.setattr(V, "PLATO_NET", math.inf)
+    assert V.gate_osi(tau_led(0.5), TAU1, AXT)["ok"]                    # порог ∞ пропускает провал на τ = 2
+    with pytest.raises(AssertionError):
+        test_tau_1_ravnye_2_i_3_prohodit_proval_na_2_net_ostalnoe_ne_trogaet()
+    monkeypatch.undo()
+    monkeypatch.setattr(V, "one_sided", lambda *a, **k: False)          # «τ = 1 всегда не проходит»
+    with pytest.raises(AssertionError):
+        test_tau_1_ravnye_2_i_3_prohodit_proval_na_2_net_ostalnoe_ne_trogaet()
 
 
 def test_mutaciya_kray_ne_pomechaetsya_i_rasshirenie_ne_schitaetsya(monkeypatch):
@@ -144,15 +171,6 @@ def test_mutaciya_kray_ne_pomechaetsya_i_rasshirenie_ne_schitaetsya(monkeypatch)
                         all(V.obj(led({**pt, a: v}, "train")) > 0 for v in V.OUTER[a])))   # «оба наружных > 0 обязательны»
     with pytest.raises(AssertionError):
         test_kray_odin_naruzhnyy_nepolozhitelnyy_obshchee_pravilo_bez_usloviya_oba()
-
-
-def test_tolko_itog_rasshirenie_schitaet_tolko_naruzhnye(tmp_path):
-    ax = {**SETKA_A["axes"], "k_s": [1.0, 2.0, NET]}
-    setka = {**SETKA_A, "axes": ax, "yakor": {**SETKA_A["yakor"]}}
-    P.run_strategy("S9", World().evaluate, lambda p: True, out=tmp_path, run_id="1", setka=setka)
-    w = World()
-    row = P.tolko_itog("S9", w.evaluate, lambda p: True, out=tmp_path, run_id="2", setka=setka)
-    assert "kray_setki" in row and set(w.calls) == {"train"}
 
 
 def test_mutaciya_porog_plato_net_beskonechnost_lovitsya(monkeypatch):

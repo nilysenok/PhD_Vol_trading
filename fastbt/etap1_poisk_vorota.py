@@ -97,24 +97,28 @@ def n_pos(led: Ledger, pts: list) -> int:
     return sum(1 for q in pts if obj(led(q, "train")) > 0)       # nan > 0 ложно
 
 
-def net_plato(led: Ledger, pt: dict, a: str, axes: dict) -> bool:
-    """Ж-048 п. 1: при «нет» на оси плато одностороннее — два ближайших конечных значения оси (k_s 4,3; R 4,3; τ 20,10)
-    не хуже точки больше чем на PLATO_NET по целевой. Недосчитанные соседи досчитываются через Ledger (идут в N)."""
-    fin = [v for v in axes[a] if v != NET][-2:]
+def one_sided(led: Ledger, pt: dict, a: str, vals: list) -> bool:
+    """Одностороннее плато: точки pt[a] -> vals не хуже точки больше чем на PLATO_NET по целевой. Недосчитанные
+    соседи досчитываются через Ledger (идут в N)."""
     o = obj(led(pt, "train"))
-    return bool(fin) and all(obj(led({**pt, a: v}, "train")) >= o - PLATO_NET for v in fin)     # nan -> ложь
+    return bool(vals) and all(obj(led({**pt, a: v}, "train")) >= o - PLATO_NET for v in vals)     # nan -> ложь
 
 
-def kray_plato(led: Ledger, pt: dict, a: str) -> bool | None:
-    """Ж-049: крайнее конечное значение (k_s, R, τ = 1). True — наружу шагнуть можно (OUTER): внешние точки — обычные соседи
-    оси в общем правиле «>= 3 в сумме, >= 1 на оси», отдельного условия нет; None — нельзя (τ = 1 день), плато не проходит."""
-    return None if a not in OUTER else True
+def net_plato(led: Ledger, pt: dict, a: str, axes: dict) -> bool:
+    """Ж-048 п. 1: при «нет» на оси — два ближайших конечных значения оси (k_s 4,3; R 4,3; τ 20,10)."""
+    return one_sided(led, pt, a, [v for v in axes[a] if v != NET][-2:])
+
+
+def kray_plato(led: Ledger, pt: dict, a: str) -> bool:
+    """Ж-049: k_s = 1 и R = 1 — край сетки с шагом наружу (OUTER): внешние точки — обычные соседи оси в общем правиле
+    «>= 3 в сумме, >= 1 на оси». Ж-050: τ = 1 — физический край, одностороннее плато τ = 2, 3 (в gate_osi), не отказ."""
+    return True
 
 
 def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:
     """Плато по k_s, R, τ: конечные значения — >= 3 положительных соседей в сумме и >= 1 на оси (Ж-048; крайнее значение —
     метка kray, соседи включают шаг наружу, Ж-049); ось с «нет» — одностороннее плато net_plato, в счёт >= 3 не входит."""
-    per, net, kray = {}, {}, {}
+    per, net, kray, fiz = {}, {}, {}, {}
     for a in OSI:
         if a == "R" and pt.get("k_s") == NET:
             continue                                                                  # R при k_s = нет вырождена
@@ -124,11 +128,14 @@ def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:
             edge = pt[a] == axes[a][0]
             if edge:
                 kray[a] = kray_plato(led, pt, a)
-                nb += [{**pt, a: v} for v in OUTER.get(a, ())]
-            per[a] = n_pos(led, nb)
-    ok = bool(per or net) and all(net.values()) and all(v >= 1 for v in per.values()) and (not per or sum(per.values()) >= 3)
-    ok = ok and all(v is True for v in kray.values())
-    out = {**per, **{f"{a}_net": v for a, v in net.items()}, **{f"{a}_kray": (v if v is not None else "край сетки τ = 1") for a, v in kray.items()}}
+            if edge and a == "tau":                                                   # Ж-050: τ = 1 — τ = 2, 3 не хуже на 0,1
+                fiz[a] = one_sided(led, pt, a, axes[a][1:3])
+                continue
+            per[a] = n_pos(led, nb + ([{**pt, a: v} for v in OUTER.get(a, ())] if edge else []))
+    ok = bool(per or net or fiz) and all(net.values()) and all(fiz.values()) and all(v >= 1 for v in per.values())
+    ok = ok and (not per or sum(per.values()) >= 3) and all(kray.values())
+    out = {**per, **{f"{a}_net": v for a, v in net.items()}, **{f"{a}_fiz": v for a, v in fiz.items()},
+           **{f"{a}_kray": v for a, v in kray.items() if a in OUTER}}
     return dict(per=out, ok=ok, kray=" ".join(kray) or "-")
 
 
