@@ -17,10 +17,13 @@ MAIN = Path(os.environ.get("FASTBT_MAIN",
                            "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading"))
 STRAT = MAIN / "moex_volatility" / "results" / "final" / "strategies"
 DATA_ROOT = Path(os.environ.get("FASTBT_DATA_ROOT", STRAT / "data"))   # --data-root
-# Н6: дневной ряд — до 18:50 (fastbt/daily_1850.py), 2018–2021; старый ohlcv_daily_full — только
-# при явном --data-root / FASTBT_DATA_ROOT (внешняя подмена данных, не режим движка).
-OHLCV = (DATA_ROOT / "ohlcv_daily_full.parquet" if "FASTBT_DATA_ROOT" in os.environ
-         else MAIN / "data" / "fastbt" / "daily" / "ohlcv_daily_1850.parquet")
+# Н6: дневной ряд — до 18:50 (fastbt/daily_1850.py), 2018–2021. --data-root / FASTBT_DATA_ROOT —
+# только копия нового ряда (ohlcv_daily_1850.parquet, напр. зашумлённая); старый ohlcv_daily_full — отказ.
+if "FASTBT_DATA_ROOT" in os.environ:
+    from fastbt.daily_1850 import check_data_root as _check
+    OHLCV = _check(DATA_ROOT)
+else:
+    OHLCV = MAIN / "data" / "fastbt" / "daily" / "ohlcv_daily_1850.parquet"
 VPRED = Path(os.environ.get("FASTBT_VPRED", DATA_ROOT / "vpred_aligned.parquet"))
 POS_PRE2026 = STRAT / "walkforward_v4" / "daily_positions_pre2026.parquet"
 

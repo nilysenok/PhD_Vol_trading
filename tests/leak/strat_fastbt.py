@@ -55,7 +55,7 @@ class Fastbt(V4):
     @staticmethod
     def _write(wd, d):
         bars = wd['bars'].copy()
-        bars.to_parquet(d / 'ohlcv_daily_full.parquet', index=False)
+        bars.to_parquet(d / 'ohlcv_daily_1850.parquet', index=False)
         wd['vp'].to_parquet(d / 'vpred_aligned.parquet', index=False)
 
     def run(self, wd, h, steps, tag=''):

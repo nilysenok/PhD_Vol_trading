@@ -197,6 +197,8 @@ def main(argv=None):
     p.add_argument("--note", default="", help="пометка в журнал (например «отладка, старый σ_pred»)")
     a = p.parse_args(argv)
     if a.data_root:
+        from fastbt.daily_1850 import check_data_root
+        check_data_root(a.data_root)          # старый ряд (ohlcv_daily_full) — отказ, Ж-019 п. 11
         os.environ["FASTBT_DATA_ROOT"] = a.data_root
     check_scope(a.scope)
     if not a.smoke and not a.design:
