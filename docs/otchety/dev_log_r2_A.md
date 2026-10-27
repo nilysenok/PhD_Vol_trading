@@ -77,3 +77,44 @@ PR #165: r2_sborka_test.py bf32fd46bd6be040 · final_test_r2.py f753e2da3b8a9f73
   Таблицы G и M вошли в приложение R2. По ним E1 + E8 на h=5 не проходит 2σ на 10 seed, на h=22 — мощность.
 - **Сборщик.** h=1 без gate_E принимается, только если gate_D без лучшего дизайна и его SHA есть в спецификации (selftest). Спецификация: `F_h_d0: [1, 5, 22]`, SHA ворот, `status: ждёт «да» владельца`. Сборка не запускалась, test_locked не читался.
 - **Своя ошибка:** один `git fetch` до разрешения дирижёра; одна команда с heredoc без записи файла (отказана средой, переписана).
+
+## Сборка теста R2 — старт 2026-10-26 21:35:49
+
+Спецификация models/designs/r2/r2_A_sborka.yaml SHA-256 f6046b6264fc7699d1f3a1038c9e11ea0d76a69363b2cb5d6cd148918a034cea; код r2_sborka_test.py SHA-256 62f9e401e02e0fdd25ac278085eec895ccc5bc11bd85407d29261c4e4e4f4fa7.
+Ворота E: h=5 17a4c64cb6bc60ba906e97bc85a7189aa16f3d5b1cd437a37f5061f163c39ff7; h=22 d95552ddd5c0a7a0943e19f1c95236a00dec51d107eab3d9348e515f93792f53.
+Сборка на h = []; F_h(d0) на h = [1, 5, 22]; s²: posledovatelno, эталон {'est': 'sm', 'kappa': 0.5, 'emb': True}.
+test_locked до этой строки не читался.
+
+Прочитано (тестовая часть — без цели; цель — только val шагов 7–10 для s² и val 1–6 вне test_locked):
+
+| файл | SHA-256 | строк |
+|---|---|---|
+| data/regen/test_locked/vyr/etalon_d0_h1_test.parquet | 3657f85805fd2be5906892d63d56f709425ee19a1442de9c9cd76d4643556de6 | 39951 |
+| data/regen/vyr/etalon_d0_h1_val.parquet [val шагов 1–6] | f10175116fcd9df1bb513a1b54db24a0a164dc1b069693c36a8651b1fdb8af33 | 25755 |
+| data/regen/test_locked/vyr/etalon_d0_h1_test.parquet [part = val, шаги 7–10: цель для s²] | 3657f85805fd2be5906892d63d56f709425ee19a1442de9c9cd76d4643556de6 | 18021 |
+| data/regen/test_locked/vyr/final_d0_h1_test.parquet | e4c59d2f5a3fbf0a0a1b4269209e736fc93fcbf9d60d5e01f359e8edc088f432 | 39951 |
+| data/regen/R2/cache/VYR/F_d0_h1_s42_val.parquet [val шагов 1–6] | e0f316fee705b1a55000f84db40bd2a74eed5174ca022132d5888b2ffe8164e2 | 25755 |
+| data/regen/test_locked/vyr/final_d0_h1_test.parquet [part = val, шаги 7–10: цель для s²] | e4c59d2f5a3fbf0a0a1b4269209e736fc93fcbf9d60d5e01f359e8edc088f432 | 18021 |
+| data/regen/test_locked/vyr/etalon_d0_h5_test.parquet | d28f791f7cc5d92fe77e07d53133cce97082d6cd1290562ea2c6c7b0f9f892e5 | 39951 |
+| data/regen/vyr/etalon_d0_h5_val.parquet [val шагов 1–6] | 9c437706bede8e03f1d91d2a2afcf4020d583f1aff1a1ad7df78da4370d54e5c | 25755 |
+| data/regen/test_locked/vyr/etalon_d0_h5_test.parquet [part = val, шаги 7–10: цель для s²] | d28f791f7cc5d92fe77e07d53133cce97082d6cd1290562ea2c6c7b0f9f892e5 | 18021 |
+| data/regen/test_locked/vyr/final_d0_h5_test.parquet | ef81c061d85f2ab122b3e9f690d54d46938dde4479f6499aa4218138189077f0 | 39951 |
+| data/regen/R2/cache/VYR/F_d0_h5_s42_val.parquet [val шагов 1–6] | 7d0107d998b7e01c045ac983e4b1285b3699fa76f959d988221473bd69e8644b | 25755 |
+| data/regen/test_locked/vyr/final_d0_h5_test.parquet [part = val, шаги 7–10: цель для s²] | ef81c061d85f2ab122b3e9f690d54d46938dde4479f6499aa4218138189077f0 | 18021 |
+| data/regen/test_locked/vyr/etalon_d0_h22_test.parquet | f29cacef3f99d06362ca267412ed6af27c34aa8b2ad26fac929419e7ddd4ff19 | 39951 |
+| data/regen/vyr/etalon_d0_h22_val.parquet [val шагов 1–6] | f3bd53492e97c6075aa5b9b464ed4c77cd7dc0b6f3544e288d546523ed320f76 | 25755 |
+| data/regen/test_locked/vyr/etalon_d0_h22_test.parquet [part = val, шаги 7–10: цель для s²] | f29cacef3f99d06362ca267412ed6af27c34aa8b2ad26fac929419e7ddd4ff19 | 18021 |
+| data/regen/test_locked/vyr/final_d0_h22_test.parquet | a5c870caf15ed3112cc07651910d5bc1afe5bb5db64bc3236e33551b60783390 | 39951 |
+
+Записано (цели нет):
+
+| файл | SHA-256 | строк |
+|---|---|---|
+| data/regen/test_locked/R2/final/etalon_d0_s2emb_h1_test.parquet | 1dce250bc913e93a7643094261eda5695288e10f72eeac3d0ae1d7d97f8665fc | 39951 |
+| data/regen/test_locked/R2/final/final_d0_s2emb_h1_test.parquet | 5ebcf61a1ccfd0f6c660e03431e306f8fe7719f011a66b469d8431be147c92e4 | 39951 |
+| data/regen/test_locked/R2/final/etalon_d0_s2emb_h5_test.parquet | de559a9ed66c892842b049964003509ab338bfbac87768dd5d63bf406041b51d | 39951 |
+| data/regen/test_locked/R2/final/final_d0_s2emb_h5_test.parquet | 4c11df7660cb174e9d169abdc67d8fd16286c21aa052351fa36b49e9b63eb887 | 39951 |
+| data/regen/test_locked/R2/final/etalon_d0_s2emb_h22_test.parquet | 3341184413c8923a71c0b78bd3e72020ecbaa93cd60a67b7a161a494d302c0fd | 39951 |
+| data/regen/test_locked/R2/final/final_d0_s2emb_h22_test.parquet | 059a8e664f490ea3cf9ff4ce25b0db9958c2b074b30c21a7e415e0f945b54c2f | 39951 |
+
+Конец 2026-10-26 21:35:49.
