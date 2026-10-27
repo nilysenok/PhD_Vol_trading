@@ -27,6 +27,7 @@ class Panel:
     act: np.ndarray
     strength: np.ndarray
     rfc: np.ndarray
+    tick: np.ndarray | None = None     # [P] тикер пары (для к2: сдвиг по тикеру); None — каждая пара сама
 
 
 def erc(cov: np.ndarray, it: int = 500) -> np.ndarray:
