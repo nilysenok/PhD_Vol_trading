@@ -64,3 +64,40 @@ def test_masked_scaled_grid_equal_reference():
         assert abs(sh[m] - want) < 1e-12
         assert abs(sh2[m] - want) < 1e-12
         assert abs(out[0, m] - want) < 1e-12
+
+
+def _segs(n=20):
+    segb = np.array([0, 6, 12, n], np.int64)
+    seg_of = np.zeros(n, np.int64)
+    for k in range(3):
+        seg_of[segb[k]:segb[k + 1]] = k
+    return segb, seg_of, np.diff(segb).astype(np.float64)
+
+
+def test_a_window_stats_pay_exit_pos_and_trades():
+    from fastbt.stats import NF, seg_stats_pos, seg_stats_trades, window
+    lr, pos = _data()
+    pos = np.zeros(20)
+    pos[2:5] = 1.0
+    pos[8:14] = -1.0       # открыта на конце окна (бар 11), держится дальше
+    segb, seg_of, nb = _segs()
+    want = _ref(pos, lr, 0, 12, C)
+    a = np.zeros((3, NF))
+    seg_stats_pos(pos, lr, segb, seg_of, 0, 20, C, a)
+    assert abs(window(a, nb, 1, C)[0] - want) < 1e-9
+    te, tx, td = np.array([2, 8]), np.array([5, 14]), np.array([1, -1], np.int8)
+    b = np.zeros((3, NF))
+    seg_stats_trades(te, tx, td, 2, lr, segb, seg_of, 20, C, b)
+    assert abs(window(b, nb, 1, C)[0] - want) < 1e-9
+    assert window(b, nb, 1, C)[0] < _ref(pos, lr, 0, 12, C, exit_end=False)
+
+
+def test_a_window_flat_at_end_unchanged():
+    from fastbt.stats import NF, seg_stats_pos, window
+    lr, _ = _data()
+    pos = np.zeros(20)
+    pos[2:5] = 1.0
+    segb, seg_of, nb = _segs()
+    a = np.zeros((3, NF))
+    seg_stats_pos(pos, lr, segb, seg_of, 0, 20, C, a)
+    assert abs(window(a, nb, 1, C)[0] - _ref(pos, lr, 0, 12, C, False)) < 1e-9

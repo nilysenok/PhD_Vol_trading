@@ -13,13 +13,16 @@ import math
 import numpy as np
 from numba import njit
 
-F_S, F_Q, F_E, F_R, F_MX, F_MN, F_D = range(7)
-NF = 7
+F_S, F_Q, F_E, F_R, F_MX, F_MN, F_D, F_L, F_X = range(9)
+NF = 9     # F_L — net последнего бара сегмента, F_X — |позиция| на нём (ОВ: выход на конце окна)
 
 
 @njit(cache=True)
-def _bar(out, cc, ini, segb, seg_of, t, net):
+def _bar(out, cc, ini, segb, seg_of, t, net, p):
     k = seg_of[t]
+    if t == segb[k + 1] - 1:
+        out[k, F_L] = net
+        out[k, F_X] = abs(p)
     if not ini[k]:
         ini[k] = True
         cc[k] = 0.0
@@ -60,13 +63,13 @@ def seg_stats_trades(te, tx, tdir, nt, lr, segb, seg_of, end, comm, out):
         k0 = seg_of[e]
         if pprev == 0.0:
             out[k0, F_R] += 1.0
-        _bar(out, cc, ini, segb, seg_of, e, d * lr[e] - abs(d - pprev) * comm)
+        _bar(out, cc, ini, segb, seg_of, e, d * lr[e] - abs(d - pprev) * comm, d)
         out[k0, F_E] += 1.0
         for t in range(e + 1, x):
-            _bar(out, cc, ini, segb, seg_of, t, d * lr[t] - 0.0 * comm)
+            _bar(out, cc, ini, segb, seg_of, t, d * lr[t] - 0.0 * comm, d)
             out[seg_of[t], F_E] += 1.0
         if x < end and not (i + 1 < nt and te[i + 1] == x):
-            _bar(out, cc, ini, segb, seg_of, x, 0.0 * lr[x] - abs(0.0 - d) * comm)
+            _bar(out, cc, ini, segb, seg_of, x, 0.0 * lr[x] - abs(0.0 - d) * comm, 0.0)
 
 
 @njit(cache=True)
@@ -80,7 +83,7 @@ def seg_stats_pos(pos, lr, segb, seg_of, start, end, comm, out):
     for t in range(start, end):
         p = pos[t]
         if p != 0.0 or prev != 0.0:
-            _bar(out, cc, ini, segb, seg_of, t, p * lr[t] - abs(p - prev) * comm)
+            _bar(out, cc, ini, segb, seg_of, t, p * lr[t] - abs(p - prev) * comm, p)
         if p != 0.0:
             out[seg_of[t], F_E] += 1.0
             if prev == 0.0:
@@ -98,13 +101,18 @@ def pos_from_trades(te, tx, tdir, nt, n):
     return pos
 
 
-def window(stats, nbars, j, bpy=252.0):
+def window(stats, nbars, j, comm, bpy=252.0):
     """Метрики окна из сегментов 0..j. stats[..., NSEG, NF]; nbars[NSEG].
     Возвращает (sharpe, maxdd, exposure_pct, trades_per_year)."""
     st = stats[..., :j + 1, :]
     N = float(nbars[:j + 1].sum())
     S = st[..., F_S].sum(-1)
     Q = st[..., F_Q].sum(-1)
+    # ОВ: окно [WARMUP, конец сегмента j) платит выход позиции последнего бара (как Н5):
+    # net_last → net_last − c·|p|; S и Q поправлены, просадка — по итоговой сумме
+    xl, ll = st[..., j, F_X], st[..., j, F_L]
+    S = S - comm * xl
+    Q = Q - 2.0 * comm * xl * ll + (comm * xl) ** 2
     var = np.maximum(Q - S * S / N, 0.0) / (N - 1.0)
     sd = np.sqrt(var)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -117,6 +125,7 @@ def window(stats, nbars, j, bpy=252.0):
         acc_d = np.minimum(np.minimum(acc_d, st[..., k, F_D]), acc_s + mn - acc_mx)
         acc_mx = np.maximum(acc_mx, acc_s + st[..., k, F_MX])
         acc_s = acc_s + st[..., k, F_S]
+    acc_d = np.minimum(acc_d, S - acc_mx)     # просадка последнего бара после выхода
     exp = st[..., F_E].sum(-1) / N * 100.0
     tpy = st[..., F_R].sum(-1) / max(N / bpy, 0.5)
     return sh, acc_d, exp, tpy

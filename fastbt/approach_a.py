@@ -60,7 +60,7 @@ class ApproachA:
         if train_end <= WARMUP or train_end >= u.n:
             return None
         j = u.seg_index(train_end)
-        sh, mdd, ex, tpy = window(self.full, u.nbars, j)
+        sh, mdd, ex, tpy = window(self.full, u.nbars, j, self.cfg.comm)
         R = len(u.rm)
         coarse = grids.coarse_idx(u.sid, R)
         res = [(i, r) for i in range(len(u.sigs)) for r in coarse]
@@ -85,7 +85,7 @@ class ApproachA:
         combos = []
         for i, r in top20:
             for e in range(len(self.exec_grid)):
-                s, _, _, _ = window(self.exec_stats(i, r, e), u.nbars, j)
+                s, _, _, _ = window(self.exec_stats(i, r, e), u.nbars, j, self.cfg.comm)
                 combos.append(((i, r, e), float(s)))
         top10 = _desc(combos, lambda c: c[1])[:grids.ENS_K]
         return [c[0] for c in top10] if top10 else None
