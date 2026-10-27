@@ -32,7 +32,7 @@ def _eng():
 def _pts(ns):
     good = (ns.A_row * ns.lr_row > 0).astype(float)           # знает знак дня: Шарп высокий, сдвиг его рушит
     noise = np.random.RandomState(4).permutation(good)
-    return lambda *a: [("D1", "good", good, False, 0.3, True), ("D1", "noise", noise, False, 0.3, True)]
+    return lambda *a: [("D1", "good", good, False, 0.3), ("D1", "noise", noise, False, 0.3)]
 
 
 @pytest.fixture
@@ -86,7 +86,7 @@ def _run_distinct(monkeypatch, tmp_path):
     g = np.ones(len(ns.A_row))
     monkeypatch.setattr(C, "OUT", tmp_path)
     monkeypatch.setattr(DB, "sdvig_zhurnal", lambda *a, **k: "сдвиг: заглушка")
-    monkeypatch.setattr(DB, "points", lambda *a: [("D1", "x1", g, False, 0.3, True), ("D1", "x2", g, False, 0.3, True)])
+    monkeypatch.setattr(DB, "points", lambda *a: [("D1", "x1", g, False, 0.3), ("D1", "x2", g, False, 0.3)])
     orig = DB.run_grid
 
     def fake(p, e, s, ser, comm, reps):

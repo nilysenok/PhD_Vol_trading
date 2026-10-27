@@ -24,7 +24,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import s9_shag_common as C  # noqa: E402
 
 POMETKA = "разработка 2018–2021, после аудита"
-SCREEN = (0.10, 0.50)
 
 
 def sdvig_zhurnal(podhod: str, sg: str, path=None) -> str:
@@ -51,7 +50,7 @@ def write(rows, name: str) -> Path:
 
 
 def points(podhod: str, eng, src: str, s9):
-    """[(семья, метка, G, масштаб?, calib_closed, отобрана)] для σ-ряда src."""
+    """[(семья, метка, G, масштаб?, calib_closed)] для σ-ряда src; экрана по доле закрытых дней нет."""
     shim, out = types.SimpleNamespace(e=eng), []
     if podhod == "D":
         fams = s9.S9.d_points(shim, src)
@@ -61,9 +60,8 @@ def points(podhod: str, eng, src: str, s9):
         y = yaml.safe_load((C.DESIGNS / "setka_B_v3.yaml").read_text(encoding="utf-8"))
         cand = [("B", f"cap{cap:g}_band{int(band * 100)}", s9.S9.b_weights(shim, src, cap, band), True)
                 for cap in y["cap"] for band in y["band"]]
-    for f, lab, G, scale in cand:
-        cc = eng.calib_closed(G)
-        out.append((f, lab, G, scale, cc, scale or SCREEN[0] <= cc <= SCREEN[1]))
+    for f, lab, G, scale in cand:                         # экран закрытых дней снят (Ъ 27.10, 15:10): все точки идут в С8 v2
+        out.append((f, lab, G, scale, eng.calib_closed(G)))
     return out
 
 
@@ -74,10 +72,8 @@ def run_grid(podhod, eng, s9, series, comm, reps):
     C.check_shift(K)                                  # лаги; сдвиг 0 — внутри eval_point на каждой точке
     rows, setka = [], []
     for src in series:
-        for f, lab, G, scale, cc, ok in points(podhod, eng, src, s9):
-            setka.append(dict(family=f, point=lab, sigma=src, calib_closed=cc, otobrana=ok))
-            if not ok:
-                continue
+        for f, lab, G, scale, cc in points(podhod, eng, src, s9):
+            setka.append(dict(family=f, point=lab, sigma=src, calib_closed=cc))
             g = eng.g_row(G)
             r = C.eval_point(eng, K, base, eng.A_row * g, g)
             r.update(family=f, point=lab, sigma=src, comm_pct=comm * 100, calib_closed=cc)
@@ -115,7 +111,7 @@ def extra(podhod, eng, s9, best, chosen, series, base, reps, tag, sg) -> None:
     """komissiya (4 комиссии), razlozhenie и доля закрытых дней по семьям S1–S6 — для выбранной точки
     (нет прошедших — для лучшей по Шарпу, пометка vybrana=False)."""
     from fastbt import fast_kontrol as fk
-    pts = {(f, lab): (G, sc) for f, lab, G, sc, _, _ in points(podhod, eng, best["sigma"], s9)}
+    pts = {(f, lab): (G, sc) for f, lab, G, sc, _ in points(podhod, eng, best["sigma"], s9)}
     G, _ = pts[(best["family"], best["point"])]
     g = eng.g_row(G)
     rows = []

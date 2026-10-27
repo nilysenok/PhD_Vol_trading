@@ -67,9 +67,9 @@ def test_check_vs_shag0_catches_k3_distorted_by_1e3(tmp_path, monkeypatch):
 
 def _pts(extra_scale=True):
     g = np.ones(3)
-    base = [("D1", "W126_p70", g, False, 0.3, True), ("D5", "x30", g, False, 0.3, True),
-            ("D6lag1", "W252_p70", g, False, 0.3, True), ("D6lag1", "W252_p80", g, False, 0.3, True),
-            ("D7", "W126_g1", g, True, 0.0, True), ("D1", "W126_p80", g, False, 0.3, True)]
+    base = [("D1", "W126_p70", g, False, 0.3), ("D5", "x30", g, False, 0.3),
+            ("D6lag1", "W252_p70", g, False, 0.3), ("D6lag1", "W252_p80", g, False, 0.3),
+            ("D7", "W126_g1", g, True, 0.0), ("D1", "W126_p80", g, False, 0.3)]
     return base if extra_scale else base[:4]
 
 
