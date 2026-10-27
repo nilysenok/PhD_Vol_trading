@@ -124,6 +124,14 @@ def test_limit_slot_ves_1_na_L():
     assert ok_slot_1_cherez_L()
 
 
+def test_short_zarabatyvaet_minus_lr_a_ne_lonh():
+    """Шорт при росте цены теряет, при падении зарабатывает (ошибка знака в sweep_post.py:162 превращала шорты в лонги)."""
+    pn = mkpanel([[-1], [-1]], lr=[[0.02], [-0.01]])
+    r = core.assemble(pn, NET, 0.0)["excess"].values
+    assert np.allclose(r, [-0.02, 0.01])
+    assert (core.assemble(mkpanel([[1], [1]], lr=[[0.02], [-0.01]]), NET, 0.0)["excess"].values == [0.02, -0.01]).all()
+
+
 def test_plecho_zapreshcheno():
     pn = mkpanel([[1, 1]])
     w = np.array([[1.0, 1.0]])
