@@ -152,12 +152,16 @@ def grid_a() -> list:
     return [dict(zip(g, v)) for v in itertools.product(*g.values())]
 
 
-def ledger_sk(sid: str, root, n_vsego: int) -> tuple:
-    """SR новых проб и их ряды (PBO) из ledger итераций; N = N_vsego (толкование 27.10 19:52): дисперсия — по новым, список
-    доводится циклическим повтором новых SR до N_vsego."""
+def ledger_sk(sid: str, root) -> tuple:
+    """SR уникальных новых проб (ключи ledger уникальны) и их ряды (PBO). N — отдельно (`Cand.n_total`), список не дополняется
+    (толкование 27.10 20:20)."""
     d = Path(root) / TABLES / "_ledger" / sid
-    new = list(json.loads((d / "ledger.json").read_text("utf-8")).values())
-    return [new[i % len(new)] for i in range(max(n_vsego, len(new)))], json.loads((d / "ledger_excess.json").read_text("utf-8"))
+    return list(json.loads((d / "ledger.json").read_text("utf-8")).values()), json.loads((d / "ledger_excess.json").read_text("utf-8"))
+
+
+def n_a(n_vsego: dict) -> int:
+    """N для сборок A′: 36 проб сборки + Σ N_vsego по S1–S6 (точки выбраны среди всех проб стратегий; толкование 27.10 20:20)."""
+    return int(n_vsego["A"]) + sum(int(n_vsego[s]) for s in SIDS)
 
 
 def make_factory(P, root=None):
@@ -175,12 +179,14 @@ def make_factory(P, root=None):
             d = Path(P.out) / "_sw" / m["id"].replace(":", "_")
             sw, ow = (make_sweep(src(m[k]), str(d / t), note) for k, t in (("tochki", "c"), ("orig_tochki", "o")))
             if m["kind"] == "S":
-                trials, exc = ledger_sk(m["sid"], root, z["N_vsego"][m["sid"]])
+                trials, exc = ledger_sk(m["sid"], root)
+                n_total = z["N_vsego"][m["sid"]]
             else:
+                n_total = n_a(z["N_vsego"])
                 for p in grid_a():                    # N = 36 проб сборки на setup 2018 при 0,04 — ledger и ряды для PBO
                     sw.evaluate(p, "setup")
                 trials, exc = sw.trials_sr(), sw.excess
-            out.append(Cand(m["id"], m["kind"], sw, m["params"], ow, m["orig_params"], m["neighbors"], trials, exc))
+            out.append(Cand(m["id"], m["kind"], sw, m["params"], ow, m["orig_params"], m["neighbors"], trials, exc, n_total))
         return out
     return factory
 

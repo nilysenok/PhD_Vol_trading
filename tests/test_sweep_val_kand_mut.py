@@ -5,7 +5,7 @@ import pytest
 
 from fastbt import sweep_val as sv
 from fastbt import sweep_val_kand as kd
-from test_sweep_val_kand import (ok_dubli_svedeny, ok_otkaz_bez_da_do_zamka, ok_otkaz_posle_kommita, ok_spisok_sostav,
+from test_sweep_val_kand import (ok_dubli_svedeny, ok_otkaz_bez_da_do_zamka, ok_otkaz_posle_kommita, ok_spisok_sostav, ok_dsr_ne_zavisit_ot_poryadka,
                                  ok_tablitsa_sborok, ok_vremya_iz_fayla, spisok)  # noqa: F401  (spisok — фикстура)
 
 
@@ -40,6 +40,20 @@ def test_mut_fabrika_nedeterminirovana(monkeypatch):
         return d
     monkeypatch.setattr(kd, "kandidaty", noisy)
     assert kd.build_spisok(".") != kd.build_spisok(".")
+
+
+def test_mut_tsiklicheskoe_dopolnenie_lovitsya():
+    from fastbt import sweep_drivers as sd
+
+    def padded(sr, trials, n, T, skew, kurt):                              # прежний способ: список доводится повтором до N
+        return sd.dsr(sr, [trials[i % len(trials)] for i in range(n)], T, skew, kurt)
+    assert not ok_dsr_ne_zavisit_ot_poryadka(padded)
+
+
+def test_mut_N_ne_otdelno_a_chislo_prob():
+    from fastbt import sweep_val_stat as vs
+    from test_sweep_val_kand import TRIALS
+    assert vs.dsr_n(0.1, TRIALS, len(TRIALS), 250, 0.0, 3.0)["dsr"] != vs.dsr_n(0.1, TRIALS, 100, 250, 0.0, 3.0)["dsr"]
 
 
 def test_mut_top2_sborok_po_kontrolyu_a_ne_po_tseli():

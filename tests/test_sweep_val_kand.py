@@ -112,6 +112,37 @@ def ok_tablitsa_sborok(t) -> bool:
                 and list(s[s.top2 > 0].sort_values("top2").index) == list(best.index))
 
 
+TRIALS = [0.01 * ((i * 37) % 23) - 0.08 for i in range(40)]
+
+
+def ok_dsr_ne_zavisit_ot_poryadka(f=None) -> bool:
+    """Перестановка ledger не меняет DSR (N=100 > числа проб, как N_vsego > новых). f(sr, trials, n, T, skew, kurt) -> {dsr}."""
+    from fastbt import sweep_val_stat as vs
+    f = f or vs.dsr_n
+    a = f(0.1, TRIALS, 100, 250, -0.2, 4.0)["dsr"]
+    b = f(0.1, TRIALS[::-1], 100, 250, -0.2, 4.0)["dsr"]
+    c = f(0.1, TRIALS[7:] + TRIALS[:7], 100, 250, -0.2, 4.0)["dsr"]
+    return bool(a == b == c)
+
+
+def test_dsr_ne_zavisit_ot_poryadka_ledger():
+    assert ok_dsr_ne_zavisit_ot_poryadka()
+
+
+def test_dsr_N_otdelno_var_po_novym():
+    import statistics
+    from fastbt import sweep_val_stat as vs
+    r1, r2 = vs.dsr_n(0.1, TRIALS, 100, 250, 0.0, 3.0), vs.dsr_n(0.1, TRIALS, 400, 250, 0.0, 3.0)
+    assert r1["n_trials"] == 100 and abs(r1["var_sr"] - statistics.variance(TRIALS)) < 1e-15 and r1["var_sr"] == r2["var_sr"]
+    assert r2["dsr"] < r1["dsr"]                                          # N растёт при той же дисперсии — DSR падает
+
+
+def test_N_dlya_A_i_Sk_iz_zamorozki(spisok):
+    n = spisok[2]
+    assert kd.n_a(n) == 36 + sum(n[s] for s in kd.SIDS) == 36 + 582 + 566 + 616 + 619 + 588 + 652
+    assert len(kd.ledger_sk("S1", ".")[0]) == 392 < n["S1"]               # новые пробы без дополнения; N — отдельно
+
+
 def test_tablitsa_sborok_A():
     import pandas as pd
     t = pd.read_csv("docs/tables/sweep_e1v2/A_sborki.csv", comment="#")

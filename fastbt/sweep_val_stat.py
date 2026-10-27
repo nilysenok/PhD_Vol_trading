@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, replace
 
 import numpy as np
@@ -36,6 +37,16 @@ class Cand:
     neighbors: int                              # число соседей плато (из таблицы итераций)
     trials: list = field(default_factory=list)  # SR проб накопленного ledger (N для DSR)
     excess: dict = field(default_factory=dict)  # ledger рядов проб (PBO)
+    n_total: int = 0                            # >0: N в DSR задан отдельно (N_vsego), var_sr — по trials (толкование 27.10 20:20)
+
+
+def dsr_n(sr: float, trials: list, n: int, T: int, skew: float, kurt: float) -> dict:
+    """DSR: var_sr — по уникальным новым пробам (порядок не влияет: сортировка и fsum), N задан отдельно. Дополнения списка нет."""
+    t = sorted(trials)
+    m = math.fsum(t) / len(t)
+    var = math.fsum((x - m) ** 2 for x in t) / (len(t) - 1) if len(t) > 1 else 0.0
+    star = sd.expected_max_sharpe(n, var)
+    return dict(n_trials=n, var_sr=var, sr_star=star, dsr=sd.psr(sr, star, T, skew, kurt))
 
 
 def delta_sharpe(rc: dict, ro: dict) -> float:
@@ -76,7 +87,8 @@ def evaluate_candidate(c: Cand, reps_lw: int = REPS_LW, reps_k2: int = REPS_K2) 
     p_lw = 1.0 if same else lw_sharpe_diff(rc["excess_d"], ro["excess_d"], reps_lw, 5, SEED)[2]
     p_k2 = fk.p_perm(rc["sharpe"], k2_sharpes(c.sw.ev.src, c.params, reps_k2))
     mult = c.sw.n_mult()
-    dsr = sd.dsr(rc["sr_d"], list(c.trials) * mult, rc["T"], rc["skew"], rc["kurt"])
+    dsr = (dsr_n(rc["sr_d"], c.trials, c.n_total * mult, rc["T"], rc["skew"], rc["kurt"]) if c.n_total
+           else sd.dsr(rc["sr_d"], list(c.trials) * mult, rc["T"], rc["skew"], rc["kurt"]))
     pbo = sweep_pbo.pbo(c.excess)["pbo"] if c.excess else float("nan")
     ok = dict(delta=delta > 0, pbo=pbo < GATES["pbo"], dsr=dsr["dsr"] >= GATES["dsr"], plato=c.neighbors >= GATES["plato"],
               p_lw=p_lw < GATES["p_lw"], p_k2=p_k2 < GATES["p_k2"])      # nan в сравнении -> False: не прошло
