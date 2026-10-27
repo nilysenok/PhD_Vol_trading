@@ -1,12 +1,9 @@
-"""Шаг 0 разработки главы 4 (владелец 27.10, 11:15): стратегии A без прогноза, 2018–2021.
+"""Шаг 0 разработки главы 4 (v3): A без прогноза, 2018–2021 → docs/tables/strat_dev_v3/shag0_*.csv.
 
-Строки: A; к3 (A без S5/S6); для каждого S1…S6 — «A только Sk» и «A без Sk».
-Вклад Sk = Шарп A − Шарп «A без Sk». Δ к A — Ледуа–Вольф, блок 5, 10 000 повторов.
-Столбцы по годам 2018…2021 и за период: Шарп, Сортино, просадка (%, по избыточной), экспозиция (%), оборот (в год).
-
-    python3 scripts/analysis/s9_shag0.py [--comm 0.0004] [--reps 10000]
-Кэш — s9 --sigma-set v2 (cache_latest_v2.txt); σ не нужны (A от прогноза не зависит). Только dev.
-Самопроверка без аргументов: python3 scripts/analysis/s9_shag0.py --selftest
+    FASTBT_MAIN=<своя копия> python3 scripts/analysis/s9_shag0.py [--reps 10000]
+Кэш — s9 v2 (cache_latest_v2.txt); σ не нужны (A от прогноза не зависит), проверка сдвига σ не применяется.
+Комиссия 0,04 % (основная) и 0,05 % (рядом). Расчёт — fastbt.shag0.build; сверка быстрого слоя (Engine.port)
+с медленным (msp.portfolio) на 5 строках — shag0_sverka_sloy.csv. Самопроверка без аргументов: --selftest.
 """
 from __future__ import annotations
 
@@ -17,97 +14,82 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from fastbt import s9  # noqa: E402
-from fastbt.msp import sharpe  # noqa: E402
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from fastbt import shag0  # noqa: E402
+from fastbt.fast_kontrol import k3_sids  # noqa: E402
 
-POMETKA = "после аудита и ОВ/К3; шаг 0, без прогноза, разработка 2018–2021"
-PERIODS = ("2018", "2019", "2020", "2021", "period")
-
-
-def block_stats(p: pd.DataFrame, mask: np.ndarray) -> dict:
-    """Шарп, Сортино, просадка, экспозиция, оборот на срезе; формулы — s9.metrics."""
-    q = p[mask]
-    ex, tot = q["excess"].values, q["total"].values
-    if len(ex) < 2:
-        return dict(sharpe=np.nan, sortino=np.nan, mdd=np.nan, expo=np.nan, turn=np.nan)
-    neg = tot[tot < 0]
-    ds = np.std(neg, ddof=1) if len(neg) > 1 else 1e-12
-    cum = np.cumsum(ex)
-    return dict(sharpe=sharpe(ex), sortino=float(np.mean(ex) * np.sqrt(252) / ds),
-                mdd=float(np.max(np.maximum.accumulate(cum) - cum) * 100),
-                expo=float(q["exposure"].mean() * 100), turn=float(q["turnover"].mean() * 252))
+OUT = ROOT / "docs" / "tables" / "strat_dev_v3"
+COMMS = (0.0004, 0.0005)
 
 
-def wide(p: pd.DataFrame) -> dict:
-    yr = p.index.year
-    out = {}
-    for per in PERIODS:
-        mask = np.ones(len(p), bool) if per == "period" else (yr == int(per))
-        for k, v in block_stats(p, mask).items():
-            out[f"{k}_{per}"] = v
-    out["worst_year"] = min(out[f"sharpe_{y}"] for y in PERIODS[:4])
-    return out
-
-
-def masked(A_row: np.ndarray, drop: np.ndarray, pair: np.ndarray) -> np.ndarray:
-    return np.where(drop[pair], 0.0, A_row)
-
-
-def build(comm: float, reps: int) -> pd.DataFrame:
-    s9.use_v2(comm)
-    eng = s9.Engine(s9.load_cache())
-    x = s9.S9(eng, reps)
-    pair = np.asarray(eng.r["pair"], np.int64)
-    sid = np.array([s for _, s in eng.pairs])
-    pA = x.A
-    rows = []
-
-    def add(label, pos, base=False):
-        p = eng.port(pos)
-        r = dict(pometka=POMETKA, row=label, comm_pct=comm * 100)
-        r.update(wide(p))
-        if not base:
-            x.delta(r, "vs_A", p, pA)
-        rows.append(r)
-        return r
-    ra = add("A", eng.A_row, base=True)
-    add("к3: A без S5/S6", masked(eng.A_row, np.isin(sid, ["S5", "S6"]), pair))
-    for s in s9.SIDS:
-        add(f"A только {s}", masked(eng.A_row, sid != s, pair))
-        r = add(f"A без {s}", masked(eng.A_row, sid == s, pair))
-        r["vklad_sharpe"] = ra["sharpe_period"] - r["sharpe_period"]
-    return pd.DataFrame(rows)
-
-
-def write(df: pd.DataFrame, name: str) -> Path:
-    p = Path(__file__).resolve().parents[2] / "docs" / "tables" / "strat_dev_v2" / name
-    df.to_csv(p, sep=";", decimal=",", index=False, float_format="%.4f", encoding="utf-8-sig")
+def write(rows: list, name: str) -> Path:
+    OUT.mkdir(parents=True, exist_ok=True)
+    p = OUT / name
+    pd.DataFrame(rows).to_csv(p, sep=";", decimal=",", index=False, float_format="%.4f", encoding="utf-8-sig")
     return p
 
 
+def slow_port(eng, pos, comm):
+    """Медленный слой: msp.portfolio на длинной таблице позиций (так считает пайплайн)."""
+    from fastbt import msp
+    df = pd.DataFrame(dict(date=eng.dates[np.asarray(eng.r["date"])],
+                           ticker=np.array(eng.tickers)[np.asarray(eng.r["tick"])],
+                           strategy=shag0.sid_row(eng), position=pos, daily_gross_return=pos * eng.lr_row))
+    return msp.portfolio(df, msp.rate_cbr(), comm)
+
+
+def sverka(eng, comm: float) -> list:
+    """5 строк: A, к3, A без S3, A только S4, A × 0,5 — строки метрик быстрого и медленного слоя (формат CSV) равны."""
+    A, sidr = np.asarray(eng.A_row, float), shag0.sid_row(eng)
+    cases = [("A", A), ("к3", shag0.zero_sids(A, sidr, k3_sids())), ("A без S3", shag0.zero_sids(A, sidr, ["S3"])),
+             ("A только S4", shag0.keep_sids(A, sidr, ["S4"])), ("A × 0,5", 0.5 * A)]
+    rows = []
+    for lab, pos in cases:
+        a, b = eng.port(pos, comm=comm), slow_port(eng, pos, comm)
+        b = b.reindex(a.index)
+        sa = pd.DataFrame([shag0.stats(a, np.ones(len(a), bool))]).to_csv(sep=";", float_format="%.4f", index=False)
+        sb = pd.DataFrame([shag0.stats(b, np.ones(len(b), bool))]).to_csv(sep=";", float_format="%.4f", index=False)
+        rows.append(dict(pometka=shag0.POMETKA, row=lab, comm_pct=comm * 100, sovpalo_pobaytno=sa == sb,
+                         max_abs_excess=float(np.abs(a["excess"].values - b["excess"].values).max())))
+    return rows
+
+
+def run(reps: int) -> None:
+    from fastbt import s9
+    s9.use_v2(COMMS[0])
+    eng = s9.Engine(s9.load_cache())
+    res = {c: shag0.build(eng, c, reps) for c in COMMS}
+    cat = lambda k: res[COMMS[0]][k] + res[COMMS[1]][k]          # noqa: E731
+    write(cat("metriki"), "shag0_A_metriki.csv")
+    write(cat("godam"), "shag0_A_po_godam.csv")
+    t4, t5 = res[COMMS[0]]["tikeram"], res[COMMS[1]]["tikeram"]
+    for a, b in zip(t4, t5):
+        a["sharpe_k0050"], a["sharpe_k3_k0050"] = b["sharpe"], b["sharpe_k3"]
+    write(t4, "shag0_A_po_tikeram.csv")
+    write(cat("loo"), "shag0_signaly_LOO.csv")
+    write(cat("k3"), "shag0_k3.csv")
+    write(cat("spravochno"), "shag0_spravochno.csv")
+    write(shag0.semyi(eng), "shag0_semyi_dni.csv")
+    sv = sverka(eng, COMMS[0])
+    write(sv, "shag0_sverka_sloy.csv")
+    print("сверка слоёв:", [(r["row"], r["sovpalo_pobaytno"]) for r in sv])
+
+
 def selftest() -> None:
-    idx = pd.bdate_range("2018-01-01", periods=600)
-    rng = np.random.default_rng(1)
-    ex = rng.normal(0, 0.01, 600)
+    assert k3_sids() == ("S5", "S6")
+    idx = pd.bdate_range("2018-01-01", periods=300)
+    ex = np.random.default_rng(1).normal(0, 0.01, 300)
     p = pd.DataFrame(dict(excess=ex, total=ex, exposure=0.5, turnover=0.1), index=idx)
-    w = wide(p)
-    assert abs(w["sharpe_period"] - sharpe(ex)) < 1e-12 and abs(w["expo_period"] - 50) < 1e-9
-    assert np.isnan(block_stats(p, np.zeros(600, bool))["sharpe"])        # пустой срез — NaN, не ноль
-    pos = np.array([1.0, 2.0, 3.0, 4.0])
-    out = masked(pos, np.array([False, True]), np.array([0, 1, 0, 1]))
-    assert out.tolist() == [1.0, 0.0, 3.0, 0.0]
+    s = shag0.stats(p, np.ones(300, bool))
+    assert abs(s["expo_pct"] - 50) < 1e-9 and abs(s["dni_v_rynke_pct"] - 100) < 1e-9
+    assert np.isnan(shag0.stats(p, np.zeros(300, bool))["sharpe"])
     print("OK")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--selftest", action="store_true")
-    ap.add_argument("--comm", type=float, default=0.0004)
     ap.add_argument("--reps", type=int, default=10000)
     a = ap.parse_args()
-    if a.selftest or len(sys.argv) == 1:
-        selftest()
-    else:
-        name = "shag0_bez_prognoza.csv" if abs(a.comm - 0.0004) < 1e-12 else "shag0_bez_prognoza_k0050.csv"
-        print(write(build(a.comm, a.reps), name))
+    selftest() if (a.selftest or len(sys.argv) == 1) else run(a.reps)
