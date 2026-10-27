@@ -1,55 +1,28 @@
-# Сетка итерации 2 этапа 1 (Ж-051): ансамбль по плато вокруг точки P1. Коммитится до счёта; N копится в общий ledger.
-# Проект, определения, тесты, критерий «прошла» — docs/otchety/2026-10-28_zh051_iteracii.md (§2.2, §3, §4).
-# Порядок значений на оси = порядок соседства (плато ±1 шаг). Значение net = механизм выключен = путь P1 побайтно (golden).
+# Итерация 2 этапа 1 (Ж-051): ансамбль по плато — ВЫПОЛНЕНО по #359/#361; файл описывает то, что посчитано.
+# Заменено #359: проектная сетка 01:31 (signal_krest/kub, vyhody_krest, golos 0,67, N = 8) не считалась и не действует.
+# Код: fastbt/etap1_ansambl.py, etap1_ansambl_eval.py, etap1_ansambl_run.py; таблицы: docs/tables/zh051/it2/; ledger: docs/tables/zh051/_ledger/.
 v: 1
 format: zh051-iteraciya
 punkt: "Ж-051"
 iteraciya: 2
+status: vypolneno_359
 nazvanie: ansambl_po_plato
-baza:                                   # P1 — точка итерации 1 (Ж-047/Ж-048…Ж-050), последняя строка файла
+baza:
   istochnik: "docs/tables/zh047/S{k}_itog_v2.csv"
   zapusk: "2026-10-28T00:36:00"
-  sha256:
-    S1: ce28779d2d99286fcad388b6e6ee0eb54e1d398ffd73e763cfc21baa1fe5f308
-    S2: 2a3b1d2ed77aaff30882432a2c40eaa08a1d1ab361762a7ada20e150862f997a
-    S3: 5c1673fe95ee3ecb25d96df2b0f0991c7a7131008cccc7dffebb9708b4ec1c47
-    S4: 10ba1226dc73fcc0220e5ca14d1af8e6417073ca23406408ba76a00e3d7dc6aa
-    S5: 2b61897f32ebc36d848099b9b18678f4db6946ebffefdfd8b1895dd34d509f03
-    S6: 916921a1f092ad6eff7339c894426881ce292dc8393009c5feee54b9f7ed086c
-setki_iteracii_1: "fastbt/designs/sweep/zh047_S{k}_run1.yaml"   # оси и порядок соседства для соседей P1
-period: {otbor: train, validation: zakryto}      # train = 2018–2019
+period: {otbor: train, validation: zakryto}
 komissiya: {otbor: 0.0004}
-tselevaya: min_msr_2018_2019                     # Ж-043
-reshenie: "позиции соседей — на close d по данным до 18:50 d; исполнение — по оси vhod точки P1, как в итерации 1"
+tselevaya: min_msr_2018_2019
+tochki: "центр P1 + соседи ±1 по каждой оси набора, по одной оси за раз (углы куба не считаются); точки с одинаковым сигналом схлопываются (signal_key); div/cbr_div пропускаются"
 
 osi:
-  sostav:                               # какие соседи P1 (радиус 1 шаг) входят в ансамбль; P1 входит всегда
-    setka: [net, signal_krest, signal_kub, vyhody_krest, vse_krest]
-    vykl: net
-    # signal_krest — ±1 шаг по одной сигнальной оси за раз; signal_kub — все сочетания ±1/0 по сигнальным осям;
-    # vyhody_krest — ±1 шаг по одной из осей k_s, R, tau (R пропускается при k_s = net); vse_krest — объединение двух крестов
-  agregaciya:
-    setka: [srednee, golos_050, golos_067]
-    # srednee — равные доли капитала: строки g, sides, expo соседей усредняются (= Engine.mix, без взаимозачёта комиссий);
-    # golos_f — боевой execlayer.vote по сигнальным позициям соседей (позиция, если ненулевых > f·M; знак суммы),
-    #           затем σ-выходы и вход точки P1 к голосованию
+  nabor:
+    setka: [top2, top3, vse]            # top2/top3 — первые оси по μ* Морриса (S{k}_morris.csv); vse — все оси сетки
+  rezhim:
+    setka: [srednee, golos]
+    # srednee: m = среднее позиций точек, направление sign(m), вес сделки × |m|; golos: строгое большинство > n/2, вес 1
+    # выходы, σ, вход и размер — центральной точки
 
-nedopustimo:
-  - "sostav in [vyhody_krest, vse_krest] and agregaciya != srednee"   # голосовать можно только по сигнальным позициям
-  - "sostav == net and agregaciya != srednee"                        # выключено — одна точка
-vyrozhdeno:
-  - "S3: signal_kub == signal_krest (одна сигнальная ось) — считается один раз"
-
-razmer_ansamblya_M:                     # P1 + соседи; по сеткам zh047_S{k}_run1.yaml и точкам P1
-  S1: {signal_krest: 7, signal_kub: 27, vyhody_krest: 3, vse_krest: 9}
-  S2: {signal_krest: 5, signal_kub: 9,  vyhody_krest: 3, vse_krest: 7}
-  S3: {signal_krest: 3, signal_kub: 3,  vyhody_krest: 3, vse_krest: 5}
-  S4: {signal_krest: 4, signal_kub: 6,  vyhody_krest: 4, vse_krest: 7}
-  S5: {signal_krest: 4, signal_kub: 8,  vyhody_krest: 3, vse_krest: 6}
-  S6: {signal_krest: 6, signal_kub: 24, vyhody_krest: 4, vse_krest: 9}
-
-N: {S1: 8, S2: 8, S3: 5, S4: 8, S5: 8, S6: 8}   # конфигураций сверх P1; досчёт плато k_s/R/tau — до 6 на кандидата, тоже в N
-kontrol: {tip: baza_bez_komponenta, opisanie: "контроль (в) — сама P1; сдвиговый контроль для ансамбля не нужен"}
-plato: {osi: [sostav, agregaciya], radius: 1}
-kriteriy: "docs/otchety/2026-10-28_zh051_iteracii.md §3"
-ledger: {iteraciya: 2, rol: kandidat}
+N: {S1: 6, S2: 6, S3: 6, S4: 6, S5: 6, S6: 6}   # ключи ledger ("ansambl", nabor, rezhim); общий N после итерации 2 — SHA256SUMS.txt
+golden: "ансамбль из одной точки = точка побайтно; sverka_s9 — сигнальные точки против боевого s9"
+ledger: {iteraciya: 2, fayl: "docs/tables/zh051/_ledger/S{k}/ledger_it2.pkl"}
