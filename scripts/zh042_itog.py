@@ -25,13 +25,23 @@ def vorota(rows: list, pl: dict) -> dict:
     """rows — две строки ref_rows (2018, 2019); pl — плато и активность точки. Значения 0/1 и текст причины."""
     g = {"G1_sharpe_pos": all(r["sharpe_posle_004"] > 0 for r in rows),
          "G2_sdelok_30": all(r["sdelok_god"] >= MIN_TRADES for r in rows),
-         "G3_plato": pl["sosedey"] >= MIN_NB and bool(pl["aktivnost_ok"]),
+         "G3_plato": pl["sosedey_prohodyat"] >= MIN_NB and bool(pl["aktivnost_ok"]),
          "G4_s9": all(r["sverka_s9"] == "sovpalo" and r["max_dpnl"] <= PNL_TOL and r["bar_poz_razl"] == 0 for r in rows)}
     txt = {"G1_sharpe_pos": "Шарп после 0,04 % ≤ 0: " + " / ".join(f"{r['god']} {r['sharpe_posle_004']:.3f}" for r in rows),
            "G2_sdelok_30": "сделок < 30 в год: " + " / ".join(f"{r['god']} {r['sdelok_god']:.1f}" for r in rows),
-           "G3_plato": f"плато: соседей {pl['sosedey']:g}, активность_ok {pl['aktivnost_ok']:g}",
+           "G3_plato": f"пик: соседей с min > 0 — {pl['sosedey_prohodyat']} из {pl['sosedey']:g}" if pl["sosedey_prohodyat"] < MIN_NB
+           else f"активность_ok {pl['aktivnost_ok']:g}",
            "G4_s9": "не воспроизводится s9"}
     return dict({k: int(v) for k, v in g.items()}, prichina="; ".join(txt[k] for k, v in g.items() if not v) or "все ворота пройдены")
+
+
+def prohodyat(sw, sid: str, exp: dict, p: dict) -> int:
+    """Соседей ±1 шаг (как в доводке), у которых min(Шарп 2018, Шарп 2019) после 0,04 % > 0 (толкование 27.10 21:35)."""
+    import zh042_konveyer as K
+    tor = pd.read_csv(L.OUT / f"{sid}_tornado_min.csv", comment="#")
+    keys = list(tor[(tor.razmakh_min_etalon >= K.TOR_MIN) & (tor.n_s_etalonom >= 2)].param)
+    nb = K.neighbors(sid, exp, p, keys, K.etalon_values(sid, exp), K.fix_inert(sid, exp))
+    return sum(K.evalpt(sw, q)["obj"] > 0 for q in nb)
 
 
 def itog(sid: str):
@@ -42,10 +52,11 @@ def itog(sid: str):
     for i, (_, r) in enumerate(top.iterrows(), 1):
         p = L.point_from_row(exp, r)
         rows = L.ref_rows(sid, sw.ev, p, f"{sid}_plato{i}")
+        r["sosedey_prohodyat"] = prohodyat(sw, sid, exp, p)
         g = vorota(rows, r)
         ok = all(g[k] for k in g if k.startswith("G"))
         st = (STATUS_OK if ok else STATUS_NO) if i == 1 else "informatsionno_ne_luchshaya_po_plato"
-        out.append(dict(rang_plato=i, status=st, **g, plato=r.plato, sosedey=r.sosedey,
+        out.append(dict(rang_plato=i, status=st, **g, plato=r.plato, sosedey=r.sosedey, sosedey_prohodyat=r.sosedey_prohodyat,
                         sharpe_2018_004=rows[0]["sharpe_posle_004"], sharpe_2019_004=rows[1]["sharpe_posle_004"],
                         sharpe_2018_do_izd=rows[0]["sharpe_do_izderzhek"], sharpe_2019_do_izd=rows[1]["sharpe_do_izderzhek"],
                         sdelok_2018=rows[0]["sdelok_god"], sdelok_2019=rows[1]["sdelok_god"],
@@ -60,7 +71,7 @@ def dopisat_reestr(sid: str, exp: dict, d: pd.DataFrame, best) -> None:
     """Дописать в реестр строки проб этапа и итоговую точку; строки с таким же ключом и источником уже есть — не дублируются."""
     F = lambda x: rs.fmt(float(x))                       # noqa: E731  (repr numpy-числа в CSV не пишем)
     seen = {(r["strategiya"], r["klyuch"], r["istochnik"]) for r in rs.chitat(rs.VYHOD)}
-    new = {}
+    new, final = {}, []
     for _, r in d.iterrows():
         p = L.point_from_row(exp, r)
         k = rs.klyuch_str(rs.kanon_ledger(pkey(p)))
@@ -70,10 +81,12 @@ def dopisat_reestr(sid: str, exp: dict, d: pd.DataFrame, best) -> None:
                     storon_god=F(r.storon_god_2018), plato=F(r.plato) if top else "", sosedey=F(r.sosedey) if top else "",
                     aktivnost_ok=rs.flag(r.aktivnost_ok) if r["rol"] in ("faktor", "oat") else "", plato_ok=rs.flag(r.sosedey >= MIN_NB) if top else "",
                     vyrozhdena="", status="proba_zh042", prichina="проба этапа доводки Ж-042 (факторный 3³ или сосед плато)", ekviv_s9="da")
-        if r.get("rang_plato") == 1:                     # итоговая точка — та же строка ключа, со статусом вердикта
-            base.update(rezhim="zh042_itog", status=best.status, prichina=best.prichina)
-        new[k] = base if (k not in new or base["status"] != "proba_zh042") else new[k]
+        new[k] = base
+        if r.get("rang_plato") == 1:                     # вердикт — отдельной строкой с источником правила 21:35 (реестр только дополняется)
+            final.append(dict(base, rezhim="zh042_itog", istochnik="zh042_vorota_2135", status=best.status, prichina=best.prichina,
+                              plato_ok=rs.flag(best.sosedey_prohodyat >= MIN_NB)))
     new = [x for k, x in new.items() if (sid, k, "zh042_konveyer") not in seen]
+    new += [x for x in final if (sid, x["klyuch"], x["istochnik"]) not in seen]
     with open(rs.VYHOD, "a", encoding="utf-8", newline="") as f:
         csv.DictWriter(f, fieldnames=rs.POLYA).writerows(new)
     print(f"в реестр дописано строк: {len(new)}")
