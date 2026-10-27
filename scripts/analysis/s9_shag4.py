@@ -2,9 +2,9 @@
 
     python3 scripts/analysis/s9_shag4.py --tochki tochki.yaml [--reps 10000] [--dry-run]
 tochki.yaml — три точки выбора шагов 1–3 (ключ s9: [семья:метка, источник σ]), по одной на σ:
-    C_naive: ["C1:W252_p70", "naive_h1"]
-    C_harj:  ["C1:W252_p70", "harj_h1"]
-    C_hyb:   ["C1:W504_p70", "hyb_h5"]
+    C_naive: ["C1:W252_p50", "naive_h1"]
+    C_harj:  ["C1:W252_p50", "harj_h1"]
+    C_hyb:   ["C1:W252_p50", "hyb_h5"]
 Комиссии 0,035 и 0,04 % — обе основные колонки (Ъ 12:05). Портфель точки — fastbt.shag4.portfel (заглушка до
 слияния s9_shag_c.py). σ — только data/regen/ch4_dev (s9.use_v2 сверяет SHA); цель QLIKE — rv_target из
 features_pit_v3 с фильтром date ≤ 2021-12-31 при чтении; цель с окном t+h за 2021-12-31 — NaN (g3.cut_target).
