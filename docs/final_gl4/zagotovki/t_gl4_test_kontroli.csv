@@ -1,0 +1,6 @@
+# таблица: t_gl4_test_kontroli — контроли без модели: к2 (сдвиг σ̂ по кругу) и к3 (A′ без того, что глушит затвор)
+# статус: тест
+# окно данных: ⟨okno_testa.s⟩ — ⟨okno_testa.po⟩; исполнение d+1; честная половина: тест 2022+, одно открытие
+# код: ⟨git HEAD⟩; спецификация: ⟨SHA spec_otkrytiya.json⟩; хэш входов: ⟨vhody_agg_sha256⟩
+# источник: scripts/otkrytie_gl4.py (v1); числа — docs/final_gl4/chisla_gl4.json
+semya,tochka,sigma,komissiya_pct,kontrol,sharpe_osnova,sharpe_kontrol,delta,se_delta,p,sposob_p,n_k2,seed_k2,status

@@ -1,0 +1,6 @@
+# таблица: t_gl4_test_osnovnaya — основная: база A′ и семьи C/E/B/D, все точки FINAL-B, все ступени σ, обе комиссии
+# статус: тест
+# окно данных: ⟨okno_testa.s⟩ — ⟨okno_testa.po⟩; исполнение d+1; честная половина: тест 2022+, одно открытие
+# код: ⟨git HEAD⟩; спецификация: ⟨SHA spec_otkrytiya.json⟩; хэш входов: ⟨vhody_agg_sha256⟩
+# источник: scripts/otkrytie_gl4.py (v1); числа — docs/final_gl4/chisla_gl4.json
+id,semya,tochka,sigma,komissiya_pct,sharpe,msr,sortino,kalmar,mdd,psr,dsr,N,oborot_y,dni_v_rynke,sdelok_y,dolya_ispolneniy,delta_k_baze,se_delta,p_lw,T,okno_s,okno_po,chestnaya,status,pometka
