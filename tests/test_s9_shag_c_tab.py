@@ -87,3 +87,32 @@ def test_sdvig_line_blocks_failed_rows():
     assert "НЕ ПРОЙДЕНА" in T.sdvig_line(pd.DataFrame(dict(ryad=["hyb_h1"], ok=[False])))
     assert "НЕ ПРОЙДЕНА" in T.sdvig_line(pd.DataFrame(dict(ryad=[], ok=[])))
     assert "допущены" in T.sdvig_line(pd.DataFrame(dict(ryad=["hyb_h1"], ok=["True"])))
+
+
+DAY, WIN = "RV_{d+k} дневная", "y_{d+k} = среднее RV дней d+k+1…d+k+5 (h=5)"
+
+
+def _sd(rows):
+    return pd.DataFrame([dict(ryad="hyb_h5", ok=ok, argmax_prirascheniya=am, cel=cel) for ok, am, cel in rows])
+
+
+def test_sdvig_line_day_blocks_window_does_not():
+    assert "НЕ ПРОЙДЕНА" in T.sdvig_line(_sd([(True, 0.0, DAY), (False, 0.0, DAY)]))      # дневная ok=False
+    assert "НЕ ПРОЙДЕНА" in T.sdvig_line(_sd([(True, -1.0, DAY)]))                          # дневная argmax != 0
+    w = T.sdvig_line(_sd([(True, 0.0, DAY), (False, -1.0, WIN)]))                          # оконная ok=False
+    assert "НЕ ПРОЙДЕНА" not in w and "допущены" in w and "справочно" in w.splitlines()[1]
+    n = T.sdvig_line(_sd([(False, -1.0, WIN)]))                                            # только оконная
+    assert "НЕ ПРОЙДЕНА" not in n and "отсутствует" in n
+
+
+def test_sdvig_reads_comma_and_semicolon(tmp_path):
+    """Формат ch4_dev_sigma (to_csv: «,», с текстом с «;» и «,» в примечании) и формат таблиц шагов («;», «,» десятичная)."""
+    df = pd.DataFrame(dict(ryad=["hyb_h1", "hyb_h5", "kontrol:hyb_h1_sdvig-1", "naive"], rol=["a", "a", "контроль: x", "a"],
+                           tip=["model"] * 4, corr=[0.87, 0.82, 0.5, 0.7], ok=[True, True, False, False],
+                           primechanie=["", "", "уровень: отстаёт; a, b", "x; y, z"]))
+    df.to_csv(tmp_path / "c.csv", index=False)
+    df.to_csv(tmp_path / "s.csv", index=False, sep=";", decimal=",")
+    a, b = T.sdvig(tmp_path / "c.csv", "hyb"), T.sdvig(tmp_path / "s.csv", "hyb")
+    assert list(a["ryad"]) == list(b["ryad"]) == ["hyb_h1", "hyb_h5"]
+    assert a["corr"].tolist() == b["corr"].tolist() == [0.87, 0.82]
+    assert "допущены" in T.sdvig_line(a)

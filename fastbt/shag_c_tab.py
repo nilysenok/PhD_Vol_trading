@@ -108,7 +108,10 @@ def komissiya(eng, g: np.ndarray, reps: int, comms=(0.00035, 0.0004, 0.0005, 0.0
 def sdvig(csv_path, sigma: str) -> pd.DataFrame:
     """Строки data/regen/ch4_dev/proverka_sdvig.csv по рядам σ шага (без контролей): наивная — `naive`,
     HAR-J — `harj_b_h*`, гибрид — `hyb_h*`. Нужны столбцы ryad, ok (формат ch4_dev_sigma.shift_row)."""
-    d = pd.read_csv(csv_path, sep=";", decimal=",", encoding="utf-8-sig")
+    with open(csv_path, encoding="utf-8-sig") as f:   # разделитель — по заголовку (ch4_dev_sigma пишет ","; таблицы шагов — ";")
+        head = f.readline()
+    sep = ";" if head.count(";") > head.count(",") else ","
+    d = pd.read_csv(csv_path, sep=sep, decimal="," if sep == ";" else ".", encoding="utf-8-sig")
     pref = {"naive": "naive", "harj": "harj_b", "hyb": "hyb"}[sigma]
     keep = d["ryad"].astype(str).str.startswith(pref)
     for col in ("rol", "tip"):
@@ -118,8 +121,24 @@ def sdvig(csv_path, sigma: str) -> pd.DataFrame:
 
 
 def sdvig_line(d: pd.DataFrame) -> str:
-    """Первая строка журнала: итог проверки сдвига (§0.1)."""
-    ok = d["ok"].astype(str).str.lower().isin(["true", "1"]) if len(d) else pd.Series(dtype=bool)
-    if not len(d) or not ok.all():
+    """Первая строка журнала: итог проверки сдвига (§0.1).
+    ↺ Блокируют только строки с дневной целью «RV_{d+k} дневная» (ok и argmax приращения = 0, оба периода);
+    строки с оконной целью (y_{d+k} = среднее RV …) — справочно, второй строкой, запуск не останавливают.
+    Откат: снять фильтр по `cel`."""
+    if not len(d):
         return "ПРОВЕРКА СДВИГА σ: НЕ ПРОЙДЕНА или нет строк — счёт запрещён"
-    return f"проверка сдвига σ (k = −2…+1, максимум на последнем известном дне): {len(d)} рядов, все допущены"
+    okno = d["cel"].astype(str).str.startswith("y_") if "cel" in d else pd.Series(False, index=d.index)
+    day, ref = d[~okno], d[okno]
+    if not len(day):
+        return ("проверка сдвига σ: для наивной проверка по дневной цели отсутствует, только оконная — справочно "
+                f"({len(ref)} строк)")
+    ok = day["ok"].astype(str).str.lower().isin(["true", "1"])
+    if "argmax_prirascheniya" in day:
+        ok &= pd.to_numeric(day["argmax_prirascheniya"], errors="coerce").eq(0)
+    if not ok.all():
+        return "ПРОВЕРКА СДВИГА σ: НЕ ПРОЙДЕНА или нет строк — счёт запрещён"
+    line = f"проверка сдвига σ (k = −2…+1, максимум на последнем известном дне): {len(day)} рядов с дневной целью, все допущены"
+    if len(ref):
+        n_ok = int(ref["ok"].astype(str).str.lower().isin(["true", "1"]).sum())
+        line += f"\nсправочно, оконная цель (не блокирует): {len(ref)} строк, ok у {n_ok}"
+    return line
