@@ -20,6 +20,7 @@ SIGMAS = ("naive", "harj", "hyb")
 NAMES = ("C_naive", "C_harj", "C_hyb")
 STEPS = ("A", "к3") + NAMES
 NAN = float("nan")
+NOTE = "C = A × затвор; ступень к3 → C смешивает эффект S5/S6 и фильтра; разложение — shagN_razlozhenie"
 
 
 def parse_label(label: str):
@@ -120,7 +121,7 @@ def lestnitsa(P: dict, reps: int) -> list:
     rows = []
     for comm, ports in P.items():
         sA = sharpe(ports["A"]["excess"].values)
-        rows.append(_row(comm, stupen="A", sharpe=sA, d_k_A=0.0))
+        rows.append(_row(comm, stupen="A", sharpe=sA, d_k_A=0.0, primechanie=NOTE))
         for prev, cur in zip(STEPS[:-1], STEPS[1:]):
             c = compare(ports[cur], ports[prev], reps)
             rows.append(_row(comm, stupen=f"{prev} → {cur}", **c, d_k_A=c["sharpe"] - sA))

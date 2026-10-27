@@ -124,6 +124,28 @@ def test_otkryt_zakryt_razdeleny_verno():
     assert res["открыт"]["n"] == n // 2 and inv["открыт"]["n"] == n // 2
 
 
+def test_exposure_open_p50_razdelyaet_dni():
+    """На затворе p50 (тренд R>0.5, контртренд R<0.5, диапазон закрыт) open_mask ≡ «никогда» — ловится;
+    exposure_open делит дни по тому, пропускает ли затвор позицию A."""
+    n = 10
+    R = np.tile(np.array([0.2, 0.8]), n // 2)[None, :]
+    G = np.ones((3, 1, n))
+    G[0] = R > 0.5
+    G[1] = R < 0.5
+    G[2] = (R >= 0.5) & (R <= 0.5)
+    assert not g3.open_mask(G).any()                    # вырожденное определение
+    tick, bar = np.zeros(2 * n, int), np.tile(np.arange(n), 2)
+    cat = np.repeat([0, 2], n)                          # строка тренда и строка диапазона
+    A = np.r_[np.ones(n), np.ones(n)]
+    A[n + 5:] = 0.0                                     # у диапазонной строки позиция только в днях 0–4
+    has, op = g3.exposure_open(A, G, tick, bar, cat, (1, n))
+    assert has.all()                                    # в каждом дне есть позиция
+    assert op[0].tolist() == [False, True] * 5          # пропускает только тренд на высоком ранге
+    A[:n] = 0.0                                         # остался только диапазон (затвор закрыт)
+    has, op = g3.exposure_open(A, G, tick, bar, cat, (1, n))
+    assert has[0, :5].all() and not has[0, 5:].any() and not op.any()
+
+
 def test_okno_tolko_2018_2021():
     n = 300
     yrs = np.repeat([2017, 2018, 2022], 100)[None, :]

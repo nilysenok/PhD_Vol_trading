@@ -81,6 +81,19 @@ def open_mask(G: np.ndarray) -> np.ndarray:
     return G.mean(axis=0) > 0.5
 
 
+def exposure_open(A, G, tick, bar, cat, shape):
+    """Определение «фильтр открыт» по экспозиции A (замена open_mask: среднее по трём категориям при p50 ≡ 1/3
+    во всём окне — тренд и контртренд дополнительны, диапазон закрыт, «открыт» не наступает никогда).
+    Тикер-день с позицией A (строка ≠ 0): открыт — затвор своей категории пропускает хотя бы одну позицию,
+    закрыт — все позиции A заблокированы. Дни без позиции A — вне фильтра (has = False). → (has, open_)."""
+    nz = np.asarray(A) != 0
+    has, passes = np.zeros(shape, bool), np.zeros(shape, bool)
+    has[tick[nz], bar[nz]] = True
+    pz = nz & (G[cat, tick, bar] > 0)
+    passes[tick[pz], bar[pz]] = True
+    return has, passes
+
+
 def share_diff(Ga: np.ndarray, Gb: np.ndarray, valid: np.ndarray) -> float:
     """Доля тикер-дней, где решения фильтра (вектор из 3 категорий) двух σ различаются."""
     d = np.any(Ga != Gb, axis=0)
