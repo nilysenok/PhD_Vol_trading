@@ -1,6 +1,8 @@
 """Э1-д (Ж-031, Ж-037): validation A′ — замок, «да», реестр, повтор, сбой; к2 и Δ. Синтетика, временный каталог.
 Реальных данных не читает; `docs/otbor/validation_reestr.csv` основной копии не создаётся (пути — во `tmp`).
 Детекторы `ok_*` возвращают True, если свойство выполнено; мутации — `test_sweep_val_mut.py`."""
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -24,7 +26,7 @@ def refused(tmp, spec_edit=None, meta_edit=None) -> bool:
     try:
         sv.run(P, spec, meta_edit(meta) if meta_edit else meta, make_factory(tmp, lambda: reads.append(1)), **REPS)
     except sv.Stop:
-        return bool(not reads and not P.lock.exists() and not P.reestr.parent.exists() and not P.out.exists())
+        return bool(not reads and not P.lock.exists() and not P.reestr.exists() and not P.out.exists())
     return False
 
 
@@ -37,7 +39,10 @@ def ok_otkaz_sha_ne_tot(tmp):
 
 
 def ok_otkaz_da_ranshe_zamorozki(tmp):
-    return refused(tmp, lambda s, P: s.update(zamorozheno_v="2026-10-28 10:00"))
+    def late(s, P):                                     # время заморозки — в файле, не в spec
+        z = json.loads(P.zamorozka.read_text("utf-8"))
+        P.zamorozka.write_text(json.dumps(dict(z, zamorozheno_v="2026-10-28 10:00")), "utf-8")
+    return refused(tmp, late)
 
 
 def ok_zamok_do_chteniya(tmp, monkeypatch) -> bool:

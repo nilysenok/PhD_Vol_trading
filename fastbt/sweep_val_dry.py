@@ -1,6 +1,7 @@
 """`--dry` для validation A′: синтетическая панель, журнал «да» и каталоги — во временной папке. Реальных данных не читает."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from fastbt import sweep_val as sv
@@ -36,12 +37,14 @@ def make_factory(tmp: Path, on_build=None):
 
 def make_spec(tmp: Path, meta: list, note=None) -> tuple:
     """(Puti, spec) с журналом: строка «да» с полным sha, позже заморозки."""
-    P = sv.Puti(koren=tmp)
+    P = sv.Puti(koren=tmp, git_proverka=False)           # git в синтетике не нужен; проверка git — в тестах заморозки
     P.zhurnal.parent.mkdir(parents=True, exist_ok=True)
     stroka = f"да, открыть validation A′, sha {sv.sha_kandidatov(meta)}"
     P.zhurnal.write_text(f"### Ж-099 · 28.10.2026, 09:30\n{stroka}\n", "utf-8")
-    return P, dict(zamorozheno_v="2026-10-28 09:00", zamorozheno_sha=sv.sha_kandidatov(meta), reopen_note=note,
-                   da_vladeltsa=dict(stroka=stroka, zhurnal="Ж-099"))
+    P.zamorozka.parent.mkdir(parents=True, exist_ok=True)       # заморозка — файл, а не spec
+    P.zamorozka.write_text(json.dumps(dict(zamorozheno_v="2026-10-28 09:00", sha=sv.sha_kandidatov(meta), N_vsego={}, bazy={},
+                                           spisok=meta)), "utf-8")
+    return P, dict(reopen_note=note, da_vladeltsa=dict(stroka=stroka, zhurnal="Ж-099"))
 
 
 def dry_run(tmp: Path) -> dict:

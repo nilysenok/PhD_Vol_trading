@@ -64,7 +64,10 @@ def test_mut_koren_ot_rabochey_kopii(monkeypatch, tmp_path):
 def test_mut_zamorozka_ne_privyazana_k_sha(monkeypatch, tmp_path):
     real = sv.check_da
 
-    def check(spec, sha, P):
-        real({**spec, "zamorozheno_sha": sha}, sha, P)
+    def check(spec, sha, P):                            # мутация: заморозка «подгоняется» под любой sha списка
+        z = sv.json.loads(P.zamorozka.read_text("utf-8"))
+        P.zamorozka.write_text(sv.json.dumps(dict(z, sha=sha, spisok=[])), "utf-8")
+        monkeypatch.setattr("fastbt.sweep_val_kand.sv.sha_kandidatov", lambda m: sha)
+        real(spec, sha, P)
     monkeypatch.setattr(sv, "check_da", check)
     assert not ok_otkaz_posle_pravki_spiska(tmp_path)
