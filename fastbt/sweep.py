@@ -27,8 +27,11 @@ class Sweep:
         self.out = Path(spec.out) if spec.out else None
         self.comm = [c / 100.0 for c in spec.comm_pct]
         self.ledger, self._mem, self._lock, self._val_open = {}, {}, threading.Lock(), False
+        self.excess = {}                  # pkey -> {daty, excess_d} тех же проб, что в ledger (файл ledger_excess.json)
         if self.out and (self.out / "ledger.json").exists():
             self.ledger = json.loads((self.out / "ledger.json").read_text("utf-8"))
+        if self.out and (self.out / "ledger_excess.json").exists():
+            self.excess = json.loads((self.out / "ledger_excess.json").read_text("utf-8"))
 
     def _df(self, p: dict, comm: float, years) -> pd.DataFrame:
         years = tuple(years)
@@ -50,10 +53,15 @@ class Sweep:
         years = self.spec.periods.years(period)
         comm = self.comm[0] if comm_pct is None else comm_pct / 100.0
         p = {**self.spec.base, **params}
-        row = ss.metrics_row(self._df(p, comm, years), years)
+        df = self._df(p, comm, years)
+        row = ss.metrics_row(df, years)
+        q = ss.year_slice(df, years)
+        row["excess_d"] = [float(x) for x in q["excess"].values]     # дневной ряд избыточной: вход pbo_cscv (sweep_pbo)
+        row["daty"] = [d.strftime("%Y-%m-%d") for d in q.index]      # даты ряда — нужны скрипту открытия
         if period == "setup" and comm == self.comm[0]:           # проба = точка на периоде отбора (настройка 2018) при комиссии отбора (первая в comm_pct)
             with self._lock:
                 self.ledger[pkey(p)] = row["sr_d"]
+                self.excess[pkey(p)] = dict(daty=row["daty"], excess_d=row["excess_d"])
         mult = self.n_mult() if period == "validation" else 1
         return {**p, "comm_pct": comm * 100, "period": period, **row, "N": len(self.trials_sr()) * mult, "n_mult": mult}
 
@@ -87,6 +95,7 @@ class Sweep:
         if self.out is not None:
             self.out.mkdir(parents=True, exist_ok=True)
             (self.out / "ledger.json").write_text(json.dumps(self.ledger), "utf-8")
+            (self.out / "ledger_excess.json").write_text(json.dumps(self.excess), "utf-8")
 
 
 def make_evaluator(spec: Spec):

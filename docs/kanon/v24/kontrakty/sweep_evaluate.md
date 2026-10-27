@@ -19,9 +19,13 @@
 | `msr`, `sortino`, `mdd` | `metriki_e.msr`, `sortino_e`; `mdd` — доля от пика, ≥ 0 |
 | `oborot_y`, `dni_v_rynke`, `sdelok_y` | Σ\|Δпоз\| в год; доля дней с экспозицией > 0; сторон в год на пару |
 | `N`, `n_mult` | число уникальных точек ledger × n_mult (n_mult = 2 при повторном открытии validation) |
+| `excess_d`, `daty` | дневная избыточная доходность на периоде строки (список float) и её даты (`YYYY-MM-DD`, список str); `sharpe` = Шарп(`excess_d`, ddof=1). Нужны `pbo_cscv` и скрипту открытия. Драйверы `_flat` их отбрасывают (списки) |
+
+### Ledger рядов (`Sweep.excess`, файл `ledger_excess.json`)
+Для каждой пробы ledger (setup, комиссия отбора 0,04 — то же условие) хранится `{daty, excess_d}` под тем же `pkey`. `ledger.json` (pkey → `sr_d`) не менялся. PBO: `fastbt/sweep_pbo.py` — `perf_matrix` (T×N, одинаковые даты у всех проб, иначе `ValueError`) → `sweep_drivers.pbo_cscv(…, 8)`; `pbo_sweep(sw)` — по ledger оценщика. Перформанс в матрице — дневная избыточная.
 
 ### v1.1, не реализовано
-`excess_d` (дневной ряд — вход `pbo_cscv`; без него PBO считать не из чего), `v`, `okno_s`, `okno_po`, `chestnaya`.
+`v`, `okno_s`, `okno_po`, `chestnaya`.
 
 ## DSR и цель
 - Ledger проб ведётся только при комиссии отбора 0,04 и вне validation; SR пробы = `sr_d`. N — число уникальных точек (`pkey`). Повтор точки пробой не является; 0,035 N не увеличивает (толкование 27.10, `tolkovaniya.md`). `n_trials` модуля владельца — отдельной колонкой.
