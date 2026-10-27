@@ -4,8 +4,8 @@
 strength[D,P] — сила сигнала (для равенства в день), rfc[D] — ставка ЦБ × календарные дни до следующей строки.
 Веса на день d считаются только по строкам < d (окно OKNO_VESOV); текущий день и будущее в вес не входят.
 Расчёт портфеля — как `s9.Engine.port` (комиссия с обеих сторон на текущий вес, плата за выход на последнем баре
-пары, свободный капитал под ставку ЦБ). Издержки пересмотра весов (обр. волатильность, паритет) не берутся, как и
-у A при изменении 1/cnt: это потолок для этих схем.
+пары, свободный капитал под ставку ЦБ) плюс комиссия на |Δw| при каждой смене веса удерживаемой позиции
+(обр. волатильность, паритет риска, смена 1/cnt и n_open/L): у A без смены cnt она равна нулю.
 """
 from __future__ import annotations
 
@@ -116,12 +116,14 @@ def portfolio(pn: Panel, g: np.ndarray, w: np.ndarray, comm: float) -> pd.DataFr
         if len(a):
             last[a[-1], p] = True
     ex = np.where(last, np.abs(g), 0.0)
-    r = (g * w * pn.lr - (dg + ex) * w * comm).sum(axis=1)
+    gp, wp = np.vstack([np.zeros((1, g.shape[1])), g[:-1]]), np.vstack([np.zeros((1, g.shape[1])), w[:-1]])
+    reb = np.where((g != 0) & (g == gp), np.abs(g) * np.abs(w - wp), 0.0)     # пересмотр веса удерживаемой позиции платит комиссию
+    r = (g * w * pn.lr - (dg + ex) * w * comm - reb * comm).sum(axis=1)
     expo = (np.abs(g) * w).sum(axis=1)
     assert expo.max(initial=0.0) <= 1.0 + 1e-9, "Σ|вес| > 1: плечо не предусмотрено"
     n_act = np.maximum(pn.act.sum(axis=1), 1)
     sides = ((dg > 0) | (ex > 0)).sum(axis=1) / n_act
-    return pd.DataFrame(dict(excess=r - expo * pn.rfc, exposure=expo, turnover=((dg + ex) * w).sum(axis=1),
+    return pd.DataFrame(dict(excess=r - expo * pn.rfc, exposure=expo, turnover=((dg + ex) * w + reb).sum(axis=1),
                              sides=sides), index=pn.dates)
 
 

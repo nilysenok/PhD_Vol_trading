@@ -92,6 +92,57 @@ def ok_slot_1_cherez_L() -> bool:
     return bool(np.allclose(w[0, :3], 0.25))
 
 
+def ok_ves_limit_bez_tekushchego_dnya() -> bool:
+    """Путь с лимитом позиций (`weights`): шок lr в день d0 не меняет веса дней ≤ d0, но меняет вес d0+1."""
+    pn = SynthPanelSource(3, ("S1", "S2"), seed=8).panel("2018-09-01")
+    g = core.gate(pn, 5, None)
+    d0 = next(d for d in range(70, len(g) - 2) if (g[d] != 0).sum() >= 2 and (g[d + 1] != 0).sum() >= 2)
+    ok = True
+    for sch in ("obratnaya_vol", "paritet_riska"):
+        w1 = core.weights(pn, sch, g, 5)
+        pn2 = Panel(pn.dates, pn.sid, pn.pos, pn.lr.copy(), pn.act, pn.strength, pn.rfc)
+        pn2.lr[d0] *= 10
+        w2 = core.weights(pn2, sch, g, 5)
+        ok &= bool(np.array_equal(w1[:d0 + 1], w2[:d0 + 1]) and not np.allclose(w1[d0 + 1], w2[d0 + 1]))
+    return ok
+
+
+def ok_peresmotr_vesov_platit() -> bool:
+    pn = mkpanel([[1, 1]] * 4, lr=np.zeros((4, 2)))
+    g = pn.pos
+    const = core.portfolio(pn, g, np.full((4, 2), 0.5), 0.01)
+    moved = core.portfolio(pn, g, np.array([[.5, .5], [.4, .6], [.5, .5], [.4, .6]]), 0.01)
+    # константные веса: вход 1 × 0,01 + выход 1 × 0,01 = −0,02, пересмотра нет; смена весов 3 раза по Σ|Δw| = 0,2 -> ещё −0,006
+    return bool(np.isclose(const["excess"].sum(), -0.02) and np.isclose(const["turnover"].sum(), 2.0)
+                and np.isclose(moved["excess"].sum(), -0.026) and np.isclose(moved["turnover"].sum(), 2.6))
+
+
+def ok_stavka_bez_bfill() -> bool:
+    from fastbt.sweep_a import rate_on
+    dts = pd.bdate_range("2018-01-01", periods=5)
+    rate = pd.Series([7.0, 8.0], index=[dts[2], dts[4]])
+    try:
+        rate_on(rate, dts)
+    except ValueError:
+        pass
+    else:
+        return False                                                    # даты до первого значения не должны получать будущую ставку
+    kr = rate_on(rate, dts[2:])
+    return bool(list(kr) == [7.0, 7.0, 8.0])
+
+
+def test_ves_limit_bez_tekushchego_dnya():
+    assert ok_ves_limit_bez_tekushchego_dnya()
+
+
+def test_peresmotr_vesov_platit_komissiyu():
+    assert ok_peresmotr_vesov_platit()
+
+
+def test_stavka_tolko_izvestnaya_na_datu():
+    assert ok_stavka_bez_bfill()
+
+
 def test_etalon_ravnye_net_net_raven_ruchnomu_A():
     assert ok_etalon()
 

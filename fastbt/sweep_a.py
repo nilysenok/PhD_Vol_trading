@@ -42,6 +42,14 @@ def load_point(csv, comm_pct: float = 0.04) -> dict:
             for c, v in r.items() if c.startswith("p.") and not pd.isna(v)}
 
 
+def rate_on(rate: pd.Series, dts: pd.DatetimeIndex) -> np.ndarray:
+    """Ставка ЦБ, известная на дату (только ffill). Дата раньше первого известного значения — отказ: bfill тянет будущее назад (Д4, № 16)."""
+    kr = rate.reindex(rate.index.union(dts)).sort_index().ffill().reindex(dts)
+    if kr.isna().any():
+        raise ValueError(f"ставка ЦБ неизвестна на {kr.index[kr.isna()][0].date()}: период начинается раньше первого значения")
+    return kr.values
+
+
 class AEvaluator:
     """Протокол Evaluator для `Sweep`: сигналов нет (sig_names пуст), всё в `pnl` по панели источника."""
     sig_names: set = set()
@@ -109,8 +117,7 @@ class SkPanelSource:
         for j, (_, d, ps, l, s) in enumerate(cols):
             k = dts.get_indexer(pd.DatetimeIndex(d))
             pos[k, j], lr[k, j], st[k, j], act[k, j] = ps, l, s, True
-        rate = msp.rate_cbr()
-        kr = rate.reindex(rate.index.union(dts)).sort_index().ffill().bfill().reindex(dts).values
+        kr = rate_on(msp.rate_cbr(), dts)
         return Panel(dts, np.array([c[0] for c in cols]), pos, lr, act, st, kr / 365.0 * msp.cal_days(dts))
 
 
