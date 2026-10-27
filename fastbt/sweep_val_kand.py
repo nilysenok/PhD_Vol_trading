@@ -1,7 +1,7 @@
 """Фабрика кандидатов validation A′ и заморозка списка (Ж-031 Э1-д, Ж-037). Читает только таблицы итераций (train) и ledger.
 
-Кандидаты: (а) стратегия Sk: топ-3 различных по плато × панель одной стратегии, сборка (равные, net, net), база — исходная Sk;
-(б) A′: топ-2 сборки × ранг 1…3 точек всех шести стратегий, база — исходная A. Дубли (отличаются только неактивным параметром)
+Кандидаты: (а) стратегия Sk: топ-3 различных по плато × панель одной стратегии, сборка (равные, net, net), база — «A только Sk» (s9);
+(б) A′: топ-2 сборки × ранг 1…3 точек всех шести стратегий, база — боевая A (s9, Ж-039 п. 1; ссылка `sweep_val_baza`). Дубли (отличаются только неактивным параметром)
 сводятся, топ-3 добирается следующим различным. Заморозка — `docs/otbor/zamorozka_A_prim.json`; `sweep_val` читает её оттуда.
 Реальная фабрика данные читает ТОЛЬКО под замком (вызывается из `sweep_val.run` после замка).
 """
@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 from fastbt import sweep_setka as sk
+from fastbt import sweep_val_baza as bz
 from fastbt import sweep_val as sv
 
 SIDS = tuple(f"S{i}" for i in range(1, 7))
@@ -98,17 +99,16 @@ def top2_sborki(root=".") -> list:
 def build_spisok(root=".") -> tuple:
     """(spisok, bazy, N_vsego) — всё JSON-сериализуемо; порядок и состав однозначны по таблицам."""
     kd = {s: kandidaty(s, root) for s in SIDS}
-    base = {s: kd[s]["base"] for s in SIDS}
-    sp = [dict(id=f"{s}:{i}", kind="S", sid=s, params=NET, orig_params=NET, tochki={s: c["point"]}, orig_tochki={s: base[s]},
+    sp =[dict(id=f"{s}:{i}", kind="S", sid=s, params=NET, orig_params=NET, tochki={s: c["point"]}, baza=bz.baza_ref(s),
                neighbors=c["neighbors"], plateau=c["plateau"], rank_tablitsy=c["rank"])
           for s in SIDS for i, c in enumerate(kd[s]["cands"], 1)]
     for j, sb in enumerate(top2_sborki(root), 1):
         for i in range(TOP_K):
             sp.append(dict(id=f"A:{i + 1}:{j}", kind="A", params={k: sb[k] for k in NET}, orig_params=NET,
-                           tochki={s: kd[s]["cands"][i]["point"] for s in SIDS}, orig_tochki=base,
+                           tochki={s: kd[s]["cands"][i]["point"] for s in SIDS}, baza=bz.baza_ref("A"),
                            neighbors=sb["plateau_neighbors"], plateau=None, rank_tablitsy=i + 1))
     n = {s: kd[s]["cands"][0]["n_vsego"] for s in SIDS}
-    return sp, dict(A=base, **base), dict(n, A=N_A)
+    return sp, {b: bz.baza_ref(b) for b in ("A", *SIDS)}, dict(n, A=N_A)
 
 
 def freeze(root=".", path=None) -> dict:
@@ -132,15 +132,15 @@ def _commit_ok(P) -> None:
 
 
 def load_zamorozka(P) -> dict:
-    """Заморозка из файла: sha обязан совпасть с пересчётом по списку, базы — с orig_tochki кандидатов; файл — как в коммите."""
+    """Заморозка из файла: sha обязан совпасть с пересчётом по списку, база кандидата — s9-ссылка нужного вида, равная bazy; файл — как в коммите."""
     f = Path(P.zamorozka)
     if not f.exists():
         raise sv.Stop(f"нет файла заморозки {f}")
     z = json.loads(f.read_text("utf-8"))
     if sv.sha_kandidatov(z["spisok"]) != z["sha"]:
         raise sv.Stop("файл заморозки правлен без пересчёта sha")
-    if any(m["orig_tochki"][s] != z["bazy"].get(s) for m in z["spisok"] for s in m.get("orig_tochki", {})):
-        raise sv.Stop("базы сравнения в файле заморозки не совпадают с кандидатами")
+    if z["bazy"] and any(not bz.baza_ok(m, z["bazy"]) for m in z["spisok"]):         # bazy пуст — только синтетика `--dry`
+        raise sv.Stop("база не s9-A / «A только Sk» (или не равна записи в bazy)")
     if P.git_proverka:
         _commit_ok(P)
     return z
@@ -168,7 +168,7 @@ def make_factory(P, root=None):
     """factory(meta, note) -> [Cand]; каталоги проб — внутри P.out (его до взгляда нет)."""
     from fastbt.sweep_a import SkPanelSource, make_sweep
     from fastbt.sweep_val_stat import Cand
-    root, srcs = Path(P.koren if root is None else root), {}
+    root, srcs, bases = Path(P.koren if root is None else root), {}, {}
 
     def src(points):
         return srcs.setdefault(json.dumps(points, sort_keys=True, default=str), SkPanelSource(points))
@@ -177,7 +177,8 @@ def make_factory(P, root=None):
         z, out = json.loads(Path(P.zamorozka).read_text("utf-8")), []
         for m in meta:
             d = Path(P.out) / "_sw" / m["id"].replace(":", "_")
-            sw, ow = (make_sweep(src(m[k]), str(d / t), note) for k, t in (("tochki", "c"), ("orig_tochki", "o")))
+            sw = make_sweep(src(m["tochki"]), str(d / "c"), note)
+            ow = bases.setdefault(m["baza"]["id"], bz.S9Baza(m["baza"]))     # база — s9, одна на A / на Sk, не центр сетки
             if m["kind"] == "S":
                 trials, exc = ledger_sk(m["sid"], root)
                 n_total = z["N_vsego"][m["sid"]]
