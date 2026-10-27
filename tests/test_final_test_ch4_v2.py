@@ -204,6 +204,14 @@ def test_otbor_ne_pri_035():
     assert not F.osn_ok(o, p, {'komissiya': 0.00035})      # отбор по С8 v2 — при 0,04
 
 
+def test_otbor_A_pri_005(monkeypatch):
+    from fastbt import s9
+    assert F.a_comm_ok() and s9.COMM == 0.0005        # единственный источник комиссии отбора A
+    for bad in (0.0004, 0.00035):                      # мутация в памяти: отбор A при 0,04 / 0,035
+        monkeypatch.setattr(s9, 'COMM', bad)
+        assert not F.a_comm_ok()
+
+
 def test_spec_dve_osnovnye_v_yaml():
     s = yaml.safe_load((ROOT / 'models/designs/ch4_v2/ch4_v2_sborka.yaml').read_text())['test']
     assert [c['stavka'] for c in s['komissiya_osnovnye']] == [0.00035, 0.0004]

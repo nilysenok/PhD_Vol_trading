@@ -772,6 +772,15 @@ def komissiya_main(tst: dict) -> tuple:
     return float(tst['komissiya']), str(tst.get('komissiya_podpis') or 'основная')
 
 
+KOMISSIYA_OTBORA_A = 0.0005      # внутренний отбор A: fastbt.s9.COMM (одно место; use_v2 скрипт не зовёт) — не трогать
+
+
+def a_comm_ok() -> bool:
+    """Отбор A идёт при 0,05 % (Ъ 27.10 12:05): fastbt.s9.COMM — единственный источник комиссии отбора."""
+    from fastbt import s9
+    return abs(float(s9.COMM) - KOMISSIYA_OTBORA_A) < 1e-12
+
+
 def split_prilozhenie(tab: pd.DataFrame) -> tuple:
     """Основная таблица — обе основные ставки (0,035 и 0,04); приложение — 0,05 и 0,06 (отдельный файл)."""
     return (tab[tab['tablitsa'] == 'osnovnaya'].reset_index(drop=True),
@@ -903,6 +912,7 @@ def selftest(P: Puti, reps: int) -> int:
         po_odnomu_na_podhod=sorted(diz) == sorted(PODHODY),
         stroki=len(tab) == len(['A'] + list(diz) + list(dop)) * 2 * 2 * (len(tst['komissiya_osnovnye']) + len(tst['komissiya_chuvstv'])),
         komissii_dve_osnovnye=osn_ok(tab_osn, tab_pril, tst),
+        otbor_A_005=a_comm_ok(),
         h2=len(h2t) == 2 * 2 * 2 and all(f'p_lw_{a}' in h2t for a in ('hyb−harj_b', 'hyb−naive', 'harj_b−naive')),
         p_v_0_1=bool(tab['p_lw_vs_A'].dropna().between(0, 1).all()),
         pravilo_srabotalo=len(hit) > 0 and bool((tab[tab.pravilo == 's_pravilom']['sharpe'].values
@@ -951,6 +961,8 @@ def run_test(P: Puti, workers: int, reps_override: int | None = None) -> int:
     os.environ['FASTBT_VPRED'] = str(src['hyb_h1'][0])
     from fastbt import data as fd
     fd.VPRED = Path(os.environ['FASTBT_VPRED'])
+    if not a_comm_ok():
+        raise Stop('отбор A не при 0,05 % (fastbt.s9.COMM) — отказ')
     cache = build_A((('test', int(tst['val'][0])),), workers)
     configure_s9(s9.TEST_YEARS, tuple(tst['val']), tst['srez'], src, rvi)
     e = s9.Engine(cache)
