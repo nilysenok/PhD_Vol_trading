@@ -34,8 +34,6 @@
 Validation открывается только с флагом на диске; повторное открытие — только с `reopen_note`. Даты ≥ 2022 — `PermissionError`. Ряд дневной до 18:50 (Н6). Сигнал по close t, доход t → t+1.
 
 ## Ключ кэша (Д5)
-`SignalCache.key = sha1(json([obj, sorted(sig_params), series_digest, code_id]))`:
-- `series_digest` — sha1 склейки дайджестов рядов тикеров;
-- `code_id` — `cache.code_hash()`.
+`SignalCache.key = sha1(json([obj, sorted(sig_params), series_digest, code_id]))`; `series_digest` — sha1 склейки дайджестов рядов тикеров, `code_id` — `cache.code_hash()`.
 
 Кэшируются только сигналы; мемо PnL — на прогон, ключ `(pkey, comm, годы)`.
