@@ -1,8 +1,8 @@
 """Режим `plato` Э1-в (Ж-031, толкование 27.10 19:35): топ-3 по плато, а не по пику, на достроенных соседях.
 
 1. Из всех проб ledger стратегии (настройка 2018, комиссия отбора) берутся топ-10 по цели, допустимые по активности:
-   сделок/год (`sdelok_y`: стороны сделок) ≥ `min_frac` × база tune 2018. Порядок просмотра — по дневному SR пробы: цель на одном
-   годе настройки = Шарп 2018, порядок тот же; цель кандидата пересчитывается оценщиком.
+   сделок/год (`sdelok_y`: стороны сделок) ≥ `min_frac` × база tune 2018. Цель каждой пробы пересчитывается оценщиком
+   (проба уже в ledger — N не растёт), порядок — по цели, не по SR из ledger.
 2. Для каждого достраиваются соседи ±1 узел сетки по каждому параметру с эффектом (размах цели в торнадо ≥ 0,05) — OAT вокруг
    кандидата. Соседи считаются тем же `Sweep.evaluate`, пробы идут в ledger и в N. Сосед, равный по канону уже посчитанной
    точке (неактивные параметры сведены к базе, `make_fix`), берётся из ledger без новой пробы.
@@ -65,19 +65,17 @@ def canon_index(sw: Sweep, exp: dict, fix) -> dict:
 def candidates(sw: Sweep, exp: dict, per: tuple, c0: float, min_sd: float, fix, n: int = TOP_N) -> list:
     """Топ-n допустимых проб ledger: dict(p канон., p_led как в ledger, res, obj)."""
     out, seen = [], set()
-    order = sorted(sw.ledger.items(), key=lambda kv: -(kv[1] if kv[1] == kv[1] else float("-inf")))
-    for k, _ in order:
+    for k in list(sw.ledger):                                      # пробы уже в ledger: evaluate их не дублирует
         p_led = dict(json.loads(k))
         p = fix({**exp["base"], **p_led})
         if pkey(p) in seen:
             continue
         seen.add(pkey(p))
         res = sw.evaluate(p_led, per[0], c0)
-        if admissible(res, min_sd):
-            out.append(dict(p=p, p_led=p_led, res=res, obj=sd.objective_stable(res)))
-        if len(out) == n:
-            break
-    return out
+        obj = sd.objective_stable(res)
+        if admissible(res, min_sd) and obj == obj:
+            out.append(dict(p=p, p_led=p_led, res=res, obj=obj))
+    return sorted(out, key=lambda c: -c["obj"])[:n]               # порядок по цели, не по SR из ledger
 
 
 def add_plateau(sw: Sweep, exp: dict, per: tuple, c0: float, keys: list, fix, cands: list) -> int:

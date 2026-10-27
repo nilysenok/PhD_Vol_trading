@@ -115,6 +115,29 @@ def test_net_sdelok_nan_ne_dopustimo():
     assert not pl.admissible(dict(sdelok_y=float("nan")), 1.0)
 
 
+# ---- 3б. порядок кандидатов — по цели, не по SR из ledger ----
+def seeded_inverse():
+    """В ledger лежит SR с обратным знаком: сортировка по нему поставила бы лучшие точки последними."""
+    exp = dict(base=dict(a=1, b=1), grid=dict(a=G9, b=G9), uslovie={})
+    sw = FakeSw(lambda p: dict(sharpe=float(p["a"]), sdelok_y=10.0), exp["base"])
+    for a in (9, 8, 1, 2, 3):                                              # лучшие по цели (9, 8) вставлены первыми
+        sw.evaluate(dict(a=a, b=1))
+    sw.ledger = {k: -v for k, v in sw.ledger.items()}                     # SR из ledger — обратный порядок цели
+    return sw, exp, pts.make_fix(exp)
+
+
+def test_kandidaty_po_tseli_a_ne_po_SR_ledger():
+    sw, exp, fix = seeded_inverse()
+    assert [c["p"]["a"] for c in pl.candidates(sw, exp, PER, C0, 0.0, fix, n=2)] == [9, 8]
+
+
+def test_mut_kandidaty_v_poryadke_ledger(monkeypatch):
+    monkeypatch.setattr(pl, "sorted", lambda it, key=None: list(it), raising=False)
+    sw, exp, fix = seeded_inverse()
+    sw.ledger = dict(reversed(list(sw.ledger.items())))                   # порядок вставки: лучшие по цели последними
+    assert [c["p"]["a"] for c in pl.candidates(sw, exp, PER, C0, 0.0, fix, n=2)] != [9, 8]
+
+
 # ---- 4. неактивный параметр не раздувает N ----
 def exp_uslovnaya(mode0="off"):
     return dict(base=dict(a=2, mode=mode0, q=1, sl_mult=1.0, rm_edinitsa="atr14", k=1),
