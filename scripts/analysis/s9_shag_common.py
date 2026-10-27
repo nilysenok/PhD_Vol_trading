@@ -20,7 +20,7 @@ DESIGNS = ROOT / "fastbt" / "designs" / "s9"
 OUT = ROOT / "docs" / "tables" / "strat_dev_v3"
 COMM_MAIN, COMM_ALT, COMM_APP = 0.0004, 0.00035, (0.0005, 0.0006)
 ALPHA, TOL = 0.05, 0.1
-NOT_APPLIED = "не применяется"
+COMM_REF = 0.0005                                   # справочный независимый выбор (§0.5)
 SIGMAS = {"naive": ("naive_h1", "naive_h5"), "harj": ("harj_h1", "harj_h5"), "hyb": ("hyb_h1", "hyb_h5")}
 B_NEGATIVE = "B не фиксируется — отрицательный результат"
 
@@ -46,16 +46,14 @@ def check_exit_fee(eng, pos, comm: float, tol: float = 1e-12) -> None:
         raise AssertionError("комиссия выхода на границе окна не уплачена (Н5)")
 
 
-def check_lags(LAG: np.ndarray, t_tick: np.ndarray, min_lag: int = fk.MIN_LAG) -> None:
-    """к2: каждый лаг ∈ [21, T−21]; лаг 0 в повторах — ошибка (сдвиг 0 даёт исходную маску)."""
-    for ti, T in enumerate(np.asarray(t_tick)):
-        if T >= 2 * min_lag and (LAG[:, ti].min() < min_lag or LAG[:, ti].max() > T - min_lag):
-            raise AssertionError(f"к2: лаг вне [{min_lag}, T−{min_lag}] у тикера {ti}")
-
-
-def check_lag0(K, g: np.ndarray, sharpe_point: float, tol: float = 1e-9) -> None:
-    """Сдвиг 0 воспроизводит Шарп точки (A × g)."""
-    if abs(K.identity_sharpe(g) - sharpe_point) > tol:
+def check_shift(K, g=None, sharpe_point: float | None = None, tol: float = 1e-9) -> None:
+    """Все проверки сдвига к2 в одном месте: лаги каждого тикера ∈ [21, T−21] (лаг 0 в повторах — ошибка);
+    если даны g и Шарп точки — сдвиг 0 воспроизводит точку (A × g). g — маска или множитель масштаба."""
+    ml = fk.MIN_LAG
+    for ti, T in enumerate(np.asarray(K.t_tick)):
+        if T >= 2 * ml and (K.LAG[:, ti].min() < ml or K.LAG[:, ti].max() > T - ml):
+            raise AssertionError(f"к2: лаг вне [{ml}, T−{ml}] у тикера {ti}")
+    if g is not None and abs(K.identity_sharpe(g) - sharpe_point) > tol:
         raise AssertionError("к2: сдвиг 0 не даёт исходную маску")
 
 
@@ -75,9 +73,10 @@ def make_base(eng, comm: float, reps: int) -> dict:
     return dict(A=A, k3=p3, mA=s9.metrics(A), m3=s9.metrics(p3), comm=comm, reps=reps)
 
 
-def eval_point(eng, K, base: dict, pos, g, scale: bool = False) -> dict:
+def eval_point(eng, K, base: dict, pos, g) -> dict:
     """Строка точки: §0.3, Δ к A (ЛВ, знак по годам), Δ к к3 (ЛВ), к2 и флаги условий 1–3 отдельно.
-    scale=True (B, D7): условие 3 не применяется; p сдвига весов — справочно (p_vs_k2_masshtab)."""
+    Условие 3 — для всех (D-маски, D7, B; Ъ 27.10): к2 — круговой сдвиг ряда экспозиции g (маски или
+    множителя масштаба) по тикерам на лаг ∈ [21, T−21]; D7 — масштаб min(1,(med/σ)^γ), не бинарный затвор."""
     p = eng.port(pos, comm=base["comm"])
     m = s9.metrics(p)
     row = shag0.stats(p, np.ones(len(p), bool))
@@ -85,15 +84,27 @@ def eval_point(eng, K, base: dict, pos, g, scale: bool = False) -> dict:
     row.update(shag0.delta(p, base["A"], base["reps"]))
     d3, _, p3 = lw_sharpe_diff(p["excess"].values, base["k3"]["excess"].values, base["reps"], 5)
     row.update(sharpe_k3=base["m3"]["sharpe"], d_vs_k3=d3, p_vs_k3=p3)
+    check_shift(K, g, m["sharpe"])                      # обязательно для каждой точки
     sh = K.k2_sharpes(g)
     pk2 = fk.p_perm(row["sharpe"], sh)
     row["sharpe_k2_med"], row["n_shift_k2"] = float(np.median(sh)), len(sh)
-    row["p_vs_k2_masshtab" if scale else "p_vs_k2"] = pk2
+    row["p_vs_k2"] = pk2
     row["usl1"] = bool(s9.c8(m, base["mA"])["passed"])
     row["usl2"] = bool(row["sharpe"] > row["sharpe_k3"])
-    row["usl3"] = NOT_APPLIED if scale else bool(pk2 < ALPHA)
-    row["passed_v2"] = bool(row["usl1"] and row["usl2"] and row["usl3"] in (True, NOT_APPLIED))
+    row["usl3"] = bool(pk2 < ALPHA)
+    row["passed_v2"] = bool(row["usl1"] and row["usl2"] and row["usl3"])
     return row
+
+
+def select_ref(d_ref: pd.DataFrame, sel):
+    """Справочный выбор при 0,05 % — независимый отбор (С8 v2 при той комиссии). Строка: точка, Шарп, флаг
+    sovpal (совпал с основным выбором). Другой выбор — обе точки идут на тест (флаг obe_na_test)."""
+    r = select(d_ref)
+    if r is None:
+        return dict(vybor_005="нет прошедших", sovpal=sel is None, obe_na_test=False)
+    same = sel is not None and (r["family"], r["point"], r["sigma"]) == (sel["family"], sel["point"], sel["sigma"])
+    return dict(vybor_005=f'{r["family"]}:{r["point"]}:{r["sigma"]}', sharpe_005=r["sharpe"],
+                sovpal=bool(same), obe_na_test=not same)
 
 
 def select(df: pd.DataFrame):
@@ -156,7 +167,7 @@ def razlozhenie(base: dict, row_p: dict, p_pt: pd.DataFrame, reps: int) -> list:
 
 def b_itog(passed: dict) -> pd.DataFrame:
     """Правило §3′: B не проходит ни на одной σ (наивная → HAR-J → гибрид) — строка отрицательного результата.
-    passed: {σ: число точек, прошедших С8 v2 (условия 1–2; условие 3 — не применяется)} или None, если не считалась."""
+    passed: {σ: число точек, прошедших С8 v2 (условия 1–3)} или None, если не считалась."""
     rows = [dict(sigma=s, proshlo_tochek=("не считалась" if passed.get(s) is None else passed[s]))
             for s in SIGMAS]
     done = [v for v in passed.values() if v is not None]

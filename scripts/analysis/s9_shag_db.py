@@ -3,8 +3,9 @@
     FASTBT_MAIN=<своя копия> python3 scripts/analysis/s9_shag_db.py --podhod D|B [--sigma naive|harj|hyb] [--reps 10000]
     python3 scripts/analysis/s9_shag_db.py --podhod B --dry-run     # план и число точек; σ и RVI не читаются
 Сетки — fastbt/designs/s9/setka_{D,B}_v3.yaml (коммит до счёта). Отбор — С8 v2 при 0,04 %; те же точки при 0,035;
-0,05/0,06 — только в komissiya. D: семьи С9 с RVI_{d−1} (D6lag1; D6 с RVI_d не входит). B: условие 3 (к2)
-не применяется (решение владельца), p сдвига весов — справочно. Таблицы: setka, otbor, ustoychivost, komissiya,
+0,05/0,06 — в komissiya; справочно независимый выбор при 0,05 (vybor005, флаг sovpal). D: семьи С9 с
+RVI_{d−1} (D6lag1; D6 с RVI_d не входит). Условие 3 (к2) — для всех, и для B, D7 (масштаб): круговой сдвиг
+ряда экспозиции по тикерам (Ъ 27.10). Таблицы: setka, otbor, ustoychivost, komissiya, vybor005,
 razlozhenie (+ shag3B_itog). Самопроверка без аргументов: python3 s9_shag_db.py
 """
 from __future__ import annotations
@@ -56,7 +57,7 @@ def run_grid(podhod, eng, s9, series, comm, reps):
     from fastbt import fast_kontrol as fk
     base, K = C.make_base(eng, comm, reps), fk.Kontrol(eng, comm)
     C.check_exit_fee(eng, eng.A_row, comm)
-    C.check_lags(K.LAG, K.t_tick)
+    C.check_shift(K)                                  # лаги; сдвиг 0 — внутри eval_point на каждой точке
     rows, setka = [], []
     for src in series:
         for f, lab, G, scale, cc, ok in points(podhod, eng, src, s9):
@@ -64,24 +65,28 @@ def run_grid(podhod, eng, s9, series, comm, reps):
             if not ok:
                 continue
             g = eng.g_row(G)
-            r = C.eval_point(eng, K, base, eng.A_row * g, g, scale and podhod == "B")
+            r = C.eval_point(eng, K, base, eng.A_row * g, g)
             r.update(family=f, point=lab, sigma=src, comm_pct=comm * 100, calib_closed=cc)
             rows.append(r)
     return pd.DataFrame(rows), setka, base
 
 
-def run(podhod: str, sigma: str | None, reps: int) -> None:
+def run(podhod: str, sigma: str | None, reps: int, eng=None) -> None:
+    """eng — движок (в тестах синтетический); иначе боевой из кэша."""
     from fastbt import s9
-    s9.use_v2(C.COMM_MAIN)
-    eng = s9.Engine(s9.load_cache())
+    if eng is None:
+        s9.use_v2(C.COMM_MAIN)
+        eng = s9.Engine(s9.load_cache())
     tag = f"shag3{podhod}"
     for sg in ([sigma] if sigma else list(C.SIGMAS)):
         series = C.SIGMAS[sg]
         d4, setka, base = run_grid(podhod, eng, s9, series, C.COMM_MAIN, reps)
         d35, _, _ = run_grid(podhod, eng, s9, series, C.COMM_ALT, reps)
+        d5, _, _ = run_grid(podhod, eng, s9, series, C.COMM_REF, reps)
         write(setka, f"{tag}_setka_{sg}.csv")
         write(pd.concat([d4, d35]).to_dict("records"), f"{tag}_otbor_{sg}.csv")
         sel = C.select(d4)
+        write([C.select_ref(d5, sel)], f"{tag}_vybor005_{sg}.csv")
         best = sel if sel is not None else d4.sort_values("sharpe", ascending=False).iloc[0]
         if sel is not None:
             write(C.ustoychivost(d4, sel).to_dict("records"), f"{tag}_ustoychivost_{sg}.csv")
@@ -96,12 +101,12 @@ def extra(podhod, eng, s9, best, chosen, series, base, reps, tag, sg) -> None:
     (нет прошедших — для лучшей по Шарпу, пометка vybrana=False)."""
     from fastbt import fast_kontrol as fk
     pts = {(f, lab): (G, sc) for f, lab, G, sc, _, _ in points(podhod, eng, best["sigma"], s9)}
-    G, scale = pts[(best["family"], best["point"])]
+    G, _ = pts[(best["family"], best["point"])]
     g = eng.g_row(G)
     rows = []
     for comm in (C.COMM_MAIN, C.COMM_ALT, *C.COMM_APP):
         b = C.make_base(eng, comm, reps)
-        r = C.eval_point(eng, fk.Kontrol(eng, comm), b, eng.A_row * g, g, scale and podhod == "B")
+        r = C.eval_point(eng, fk.Kontrol(eng, comm), b, eng.A_row * g, g)
         rows.append(dict(family=best["family"], point=best["point"], sigma=best["sigma"], vybrana=chosen,
                          comm_pct=comm * 100, **{k: r[k] for k in r if k.startswith(("sharpe", "d_vs", "p_vs", "usl", "passed"))}))
     write(rows, f"{tag}_komissiya_{sg}.csv")

@@ -1,10 +1,9 @@
 """Шаг 3′ (D, B): scripts/analysis/s9_shag_common.py, s9_shag_db.py на синтетике; данные не читаются.
-Обязательные мутации §6 (в памяти) роняют проверки: сдвиг входа σ / RVI на +1, снятие комиссии выхода на
-границе, к2 со сдвигом 0, к3 с невыключенной S5; отдельно — RVI_d вместо RVI_{d−1}.
+Мутации §6 (в памяти) роняют проверки: комиссия выхода на границе, к2 со сдвигом 0, к3 с невыключенной S5,
+условие 3 для B пропущено. Мутации входов (σ / RVI) — tests/test_s9_shag_db_mut.py; константы и run() — _run.py.
 python3 -m pytest tests/test_s9_shag_db.py -q
 """
 import sys
-import types
 from pathlib import Path
 
 import numpy as np
@@ -28,7 +27,12 @@ def _inf_gate(ns):
     """Информативная маска (знает знак дня): сдвиг её ломает; для проверки p к к2."""
     return (ns.A_row * ns.lr_row > 0).astype(float)
 
-# ---------------- комиссия выхода на границе ----------------
+
+def _inf_scale(ns):
+    """Информативный множитель масштаба (B, D7): 1 в дни с верным знаком, 0,3 в прочие."""
+    return np.where(ns.A_row * ns.lr_row > 0, 1.0, 0.3)
+
+
 def _port_no_exit(ns):
     def port(pos, comm=None, cap=1.0, wgt=None):
         dp = np.diff(pos, prepend=0.0)
@@ -49,32 +53,43 @@ def test_exit_fee_paid_and_mutation_caught():
     with pytest.raises(AssertionError, match="комиссия выхода"):
         C.check_exit_fee(ns, ns.A_row, COMM)
 
-# ---------------- к2: сдвиг 0, лаги ----------------
-def test_k2_lag0_reproduces_point_and_mutation_caught():
+
+def test_check_shift_lag0_and_lags():
     ns = _world()
     g = _inf_gate(ns)
     K = fk.Kontrol(ns, COMM, n_shift=20)
     sh = s9.metrics(ns.port(ns.A_row * g, comm=COMM))["sharpe"]
-    C.check_lag0(K, g, sh)
-    with pytest.raises(AssertionError):
-        C.check_lag0(K, np.roll(g, 1), sh)                       # маска не та — сдвиг 0 не воспроизводит точку
+    C.check_shift(K, g, sh)
+    with pytest.raises(AssertionError, match="сдвиг 0"):
+        C.check_shift(K, np.roll(g, 1), sh)                      # маска не та — сдвиг 0 не воспроизводит точку
+    K.LAG[0, 0] = 0
+    with pytest.raises(AssertionError, match="лаг вне"):
+        C.check_shift(K)
 
 
-def test_k2_zero_shift_mutation_caught(monkeypatch):
+def test_k2_zero_shift_mutation_caught():
     ns = _world()
     g = _inf_gate(ns)
     base = C.make_base(ns, COMM, 50)
     K = fk.Kontrol(ns, COMM, n_shift=100)
-    C.check_lags(K.LAG, K.t_tick)
     ok = C.eval_point(ns, K, base, ns.A_row * g, g)
     assert ok["p_vs_k2"] < 0.05 and ok["usl3"] is True
     K.LAG[:] = 0                                                 # мутация: сдвиг 0 у всех повторов
-    bad = C.eval_point(ns, K, base, ns.A_row * g, g)
-    assert bad["p_vs_k2"] == 1.0 and bad["usl3"] is False and not bad["passed_v2"]
-    with pytest.raises(AssertionError, match="лаг вне"):
-        C.check_lags(K.LAG, K.t_tick)
+    with pytest.raises(AssertionError, match="лаг вне"):         # eval_point зовёт check_shift сам
+        C.eval_point(ns, K, base, ns.A_row * g, g)
 
-# ---------------- к3 ----------------
+
+def test_run_grid_calls_check_shift(monkeypatch):
+    ns = _world()
+    ns.g_row = lambda G: G
+    calls = []
+    orig = C.check_shift
+    monkeypatch.setattr(C, "check_shift", lambda *a, **k: (calls.append(a), orig(*a, **k))[1])
+    monkeypatch.setattr(DB, "points", lambda *a: [("D1", "p", _inf_gate(ns), False, 0.3, True)])
+    DB.run_grid("D", ns, s9, ("x",), COMM, 50)
+    assert len(calls) == 2 and calls[0][1:] == () and calls[1][1] is not None   # лаги + сдвиг 0 точки
+
+
 def test_k3_off_s5_and_mutation_caught(monkeypatch):
     ns = _world()
     good = fk.k3_positions(ns.A_row, ns.r["pair"], ns.pairs)
@@ -87,19 +102,43 @@ def test_k3_off_s5_and_mutation_caught(monkeypatch):
     with pytest.raises(AssertionError, match="к3"):              # к3 = A (S5/S6 не выключены) — make_base падает
         C.make_base(ns, COMM, 50)
 
-# ---------------- условия С8 v2 отдельно; B без условия 3 ----------------
-def test_flags_d_vs_b():
+
+def test_flags_condition3_applies_to_scale_too(monkeypatch):
     ns = _world()
     base, K = C.make_base(ns, COMM, 50), fk.Kontrol(ns, COMM, n_shift=100)
-    g = _inf_gate(ns)
-    d = C.eval_point(ns, K, base, ns.A_row * g, g)
-    b = C.eval_point(ns, K, base, ns.A_row * g, g, scale=True)
-    assert d["usl3"] is True and "p_vs_k2" in d
-    assert b["usl3"] == C.NOT_APPLIED and "p_vs_k2" not in b and "p_vs_k2_masshtab" in b
-    assert b["passed_v2"] == bool(b["usl1"] and b["usl2"])
-    assert d["sharpe_k3"] == base["m3"]["sharpe"] and d["usl2"] == (d["sharpe"] > d["sharpe_k3"])
+    for g in (_inf_gate(ns), _inf_scale(ns)):
+        r = C.eval_point(ns, K, base, ns.A_row * g, g)
+        assert r["usl3"] is True and r["p_vs_k2"] < 0.05 and "p_vs_k2_masshtab" not in r
+        assert r["passed_v2"] == bool(r["usl1"] and r["usl2"] and r["usl3"])
+        assert r["sharpe_k3"] == base["m3"]["sharpe"] and r["usl2"] == (r["sharpe"] > r["sharpe_k3"])
     for k in ("d_vs_A", "p_vs_A", "d_vs_k3", "p_vs_k3", "ce1_pct_y", "fko_nad_poroga_pct", "znak_2018"):
-        assert k in d
+        assert k in r
+    assert _noise_scale_blocked(ns, K, base)
+    monkeypatch.setattr(C.fk, "p_perm", lambda *a: 0.0)              # мутация: условие 3 для B пропущено
+    assert not _noise_scale_blocked(ns, K, base)                     # …шум проходит ложно — проверка выше упала бы
+
+
+def _noise_scale_blocked(ns, K, base) -> bool:
+    """Масштаб без информации (перемешан) условием 3 останавливается: p ≥ α, usl3 False, не прошёл."""
+    rnd = np.random.RandomState(1).permutation(_inf_scale(ns))
+    r = C.eval_point(ns, K, base, ns.A_row * rnd, rnd)
+    return r["usl3"] is False and not r["passed_v2"] and r["p_vs_k2"] >= C.ALPHA
+
+
+def test_k2_scale_shift_invariants():
+    """Сдвиг ряда масштаба: сдвиг 0 — исходный ряд; распределение масштаба, переключения (оборот) и длины серий сохранены."""
+    ns = _world()
+    K = fk.Kontrol(ns, COMM, n_shift=20)
+    g =np.concatenate([np.repeat(np.random.RandomState(p).choice([1.0, 0.6, 0.3], 60), 20)[:np.sum(ns.r["pair"] == p)]
+                        for p in np.unique(ns.r["pair"])])
+    assert np.array_equal(g[fk.src_rows(np.zeros(len(K.t_tick), int), K.tick, K.pstart, K.plen, K.loc)], g)
+    K.check(g)                                                      # мультимножество уровней и число переключений
+    src = K.src(3)
+    for p in np.unique(ns.r["pair"]):
+        m = ns.r["pair"] == p
+        run_len = lambda x: sorted(np.diff(np.flatnonzero(np.r_[True, x[1:] != x[:-1], True])))   # noqa: E731
+        a, s = g[m], g[src][m]
+        assert sorted(a) == sorted(s) and abs(len(run_len(a)) - len(run_len(s))) <= 1
 
 
 def test_select_max_sharpe_among_passed_only():
@@ -107,69 +146,9 @@ def test_select_max_sharpe_among_passed_only():
     assert C.select(df)["point"] == "c"
     assert C.select(df.assign(passed_v2=False)) is None
 
-# ---------------- входы: сдвиг +1 σ / RVI, RVI_d вместо RVI_{d−1} ----------------
-N, K0 = 700, 400
 
-
-def _inputs(seed=5):
-    rng = np.random.RandomState(seed)
-    S = np.exp(rng.normal(-4, 0.4, (2, N)))
-    RV = 18 + np.abs(rng.normal(0, 5, (2, N)))
-    return S, RV
-
-
-def _gates(S, RV, ignore_lag=False):
-    def rvi(lag):
-        R = RV if ignore_lag else np.c_[np.full((2, lag), np.nan), RV[:, :N - lag]]
-        return R
-    e = types.SimpleNamespace(sigma=lambda s: S, rvi=rvi, n_t=np.array([N, N - 50]))
-    fams = s9.S9.d_points(types.SimpleNamespace(e=e), "x")
-    return {f: np.stack([G for _, G, _ in pts]) for f, pts in fams.items()}
-
-
-def _peek(fn, S, RV, which):
-    """Какие семьи меняют затвор до дня k (σ: [:k]; RVI_k до дня k включительно не виден → [:k+1])."""
-    a = fn(S, RV)
-    S2, RV2 = S.copy(), RV.copy()
-    (S2 if which == "sigma" else RV2)[:, K0] *= 1.9
-    b = fn(S2, RV2)
-    cut = K0 if which == "sigma" else K0 + 1
-    return {f for f in a if not np.array_equal(a[f][..., :cut], b[f][..., :cut], equal_nan=True)}
-
-
-def test_gates_use_no_future_and_shift_mutations_caught(monkeypatch):
-    monkeypatch.setattr(s9, "V2", True)
-    S, RV = _inputs()
-    assert {f for f in _gates(S, RV)} >= {"D1", "D2", "D4", "D5", "D6lag1", "D7"}
-    assert _peek(_gates, S, RV, "sigma") == set()                         # σ: день d виден только с d
-    assert _peek(_gates, S, RV, "rvi") - {"D6"} == set()                  # RVI: сегодня не виден у D6lag1
-    # мутация: σ сдвинут на +1 (σ_{d+1} в решении d)
-    leaky = lambda s, r: _gates(np.roll(s, -1, axis=1), r)               # noqa: E731
-    assert _peek(leaky, S, RV, "sigma") >= {"D1", "D2", "D4", "D5", "D7"}
-    # мутация: RVI_d вместо RVI_{d−1} (лаг игнорируется) — ловится на D6lag1
-    same_day = lambda s, r: _gates(s, r, ignore_lag=True)                # noqa: E731
-    assert "D6lag1" in _peek(same_day, S, RV, "rvi")
-    # мутация: RVI сдвинут на +1 при верном лаге
-    leaky_r = lambda s, r: _gates(s, np.roll(r, -1, axis=1))             # noqa: E731
-    assert "D6lag1" in _peek(leaky_r, S, RV, "rvi")
-
-
-def test_b_weights_no_future_and_shift_caught():
-    S, _ = _inputs()
-    def w(s, _r):
-        e = types.SimpleNamespace(sigma=lambda x: s, n_t=np.array([N, N - 50]))
-        return {"B": np.stack([s9.S9.b_weights(types.SimpleNamespace(e=e), "x", c, b)
-                               for c in (1.0, 2.0) for b in (0.0, 0.2)])}
-    assert _peek(w, S, S, "sigma") == set()
-    assert _peek(lambda s, r: w(np.roll(s, -1, axis=1), r), S, S, "sigma") == {"B"}
-
-# ---------------- сетка, план, устойчивость, итог B ----------------
 def test_grid_counts_match_yaml(monkeypatch):
-    monkeypatch.setattr(s9, "V2", True)
-    S, RV = _inputs()
-    g = _gates(S, RV)
-    assert {f: len(v) for f, v in g.items() if f != "D6"} == dict(D1=9, D2=18, D4=27, D5=3, D6lag1=3, D7=6)
-    assert sum(len(v) for f, v in g.items() if f != "D6") == C.plan("D")["na_ryad"] == 66
+    assert C.plan("D")["na_ryad"] == 66 and C.plan("B")["na_ryad"] == 9
     assert C.plan("D")["vsego"] == 396 and C.plan("B")["vsego"] == 54 and C.plan("B", "naive")["vsego"] == 18
 
 
