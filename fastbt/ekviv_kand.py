@@ -60,6 +60,34 @@ def zapisat_yaml(root=".") -> int:
     return len(rows)
 
 
+def dsr_perescet(root=".") -> pd.DataFrame:
+    """Пересчёт `dsr_vsego` в kand_a.csv по ledger репозитория (после того как расширенные ledger положены в `_ledger`): var_sr — по всем
+    уникальным новым пробам, N = N_vsego. Отбор не повторяется (пул считался по ledger до достройки). Возвращает таблицу с колонкой dsr_do."""
+    import json
+    from fastbt import reestr_otbora as rs
+    from fastbt.sweep import Sweep, make_evaluator
+    from fastbt.sweep_pts import point_cols
+    from fastbt.sweep_run import load, periods
+    from fastbt.sweep_spec import Spec
+    from fastbt.sweep_val_stat import dsr_n
+    f = Path(root) / KAND
+    head = "".join(ln for ln in f.read_text("utf-8").splitlines(keepends=True) if ln.startswith("#"))
+    t = pd.read_csv(f, comment="#")
+    t["dsr_do"] = t["dsr_vsego"]
+    for sid in SIDS:
+        spec_d, exp, raw = load(Path(root) / "fastbt" / "designs" / "sweep" / f"{sid}_setka_e1b.yaml")
+        spec = Spec(**spec_d, out=str(Path(root) / "docs" / "tables" / "sweep_e1v2" / "_ledger" / sid))
+        sw = Sweep(spec, make_evaluator(spec))
+        per, c0, trials = periods(raw), spec.comm_pct[0], list(sw.ledger.values())
+        by = {rs.klyuch_str(rs.kanon_ledger(k)): dict(json.loads(k)) for k in sw.ledger}
+        for i in t.index[t["strategiya"] == sid]:
+            m = point_cols(sw, by[t.at[i, "klyuch"]], per, c0)
+            t.at[i, "dsr_vsego"] = dsr_n(m["sr_d"], trials, int(t.at[i, "N_vsego"]), m["T"], m["skew"], m["kurt"])["dsr"]
+    head = head.replace("dsr_vsego — var_sr по ledger репозитория (392…451 проб)", "dsr_vsego — var_sr по полному ledger репозитория (553…679 проб)")
+    f.write_text(head + t.drop(columns="dsr_do").to_csv(index=False), "utf-8")
+    return t
+
+
 def main(scratch, root="."):
     from fastbt import reestr_otbora_pz as pz
     res = {s: ef.plato_vosp(s, scratch, root) for s in SIDS}
@@ -72,7 +100,10 @@ def main(scratch, root="."):
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "yaml":
+    if sys.argv[1] == "dsr":
+        r = dsr_perescet()
+        print(r[r["top3"] == 1][["strategiya", "rank", "dsr_do", "dsr_vsego"]].round(5).to_string())
+    elif sys.argv[1] == "yaml":
         print("точек:", zapisat_yaml())
     else:
         main(sys.argv[1])

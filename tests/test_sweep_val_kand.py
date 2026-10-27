@@ -154,7 +154,10 @@ def test_N_dlya_A_i_Sk_iz_zamorozki(spisok):
     n = spisok[2]
     z = json.loads(Path("docs/otbor/zamorozka_A_prim.json").read_text("utf-8"))["N_vsego"]       # числа — из файла заморозки
     assert n == z and kd.n_a(n) == 36 + sum(z[s] for s in kd.SIDS)
-    assert len(kd.ledger_sk("S1", ".")[0]) == 392 < n["S1"]               # новые пробы без дополнения; N — отдельно
+    k = kd.kandidaty("S1")["cands"][0]
+    import pandas as pd
+    nov = int(pd.read_csv("docs/tables/sweep_e1v2/kand_a.csv", comment="#").query("strategiya == 'S1'")["N_novye"].iloc[0])
+    assert len(kd.ledger_sk("S1", ".")[0]) == nov < k["n_vsego"] == n["S1"]     # все новые пробы в ledger (без дополнения); N — отдельно
 
 
 def test_tablitsa_sborok_A():

@@ -100,7 +100,8 @@ def test_vse_proby_ledger_v_reestre(reestr):
     for s in R.STRATEGII:
         for istochnik, papka in (("sweep_e1v2", R.NOVYE), ("sweep_e1", R.STARYE)):
             led = json.load(open(f"{papka}/_ledger/{s}/ledger.json", encoding="utf-8"))
-            ks = {r["klyuch"] for r in reestr if r["strategiya"] == s and r["istochnik"] == istochnik}
+            ist = (istochnik, "sweep_e1v2_dostroyka") if istochnik == "sweep_e1v2" else (istochnik,)     # достроенные соседи — отдельный источник
+            ks = {r["klyuch"] for r in reestr if r["strategiya"] == s and r["istochnik"] in ist}
             assert ks == {R.klyuch_str(R.kanon_ledger(k)) for k in led}
 
 
@@ -131,7 +132,7 @@ def test_mutaciya_starye_cherez_ocenit_dayut_kandidata():
 
 
 def test_kandidaty_proshli_pravila_i_net_dublej(reestr):
-    kand = [r for r in reestr if r["status"] == "kandidat_zamorozki"]
+    kand = [r for r in reestr if r["status"] == "kandidat_zamorozki" and r["istochnik"] == "sweep_e1v2"]     # перезаморозка 2 — источник zamorozka_2
     assert len(kand) == 3 * len(R.STRATEGII)
     assert all(r["aktivnost_ok"] == "1" and r["plato_ok"] == "1" and r["vyrozhdena"] == "0" for r in kand)
     ks = [R.kluch_strok(r) for r in reestr]
