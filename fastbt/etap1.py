@@ -54,12 +54,34 @@ class E1Inputs:
         return cache.key("etap1_inputs", *parts, self.sk.series_digest() if self.sk is not None else "")
 
 
+def load_ticker_nf(ticker: str):
+    """`data.load_ticker` без прогнозов σ: дневной ряд Н6 и всё; vpred_aligned.parquet не открывается (Ж-047 п. 1)."""
+    from fastbt import data
+    from fastbt.signals.interface import TickerData
+    x = data.daily_df()
+    x = x[x["ticker"] == ticker].sort_values("date").reset_index(drop=True)
+    c, h, l, o, v = [x[k].values.astype(np.float64) for k in ("close", "high", "low", "open", "volume")]
+    lr = np.zeros(len(c))
+    lr[:-1] = np.log(c[1:] / np.maximum(c[:-1], 1e-12))
+    return TickerData(ticker, pd.to_datetime(x["date"].values).values, o, h, l, c, v, lr, {})
+
+
+def sk_evaluator(sid: str):
+    """SkEvaluator без прогнозных рядов: тот же класс, `load_ticker` заменён на `load_ticker_nf` на время сборки."""
+    from fastbt import sweep_sk
+    old = sweep_sk.load_ticker
+    sweep_sk.load_ticker = load_ticker_nf
+    try:
+        return sweep_sk.SkEvaluator(sid)
+    finally:
+        sweep_sk.load_ticker = old
+
+
 def build_inputs(sid: str, ev=None, end: pd.Timestamp = END_TRAIN) -> E1Inputs:
     from fastbt import msp
-    from fastbt.sweep_sk import SkEvaluator
     if end >= LIMIT or end > END_TRAIN:
         raise PermissionError("этап 1: только окна до 2019-12-31; validation открывает дирижёр")
-    ev = ev or SkEvaluator(sid)
+    ev = ev or sk_evaluator(sid)
     meta, bars, close, tick = {}, {}, {}, {}
     for t in ev.tickers:
         td = ev._td[t][0]

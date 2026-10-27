@@ -40,6 +40,51 @@ def test_214_mutation_last_row_sides_zero_caught(monkeypatch, inputs):
     assert max(d.values()) > TOL
 
 
+FORBID = ("vpred", "ch4_dev", "sigma_pred")
+
+
+def _guard(monkeypatch):
+    """Любое открытие файла с запрещённым именем (open, read_parquet, read_table, read_csv, Path.read_*) → падение."""
+    import builtins
+    from pathlib import Path
+
+    import pandas as pd
+    import pyarrow.parquet as pq
+
+    def wrap(f):
+        def g(*a, **kw):
+            for x in list(a[:1]) + list(kw.values()):
+                if any(w in str(x) for w in FORBID):
+                    raise AssertionError(f"этап 1 открыл прогнозный файл: {x}")
+            return f(*a, **kw)
+        return g
+    monkeypatch.setattr(builtins, "open", wrap(builtins.open))
+    for mod, name in ((pd, "read_parquet"), (pd, "read_csv"), (pq, "read_table")):
+        monkeypatch.setattr(mod, name, wrap(getattr(mod, name)))
+    for name in ("read_bytes", "read_text"):
+        orig = getattr(Path, name)
+        monkeypatch.setattr(Path, name, lambda self, *a, _o=orig, **kw: wrap(_o)(self, *a, **kw))
+
+
+def test_no_forecast_files_opened_at_runtime(monkeypatch):
+    """Ж-047 п. 1: fabrika("S2") + одна оценка не открывают vpred_aligned.parquet и прочие прогнозные файлы."""
+    from fastbt import data, etap1
+    data.vpred_df.cache_clear()
+    _guard(monkeypatch)
+    ev, chk = etap1.fabrika("S2")
+    assert np.isfinite(ev({"k_s": 2.0, "tau": 5}, "train")["sharpe"]) and chk({}) is True
+
+
+def test_guard_catches_vpred_load(monkeypatch):
+    """Мутация: прежний путь SkEvaluator (load_ticker с align_sigma) открывает vpred — охрана обязана упасть."""
+    from fastbt import data, etap1
+    data.vpred_df.cache_clear()
+    _guard(monkeypatch)
+    monkeypatch.setattr(etap1, "load_ticker_nf", data.load_ticker)
+    with pytest.raises(AssertionError, match="прогнозный"):
+        etap1.sk_evaluator("S2")
+
+
 def test_row_format_for_driver_k5(inputs):
     from fastbt import etap1
     from fastbt.etap1_eval import Evaluator
