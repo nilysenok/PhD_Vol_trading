@@ -29,9 +29,9 @@ def rd(name: str) -> pd.DataFrame:
 
 def pick_points(eng) -> list:
     pts = DB.points("D", eng, "hyb_h5", s9)
-    by = {(f, lab): (f, lab, G) for f, lab, G, _, _, _ in pts}
+    by = {(f, lab): (f, lab, G) for f, lab, G, _, _ in pts}
     out = [by[k] for k in PICK if k in by]
-    for f, lab, G, scale, _, _ in pts:
+    for f, lab, G, scale, _ in pts:
         if (scale or f == "D1") and len(out) < 5 and all(lab != o[1] or f != o[0] for o in out):
             out.append((f, lab, G))
     return out[:5]

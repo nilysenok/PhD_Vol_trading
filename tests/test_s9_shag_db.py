@@ -85,7 +85,7 @@ def test_run_grid_calls_check_shift(monkeypatch):
     calls = []
     orig = C.check_shift
     monkeypatch.setattr(C, "check_shift", lambda *a, **k: (calls.append(a), orig(*a, **k))[1])
-    monkeypatch.setattr(DB, "points", lambda *a: [("D1", "p", _inf_gate(ns), False, 0.3, True)])
+    monkeypatch.setattr(DB, "points", lambda *a: [("D1", "p", _inf_gate(ns), False, 0.3)])
     DB.run_grid("D", ns, s9, ("x",), COMM, 50)
     assert len(calls) == 2 and calls[0][1:] == () and calls[1][1] is not None   # лаги + сдвиг 0 точки
 
