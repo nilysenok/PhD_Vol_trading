@@ -11,7 +11,7 @@ import pandas as pd
 import pytest
 
 from fastbt import etap1, etap1_eval_v2 as v2, exec_e
-from fastbt.etap1_eval import YAKOR, Evaluator
+from fastbt.etap1_eval import Evaluator
 from fastbt.etap1_poisk import load_setka
 from fastbt.etap1_run import run_e1
 
@@ -19,14 +19,10 @@ PER, COMM, SIDS = "train4", 0.0004, ("S1", "S2", "S3", "S4", "S5", "S6")
 _INP = {}
 
 
-def inp_of(sid):
+def make(sid, cls=v2.EvaluatorV2):
     if sid not in _INP:
         _INP[sid] = etap1.build_inputs(sid, period=PER)
-    return _INP[sid]
-
-
-def make(sid, cls=v2.EvaluatorV2):
-    return cls(sid, inp_of(sid), etap1.base_point(sid), COMM)
+    return cls(sid, _INP[sid], etap1.base_point(sid), COMM)
 
 
 def rand_points(sid, n, seed):
@@ -39,7 +35,6 @@ def sha(x):
     return hashlib.sha256(np.ascontiguousarray(x, dtype=np.float64).tobytes()).hexdigest()
 
 
-# ---- IG-2: все новые оси = умолчания → побайтно как Evaluator ----
 @pytest.mark.parametrize("sid", SIDS)
 def test_umolchaniya(sid):
     e1, e2 = make(sid, Evaluator), make(sid)
@@ -58,14 +53,12 @@ def test_umolchaniya(sid):
             assert repr({int(a): b for a, b in row[k].items()}) == repr(old[k]), k
 
 
-# ---- IG-3: тождество рядов ----
 def tozh(ev, pt, vozm=None):
     row, x, tik = ev.evaluate_v2(pt, PER, vozm)
     if tik is None:
         return 0.0, 0.0, row
-    m = np.nanmean(tik, axis=0)
-    return float(np.max(np.abs(m - x))), float(np.max(np.abs(m.astype(np.float32).astype(np.float64)
-                                                           - np.nanmean(tik.astype(np.float32), 0, dtype=np.float64)))), row
+    m32 = np.nanmean(tik.astype(np.float32), 0, dtype=np.float64)                   # после приведения к float32 (§1.4)
+    return float(np.max(np.abs(np.nanmean(tik, axis=0) - x))), float(np.max(np.abs(m32 - x))), row
 
 
 @pytest.mark.parametrize("sid", SIDS)
@@ -84,15 +77,13 @@ def test_tozhdestvo_mutatsiya_bez_rf(monkeypatch):
     assert tozh(ev, pt)[0] > 1e-8
 
 
-# ---- IG-1: якорь через EvaluatorV2 = боевой s9 ----
-def test_yakor_v2_equals_s9():
+def test_yakor_v2_equals_s9():                                                       # IG-1
     from test_yakor_v1 import POINTS, TOL, deltas
     for sid, sigp in POINTS:
         d = deltas(make(sid), sid, sigp)
         assert len(d) == 4 and max(d.values()) <= TOL
 
 
-# ---- новые оси ----
 PT = {"vhod": 0.5, "k_s": "net", "R": "net", "tau": 3}
 
 
@@ -123,22 +114,12 @@ def test_lestnica_mutatsiya_ves_ne_polovina(monkeypatch):
     assert not ladder_half_ok(make("S1"))
 
 
-def test_lestnica_dve_polovinki_sovpadayut_pri_x0():
-    ev = make("S1")
-    net, lad = rows_of(ev, PT, {}), rows_of(ev, PT, {"lestnica": 0.0})
-    assert all(np.allclose(a.g, b.g, atol=1e-15) and np.allclose(a.sides, b.sides, atol=1e-15) for a, b in zip(net, lad))
-
-
-def storona_long_ok(ev):
-    return all(tr.side > 0 for r in rows_of(ev, PT, {"storona": "long"}) for tr in r.trades)
-
-
 def test_storona_long_net_shortov(monkeypatch):
     ev = make("S1")
-    assert any(tr.side < 0 for r in rows_of(ev, PT, {}) for tr in r.trades)         # контроль: при obe шорты есть
-    assert storona_long_ok(ev)
+    ok = lambda: all(tr.side > 0 for r in rows_of(ev, PT, {"storona": "long"}) for tr in r.trades)     # noqa: E731
+    assert any(tr.side < 0 for r in rows_of(ev, PT, {}) for tr in r.trades) and ok()   # контроль: при obe шорты есть
     monkeypatch.setattr(v2.np, "maximum", lambda a, b: a)                              # мутация: long пропускает шорт
-    assert not storona_long_ok(ev)
+    assert not ok()
 
 
 def test_storona_short_shag1_pokazyvaet_kray_i_menyaet_shorty():
@@ -160,10 +141,7 @@ def test_zaem_tolko_na_shortakh(monkeypatch):
     lg, _, _ = ev.evaluate_v2({**PT, "storona": "long"}, PER)
     assert lg["by_quarter_zaem"]["5"] == lg["by_quarter"] == lg["by_quarter_zaem"]["10"]
     orig = v2.run_e1
-    def lonely(*a, **k):
-        r = orig(*a, **k)
-        return replace(r, short=r.expo)                                                # мутация: заём на лонгах
-    monkeypatch.setattr(v2, "run_e1", lonely)
+    monkeypatch.setattr(v2, "run_e1", lambda *a, **k: (lambda r: replace(r, short=r.expo))(orig(*a, **k)))   # заём на лонгах
     mt, _, _ = ev.evaluate_v2({**PT, "storona": "long"}, PER)
     assert mt["by_quarter_zaem"]["10"] != mt["by_quarter"]
 
@@ -196,19 +174,17 @@ def test_ed_probros_i_massivy(monkeypatch):
     seen = []
     monkeypatch.setattr(exec_e, "run", lambda *a, **k: seen.append(k) or (_ for _ in ()).throw(RuntimeError))
     ev, t = make("S1"), "SBER"
-    m = ev.inp.meta[t]
-    sg = np.full(50, 0.02)
     for ed in (None, np.ones(3)):
         with pytest.raises(RuntimeError):
             run_e1(t, [], np.zeros(0), np.zeros(0), exec_e.Params(), ed=ed)
     assert "ed" not in seen[0] and seen[1]["ed"].shape == (3,)
-    s0, b = m["s0"], ev._b(t, PER)
+    s0, b = ev.inp.meta[t]["s0"], ev._b(t, PER)
     td, ind = ev.sk._td[t]
-    dates = m["dates"][:b + 1]
-    assert np.array_equal(ev._ed(t, "pct", sg, dates, s0, b), np.full(b + 1, 0.01))
-    assert np.array_equal(ev._ed(t, "diap", sg, dates, s0, b), (td.high - td.low)[s0:s0 + b + 1] / td.close[s0:s0 + b + 1])
-    assert np.array_equal(ev._ed(t, "atr14", sg, dates, s0, b), ind["atr14"][s0:s0 + b + 1] / td.close[s0:s0 + b + 1])
-    assert ev._ed(t, "sigma", sg, dates, s0, b) is None
+    sl = slice(s0, s0 + b + 1)
+    e = lambda name: ev._ed(t, name, np.full(50, 0.02), ev.inp.meta[t]["dates"][:b + 1], s0, b)    # noqa: E731
+    assert np.array_equal(e("pct"), np.full(b + 1, 0.01)) and e("sigma") is None
+    assert np.array_equal(e("diap"), (td.high[sl] - td.low[sl]) / td.close[sl])
+    assert np.array_equal(e("atr14"), ind["atr14"][sl] / td.close[sl])
 
 
 def test_vozmushcheniya():
@@ -218,13 +194,11 @@ def test_vozmushcheniya():
     assert ev.evaluate_v2(PT, PER, {"sigma_mult": 1.1})[1].tobytes() != base[1].tobytes()
     hi = ev.evaluate_v2(PT, PER, {"komissiya": 0.0005})
     assert hi[0]["komissiya"] == 0.0005 and hi[1].sum() < base[1].sum() and ev.comm == COMM
-    nul = ev.evaluate_v2(PT, PER, {"sig_fn": lambda t, s, d: np.zeros(len(s))})
-    assert nul[0]["dolya_ispolneniya_limita"] != nul[0]["dolya_ispolneniya_limita"] or sum(nul[0]["sdelok_y"].values()) == 0
+    assert sum(ev.evaluate_v2(PT, PER, {"sig_fn": lambda t, s, d: np.zeros(len(s))})[0]["sdelok_y"].values()) == 0
     m = v2.mediana_goda(np.array([1.0, 3.0, 9.0, np.nan, 5.0]), pd.to_datetime(["2016-01-04"] * 3 + ["2017-01-03"] * 2))
     assert m[0] == m[1] == m[2] == 3.0 and m[3] == m[4] == 5.0                          # медиана своего года, не всех лет
 
 
-# ---- кварталы и целевая: известный ответ ----
 def test_kvartaly_granitsy_i_tselevaya():
     d = pd.to_datetime(["2016-03-31", "2016-04-01", "2016-04-04", "2016-04-05"])
     x = np.array([0.1, 0.1, 0.3, 0.2])

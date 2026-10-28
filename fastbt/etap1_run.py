@@ -35,6 +35,13 @@ class E1Rows:
     short: np.ndarray | None = None  # вес × доля баров в рынке только у шорт-сделок (Л-5: плата за заём), [a; b)
 
 
+def sum_rows(rs: list) -> E1Rows:
+    """Л-5 (лестница): g, sides, expo, noch, short — суммой (run_e1 линеен по весу); счёт сделок — среднее половин."""
+    f = lambda k: sum(getattr(r, k) for r in rs)                             # noqa: E731
+    return E1Rows(f("g"), f("sides"), f("expo"), f("cnt") / len(rs), [t for r in rs for t in r.trades], f("n_orders"),
+                  f("n_fills"), None if rs[0].noch is None else f("noch"), f("x_orders"), f("x_fills"), f("short"))
+
+
 def _spans(res, ix, p: Params, n: int):
     """(сделка, строка входа, последняя строка дохода, строка комиссии выхода) по сделкам прогона."""
     jx = {i: j for j, i in enumerate(ix)}
