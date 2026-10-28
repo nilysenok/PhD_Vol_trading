@@ -18,15 +18,29 @@ CUT = np.datetime64("2022-01-01")
 ZAD = 2                       # вход через ZAD торговых дней после d0; 1 — мутация (вход на g)
 
 
+def vhod() -> dict:
+    """inp + таблица дивидендов из `fastbt.dividendy` (#370; пока не слит — ImportError, не заглушка)."""
+    from fastbt import dividendy, t_vhody
+    inp = t_vhody.zagruzit()
+    inp["div"] = t_vhody.dividendy_tablitsa(dividendy.TABLE)
+    return inp
+
+
+def porog(osi: dict) -> float:
+    """Порог веса в единицах силы (gap_σ): g0, а при g0 = 0 — 1σ (порог обязан быть > 0; ↺)."""
+    return float(osi["g0"]) if float(osi["g0"]) > 0 else 1.0
+
+
 def sobytiya(inp: dict, osi: dict) -> list:
-    dates = np.asarray(inp["dates"], "datetime64[D]")
-    if len(dates) and dates.max() >= CUT:
+    all_dates = np.asarray(inp["dates"], "datetime64[D]")
+    if len(all_dates) and all_dates.max() >= CUT:
         raise PermissionError("T18: даты ≥ 2022")
     g0 = float(osi["g0"])
     div = inp["div"]
     out = []
     for t in sorted(inp["tickers"]):
         x = inp["tickers"][t]
+        dates = np.asarray(x.get("dates", all_dates), "datetime64[D]")
         c, sg = np.asarray(x["close"], float), np.asarray(x["sigma"], float)
         for row in div[div["ticker"] == t].itertuples():
             cum, ann = pd.Timestamp(row.last_cum_date), pd.Timestamp(row.announce_date)

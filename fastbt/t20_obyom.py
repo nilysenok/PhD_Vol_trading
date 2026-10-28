@@ -17,6 +17,16 @@ OKNO = 20
 SMA_SDVIG = 1                 # 0 — мутация: окно среднего включает день d
 
 
+def vhod() -> dict:
+    from fastbt import t_vhody
+    return t_vhody.zagruzit()
+
+
+def porog(osi: dict) -> float:
+    """Порог веса в единицах силы (U_d): на пороге v0 множитель 1."""
+    return float(osi["v0"])
+
+
 def sobytiya(inp: dict, osi: dict) -> list:
     if len(inp["dates"]) and np.max(np.asarray(inp["dates"], "datetime64[D]")) >= CUT:
         raise PermissionError("T20: даты ≥ 2022")

@@ -16,15 +16,26 @@ CUT = np.datetime64("2022-01-01")
 FILTR_IMOEX = True            # False — мутация: IMOEX вне ±m0 не отсекается
 
 
+def vhod() -> dict:
+    from fastbt import t_vhody
+    return t_vhody.zagruzit()
+
+
+def porog(osi: dict) -> float:
+    """Порог веса в единицах силы (|z|): на пороге z0 множитель 1."""
+    return float(osi["z0"])
+
+
 def sobytiya(inp: dict, osi: dict) -> list:
     if len(inp["dates"]) and np.max(np.asarray(inp["dates"], "datetime64[D]")) >= CUT:
         raise PermissionError("T16: даты ≥ 2022")
     z0, m0 = float(osi["z0"]), float(osi["m0"])
-    Z = Z_ryad(inp["imoex"]["close"], inp["imoex"]["sigma"])
-    ok_mkt = np.abs(Z) <= m0 if FILTR_IMOEX else np.ones(len(Z), bool)       # NaN → False: нет данных, нет события
     out = []
     for t in sorted(inp["tickers"]):
         x = inp["tickers"][t]
+        m = inp["imoex"] if "imoex" in inp else {"close": x["mkt_close"], "sigma": x["mkt_sigma"]}   # IMOEX на датах тикера
+        Z = Z_ryad(m["close"], m["sigma"])
+        ok_mkt = np.abs(Z) <= m0 if FILTR_IMOEX else np.ones(len(Z), bool)   # NaN → False: нет данных, нет события
         z = z_ryad(x["close"], x["sigma"])
         for d in np.flatnonzero((z <= -z0) & ok_mkt):
             out.append((t, int(d), 1, float(-z[d])))

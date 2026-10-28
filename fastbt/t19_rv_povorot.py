@@ -15,6 +15,16 @@ OKNO = 10
 VPERED = 0                    # 1 — мутация: снижение по σ_rv5,d+1 < σ_rv5,d
 
 
+def vhod() -> dict:
+    from fastbt import t_vhody
+    return t_vhody.zagruzit()
+
+
+def porog(osi: dict) -> float:
+    """Порог веса в единицах силы (V_c): на пороге q множитель 1."""
+    return float(osi["q"])
+
+
 def sobytiya(inp: dict, osi: dict) -> list:
     if len(inp["dates"]) and np.max(np.asarray(inp["dates"], "datetime64[D]")) >= CUT:
         raise PermissionError("T19: даты ≥ 2022")

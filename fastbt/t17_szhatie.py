@@ -20,6 +20,16 @@ def _vpered(a: np.ndarray) -> np.ndarray:
     return a if SDVIG == 0 else np.r_[a[SDVIG:], np.full(SDVIG, np.nan)]
 
 
+def vhod() -> dict:
+    from fastbt import t_vhody
+    return t_vhody.zagruzit()
+
+
+def porog(osi: dict) -> float:
+    """У пробоя порога в условии нет (↺): базой веса взята сила 1σ (пробой на 1σ̂_d даёт множитель 1)."""
+    return 1.0
+
+
 def sobytiya(inp: dict, osi: dict) -> list:
     if len(inp["dates"]) and np.max(np.asarray(inp["dates"], "datetime64[D]")) >= CUT:
         raise PermissionError("T17: даты ≥ 2022")
