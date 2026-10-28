@@ -21,7 +21,7 @@ SIDES = (("лонг", 1), ("шорт", -1), ("все", 0))
 C_DOB = ["S", "комиссия_%", "сторона", "N", "x", "сделок", "сработало", "доля_срабатывания_%", "исполнено_добора",
          "доля_исполнения_от_всех_%", "pnl_Sk_L1_%", "pnl_сработавших_L1_%", "dPnL_L1,5_сумма_%", "dPnL_L1,5_на_сработавшую_%",
          "dPnL_L2_сумма_%", "dPnL_L2_на_сработавшую_%"]
-C_DAY = ["S", "комиссия_%", "сторона", "сделок", "в_плюс_внутри_дня", "доля_%", "вклад_в_pnl_%", "pnl_сумма_%", "доля_вклада_%"]
+C_DAY = ["S", "комиссия_%", "сторона", "сделок", "в_плюс_внутри_дня", "доля_%", "вклад_в_pnl_%", "pnl_сумма_%", "доля_вклада_%", "выходы_по_причинам"]
 
 
 @dataclass
@@ -131,5 +131,6 @@ def day_rows(sid: str, cl: str, trs: list) -> list:
         sub = [t for t in trs if sd == 0 or t.side == sd]
         n, s = plus_intraday(sub)
         tot = sum(t.pnl for t in sub)
-        rows.append([sid, cl, nm, len(sub), n, 100 * n / max(len(sub), 1), 100 * s, 100 * tot, 100 * s / tot if tot else float("nan")])
+        why = ";".join(f"{r}:{sum(t.reason == r for t in sub)}" for r in sorted({t.reason for t in sub}))      # чем закрыты сделки
+        rows.append([sid, cl, nm, len(sub), n, 100 * n / max(len(sub), 1), 100 * s, 100 * tot, 100 * s / tot if tot else float("nan"), why])
     return rows
