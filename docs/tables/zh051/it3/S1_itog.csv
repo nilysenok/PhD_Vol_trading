@@ -1,0 +1,4 @@
+# статус: разработка, train 2018–2019; Ж-051; validation не открыта
+# PnL без дивидендов (находка #362): цены не поправлены, дивиденды не начисляются — цифры не для диссертации
+strategiya,zapusk,iteraciya,N_do,pbo_do,pi_top_k,pi_sektor_trend,pi_shirina,pi_ma_n,pi_porog_shiriny,obj_pi,obj_p1,sharpe_2018,sharpe_2019,msr_2018,msr_2019,storon_2018,storon_2019,sdelok_2018,sdelok_2019,P1,P2,P3,P4,P5,p_kontrol,delta,G1_pbo,G2_sdelki,G3_plato,G4_osi,G5_s9,osi_pos,n_sosedey,net_sosedey,psr,dsr,proshla,verdikt,pbo_obshchaya,pbo_tolko_it,N_obshchee,N_pbo,N_novyh
+S1,2026-10-28T02:44:02,3,3796,0.7,12,,,,,0.5371080754740012,0.5371080754740012,0.6893963092427666,1.815362270306967,0.5371080754740012,1.9444463040864632,71.0,77.0,35.5,38.5,False,True,False,False,False,1.0,0.0,False,True,False,False,True,"{'k_s_net': True, 'tau_fiz': False}",2,True,0.950094839991762,0.011008666689492852,False,"не прошла: нет соседей, плато не пройдено",0.7,0.5714285714285714,3806,3607,10

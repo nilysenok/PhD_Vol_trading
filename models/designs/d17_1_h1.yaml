@@ -1,0 +1,15 @@
+# Д17.1 — остаточный ученик как GLM с офсетом (агент A, 26.10). Отчёт — docs/otchety/2026-10-26_d17.md
+name: d17_1_h1
+horizon: 1
+seeds: [42, 43, 44]
+data: {features: data/regen/features_pit_v3.parquet}
+lever: "objective gamma на уровне RV (LGBM gamma / XGB reg:gamma), init_score/base_margin = ln(основа) + s²/2 (s² — остатки ln основы на обучающем окне шага); ES — нативная gamma-метрика val-года; без поправки на выходе; признаки V0 (без harf)"
+bases: {harj: "HAR-J (l2_lib.har_ln)", harx: "HAR-X (harx.py агента d16-harx через d17_1_harx_base.py; D17_BASE=harx)"}
+rule: "OOS шаги 2-5 (2017-2020): >=1% и лучше на каждом seed; 2021 (шаг 6) не хуже текущего; c1-c4 — gibrid_v17 --dev-eval oos --etalon same"
+current: "D12_h1_A_d812 (Д8.12, top5/V0_XGB/B-sm)"
+cfg: '{"obj":"gamma","v9":true,"b01":true}'
+variants:
+  - {name: G1, points: "Bv2b", base: harj, boost: D17_1_h1_G1, decision: "отброшен: +3,6%"}
+  - {name: G1opt, points: "optuna-30", base: harj, boost: D17_1_h1_G1opt, decision: "отброшен: +1,4%"}
+  - {name: G1X, points: "Bv2b (+top5)", base: harx, boost: D17_1_h1_G1X, decision: "отброшен: -1,9% (порог пройден), 2021 хуже (+1,0%)"}
+  - {name: G1Xopt, points: "optuna-30", base: harx, boost: D17_1_h1_G1Xopt, decision: "отброшен: -3,9% (порог пройден), 2021 хуже (+0,5% по 3 seed; дизайн гибрида 0,2364 против 0,2362)"}

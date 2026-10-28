@@ -1,0 +1,8420 @@
+faza: B
+h: 5
+plan: factor_plan_v1.csv (O)
+nastroyki: 'v4: 1 seed, LightGBM, 50% строк'
+row_frac: 0.5
+row_seed: 20261026
+mh_vhod: base_1, leg_1 — в inputs дизайнов с persist/reconcile (входят в хэш)
+n: 64
+designs:
+- design: B_h5_r01 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 1
+- design: B_h5_r02 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r03 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r04 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r05 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r06 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    resid_source: cross_fit
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 1
+  data:
+    recency_halflife: 4y
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+- design: B_h5_r07 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r08 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r09 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r10 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 1
+    agg: median
+  data:
+    recency_halflife: 4y
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+- design: B_h5_r11 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r12 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r13 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    resid_source: cross_fit
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 1
+    agg: median
+- design: B_h5_r14 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r15 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r16 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r17 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r18 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r19 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    clip_sigma: 3
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 1
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+- design: B_h5_r20 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r21 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r22 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r23 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r24 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 1
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    kappa: fit
+- design: B_h5_r25 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r26 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r27 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r28 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    clip_sigma: 3
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 1
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    kappa: fit
+- design: B_h5_r29 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r30 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r31 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 1
+  data:
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+- design: B_h5_r32 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: const
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r33 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 1
+    agg: median
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+- design: B_h5_r34 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r35 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r36 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r37 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r38 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    resid_source: cross_fit
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 1
+    agg: median
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+- design: B_h5_r39 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r40 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r41 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r42 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 1
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+- design: B_h5_r43 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r44 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r45 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    resid_source: cross_fit
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 1
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+- design: B_h5_r46 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r47 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r48 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: false
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r49 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r50 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r51 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    clip_sigma: 3
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 1
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+- design: B_h5_r52 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r53 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r54 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r55 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: mean
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r56 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 1
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+- design: B_h5_r57 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r58 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r59 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: in_sample
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: false
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r60 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    clip_sigma: 3
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 1
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+- design: B_h5_r61 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: inf
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: false
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r62 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: 2014
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: 0.5
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: false
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+- design: B_h5_r63 (точки D12_h5)
+  h: 5
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+  boost:
+    role: residual
+    lib: lightgbm
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+    row_frac: 0.5
+    early_stop: qlike_total
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 1
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+- design: B_h5_r64 (точки D12_h5)
+  h: 5
+  seed: 42
+  data:
+    info_set: d
+    embargo: h
+    train_halt: keep
+    target: ln_mean
+    recency_halflife: 4y
+    history_start: ISS_start
+    winsor: none
+    train_target_estimator: RV10
+    window: expanding
+  leg:
+    type: HARX
+    regressors: S3
+    enet:
+      lambda:
+      - 0.01
+      - 0.1
+      - 1
+      alpha:
+      - 0
+      - 0.5
+      - 1
+    pooled_kappa: 1
+    regime_count: 2
+    robust: OLS
+    struct: single
+    struct_split: rv_whole
+    tau_window: 22
+    tau_extend: const
+    moe: false
+    moe_gate: logit
+    moe_calib: none
+    moe_hard: false
+    panel: false
+    panel_beta_window: 252
+    panel_market: RV_IMOEX
+    refit: yearly
+    rls_lambda: 1
+    estimator: log_ols_calib
+  boost:
+    role: residual
+    resid_source: cross_fit
+    lib: lightgbm
+    grid: current
+    early_stop: qlike_total
+    monotone: false
+    objective: l2_log
+    clip_sigma: 3
+    shrink: 1
+    linear_tree: false
+    prob: false
+    prob_dist: empirical
+    prob_window: all
+    boost_refit: yearly
+    row_frac: 0.5
+    grid_point: none
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  calib:
+    s2_est: sm
+    kappa: fit
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+    mz: false
+    update: step
+    order: s2_state_kappa>c_qlike>mz
+    s2_embargo: true
+  mh:
+    scheme: direct
+    decomp_k: null
+    iterated_k: null
+    persist: qlike
+    slope: false
+    reconcile: MinT
+  ens:
+    seeds: 1
+    agg: median
+    lib_agg: best_by_LOYO
+    leg_ens: single
+    window_ens: false
+    ticker_bag: false
+    stack: false
+    uncert_shrink: false
+    ec: false
+    range_guard: false
+  selection:
+    loyo_folds:
+    - 2017
+    - 2018
+    - 2019
+    - 2020
+    - 2021
+    entry:
+      wins_min: 3
+      etalon: HARJ_s2_d0_sm
+      c3_all_folds: true
+      c124: as_R1
+    sigma:
+      mult: 2
+      seeds: 10
+      rule: D24_3
+      paired_with: F_h_d0
+      'True': finalists
+    complexity_penalty:
+      rank_delta: 1
+      qlike_rel: 0.01
+  guards:
+    info_set_shift_check: true
+    leak_detector: true
+    read_after_2021: forbidden
+  k16:
+    gate: false
+    tau:
+    - 0.25
+    - 0.5
+    - 1
+    - 2
+    - 4
+    k:
+    - 3
+    - 5
+    - 10
+    q:
+    - 0.9
+    - 0.95
+    - 0.99
+    measure: uroven
+    regime_calib: none
+  k18:
+    lam_to_ref: false
+    lam:
+    - 0.25
+    - 0.5
+    - 0.75
+    - 1
+    ticker_choice: false
+  k20:
+    sign_delta: false
+    delta:
+    - 0.1
+    - 0.2
+    - 0.3
+    base: noga
+    reweight_abs_d: false
+  schema: v2
+  inputs:
+    base_1:
+      ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+      file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    leg_1:
+      ryad: HAR-J+s² d0 = E_1 (нога₁)
+      file: vyr/etalon_d0_h1_val.parquet
+      col: har_corr
+index:
+- design: B_h5_r01 (точки D12_h5)
+  design_sha: 22eb1e5435b090a952804eb5a874e3b4628ff05d216fac12a393d3aa92c06ddf
+  slozhnost: 6
+- design: B_h5_r02 (точки D12_h5)
+  design_sha: 8aaa6efdf3ad857e8b9a9666c9d5290c049fb269b006cf5f80912c5513758849
+  slozhnost: 13
+- design: B_h5_r03 (точки D12_h5)
+  design_sha: d463fa1341467e074553f3775fa79551a2d905f2f8d330134fedbf837a0952df
+  slozhnost: 13
+- design: B_h5_r04 (точки D12_h5)
+  design_sha: b5b51aa688461e169fb732db4e3cc1a0209ca337776e7f57c312f0bbfdad70c8
+  slozhnost: 14
+- design: B_h5_r05 (точки D12_h5)
+  design_sha: 06c3d9e60998d3ca2a241396c1aa45b03f67be12cf6b8a4fb85847db33fc0fc2
+  slozhnost: 17
+- design: B_h5_r06 (точки D12_h5)
+  design_sha: b02637b25e6bf859a8c98eb000fe113997b3325b8625d32fa2f82465d3183eb4
+  slozhnost: 12
+- design: B_h5_r07 (точки D12_h5)
+  design_sha: 12f21d8214ea7abdb4c71ecf51a3ea0927e567a6ff24aab4559be2347825225f
+  slozhnost: 12
+- design: B_h5_r08 (точки D12_h5)
+  design_sha: 3a69792b2560eefba7d25b8893da676d30664777dd70c46a1be78053f9b81263
+  slozhnost: 13
+- design: B_h5_r09 (точки D12_h5)
+  design_sha: 0294f2cf462179815b13d5618b1f428c66ad5e090af3adfabe58a6a6bf276b97
+  slozhnost: 13
+- design: B_h5_r10 (точки D12_h5)
+  design_sha: f9d960e5ba7ed7727fb97d34db18bb4abd217980c71f57867cc8c404492399b7
+  slozhnost: 12
+- design: B_h5_r11 (точки D12_h5)
+  design_sha: 2c4e922a3e7431712903fbf9e70870dc93dca856cb31a41f4feaf15d09333695
+  slozhnost: 12
+- design: B_h5_r12 (точки D12_h5)
+  design_sha: 516d03bdc1f0768a9d91605d45760a88f8709f52e8b380006718a24708e3f97a
+  slozhnost: 17
+- design: B_h5_r13 (точки D12_h5)
+  design_sha: 1f2b360310a7a31db1af58b24112884d4525893ee6d3c2a320a4d03d03304254
+  slozhnost: 12
+- design: B_h5_r14 (точки D12_h5)
+  design_sha: 1ffac57c2a0bef2c80efd685d0d6d06990cdd49789faf28c929cee7c52eba6f7
+  slozhnost: 15
+- design: B_h5_r15 (точки D12_h5)
+  design_sha: c6c5244370d85d6e5c3c0814047746ded6cc662258b7c1f091ba3964b8d861c8
+  slozhnost: 15
+- design: B_h5_r16 (точки D12_h5)
+  design_sha: 2438c6095ec930bda2e3d54877b494d8fd8c1acf35c9e1b25c51a3bc6b57e632
+  slozhnost: 12
+- design: B_h5_r17 (точки D12_h5)
+  design_sha: 762813c039caf9db8e335ce3e43afe1c5254179791a8fa1a70dd8f244ce74cd3
+  slozhnost: 13
+- design: B_h5_r18 (точки D12_h5)
+  design_sha: 16cd408be8f4ac3a21d39d326371781f0695ebf5499cd72943cc83099bd1274f
+  slozhnost: 18
+- design: B_h5_r19 (точки D12_h5)
+  design_sha: f6ae8ce331b96f5f8d68bf9809aaa6a3e346880e5e57fb5b6b8bd62d1667997c
+  slozhnost: 12
+- design: B_h5_r20 (точки D12_h5)
+  design_sha: 9822d07db19872b1ec87195f7df5a56fdda070bf928670a92065fdcfd1b60909
+  slozhnost: 15
+- design: B_h5_r21 (точки D12_h5)
+  design_sha: ede103e25ddf5fbbf4fce53e49741b8a9b5edcbd2003c5896c768da98b1304aa
+  slozhnost: 14
+- design: B_h5_r22 (точки D12_h5)
+  design_sha: acca87d6bfd9de5b2596338cdbff026b1ec3d7db5bf6818933ef33a975ce94c2
+  slozhnost: 11
+- design: B_h5_r23 (точки D12_h5)
+  design_sha: 8c6ccb84546d97c66a2b2e1dd1abac590dd844a0c0d069cc256cfa9a79765d8a
+  slozhnost: 17
+- design: B_h5_r24 (точки D12_h5)
+  design_sha: 3b680d6ce83c4a8f692f34936c4cbb1472b76856af9203f170ed28afbaa05511
+  slozhnost: 16
+- design: B_h5_r25 (точки D12_h5)
+  design_sha: 47c6497b0e81fee600a27a717b1cd2cd47e5ab507101f7aaa10ca8fc382fc8ac
+  slozhnost: 12
+- design: B_h5_r26 (точки D12_h5)
+  design_sha: 4bb160dbc8b76cbedc4e1afb6c4fe086372fb460f19d38d888afce3467a7c3e6
+  slozhnost: 13
+- design: B_h5_r27 (точки D12_h5)
+  design_sha: 069a21daa118b0a2ca0edeac234c2e9e334c578fb93a08052943f0c994ea9d47
+  slozhnost: 11
+- design: B_h5_r28 (точки D12_h5)
+  design_sha: 37bb436efc98f062870896a616c72459e710ea459d722c949242e06bd5fc121a
+  slozhnost: 14
+- design: B_h5_r29 (точки D12_h5)
+  design_sha: 808a63d82e6b2cc146879e930179b28e9033c78beea9155c62efea78b2ffd581
+  slozhnost: 13
+- design: B_h5_r30 (точки D12_h5)
+  design_sha: 69198ae5db872a7621e78c8fe38112869cd6a8ba9c86d90632cead98b966751f
+  slozhnost: 14
+- design: B_h5_r31 (точки D12_h5)
+  design_sha: 85a46ae7bc1c9692513977ebc8a03b35600422caec1915998e6982c88ddd49ca
+  slozhnost: 16
+- design: B_h5_r32 (точки D12_h5)
+  design_sha: fd970efd03a5ae38684babf698afb2655e24bfc538642a1679055afd4d49554b
+  slozhnost: 15
+- design: B_h5_r33 (точки D12_h5)
+  design_sha: 7a975ce86bc176672498fb0d719ab31505a79e2b9ef1459d25d140b58e5e0f98
+  slozhnost: 13
+- design: B_h5_r34 (точки D12_h5)
+  design_sha: cc2b904f6417f9a5e62039e6519a307e5b60dfbbaf93e45acaa1c59cd643b2e5
+  slozhnost: 12
+- design: B_h5_r35 (точки D12_h5)
+  design_sha: 874ffcb754a5c0efee25049875726e288eb3530d4bcc16bc1738bf3ad9b42e20
+  slozhnost: 14
+- design: B_h5_r36 (точки D12_h5)
+  design_sha: 5d0beaaaa1e114de5e8c8dbafde3b26583a79eca4f6c4dc5122a4a4e0699dbc1
+  slozhnost: 15
+- design: B_h5_r37 (точки D12_h5)
+  design_sha: 3c515e6de2aed78b614e37d0041fad7d544437f59018f64ed840be8fb2131012
+  slozhnost: 14
+- design: B_h5_r38 (точки D12_h5)
+  design_sha: b6d11568a882b454d07b43cba3f01a5c380f5d33c9141dbc56a59d9a6df828b0
+  slozhnost: 17
+- design: B_h5_r39 (точки D12_h5)
+  design_sha: a99ee01b1e8c778bad22e2aecce03d655d32cbf0e4fa3c507bd84e17f68ba78f
+  slozhnost: 15
+- design: B_h5_r40 (точки D12_h5)
+  design_sha: ac6263710c07ac22cdcc78e1ce55a4a0ce1613334820a50ff04b1b4128e553e6
+  slozhnost: 16
+- design: B_h5_r41 (точки D12_h5)
+  design_sha: 73694fe122f2957080709c08775be99cb1867dbdd18a811a517a8b13f87791da
+  slozhnost: 12
+- design: B_h5_r42 (точки D12_h5)
+  design_sha: 58970777597cc7894be1fbf360b8783b1bceada959ddc146ff07198ba33e7378
+  slozhnost: 11
+- design: B_h5_r43 (точки D12_h5)
+  design_sha: c7ef658214f35466345250c7a34696592a0833231cba4c8ad11ab9f3f627834e
+  slozhnost: 17
+- design: B_h5_r44 (точки D12_h5)
+  design_sha: 42d44724337016234773662623563915bf0a21c38b8b8efd9fbeb2957690cb14
+  slozhnost: 14
+- design: B_h5_r45 (точки D12_h5)
+  design_sha: 915678cd7788f86e937796a161f5be9b21c38f5e2cd476d423fa028d6c3eb782
+  slozhnost: 13
+- design: B_h5_r46 (точки D12_h5)
+  design_sha: 5da26382e5c8970167bfdb3f2ff4bb3cd48ec651e58e184807cf1e7b9ba72ca8
+  slozhnost: 16
+- design: B_h5_r47 (точки D12_h5)
+  design_sha: 5c5cbca602dae59fef182667b32f15da68aafe47ac35b1edde30c343e84c1f40
+  slozhnost: 10
+- design: B_h5_r48 (точки D12_h5)
+  design_sha: c433fa22027659b8a6117646002922355add5dd1b7bb37f6a15039d0defaffd0
+  slozhnost: 15
+- design: B_h5_r49 (точки D12_h5)
+  design_sha: 0c95bd9ce9c053ade14c5d8fa7f75e7acdfdf64bd1e622a5cd3d0cd3a567f4b9
+  slozhnost: 16
+- design: B_h5_r50 (точки D12_h5)
+  design_sha: 348aae1b291dc4034b12857697fb90fe1adaa793d5323b4203266491ce73d1cf
+  slozhnost: 13
+- design: B_h5_r51 (точки D12_h5)
+  design_sha: 7eb9e889ccf874ebd7e09316816a530fe4faffef0c38a3846d52d9678e6ed651
+  slozhnost: 13
+- design: B_h5_r52 (точки D12_h5)
+  design_sha: 7a53d3109efa9c3009e31718e76e0ec7d7b0e86e8a7daca9bb4a596de8684817
+  slozhnost: 16
+- design: B_h5_r53 (точки D12_h5)
+  design_sha: 2aae627ffade7ef233d2309b31d99067d9c1bc95aa0cda8bebf1660b407b0f13
+  slozhnost: 11
+- design: B_h5_r54 (точки D12_h5)
+  design_sha: d01e8b0c96efc4df6028530ebd5beb2aa4554e543e7301cd916fb3d9ada09688
+  slozhnost: 16
+- design: B_h5_r55 (точки D12_h5)
+  design_sha: 25b6d8fd611d769328af805604a113276fce7431badf20ee2c03ca83bac83ce6
+  slozhnost: 16
+- design: B_h5_r56 (точки D12_h5)
+  design_sha: e2920f297d555d799d3942dc5a44b098d5fa74b5e36b21fd4e9bdbf076ae0eca
+  slozhnost: 15
+- design: B_h5_r57 (точки D12_h5)
+  design_sha: 92599ac22a81b1fa7c26a4066cf6407f19cd80d77a0667a2223024aae115dafa
+  slozhnost: 15
+- design: B_h5_r58 (точки D12_h5)
+  design_sha: 17ecd837e37c07b576d3aaa837a2db3924b4f554de808b1461cd79e1f76f9043
+  slozhnost: 16
+- design: B_h5_r59 (точки D12_h5)
+  design_sha: 7faaf7bbc644cd26e2df77d029edb96a2865041420663145e9187e603223893c
+  slozhnost: 16
+- design: B_h5_r60 (точки D12_h5)
+  design_sha: ebf487a90fb957f5e0ade2735d3bc083b5e4728a86933e295288365699350abd
+  slozhnost: 11
+- design: B_h5_r61 (точки D12_h5)
+  design_sha: 6443efb3162265702cecc093964a07ffe40cf088c7ef241db1149b187b520b8c
+  slozhnost: 14
+- design: B_h5_r62 (точки D12_h5)
+  design_sha: c718aa3aff8b945d355f4b071817b614e0e2cbf28e631ec3f1261f7c65e17c73
+  slozhnost: 15
+- design: B_h5_r63 (точки D12_h5)
+  design_sha: 636b70c9f7db8e167d02ba5c27bdc1a9d780f95ab25ba55fb291685ff9efbc09
+  slozhnost: 15
+- design: B_h5_r64 (точки D12_h5)
+  design_sha: cb6b396d321ccd2037ff71143293be8536eba04a142b5810f289f65b9bf4bb5a
+  slozhnost: 22

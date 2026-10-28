@@ -1,0 +1,49 @@
+ticker,record_date,announce_date,dps_rub,dps_dohod_raw,source_url,primary_checked,accessed,note
+AFLT,,,,,https://www.dohod.ru/ik/analytics/dividend/aflt,no,2026-10-28,выплат с реестром 2015-2016 нет (dohod: между реестрами 08.07.2014 и 14.07.2017 записей нет); не подтверждено документацией эмитента
+ALRS,2015-07-15,2015-04-23,1.47,1.47,https://www.dohod.ru/ik/analytics/dividend/alrs,no,2026-10-28,
+ALRS,2016-07-19,2016-05-05,2.09,2.09,https://www.dohod.ru/ik/analytics/dividend/alrs,no,2026-10-28,
+HYDR,2015-07-07,2015-05-13,0.0156,0.0156,https://www.dohod.ru/ik/analytics/dividend/hydr,no,2026-10-28,
+HYDR,2016-07-08,2016-05-13,0.0389,0.0389,https://www.dohod.ru/ik/analytics/dividend/hydr,no,2026-10-28,
+IRAO,2015-06-09,2015-04-09,0.0010397,0.0010397,https://www.dohod.ru/ik/analytics/dividend/irao,no,2026-10-28,
+IRAO,2016-06-21,2016-04-07,0.0178,0.0178,https://www.dohod.ru/ik/analytics/dividend/irao,no,2026-10-28,
+LKOH,2015-07-14,2015-04-28,94,94,https://www.dohod.ru/ik/analytics/dividend/lkoh,no,2026-10-28,
+LKOH,2015-12-24,2015-10-27,65,65,https://www.dohod.ru/ik/analytics/dividend/lkoh,no,2026-10-28,
+LKOH,2016-07-12,2016-04-25,112,112,https://www.dohod.ru/ik/analytics/dividend/lkoh,no,2026-10-28,
+LKOH,2016-12-23,2016-10-31,75,75,https://www.dohod.ru/ik/analytics/dividend/lkoh,no,2026-10-28,
+LSRG,2015-04-18,2015-03-05,78,78,https://www.dohod.ru/ik/analytics/dividend/lsrg,no,2026-10-28,реестр в субботу по dohod
+LSRG,2016-04-18,2016-03-03,78,78,https://www.dohod.ru/ik/analytics/dividend/lsrg,no,2026-10-28,
+MGNT,2015-06-19,2015-04-07,132.57,132.57,https://www.dohod.ru/ik/analytics/dividend/mgnt,no,2026-10-28,
+MGNT,2015-10-09,2015-07-30,88.4,88.4,https://www.dohod.ru/ik/analytics/dividend/mgnt,no,2026-10-28,
+MGNT,2016-01-08,2015-12-23,179.77,179.77,https://www.dohod.ru/ik/analytics/dividend/mgnt,no,2026-10-28,реестр в праздничный день (8 января)
+MGNT,2016-06-17,2016-04-08,42.3,42.3,https://www.dohod.ru/ik/analytics/dividend/mgnt,no,2026-10-28,
+MGNT,2016-09-23,2016-08-02,84.6,84.6,https://www.dohod.ru/ik/analytics/dividend/mgnt,no,2026-10-28,
+MGNT,2016-12-23,2016-10-31,126.12,126.12,https://www.dohod.ru/ik/analytics/dividend/mgnt,no,2026-10-28,
+MOEX,2015-05-12,2015-03-06,3.87,3.87,https://www.dohod.ru/ik/analytics/dividend/moex,no,2026-10-28,
+MOEX,2016-05-16,2016-03-07,7.11,7.11,https://www.dohod.ru/ik/analytics/dividend/moex,no,2026-10-28,
+MTLR,,,,,https://www.dohod.ru/ik/analytics/dividend/mtlr,no,2026-10-28,выплат с реестром 2015-2016 нет (dohod: последний дивиденд по обыкновенным 2012; привилегированные MTLRP вне списка); не подтверждено документацией эмитента
+MTSS,2015-07-07,2015-04-15,19.56,19.56,https://www.dohod.ru/ik/analytics/dividend/mtss,no,2026-10-28,
+MTSS,2015-10-14,2015-07-31,5.61,5.61,https://www.dohod.ru/ik/analytics/dividend/mtss,no,2026-10-28,
+MTSS,2016-07-05,2016-04-12,14.01,14.01,https://www.dohod.ru/ik/analytics/dividend/mtss,no,2026-10-28,
+MTSS,2016-10-14,2016-08-01,11.99,11.99,https://www.dohod.ru/ik/analytics/dividend/mtss,no,2026-10-28,
+NVTK,2015-05-05,2015-03-12,5.2,5.2,https://www.dohod.ru/ik/analytics/dividend/nvtk,no,2026-10-28,
+NVTK,2015-10-06,2015-08-24,6.6,6.6,https://www.dohod.ru/ik/analytics/dividend/nvtk,no,2026-10-28,
+NVTK,2016-05-04,2016-03-16,6.9,6.9,https://www.dohod.ru/ik/analytics/dividend/nvtk,no,2026-10-28,
+NVTK,2016-10-11,2016-08-29,6.9,6.9,https://www.dohod.ru/ik/analytics/dividend/nvtk,no,2026-10-28,
+OGKB,2015-06-25,2015-05-08,0.0081415,0.0081415,https://www.dohod.ru/ik/analytics/dividend/ogkb,no,2026-10-28,
+OGKB,2016-06-20,2016-04-29,0.0056738,0.0056738,https://www.dohod.ru/ik/analytics/dividend/ogkb,no,2026-10-28,
+PHOR,2015-01-11,2014-11-18,20,20,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,реестр в воскресенье по dohod
+PHOR,2015-06-19,2015-04-28,15,15,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,
+PHOR,2015-07-25,2015-05-28,48,48,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,реестр в субботу по dohod
+PHOR,2015-10-17,2015-08-17,57,57,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,реестр в субботу по dohod
+PHOR,2016-01-26,2016-01-18,63,63,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,
+PHOR,2016-06-11,2016-03-23,57,57,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,реестр в субботу по dohod
+PHOR,2016-08-10,2016-05-27,63,63,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,
+PHOR,2016-10-14,2016-08-17,33,33,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,
+RTKM,2015-07-03,2015-05-18,3.34,3.34,https://www.dohod.ru/ik/analytics/dividend/rtkm,no,2026-10-28,
+RTKM,2016-07-08,2016-05-24,5.92,5.92,https://www.dohod.ru/ik/analytics/dividend/rtkm,no,2026-10-28,
+SBER,2015-06-15,2015-04-17,0.45,0.45,https://www.dohod.ru/ik/analytics/dividend/sber,no,2026-10-28,
+SBER,2016-06-14,2016-04-12,1.97,1.97,https://www.dohod.ru/ik/analytics/dividend/sber,no,2026-10-28,
+TATN,2015-07-15,2015-04-27,10.58,10.58,https://www.dohod.ru/ik/analytics/dividend/tatn,no,2026-10-28,
+TATN,2016-07-08,2016-04-26,10.96,10.96,https://www.dohod.ru/ik/analytics/dividend/tatn,no,2026-10-28,
+VTBR,2015-07-06,2015-05-15,0.00117,5.85,https://www.dohod.ru/ik/analytics/dividend/vtbr,no,2026-10-28,dps_rub = dohod/5000 (как в файле 2017-2021: dohod приводит суммы после консолидации 5000:1)
+VTBR,2016-07-04,2016-05-13,0.00117,5.85,https://www.dohod.ru/ik/analytics/dividend/vtbr,no,2026-10-28,dps_rub = dohod/5000

@@ -1,0 +1,21 @@
+признак,gain_%,группа
+rv_m,33.03,лаги RV
+rv_w,9.2,лаги RV
+bv,7.04,лаги RV
+rv_2w,5.62,лаги RV
+rv,5.39,лаги RV
+idx_MOEXFN_rv_annualized_ma5,4.77,индексы MOEX
+rv_q,3.31,лаги RV
+rv_d,2.64,лаги RV
+m2_ru_diff22,2.3,макро
+rv_IMOEX,1.04,индексы MOEX
+idx_RGBI_rv_annualized_ret22,0.91,индексы MOEX
+idx_MOEXMM_rv_annualized_ret5,0.83,индексы MOEX
+yahoo_treasury_5y_ret22,0.69,Yahoo (глоб.)
+close_MOEXMM,0.67,индексы MOEX
+yahoo_tbill_3m_ma22,0.66,Yahoo (глоб.)
+yahoo_dxy_vol22,0.59,Yahoo (глоб.)
+idx_MOEXTL_rv_annualized_ma5,0.57,индексы MOEX
+yahoo_gold_ret22,0.55,Yahoo (глоб.)
+close_MOEXEU,0.51,индексы MOEX
+rv_RGBI,0.48,индексы MOEX

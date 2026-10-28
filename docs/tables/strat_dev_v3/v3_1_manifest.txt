@@ -1,0 +1,42 @@
+# Манифест таблиц v3.1 шагов 0–3 до пересчёта Н6 (v3.2, ряд до 18:50), 27.10.
+# Архив — git (правило хуков закрывает пути arhiv_*): коммит 85afdd3. Проверено: git diff 85afdd3 HEAD по shag[0-3]_* пуст, файлы совпадают.
+# Формат: SHA-256  путь  |  архив: git show 85afdd3:<путь>
+c6d017613983738799aa3652a49557d583b02f8844d6da0e2ee83bbe9c43478a  docs/tables/strat_dev_v3/shag0_A_metriki_prilozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_A_metriki_prilozhenie.csv
+87e3da5c975b4e88940f1b0526847e5e7ef160d4c8d7fe03784edee472cf5f00  docs/tables/strat_dev_v3/shag0_A_metriki.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_A_metriki.csv
+c3a45cc92d48e5a76dd02db1aa294d64e000aaed6c058712ce3efb07526fedd1  docs/tables/strat_dev_v3/shag0_A_po_godam_prilozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_A_po_godam_prilozhenie.csv
+8a785d1a020d5c4664beb1b66945efbcca26957ef5c4ad598586fb7f9b8f7608  docs/tables/strat_dev_v3/shag0_A_po_godam.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_A_po_godam.csv
+d4250904153fab7ac9899603f4812ac18d9e89c72b6c441727eab0c800a374dc  docs/tables/strat_dev_v3/shag0_A_po_tikeram_prilozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_A_po_tikeram_prilozhenie.csv
+02863bcbaa634449b95e905f02e312010b32d7b78775f10d044e1f4b55b7cc1c  docs/tables/strat_dev_v3/shag0_A_po_tikeram.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_A_po_tikeram.csv
+80d0dee47bc82e3a79d078ba45b82700306336aa72b46bc5211d5c8abc25abec  docs/tables/strat_dev_v3/shag0_k3_prilozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_k3_prilozhenie.csv
+624e65b2b5137734282c3252c2697db542d63b4edaee91da49aa6eeda2855822  docs/tables/strat_dev_v3/shag0_k3.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_k3.csv
+ac2585990451929d40473ed7f1e55fd8eef90cc30c77498391bae02597525cf0  docs/tables/strat_dev_v3/shag0_semyi_dni.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_semyi_dni.csv
+f14b3de84916d2747fe04508ea1b862cf9a687acd97a28964ab7ee243ab294f6  docs/tables/strat_dev_v3/shag0_signaly_LOO_prilozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_signaly_LOO_prilozhenie.csv
+89edf8be6f688af003edb1a5e2c7d20a036b3a5e509ec23e50bf80a11605d0d9  docs/tables/strat_dev_v3/shag0_signaly_LOO.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_signaly_LOO.csv
+e41a7913bd6375deef400d67bcc7e972931e9986b6c89618b824b8936db44da7  docs/tables/strat_dev_v3/shag0_spravochno_prilozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_spravochno_prilozhenie.csv
+08afec569c14b0b66fca0da3b328dfc71a1a732327cca4c353c40fd9b004eea8  docs/tables/strat_dev_v3/shag0_spravochno.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_spravochno.csv
+52b77a23721dad873e453a66a2eee2cfccb37e86f3de2ddc5ac1b2925475b0ce  docs/tables/strat_dev_v3/shag0_sverka_predzashchita.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_sverka_predzashchita.csv
+4316391bb43b0308cc5c969f544607c11f2c3dd31aa5ebe9d63987a70ec9e763  docs/tables/strat_dev_v3/shag0_sverka_sloy.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag0_sverka_sloy.csv
+d22ac6a668649ac28c0638750938c8a2ed550ff6bcfee8c10378bb161b46b836  docs/tables/strat_dev_v3/shag1_komissiya.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag1_komissiya.csv
+546a8725aaae44b745eba987f4acb98fe3e016238b3a7b35c76a6a5121832afc  docs/tables/strat_dev_v3/shag1_otbor.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag1_otbor.csv
+f4827f60b70624b0d2bdacbba586421055510c02face3f0193082997aef6cbb8  docs/tables/strat_dev_v3/shag1_razlozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag1_razlozhenie.csv
+d6899493da0658dfe4a1d04687476c5631ee0d29a81e5d314b9ca4d19de580ab  docs/tables/strat_dev_v3/shag1_sdvig.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag1_sdvig.csv
+9f1a9821e4f98bb5e12e1ca3530f27a6b79124b84b6485cf7d79be334e592f3d  docs/tables/strat_dev_v3/shag1_setka.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag1_setka.csv
+2e1dce8ef6b8b9069a0dd829a1f596fdd24d81ae8f11b1b62421e4241a74380a  docs/tables/strat_dev_v3/shag1_sverka_sloy.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag1_sverka_sloy.csv
+4d2b87d3c488f011cc31f523b8daa9943379a896f7278ac56ac32271421ed96a  docs/tables/strat_dev_v3/shag1_ustoychivost.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag1_ustoychivost.csv
+b3f2a167c8dfc0f2ec8c1d738e940c1a99c02795b78dee909077bca77e833e72  docs/tables/strat_dev_v3/shag1_zhurnal.txt  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag1_zhurnal.txt
+68f4aabbac610b11230d8bae82b5c38f915f76d528a1bff70aa37fb04e0c9509  docs/tables/strat_dev_v3/shag2_komissiya.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag2_komissiya.csv
+7a6b29c7801342e2d55e8f642f462d1e3a67e3a265dd87b3ea1ab2bcbf1b0ea8  docs/tables/strat_dev_v3/shag2_otbor.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag2_otbor.csv
+84245a014e770533c50cb468e4efb3e4c71c1cac1e42be0d4af278651a34a4aa  docs/tables/strat_dev_v3/shag2_razlozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag2_razlozhenie.csv
+1d06dde4e5666c3d6b3018a11984bbad6a07ab2f64c0fc67e07b77af5aee71c3  docs/tables/strat_dev_v3/shag2_sdvig.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag2_sdvig.csv
+a8757477f2111d1b5a34e48b4f6441f02966ff6124a15b782810cb5c5b862932  docs/tables/strat_dev_v3/shag2_setka.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag2_setka.csv
+d125c86517608042ab83598ce9f67527ee1d5652c3bd452255b76bf566e02b2c  docs/tables/strat_dev_v3/shag2_sverka_sloy.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag2_sverka_sloy.csv
+686afb33c675f54e16bd3720b34adad2c7b13fe9e8a45229df13e918788aaf55  docs/tables/strat_dev_v3/shag2_ustoychivost.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag2_ustoychivost.csv
+c24acd1c3db1938a87966a0f02d55861a446054a42abeaf9a55bd1e89a225888  docs/tables/strat_dev_v3/shag2_zhurnal.txt  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag2_zhurnal.txt
+143b63e77319b735d53695cab94372a1dd2bb14afb08ec99427d782376acaba4  docs/tables/strat_dev_v3/shag3_komissiya.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag3_komissiya.csv
+9a1ad0543f0ab8338025c9080a21fc67bc7bb6c52ece2a9ae9a886eb0ab490ee  docs/tables/strat_dev_v3/shag3_otbor.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag3_otbor.csv
+55dae9dc169bb7ed9f8801a1f51cbee8a57ccf2a8635ec32f7d3d746585dc53e  docs/tables/strat_dev_v3/shag3_razlozhenie.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag3_razlozhenie.csv
+a973f9d225ebf28ac1ab1a8fdad5c95da21dcf0ac14c99258aa2e73447fb7152  docs/tables/strat_dev_v3/shag3_sdvig.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag3_sdvig.csv
+75435ee73f5aa897acdb239a7bec4b4ef0c543c4eb693913d04d311ac9f8ef68  docs/tables/strat_dev_v3/shag3_setka.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag3_setka.csv
+c3c36adf9b71481956e9e24bfc4b9f67714072294c6f9b15577501a64cf41ebf  docs/tables/strat_dev_v3/shag3_sverka_sloy.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag3_sverka_sloy.csv
+5fca4395469183bb692933e5f17fc5cad6595968681d308f330320cdb587ff34  docs/tables/strat_dev_v3/shag3_ustoychivost.csv  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag3_ustoychivost.csv
+c32c023283c1462f90f36def0cc35eb1a849949710bdf5baeb019b23e311540a  docs/tables/strat_dev_v3/shag3_zhurnal.txt  |  архив: git show 85afdd3:docs/tables/strat_dev_v3/shag3_zhurnal.txt

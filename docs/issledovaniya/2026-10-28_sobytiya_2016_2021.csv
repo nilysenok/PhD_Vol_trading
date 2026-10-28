@@ -1,0 +1,450 @@
+ticker,tip,data_obyavleniya,data_sobytiya,istochnik,accessed,note
+*,cbr_zasedanie_klyuchevaya_stavka,2016-01-29,2016-01-29,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2016-03-18,2016-03-18,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2016-04-29,2016-04-29,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2016-06-10,2016-06-10,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2016-07-29,2016-07-29,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2016-09-16,2016-09-16,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2016-10-28,2016-10-28,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2016-12-16,2016-12-16,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2017-02-03,2017-02-03,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2017-03-24,2017-03-24,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2017-04-28,2017-04-28,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2017-06-16,2017-06-16,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2017-07-28,2017-07-28,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2017-09-15,2017-09-15,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2017-10-27,2017-10-27,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2017-12-15,2017-12-15,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2018-02-09,2018-02-09,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2018-03-23,2018-03-23,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2018-04-27,2018-04-27,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2018-06-15,2018-06-15,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2018-07-27,2018-07-27,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2018-09-14,2018-09-14,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2018-10-26,2018-10-26,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2018-12-14,2018-12-14,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2019-02-08,2019-02-08,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2019-03-22,2019-03-22,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2019-04-26,2019-04-26,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2019-06-14,2019-06-14,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2019-07-26,2019-07-26,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2019-09-06,2019-09-06,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2019-10-25,2019-10-25,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2019-12-13,2019-12-13,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2020-02-07,2020-02-07,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2020-03-20,2020-03-20,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2020-04-24,2020-04-24,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2020-06-19,2020-06-19,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2020-07-24,2020-07-24,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2020-09-18,2020-09-18,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2020-10-23,2020-10-23,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2020-12-18,2020-12-18,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2021-02-12,2021-02-12,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2021-03-19,2021-03-19,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2021-04-23,2021-04-23,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2021-06-11,2021-06-11,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2021-07-23,2021-07-23,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2021-09-10,2021-09-10,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2021-10-22,2021-10-22,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,cbr_zasedanie_klyuchevaya_stavka,2021-12-17,2021-12-17,https://www.cbr.ru/dkp/cal_mp/,2026-10-28,"объявление = дата решения (дата публикации календаря не подтверждена)"
+*,imoex_peresmotr,2016-03-01,2016-03-16,https://iss.moex.com/iss/sitenews/12274.json,2026-10-28,"moex.com/n12274"
+*,imoex_peresmotr,2016-06-01,2016-06-16,https://iss.moex.com/iss/sitenews/12964.json,2026-10-28,"moex.com/n12964"
+*,imoex_peresmotr,2016-09-01,2016-09-16,https://iss.moex.com/iss/sitenews/13654.json,2026-10-28,"moex.com/n13654"
+*,imoex_peresmotr,2016-12-01,2016-12-16,https://iss.moex.com/iss/sitenews/14502.json,2026-10-28,"moex.com/n14502"
+*,imoex_peresmotr,2017-03-01,2017-03-17,https://iss.moex.com/iss/sitenews/15251.json,2026-10-28,"moex.com/n15251"
+*,imoex_peresmotr,2017-06-01,2017-06-16,https://iss.moex.com/iss/sitenews/16135.json,2026-10-28,"moex.com/n16135"
+*,imoex_peresmotr,2017-09-01,2017-09-22,https://iss.moex.com/iss/sitenews/16971.json,2026-10-28,"moex.com/n16971"
+*,imoex_peresmotr,2017-12-01,2017-12-22,https://iss.moex.com/iss/sitenews/17878.json,2026-10-28,"moex.com/n17878; новая методика (переменное число акций) с 27.11.2017"
+*,imoex_peresmotr,2018-03-01,2018-03-16,https://iss.moex.com/iss/sitenews/18746.json,2026-10-28,"moex.com/n18746"
+*,imoex_peresmotr,2018-06-01,2018-06-22,https://iss.moex.com/iss/sitenews/19775.json,2026-10-28,"moex.com/n19775"
+*,imoex_peresmotr,2018-09-03,2018-09-21,https://iss.moex.com/iss/sitenews/20775.json,2026-10-28,"moex.com/n20775; предварительная новость 2018-08-29 (n20723)"
+*,imoex_peresmotr,2018-12-03,2018-12-21,https://iss.moex.com/iss/sitenews/21804.json,2026-10-28,"moex.com/n21804; предварительная новость 2018-11-23 (n21683)"
+*,imoex_peresmotr,2019-03-01,2019-03-22,https://iss.moex.com/iss/sitenews/22774.json,2026-10-28,"moex.com/n22774; предварительная новость 2019-02-27 (n22717)"
+*,imoex_peresmotr,2019-06-03,2019-06-21,https://iss.moex.com/iss/sitenews/23836.json,2026-10-28,"moex.com/n23836; предварительная новость 2019-05-29 (n23776)"
+*,imoex_peresmotr,2019-09-02,2019-09-20,https://iss.moex.com/iss/sitenews/24862.json,2026-10-28,"moex.com/n24862; предварительная новость 2019-08-29 (n24823)"
+*,imoex_peresmotr,2019-12-02,2019-12-20,https://iss.moex.com/iss/sitenews/26084.json,2026-10-28,"moex.com/n26084; предварительная новость 2019-11-27 (n26020)"
+*,imoex_peresmotr,2020-03-02,2020-03-20,https://iss.moex.com/iss/sitenews/27153.json,2026-10-28,"moex.com/n27153; предварительная новость 2020-02-28 (n27110)"
+*,imoex_peresmotr,2020-06-02,2020-06-19,https://iss.moex.com/iss/sitenews/28640.json,2026-10-28,"moex.com/n28640; предварительная новость 2020-05-27 (n28561)"
+*,imoex_peresmotr,2020-09-01,2020-09-18,https://iss.moex.com/iss/sitenews/29952.json,2026-10-28,"moex.com/n29952; предварительная новость 2020-08-27 (n29889)"
+*,imoex_peresmotr,2020-12-02,2020-12-18,https://iss.moex.com/iss/sitenews/31467.json,2026-10-28,"moex.com/n31467; предварительная новость 2020-11-27 (n31406)"
+*,imoex_peresmotr,2021-03-02,2021-03-19,https://iss.moex.com/iss/sitenews/32815.json,2026-10-28,"moex.com/n32815; предварительная новость 2021-02-26 (n32765)"
+*,imoex_peresmotr,2021-06-03,2021-06-18,https://iss.moex.com/iss/sitenews/34446.json,2026-10-28,"moex.com/n34446; новости 2021-05-28 (n34300) и 2021-06-02 (n34379) содержат только «Обновленный текст размещен по ссылке»"
+*,imoex_peresmotr,2021-09-02,2021-09-17,https://iss.moex.com/iss/sitenews/36029.json,2026-10-28,"moex.com/n36029; предварительная новость 2021-08-27 (n35930)"
+*,imoex_peresmotr,2021-12-02,2021-12-17,https://iss.moex.com/iss/sitenews/38329.json,2026-10-28,"moex.com/n38329; предварительная новость 2021-11-26 (n38156)"
+MTLR,imoex_iskluchenie,2016-06-01,2016-06-16,https://iss.moex.com/iss/sitenews/12964.json,2026-10-28,"текст новости; ISS IMOEX analytics: есть 2016-06-15, нет 2016-06-16"
+MTLR,imoex_vklyuchenie,2016-12-01,2016-12-16,https://iss.moex.com/iss/sitenews/14502.json,2026-10-28,"текст новости; ISS IMOEX analytics: нет 2016-12-15, есть 2016-12-16"
+LSRG,imoex_iskluchenie,2017-12-01,2017-12-22,https://iss.moex.com/iss/sitenews/17878.json,2026-10-28,"текст новости; ISS IMOEX analytics: есть 2017-12-21, нет 2017-12-22"
+MTLR,imoex_iskluchenie,2019-03-01,2019-03-22,https://iss.moex.com/iss/sitenews/22774.json,2026-10-28,"текст новости; ISS IMOEX analytics: есть 2019-03-21, нет 2019-03-22"
+LSRG,imoex_vklyuchenie,2019-09-02,2019-09-20,https://iss.moex.com/iss/sitenews/24862.json,2026-10-28,"текст новости; ISS IMOEX analytics: нет 2019-09-19, есть 2019-09-20"
+LSRG,imoex_iskluchenie,2021-12-02,2021-12-17,https://iss.moex.com/iss/sitenews/38329.json,2026-10-28,"текст новости; ISS IMOEX analytics: есть 2021-12-16, нет 2021-12-17"
+AFLT,imoex_free_float,2016-03-01,2016-03-16,https://iss.moex.com/iss/sitenews/12274.json,2026-10-28,"в таблице free-float новости"
+HYDR,imoex_free_float,2016-03-01,2016-03-16,https://iss.moex.com/iss/sitenews/12274.json,2026-10-28,"в таблице free-float новости"
+MOEX,imoex_free_float,2016-03-01,2016-03-16,https://iss.moex.com/iss/sitenews/12274.json,2026-10-28,"в таблице free-float новости"
+ALRS,imoex_free_float,2016-09-01,2016-09-16,https://iss.moex.com/iss/sitenews/13654.json,2026-10-28,"в таблице free-float новости"
+IRAO,imoex_free_float,2016-09-01,2016-09-16,https://iss.moex.com/iss/sitenews/13654.json,2026-10-28,"в таблице free-float новости"
+MGNT,imoex_free_float,2016-09-01,2016-09-16,https://iss.moex.com/iss/sitenews/13654.json,2026-10-28,"в таблице free-float новости"
+MTLR,imoex_free_float,2016-09-01,2016-09-16,https://iss.moex.com/iss/sitenews/13654.json,2026-10-28,"в таблице free-float; MTLR в этот период вне IMOEX (по ISS)"
+MTSS,imoex_free_float,2016-09-01,2016-09-16,https://iss.moex.com/iss/sitenews/13654.json,2026-10-28,"в таблице free-float новости"
+IRAO,imoex_free_float,2016-12-01,2016-12-16,https://iss.moex.com/iss/sitenews/14502.json,2026-10-28,"в таблице free-float; таблица в тексте обрезана — полнота не подтверждена"
+PHOR,imoex_free_float,2017-03-01,2017-03-17,https://iss.moex.com/iss/sitenews/15251.json,2026-10-28,"в таблице free-float новости"
+MOEX,imoex_free_float,2017-09-01,2017-09-22,https://iss.moex.com/iss/sitenews/16971.json,2026-10-28,"в таблице free-float новости"
+OGKB,imoex_free_float,2017-09-01,2017-09-22,https://iss.moex.com/iss/sitenews/16971.json,2026-10-28,"в таблице free-float; OGKB не входил в IMOEX ни на одну из 48 проверенных дат (ISS)"
+HYDR,imoex_free_float,2018-06-01,2018-06-22,https://iss.moex.com/iss/sitenews/19775.json,2026-10-28,"в таблице free-float новости"
+IRAO,imoex_free_float,2018-06-01,2018-06-22,https://iss.moex.com/iss/sitenews/19775.json,2026-10-28,"в таблице free-float новости"
+MGNT,imoex_free_float,2018-06-01,2018-06-22,https://iss.moex.com/iss/sitenews/19775.json,2026-10-28,"в таблице free-float новости"
+VTBR,imoex_free_float,2018-06-01,2018-06-22,https://iss.moex.com/iss/sitenews/19775.json,2026-10-28,"в таблице free-float новости"
+IRAO,imoex_free_float,2018-09-03,2018-09-21,https://iss.moex.com/iss/sitenews/20775.json,2026-10-28,"в таблице free-float; в предварительной n20723 (2018-08-29) также VTBR — в итоговой не найден"
+LKOH,imoex_free_float,2018-12-03,2018-12-21,https://iss.moex.com/iss/sitenews/21804.json,2026-10-28,"в таблице free-float новости"
+MGNT,imoex_free_float,2018-12-03,2018-12-21,https://iss.moex.com/iss/sitenews/21804.json,2026-10-28,"в таблице free-float новости"
+MTSS,imoex_free_float,2018-12-03,2018-12-21,https://iss.moex.com/iss/sitenews/21804.json,2026-10-28,"в таблице free-float новости"
+NVTK,imoex_free_float,2018-12-03,2018-12-21,https://iss.moex.com/iss/sitenews/21804.json,2026-10-28,"в таблице free-float новости"
+AFLT,imoex_free_float,2019-03-01,2019-03-22,https://iss.moex.com/iss/sitenews/22774.json,2026-10-28,"в таблице free-float новости"
+NVTK,imoex_free_float,2019-03-01,2019-03-22,https://iss.moex.com/iss/sitenews/22774.json,2026-10-28,"в таблице free-float новости"
+LSRG,imoex_free_float,2019-06-03,2019-06-21,https://iss.moex.com/iss/sitenews/23836.json,2026-10-28,"в таблице free-float; LSRG в этот период вне IMOEX (по ISS)"
+LKOH,imoex_free_float,2019-09-02,2019-09-20,https://iss.moex.com/iss/sitenews/24862.json,2026-10-28,"в таблице free-float новости"
+LKOH,imoex_free_float,2020-03-02,2020-03-20,https://iss.moex.com/iss/sitenews/27153.json,2026-10-28,"в таблице free-float новости"
+MOEX,imoex_free_float,2020-03-02,2020-03-20,https://iss.moex.com/iss/sitenews/27153.json,2026-10-28,"в таблице free-float новости"
+MTLR,imoex_free_float,2020-03-02,2020-03-20,https://iss.moex.com/iss/sitenews/27153.json,2026-10-28,"в таблице free-float; MTLR вне IMOEX (по ISS)"
+OGKB,imoex_free_float,2020-03-02,2020-03-20,https://iss.moex.com/iss/sitenews/27153.json,2026-10-28,"в таблице free-float; OGKB не входил в IMOEX (ISS)"
+MTLR,imoex_free_float,2020-06-02,2020-06-19,https://iss.moex.com/iss/sitenews/28640.json,2026-10-28,"в таблице free-float; MTLR вне IMOEX (по ISS)"
+RTKM,imoex_free_float,2020-09-01,2020-09-18,https://iss.moex.com/iss/sitenews/29952.json,2026-10-28,"в таблице free-float новости"
+AFLT,imoex_free_float,2020-12-02,2020-12-18,https://iss.moex.com/iss/sitenews/31467.json,2026-10-28,"в таблице free-float новости"
+HYDR,imoex_free_float,2021-03-02,2021-03-19,https://iss.moex.com/iss/sitenews/32815.json,2026-10-28,"в таблице free-float новости"
+MGNT,imoex_free_float,2021-03-02,2021-03-19,https://iss.moex.com/iss/sitenews/32815.json,2026-10-28,"в таблице free-float новости"
+MTLR,imoex_free_float,2021-03-02,2021-03-19,https://iss.moex.com/iss/sitenews/32815.json,2026-10-28,"в таблице free-float; MTLR вне IMOEX (по ISS)"
+HYDR,imoex_free_float,2021-06-03,2021-06-18,https://iss.moex.com/iss/sitenews/34446.json,2026-10-28,"в таблице free-float новости"
+MGNT,imoex_free_float,2021-06-03,2021-06-18,https://iss.moex.com/iss/sitenews/34446.json,2026-10-28,"в таблице free-float новости"
+MTSS,imoex_free_float,2021-06-03,2021-06-18,https://iss.moex.com/iss/sitenews/34446.json,2026-10-28,"в таблице free-float новости"
+MGNT,imoex_free_float,2021-12-02,2021-12-17,https://iss.moex.com/iss/sitenews/38329.json,2026-10-28,"в таблице free-float новости"
+AFLT,forts_expiraciya,2017-07-13,2017-09-22,https://iss.moex.com/iss/securities/AFU7_2017.json,2026-10-28,"AFLT-9.17; объявление=FRSTTRADE; событие=LSTDELDATE"
+AFLT,forts_expiraciya,2017-07-13,2017-12-22,https://iss.moex.com/iss/securities/AFZ7_2017.json,2026-10-28,
+AFLT,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/AFH8_2018.json,2026-10-28,
+AFLT,forts_expiraciya,2017-12-13,2018-06-22,https://iss.moex.com/iss/securities/AFM8_2018.json,2026-10-28,
+AFLT,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/AFU8_2018.json,2026-10-28,
+AFLT,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/AFZ8_2018.json,2026-10-28,
+AFLT,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/AFH9.json,2026-10-28,
+AFLT,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/AFM9.json,2026-10-28,
+AFLT,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/AFU9.json,2026-10-28,
+AFLT,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/AFZ9.json,2026-10-28,
+AFLT,forts_expiraciya,2019-09-09,2020-03-19,https://iss.moex.com/iss/securities/AFH0.json,2026-10-28,
+AFLT,forts_expiraciya,2019-12-09,2020-06-18,https://iss.moex.com/iss/securities/AFM0.json,2026-10-28,
+AFLT,forts_expiraciya,2020-03-10,2020-09-17,https://iss.moex.com/iss/securities/AFU0.json,2026-10-28,
+AFLT,forts_expiraciya,2020-06-08,2020-12-17,https://iss.moex.com/iss/securities/AFZ0.json,2026-10-28,
+AFLT,forts_expiraciya,2020-09-04,2021-03-18,https://iss.moex.com/iss/securities/AFH1.json,2026-10-28,
+AFLT,forts_expiraciya,2020-12-03,2021-06-18,https://iss.moex.com/iss/securities/AFM1.json,2026-10-28,
+AFLT,forts_expiraciya,2021-03-04,2021-09-17,https://iss.moex.com/iss/securities/AFU1.json,2026-10-28,
+AFLT,forts_expiraciya,2021-05-17,2021-12-17,https://iss.moex.com/iss/securities/AFZ1.json,2026-10-28,
+ALRS,forts_expiraciya,2016-10-04,2016-12-16,https://iss.moex.com/iss/securities/ALZ6_2016.json,2026-10-28,
+ALRS,forts_expiraciya,2016-11-22,2017-03-16,https://iss.moex.com/iss/securities/ALH7_2017.json,2026-10-28,
+ALRS,forts_expiraciya,2017-01-03,2017-06-15,https://iss.moex.com/iss/securities/ALM7_2017.json,2026-10-28,
+ALRS,forts_expiraciya,2017-03-09,2017-09-22,https://iss.moex.com/iss/securities/ALU7_2017.json,2026-10-28,
+ALRS,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/ALZ7_2017.json,2026-10-28,
+ALRS,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/ALH8_2018.json,2026-10-28,
+ALRS,forts_expiraciya,2017-12-13,2018-06-22,https://iss.moex.com/iss/securities/ALM8_2018.json,2026-10-28,
+ALRS,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/ALU8_2018.json,2026-10-28,
+ALRS,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/ALZ8_2018.json,2026-10-28,"в ISS SHORTNAME серии записан как Al-12.18"
+ALRS,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/ALH9.json,2026-10-28,
+ALRS,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/ALM9.json,2026-10-28,
+ALRS,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/ALU9.json,2026-10-28,
+ALRS,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/ALZ9.json,2026-10-28,
+ALRS,forts_expiraciya,2019-09-09,2020-03-19,https://iss.moex.com/iss/securities/ALH0.json,2026-10-28,
+ALRS,forts_expiraciya,2019-12-09,2020-06-18,https://iss.moex.com/iss/securities/ALM0.json,2026-10-28,
+ALRS,forts_expiraciya,2020-02-06,2020-09-17,https://iss.moex.com/iss/securities/ALU0.json,2026-10-28,
+ALRS,forts_expiraciya,2020-02-06,2020-12-17,https://iss.moex.com/iss/securities/ALZ0.json,2026-10-28,
+ALRS,forts_expiraciya,2020-06-26,2021-03-18,https://iss.moex.com/iss/securities/ALH1.json,2026-10-28,
+ALRS,forts_expiraciya,2020-06-26,2021-06-17,https://iss.moex.com/iss/securities/ALM1.json,2026-10-28,
+ALRS,forts_expiraciya,2021-02-10,2021-09-17,https://iss.moex.com/iss/securities/ALU1.json,2026-10-28,
+ALRS,forts_expiraciya,2021-04-20,2021-12-17,https://iss.moex.com/iss/securities/ALZ1.json,2026-10-28,
+HYDR,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/HYH6_2016.json,2026-10-28,
+HYDR,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/HYM6_2016.json,2026-10-28,
+HYDR,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/HYU6_2016.json,2026-10-28,
+HYDR,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/HYZ6_2016.json,2026-10-28,
+HYDR,forts_expiraciya,2016-11-22,2017-03-16,https://iss.moex.com/iss/securities/HYH7_2017.json,2026-10-28,
+HYDR,forts_expiraciya,2017-01-03,2017-06-15,https://iss.moex.com/iss/securities/HYM7_2017.json,2026-10-28,
+HYDR,forts_expiraciya,2017-03-09,2017-09-22,https://iss.moex.com/iss/securities/HYU7_2017.json,2026-10-28,
+HYDR,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/HYZ7_2017.json,2026-10-28,
+HYDR,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/HYH8_2018.json,2026-10-28,
+HYDR,forts_expiraciya,2017-12-13,2018-06-22,https://iss.moex.com/iss/securities/HYM8_2018.json,2026-10-28,
+HYDR,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/HYU8_2018.json,2026-10-28,
+HYDR,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/HYZ8_2018.json,2026-10-28,
+HYDR,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/HYH9.json,2026-10-28,
+HYDR,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/HYM9.json,2026-10-28,
+HYDR,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/HYU9.json,2026-10-28,
+HYDR,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/HYZ9.json,2026-10-28,
+HYDR,forts_expiraciya,2019-09-09,2020-03-19,https://iss.moex.com/iss/securities/HYH0.json,2026-10-28,
+HYDR,forts_expiraciya,2019-12-09,2020-06-18,https://iss.moex.com/iss/securities/HYM0.json,2026-10-28,
+HYDR,forts_expiraciya,2020-03-10,2020-09-17,https://iss.moex.com/iss/securities/HYU0.json,2026-10-28,
+HYDR,forts_expiraciya,2020-06-08,2020-12-17,https://iss.moex.com/iss/securities/HYZ0.json,2026-10-28,
+HYDR,forts_expiraciya,2020-09-04,2021-03-18,https://iss.moex.com/iss/securities/HYH1.json,2026-10-28,
+HYDR,forts_expiraciya,2020-12-03,2021-06-18,https://iss.moex.com/iss/securities/HYM1.json,2026-10-28,
+HYDR,forts_expiraciya,2021-03-04,2021-09-17,https://iss.moex.com/iss/securities/HYU1.json,2026-10-28,
+HYDR,forts_expiraciya,2021-06-03,2021-12-17,https://iss.moex.com/iss/securities/HYZ1.json,2026-10-28,
+IMOEX,forts_expiraciya,2013-12-25,2016-03-15,https://iss.moex.com/iss/securities/MXH6_2016.json,2026-10-28,"MIX (фьючерс на Индекс МосБиржи)"
+IMOEX,forts_expiraciya,2014-04-03,2016-06-15,https://iss.moex.com/iss/securities/MXM6_2016.json,2026-10-28,
+IMOEX,forts_expiraciya,2014-08-20,2016-09-15,https://iss.moex.com/iss/securities/MXU6_2016.json,2026-10-28,
+IMOEX,forts_expiraciya,2016-08-30,2016-12-15,https://iss.moex.com/iss/securities/MXZ6_2016.json,2026-10-28,
+IMOEX,forts_expiraciya,2016-11-22,2017-03-16,https://iss.moex.com/iss/securities/MXH7_2017.json,2026-10-28,
+IMOEX,forts_expiraciya,2016-11-22,2017-06-15,https://iss.moex.com/iss/securities/MXM7_2017.json,2026-10-28,
+IMOEX,forts_expiraciya,2016-11-22,2017-09-21,https://iss.moex.com/iss/securities/MXU7_2017.json,2026-10-28,
+IMOEX,forts_expiraciya,2017-01-03,2017-12-21,https://iss.moex.com/iss/securities/MXZ7_2017.json,2026-10-28,
+IMOEX,forts_expiraciya,2017-03-03,2018-03-15,https://iss.moex.com/iss/securities/MXH8_2018.json,2026-10-28,
+IMOEX,forts_expiraciya,2017-06-02,2018-06-21,https://iss.moex.com/iss/securities/MXM8_2018.json,2026-10-28,
+IMOEX,forts_expiraciya,2017-09-08,2018-09-20,https://iss.moex.com/iss/securities/MXU8_2018.json,2026-10-28,
+IMOEX,forts_expiraciya,2017-12-08,2018-12-20,https://iss.moex.com/iss/securities/MXZ8_2018.json,2026-10-28,
+IMOEX,forts_expiraciya,2018-03-02,2019-03-21,https://iss.moex.com/iss/securities/MXH9.json,2026-10-28,
+IMOEX,forts_expiraciya,2018-06-08,2019-06-20,https://iss.moex.com/iss/securities/MXM9.json,2026-10-28,
+IMOEX,forts_expiraciya,2018-09-07,2019-09-19,https://iss.moex.com/iss/securities/MXU9.json,2026-10-28,
+IMOEX,forts_expiraciya,2018-12-07,2019-12-19,https://iss.moex.com/iss/securities/MXZ9.json,2026-10-28,
+IMOEX,forts_expiraciya,2019-03-07,2020-03-19,https://iss.moex.com/iss/securities/MXH0.json,2026-10-28,
+IMOEX,forts_expiraciya,2019-06-07,2020-06-18,https://iss.moex.com/iss/securities/MXM0.json,2026-10-28,
+IMOEX,forts_expiraciya,2019-09-06,2020-09-17,https://iss.moex.com/iss/securities/MXU0.json,2026-10-28,
+IMOEX,forts_expiraciya,2019-12-06,2020-12-17,https://iss.moex.com/iss/securities/MXZ0.json,2026-10-28,
+IMOEX,forts_expiraciya,2020-03-06,2021-03-18,https://iss.moex.com/iss/securities/MXH1.json,2026-10-28,
+IMOEX,forts_expiraciya,2020-06-04,2021-06-17,https://iss.moex.com/iss/securities/MXM1.json,2026-10-28,
+IMOEX,forts_expiraciya,2020-09-03,2021-09-16,https://iss.moex.com/iss/securities/MXU1.json,2026-10-28,
+IMOEX,forts_expiraciya,2020-12-04,2021-12-16,https://iss.moex.com/iss/securities/MXZ1.json,2026-10-28,
+IRAO,forts_expiraciya,2020-10-14,2020-12-18,https://iss.moex.com/iss/securities/IRZ0.json,2026-10-28,
+IRAO,forts_expiraciya,2020-10-14,2021-03-19,https://iss.moex.com/iss/securities/IRH1.json,2026-10-28,
+IRAO,forts_expiraciya,2020-12-03,2021-06-18,https://iss.moex.com/iss/securities/IRM1.json,2026-10-28,
+IRAO,forts_expiraciya,2021-03-04,2021-09-17,https://iss.moex.com/iss/securities/IRU1.json,2026-10-28,
+IRAO,forts_expiraciya,2021-06-03,2021-12-17,https://iss.moex.com/iss/securities/IRZ1.json,2026-10-28,
+LKOH,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/LKH6_2016.json,2026-10-28,
+LKOH,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/LKM6_2016.json,2026-10-28,
+LKOH,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/LKU6_2016.json,2026-10-28,
+LKOH,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/LKZ6_2016.json,2026-10-28,
+LKOH,forts_expiraciya,2016-11-22,2017-03-16,https://iss.moex.com/iss/securities/LKH7_2017.json,2026-10-28,
+LKOH,forts_expiraciya,2016-11-22,2017-06-15,https://iss.moex.com/iss/securities/LKM7_2017.json,2026-10-28,
+LKOH,forts_expiraciya,2016-11-22,2017-09-21,https://iss.moex.com/iss/securities/LKU7_2017.json,2026-10-28,
+LKOH,forts_expiraciya,2017-01-03,2017-12-21,https://iss.moex.com/iss/securities/LKZ7_2017.json,2026-10-28,
+LKOH,forts_expiraciya,2017-03-09,2018-03-16,https://iss.moex.com/iss/securities/LKH8_2018.json,2026-10-28,
+LKOH,forts_expiraciya,2017-06-07,2018-06-22,https://iss.moex.com/iss/securities/LKM8_2018.json,2026-10-28,
+LKOH,forts_expiraciya,2017-09-13,2018-09-21,https://iss.moex.com/iss/securities/LKU8_2018.json,2026-10-28,
+LKOH,forts_expiraciya,2017-12-13,2018-12-21,https://iss.moex.com/iss/securities/LKZ8_2018.json,2026-10-28,
+LKOH,forts_expiraciya,2018-03-07,2019-03-22,https://iss.moex.com/iss/securities/LKH9.json,2026-10-28,
+LKOH,forts_expiraciya,2018-06-13,2019-06-21,https://iss.moex.com/iss/securities/LKM9.json,2026-10-28,
+LKOH,forts_expiraciya,2018-09-11,2019-09-19,https://iss.moex.com/iss/securities/LKU9.json,2026-10-28,
+LKOH,forts_expiraciya,2018-12-11,2019-12-19,https://iss.moex.com/iss/securities/LKZ9.json,2026-10-28,
+LKOH,forts_expiraciya,2019-03-12,2020-03-19,https://iss.moex.com/iss/securities/LKH0.json,2026-10-28,
+LKOH,forts_expiraciya,2019-06-11,2020-06-18,https://iss.moex.com/iss/securities/LKM0.json,2026-10-28,
+LKOH,forts_expiraciya,2019-09-09,2020-09-17,https://iss.moex.com/iss/securities/LKU0.json,2026-10-28,
+LKOH,forts_expiraciya,2019-12-09,2020-12-17,https://iss.moex.com/iss/securities/LKZ0.json,2026-10-28,
+LKOH,forts_expiraciya,2020-03-10,2021-03-18,https://iss.moex.com/iss/securities/LKH1.json,2026-10-28,
+LKOH,forts_expiraciya,2020-06-08,2021-06-17,https://iss.moex.com/iss/securities/LKM1.json,2026-10-28,
+LKOH,forts_expiraciya,2020-09-04,2021-09-17,https://iss.moex.com/iss/securities/LKU1.json,2026-10-28,
+LKOH,forts_expiraciya,2020-12-03,2021-12-17,https://iss.moex.com/iss/securities/LKZ1.json,2026-10-28,
+MGNT,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/MNH6_2016.json,2026-10-28,
+MGNT,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/MNM6_2016.json,2026-10-28,
+MGNT,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/MNU6_2016.json,2026-10-28,
+MGNT,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/MNZ6_2016.json,2026-10-28,
+MGNT,forts_expiraciya,2016-11-22,2017-03-16,https://iss.moex.com/iss/securities/MNH7_2017.json,2026-10-28,
+MGNT,forts_expiraciya,2017-01-03,2017-06-15,https://iss.moex.com/iss/securities/MNM7_2017.json,2026-10-28,
+MGNT,forts_expiraciya,2017-01-03,2017-09-21,https://iss.moex.com/iss/securities/MNU7_2017.json,2026-10-28,
+MGNT,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/MNZ7_2017.json,2026-10-28,
+MGNT,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/MNH8_2018.json,2026-10-28,
+MGNT,forts_expiraciya,2017-09-15,2018-06-22,https://iss.moex.com/iss/securities/MNM8_2018.json,2026-10-28,
+MGNT,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/MNU8_2018.json,2026-10-28,
+MGNT,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/MNZ8_2018.json,2026-10-28,
+MGNT,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/MNH9.json,2026-10-28,
+MGNT,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/MNM9.json,2026-10-28,
+MGNT,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/MNU9.json,2026-10-28,
+MGNT,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/MNZ9.json,2026-10-28,
+MGNT,forts_expiraciya,2019-06-10,2020-03-19,https://iss.moex.com/iss/securities/MNH0.json,2026-10-28,
+MGNT,forts_expiraciya,2019-11-22,2020-06-18,https://iss.moex.com/iss/securities/MNM0.json,2026-10-28,
+MGNT,forts_expiraciya,2019-11-22,2020-09-17,https://iss.moex.com/iss/securities/MNU0.json,2026-10-28,
+MGNT,forts_expiraciya,2020-02-19,2020-12-17,https://iss.moex.com/iss/securities/MNZ0.json,2026-10-28,
+MGNT,forts_expiraciya,2020-06-26,2021-03-18,https://iss.moex.com/iss/securities/MNH1.json,2026-10-28,
+MGNT,forts_expiraciya,2020-06-26,2021-06-17,https://iss.moex.com/iss/securities/MNM1.json,2026-10-28,
+MGNT,forts_expiraciya,2021-02-10,2021-09-17,https://iss.moex.com/iss/securities/MNU1.json,2026-10-28,
+MGNT,forts_expiraciya,2021-04-20,2021-12-17,https://iss.moex.com/iss/securities/MNZ1.json,2026-10-28,
+MOEX,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/MEH6_2016.json,2026-10-28,
+MOEX,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/MEM6_2016.json,2026-10-28,
+MOEX,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/MEU6_2016.json,2026-10-28,
+MOEX,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/MEZ6_2016.json,2026-10-28,
+MOEX,forts_expiraciya,2016-11-22,2017-03-16,https://iss.moex.com/iss/securities/MEH7_2017.json,2026-10-28,
+MOEX,forts_expiraciya,2017-01-03,2017-06-15,https://iss.moex.com/iss/securities/MEM7_2017.json,2026-10-28,
+MOEX,forts_expiraciya,2017-03-09,2017-09-22,https://iss.moex.com/iss/securities/MEU7_2017.json,2026-10-28,
+MOEX,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/MEZ7_2017.json,2026-10-28,
+MOEX,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/MEH8_2018.json,2026-10-28,
+MOEX,forts_expiraciya,2017-12-13,2018-06-22,https://iss.moex.com/iss/securities/MEM8_2018.json,2026-10-28,
+MOEX,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/MEU8_2018.json,2026-10-28,
+MOEX,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/MEZ8_2018.json,2026-10-28,
+MOEX,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/MEH9.json,2026-10-28,
+MOEX,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/MEM9.json,2026-10-28,
+MOEX,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/MEU9.json,2026-10-28,
+MOEX,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/MEZ9.json,2026-10-28,
+MOEX,forts_expiraciya,2019-09-09,2020-03-19,https://iss.moex.com/iss/securities/MEH0.json,2026-10-28,
+MOEX,forts_expiraciya,2019-12-09,2020-06-18,https://iss.moex.com/iss/securities/MEM0.json,2026-10-28,
+MOEX,forts_expiraciya,2020-03-10,2020-09-17,https://iss.moex.com/iss/securities/MEU0.json,2026-10-28,
+MOEX,forts_expiraciya,2020-06-08,2020-12-17,https://iss.moex.com/iss/securities/MEZ0.json,2026-10-28,
+MOEX,forts_expiraciya,2020-06-11,2021-03-18,https://iss.moex.com/iss/securities/MEH1.json,2026-10-28,
+MOEX,forts_expiraciya,2020-12-03,2021-06-18,https://iss.moex.com/iss/securities/MEM1.json,2026-10-28,
+MOEX,forts_expiraciya,2021-03-04,2021-09-17,https://iss.moex.com/iss/securities/MEU1.json,2026-10-28,
+MOEX,forts_expiraciya,2021-06-03,2021-12-17,https://iss.moex.com/iss/securities/MEZ1.json,2026-10-28,
+MTSS,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/MTH6_2016.json,2026-10-28,"в ISS серия MTSI"
+MTSS,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/MTM6_2016.json,2026-10-28,
+MTSS,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/MTU6_2016.json,2026-10-28,
+MTSS,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/MTZ6_2016.json,2026-10-28,
+MTSS,forts_expiraciya,2016-11-22,2017-03-16,https://iss.moex.com/iss/securities/MTH7_2017.json,2026-10-28,
+MTSS,forts_expiraciya,2017-01-03,2017-06-15,https://iss.moex.com/iss/securities/MTM7_2017.json,2026-10-28,
+MTSS,forts_expiraciya,2017-03-09,2017-09-22,https://iss.moex.com/iss/securities/MTU7_2017.json,2026-10-28,
+MTSS,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/MTZ7_2017.json,2026-10-28,
+MTSS,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/MTH8_2018.json,2026-10-28,
+MTSS,forts_expiraciya,2017-12-13,2018-06-22,https://iss.moex.com/iss/securities/MTM8_2018.json,2026-10-28,
+MTSS,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/MTU8_2018.json,2026-10-28,
+MTSS,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/MTZ8_2018.json,2026-10-28,
+MTSS,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/MTH9.json,2026-10-28,
+MTSS,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/MTM9.json,2026-10-28,
+MTSS,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/MTU9.json,2026-10-28,
+MTSS,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/MTZ9.json,2026-10-28,
+MTSS,forts_expiraciya,2019-09-09,2020-03-19,https://iss.moex.com/iss/securities/MTH0.json,2026-10-28,
+MTSS,forts_expiraciya,2019-12-09,2020-06-18,https://iss.moex.com/iss/securities/MTM0.json,2026-10-28,
+MTSS,forts_expiraciya,2020-02-06,2020-09-17,https://iss.moex.com/iss/securities/MTU0.json,2026-10-28,
+MTSS,forts_expiraciya,2020-02-06,2020-12-17,https://iss.moex.com/iss/securities/MTZ0.json,2026-10-28,
+MTSS,forts_expiraciya,2020-06-26,2021-03-18,https://iss.moex.com/iss/securities/MTH1.json,2026-10-28,
+MTSS,forts_expiraciya,2020-06-26,2021-06-17,https://iss.moex.com/iss/securities/MTM1.json,2026-10-28,
+MTSS,forts_expiraciya,2021-02-10,2021-09-17,https://iss.moex.com/iss/securities/MTU1.json,2026-10-28,
+MTSS,forts_expiraciya,2021-04-20,2021-12-17,https://iss.moex.com/iss/securities/MTZ1.json,2026-10-28,
+NVTK,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/NKH6_2016.json,2026-10-28,"в ISS серия NOTK"
+NVTK,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/NKM6_2016.json,2026-10-28,
+NVTK,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/NKU6_2016.json,2026-10-28,
+NVTK,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/NKZ6_2016.json,2026-10-28,
+NVTK,forts_expiraciya,2016-11-22,2017-03-16,https://iss.moex.com/iss/securities/NKH7_2017.json,2026-10-28,
+NVTK,forts_expiraciya,2017-01-03,2017-06-15,https://iss.moex.com/iss/securities/NKM7_2017.json,2026-10-28,
+NVTK,forts_expiraciya,2017-03-09,2017-09-22,https://iss.moex.com/iss/securities/NKU7_2017.json,2026-10-28,
+NVTK,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/NKZ7_2017.json,2026-10-28,
+NVTK,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/NKH8_2018.json,2026-10-28,
+NVTK,forts_expiraciya,2017-12-13,2018-06-22,https://iss.moex.com/iss/securities/NKM8_2018.json,2026-10-28,
+NVTK,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/NKU8_2018.json,2026-10-28,
+NVTK,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/NKZ8_2018.json,2026-10-28,
+NVTK,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/NKH9.json,2026-10-28,
+NVTK,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/NKM9.json,2026-10-28,
+NVTK,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/NKU9.json,2026-10-28,
+NVTK,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/NKZ9.json,2026-10-28,
+NVTK,forts_expiraciya,2019-09-09,2020-03-19,https://iss.moex.com/iss/securities/NKH0.json,2026-10-28,
+NVTK,forts_expiraciya,2019-12-09,2020-06-18,https://iss.moex.com/iss/securities/NKM0.json,2026-10-28,
+NVTK,forts_expiraciya,2020-03-10,2020-09-17,https://iss.moex.com/iss/securities/NKU0.json,2026-10-28,
+NVTK,forts_expiraciya,2020-06-08,2020-12-17,https://iss.moex.com/iss/securities/NKZ0.json,2026-10-28,
+NVTK,forts_expiraciya,2020-09-04,2021-03-18,https://iss.moex.com/iss/securities/NKH1.json,2026-10-28,
+NVTK,forts_expiraciya,2020-12-03,2021-06-18,https://iss.moex.com/iss/securities/NKM1.json,2026-10-28,
+NVTK,forts_expiraciya,2021-03-04,2021-09-17,https://iss.moex.com/iss/securities/NKU1.json,2026-10-28,
+NVTK,forts_expiraciya,2021-06-03,2021-12-17,https://iss.moex.com/iss/securities/NKZ1.json,2026-10-28,
+RTKM,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/RTH6_2016.json,2026-10-28,
+RTKM,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/RTM6_2016.json,2026-10-28,
+RTKM,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/RTU6_2016.json,2026-10-28,
+RTKM,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/RTZ6_2016.json,2026-10-28,
+RTKM,forts_expiraciya,2017-01-03,2017-03-17,https://iss.moex.com/iss/securities/RTH7_2017.json,2026-10-28,
+RTKM,forts_expiraciya,2017-01-03,2017-06-16,https://iss.moex.com/iss/securities/RTM7_2017.json,2026-10-28,
+RTKM,forts_expiraciya,2017-03-09,2017-09-22,https://iss.moex.com/iss/securities/RTU7_2017.json,2026-10-28,
+RTKM,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/RTZ7_2017.json,2026-10-28,
+RTKM,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/RTH8_2018.json,2026-10-28,
+RTKM,forts_expiraciya,2017-12-13,2018-06-22,https://iss.moex.com/iss/securities/RTM8_2018.json,2026-10-28,
+RTKM,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/RTU8_2018.json,2026-10-28,
+RTKM,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/RTZ8_2018.json,2026-10-28,
+RTKM,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/RTH9.json,2026-10-28,
+RTKM,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/RTM9.json,2026-10-28,
+RTKM,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/RTU9.json,2026-10-28,
+RTKM,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/RTZ9.json,2026-10-28,
+RTKM,forts_expiraciya,2019-09-09,2020-03-19,https://iss.moex.com/iss/securities/RTH0.json,2026-10-28,
+RTKM,forts_expiraciya,2019-12-09,2020-06-18,https://iss.moex.com/iss/securities/RTM0.json,2026-10-28,
+RTKM,forts_expiraciya,2020-03-10,2020-09-17,https://iss.moex.com/iss/securities/RTU0.json,2026-10-28,
+RTKM,forts_expiraciya,2020-06-08,2020-12-17,https://iss.moex.com/iss/securities/RTZ0.json,2026-10-28,
+RTKM,forts_expiraciya,2020-09-04,2021-03-18,https://iss.moex.com/iss/securities/RTH1.json,2026-10-28,
+RTKM,forts_expiraciya,2020-12-03,2021-06-18,https://iss.moex.com/iss/securities/RTM1.json,2026-10-28,
+RTKM,forts_expiraciya,2021-03-04,2021-09-17,https://iss.moex.com/iss/securities/RTU1.json,2026-10-28,
+RTKM,forts_expiraciya,2021-06-03,2021-12-17,https://iss.moex.com/iss/securities/RTZ1.json,2026-10-28,
+RTSI,forts_expiraciya,2014-12-16,2016-03-15,https://iss.moex.com/iss/securities/RIH6_2016.json,2026-10-28,"RTS (фьючерс на индекс РТС)"
+RTSI,forts_expiraciya,2015-03-19,2016-06-15,https://iss.moex.com/iss/securities/RIM6_2016.json,2026-10-28,
+RTSI,forts_expiraciya,2015-06-11,2016-09-15,https://iss.moex.com/iss/securities/RIU6_2016.json,2026-10-28,
+RTSI,forts_expiraciya,2014-12-12,2016-12-15,https://iss.moex.com/iss/securities/RIZ6_2016.json,2026-10-28,
+RTSI,forts_expiraciya,2015-07-09,2017-03-16,https://iss.moex.com/iss/securities/RIH7_2017.json,2026-10-28,
+RTSI,forts_expiraciya,2016-11-22,2017-06-15,https://iss.moex.com/iss/securities/RIM7_2017.json,2026-10-28,
+RTSI,forts_expiraciya,2016-11-22,2017-09-21,https://iss.moex.com/iss/securities/RIU7_2017.json,2026-10-28,
+RTSI,forts_expiraciya,2016-11-22,2017-12-21,https://iss.moex.com/iss/securities/RIZ7_2017.json,2026-10-28,
+RTSI,forts_expiraciya,2016-03-17,2018-03-15,https://iss.moex.com/iss/securities/RIH8_2018.json,2026-10-28,
+RTSI,forts_expiraciya,2016-06-20,2018-06-21,https://iss.moex.com/iss/securities/RIM8_2018.json,2026-10-28,
+RTSI,forts_expiraciya,2016-08-04,2018-09-20,https://iss.moex.com/iss/securities/RIU8_2018.json,2026-10-28,
+RTSI,forts_expiraciya,2016-12-12,2018-12-20,https://iss.moex.com/iss/securities/RIZ8_2018.json,2026-10-28,
+RTSI,forts_expiraciya,2017-03-10,2019-03-21,https://iss.moex.com/iss/securities/RIH9.json,2026-10-28,
+RTSI,forts_expiraciya,2017-06-09,2019-06-20,https://iss.moex.com/iss/securities/RIM9.json,2026-10-28,
+RTSI,forts_expiraciya,2017-05-22,2019-09-19,https://iss.moex.com/iss/securities/RIU9.json,2026-10-28,
+RTSI,forts_expiraciya,2017-12-15,2019-12-19,https://iss.moex.com/iss/securities/RIZ9.json,2026-10-28,
+RTSI,forts_expiraciya,2018-01-10,2020-03-19,https://iss.moex.com/iss/securities/RIH0.json,2026-10-28,
+RTSI,forts_expiraciya,2018-06-15,2020-06-18,https://iss.moex.com/iss/securities/RIM0.json,2026-10-28,
+RTSI,forts_expiraciya,2018-09-14,2020-09-17,https://iss.moex.com/iss/securities/RIU0.json,2026-10-28,
+RTSI,forts_expiraciya,2018-12-14,2020-12-17,https://iss.moex.com/iss/securities/RIZ0.json,2026-10-28,
+RTSI,forts_expiraciya,2019-03-15,2021-03-18,https://iss.moex.com/iss/securities/RIH1.json,2026-10-28,
+RTSI,forts_expiraciya,2019-06-14,2021-06-17,https://iss.moex.com/iss/securities/RIM1.json,2026-10-28,
+RTSI,forts_expiraciya,2019-09-13,2021-09-16,https://iss.moex.com/iss/securities/RIU1.json,2026-10-28,
+RTSI,forts_expiraciya,2019-12-13,2021-12-16,https://iss.moex.com/iss/securities/RIZ1.json,2026-10-28,
+SBER,forts_expiraciya,2015-06-18,2016-03-18,https://iss.moex.com/iss/securities/SRH6_2016.json,2026-10-28,"в ISS серия SBRF"
+SBER,forts_expiraciya,2015-09-21,2016-06-17,https://iss.moex.com/iss/securities/SRM6_2016.json,2026-10-28,
+SBER,forts_expiraciya,2015-12-22,2016-09-16,https://iss.moex.com/iss/securities/SRU6_2016.json,2026-10-28,
+SBER,forts_expiraciya,2016-03-17,2016-12-16,https://iss.moex.com/iss/securities/SRZ6_2016.json,2026-10-28,
+SBER,forts_expiraciya,2017-01-03,2017-03-17,https://iss.moex.com/iss/securities/SRH7_2017.json,2026-10-28,
+SBER,forts_expiraciya,2017-01-03,2017-06-16,https://iss.moex.com/iss/securities/SRM7_2017.json,2026-10-28,
+SBER,forts_expiraciya,2017-01-03,2017-09-22,https://iss.moex.com/iss/securities/SRU7_2017.json,2026-10-28,
+SBER,forts_expiraciya,2017-01-03,2017-12-22,https://iss.moex.com/iss/securities/SRZ7_2017.json,2026-10-28,
+SBER,forts_expiraciya,2017-03-09,2018-03-16,https://iss.moex.com/iss/securities/SRH8_2018.json,2026-10-28,
+SBER,forts_expiraciya,2017-06-07,2018-06-22,https://iss.moex.com/iss/securities/SRM8_2018.json,2026-10-28,
+SBER,forts_expiraciya,2017-09-13,2018-09-21,https://iss.moex.com/iss/securities/SRU8_2018.json,2026-10-28,
+SBER,forts_expiraciya,2017-12-13,2018-12-21,https://iss.moex.com/iss/securities/SRZ8_2018.json,2026-10-28,
+SBER,forts_expiraciya,2018-03-05,2019-03-22,https://iss.moex.com/iss/securities/SRH9.json,2026-10-28,
+SBER,forts_expiraciya,2018-06-13,2019-06-21,https://iss.moex.com/iss/securities/SRM9.json,2026-10-28,
+SBER,forts_expiraciya,2018-09-11,2019-09-19,https://iss.moex.com/iss/securities/SRU9.json,2026-10-28,
+SBER,forts_expiraciya,2018-12-11,2019-12-19,https://iss.moex.com/iss/securities/SRZ9.json,2026-10-28,
+SBER,forts_expiraciya,2019-02-27,2020-03-19,https://iss.moex.com/iss/securities/SRH0.json,2026-10-28,
+SBER,forts_expiraciya,2019-06-11,2020-06-18,https://iss.moex.com/iss/securities/SRM0.json,2026-10-28,
+SBER,forts_expiraciya,2019-09-09,2020-09-17,https://iss.moex.com/iss/securities/SRU0.json,2026-10-28,
+SBER,forts_expiraciya,2019-12-09,2020-12-17,https://iss.moex.com/iss/securities/SRZ0.json,2026-10-28,
+SBER,forts_expiraciya,2020-03-10,2021-03-18,https://iss.moex.com/iss/securities/SRH1.json,2026-10-28,
+SBER,forts_expiraciya,2020-06-08,2021-06-17,https://iss.moex.com/iss/securities/SRM1.json,2026-10-28,
+SBER,forts_expiraciya,2020-09-04,2021-09-17,https://iss.moex.com/iss/securities/SRU1.json,2026-10-28,
+SBER,forts_expiraciya,2020-12-03,2021-12-17,https://iss.moex.com/iss/securities/SRZ1.json,2026-10-28,
+TATN,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/TTH6_2016.json,2026-10-28,
+TATN,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/TTM6_2016.json,2026-10-28,
+TATN,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/TTU6_2016.json,2026-10-28,
+TATN,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/TTZ6_2016.json,2026-10-28,
+TATN,forts_expiraciya,2017-01-03,2017-03-17,https://iss.moex.com/iss/securities/TTH7_2017.json,2026-10-28,
+TATN,forts_expiraciya,2017-01-03,2017-06-16,https://iss.moex.com/iss/securities/TTM7_2017.json,2026-10-28,
+TATN,forts_expiraciya,2017-03-09,2017-09-22,https://iss.moex.com/iss/securities/TTU7_2017.json,2026-10-28,
+TATN,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/TTZ7_2017.json,2026-10-28,
+TATN,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/TTH8_2018.json,2026-10-28,
+TATN,forts_expiraciya,2017-12-13,2018-06-22,https://iss.moex.com/iss/securities/TTM8_2018.json,2026-10-28,
+TATN,forts_expiraciya,2018-03-02,2018-09-21,https://iss.moex.com/iss/securities/TTU8_2018.json,2026-10-28,
+TATN,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/TTZ8_2018.json,2026-10-28,
+TATN,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/TTH9.json,2026-10-28,
+TATN,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/TTM9.json,2026-10-28,
+TATN,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/TTU9.json,2026-10-28,
+TATN,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/TTZ9.json,2026-10-28,
+TATN,forts_expiraciya,2019-09-09,2020-03-19,https://iss.moex.com/iss/securities/TTH0.json,2026-10-28,
+TATN,forts_expiraciya,2019-12-09,2020-06-18,https://iss.moex.com/iss/securities/TTM0.json,2026-10-28,
+TATN,forts_expiraciya,2020-03-10,2020-09-17,https://iss.moex.com/iss/securities/TTU0.json,2026-10-28,
+TATN,forts_expiraciya,2020-06-08,2020-12-17,https://iss.moex.com/iss/securities/TTZ0.json,2026-10-28,
+TATN,forts_expiraciya,2020-09-04,2021-03-18,https://iss.moex.com/iss/securities/TTH1.json,2026-10-28,
+TATN,forts_expiraciya,2020-12-03,2021-06-18,https://iss.moex.com/iss/securities/TTM1.json,2026-10-28,
+TATN,forts_expiraciya,2021-03-04,2021-09-17,https://iss.moex.com/iss/securities/TTU1.json,2026-10-28,
+TATN,forts_expiraciya,2021-05-17,2021-12-17,https://iss.moex.com/iss/securities/TTZ1.json,2026-10-28,
+VTBR,forts_expiraciya,2015-09-10,2016-03-18,https://iss.moex.com/iss/securities/VBH6_2016.json,2026-10-28,
+VTBR,forts_expiraciya,2015-12-10,2016-06-17,https://iss.moex.com/iss/securities/VBM6_2016.json,2026-10-28,
+VTBR,forts_expiraciya,2016-03-10,2016-09-16,https://iss.moex.com/iss/securities/VBU6_2016.json,2026-10-28,
+VTBR,forts_expiraciya,2016-06-09,2016-12-16,https://iss.moex.com/iss/securities/VBZ6_2016.json,2026-10-28,
+VTBR,forts_expiraciya,2017-01-03,2017-03-17,https://iss.moex.com/iss/securities/VBH7_2017.json,2026-10-28,
+VTBR,forts_expiraciya,2017-01-03,2017-06-16,https://iss.moex.com/iss/securities/VBM7_2017.json,2026-10-28,
+VTBR,forts_expiraciya,2017-03-09,2017-09-22,https://iss.moex.com/iss/securities/VBU7_2017.json,2026-10-28,
+VTBR,forts_expiraciya,2017-06-07,2017-12-22,https://iss.moex.com/iss/securities/VBZ7_2017.json,2026-10-28,
+VTBR,forts_expiraciya,2017-09-13,2018-03-16,https://iss.moex.com/iss/securities/VBH8_2018.json,2026-10-28,
+VTBR,forts_expiraciya,2017-09-15,2018-06-22,https://iss.moex.com/iss/securities/VBM8_2018.json,2026-10-28,
+VTBR,forts_expiraciya,2018-03-07,2018-09-21,https://iss.moex.com/iss/securities/VBU8_2018.json,2026-10-28,
+VTBR,forts_expiraciya,2018-06-13,2018-12-21,https://iss.moex.com/iss/securities/VBZ8_2018.json,2026-10-28,
+VTBR,forts_expiraciya,2018-09-11,2019-03-22,https://iss.moex.com/iss/securities/VBH9.json,2026-10-28,
+VTBR,forts_expiraciya,2018-12-11,2019-06-21,https://iss.moex.com/iss/securities/VBM9.json,2026-10-28,
+VTBR,forts_expiraciya,2019-03-12,2019-09-19,https://iss.moex.com/iss/securities/VBU9.json,2026-10-28,
+VTBR,forts_expiraciya,2019-06-11,2019-12-19,https://iss.moex.com/iss/securities/VBZ9.json,2026-10-28,
+VTBR,forts_expiraciya,2019-06-10,2020-03-19,https://iss.moex.com/iss/securities/VBH0.json,2026-10-28,
+VTBR,forts_expiraciya,2019-11-22,2020-06-18,https://iss.moex.com/iss/securities/VBM0.json,2026-10-28,
+VTBR,forts_expiraciya,2019-11-22,2020-09-17,https://iss.moex.com/iss/securities/VBU0.json,2026-10-28,
+VTBR,forts_expiraciya,2020-02-19,2020-12-17,https://iss.moex.com/iss/securities/VBZ0.json,2026-10-28,
+VTBR,forts_expiraciya,2020-06-26,2021-03-18,https://iss.moex.com/iss/securities/VBH1.json,2026-10-28,
+VTBR,forts_expiraciya,2020-06-26,2021-06-17,https://iss.moex.com/iss/securities/VBM1.json,2026-10-28,
+VTBR,forts_expiraciya,2021-02-10,2021-09-17,https://iss.moex.com/iss/securities/VBU1.json,2026-10-28,
+VTBR,forts_expiraciya,2021-04-20,2021-12-17,https://iss.moex.com/iss/securities/VBZ1.json,2026-10-28,

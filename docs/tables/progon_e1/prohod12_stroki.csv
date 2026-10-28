@@ -1,0 +1,7 @@
+S,strok,ok,ne_schitana,oshibka,osnovnyh,spravochnyh,osnovnyh_ok,spravochnyh_ok,N_klyuch_sha,istochniki,kod,kod_slit,prichiny_ne_schitana,N_osnovnye,N_spravochnye
+S1,10000,8889,1111,0,6003,3997,5336,3553,10000,sobol1:5000;sobol2:5000,d4711aa5482463484217604fe0e1ffeadbda9acd,True,filtr div: условие не определено на данных ×1111,6003,3997
+S2,10000,8889,1111,0,6001,3999,5330,3559,10000,sobol1:5000;sobol2:5000,d4711aa5482463484217604fe0e1ffeadbda9acd,True,filtr div: условие не определено на данных ×1111,6001,3999
+S3,10000,8891,1109,0,5999,4001,5334,3557,10000,sobol1:5000;sobol2:5000,d4711aa5482463484217604fe0e1ffeadbda9acd,True,filtr div: условие не определено на данных ×1109,5999,4001
+S4,10000,8889,1111,0,6002,3998,5337,3552,10000,sobol1:5000;sobol2:5000,d4711aa5482463484217604fe0e1ffeadbda9acd,True,filtr div: условие не определено на данных ×1111,6002,3998
+S5,10000,8889,1111,0,6002,3998,5338,3551,10000,sobol1:5000;sobol2:5000,d4711aa5482463484217604fe0e1ffeadbda9acd,True,filtr div: условие не определено на данных ×1111,6002,3998
+S6,10000,8887,1113,0,6001,3999,5330,3557,10000,sobol1:5000;sobol2:5000,d4711aa5482463484217604fe0e1ffeadbda9acd,True,filtr div: условие не определено на данных ×1113,6001,3999

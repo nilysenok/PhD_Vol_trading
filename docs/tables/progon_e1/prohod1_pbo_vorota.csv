@@ -1,0 +1,7 @@
+S,pbo,razbienij,bez_kandidata,pbo_argmax_sprav,razbienij_argmax,pbo_wf,G1_pbo,G2_plato,G3_sdelki,G4_s9,sdelok_min,vorota_bez_s9,iskhod
+S1,,0,70,1.0,70,1.0,False,False,False,nd,,False,в
+S2,,0,70,1.0,70,0.14285714285714285,False,False,False,nd,,False,в
+S3,,0,70,0.9857142857142858,70,1.0,False,False,False,nd,,False,в
+S4,1.0,1,69,0.9428571428571428,70,0.5,False,False,False,nd,,False,в
+S5,,0,70,0.9714285714285714,70,1.0,False,False,False,nd,,False,в
+S6,,0,70,0.7857142857142857,70,1.0,False,False,False,nd,,False,в
