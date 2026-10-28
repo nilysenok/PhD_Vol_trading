@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "analysis"))
 import overnajt as O  # noqa: E402
 import overnajt_lib as L  # noqa: E402
-from fastbt import a_strogaya as AS, kross_seksiya as ks, msp  # noqa: E402
+from fastbt import a_strogaya as AS, kross_seksiya as ks, msp, zona  # noqa: E402
 from fastbt.data import TICKERS  # noqa: E402
 
 HEADER = "# реверс раунд 1, 2022–2024, справочно, без выбора"
@@ -91,7 +91,7 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
         if a.period == "test1":
-            f.write(HEADER + "\n")
+            f.write(HEADER + "\n" + zona.shapka_dividendy())
         df.to_csv(f, index=False)
     print(df.round(3).to_string())
     if a.period == "train4":
