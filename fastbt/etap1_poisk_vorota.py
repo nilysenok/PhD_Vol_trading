@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """etap1_poisk_vorota.py — части драйвера поиска этапа 1 (Ж-047): кэш точек, целевая, плато, ворота Ж-044, PBO, DSR.
 
-Контракт строки evaluate: msr_by_year {год: mSR}, excess_d {год: ряд}, sdelok_y {год: сделок}, vyrozhdena.
-Периоды: "train" (2018+2019) и "ctrl2019" (только 2019). Данных не читает.
+Контракт строки evaluate: msr_by_year {год: mSR}, excess_d {год: ряд}, sdelok_y {год: сделок}, vyrozhdena. Периоды: train, ctrl2019, train4 (В1). Данных не читает.
 """
 from __future__ import annotations
 
@@ -50,15 +49,16 @@ class Ledger:
         return len({k for k, _ in self.cache})
 
 
-def obj(res: dict, period: str = "train") -> float:
-    """Целевая Ж-043: min mSR по годам периода (train4 — по 4 годам); любой nan или нехватка года -> nan."""
+def obj(res: dict, period: str | None = None) -> float:
+    """Ж-043: min mSR по имеющимся годам (None/«train» — как раньше, ctrl2019 — один год); train4 — по всем 4, нехватка -> nan."""
     m = {int(y): float(x) for y, x in (res.get("msr_by_year") or {}).items()}
-    v = [m[y] for y in PERIOD_YEARS[period] if y in m]
-    ok = len(v) == len(PERIOD_YEARS[period]) and all(math.isfinite(x) for x in v)
-    return min(v) if ok else float("nan")
+    if period not in (None, "train"):
+        m = {y: m.get(y, float("nan")) for y in PERIOD_YEARS[period]}
+    v = list(m.values())
+    return min(v) if v and all(math.isfinite(x) for x in v) else float("nan")
 
 
-def obj_morris(res: dict, period: str = "train") -> float:
+def obj_morris(res: dict, period: str | None = None) -> float:
     o = obj(res, period)
     return o if math.isfinite(o) else 0.0     # mSR не определён (нет сделок) = нейтрально, эффект не должен стать nan
 
@@ -158,9 +158,9 @@ def gates(led: Ledger, pt: dict, axes: dict, plan: list, pbo: float, s9_check, p
 
 
 def sdelok_ok(sdy: dict, period: str = "train") -> bool:
-    """Ворота Ж-044 G2: сделок >= MIN_SDELOK в КАЖДОМ году периода (нет года или nan — не пройдено)."""
-    got = {int(y): v for y, v in sdy.items()}
-    return all(y in got and got[y] >= MIN_SDELOK for y in PERIOD_YEARS[period])
+    """Ж-044 G2: сделок >= MIN_SDELOK в каждом году (train — в имеющихся, как раньше; train4 — нет года = не пройдено)."""
+    full = period == "train" or set(PERIOD_YEARS[period]) <= {int(y) for y in sdy}
+    return bool(sdy) and full and all(v >= MIN_SDELOK for v in sdy.values())
 
 
 def storony(res: dict) -> dict:

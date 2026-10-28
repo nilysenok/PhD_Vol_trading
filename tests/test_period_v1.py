@@ -105,6 +105,65 @@ def test_nblk_parametr():
     assert sd.pbo_cscv(M.tolist(), 8)["n_splits"] == 70
 
 
+# --- ctrl2019 / Моррис на одном году: старое поведение побайтно ---------------------------------------------------
+def _legacy_obj_morris(res: dict) -> float:
+    v = [float(x) for x in (res.get("msr_by_year") or {}).values()]
+    o = min(v) if v and all(np.isfinite(x) for x in v) else float("nan")
+    return o if np.isfinite(o) else 0.0
+
+
+def test_obj_odin_god_kak_ranshe():
+    r = {"msr_by_year": {2019: 0.7}}
+    assert V.obj(r) == V.obj(r, "train") == 0.7 and V.obj_morris(r) == 0.7 == _legacy_obj_morris(r)
+    assert np.isnan(V.obj(r, "train4")) and V.obj_morris(r, "train4") == 0.0       # В1 с одним годом — нейтрально
+
+
+def test_morris_2019_effekty_nenulevye_i_ravny_rodителю(tmp_path, monkeypatch):
+    from test_etap1_poisk import csv, run
+    _, w = run(tmp_path / "new", morris_2019=True)
+    m = csv(tmp_path / "new", "morris")
+    assert set(w.calls[:20]) == {"ctrl2019"} and m[m.os == "a"].mu_star.item() > 0 and (m.mu_star > 0).any()
+    import fastbt.etap1_poisk as P
+    monkeypatch.setattr(P, "obj_morris", _legacy_obj_morris)
+    run(tmp_path / "old", morris_2019=True)
+    old = csv(tmp_path / "old", "morris")
+    assert m[["os", "rang", "mu_star", "sigma", "n"]].to_csv() == old[["os", "rang", "mu_star", "sigma", "n"]].to_csv()
+
+
+# --- границы окна: первый день метрик, h по прогреву -----------------------------------------------------------------
+def _dates():
+    return pd.bdate_range("2014-06-09", "2019-12-31").to_numpy("datetime64[ns]")
+
+
+def test_window_idx_default_i_v1():
+    from fastbt import etap1
+    d = _dates()
+    s, a, i = etap1.window_idx(d, D.START, 2018, "2020-01-01")
+    assert d[s] >= np.datetime64("2017-01-01") > d[s - 1] and d[a] >= np.datetime64("2018-01-01") > d[a - 1] and i == len(d)
+    s, a, i = etap1.window_idx(d, D.START_V1, 2016, "2020-01-01")
+    assert d[s] >= np.datetime64("2015-01-01") > d[s - 1] and d[a] >= np.datetime64("2016-01-01") > d[a - 1]
+    assert str(d[a])[:10] == "2016-01-01" and str(d[s - 1])[:4] == "2014"        # первый торговый день 2016; 2015 — прогрев
+
+
+def _ev_h(a_idx: int):
+    """Evaluator без данных: позиции — сделки по 2 дня в прогреве (до 40), по 10 дней в train (после 40)."""
+    from types import SimpleNamespace
+    pos = np.zeros(120)
+    for s in range(0, 40, 8):
+        pos[s:s + 2] = 1.0
+    for s in range(40, 120, 10):
+        pos[s:s + 8] = 1.0
+    ev = object.__new__(E.Evaluator)
+    ev.inp = SimpleNamespace(meta={"T": dict(s0=0, a18=a_idx, i1=119)})
+    ev._positions = lambda *a: pos
+    return ev
+
+
+def test_h_po_progrevu_a_ne_po_train():
+    assert _ev_h(40)._h({}, 0.0) == 2.0
+    assert _ev_h(120)._h({}, 0.0) > 2.0                                  # мутация: медиана захватывает train — ловится
+
+
 # --- прогрев 2015 не входит в метрики -------------------------------------------------------------------------------
 def test_progrev_2015_ne_vkhodit_v_metriki():
     x, yrs = np.arange(12.0), np.repeat([2015, 2016, 2017, 2018], 3)
