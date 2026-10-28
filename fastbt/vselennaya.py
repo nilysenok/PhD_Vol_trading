@@ -27,10 +27,18 @@ def _year(d) -> int:
     return y
 
 
+SOSTAV_COL = "date_eff"  # дата вступления состава в силу (не known_from)
+
+
+def rank_year(d) -> int:
+    """Год, по обороту которого ранжируем: прошлый календарный."""
+    return _year(d) - 1
+
+
 @lru_cache(maxsize=None)
-def _sostav_table(path: str) -> tuple[tuple[pd.Timestamp, frozenset], ...]:
-    t = pd.read_csv(path, usecols=["date_eff", "tickers"])
-    rows = [(pd.Timestamp(r.date_eff), frozenset(str(r.tickers).split())) for r in t.itertuples()]
+def _sostav_table(path: str, col: str = "date_eff") -> tuple[tuple[pd.Timestamp, frozenset], ...]:
+    t = pd.read_csv(path, usecols=[col, "tickers"])
+    rows = [(pd.Timestamp(a), frozenset(str(b).split())) for a, b in zip(t[col], t["tickers"])]
     rows.sort(key=lambda x: x[0])
     return tuple(rows)
 
@@ -44,7 +52,7 @@ def sostav(d, sostav_path: Path | str = SOSTAV) -> frozenset:
     _year(d)
     ts = pd.Timestamp(d)
     cur: frozenset = frozenset()
-    for de, tk in _sostav_table(str(sostav_path)):
+    for de, tk in _sostav_table(str(sostav_path), SOSTAV_COL):
         if de <= ts:
             cur = tk
         else:
@@ -67,12 +75,12 @@ def oborot_goda(ticker: str, year: int, root: str = str(DATA_ROOT)) -> float:
 
 def bez_oborota(d, sostav_path: Path | str = SOSTAV, root: Path | str = DATA_ROOT) -> frozenset:
     """Тикеры состава на d без оборота в прошлом году (в U не входят) — для отчёта."""
-    y = _year(d) - 1
+    y = rank_year(d)
     return frozenset(t for t in sostav(d, sostav_path) if oborot_goda(t, y, str(root)) <= 0)
 
 
 def U(d, k: int = 40, sostav_path: Path | str = SOSTAV, root: Path | str = DATA_ROOT) -> frozenset:
-    y = _year(d) - 1
+    y = rank_year(d)
     rows = [(oborot_goda(t, y, str(root)), t) for t in sostav(d, sostav_path)]
     rows = [r for r in rows if r[0] > 0]
     rows.sort(key=lambda r: (-r[0], r[1]))

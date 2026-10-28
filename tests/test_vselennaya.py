@@ -1,5 +1,4 @@
-"""К-а2: вселенная U_d. Синтетика; четыре мутации (mutations.md № 19 и др.) обязаны ловиться."""
-import pandas as pd
+"""К-а2: вселенная U_d. Синтетика; четыре мутации (monkeypatch по fastbt.vselennaya) обязаны ронять штатные ассерты."""
 import pytest
 
 from fastbt import vselennaya as V
@@ -33,6 +32,7 @@ def u(d, env, k=40):
 
 def test_sostav_po_date_eff(env):
     s = env[0]
+    assert V.sostav("2016-03-10", s) == {"A", "B"}  # между known_from (03-02) и date_eff (03-17)
     assert V.sostav("2016-03-16", s) == {"A", "B"}
     assert V.sostav("2016-03-17", s) == {"A", "B", "C"}
     assert V.sostav("2014-12-31", s) == frozenset()
@@ -42,6 +42,10 @@ def test_u_rank_proshlogo_goda_i_topk(env):
     assert u("2016-06-01", env, k=1) == {"A"}  # 2015: A=9 > B=5
     assert u("2017-07-03", env, k=1) == {"C"}  # 2016: C=8
     assert u("2017-07-03", env) == {"B", "C"}
+
+
+def test_sostav_2016_ne_2021(env):
+    assert u("2016-06-01", env) == {"A", "B", "C"}  # состав 2016, не поздний {B, C}
 
 
 def test_tiker_vne_sostava_ne_popadaet(env):
@@ -73,38 +77,38 @@ def test_digest_menyaetsya_pri_podmene_vkhoda(env):
     assert V.digest(s, r) != d0
 
 
-# --- мутации: неверная реализация обязана давать иной ответ на синтетике (т.е. тест её ловит) ---
-def _u_mut(d, env, *, year_shift=0, col="date_eff", fixed_sostav=None, no_filter=False, k=40):
-    s, r = env
-    ts = pd.Timestamp(d)
-    t = pd.read_csv(s)
-    cur = frozenset()
-    if fixed_sostav is not None:
-        cur = fixed_sostav
-    else:
-        for row in t.sort_values(col).itertuples():
-            if pd.Timestamp(getattr(row, col)) <= ts:
-                cur = frozenset(row.tickers.split())
-    pool = frozenset(OB) if no_filter else cur
-    y = ts.year + year_shift
-    rows = sorted(((V.oborot_goda(x, y, str(r)), x) for x in pool), key=lambda z: (-z[0], z[1]))
-    return frozenset(x for v, x in rows[:k] if v > 0)
+# --- мутации: подменяем функцию модуля; штатные тесты выше обязаны упасть ---
+def _shtatnye(env):
+    test_sostav_po_date_eff(env)
+    test_u_rank_proshlogo_goda_i_topk(env)
+    test_sostav_2016_ne_2021(env)
+    test_tiker_vne_sostava_ne_popadaet(env)
 
 
-def test_mut19_oborot_tekushchego_goda_lovitsya(env):
-    assert _u_mut("2016-06-01", env, year_shift=0, k=1) != u("2016-06-01", env, k=1)
+def test_shtatnye_prokhodyat_bez_mutatsii(env):
+    _shtatnye(env)
 
 
-def test_mut_known_from_vmesto_date_eff_lovitsya(env):
-    d = "2016-03-10"  # между known_from (03-02) и date_eff (03-17)
-    assert V.sostav(d, env[0]) == {"A", "B"}
-    assert _u_mut(d, env, year_shift=-1, col="known_from") != u(d, env)
+def _lovitsya(env):
+    with pytest.raises(AssertionError):
+        _shtatnye(env)
 
 
-def test_mut_sostav_2021_v_2016_lovitsya(env):
-    last = frozenset({"B", "C"})
-    assert _u_mut("2016-06-01", env, year_shift=-1, fixed_sostav=last) != u("2016-06-01", env)
+def test_mut19_oborot_tekushchego_goda_lovitsya(env, monkeypatch):
+    monkeypatch.setattr(V, "rank_year", lambda d: V._year(d))
+    _lovitsya(env)
 
 
-def test_mut_tiker_vne_sostava_lovitsya(env):
-    assert _u_mut("2016-06-01", env, year_shift=-1, no_filter=True, k=1) != u("2016-06-01", env, k=1)
+def test_mut_known_from_vmesto_date_eff_lovitsya(env, monkeypatch):
+    monkeypatch.setattr(V, "SOSTAV_COL", "known_from")
+    _lovitsya(env)
+
+
+def test_mut_sostav_2021_v_2016_lovitsya(env, monkeypatch):
+    monkeypatch.setattr(V, "sostav", lambda d, sostav_path=None: frozenset({"B", "C"}))
+    _lovitsya(env)
+
+
+def test_mut_tiker_vne_sostava_lovitsya(env, monkeypatch):
+    monkeypatch.setattr(V, "sostav", lambda d, sostav_path=None: frozenset(OB))
+    _lovitsya(env)
