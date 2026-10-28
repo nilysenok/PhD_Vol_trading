@@ -593,10 +593,12 @@ class Engine:
             turn = np.bincount(di, sides, nd)
         return self._finish(r, gross, exp_, turn, cap)
 
-    def port_rows(self, g, sides, expo, comm=None, cap=1.0):
+    def port_rows(self, g, sides, expo, comm=None, cap=1.0, noch=None):
         """Ж-047 (приёмка #345): портфель по готовым строкам — g = доходность×вес, sides = стороны×вес (с Н5 на
         границах окна), expo = вес×доля баров в рынке. Арифметика `port` (wgt=None): pos·lr → g, |dp|+last·|pos|
-        → sides, |pos| → expo; деление на cnt и `_finish` те же. `port` не менялся."""
+        → sides, |pos| → expo; деление на cnt и `_finish` те же. `port` не менялся.
+        noch (Ж-065 п. 3) — занятость на 18:50 по строкам (fdr.noch_iz_*), только для ставки на свободный капитал;
+        None — старый путь побайтно, `exposure` в выходе от noch не зависит."""
         comm = COMM if comm is None else comm
         di, nd = self.r["date"], len(self.dates)
         net = g - sides * comm
@@ -604,11 +606,14 @@ class Engine:
         gross = np.bincount(di, g, nd) / self.cnt
         exp_ = np.bincount(di, expo, nd) / self.cnt
         turn = np.bincount(di, sides, nd) / self.cnt
-        return self._finish(r, gross, exp_, turn, cap)
+        noch_ = None if noch is None else np.bincount(di, noch, nd) / self.cnt
+        return self._finish(r, gross, exp_, turn, cap, noch_)
 
-    def _finish(self, r, gross, exp_, turn, cap):
+    def _finish(self, r, gross, exp_, turn, cap, noch_=None):
+        """noch_ — уже сведённая по датам занятость на 18:50 (None — ставка по exp_, как раньше). Плечо mg — по exp_."""
         used = cap * exp_
-        fdr = np.maximum(0.0, 1.0 - used) * self.rf * self.cal
+        used_fdr = used if noch_ is None else cap * noch_
+        fdr = np.maximum(0.0, 1.0 - used_fdr) * self.rf * self.cal
         # плата за плечо — за те же календарные дни [d, d_next), что и ставка (аудит FA2a, Н4)
         mg = np.maximum(0.0, used - 1.0) * (self.kr + 0.02) / 365.0 * self.cal
         total = r + fdr - mg

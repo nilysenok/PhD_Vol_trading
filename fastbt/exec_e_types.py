@@ -35,6 +35,7 @@ class Params:
     be: bool = False              # безубыток после +1σ, со следующего бара
     check: str = "bary"           # bary | zakrytie (выходы только по close Н6)
     reentry: bool = True          # False — блок повторного входа до sig == 0 или смены знака
+    vyhod_lim: bool = False       # Ж-065 п. 3: выход по signal/vremya — лимитом на d+1 (иначе close дня решения); нужен k, check="bary"
 
 
 @dataclass
@@ -64,6 +65,8 @@ class Result:
     fdr: np.ndarray
     n_orders: int = 0             # лимитных заявок поставлено
     n_fills: int = 0              # из них исполнено
+    x_orders: int = 0             # лимитных заявок выхода поставлено (vyhod_lim); n_orders/n_fills — только входы
+    x_fills: int = 0              # из них исполнено (причина "lim")
 
     @property
     def pnl(self):

@@ -67,6 +67,8 @@ def _check_params(p: Params) -> None:
         raise ValueError("side: +1 | −1")
     if p.tick is not None and not p.tick >= 0:
         raise ValueError("tick должен быть ≥ 0 (0 — касание)")
+    if p.vyhod_lim and (p.k is None or p.check != "bary"):
+        raise ValueError("vyhod_lim требует k (лимитный вход) и check='bary'")
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None) -> Result:
@@ -105,7 +107,7 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         if d.pusto:
             r.pos[i] = r.pos[i - 1] if i else 0.0
     rf = np.zeros(n) if rf_cal is None else np.asarray(rf_cal, float)
-    return Result(r.trades, gross, r.cost, r.pos, free, free * rf, r.n_orders, r.n_fills)
+    return Result(r.trades, gross, r.cost, r.pos, free, free * rf, r.n_orders, r.n_fills, r.x_orders, r.x_fills)
 
 
 def run_e1(*a, **kw):

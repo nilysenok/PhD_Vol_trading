@@ -29,6 +29,7 @@ class Run:
         s.ref = s.i0 = s.sg = s.ej = None
         s.blocked = 0                               # сторона, пока не сменится сигнал (0 — нет блока)
         s.ext, s.be_on, s.n_orders, s.n_fills = None, False, 0, 0
+        s.xo, s.x_orders, s.x_fills = None, 0, 0    # заявка выхода {X, due, reason} (vyhod_lim, Ж-065 п. 3) и счётчики
         s.zak = p.check == "zakrytie"
         s.sr = "stop"
 
@@ -82,7 +83,7 @@ class Run:
         tr = s.tr
         S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on)    # sr: stop | trail | bu
         S = s._stop_shift(S)
-        return S, take_level(tr.side, tr.entry_px, sg, s.p)
+        return S, None if s.xo is not None else take_level(tr.side, tr.entry_px, sg, s.p)    # висит заявка выхода: тейк снят (ОСО)
 
     def _after_bar(s, j, hi, lo):
         """Экстремум и безубыток обновляются ПОСЛЕ бара: действуют со следующего (внутри бара уровни не меняются)."""
@@ -108,6 +109,9 @@ class Run:
                 hit, px = take_hit(sd, o, h, l, T, s.p.tick)
                 if hit:
                     return s._exit(i, j, b, px, "take")
+            if s.xo is not None and limit_mask(-sd, h, l, s.xo["X"], s.p.tick):     # после стопа: только проход на тик
+                s.x_fills += 1
+                return s._exit(i, j, b, limit_px(-sd, o, s.xo["X"]), "lim")
             if dyn:
                 s._after_bar(j, h, l)
                 S, T = s._levels(j)
@@ -133,11 +137,15 @@ class Run:
         elif s.tr is not None:
             s._scan(i, j, d, 0)
         close = s.close_of(i)
+        if s.xo is not None:                        # заявка выхода не исполнилась за d+1: выход по close с прежней причиной
+            if s.tr is not None:
+                s._exit(i, j, nb - 1, close, s.xo["reason"])
+            s.xo = None
         if s.tr is not None:                        # сигнал дня входа тоже: sig[d+1] != стороне → выход по close d+1
             if s.p.tau is not None and j - s.ej >= s.p.tau and j > s.ej:
-                s._exit(i, j, nb - 1, close, "vremya")
+                s._leave(i, j, nb, close, "vremya")
             elif s.p.exit_signal and s.dir(i) != s.tr.side:
-                s._exit(i, j, nb - 1, close, "signal")
+                s._leave(i, j, nb, close, "signal")
         if s.tr is not None:
             s.gross[i] += s.tr.side * math.log((close + s.dv) / s.ref)
             s.dv = 0.0
@@ -149,6 +157,16 @@ class Run:
         s._decide(i, j, close, nb)
         s.pos[i] = float(s.tr.side) if s.tr is not None else 0.0
         s.free[i] = 1.0 - s.used[i] / nb
+
+    def _leave(s, i, j, nb, close, reason):
+        """Выход по signal/vremya: рынком по close дня решения; при vyhod_lim — лимитная заявка на d+1 (due = j+1, не раньше, Д2)
+        на X = limit_level(−сторона, close, k, σ̂_d, тик). Нет d+1 в окне или σ̂ нечисловая — как раньше, по close."""
+        sg = s.sigma[i]
+        if s.p.vyhod_lim and j + 1 < len(s.ix) and np.isfinite(sg):
+            s.x_orders += 1
+            s.xo = dict(X=limit_level(-s.tr.side, close, s.p.k, sg, s.p.tick), due=j + 1, reason=reason)
+        else:
+            s._exit(i, j, nb - 1, close, reason)
 
     def _place(s, close, sd, sg, j, i, **kw):
         s.n_orders += 1

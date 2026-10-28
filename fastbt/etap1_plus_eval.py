@@ -173,7 +173,7 @@ class PlusEvaluator(AnsamblEvaluator):
             p = params_of(pt, inp.tick[t], h, False, self.comm)
             ww = w * s["mag"]
             res = run_e1(t, days, s["d"], s["sg"], p, close=inp.close_n6[t][:s["b"] + 1], w=ww, win=(a, s["b"]),
-                          div=inp.div[t][:s["b"] + 1])
+                          div=inp.div[t][:s["b"] + 1], **self.fdr_kw())
             if float(pt.get("plata_shorta", 0.0)) > 0:
                 charge_short(res.g, res.trades, days, ww, (a, s["b"]), float(pt["plata_shorta"]))
             out.append((ti, res, a, s["b"]))
