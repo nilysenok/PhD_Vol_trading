@@ -1,9 +1,11 @@
 """П-4 (проверяющий), Л-8: walk-forward и PBO_wf на синтетике. Контракт: docs/zadaniya/2026-10-28_progon_L8_wf.md.
 wf(M, rows, daty, pravilo) -> {"oos_ryad", "oos_by_quarter", ...}; M — T × N; вызов vybor_region перехватывается шпионом (аргументы
 kvartaly_idx / radius / tsel). Модули импортируются внутри тестов: до кода каждый тест красный (без skip и xfail, Ж-081)."""
+import importlib
 import inspect
 import itertools
 import sys
+import types
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +42,24 @@ def kub(mu_q, seed=1):
 
 def sharpe_oos(res):
     return sr(np.asarray(res["oos_ryad"], float)[np.isfinite(res["oos_ryad"])])
+
+
+@pytest.fixture(autouse=True)
+def _dvojnik_l7(monkeypatch):
+    """Пока Л-7 нет в базе — двойник по контракту (ряд = среднее всех столбцов; сам регион проверяет test_p4_region.py).
+    Подмена только на время теста, чтобы тесты региона двойник не видели; progon_wf на каждый тест импортируется заново."""
+    try:
+        importlib.import_module("fastbt.progon_region")
+    except ImportError:
+        m = types.ModuleType("fastbt.progon_region")
+        m.vybor_region = lambda M, rows, daty, kvartaly_idx=None, radius=1, tsel="mediana": dict(
+            centr=None, chleny=[], ryad=np.asarray(M).mean(axis=1), score=0.0, osi=[])
+        monkeypatch.setitem(sys.modules, "fastbt.progon_region", m)
+    monkeypatch.delitem(sys.modules, "fastbt.progon_wf", raising=False)
+    import fastbt
+    monkeypatch.delattr(fastbt, "progon_wf", raising=False)
+    yield
+    sys.modules.pop("fastbt.progon_wf", None)
 
 
 @pytest.fixture
