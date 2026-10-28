@@ -36,6 +36,18 @@
 | 28 | Шорты A выброшены в E (E0 при q = 0 ≠ A) | E0 ≡ A | #311 | `tests/test_sem_e.py::test_e0_q0_equals_full_a_with_shorts` |
 | 29 | B без условия 3 (к2) | отбор B | #314 | тест: см. файл `tests/test_konveyer_bcd.py` ❓ (точного теста нет; ближайший `test_k2_lag_zero_caught`) |
 | 30 | Замок открытия теста ставится после чтения данных | открытие | #313 / #320 | `tests/test_otkrytie_gl4.py::test_zamok_do_chteniya` |
+| 31 | D начисляется в день записи вместо дня гэпа (дивиденды) | дивиденды, день начисления | #370 | `tests/test_dividendy_pnl.py::test_mutatsiya_den_zapisi_vmesto_dnya_gepa_lovitsya` |
+| 32 | Стоп через отсечку не сдвинут на D | дивиденды, стоп | #370 | `tests/test_dividendy_ispolnenie.py::test_mutatsiya_stop_ne_sdvinut_lovitsya` |
+| 33 | Сигналы на реальном ряду вместо скорректированного (подключение в загрузчиках) | дивиденды, загрузчики | #370 | `tests/test_dividendy.py::test_mutatsiya_M3b_load_ticker_bez_adjust_ohlc_lovitsya`; `tests/test_dividendy.py::test_mutatsiya_M3c_load_ticker_nf_bez_adjust_ohlc_lovitsya` |
+| 34 | Дата отсечки +1 / −1 день против дня ценового гэпа | дивиденды, дата отсечки | #400 | `tests/test_dividendy_gap.py::test_mutatsii_lovyatsya` |
+| 35 | Событие, объявленное после d, отдаётся на d (point-in-time) | point-in-time | #395 | `tests/test_sobytiya_pit.py::test_obyavleno_pozzhe_ne_otdayotsya` |
+| 36 | Свечи ≥ 2022 записаны после ответа ISS (без обрезки) | граница 2022 при выгрузке | #391 | `tests/test_vygruzka_vselennaya.py::test_mutation_no_clip_caught` |
+| 37 | Контроль (б) заворачивает события за концом train в окно train | граница train | #380 | `tests/test_zh051_iter_t.py::test_mutaciya_bez_otbrasyvaniya_hvosta_lovitsya` |
+| 38 | Комиссия не в ключе ledger / не в `digest` | ключ кэша | #411 | `tests/test_klyuchi_kesha.py::test_ledger_commission_mutation_caught`; `tests/test_klyuchi_kesha.py::test_digest_commission_mutation_caught` |
+| 39 | Каталог numba-кэша без хэша кода (устаревший скомпилированный код) | ключ кэша | #411 | `tests/test_klyuchi_kesha.py::test_numba_cache_dir_mutation_caught` |
+| 40 | Режим ФДР (`fdr`) не в ключе кэша / ledger | ключ кэша, режим | #398 | `tests/test_fdr_vnutri_dnya.py::test_mutatsiya_fdr_ne_v_klyuche_lovitsya` |
+| 41 | Ворота «сделок ≥ 30» по `prinyato` вместо реальных сделок | ворота отбора | #380 | `tests/test_zh051_iter_t.py::test_mutaciya_vorota_po_prinyato_lovitsya` |
+| 42 | Правило выбора внутри CSCV подменено на argmax (PBO не той процедурой, Ж-080) | PBO, правило выбора | в работе, ветка `pbo-pravilo-kod` | `tests/test_pbo_pravilo.py` после слияния |
 
 Слиты #288, #289; их мутации внесены в строки 17–19. Остальные мутации постановки E §8 (исполнение по барам дня d вместо d+1; E0 при q = 0 ≠ A побайтно; сила сигнала по d+1; комиссия при стопе внутри дня; ставка на капитал, освободившийся внутри дня) обязательны для PR семьи E с первого дня и вносятся в таблицу строками, когда появятся тесты.
 
