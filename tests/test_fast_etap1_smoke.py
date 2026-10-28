@@ -96,6 +96,17 @@ def test_plohie_bary_ta_zhe_oshibka(bad):
         fast_etap1.run("T", days, sig, sigma, Params(), close=close)
 
 
+@pytest.mark.parametrize("seed", range(40))
+def test_osi_run2_idut_etalonom(seed):
+    """Оси Л-2 (zhizn, gap_propusk, ed) ядро не повторяет: результат — тот же, что у exec_e.run (через эталон)."""
+    days, sig, sigma, p, close, div = _case(seed)
+    if p.check != "bary" or p.vyhod_lim or p.k is None or (p.R is not None and p.h is None and p.tau is None):
+        p = dataclasses.replace(p, check="bary", vyhod_lim=False, k=0.5, R=None, h=None)
+    p = dataclasses.replace(p, zhizn=12, gap_propusk=bool(seed % 2))
+    _same(exec_e.run("T", days, sig, sigma, p, close=close, div=div),
+          fast_etap1.run("T", days, sig, sigma, p, close=close, div=div))
+
+
 def test_kesh_golovy_ne_putaet_lenty():
     """Тот же список дней с другим последним днём и другая лента той же длины — свой результат, как у эталона."""
     days, sig, sigma, p, close, div = _case(7)
