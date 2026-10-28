@@ -5,6 +5,8 @@
  S3_GRID/S4_GRID; текст Ж-091 п. 1.2 тоже S3 = канал, S4 = ST. Но fastbt/designs/progon/kub_S3.yaml несёт atr_period/multiplier, а kub_S4.yaml —
  dc_window: файлы куба перепутаны. Тесты следуют коду и Ж-091 (S3 = dc_window, S4 = atr_period+multiplier); проверка куба — только по оси.
 
+ТОЛКОВАНИЕ [Ж-091 п. 1.1] (дирижёр, 28.10): при rodnoy_uroven выход по сигналу выключен, τ остаётся, t_vyhod схлопывается в open2 (не close; tau не net).
+ test_canon_rodnoy_skhlopyvaet_t_vyhod перенацелен: было t_vyhod=close и tau=net. Значения куба для rodnoy_uroven — в test_p9_kuby.py.
 ПОДГОНКА ПОД КОД (28.10, после PR #459 Л-21 и #462 Л-22; требования Ж-091 те же, меняются только сигнатуры):
  П1. Л-21: `rodnoy_uroven(sid, sp, dn, sd=1)` — kwarg `sd`, не `side`; в движок уровень идёт как `tejk_M` формы [2, days] (строка 0 лонг, 1 шорт), не `rod_L`;
      canon при rodnoy схлопывает ещё и tau (= net) — добавлено в test_canon_rodnoy_skhlopyvaet_t_vyhod.
@@ -236,7 +238,7 @@ def _canon(sid="S1", **kw):
 def test_canon_rodnoy_skhlopyvaet_t_vyhod():
     for tv in ("1500", "1700", "open2"):
         q = _canon(tejk_signal=ROD, t_vyhod=tv, R=3.0, k_x=1.5, tau=5)
-        assert q["t_vyhod"] == "close" and q["R"] == "net" and q["k_x"] == "net" and q["tau"] == "net"
+        assert q["t_vyhod"] == "open2" and q["R"] == "net" and q["k_x"] == "net" and q["tau"] == 5     # τ остаётся (толкование [Ж-091 п. 1.1])
     for t in ("net", "k_srednemu", "pol_puti"):                               # остальные значения t_vyhod не трогают
         assert _canon(tejk_signal=t, t_vyhod="1500")["t_vyhod"] == "1500"
 
@@ -441,12 +443,6 @@ def _find(o, key):
 
 def _kub(sid):
     return yaml.safe_load((KUB / f"kub_{sid}.yaml").read_text(encoding="utf-8"))
-
-
-@pytest.mark.parametrize("sid", ["S1", "S2", "S5", "S6"])
-def test_kub_rodnoy_v_osi(sid):
-    f = _find(_kub(sid), "tejk_signal")
-    assert len(f) == 1 and list(f[0]["setka"]) == OSI4 and f[0]["yakor"] == "net"
 
 
 @pytest.mark.parametrize("sid", ["S1", "S2", "S5", "S6"])
