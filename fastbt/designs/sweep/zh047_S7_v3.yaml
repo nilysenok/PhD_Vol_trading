@@ -1,0 +1,33 @@
+# Сетка v3, S7 кросс-секционный разворот (Ж-093 п. 4, Ж-095 1.1). ПРОЕКТ на просмотр владельцу — до коммита в базу не счёт.
+# Определение и данные — §2.6 записки docs/otchety/2026-10-28_arhitektura_v3_proekt.md. Всегда лонг-шорт нейтральна.
+v: 3
+format: zh047-setka-v3
+punkt: "Ж-095 (итерация 27б)"
+obekt: {tip: strategiya, sid: S7, semya: kontrtrend_ks}
+period: {otbor: train4, okno: "2016-01-01..2019-12-31", progrev: 2015, validation: zakryto}
+zaderzhka: "решение 18:50 d, исполнение d+1 по open 10:00 (Ж-086)"
+chestnaya: net
+komissiya: {otbor: 0.0004}
+tselevaya: msr_train4
+
+fiks:
+  signal: {dohodnost: "r_i(d−4…d) − r_IMOEX(d−4…d)", storona: protiv}   # разворот 5 дней (Lehmann 1990)
+  skor: {tip: percentil_ranga_ks, znak: "−(2·pct − 1)", norm: net}      # уже в [−1; 1], сопоставим (Ж-095 1.1); 1.2 не применяется
+  g: [ne_novost_2.5, likvidnost_5pct]
+  vhod: {tip: rynok_open2}
+  derzhanie: {tau: 5, transhi: 5}    # 3.3: контртренд 1–5; 5 перекрывающихся траншей по 1/5 (Jegadeesh–Titman)
+  neytralnost: {po_stoimosti: true}  # лонг = шорт по стоимости каждый вечер
+  t_vyhod: open2
+  pauza_2_stopa: 5
+  stop_div: sdvig
+  sigma: rv22
+  kniga: {stavok_v_sektore: 3, netto_dolya_valovoy: 0.30, target: 0.08}
+
+osi:
+  porog:      {setka: [0.3, 0.5, 0.7], centr: 0.5}        # |s| ≥ порог ↔ крайние 35 / 25 / 15 % сечения
+  rho:        {setka: [0.2, 0.3, 0.5], centr: 0.3}
+  k_s:        {setka: [1.5, 2.0, 3.0], centr: 2.0}
+  okno_knigi: {setka: [21, 63], centr: 21}
+
+canon_v3: []
+N_polnyy_kub: 54

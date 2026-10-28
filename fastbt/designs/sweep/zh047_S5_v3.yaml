@@ -1,0 +1,33 @@
+# Сетка v3, S5 Pivot (Ж-095, поглощает Ж-092). ПРОЕКТ на просмотр владельцу — до коммита в базу не счёт.
+# Спецификация уровней 0–4: docs/otchety/2026-10-28_arhitektura_v3_proekt.md. Не больше 6 осей (Ж-095 а).
+v: 3
+format: zh047-setka-v3
+punkt: "Ж-095 (итерация 27б)"
+obekt: {tip: strategiya, sid: S5, semya: diapazon}
+period: {otbor: train4, okno: "2016-01-01..2019-12-31", progrev: 2015, validation: zakryto}
+zaderzhka: "решение 18:50 d, исполнение d+1 заявками (Ж-086, Ж-091)"
+chestnaya: net
+komissiya: {otbor: 0.0004}
+tselevaya: msr_train4
+
+fiks:
+  signal: {pivot_period: weekly, pivot_type: classic, filter_set: 3}   # ishodnoe; monthly убран (Ж-092 S5.4)
+  skor: {tip: rasstoyanie_do_P_v_sigma, obrezka: 3.0, norm: rang_252_pul_Sk, min_nabl: 20}
+  g: [ne_novost_2.5, likvidnost_5pct]                       # согласие с рынком для диапазона Ж-095 не задаёт → 1
+  vhod: {tip: limit_na_uroven, uroven: "S1 (лонг) / R1 (шорт) текущей недели", zhizn: den}
+  t_vyhod: open2
+  pauza_2_stopa: 5
+  stop_div: sdvig
+  sigma: rv22
+  kniga: {stavok_v_sektore: 3, netto_dolya_valovoy: 0.30, target: 0.08}
+
+osi:
+  porog:      {setka: [0.3, 0.5, 0.7], centr: 0.5}
+  rho:        {setka: [0.2, 0.3, 0.5], centr: 0.3}
+  k_s:        {setka: [1.5, 2.0, 3.0], centr: 2.0}         # 2.4: стоп в σ у всех (заменяет «стоп за S2/R2» Ж-092 S5.3)
+  okno_knigi: {setka: [21, 63], centr: 21}
+  vyhod_diap: {setka: [protivopolozhnyy, k_srednemu], centr: protivopolozhnyy}   # 2.3: R1/S1 (Ж-095) или P (Ж-084/092) — конфликт К-3
+  tau:        {setka: [5, 10], centr: 10}                  # 3.3: диапазон 5–10 дней
+
+canon_v3: []
+N_polnyy_kub: 216

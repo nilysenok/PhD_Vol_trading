@@ -1,0 +1,34 @@
+# Сетка v3, S4 Supertrend (Ж-095, поглощает Ж-092). ПРОЕКТ на просмотр владельцу — до коммита в базу не счёт.
+# Спецификация уровней 0–4: docs/otchety/2026-10-28_arhitektura_v3_proekt.md. Не больше 6 осей (Ж-095 а).
+# S4 = Supertrend (atr_period, multiplier), как zh047_S4.yaml и kub_S4.yaml после #461.
+v: 3
+format: zh047-setka-v3
+punkt: "Ж-095 (итерация 27б)"
+obekt: {tip: strategiya, sid: S4, semya: trend}
+period: {otbor: train4, okno: "2016-01-01..2019-12-31", progrev: 2015, validation: zakryto}
+zaderzhka: "решение 18:50 d, исполнение d+1 заявками (Ж-086, Ж-091)"
+chestnaya: net
+komissiya: {otbor: 0.0004}
+tselevaya: msr_train4
+
+fiks:
+  signal: {atr_period: 14, multiplier: 3.0, er_okno: 10}    # ishodnoe; пробой — смена стороны линии ST на close d
+  skor: {tip: er_x_znak_proboya, norm: rang_252_pul_Sk, min_nabl: 20}
+  g: [ne_novost_2.5, soglasie_imoex_ma50, likvidnost_5pct]
+  otkat: {sdvig_atr: 0.5, dney: 3}   # лимит на линию ST дня сигнала ± 0,5·ATR14
+  vyhod: {treyl_atr: 2.0, chast: {dolya: 0.5, na_R: 1.0}, tau: net}
+  t_vyhod: open2                     # обратный сигнал — стоп-заявка на линии ST, пересчёт каждый вечер (Ж-091 п. 1.2)
+  pauza_2_stopa: 5
+  stop_div: sdvig
+  sigma: rv22
+  kniga: {stavok_v_sektore: 3, netto_dolya_valovoy: 0.30, target: 0.08}
+
+osi:
+  porog:      {setka: [0.3, 0.5, 0.7], centr: 0.5}
+  rho:        {setka: [0.2, 0.3, 0.5], centr: 0.3}
+  k_s:        {setka: [1.5, 2.0, 3.0], centr: 2.0}
+  okno_knigi: {setka: [21, 63], centr: 21}
+  vhod_tip:   {setka: [stop_zayavka, otkat], centr: stop_zayavka}
+
+canon_v3: []
+N_polnyy_kub: 108

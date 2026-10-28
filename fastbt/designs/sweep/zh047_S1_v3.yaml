@@ -1,0 +1,34 @@
+# Сетка v3, S1 Z-score (Ж-095, поглощает Ж-092). ПРОЕКТ на просмотр владельцу — до коммита в базу не счёт.
+# Спецификация уровней 0–4: docs/otchety/2026-10-28_arhitektura_v3_proekt.md. Не больше 6 осей (Ж-095 а).
+# Порядок значений на оси = соседство. N = полный куб после canon_v3 (§3 записки), перебор — полная сетка.
+v: 3
+format: zh047-setka-v3
+punkt: "Ж-095 (итерация 27б)"
+obekt: {tip: strategiya, sid: S1, semya: kontrtrend}
+period: {otbor: train4, okno: "2016-01-01..2019-12-31", progrev: 2015, validation: zakryto}
+zaderzhka: "решение 18:50 d, исполнение d+1 заявками (Ж-086, Ж-091)"
+chestnaya: net                       # одна выборка train4; честная половина — CSCV/PBO (Ж-080)
+komissiya: {otbor: 0.0004}
+tselevaya: msr_train4                # Ж-090 п. 1; условие: mSR каждого года > 0
+
+fiks:                                # не оси: значения v3 для всех точек S1
+  signal: {ma_window: 20, z0: 2.0, obrezka_z: 3.0}          # ishodnoe ekviv_20 (❓ В-1)
+  skor: {tip: z_sverh_poroga, norm: rang_252_pul_Sk, min_nabl: 20}
+  g: [ne_novost_2.5, soglasie_otn_z, likvidnost_5pct]       # уровень 1.3, произведение индикаторов
+  vhod: {tip: limit, k_e: 0.5, ed: sigma, zhizn: den}       # 2.1, срок 1 день (❓ В-2)
+  t_vyhod: open2                     # τ исполняется по open 10:00 x+1 (Ж-086); сигнальный выход выключен (Ж-092 S1.4)
+  pauza_2_stopa: 5                   # 2.4, дней
+  stop_div: sdvig                    # 2.4, сдвиг стопа на дивиденд (мутация № 32)
+  sigma: rv22                        # σ_d для размера и уровней (уровень 5 меняет на σ̂)
+  kniga: {stavok_v_sektore: 3, netto_dolya_valovoy: 0.30, target: 0.08}   # 3.1–3.2
+
+osi:
+  porog:       {setka: [0.3, 0.5, 0.7], centr: 0.5}        # 1.4, |s_итог| ≥ порог
+  rho:         {setka: [0.2, 0.3, 0.5], centr: 0.3}        # 2.2, % капитала на ставку (❓ В-4: вырождена под таргетом книги)
+  k_s:         {setka: [1.5, 2.0, 3.0], centr: 2.0}        # 2.4, стоп в σ_d
+  okno_knigi:  {setka: [21, 63], centr: 21}                # 3.2, окно таргета книги, дни до d−1
+  tau:         {setka: [3, 5], centr: 3}                   # 2.3, дней; исполнение по t_vyhod
+  tejk_signal: {setka: [k_srednemu, pol_puti, rodnoy_uroven], centr: k_srednemu}   # 2.3; net убран (выход к среднему обязателен)
+
+canon_v3: []                         # у S1 схлопываний нет: rodnoy_uroven τ НЕ выключает (Ж-095 2.3, отличие от canon_v2)
+N_polnyy_kub: 324

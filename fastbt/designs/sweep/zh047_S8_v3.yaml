@@ -1,0 +1,33 @@
+# Сетка v3, S8 кросс-секционный моментум 12–1 (Ж-093 п. 4, Ж-095 1.1). ПРОЕКТ на просмотр владельцу — до коммита в базу не счёт.
+# Определение и данные — §2.6 записки docs/otchety/2026-10-28_arhitektura_v3_proekt.md. Всегда лонг-шорт нейтральна.
+v: 3
+format: zh047-setka-v3
+punkt: "Ж-095 (итерация 27б)"
+obekt: {tip: strategiya, sid: S8, semya: momentum_ks}
+period: {otbor: train4, okno: "2016-01-01..2019-12-31", progrev: 2015, validation: zakryto}
+zaderzhka: "решение 18:50 d, исполнение d+1 по open 10:00 (Ж-086)"
+chestnaya: net
+komissiya: {otbor: 0.0004}
+tselevaya: msr_train4
+
+fiks:
+  signal: {dohodnost: "log(close d−21 / close d−252)", storona: po_trendu}   # 12–1 (Jegadeesh–Titman 1993); нет 252 дней истории — тикер вне сечения
+  skor: {tip: percentil_ranga_ks, znak: "2·pct − 1", norm: net}
+  g: [ne_novost_2.5, likvidnost_5pct]
+  vhod: {tip: rynok_open2}
+  derzhanie: {tau: 21, transhi: 3}   # 3.3: моментум 20–60; ребаланс трети книги раз в 7 торговых дней
+  neytralnost: {po_stoimosti: true}
+  t_vyhod: open2
+  pauza_2_stopa: 5
+  stop_div: sdvig
+  sigma: rv22
+  kniga: {stavok_v_sektore: 3, netto_dolya_valovoy: 0.30, target: 0.08}
+
+osi:
+  porog:      {setka: [0.3, 0.5, 0.7], centr: 0.5}
+  rho:        {setka: [0.2, 0.3, 0.5], centr: 0.3}
+  k_s:        {setka: [1.5, 2.0, 3.0], centr: 3.0}         # центр 3σ: горизонт месяц
+  okno_knigi: {setka: [21, 63], centr: 21}
+
+canon_v3: []
+N_polnyy_kub: 54
