@@ -229,7 +229,7 @@ PBO итерации 1 по общей матрице: S1 0,70; S2 0,63; S3 0,71
 
 ## Реестр гейтов: закрыто 5 из 5
 
-Гейты — `/private/tmp/claude-501/-Users-nilysenok-Desktop--------PhD-Vol-trading/b58320a0-0dac-4690-a8f8-b32419175dd9/scratchpad/GATES_L2.md`; EVIDENCE — в описании PR.
+Гейты — таблица ниже; EVIDENCE — в описании PR #408.
 
 | № | результат | CHECK |
 |---|---|---|
