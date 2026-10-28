@@ -142,6 +142,44 @@ def test_mutaciya_pbo_tolko_svoya_matritsa_lovitsya(tmp_path, monkeypatch):
         _proverka_pbo(tmp_path)
 
 
+class Zapis(FakeTev):
+    def __init__(self):
+        super().__init__()
+        self.vyzovy = []
+
+    def rows(self, events, *a, **kw):
+        self.vyzovy.append({t: list(ev) for t, ev in events.items()})
+        return super().rows(events, *a, **kw)
+
+
+def _proverka_hvosta():
+    """Ряд 530 дней: последние 10 — 2020 (как `inp` до 2020-01-03). Событие в хвосте не должно попасть в контроли."""
+    yrs = {"AAA": np.r_[IDX.year.to_numpy(), np.full(10, 2020)]}
+    tev = Zapis()
+    D.kontroli(D.Ctx(tev, yrs), {"AAA": [(100, 1, 2.0), (525, 1, 2.0)]}, 5, 1.0, 18)
+    assert len(tev.vyzovy) == 40
+    for ev in tev.vyzovy:
+        assert len(ev["AAA"]) == 1 and all(d < 520 for d, _, _ in ev["AAA"])        # пришедших из-за границы train нет
+
+
+def test_kontroli_ne_beryut_sobytiya_za_train():
+    _proverka_hvosta()
+
+
+def test_mutaciya_bez_otbrasyvaniya_hvosta_lovitsya(monkeypatch):
+    monkeypatch.setattr(D, "v_train", lambda events, years: events)
+    with pytest.raises(AssertionError):
+        _proverka_hvosta()
+
+
+def test_build_ctx_bez_dannyh_dayot_ponyatnyi_stop(monkeypatch, tmp_path):
+    """Причина KeyError 'date': в копии нет data/regen/D25/bars1m → пустые 5-минутки; драйвер называет причину."""
+    from fastbt import bars5m
+    monkeypatch.setattr(bars5m, "SRC", tmp_path / "net_takoy")
+    with pytest.raises(SystemExit, match="FASTBT_BARS1M"):
+        D.build_ctx()
+
+
 def test_kontroli_i_sverka_dnevnogo_puti(tmp_path):
     ctx = _ctx(tmp_path)
     ev = D._by_t(FakeMod.sobytiya(None, {"g0": 0.0, "tau": 5}))

@@ -1,11 +1,9 @@
 """Драйвер итераций 16–20 Ж-051 (стратегии T16–T20; контракт #376 §2.7, К-T1). Только train 2018–2019, счёт не запускается здесь.
 
-Запуск: FASTBT_MAIN=<копия> python -m fastbt.zh051_iter_t --it 16 [17 ...]
-План — строки итерации из `setki_12_16_25.csv` (число = N_iteracii). События — `fastbt.t{NN}_*.sobytiya(inp, osi)`, вход
-модуль отдаёт сам (`vhod()`), порог веса — `porog(osi)` (нет — 1,0). Оценка — `t_eval.TEvaluator`. Ledger T{it}: ключ
-(("T", konfig), "train"), пишется один раз (`zapisat_ledger`). Центр — плато radius 1, ничья ≤ 0,05 → меньший σ126; досчёт k_s
-в центре; контроли (б) сдвиг маски ≥ 63 дней и (а) случайные дни, 20 + 20, вне ledger. PBO — свой и по ledger 16–20.
-"""
+Запуск: FASTBT_MAIN=<копия> [FASTBT_BARS1M=<1-минутки D25>] python -m fastbt.zh051_iter_t --it 16 [17 ...]
+План — `setki_12_16_25.csv` (N строк = N_iteracii). События — `sobytiya(inp, osi)`, вход — `vhod()`, порог веса — `porog(osi)`
+(нет — 1,0). Ledger T{it}: ключ (("T", konfig), "train"), пишется один раз. Центр — плато radius 1, ничья ≤ 0,05 → меньший
+σ126; досчёт k_s; контроли (б) сдвиг ≥ 63 дней внутри train и (а) случайные дни, 20 + 20, вне ledger; PBO свой и по 16–20."""
 from __future__ import annotations
 
 import argparse
@@ -96,17 +94,22 @@ def pbo_obshchii(it: int, led, root: Path) -> dict:
 def kontroli(ctx: Ctx, events: dict, tau: int, porog: float, it: int) -> dict:
     """(б) циклический сдвиг дней событий ≥ 63 на тикер; (а) случайные дни того же года с тем же числом событий."""
     obj, out = lambda ev: V.obj(ocenka(ctx, ev, tau, porog)), {"b": [], "a": []}     # noqa: E731
-    rng = np.random.default_rng(20261028 + it)
+    events, rng = v_train(events, ctx.years), np.random.default_rng(20261028 + it)
+    n = {t: int((y <= GODY[-1]).sum()) for t, y in ctx.years.items()}                  # сдвиг — только внутри train
     for lag in rng.choice(np.arange(LAG_MIN, 252), size=N_KONTROL, replace=False):
-        n = {t: len(y) for t, y in ctx.years.items()}
         out["b"].append(obj({t: [((d + int(lag)) % n[t], s, x) for d, s, x in ev] for t, ev in events.items()}))
     for i in range(N_KONTROL):
         r, ev2 = np.random.default_rng(1000 * it + i), {}
         for t, ev in events.items():
             yr = ctx.years[t]
-            ev2[t] = [(int(r.choice(np.flatnonzero(yr == yr[d]))), s, x) for d, s, x in ev if d < len(yr)]
+            ev2[t] = [(int(r.choice(np.flatnonzero(yr == yr[d]))), s, x) for d, s, x in ev]
         out["a"].append(obj(ev2))
     return out
+
+
+def v_train(events: dict, years: dict) -> dict:
+    """События только окна train (d ≤ 2019-12-31): ряд `inp` идёт до 2020-01-03, хвост в контроли не попадает."""
+    return {t: [e for e in ev if int(years[t][e[0]]) <= GODY[-1]] for t, ev in events.items()}
 
 
 def p_kontrol(ctrl: list, obj_c: float) -> float:
@@ -125,11 +128,10 @@ def tsentr(rows: list, led, keys: list, grid: dict) -> dict | None:
 
 
 def run_it(it: int, ctx: Ctx, mod, out: Path = OUT) -> dict:       # xtask: длинная — один сквозной проход итерации (план→ledger→центр→контроли→PBO)
-    rows = plan(it)
-    inp = mod.vhod()
+    rows, inp = plan(it), mod.vhod()
     ev = lambda osi: _by_t(mod.sobytiya(inp, osi))                                   # noqa: E731
     por = lambda osi: float(mod.porog(osi)) if hasattr(mod, "porog") else 1.0        # noqa: E731
-    led, sid = V.Ledger(None), f"T{it}"
+    led = V.Ledger(None)
     net_ledger(it, ctx.led)
     for r in rows:
         if r["tip"] == "setka":
@@ -138,21 +140,19 @@ def run_it(it: int, ctx: Ctx, mod, out: Path = OUT) -> dict:       # xtask: дл
     keys = [k for k in rows[0]["osi"]]
     grid = {k: sorted({r["osi"][k] for r in rows if r["tip"] == "setka"}) for k in keys}
     c = tsentr(rows, led, keys, grid)
-    itog = dict(strategiya=sid, iteraciya=it, N_plan=len(rows), centr=c["konfig"] if c else "", proshla=False)
+    itog = dict(strategiya=f"T{it}",iteraciya=it, N_plan=len(rows), centr=c["konfig"] if c else "", proshla=False)
     if c:
         o = {k: c[k] for k in keys}
         for r in (r for r in rows if r["tip"] == "doschet"):
             K.add_cfg(led, ("T", r["konfig"]), dict(o, k_s=r["k_s"]), ocenka(ctx, ev(o), o["tau"], por(o), stop_b=r["k_s"]))
         res, e = led.cache[(("T", c["konfig"]), "train")][1], ev(o)
-        k = kontroli(ctx, e, o["tau"], por(o), it)
-        d = ocenka(ctx, e, o["tau"], por(o), dnevnoy=True)
+        k, d = kontroli(ctx, e, o["tau"], por(o), it), ocenka(ctx, e, o["tau"], por(o), dnevnoy=True)
         s_ok = all(np.max(np.abs(np.asarray(res["excess_d"][y]) - np.asarray(d["excess_d"][y]))) <= 1e-12 for y in GODY)
         itog.update(obj=V.obj(res), p_kontrol_b=p_kontrol(k["b"], V.obj(res)), p_kontrol_a=p_kontrol(k["a"], V.obj(res)),
                     G2_sdelki=vorota_sdelok(res), G3_plato=True, G5_dnevnoy=bool(s_ok), **{f"sdelok_{y}": res["sdelok_y"][y] for y in GODY})
     po = pbo_obshchii(it, led, ctx.led)
-    M = V.matrix(led)
-    itog.update(pbo_svoi=V.pbo(M), N_svoi=led.n_unique, pbo_obsh=po["pbo_obsh"], N_obsh=po["N_obsh"])
-    itog["G1_pbo"] = bool(itog["pbo_svoi"] < V.PBO_MAX)
+    pb = V.pbo(V.matrix(led))
+    itog.update(pbo_svoi=pb, N_svoi=led.n_unique, pbo_obsh=po["pbo_obsh"], N_obsh=po["N_obsh"], G1_pbo=bool(pb < V.PBO_MAX))
     if c:
         itog["proshla"] = all(bool(itog[g]) for g in ("G1_pbo", "G2_sdelki", "G3_plato", "G5_dnevnoy")) and max(
             itog["p_kontrol_b"], itog["p_kontrol_a"]) <= 0.1
@@ -170,9 +170,11 @@ def _by_t(evs) -> dict:
 
 def build_ctx() -> Ctx:
     """Настоящий запуск: входы этапа 1 (до 2019), движок train; порядок `years` = порядок тикеров `TEvaluator`."""
-    from fastbt import etap1, etap1_eval as EE                    # noqa: PLC0415  (данные — только при настоящем запуске)
+    from fastbt import bars5m, etap1, etap1_eval as EE            # noqa: PLC0415  (данные — только при настоящем запуске)
     from fastbt.etap1_data import _one_bar                        # noqa: PLC0415
     from fastbt.t_eval import TEvaluator, TInput                  # noqa: PLC0415
+    if not bars5m.SRC.exists():
+        raise SystemExit(f"{bars5m.SRC}: нет 1-минуток D25 (копия без data/) — задать FASTBT_BARS1M")
     inp = etap1.build_inputs("S1")
     ev = EE.Evaluator("S1", inp, etap1.base_point("S1"))
     xs, years = {}, {}
