@@ -1,0 +1,14 @@
+sverka,col,n,max_abs,nan_mismatch,note
+r2_xs vs d23_corr_raw (>= 2014-07-15),corr_d,50872,0.0,0,
+r2_xs vs d23_corr_raw (>= 2014-07-15),corr_w,50872,0.0,0,
+r2_xs vs d23_corr_raw (>= 2014-07-15),corr_m,50872,0.0,0,
+r2_xs vs d23_corr_raw (>= 2014-07-15),disp_lnrv,50872,0.0,0,
+r2_xs vs d23_corr_raw (>= 2014-07-15),amihud,50872,0.0,0,
+r2_xs vs d23_corr_raw (>= 2014-07-15),lasthour,50872,0.0,0,
+"RRV-порт vs rrv_1850 (SBER, дни без карантина)","rrv_pk,rrv_gk",3008,6.938893903907228e-18,0,
+"RRV-порт vs rrv_1850 (LKOH, дни без карантина)","rrv_pk,rrv_gk",3008,5.204170427930421e-18,0,
+"RRV-порт vs rrv_1850 (AFLT, дни без карантина)","rrv_pk,rrv_gk",2946,6.938893903907228e-18,0,
+гэп vs D13 intraday1850 (> 2014-06-02),gap_on,51344,0.0,0,
+порт RV USD (окно Д24.8) vs rv_ext_daily,rv,2562,0.0,0,
+порт RV BR (окно Д24.8) vs rv_ext_daily,rv,3016,0.0,0,
+GAZP: дней RV (≥ 30 доходностей),rv,3014,,0,2014-06-09 … 2026-02-27

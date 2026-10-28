@@ -1,0 +1,118 @@
+faza: E
+ofat:
+  calib.s2_est:
+  - smrob
+  - sm_pooled
+  - sm_by_ticker
+  - sm_roll1y
+  - sm_roll2y
+  - sm_ewma097
+  calib.kappa:
+  - fit
+  calib.s2_state:
+  - RVI
+  - RVI_volvol
+  - regime2
+  calib.c_qlike:
+  - roll_all
+  - roll_2y
+  calib.mz:
+  - true
+  calib.update:
+  - daily
+  boost.prob:
+  - scale_boost
+  - scale_har
+  - quantile5
+  mh.scheme:
+  - decomp
+  - iterated
+  - joint_h
+  - perlead
+  mh.persist:
+  - OLS
+  - qlike
+  - pos_neg
+  - sqrtRQ
+  mh.slope:
+  - true
+  mh.reconcile:
+  - MinT
+  ens.agg:
+  - median
+  ens.leg_ens:
+  - equal
+  - median
+  - qlike_shrunk_05
+  - qlike_shrunk_075
+  ens.window_ens:
+  - true
+  ens.ticker_bag:
+  - true
+  ens.uncert_shrink:
+  - true
+  ens.ec:
+  - m5
+  - m10
+  ens.range_guard:
+  - true
+  leg.moe:
+  - k2
+  - k3
+  leg.panel:
+  - factor
+  - factor_shrink_025
+  - factor_shrink_05
+  - factor_shrink_state
+  leg.refit:
+  - quarterly
+  - monthly
+  leg.rls_lambda:
+  - 0.995
+  - 0.99
+  boost.boost_refit:
+  - quarterly_warm
+  k16.gate:
+  - conf_seed
+  - regime
+  - shock_fresh
+  - soft
+  k18.lam_to_ref:
+  - true
+  k20.sign_delta:
+  - znak
+  - dolya
+vne_skhemy:
+  abstain:
+  - conf_seed
+  - regime
+  - shock_fresh
+  - uncert_shrink
+  abstain_k:
+  - 3
+  - 5
+  - 10
+  shrink_to_etalon_lambda:
+  - 0.25
+  - 0.5
+  - 0.75
+  - 1.0
+  sign_delta:
+  - 0.1
+  - 0.2
+  - 0.3
+seeds_final:
+- 42
+- 43
+- 44
+- 45
+- 46
+- 47
+- 48
+- 49
+- 50
+- 51
+lib_final: both_avg
+finalists_k: 3
+primechanie: дизайны E = лучший дизайн gate_D + одно изменение ofat; vne_skhemy —
+  параметры модуля G (❓ schema_v2)

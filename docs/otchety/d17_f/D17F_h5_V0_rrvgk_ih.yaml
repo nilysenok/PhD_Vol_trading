@@ -1,0 +1,10 @@
+# Д17, агент F. Сборка: python3 scripts/analysis/d17_f.py --h 5 --designs V0_h5 --variants rrv_gk+iterhar --final D17F_h5_V0_rrvgk_ih
+# Отбор (3 seed, Б0.1 smrob, нога wrap2): OOS 2017–2020 −5,2% к V0 (3 seed: −4,3/−5,7/−5,3%), 2021 −3,5%. Детектор: docs/otchety/d17_f/detektor_*.log
+boost: D17F_h5_V0_rrvgk_ih
+h: 5
+semeystvo: чистый бустинг V0 + признаки RRV/итер. HAR
+rychag: Д17.2+Д17.4
+opisanie: чистый бустинг V0 (XGB/LGBM на ln RV, точки Bv3) + ln RRV Garman–Klass d/w/m + ln итерированного HAR среднего за 5 дней
+regen: data/regen
+test_dir: data/regen/test_locked/D17F_h5_V0_rrvgk_ih
+n_variantov: 18  # все варианты бустинга агента F на h=5 без основ (D12_h5: 6, F2m_h5: 5, V0_h5: 7)

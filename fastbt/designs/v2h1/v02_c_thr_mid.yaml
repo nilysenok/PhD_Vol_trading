@@ -1,0 +1,12 @@
+# C: пороги ранга 0,40–0,60 (мягкая маска)
+vpred: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/sigma_pred_h1_v2.parquet
+fix_c_s12_val: true
+fix_b_median: true
+fix_d_units: true
+fix_c_fill: true
+fix_rate: true
+fix_sharpe: true
+comm: 0.0005
+msp_comm: 0.0005
+horizons: [h1]
+c_thresholds: [0.4, 0.45, 0.5, 0.55, 0.6]

@@ -1,0 +1,44 @@
+# Сетка итерации 9 этапа 1 (Ж-051): тормоз по просадке и лимит на сектор. Коммитится до счёта.
+# Проект — docs/otchety/2026-10-28_zh051_iteracii.md (§2.9, §3, §4). net = выключено = путь P1 побайтно (golden).
+# Лимит на тикер при P1 не связывает (размер «равный» у всех шести, 1/17 капитала на тикер) — ось не считается, см. ↺ в отчёте.
+v: 1
+format: zh051-iteraciya
+punkt: "Ж-051"
+iteraciya: 9
+nazvanie: tormoz_i_limity
+baza:
+  istochnik: "docs/tables/zh047/S{k}_itog_v2.csv"
+  zapusk: "2026-10-28T00:36:00"
+  sha256:
+    S1: ce28779d2d99286fcad388b6e6ee0eb54e1d398ffd73e763cfc21baa1fe5f308
+    S2: 2a3b1d2ed77aaff30882432a2c40eaa08a1d1ab361762a7ada20e150862f997a
+    S3: 5c1673fe95ee3ecb25d96df2b0f0991c7a7131008cccc7dffebb9708b4ec1c47
+    S4: 10ba1226dc73fcc0220e5ca14d1af8e6417073ca23406408ba76a00e3d7dc6aa
+    S5: 2b61897f32ebc36d848099b9b18678f4db6946ebffefdfd8b1895dd34d509f03
+    S6: 916921a1f092ad6eff7339c894426881ce292dc8393009c5feee54b9f7ed086c
+period: {otbor: train, validation: zakryto}
+komissiya: {otbor: 0.0004}
+tselevaya: min_msr_2018_2019
+reshenie: >-
+  Тень — та же точка без тормоза, ряд excess на 2017–2019 (2017 — прогрев, в метрики не входит). Кривая E_d = сумма excess строк ≤ d−1
+  (строка t — интервал close t → close t+1, известна на close t+1). DD_d = max_{s≤d} E_s − E_d. σ_a,d = ст. откл. excess строк d−252…d−1 × √252.
+  Тормоз включается на close d, если DD_d > k·σ_a,d; пока включён — новые входы запрещены (открытые не закрываются).
+  Лимит на сектор — не больше n одновременных сделок стратегии в секторе; занятость и порядок — как в итерации 3 (балл |strength|/σ).
+
+osi:
+  tormoz_k:
+    setka: [0.25, 0.5, 1.0, net]
+    vykl: net
+  vosstanovlenie:                        # выключение тормоза: через 10 или 20 торговых дней, либо когда DD_d < k·σ_a,d / 2
+    setka: [pauza_10, pauza_20, polovina]
+  limit_sektor:
+    setka: [1, 2, net]
+    vykl: net
+
+nedopustimo:
+  - "tormoz_k == net and vosstanovlenie != pauza_20"   # без тормоза восстановление не влияет — одна точка
+N: {S1: 29, S2: 29, S3: 29, S4: 29, S5: 29, S6: 29}    # (1 + 3·3) состояний тормоза × 3 лимита − 1
+kontrol: {tip: krug_sdvig, n: 20, lag_min: 63, seed: 20261028, opisanie: "маска тормоза циклически сдвинута по дням (к2); лимит сектора — случайные секторы той же численности"}
+plato: {osi: [tormoz_k, vosstanovlenie, limit_sektor], radius: 1}
+kriteriy: "docs/otchety/2026-10-28_zh051_iteracii.md §3"
+ledger: {iteraciya: 9, rol: kandidat}

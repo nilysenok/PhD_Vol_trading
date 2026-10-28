@@ -1,0 +1,123 @@
+# R2, агент P: кластер 14 — панельно-факторная архитектура (рынок × идиосинкразия).
+# Протокол v3 — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md (условия — раздел 1; кластер 9 — п. 2.6; запреты — раздел 10).
+# Схема ключей — models/designs/r2/schema_v1.yaml (leg.panel, leg.panel_beta_window, leg.panel_market; общие leg.*, boost.*, data.*).
+# Записан до счёта: определения ниже не меняются после появления метрик (исправление явной ошибки — строкой ↺ с датой).
+agent: P
+script: scripts/analysis/r2_panel.py
+core: scripts/analysis/r2_core.py            # агент S: validate, design_hash, cache_dir, write_series, load_d0, perturb_frame, plant_frame,
+                                             # shift_check, leak_check, run_phase, variants
+max_step: 6                                  # val шагов 1–6 (2016–2021); ≥ 2022 не строится и не пишется
+data:
+  matrix: "r2_core.load_d0 (features_pit_v3 в версии d0, строки <= 2021): rv — RV дня d (нулевой — последним положительным тикера)"
+  g5: data/regen/R2/features/features_r2_v2.parquet          # агент F; читаются только date, ticker, g5_corr_m, g5_corr_w, date <= 2021-12-31
+  g5_sha256: cd78deb7fd38585a68fda06c38602d895821d8d40922adefa3b27ccad12288ca
+  g5_cols: [g5_corr_m, g5_corr_w]            # средняя парная реализованная корреляция 17 тикеров за 22 / 5 дней по день d (G5, K = {0})
+
+# ---- разложение по день d (кластер 14)
+decomp:
+  formula: "ln RV_i,t = α_i,d + β_i,d · ln m_t + u_i,t на окне t ∈ (d − W, d] тикера (W = leg.panel_beta_window), min W/2 строк"
+  market:
+    RV_IMOEX: "m_d = rv_IMOEX_d² / 252 (rv_IMOEX — годовая RV индекса дня d; imoex_low_bars = 1 -> пропуск; пропуск -> последнее известное значение)"
+    RV_eq17: "ln m_d = среднее по тикерам дня d их ln RV_d (равные веса в логах = геометрическое среднее; оценка общего фактора в лог-модели);
+              строится по всем 17 тикерам до среза тикеров. ↺ 26.10, до боевого счёта: арифметическое среднее уровней отвергнуто — артефакт
+              консолидации IRAO 20.01.2015 (RV = 21,9 при обычных 3e-4) один задаёт m_eq17 на 22–132 дня окон"
+  beta_shrink: "к 1 по Васичеку: β̃ = c·1 + (1 − c)·β̂, c = se²(β̂) / (se²(β̂) + τ²_d), τ²_d — дисперсия β̂ по тикерам в день d (≥ tau2_min)"
+  tau2_min: 0.0001
+  alpha: "α̃ = mean_W(ln RV_i) − β̃ · mean_W(ln m)"
+  u_har: "ũ_d = ln RV_d − α̃ − β̃ ln m_d; ũ_w, ũ_m — то же для ln среднего за 5 / 22 дня (тикер и рынок); α̃, β̃ — дня d"
+  target_u: "u^h = ln RV̄_i,(d+1..d+h) − α̃_d − β̃_d · ln m̄_(d+1..d+h)"
+  forecast: "ln ŷ_i = α̃_d + β̃_d · F_mkt + F_u,i"
+
+# ---- рыночная компонента F_mkt = прогноз ln m̄_(d+1..d+h) (ряд по датам; обучение — даты, чьё окно кончилось до 1 янв. vy)
+market_leg:
+  HARJ: "HAR рынка: ln m̄_h ~ 1 + ln m_d + ln m_w + ln m_m (МНК)"
+  HARX: "HAR рынка + Z (harx.fit_en: HAR-члены без штрафа, Z со штрафом эластичной сети, как у ног L); точка λ × α — leg.enet (сетка внутри складки)"
+  RVI_anchor: "Д25.1 (а) на рынке: d25_1.rvi_leg(ticker = MKT, цель — m̄_h), k — медиана m̄_h/v за 252 даты с эмбарго h; калибровка — сдвиг в логах
+               a = mean(ln m̄_h − ln якорь) по датам обучения шага; нет k -> HAR рынка"
+  factor: "0,5 · HAR-X рынка + 0,5 · RVI-якорь (в логах, после калибровки якоря); равные веса — без подгонки"
+  regressors_Z:                            # leg.regressors для HAR-X рынка (рыночный аналог S1–S5 ног L)
+    none: []
+    S1: [ln_rvi2]
+    S2: [ln_rvi2, ln_m_other_m]            # ln среднего за 22 дня второй меры рынка (IMOEX <-> eq17)
+    S3: [ln_rvi2, ln_m_other_m, ln_m_q]    # + ln среднего m за 66 дней
+    S4: [ln_rvi2, ln_m_other_m, ln_m_q]
+    S5: [ln_rvi2, ln_m_other_m, ln_m_q, ln_m_h]   # + ln среднего m за 132 дня
+  calib_note: "s² (кластер 3) не применяется: ряд P сырой, калибровка — общий слой L (r2_calib.py) по ключам calib.*"
+
+# ---- идиосинкразия F_u
+u_leg:
+  har: "u^h ~ 1 + ũ_d + ũ_w + ũ_m: пул-МНК по тикерам и МНК тикера; F_u = (1 − κ)·пул + κ·тикер, κ = leg.pooled_kappa (список — выбор внутри складки);
+        у тикера меньше min_ticker_rows строк обучения -> пул"
+  min_ticker_rows: 50
+  boost: "boost.role = residual: F_u = HAR-u + boost.shrink · LightGBM (пул по тикерам) на остатке HAR-u в обучении (resid_source = in_sample)"
+  boost_features: [u_d, u_w, u_m, x_d, x_w, x_m, beta, ln_rvi2]       # + g5_corr_m, g5_corr_w, если G5 в features дизайна
+  lgbm: {objective: regression, num_leaves: 15, learning_rate: 0.05, min_data_in_leaf: 100, feature_fraction: 0.8,
+         bagging_fraction: 0.8, bagging_freq: 1, lambda_l2: 1.0, num_threads: 1, deterministic: true, force_row_wise: true, verbose: -1}
+  # ↺ 26.10, 18:00 (r2_core.validate, PR #201 / решение дирижёра 17:44): у бустинга только boost.early_stop = qlike_total. Было: 200 деревьев
+  # без остановки. Стало: внутренняя складка r2_core.inner_masks (обучение < vy−1 с эмбарго h, оценка — год vy−1 без окон, заходящих в vy);
+  # вся модель P (рынок, HAR-u, ū^h, w) переобучается на 1 янв. vy−1; остановка по QLIKE итога exp(база + множитель·бустинг);
+  # затем бустинг на обучении шага vy с найденным числом деревьев. Внутреннее обучение < min_inner_train строк — бустинг на шаге не применяется.
+  early_stop: {max_rounds: 300, patience: 30, min_inner_train: 500}
+  recency: "data.recency_halflife: веса 0,5^(возраст в годах / полураспад) от 1 янв. vy — в МНК рынка, HAR-u и LightGBM"
+
+# ---- переключатель leg.panel
+panel:
+  off: "без разложения: F_i = HAR (κ-пул) на ln RV̄_i,h ~ ln RV_d, ln RV_w, ln RV_m (+ бустинг остатка при role = residual) — абляция"
+  factor: "ln ŷ = α̃ + β̃·F_mkt + F_u"
+  factor_shrink_025: "ln ŷ ← (1 − w)·ln ŷ + w·(α̃^(h) + β̃·F_mkt), w = 0,25; α̃^(h) = α̃_d + ū^h — α тикера в масштабе цели h
+                      (ū^h — среднее u^h на обучении шага, κ-смесь пула и тикера; без него цель усадки смещена на поправку Йенсена ln-среднего)"
+  factor_shrink_05: "то же, w = 0,5"
+  factor_shrink_state: "w_d = w_lo + (w_hi − w_lo) · Ê_train(ρ̄_d): ρ̄_d = g5_corr_m дня d, Ê_train — эмпирическая функция распределения ρ̄ по датам
+                        обучения шага (< 1 янв. vy); нет ρ̄ -> середина"
+  w_lo: 0.25
+  w_hi: 0.5
+
+# ---- E6 (блок владельца 20:10, дирижёр 20:3x): усадка поверх готового итогового ряда, без ноги B
+overlay:
+  input: "inputs.base = {design_sha, series} (r2_core.with_inputs; в хэш входит идентичность входа): ряд series дизайна design_sha из кэша
+          (r2_core.load_series; series — имя ряда, иначе — модуль, все его ряды); seed — свой, иначе det"
+  formula: "ln ŷ = (1 − w)·ln F_base + w·(α̃^(h) + β̃·F_mkt) на строках F_base; α̃, β̃ — разложение P по день d (leg.panel_market,
+            leg.panel_beta_window), α̃^(h) = α̃_d + ū^h (κ = leg.pooled_kappa, первая точка), w — по leg.panel (shrink_025 / 05 / state)"
+  market_leg: HARJ                        # F_mkt надстройки — HAR рынка (без Z и сеток): один ряд на базу
+  panels: [factor_shrink_025, factor_shrink_05, factor_shrink_state]
+  other_keys: "прочие ключи дизайна описывают базу (её цепочку); P их не читает"
+  missing: "строки базы без α̃/β̃/F_mkt — база без изменений (ovl_n_bez_panel_val)"
+  output: "ряд P (одна база) или P__<ряд базы>; params_P.csv — ovl_*"
+  leak: "база — столбцы матрицы: шум после среза и подлог «d := d+1» её касаются; part = all — α̃^(h) + β̃·F_mkt модели шага"
+
+# ---- применимость (иначе — NotApplicable до счёта; дизайн не считается и не пишется)
+applicable:
+  leg.type: [HARJ, HARX, RVI_anchor, factor]
+  leg_default_only: [struct, struct_split, moe, robust, refit, rls_lambda, estimator]   # кластеры 11, 13, 15 — у L/M/B
+  data_supported: [recency_halflife]       # прочие data.* — только default
+  boost.role: [none, residual]
+  boost_residual_only_default: [resid_source, monotone, objective, clip_sigma, prob, boost_refit, grid]   # early_stop = qlike_total (validate)
+  boost.lib: [lightgbm]
+  mh: "только default (scheme direct; persist, slope, reconcile off) — многогоризонтные схемы поверх ряда P делает M"
+  features: [G0, G1, G5]                   # G1 (RVI, рынок) — уже в рыночной компоненте; G5 — в признаках бустинга; прочие группы — не P
+  ignored: "calib.* (общий слой L), ens.* (O/E), k16/k18/k20 (слой G, schema_v2), selection.*, guards.* — на ряд P не влияют"
+
+# ---- выход
+out:
+  series: "r2_core.write_series: R2/cache/<hash>/P_h{h}_s{seed|det}_val.parquet; варианты сетки — P__<тег r2_core.variants>"
+  params: "R2/cache/<hash>/params_P.csv (r2_core.params_path(design, 'P'), PR #201; общий params.csv не пишется) — design_sha, h, step, param, value (param = <ряд>:<имя>; параметры LightGBM — с префиксом s<seed>)"
+  dym: data/regen/R2/P/dym                 # дым на Маке (3 тикера) — не кэш, в выбор не идёт
+  blok_sdvig: data/regen/R2/O/blok_sdvig.csv
+
+guards:
+  leak:
+    cuts_dym: ['2017-06-30', '2018-06-29', '2016-12-31', '2017-12-31']   # дым: шаги 1–3 (val 2016–2018)
+    cuts_full: ['2018-06-29', '2020-03-02', '2021-06-30', '2017-12-31', '2019-12-31', '2020-12-31']
+
+dym:
+  tickers: [SBER, LKOH, AFLT]
+  steps: [1, 2, 3]
+  seed: 42
+  h: [1, 5, 22]
+  designs:
+    - {name: P_factor_harx, leg: {panel: factor, type: HARX, regressors: S1, enet: {lambda: 0.01, alpha: 0.5}}}
+    - {name: P_shr025_eq17, leg: {panel: factor_shrink_025, type: factor, regressors: S2, enet: {lambda: 0.1, alpha: 1}, panel_market: RV_eq17, panel_beta_window: 126}}
+    - {name: P_shr05_boost, leg: {panel: factor_shrink_05, type: HARJ}, boost: {role: residual, early_stop: qlike_total}}
+    - {name: P_state_anchor, leg: {panel: factor_shrink_state, type: RVI_anchor, pooled_kappa: [0, 0.5, 1]}, features: [G0, G5]}
+    - {name: P_off, leg: {panel: 'off'}}
+    - {name: P_grid, only_h: [5], leg: {panel: factor, type: HARX, regressors: S1}}

@@ -1,0 +1,22 @@
+# Д16.2 — мета-модель согласования горизонтов (третий круг, владелец 26.10 00:55); код — scripts/analysis/d16_2.py
+name: d16_2_h5
+h: 5
+formula: "ln y_5 = a + b1 ln s1 + b5 ln s5 + b22 ln s22 + b0 ln HAR_5"
+inputs:
+  s1: {boost: D12_h1_A_d812, leg: top5, model: xgb, correction: none}
+  s5: {boost: D12_h5, leg: wrap2, model: xgb, correction: none}
+  s22: {boost: D12_h22, leg: seeds3, model: xgb, correction: none}
+  HAR_5: {model: HAR-J, features: features_pit_v3, correction: B-sm}   # вариант --harx: HARX_h5_val.parquet агента B
+fit:
+  pool: 17 тикеров
+  estimator: гребень на стандартизованных ln-регрессорах (lambda=0 — МНК), свободный член без штрафа
+  grid: {window: [t1, pool], lambda: [0, 10, 100, 1000, 10000], constraint: [free, sum1]}   # 20 дизайнов
+  window: "t1 — val-год шага t-1; pool — val-годы 1..t-1 (на тесте шага t: 1..t)"
+  embargo_days: 5            # последние h торговых дней года оценки исключены (цель уходит в год применения)
+  val_step1: заполнитель в выборке (нужен гибриду для s2 шага 2), в метрики не входит
+correction: B-sm             # по val-остаткам мета-прогноза; val шага t — оценка шага t-1, тест шага t — оценка шага t
+selection: "мин. средний QLIKE val 2017-2020 (шаги 2-5); 2021 (шаг 6) — проверка; критерии 1-4 — gibrid_v17 V0_XGB, шаги 2-6"
+chosen: "pool|lam1000|sum1"
+outputs:
+  val: data/regen/D16_2_h5_{xgb,lgbm}_h5_val.parquet
+  test_no_metrics: data/regen/test_locked/D16_2/D16_2_h5_test.parquet

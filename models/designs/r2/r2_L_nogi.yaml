@@ -1,0 +1,57 @@
+# R2, агент L (бывш. Э): ноги кластера 2 и эконометрические части кластеров 11, 14, 15; калибровка кластера 3 (протокол v3, раздел 6)
+agent: L
+moduli: [scripts/analysis/r2_nogi.py, scripts/analysis/r2_calib.py]
+kontrakt_draivera:   # r2_driver.py (агент S, PR #184), модули L и L3 (r2_L_calib.yaml)
+  run: "run --designs <yaml> --h --seeds --steps --workers  # кэш по хэшу, модуль 'L', DONE_L; panel ≠ off — пропуск (P); код 0/1"
+  leak: "leak --hs {h}  # r2_core.leak_check на дизайнах дыма L (3 тикера, шаги 1–3); код 0/1"
+  odna_realizaciya: "ключи R (leg.refit, rls_lambda, estimator) и M (leg.struct) L сбрасывает в default — их применяют R и M"
+neprimenimye_faktory: []   # L входит во все цепочки: ключи, которыми нога не пользуется (features, boost.*, history_start), на ряд L не влияют
+schema_validacii: schema_v2   # через r2_core.validate
+yadro: scripts/analysis/r2_core.py   # агент S: validate, variants, load_d0, train_mask, shift_check, leak_check, run_phase
+schema: models/designs/r2/schema_v1.yaml
+info_set: d0                         # r2_nogi.load(d0=True): rv_d = RV_d, rv_w = mean RV_{d−4..d}, rv_m = mean RV_{d−21..d}
+embargo: h                           # обучение на точке c: дата строки < c и конец окна цели (_tend{h}) < c
+interfeys:
+  r2_nogi.run_leg(design, M, steps): "{тег варианта: (V, W)}; V — сырой прогноз val, W — ln модели шага на строках year <= vy"
+  r2_nogi.fn_leg(design, seed, steps): "модуль run_phase: ряды leg / leg__<тег>"
+  r2_nogi.leg_ln(design, M, steps): "ln для ролей B: date, ticker, step, part (tr/va), base_ln, emb_ok"
+  r2_nogi.leak_build(design, steps): "build(A) для r2_core.leak_check (part = val / all)"
+  r2_calib.calibrate(design, V, S): "(Vc, таблица стабильности); S = r2_calib.state_frame(M, h)"
+  r2_calib.fn_v0(design, seed, steps): "модуль run_phase для V0-ячеек: нога × калибровка, ряды v0 / v0__<тег>"
+setki_vnutri_skladki:   # r2_core.variants(keys=r2_nogi.grid_keys_L(design))
+  HARX (regressors ≠ none, OLS): [leg.enet.lambda, leg.enet.alpha]   # 3 × 3
+  HARX_pooled: [leg.pooled_kappa]
+  HARX_regime: [leg.regime_count]
+  struct = tau_midas: [leg.tau_window]
+nogi:   # ❓ — определения, которых нет в схеме: умолчание до ответа владельца/архитектора
+  S_terms: {S1: [ln_rvi2], S2: [+ ln_rvm_imoex], S3: [+ lhar_1, lhar_5, lhar_22, pc1], S4: [+ harq, ln_rsv_pos, ln_rsv_neg], S5: [+ ln_rv66, ln_rv132]}
+  HARX: "harx.fit_en (Фриш–Во: HAR без штрафа, S — эластичная сеть, λ = alpha sklearn, α = l1_ratio); robust = Huber или estimator = qmle_level — без штрафа"
+  HARX_regime: "[HAR, S] + I·[1, HAR, S]; 2 режима — RVI > медианы за 252 прошлых дня (Д24.4); 3 — терцили RVI за 252 прошлых дня"
+  HARX_pooled: "β_i = (1−κ)β_pool + κβ_i"
+  HEAVY / RealizedGARCH: "d24_6.fit_forecast: QMLE на годах < vy, фильтр по прошлому (целей в обучении нет)"
+  MIDAS_RV: "ln y = a + b ln Σ_{j<66} w_j(θ) RV_{d−j}, Beta(1, θ), θ ∈ {1,2,3,5,8,12,20,30} по МНК на обучении шага ❓"
+  HAR_perlead: "HAR на ln RV_{d+j}, j = 1..h; ŷ = среднее exp ❓"
+  RVI_anchor: "Д25.1 (а): v·k_i, k — медиана RV_h/v по 252 строкам с эмбарго h; нет k — HAR-J шага"
+  factor: "HAR рынка (leg.panel_market) + пул-МНК отклонения ln y − ln y_рынка на ln(rv/m)_{d,w,m} с интерцептом тикера ❓"
+  robust_Huber: "sklearn HuberRegressor (стандартизация регрессоров), epsilon 1,35"
+  estimator_qmle_level: "QMLE в уровнях: min Σ (y·e^{−xβ} + xβ), старт — МНК в логах"
+  struct (кластер 11): "tau_midas: τ = Σ_{j<W} Beta(1,5) RV_{d−j}; tau_rvi: τ = якорь RVI (h=22); нога — на ln(y/τ_ext) с HAR от ln(RV/τ_d); tau_extend AR1 — пул-AR(1) ln τ на обучении; tau_boost — агент B ❓"
+  struct_split bv_plus_jump: "HAR-CJ d0 (C, J — d/w/m, как vyr_spravochnye.load_cj)"
+  panel (кластер 14): "P_i = α_i + β_i·ln ŷ_рынка (скользящая МНК ln RV_i на ln m за panel_beta_window дней по день d); factor — P_i; shrink_s — (1−s)·нога + s·P_i; shrink_state — s = 0,5 при RVI выше медианы, иначе 0,25 ❓"
+  refit (кластер 15): "quarterly / monthly — переобучение на начало квартала/месяца года vy по строкам с окном цели до этой даты; rls_lambda < 1 — ежедневно, веса λ^(возраст, торговые дни)"
+  data: "recency_halflife (0,5^(возраст/T)), winsor p1_99_by_ticker (обучение), history_start_date — из ctx; target ≠ ln_mean — не L"
+calib:   # r2_calib.py, кластер 3 + calib.update (кластер 15)
+  s2_est: {sm: "шаги t−3..t−1", smrob: "(1,4826 MAD)²", sm_pooled: "все прошлые шаги ❓", sm_by_ticker: "по тикеру, < 50 — общая",
+           sm_roll1y: "1 год", sm_roll2y: "2 года", sm_ewma097: "EWMA λ = 0,97 средней по сечению (e − ē)²"}
+  kappa: {"0.5": "F = exp(s²/2)", fit: "κ ∈ [0; 1,5] по QLIKE на окне"}
+  s2_state: {const: "", RVI: "(e − ē)² ~ 1 + ln RVI²", RVI_volvol: "+ вол-оф-вол (Д26 b)", regime2: "дисперсия по режиму RVI"}
+  s2_state_forma: "s²(d) = s̄²·clip(f(z_d)/f̄_окна, 0,25; 4) ❓"
+  c_qlike: "аддитивная ŷ + c, c = argmin QLIKE (Д26 c); roll_all — все прошлые, roll_2y — 2 года"
+  mz: "ln y = a + b ln ŷ по всем прошлым строкам (Д24.11)"
+  update: {step: "по шагам < t", daily: "по строкам, чьё окно цели кончилось до дня d (эмбарго h)"}
+  stabilnost: "параметры по шагам, скачок > 50% — флаг (аналог c4)"
+kontrol:
+  r2_nogi kontrol: "HARJ, HEAVY, HARX(none) на полной матрице = ряды Э *_emb_d0 (|Δ| ≤ 1e-7); lnall HARJ = HARJ_emb_d0_lnall"
+  r2_calib kontrol: "calib по умолчанию = Б0.1 sm R1 (V0_F Э) на 17 тикерах, шаги 1–6"
+  r2_nogi sverka_F: "G1/G4/G9 F против матрицы L (строки ≤ 2021)"
+dym: {tickers: [SBER, LKOH, AFLT], steps: [1, 2, 3], seed: 42, h: [1, 5, 22], workers: 2}

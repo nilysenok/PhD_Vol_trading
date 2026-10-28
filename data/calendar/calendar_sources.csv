@@ -1,0 +1,105 @@
+file,year,n_plan,n_vneplan,source_url,calendar_published
+cbr,2014,8,2,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2015,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2016,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2017,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2018,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2019,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2020,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2021,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2022,8,3,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2023,8,1,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2024,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2025,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+cbr,2026,8,0,https://www.cbr.ru/dkp/cal_mp/,не видна -> 1 января
+fomc,2014,8,1,https://www.federalreserve.gov/monetarypolicy/fomchistorical2014.htm,не видна -> 1 января
+fomc,2015,8,0,https://www.federalreserve.gov/monetarypolicy/fomchistorical2015.htm,не видна -> 1 января
+fomc,2016,8,0,https://www.federalreserve.gov/monetarypolicy/fomchistorical2016.htm,не видна -> 1 января
+fomc,2017,8,0,https://www.federalreserve.gov/monetarypolicy/fomchistorical2017.htm,не видна -> 1 января
+fomc,2018,8,0,https://www.federalreserve.gov/monetarypolicy/fomchistorical2018.htm,не видна -> 1 января
+fomc,2019,8,1,https://www.federalreserve.gov/monetarypolicy/fomchistorical2019.htm,не видна -> 1 января
+fomc,2020,8,2,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,не видна -> 1 января
+fomc,2021,8,0,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,не видна -> 1 января
+fomc,2022,8,0,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,не видна -> 1 января
+fomc,2023,8,0,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,не видна -> 1 января
+fomc,2024,8,0,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,не видна -> 1 января
+fomc,2025,8,0,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,не видна -> 1 января
+fomc,2026,8,0,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,не видна -> 1 января
+cpi_us,2014,12,0,https://www.bls.gov/schedule/2014/home.htm,не видна -> 1 января
+cpi_us,2015,12,0,https://www.bls.gov/schedule/2015/home.htm,не видна -> 1 января
+cpi_us,2016,12,0,https://www.bls.gov/schedule/2016/home.htm,не видна -> 1 января
+cpi_us,2017,12,0,https://www.bls.gov/schedule/2017/home.htm,не видна -> 1 января
+cpi_us,2018,12,0,https://www.bls.gov/schedule/2018/home.htm,не видна -> 1 января
+cpi_us,2019,12,0,https://www.bls.gov/schedule/2019/home.htm,не видна -> 1 января
+cpi_us,2020,12,0,https://www.bls.gov/schedule/2020/home.htm,не видна -> 1 января
+cpi_us,2021,12,0,https://www.bls.gov/schedule/2021/home.htm,не видна -> 1 января
+cpi_us,2022,12,0,https://www.bls.gov/schedule/2022/home.htm,не видна -> 1 января
+cpi_us,2023,12,0,https://www.bls.gov/schedule/2023/home.htm,не видна -> 1 января
+cpi_us,2024,12,0,https://www.bls.gov/schedule/2024/home.htm,не видна -> 1 января
+cpi_us,2025,11,0,https://www.bls.gov/schedule/2025/home.htm,не видна -> 1 января
+cpi_us,2026,12,0,https://www.bls.gov/schedule/2026/home.htm,не видна -> 1 января
+cpi_ru,2014,0,0,нет данных,нет данных
+cpi_ru,2015,0,0,нет данных,нет данных
+cpi_ru,2016,0,0,нет данных,нет данных
+cpi_ru,2017,0,0,нет данных,нет данных
+cpi_ru,2018,0,0,нет данных,нет данных
+cpi_ru,2019,0,0,нет данных,нет данных
+cpi_ru,2020,0,0,нет данных,нет данных
+cpi_ru,2021,0,0,нет данных,нет данных
+cpi_ru,2022,0,0,нет данных,нет данных
+cpi_ru,2023,0,0,нет данных,нет данных
+cpi_ru,2024,0,0,нет данных,нет данных
+cpi_ru,2025,0,0,нет данных,нет данных
+cpi_ru,2026,0,0,нет данных,нет данных
+dividends_expected,2014,0,0,нет данных,нет данных
+dividends_expected,2015,0,0,нет данных,нет данных
+dividends_expected,2016,0,0,нет данных,нет данных
+dividends_expected,2017,0,0,нет данных,нет данных
+dividends_expected,2018,0,0,нет данных,нет данных
+dividends_expected,2019,0,0,нет данных,нет данных
+dividends_expected,2020,0,0,нет данных,нет данных
+dividends_expected,2021,0,0,нет данных,нет данных
+dividends_expected,2022,0,0,нет данных,нет данных
+dividends_expected,2023,0,0,нет данных,нет данных
+dividends_expected,2024,0,0,нет данных,нет данных
+dividends_expected,2025,0,0,нет данных,нет данных
+dividends_expected,2026,0,0,нет данных,нет данных
+dividends_actual,2014,0,0,нет данных,нет данных
+dividends_actual,2015,0,0,нет данных,нет данных
+dividends_actual,2016,0,0,нет данных,нет данных
+dividends_actual,2017,0,0,нет данных,нет данных
+dividends_actual,2018,0,0,нет данных,нет данных
+dividends_actual,2019,0,0,нет данных,нет данных
+dividends_actual,2020,0,0,нет данных,нет данных
+dividends_actual,2021,0,0,нет данных,нет данных
+dividends_actual,2022,0,0,нет данных,нет данных
+dividends_actual,2023,0,0,нет данных,нет данных
+dividends_actual,2024,0,0,нет данных,нет данных
+dividends_actual,2025,0,0,нет данных,нет данных
+dividends_actual,2026,0,0,нет данных,нет данных
+expirations,2014,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2015,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2016,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2017,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2018,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2019,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2020,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2021,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2022,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2023,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2024,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2025,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+expirations,2026,4,0,https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),не видна -> 1 января
+imoex_rebal,2014,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2015,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2016,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2017,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2018,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2019,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2020,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2021,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2022,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2023,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2024,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2025,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
+imoex_rebal,2026,4,0,https://www.moex.com/ru/factsheet/rebalance,не видна -> 1 января
