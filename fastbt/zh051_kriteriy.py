@@ -28,12 +28,13 @@ def _gt(a: float, b: float) -> bool:                      # a ≥ b с допу�
     return math.isfinite(a) and math.isfinite(b) and _r(a) >= _r(b)
 
 
-def kriteriy(d: dict) -> dict:
+def kriteriy(d: dict, years: tuple = (2018, 2019)) -> dict:
     """П1–П5 по §3. Вход: tsel_pi, tsel_p1, msr_pi{год}, msr_p1{год}, nb_tsel (список tsel соседей, без net),
-    sdelok_pi{год}, s9_ok, g4_ok, pbo_do, pbo_posle, kontrol (список tsel 20 контролей Pi; None — не применимо)."""
+    sdelok_pi{год}, s9_ok, g4_ok, pbo_do, pbo_posle, kontrol (список tsel 20 контролей Pi; None — не применимо).
+    years — годы П2: train (2018, 2019) как раньше; В1 — (2016…2019)."""
     dpi = d["tsel_pi"] - d["tsel_p1"]
     p1 = _gt(dpi, DELTA)
-    p2 = all(_gt(d["msr_pi"][y], d["msr_p1"][y] - DELTA) for y in (2018, 2019))
+    p2 = all(_gt(d["msr_pi"][y], d["msr_p1"][y] - DELTA) for y in years)
     nb = [x - d["tsel_p1"] for x in d["nb_tsel"]]
     p3 = bool(d["plato_ok"]) if "plato_ok" in d else sum(1 for x in nb if math.isfinite(x) and x > 0) >= min(2, len(nb))
     p4 = (all(v >= V.MIN_SDELOK for v in d["sdelok_pi"].values()) and bool(d["s9_ok"]) and bool(d["g4_ok"])

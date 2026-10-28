@@ -26,6 +26,18 @@ from fastbt.etap1_plus_eval import PlusEvaluator
 from fastbt.zh051_plato import PLUS_KEYS, fdr_of, ledger_cls, ledger_name, norm, vybor
 
 SETKI, OUT = Path("fastbt/designs/sweep"), Path("docs/tables/zh051")
+# В1 (train 2016–2019, прогрев 2015): отдельные ledger и таблицы, периоды в одной матрице не смешиваются (Д7)
+LED_V1, OUT_V1, P1_V1 = Path("docs/tables/zh051/_ledger_v1"), Path("docs/tables/zh051_v1"), Path("docs/tables/zh051_v1/it1")
+P1_OLD, YEARS = Path("docs/tables/zh047"), {"train": (2018, 2019), "train4": (2016, 2017, 2018, 2019)}
+
+
+def paths(period: str) -> tuple:
+    """(каталог ledger | None = умолчание, каталог таблиц, каталог itog_v2 с P1) периода."""
+    if period == "train":
+        return None, OUT, P1_OLD
+    if period == "train4":
+        return LED_V1, OUT_V1, P1_V1
+    raise ValueError(f"период {period!r}: допустимо {sorted(YEARS)}")
 
 
 def plan(y: dict) -> tuple:
@@ -40,61 +52,64 @@ def plan(y: dict) -> tuple:
     return out, grid
 
 
-def kontroli(evr, pt: dict, it: int, y: dict) -> list:
+def kontroli(evr, pt: dict, it: int, y: dict, period: str = "train") -> list:
     """20 контролей вне Ledger: it3 — перемешанные баллы, it4 — циклический сдвиг рядов ≥ 63 дней (к2)."""
     kc = y["kontrol"]
     rng = np.random.default_rng(int(kc["seed"]))
     lags = rng.choice(np.arange(kc.get("lag_min", 63), 252), size=K.N_KONTROL, replace=False)
     ks = [("sluchaynyy_rang", kc["seed"] + i) if it == 3 else ("krug_sdvig", int(lags[i])) for i in range(K.N_KONTROL)]
-    return [V.obj(evr.evaluate({**YAKOR, **pt, "kontrol": k}, "train")) for k in ks]
+    return [V.obj(evr.evaluate({**YAKOR, **pt, "kontrol": k}, period), period) for k in ks]
 
 
-def run_it(sid: str, it: int) -> dict:
+def run_it(sid: str, it: int, period: str = "train") -> dict:
+    led_dir, out, p1_dir = paths(period)
+    kw = {} if led_dir is None else {"led": led_dir}                            # умолчание — вызовы как раньше
     y = yaml.safe_load((SETKI / f"zh051_it{it}.yaml").read_text("utf-8"))
     S, run_id = P.load_setka(sid), dt.datetime.now().isoformat(timespec="seconds")
-    evr = PlusEvaluator(sid, etap1.build_inputs(sid), etap1.base_point(sid), 0.0004)
+    inp = etap1.build_inputs(sid) if period == "train" else etap1.build_inputs(sid, period=period)
+    evr = PlusEvaluator(sid, inp, etap1.base_point(sid), 0.0004)
     ev = lambda p, per: evr.evaluate({**YAKOR, **p}, per)                    # noqa: E731
-    led = K.load_ledger(sid, ledger_name(2, fdr_of(evr)), ev, cls=ledger_cls(fdr_of(evr)))
+    led = K.load_ledger(sid, ledger_name(2, fdr_of(evr)), ev, cls=ledger_cls(fdr_of(evr)), **kw)
     if K.sverka_ledger(led, ev):
         raise SystemExit(f"{sid}: СТОП, строки ledger не воспроизведены текущим кодом")
-    row = pd.read_csv(Path("docs/tables/zh047") / f"{sid}_itog_v2.csv", comment="#").iloc[-1]
+    row = pd.read_csv(p1_dir / f"{sid}_itog_v2.csv", comment="#").iloc[-1]
     p1 = {k: P._coerce(str(row[f"p_{k}"]), S["axes"][k]) for k in S["axes"]}
-    pb0, n0, keys0 = V.pbo(V.matrix(led)), led.n_unique, set(led.cache)
+    pb0, n0, keys0 = V.pbo(V.matrix(led, period)), led.n_unique, set(led.cache)
     _, grid = plan(y)
-    r1, s9 = led(p1, "train"), max(etap1.anchor_s9_diff(sid, evr).values()) <= 1e-12
-    best, rows = vybor(led, p1, grid, S["axes"], S["yakor"], s9)
+    r1, s9 = led(p1, period), max(etap1.anchor_s9_diff(sid, evr).values()) <= 1e-12
+    best, rows = vybor(led, p1, grid, S["axes"], S["yakor"], s9, period)
     itog = dict(strategiya=sid, zapusk=run_id, iteraciya=it, N_do=n0, pbo_do=pb0)
     if best is None:
         itog.update(proshla=False, net_sosedey=True, verdikt="не прошла: нет допустимой точки")
     else:
-        itog.update(_ocenit(evr, led, y, p1, r1, best, pb0, it))
-    M = V.matrix(led)
+        itog.update(_ocenit(evr, led, y, p1, r1, best, pb0, it, period))
+    M, ys = V.matrix(led, period), YEARS[period]
     new = [k for k in led.cache if k not in keys0]
-    cols = [np.r_[V.series(led.cache[k][1])[2018], V.series(led.cache[k][1])[2019]] for k in new
-            if {2018, 2019} <= set(V.series(led.cache[k][1]))]
+    cols = [np.concatenate([V.series(led.cache[k][1])[a] for a in ys]) for k in new if set(ys) <= set(V.series(led.cache[k][1]))]
     itog.update(pbo_obshchaya=V.pbo(M), pbo_tolko_it=V.pbo(np.column_stack(cols)) if len(cols) > 1 else float("nan"),
                 N_obshchee=led.n_unique, N_pbo=M.shape[1], N_novyh=led.n_unique - n0)
-    K.write_table(OUT / f"it{it}" / f"{sid}_plan.csv",
+    K.write_table(out / f"it{it}" / f"{sid}_plan.csv",
                   [{"strategiya": sid, **c["e"], **{k: c[k] for k in ("objective", "plateau", "n", "sigma126", "adm", "edge")}}
                    for c in rows])
-    K.write_table(OUT / f"it{it}" / f"{sid}_itog.csv", [itog])
-    K.save_ledger(sid, led, ledger_name(it, fdr_of(evr)))
+    K.write_table(out / f"it{it}" / f"{sid}_itog.csv", [itog])
+    K.save_ledger(sid, led, ledger_name(it, fdr_of(evr)), **kw)
     return itog
 
 
-def _ocenit(evr, led, y, p1, r1, best, pb0, it) -> dict:
+def _ocenit(evr, led, y, p1, r1, best, pb0, it, period: str = "train") -> dict:
     """Выбранная Pi: ворота плато (iteration-1: G1–G5, пересчитаны в `vybor`), контроли, критерий §3 (П1, П2, П4, П5)."""
     e, g = best["e"], best["gates"]
     pi = {**p1, **e}
-    ri = led(pi, "train")
-    ctrl = kontroli(evr, pi, it, y)
-    pbo_after = V.pbo(V.matrix(led))
-    c = K.kriteriy(dict(tsel_pi=V.obj(ri), tsel_p1=V.obj(r1), msr_pi=ri["msr_by_year"], msr_p1=r1["msr_by_year"], nb_tsel=[],
-                        plato_ok=bool(g["G3_plato"]), sdelok_pi=ri["sdelok_y"], s9_ok=g["G5_s9"], g4_ok=g["G4_osi"],
-                        pbo_do=pb0, pbo_posle=pbo_after, kontrol=ctrl))
-    psr = V.psr_dsr(np.concatenate(list(V.series(ri).values())), V.matrix(led), led.n_unique)
+    ri = led(pi, period)
+    ctrl = kontroli(evr, pi, it, y) if period == "train" else kontroli(evr, pi, it, y, period)    # умолчание — вызов как раньше
+    pbo_after = V.pbo(V.matrix(led, period))
+    c = K.kriteriy(dict(tsel_pi=V.obj(ri, period), tsel_p1=V.obj(r1, period), msr_pi=ri["msr_by_year"], msr_p1=r1["msr_by_year"],
+                        nb_tsel=[], plato_ok=bool(g["G3_plato"]), sdelok_pi=ri["sdelok_y"], s9_ok=g["G5_s9"], g4_ok=g["G4_osi"],
+                        pbo_do=pb0, pbo_posle=pbo_after, kontrol=ctrl), YEARS[period])
+    psr = V.psr_dsr(np.concatenate(list(V.series(ri).values())), V.matrix(led, period), led.n_unique)
     ok = c["proshla"] and g["ok"]
-    return dict(**{f"pi_{a}": e.get(a, "") for a in PLUS_KEYS}, obj_pi=V.obj(ri), obj_p1=V.obj(r1), **V.po_godam(ri),
+    return dict(**{f"pi_{a}": e.get(a, "") for a in PLUS_KEYS}, obj_pi=V.obj(ri, period), obj_p1=V.obj(r1, period),
+                **V.po_godam(ri, period),
                 **{k: v for k, v in c.items() if k != "proshla"},
                 **{k: g[k] for k in ("G1_pbo", "G2_sdelki", "G3_plato", "G4_osi", "G5_s9", "osi_pos", "n_sosedey")},
                 net_sosedey=best["net_sosedey"], psr=psr["psr"], dsr=psr["dsr"], proshla=bool(ok),
@@ -157,7 +172,10 @@ def main(argv=None) -> dict:
     ap.add_argument("--it", type=int, required=True, choices=(3, 4, 10, 26))
     ap.add_argument("--strategii", nargs="+", required=True)
     ap.add_argument("--jobs", type=int, default=6)
+    ap.add_argument("--period", choices=sorted(YEARS), default="train", help="train4 — В1: ledger _ledger_v1, таблицы zh051_v1")
     a = ap.parse_args(argv)
+    if a.period != "train" and a.it not in (3, 4):
+        raise SystemExit(f"--period {a.period}: итерация {a.it} на В1 не поддержана (только 3, 4)")
     if a.it == 26:
         print(sdvig_sigma(etap1.build_inputs(a.strategii[0]).sk.tickers))
         with ProcessPoolExecutor(max_workers=max(1, min(a.jobs, 3))) as ex:
@@ -165,13 +183,13 @@ def main(argv=None) -> dict:
     if a.it == 10:
         from fastbt.zh051_iter10 import run_10 as fn
     else:
-        fn = functools.partial(run_it, it=a.it)
+        fn = functools.partial(run_it, it=a.it) if a.period == "train" else functools.partial(run_it, it=a.it, period=a.period)
     with ProcessPoolExecutor(max_workers=max(1, min(a.jobs, 6))) as ex:
         res = list(ex.map(fn, a.strategii))
     if len(res) < 6:
         return dict(stop=None, itog="правило остановки не проверяется: считаны не все 6 стратегий")
     st = K.ostanovka({r["strategiya"]: r["pbo_obshchaya"] for r in res}, {r["strategiya"]: vorota(r) for r in res})
-    K.write_table(OUT / f"it{a.it}" / "ostanovka.csv", [{**st, "iteraciya": a.it, "dalshe": " ".join(st["dalshe"])}])
+    K.write_table(paths(a.period)[1] / f"it{a.it}" / "ostanovka.csv", [{**st, "iteraciya": a.it, "dalshe": " ".join(st["dalshe"])}])
     print(st["itog"])
     return st
 
