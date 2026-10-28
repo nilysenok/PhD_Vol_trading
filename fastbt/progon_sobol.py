@@ -226,7 +226,7 @@ def sverka(n: int, root: Path, fast: bool) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Соболь-драйвер прогона этапа 1 (счёт — только по команде дирижёра)")
-    ap.add_argument("--prohod", type=int, choices=[0, 1, 2], help="0 — пробный (IG-5), 1 — точки 0…4999, 2 — 5000…29999")
+    ap.add_argument("--prohod", type=int, choices=[0, 1, 2], help="0 — пробный (IG-5), 1 — точки 0…4999, 2 — 5000…9999")
     ap.add_argument("--tochek", type=int, default=200, help="для --prohod 0: точек на стратегию")
     ap.add_argument("--processov", type=int, default=MAX_PROC, help=f"процессов, не больше {MAX_PROC}")
     ap.add_argument("--sverka", type=int, help="IG-8: пересчитать N случайных строк ledger и сверить побайтно")
