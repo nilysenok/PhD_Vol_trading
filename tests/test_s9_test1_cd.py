@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from fastbt import data, s9, zona
+from fastbt import data, s9, sigma_z2, zona
 
 DEV_DATES = pd.to_datetime(["2021-12-29", "2021-12-30"])
 Z2_DATES = pd.to_datetime(["2022-01-04", "2022-01-05", "2023-06-01", "2024-12-30", "2024-12-31"])
@@ -16,16 +16,18 @@ def _rv(i, h):
 
 @pytest.fixture
 def z2(tmp_path, monkeypatch):
-    dev = pd.DataFrame({"date": DEV_DATES, "ticker": "SBER", "sigma_h1": 0.1, "sigma_h5": 0.2, "sigma_h22": 0.3}).astype(
-        {"sigma_h1": "float32", "sigma_h5": "float32", "sigma_h22": "float32"})
-    dev.to_parquet(tmp_path / "dev.parquet")
+    dk = tmp_path / "d"
+    dk.mkdir()
+    for h in (1, 5):
+        pd.DataFrame({"date": DEV_DATES, "ticker": "SBER", f"sigma_pred_h{h}": np.float32(0.1 * h)}
+                     ).to_parquet(sigma_z2.dev_path(h, dk))
     kat = tmp_path / "z"
     kat.mkdir()
-    for h in (1, 5, 22):
-        pd.DataFrame({"date": Z2_DATES, "ticker": "SBER", "rv_pred": [_rv(i, h) for i in range(len(Z2_DATES))]}
-                     ).to_parquet(kat / f"final_h{h}__t1.parquet")
-    monkeypatch.setattr(data, "VPRED", tmp_path / "dev.parquet")
-    monkeypatch.setenv("FASTBT_Z2_FINAL3", str(kat))
+    for h in (1, 5):
+        pd.DataFrame({"date": Z2_DATES, "ticker": "SBER", "rv_pred": [_rv(i, h) for i in range(len(Z2_DATES))],
+                      "design": "d0_s2emb"}).to_parquet(sigma_z2.z2_path(h, kat))
+    monkeypatch.setenv("FASTBT_DEV_SIGMA", str(dk))
+    monkeypatch.setenv("FASTBT_Z2_R2FINAL", str(kat))
     data.vpred_df.cache_clear()
     old = s9.PERIOD, s9.YEARS, s9.VAL_START
     s9.set_period("test1")
@@ -95,9 +97,9 @@ def test_mutaciya_sigma_plus_odin_den_lovitsya(z2, monkeypatch):
 
 def test_otkaz_2025_i_mutaciya_bez_otsechki(z2, monkeypatch):
     kat = z2
-    for h in (1, 5, 22):
+    for h in (1, 5):
         pd.DataFrame({"date": pd.to_datetime(["2024-12-31", "2025-01-02"]), "ticker": "SBER", "rv_pred": 0.04}
-                     ).to_parquet(kat / f"final_h{h}__t1.parquet")
+                     ).to_parquet(sigma_z2.z2_path(h, kat))
     data.vpred_df.cache_clear()
     with pytest.raises(PermissionError):
         s9.load_source("hyb_h5")                 # отсечка 2025 стоит
@@ -106,3 +108,53 @@ def test_otkaz_2025_i_mutaciya_bez_otsechki(z2, monkeypatch):
     df = s9.load_source("hyb_h5")
     with pytest.raises(AssertionError):          # ловится проверкой границы зоны: данные ≥ 2025 дошли бы до счёта
         assert df["date"].max() < pd.Timestamp("2025-01-01")
+
+
+def _klyuch(monkeypatch, tmp_path):
+    """cache_key на test1 с подменой тяжёлых общих входов (бары, SOURCES) на крошечный файл: меняется только σ̂."""
+    f = tmp_path / "x.bin"
+    f.write_bytes(b"x")
+    monkeypatch.setattr(zona, "path", lambda kind, p=None: f)
+    monkeypatch.setattr(s9, "SOURCES", {"hyb_h1": (f, "sigma_pred_h1", "h1")})
+    monkeypatch.setattr(s9, "MAIN_YAML", f)
+    return s9.cache_key()
+
+
+def _podmena(p, col):
+    d = pd.read_parquet(p)
+    d.iloc[0, d.columns.get_loc(col)] += 0.001
+    d.to_parquet(p)
+
+
+@pytest.mark.parametrize("chast", ["dev", "z2"])
+def test_klyuch_test1_menyaetsya_pri_podmene_dev_ili_z2(z2, monkeypatch, tmp_path, chast):
+    """Д5 (mutations № 7): подмена dev-файла или Z2-файла при прочих равных → другой ключ."""
+    k0 = _klyuch(monkeypatch, tmp_path)
+    assert _klyuch(monkeypatch, tmp_path) == k0
+    if chast == "dev":
+        _podmena(sigma_z2.dev_path(5), "sigma_pred_h5")
+    else:
+        _podmena(sigma_z2.z2_path(1), "rv_pred")
+    assert _klyuch(monkeypatch, tmp_path) != k0
+
+
+def test_mutaciya_dev_ne_v_klyuche_lovitsya(z2, monkeypatch, tmp_path):
+    """Мутация: digest считает только Z2-файлы (dev не в ключе) — проверка «подмена dev меняет ключ» обязана падать."""
+    def tolko_z2():
+        return b"".join(sigma_z2.z2_path(h).read_bytes() for h in sigma_z2.HORIZONS).hex()[:40]
+    monkeypatch.setattr(sigma_z2, "digest", tolko_z2)
+    k0 = _klyuch(monkeypatch, tmp_path)
+    _podmena(sigma_z2.dev_path(5), "sigma_pred_h5")
+    with pytest.raises(AssertionError):
+        assert _klyuch(monkeypatch, tmp_path) != k0
+
+
+def test_load_source_sam_otkazyvaet_2025(z2, monkeypatch):
+    """Мутация «удалён zona.check в load_source» падает здесь: без своей проверки источник с датой 2025 молча отрезался бы _cut."""
+    bad = pd.DataFrame({"date": pd.to_datetime(["2024-12-31", "2025-01-02"]), "ticker": "SBER",
+                        "sigma_pred_h1": 0.1, "sigma_pred_h5": 0.1})
+    fake = lambda: bad                  # noqa: E731
+    fake.cache_clear = lambda: None
+    monkeypatch.setattr(data, "vpred_df", fake)
+    with pytest.raises(PermissionError):
+        s9.load_source("hyb_h5")

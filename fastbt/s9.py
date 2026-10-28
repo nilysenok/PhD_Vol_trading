@@ -499,9 +499,9 @@ def cache_key() -> str:
         h.update(f"{SCOPE}|{VAL_START}|{VAL_END}|{CUT.date()}".encode())
     if PERIOD != "train":                  # Д5: период в ключе только при не-умолчании (ключ train не меняется)
         h.update(f"period|{PERIOD}|{YEARS}|{VAL_START}".encode())
-    if PERIOD == "test1" and os.environ.get("FASTBT_Z2_FINAL3"):    # Д5: σ̂ Z2 в ключе
-        for hh in (1, 5, 22):
-            h.update(hashlib.sha1((Path(os.environ["FASTBT_Z2_FINAL3"]) / f"final_h{hh}__t1.parquet").read_bytes()).digest())
+    if PERIOD == "test1" and os.environ.get("FASTBT_Z2_R2FINAL"):    # Д5: σ̂ dev (ch4_dev) и Z2 (R2) в ключе
+        from fastbt import sigma_z2
+        h.update(sigma_z2.digest().encode())
     if PERIOD == "v2":                     # прогрев и правило качества — в ключе (train4 не меняется)
         h.update(f"start|{period_v2.START.date()}|hold_invalid".encode())
         h.update(Path(period_v2.__file__).read_bytes())
