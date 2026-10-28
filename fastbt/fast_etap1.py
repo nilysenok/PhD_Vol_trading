@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from fastbt import exec_e, fast_exec as fx
+from fastbt import exec_e, fast_exec as fx, fdr as fdr_mod
 from fastbt.exec_e_types import Params, Result, Trade
 from fastbt.exec_e_v6 import v6_on
 
@@ -253,7 +253,7 @@ def pokryto(pt: dict) -> bool:
     `filtr` — только net | cbr (прежние `sobytiya`), заём — только 0. Остальное драйвер считает медленным путём."""
     from fastbt.etap1_eval import NET
     umolch = dict(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod", t_vyhod="close", k_x=NET, storona="obe",
-                  tejk_signal=NET)                  # Ж-084: tejk_signal ≠ net — медленный путь (эталон)
+                  tejk_signal=NET, rho=NET, m_tip="1", rang_tip="tikernyj")   # Ж-084: tejk_signal ≠ net; V6-c: rho ≠ net — медленный путь (эталон)
     return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and pt.get("filtr", NET) in (NET, "cbr")
             and pt.get("sobytiya", NET) in (NET, "cbr") and pt.get("vyhod", NET) in (NET, "lim")
             and pt.get("zaem", 0) in (0, "0", "0.0", NET, None))
@@ -268,10 +268,11 @@ def ryady(evr, pt: dict, period: str) -> tuple:
         df, inv, eng, _, rs = evr.excess(pt, period)
     keep = np.isin(eng.dates.year, years_of(period))
     tik = np.full((len(rs), len(eng.dates)), np.nan)
+    anc = getattr(evr, "_zctx", (None, False))[1]
     a = 0
     for ti, r in enumerate(rs):
         d = inv[a:a + len(r.g)]
-        u = r.expo if r.noch is None else r.noch
+        u = r.expo if r.noch is None else fdr_mod.zanyatost(r.noch, r.expo, eng.cal[d], "t0" if anc else evr.fdr)   # t0d: ночь + день по барам; якорь — noch
         tik[ti, d] = r.g - r.sides * evr.comm - u * eng.rf[d] * eng.cal[d]
         a += len(r.g)
     return df["excess"].to_numpy()[keep], tik[:, keep].astype(np.float32), eng.dates[keep].to_numpy()
