@@ -33,9 +33,12 @@ def _tok(v) -> str:
 
 
 def osnovnaya(klyuch: dict) -> bool:
-    """True — основная строка. Только параметры точки: t_vyhod и vhod. Оси t_vyhod нет — умолчание оси close (контракт §1.1)."""
+    """True — основная строка. Только параметры точки: t_vyhod и vhod; нет любой из осей в ключе — ValueError, не «основная»."""
     pt = _pt(klyuch)
-    t = _tok(pt.get("t_vyhod", "close"))
+    for ось in ("t_vyhod", "vhod"):
+        if ось not in pt:
+            raise ValueError(f"в ключе строки нет оси {ось}: основная/справочная не определена (ключ: {sorted(pt)})")
+    t = _tok(pt["t_vyhod"])
     if t != "close" and t not in OSNOVNYE_T:
         raise ValueError(f"t_vyhod {t!r}: допустимо close, 1500, 1700, open2")
     if t == "close":
@@ -44,17 +47,15 @@ def osnovnaya(klyuch: dict) -> bool:
 
 
 def osnovnaya_stroki(row: dict):
-    """Признак строки ledger / реестра: bool; якорь — False; None — оси t_vyhod в ключе нет (строка не прогона v2)."""
+    """Признак строки ledger / реестра: bool; якорь — False; нет t_vyhod или vhod в ключе — ValueError."""
     if row.get("istochnik") in ISTOCHNIKI_YAKORYA:
         return False
-    if "t_vyhod" not in _pt(row):
-        return None
     return osnovnaya(row)
 
 
 def maska(rows: list) -> np.ndarray:
-    """bool на каждую строку: не классифицируемая (нет оси) остаётся в выборе, справочная и якорь — нет."""
-    return np.array([osnovnaya_stroki(r) is not False for r in rows], bool)
+    """bool на каждую строку: основная — True, справочная и якорь — False; строка без оси — ValueError."""
+    return np.array([osnovnaya_stroki(r) for r in rows], bool)
 
 
 def rows_osnovnye(ch, status="ok") -> list:
