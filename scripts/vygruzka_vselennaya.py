@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 """Выгрузка ISS для расширенной вселенной (рычаг (а), Ж-069 п. 3): 1-мин, 10-мин свечи и дневной VALUE, период только < 2022.
 
-Образец — scripts/analysis/d25_6.py. Только GET на iss.moex.com, последовательно, пауза после каждого запроса.
-  python3 scripts/vygruzka_vselennaya.py --tickers SBER,LKOH --start 2015-01-01 --end 2021-12-31 --dry-run
-Выход (новый каталог data/regen/V40/, существующие каталоги — D25 и moex_discovery — не трогаются):
-  bars1m/{T}_{Y}.csv + .done           — формат data/regen/D25/bars1m (begin, open, high, low, close, volume, value)
-  candles_10m/{T}.parquet + .done      — формат moex_discovery/data/raw/candles_10m (timestamp, open, high, low, close, volume)
-  daily_value/{T}.csv + .done          — date, value (оборот за день, interval=24)
-  sha_journal.csv                      — SHA-256 каждого записанного файла (только дополняется)
-Выгрузку запускает дирижёр; тесты ходят в фикстуру, не в сеть.
+Образец — d25_6.py. Только GET, последовательно. Пример: --tickers SBER,LKOH --end 2021-12-31 --dry-run
+Выход — новый каталог data/regen/V40/ (D25 и moex_discovery не трогаются), + .done у каждого файла:
+  bars1m/{T}_{Y}.csv (формат D25) · candles_10m/{T}.parquet (формат moex_discovery) · daily_value/{T}.csv (date, value)
+  sha_journal.csv — SHA-256, строки, число отброшенных строк >= 2022 (только дополняется)
 """
 import argparse
 import hashlib
@@ -21,12 +17,10 @@ from pathlib import Path
 
 import pandas as pd
 
-DATA = Path(__file__).resolve().parents[1] / 'data'
-ROOT = DATA / 'regen' / 'V40'
+ROOT = Path(__file__).resolve().parents[1] / 'data' / 'regen' / 'V40'
 LAST_OK = pd.Timestamp('2021-12-31')
 BASE = 'https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{t}'
-PAGE = 500
-PAUSE = 0.2
+PAGE, PAUSE = 500, 0.2
 COLS = ['begin', 'open', 'high', 'low', 'close', 'volume', 'value']
 TYPES = {'1m': 1, '10m': 10, 'daily': 24}
 
@@ -64,8 +58,7 @@ def make_get(tries=6):
 
 
 def paginate(get, url):
-    """Страницы по PAGE подряд до страницы короче PAGE; возвращает список dict."""
-    rows, start = [], 0
+    rows, start = [], 0  # страницы по PAGE до страницы короче PAGE
     while True:
         c = get(f'{url}&start={start}')['candles']
         rows += [dict(zip(c['columns'], r)) for r in c['data']]
@@ -78,7 +71,7 @@ DROPPED = [0]  # отброшено обрезкой с последнего fin
 
 
 def clip(rows):
-    """Граница и после ответа: begin (время МСК) >= 2022-01-01 00:00 отбрасывается, что бы ни вернул ISS."""
+    # граница и после ответа: begin (МСК) >= 2022-01-01 00:00 отбрасывается, что бы ни вернул ISS
     kept = [r for r in rows if r['begin'][:10] <= str(LAST_OK.date())]
     return kept, len(rows) - len(kept)
 
@@ -104,7 +97,6 @@ def year_spans(start, end):
 
 
 def finish(out, path, rows, key):
-    """Журнал SHA (с числом строк, отброшенных обрезкой по 2022) и метка .done."""
     drop, DROPPED[0] = DROPPED[0], 0
     if drop:
         print(f'ВНИМАНИЕ: {path.name}: отброшено {drop} строк >= 2022-01-01 (ISS отдал их вопреки till)', flush=True)
@@ -158,8 +150,7 @@ def job_daily(get, out, t, start, end):
 
 
 def run(tickers, start, end, types, out=ROOT, get=None, dry_run=False, root=ROOT):
-    """Все проверки (end, каталог, тикеры) — до первого GET."""
-    end = check_end(end)
+    end = check_end(end)  # все проверки (end, каталог, тикеры) — до первого GET
     start = pd.Timestamp(start)
     if start > end:
         raise ValueError('start позже end')
