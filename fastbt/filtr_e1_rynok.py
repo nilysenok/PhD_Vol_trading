@@ -6,6 +6,8 @@ IMOEX — `rezhim_e1.imoex_daily()` (кэш на `inp`). Только данны
 """
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import numpy as np
 import pandas as pd
 
@@ -60,6 +62,15 @@ def _sektor_ctx(inp, dates):
     return ctx
 
 
+def _td_local(inp, t: str, dates: np.ndarray) -> SimpleNamespace:
+    """Ряды тикера на локальной сетке `dates` (σ, sd, сигнал живут на ней: с inp.meta[t]['s0'], до конца окна).
+    `sk._td[t]` — полный ряд (с прогрева, до конца разработки): режем по s0 и сверяем даты, а не обрезаем по длине."""
+    td, n, s0 = inp.sk._td[t][0], len(dates), int(inp.meta[t]["s0"])
+    if not np.array_equal(np.asarray(td.dates[s0:s0 + n], "datetime64[D]"), np.asarray(dates, "datetime64[D]")):
+        raise ValueError(f"{t}: даты sk._td[s0:s0+n] не совпали с локальной сеткой dates — отказ")
+    return SimpleNamespace(**{k: np.asarray(getattr(td, k))[s0:s0 + n] for k in ("close", "high", "low", "volume")})
+
+
 def razresheno(imya: str, t: str, inp, sd: np.ndarray, dates: np.ndarray) -> np.ndarray | None:
     if imya not in ZNACHENIYA:
         raise ValueError(f"filtr: {imya!r} вне {ZNACHENIYA}")
@@ -70,7 +81,7 @@ def razresheno(imya: str, t: str, inp, sd: np.ndarray, dates: np.ndarray) -> np.
     if imya in ("cbr", "div"):
         ev = inp.sobytiya.get(imya)
         return None if ev is None else ~np.asarray(ev[t], bool)
-    td = inp.sk._td[t][0]
+    td = _td_local(inp, t, dates)
     s22 = inp.sigma["rv22"][t]
     r = f.ret(td.close)
     z = f.z_series(r, s22)
