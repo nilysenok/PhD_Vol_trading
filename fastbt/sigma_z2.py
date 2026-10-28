@@ -6,7 +6,7 @@ Dev того же семейства — data/regen/ch4_dev/sigma_hyb_h{1,5}_dev
 по датам (put_z2, scripts/dannye/suzhenie_rezka.py): <каталог>/final_d0_s2emb_h{1,5}__t1.parquet; то же преобразование
 (`_sigma_ch3` ниже), сдвигов нет: значение на дату d известно на d. Горизонта 22 в семействе нет (колонки h22 нет → NaN).
 Каталоги — FASTBT_DEV_SIGMA (ch4_dev) и FASTBT_Z2_R2FINAL (Z2 R2/final). Отказ: дата ≥ 2025 (zona.HARD), дубль date×ticker,
-дата Z2 раньше 2022-01-01, отрицательный rv_pred, несколько значений `design` или разные `design` у горизонтов (семейство).
+дата Z2 раньше 2022-01-01, отрицательный rv_pred, несколько значений `design` в файле или `design` ≠ DESIGN[h] (семейство, по горизонту).
 """
 from __future__ import annotations
 
@@ -21,6 +21,10 @@ from fastbt import zona
 
 HORIZONS = (1, 5)
 COLS = {h: f"sigma_pred_h{h}" for h in HORIZONS}
+# Ожидаемый столбец design по горизонту. В спецификациях (ch4_v2_sborka.yaml, r2_A*_sborka.yaml) полных строк нет (только имена
+# точек D22_h1/D12_h5): строки прочитаны дирижёром 29.10 из реальных частей Z2 после нарезки.
+DESIGN = {1: "D22_h1 top5|V0_XGB|B-sm|L0 d0 | s² t−1, эмбарго",
+          5: "D12_h5 wrap2|V0_XGB|B-sm|L0 d0 | s² t−1, эмбарго"}
 ROOT = Path(os.environ.get("FASTBT_MAIN", "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading"))     # как fastbt.data.MAIN
 
 
@@ -60,7 +64,7 @@ def _sigma_ch3(rv_pred: pd.Series) -> np.ndarray:
 
 def chast_z2(katalog: Path | None = None) -> pd.DataFrame:
     """Часть Z2: date, ticker, sigma_pred_h1/h5 (float32). Нет файла горизонта — FileNotFoundError."""
-    out, designs = None, {}
+    out = None
     for h in HORIZONS:
         p = z2_path(h, katalog)
         d = pd.read_parquet(p)
@@ -73,15 +77,11 @@ def chast_z2(katalog: Path | None = None) -> pd.DataFrame:
             u = d["design"].dropna().unique()
             if len(u) != 1:
                 raise ValueError(f"{p.name}: в файле {len(u)} значений design — не одно семейство")
-            designs[h] = str(u[0])
+            if str(u[0]) != DESIGN[h]:
+                raise ValueError(f"{p.name}: design {u[0]!r} ≠ ожидаемого для h{h} {DESIGN[h]!r} — не то семейство")
         d[COLS[h]] = _sigma_ch3(d["rv_pred"])
         d = d[["date", "ticker", COLS[h]]]
         out = d if out is None else out.merge(d, on=["date", "ticker"], how="outer")
-    if len(set(designs.values())) > 1:
-        raise ValueError(f"Z2: разные design у горизонтов {designs} — не одно семейство")
-    want = os.environ.get("FASTBT_Z2_DESIGN")
-    if want and any(v != want for v in designs.values()):
-        raise ValueError(f"Z2: design {designs} ≠ ожидаемого {want}")
     return out
 
 

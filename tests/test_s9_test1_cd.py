@@ -25,7 +25,7 @@ def z2(tmp_path, monkeypatch):
     kat.mkdir()
     for h in (1, 5):
         pd.DataFrame({"date": Z2_DATES, "ticker": "SBER", "rv_pred": [_rv(i, h) for i in range(len(Z2_DATES))],
-                      "design": "d0_s2emb"}).to_parquet(sigma_z2.z2_path(h, kat))
+                      "design": sigma_z2.DESIGN[h]}).to_parquet(sigma_z2.z2_path(h, kat))
     monkeypatch.setenv("FASTBT_DEV_SIGMA", str(dk))
     monkeypatch.setenv("FASTBT_Z2_R2FINAL", str(kat))
     data.vpred_df.cache_clear()

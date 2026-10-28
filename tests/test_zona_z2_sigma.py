@@ -26,12 +26,11 @@ def _dev_kat(kat, dev=None):
     return kat
 
 
-def _z2(kat, dates=("2022-01-04", "2022-01-05"), rows=None, design="d0_s2emb"):
+def _z2(kat, dates=("2022-01-04", "2022-01-05"), rows=None, design=None):
     for h in sigma_z2.HORIZONS:
         r = rows or [(d, "SBER", 0.04 * h) for d in dates]
         d = pd.DataFrame(r, columns=["date", "ticker", "rv_pred"]).assign(step=1)
-        if design is not None:
-            d["design"] = design
+        d["design"] = design or sigma_z2.DESIGN[h]
         d.to_parquet(sigma_z2.z2_path(h, kat))
 
 
@@ -66,7 +65,16 @@ def test_otkaz_drugogo_semejstva_design(tmp_path):
     _z2(tmp_path)
     p = sigma_z2.z2_path(5, tmp_path)
     pd.read_parquet(p).assign(design="final3").to_parquet(p)                       # h5 из другого семейства
-    with pytest.raises(ValueError, match="разные design"):
+    with pytest.raises(ValueError, match="не то семейство"):
+        sigma_z2.sklei(_dev(), tmp_path)
+
+
+def test_otkaz_design_chuzhogo_gorizonta(tmp_path):
+    """design h1 в файле h5 (и наоборот) — отказ: ожидаемое значение своё для каждого горизонта."""
+    _z2(tmp_path)
+    p = sigma_z2.z2_path(5, tmp_path)
+    pd.read_parquet(p).assign(design=sigma_z2.DESIGN[1]).to_parquet(p)
+    with pytest.raises(ValueError, match="не то семейство"):
         sigma_z2.sklei(_dev(), tmp_path)
 
 
@@ -77,13 +85,6 @@ def test_otkaz_neskolko_design_v_fajle(tmp_path):
     d["design"] = ["a", "b"]
     d.to_parquet(p)
     with pytest.raises(ValueError, match="не одно семейство"):
-        sigma_z2.sklei(_dev(), tmp_path)
-
-
-def test_otkaz_ozhidaemyj_design(tmp_path, monkeypatch):
-    _z2(tmp_path, design="final3")
-    monkeypatch.setenv("FASTBT_Z2_DESIGN", "d0_s2emb")
-    with pytest.raises(ValueError, match="ожидаемого"):
         sigma_z2.sklei(_dev(), tmp_path)
 
 
