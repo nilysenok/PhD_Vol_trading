@@ -1,7 +1,6 @@
 """Ж-113 пп. 1, 6 / Ж-114 пп. 1–2: период v2 (train 2015–2019, прогрев с 26.08.2014), путь A без σ.
 Синтетика (быстро) + реальные данные (нужен FASTBT_BARS1M; нет — пропуск реальной части).
-Якорь: 18 точек Sk (S1–S6 × 3) + 2 точки A (комиссия 0,04 и 0,035 %) = 20, годы 2016–2019, допуск 1e-12.
-Дивиденды 2014 не подключены (period_v2.NOTE_DIV_2014): 2014 — только прогрев, в метрики не входит.
+Якорь: 18 точек Sk (S1–S6 × 3) + 2 точки A (0,04 и 0,035 %) = 20, годы 2016–2019, допуск 1e-12. Дивиденды 2014 не подключены.
 python3 -m pytest tests/test_period_v2.py -q"""
 import pickle
 
@@ -109,10 +108,6 @@ def test_mutaciya_nevalidnyy_den_dayot_signal_lovitsya(monkeypatch):
     assert period_v2.valid_vec("X", pd.bdate_range("2017-01-02", periods=2), K).tolist() == [False, False]   # вне календаря
 
 
-def test_dividendy_2014_pomecheny():
-    assert period_v2.NOTE_DIV_2014 == "дивиденды 2014 не подключены"
-
-
 # ---------------- реальные данные ----------------
 @pytest.fixture(scope="module")
 def evrs():
@@ -148,16 +143,11 @@ def deltas(evr, sid, sigp):
     return out
 
 
-def _points():
-    from tests.test_yakor_v1 import IDS, POINTS
-    return POINTS, IDS
-
-
 @real
 @pytest.mark.parametrize("i", range(18))
 def test_v2_yakor_Sk_ravno_s9(i, evrs):
-    pts, _ = _points()
-    sid, sigp = pts[i]
+    from tests.test_yakor_v1 import POINTS
+    sid, sigp = POINTS[i]
     d = deltas(evrs(sid), sid, sigp)
     assert set(d) == set(GODY) and max(d.values()) <= TOL, (sid, sigp, d)
 
@@ -187,7 +177,9 @@ def test_v2_kesh_A_progrev_i_hold(a_cache):
     assert len(a_cache) == 17
     for t, c in a_cache.items():
         assert pd.Timestamp(c["dates"][0]) >= period_v2.START and pd.Timestamp(c["dates"][0]) < pd.Timestamp("2014-09-05"), t
-        assert set(c["A"]["S1"]) == {2015, 2016, 2017, 2018, 2019} and c["C"] == {}
+        # A выбирает топ-10 по данным до 1 января года и требует WARMUP = 200 баров (approach_a.year): от 26.08.2014 до
+        # 1.01.2015 их ~86, поэтому у A нет 2015 (молча, как есть в движке); 2015 есть у Sk с фиксированной точкой.
+        assert set(c["A"]["S1"]) == {2016, 2017, 2018, 2019} and c["C"] == {}
     ok = period_v2.valid_vec("LSRG", a_cache["LSRG"]["dates"])
     assert (~ok).any()
     for sid, byY in a_cache["LSRG"]["A"].items():
