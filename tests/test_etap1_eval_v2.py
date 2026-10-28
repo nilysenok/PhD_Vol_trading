@@ -148,16 +148,25 @@ def test_zaem_tolko_na_shortakh(monkeypatch):
 
 def test_filtr_none_ne_schitana(monkeypatch):
     stub = types.ModuleType("fastbt.filtr_e1_rynok")
-    stub.razresheno = lambda name, inp, t, sig: None
+    stub.razresheno = lambda name, t, inp, sig, dates: None
     monkeypatch.setitem(sys.modules, "fastbt.filtr_e1_rynok", stub)
     ev = make("S1")
     row, x, tik = ev.evaluate_v2({**PT, "filtr": "obyom"}, PER)
     assert row["status"] == "ne_schitana" and x is None and tik is None and np.isnan(row["sharpe"])
-    stub.razresheno = lambda name, inp, t, sig: np.ones(len(sig), bool)
+    stub.razresheno = lambda name, t, inp, sig, dates: np.ones(len(sig), bool)
     assert ev.evaluate_v2({**PT, "filtr": "obyom"}, PER)[0]["status"] == "ok"
-    stub.razresheno = lambda name, inp, t, sig: None                                   # мутация: None как net
+    stub.razresheno = lambda name, t, inp, sig, dates: None                              # мутация: None как net
     monkeypatch.setattr(v2.EvaluatorV2, "_allow", lambda self, pt, t, d, s, f: np.ones(len(s), bool))
     assert ev.evaluate_v2({**PT, "filtr": "obyom"}, PER)[0]["status"] != "ne_schitana"
+
+
+def test_osi_v_params():                    # t_vyhod считается Л-3 (exec_e_vremya, ещё не слит): здесь только проводка в Params
+    ev = make("S1")
+    nov = {**v2.NOVYE, "zhizn": 36, "gap": "propusk", "t_vyhod": 1500}
+    p = ev._params(ev.full({"vhod": 0.5, "proverka": "bary"}), "SBER", 5.0, False, nov, {"bar_plus": 1, "stop_tik": 2})
+    assert (p.zhizn, p.gap_propusk, p.t_vyhod, p.bar_plus, p.stop_tik) == (36, True, "1500", 1, 2)
+    q = ev._params(ev.full({"vhod": 0.5}), "SBER", 5.0, False, v2.NOVYE, {})
+    assert (q.zhizn, q.gap_propusk, q.t_vyhod, q.bar_plus, q.stop_tik) == (None, False, "close", 0, 0)
 
 
 def test_k_x_tolko_bez_stopa(monkeypatch):
@@ -202,10 +211,18 @@ def test_vozmushcheniya():
 def test_kvartaly_granitsy_i_tselevaya():
     d = pd.to_datetime(["2016-03-31", "2016-04-01", "2016-04-04", "2016-04-05"])
     x = np.array([0.1, 0.1, 0.3, 0.2])
-    q = v2.kvartaly(d, x, (2016,))
-    assert len(q) == 4 and np.isnan(q["2016Q3"]) and q["2016Q1"] == 0.0
+    q = v2.kvartaly(d.to_numpy(), x)                                                 # ledger_v2 (Л-1): граница 31.03 / 01.04
+    assert len(q) == 16 and np.isnan(q["2016Q3"]) and q["2016Q1"] == 0.0
     expect = np.mean(x[1:]) / np.std(x[1:], ddof=1) * np.sqrt(252)
     assert abs(q["2016Q2"] - expect) < 1e-12
-    med, dolya = v2.tselevaya({**q, "2016Q1": 1.0})
-    assert np.isnan(med) and dolya == 0.5                                           # Q1 и Q2 положительны; Q3, Q4 — nan
     assert v2.tselevaya({"a": 1.0, "b": -1.0, "c": 3.0, "d": 0.0}) == (0.5, 0.5)
+
+
+@pytest.mark.parametrize("nov,vz", [({"ed_lim": "pct"}, None), ({"ed_lim": "atr14"}, None), ({"ed_lim": "diap"}, None),
+                                    ({"zhizn": 12}, None), ({"gap": "propusk"}, None), ({"lestnica": 0.5}, None), ({"k_x": 1.0}, None), ({"proverka": "bary"}, {"bar_plus": 1}),
+                                    ({}, {"stop_tik": 1}), ({"storona": "short_shag1"}, None), ({"filtr": "cbr"}, None)])
+def test_novye_osi_dayut_ryad_i_tozhdestvo(nov, vz):
+    ev = make("S1")
+    row, x, tik = ev.evaluate_v2({**PT, **nov}, PER, vz)
+    d64, d32, _ = tozh(ev, {**PT, **nov}, vz)
+    assert row["status"] == "ok" and len(row["by_quarter"]) == 16 and d64 <= 1e-12 and d32 <= 1e-8 and not np.isnan(x).any()

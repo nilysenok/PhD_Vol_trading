@@ -12,34 +12,18 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 
-from fastbt import metriki_e as me, rezhim_e1
+from fastbt import rezhim_e1
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, params_of, years_of
 from fastbt.etap1_run import run_e1, sum_rows
-from fastbt.sweep_post import build_view, positions
+from fastbt.ledger_v2 import kvartaly, tselevaya
 
 NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net")
 POROG = {"S1": "z_entry", "S2": "bb_std", "S3": "dc_window", "S4": "multiplier", "S6": "dev_mult"}   # §1.1 storona
 ZAEM = (5, 10)                                                                 # % годовых, колонки by_quarter_zaem
-_ID = {"zhizn": "den", "gap": "vhod", "t_vyhod": "close"}
-SQ = np.sqrt(252)
 
 
 class NeSchitana(Exception): """razresheno → None: строка ne_schitana, а не молча net."""
-
-
-def kvartaly(daty, x, years) -> dict:
-    """{"2016Q1": SR годовой шкалы (ddof=1), …}; квартал без дней — nan."""
-    i = pd.DatetimeIndex(daty)
-    qq = i.year * 10 + i.quarter
-    return {f"{y}Q{q}": (me.sr_dnevnoy(x[qq == y * 10 + q]) * SQ if (qq == y * 10 + q).any() else float("nan"))
-            for y in years for q in range(1, 5)}
-
-
-def tselevaya(bq: dict) -> tuple:
-    """(медиана, доля кварталов с SR > 0); есть nan — медиана nan, nan не положителен."""
-    v = np.array(list(bq.values()), float)
-    return (float("nan") if np.isnan(v).any() else float(np.median(v))), float((v > 0).sum() / len(v))
 
 
 def _carry(eng, inv) -> np.ndarray:
@@ -80,9 +64,9 @@ class EvaluatorV2(Evaluator):
 
     def _allow(self, pt, t, dates, sig, f):
         inp = self.inp
-        allow = ~inp.sobytiya["cbr" if f == "cbr" else pt["sobytiya"]][t]
-        if f not in ("net", "cbr"):
-            a = importlib.import_module("fastbt.filtr_e1_rynok").razresheno(f, inp, t, sig)         # None — не определён
+        allow = ~inp.sobytiya[pt["sobytiya"]][t]
+        if f != "net":
+            a = importlib.import_module("fastbt.filtr_e1_rynok").razresheno(f, t, inp, sig, dates)  # None — не определён
             if a is None:
                 raise NeSchitana(f"filtr {f}: условие не определено на данных")
             allow = allow & np.asarray(a, bool)
@@ -100,8 +84,13 @@ class EvaluatorV2(Evaluator):
         p = params_of(pt, self.inp.tick[t], h, anchor, self.comm)
         if nov["k_x"] != NET and p.b is None and not anchor:
             p = replace(p, a=float(nov["k_x"]))                             # тейк без стопа; при k_s ≠ net k_x не действует
-        ext = {k: v for k, v in nov.items() if k in _ID and v != _ID[k]}
-        ext.update({k: vz[k] for k in ("bar_plus", "stop_tik") if k in vz})
+        ext = {k: int(vz[k]) for k in ("bar_plus", "stop_tik") if k in vz}
+        if nov["zhizn"] != "den":
+            ext["zhizn"] = int(nov["zhizn"])
+        if nov["gap"] == "propusk":
+            ext["gap_propusk"] = True
+        if str(nov["t_vyhod"]) != "close":
+            ext["t_vyhod"] = str(nov["t_vyhod"])
         return replace(p, **ext) if ext else p
 
     def _rows2(self, pt, period, anchor, c):
@@ -184,13 +173,13 @@ class EvaluatorV2(Evaluator):
                     "by_quarter": {f"{y}Q{q}": nan for y in yrs for q in range(1, 5)}, "sharpe": nan, "msr": nan,
                     "flagi": {"vyrozhdena": True}}, None, None
         x, tik, dts, zaem, cnt, rdates = self._series(period, comm)
-        bq = kvartaly(dts, x, yrs)
+        bq = kvartaly(dts.to_numpy(), x)
         med, dolya = tselevaya(bq)
         qr = (rdates.year * 10 + rdates.quarter).to_numpy()
         sk = lambda d: {str(k): v for k, v in d.items()}                         # noqa: E731
         row = {**head, "status": "ok", "prichina": None, "kod": v1["kod"], "vhody": v1["vhody"],
                "by_year": sk(v1["by_year"]), "msr_by_year": sk(v1["msr_by_year"]), "by_quarter": bq, "mediana_kv": med,
-               "dolya_pol_kv": dolya, "by_quarter_zaem": {str(s): kvartaly(dts, z, yrs) for s, z in zaem.items()},
+               "dolya_pol_kv": dolya, "by_quarter_zaem": {str(s): kvartaly(dts.to_numpy(), z) for s, z in zaem.items()},
                "sdelok_y": sk(v1["sdelok_y"]), "storony_y": sk(v1["storony_y"]),
                "sdelok_kv": {k: float(cnt[(qr == int(k[:4]) * 10 + int(k[5]))].sum()) / 2 for k in bq},
                "flagi": {"vyrozhdena": v1["vyrozhdena"], "kray": [], "short_shag1_kray": self._kray}, "t_sek": time.perf_counter() - t0,
