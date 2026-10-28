@@ -311,6 +311,16 @@ def test_dannye_kx_menyaet_ryad(ev_s1):                                         
     assert not np.array_equal(_x(ev_s1), _x(ev_s1, k_x=1.0))
 
 
+# Ж-087 п. 1: поля отчёта оси — не в ledger (формат v2.0 не меняется); строка при net = прежняя
+POLYA_OTCHETA = {"dolya_tejk_y", "dolya_pribyl_y", "vyigrysh_sredn_y", "proigrysh_sredn_y", "top5_pnl_y", "n_bez_tejka"}
+
+
+@pytest.mark.parametrize("t", ["net", "pol_puti"])
+def test_ledger_stroka_bez_poley_otcheta(ev_s1, t):
+    row = ev_s1.evaluate_v2({"vhod": 0.5, "proverka": "bars5m", "tejk_signal": t}, "train4")[0]
+    assert not (POLYA_OTCHETA & set(row)), sorted(POLYA_OTCHETA & set(row))
+
+
 @pytest.mark.parametrize("t", ["k_srednemu", "pol_puti"])
 def test_dannye_tejk_menyaet_ryad(ev_s1, t):
     kw = dict(vhod=0.5, proverka="bars5m", tejk_signal=t)

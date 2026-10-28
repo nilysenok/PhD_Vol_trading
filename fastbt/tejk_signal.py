@@ -98,10 +98,10 @@ def pole_otcheta(evr, years) -> dict:
     return {**otchet(pary, years), "n_bez_tejka": sum(r.n_bez_tejka for r in rs)}
 
 
-def pisat_diag(pisatel, row: dict, diag) -> None:
-    """Ж-087: диагностика рядом с ledger — p{NN}/diag.jsonl, по строке на строку ledger; ключ — klyuch_sha (с kod).
+def pisat_diag(papka, row: dict, diag) -> None:
+    """Ж-087: papka — каталог потока писателя (Pisatel.pd), явно; диагностика рядом с ledger — p{NN}/diag.jsonl, по строке на строку ledger; ключ — klyuch_sha (с kod).
     diag = None у строк не ok. Формат ledger v2.0 и Chitatel не затронуты; дубль после обрыва — читатель берёт последнюю."""
-    with open(pisatel.pd / DIAG, "a", encoding="utf-8") as f:
+    with open(Path(papka) / DIAG, "a", encoding="utf-8") as f:
         f.write(json.dumps({"klyuch_sha": row["klyuch_sha"], "kod": row.get("kod"), "diag": diag}, sort_keys=True) + "\n")
 
 

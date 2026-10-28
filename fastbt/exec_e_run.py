@@ -160,7 +160,7 @@ class Run:
         if s.tr is not None:                        # сигнал дня входа тоже: sig[d+1] != стороне → выход по close d+1
             if s.p.tau is not None and j - s.ej >= s.p.tau and j > s.ej:
                 s._leave(i, j, nb, close, "vremya")
-            elif s.p.exit_signal and s.dir(i) != s.tr.side:
+            elif s._sig_exit(i):
                 s._leave(i, j, nb, close, "signal")
         if s.tr is not None:
             s.gross[i] += s.tr.side * math.log((close + s.dv) / s.ref)
@@ -173,6 +173,10 @@ class Run:
         s._decide(i, j, close, nb)
         s.pos[i] = float(s.tr.side) if s.tr is not None else 0.0
         s.free[i] = 1.0 - s.used[i] / nb
+
+    def _sig_exit(s, i):
+        """Сигнал ушёл от стороны сделки. rodnoy_uroven — сам родной сигнальный выход, выставленный заявкой: рыночного нет (Ж-091)."""
+        return s.p.exit_signal and s.p.tejk != "rodnoy_uroven" and s.dir(i) != s.tr.side
 
     def _leave(s, i, j, nb, close, reason):
         """Выход по signal/vremya: рынком по close дня решения; при vyhod_lim — лимитная заявка на d+1 (due = j+1, не раньше, Д2)

@@ -87,15 +87,16 @@ class EvaluatorV2(Evaluator):
             p = replace(p, a=float(nov["k_x"]))                             # тейк без стопа; при k_s ≠ net k_x не действует
         if nov["tejk_signal"] != NET:                                       # Ж-084: один тейк, от M (canon_v2: R, k_x = net)
             p = replace(p, R=None, a=None, tejk=nov["tejk_signal"])
-            if nov["tejk_signal"] == tejk_signal.RODNOY:                    # Ж-091 п. 1.1: родной выход — только заявка; сигнал и τ выключены
-                p = replace(p, exit_signal=False, tau=None)
+            if nov["tejk_signal"] == tejk_signal.RODNOY:                    # Ж-091 п. 1.1 (толк. дирижёра): выход по сигналу — заявка; τ остаётся
+                p = replace(p, exit_signal=False)
         ext = {k: int(vz[k]) for k in ("bar_plus", "stop_tik") if k in vz}
         if nov["zhizn"] != "den":
             ext["zhizn"] = int(nov["zhizn"])
         if nov["gap"] == "propusk":
             ext["gap_propusk"] = True
-        if str(nov["t_vyhod"]) != "close" and nov["tejk_signal"] != tejk_signal.RODNOY:     # rodnoy: t_vyhod схлопнут (canon_v2)
-            ext["t_vyhod"] = str(nov["t_vyhod"])
+        tv = "open2" if nov["tejk_signal"] == tejk_signal.RODNOY and p.tau is not None else str(nov["t_vyhod"])   # rodnoy: t_vyhod = open2 для τ
+        if tv != "close" and not (nov["tejk_signal"] == tejk_signal.RODNOY and p.tau is None):
+            ext["t_vyhod"] = tv
         return replace(p, **ext) if ext else p
 
     def _rows2(self, pt, period, anchor, c):
