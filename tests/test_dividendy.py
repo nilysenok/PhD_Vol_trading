@@ -118,7 +118,7 @@ def _series(div):
     return p, raw, v, g
 
 
-@pytest.mark.parametrize("sid", ["S4", "S5", "S6"])
+@pytest.mark.parametrize("sid", ["S3", "S4", "S5", "S6"])
 def test_signal_posle_otsechki_ne_zavisit_ot_razmera_D(tmp_path, monkeypatch, sid):
     """D = 0 и D > 0 при одном и том же «скорректированном» пути дают одинаковые сигналы; на реальном ряду — другие (мутация)."""
     D_ = 25.0
@@ -131,6 +131,94 @@ def test_signal_posle_otsechki_ne_zavisit_ot_razmera_D(tmp_path, monkeypatch, si
     assert np.array_equal(s_adj, s_zero) and s_zero.any()
     s_raw = _signals(_td(raw, raw * 1.01, raw * 0.99, raw, v), monkeypatch, sid)  # мутация: сигналы на реальном ряду
     assert not np.array_equal(s_raw, s_zero)
+
+
+def _series_ohlc(div, g=200):
+    """Путь с шумом открытия (красные/зелёные свечи нужны фильтрам S1/S2); реальный ряд выше до отсечки в 1/f раз."""
+    r = np.random.default_rng(4)
+    ret = r.normal(0.001 * np.sin(np.arange(N) / 20), 0.03, N)
+    p = 100 * np.exp(np.cumsum(ret))
+    op = p * (1 + r.normal(0, 0.03, N))
+    hi = np.maximum(p * (1 + np.abs(r.normal(0, 0.03, N))), op)
+    lo = np.minimum(p * (1 - np.abs(r.normal(0, 0.03, N))), op)
+    v = r.uniform(1e6, 2e6, N) * (1 + 3 * (r.random(N) < 0.1))
+    f = p[g - 1] / (p[g - 1] + div)
+    k = np.where(np.arange(N) < g, 1 / f, 1.0)
+    return (op, hi, lo, p), tuple(x * k for x in (op, hi, lo, p)), v, g
+
+
+@pytest.mark.parametrize("sid", ["S1", "S2"])
+def test_signaly_s1_s2_ne_zavisyat_ot_D_s_o_h_l(tmp_path, monkeypatch, sid):
+    """Как выше, но со всеми четырьмя ценами и шумом открытия (S1/S2 без красных свечей молчат): D = 0 и D > 0 дают один сигнал,
+    на реальном ряду — другой (мутация «сигналы на реальном ряду»)."""
+    D_ = 25.0
+    adj, raw, v, g = _series_ohlc(D_)
+    _table(tmp_path, monkeypatch, [("T", str(DATES[g - 1])[:10], D_)])
+    got = dividendy.adjust_ohlc("T", DATES, raw[3], *raw)
+    assert all(a == pytest.approx(b, rel=1e-12) for a, b in zip(got, adj))
+    s_adj, s_zero = _signals(_td(*got, v), monkeypatch, sid), _signals(_td(*adj, v), monkeypatch, sid)
+    assert np.array_equal(s_adj, s_zero) and s_zero.any(), sid
+    assert not np.array_equal(_signals(_td(*raw, v), monkeypatch, sid), s_zero), sid
+
+
+# ---------- подключение: load_ticker (s9) и load_ticker_nf (этап 1) ----------
+G, DIV = 150, 7.0
+
+
+def _wire_env(tmp_path, monkeypatch):
+    from fastbt import data as fd
+    r = np.random.default_rng(3)
+    c = 100 * np.exp(np.cumsum(r.normal(0, 0.01, N)))
+    c[G:] *= 1 - DIV / c[G - 1]                                              # сырая цена падает на D в день гэпа G
+    df = pd.DataFrame({"ticker": "T", "date": pd.to_datetime(DATES), "open": c * 1.001, "high": c * 1.01, "low": c * 0.99,
+                       "close": c, "volume": 1e6})
+    _table(tmp_path, monkeypatch, [("T", str(DATES[G - 1])[:10], DIV)])
+    monkeypatch.setattr(fd, "daily_df", lambda: df)
+    monkeypatch.setattr(fd, "align_sigma", lambda dates, t: {})
+    return c
+
+
+def _check_wiring(td, c):
+    m = 1 - DIV / c[G - 1]
+    assert td.close[G - 1] == pytest.approx(c[G - 1] - DIV, rel=1e-12)       # c_cum·(1 − D/c_cum)
+    assert td.open[:G] == pytest.approx(c[:G] * 1.001 * m, rel=1e-12)
+    assert td.high[:G] == pytest.approx(c[:G] * 1.01 * m, rel=1e-12)
+    assert td.low[:G] == pytest.approx(c[:G] * 0.99 * m, rel=1e-12)
+    assert td.close[G:].tobytes() == c[G:].tobytes()
+    assert td.log_ret[G - 1] == pytest.approx(np.log((c[G] + DIV * 0.87) / c[G - 1]), abs=1e-15)   # lr — по реальным ценам
+
+
+def test_load_ticker_otdaet_skorrektirovannye_ohlc_i_lr_po_real(tmp_path, monkeypatch):
+    from fastbt import data as fd
+    c = _wire_env(tmp_path, monkeypatch)
+    _check_wiring(fd.load_ticker.__wrapped__("T"), c)
+
+
+def test_load_ticker_nf_i_real_close(tmp_path, monkeypatch):
+    c = _wire_env(tmp_path, monkeypatch)
+    _check_wiring(etap1.load_ticker_nf("T"), c)
+    assert etap1.real_close("T").tobytes() == c.tobytes()                    # исполнение — по сырому close
+
+
+class _NoAdjust:
+    """Модуль dividendy без обратной корректировки (удалённый вызов adjust_ohlc)."""
+    adjust_lr = staticmethod(dividendy.adjust_lr)
+    adjust_ohlc = staticmethod(lambda t, d, close, *bars: tuple(np.array(b, float) for b in bars))
+
+
+def test_mutatsiya_M3b_load_ticker_bez_adjust_ohlc_lovitsya(tmp_path, monkeypatch):
+    from fastbt import data as fd
+    c = _wire_env(tmp_path, monkeypatch)
+    monkeypatch.setattr(fd, "dividendy", _NoAdjust)
+    with pytest.raises(AssertionError):
+        _check_wiring(fd.load_ticker.__wrapped__("T"), c)
+
+
+def test_mutatsiya_M3c_load_ticker_nf_bez_adjust_ohlc_lovitsya(tmp_path, monkeypatch):
+    c = _wire_env(tmp_path, monkeypatch)
+    monkeypatch.setattr(etap1, "dividendy", _NoAdjust)
+    with pytest.raises(AssertionError):
+        _check_wiring(etap1.load_ticker_nf("T"), c)
 
 
 # ---------- ключи кэша (Д5) ----------
@@ -149,7 +237,7 @@ def _s9_env(tmp_path, monkeypatch):
     monkeypatch.setattr(fd, "CORP", corp)
 
 
-def test_klyuch_s9_menyaetsya_ot_tablitsy_i_nalogovogo_mnozhitelya(tmp_path, monkeypatch):
+def _check_s9_key(tmp_path, monkeypatch):
     _s9_env(tmp_path, monkeypatch)
     f = _table(tmp_path, monkeypatch, [("T", "2018-06-15", 3.0)])
     k0 = s9.cache_key()
@@ -161,14 +249,15 @@ def test_klyuch_s9_menyaetsya_ot_tablitsy_i_nalogovogo_mnozhitelya(tmp_path, mon
     assert s9.cache_key() != k1
 
 
-def test_mutatsiya_klyuch_s9_bez_dividendov_ne_lovit_by_podmenu(tmp_path, monkeypatch):
-    """Контроль теста: если digest() константа (ключ не видит таблицу), подмена таблицы не меняет ключ — ровно это тест ловит."""
-    _s9_env(tmp_path, monkeypatch)
-    f = _table(tmp_path, monkeypatch, [("T", "2018-06-15", 3.0)])
+def test_klyuch_s9_menyaetsya_ot_tablitsy_i_nalogovogo_mnozhitelya(tmp_path, monkeypatch):
+    _check_s9_key(tmp_path, monkeypatch)
+
+
+def test_mutatsiya_klyuch_s9_bez_dividendy_digest_lovitsya(tmp_path, monkeypatch):
+    """Мутация: из ключа убран dividendy.digest() (он константа) — тест ключа обязан упасть."""
     monkeypatch.setattr(dividendy, "digest", lambda: "const")
-    k0 = s9.cache_key()
-    f.write_text(f.read_text().replace("3.0", "3.5"))
-    assert s9.cache_key() == k0
+    with pytest.raises(AssertionError):
+        _check_s9_key(tmp_path, monkeypatch)
 
 
 def test_klyuch_signalov_vidit_skorrektirovannyy_ryad(tmp_path, monkeypatch):
