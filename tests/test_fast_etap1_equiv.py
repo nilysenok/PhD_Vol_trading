@@ -6,6 +6,8 @@
 с подложенной ошибкой (monkeypatch), быстрый — честный; сверка обязана разойтись, и сам тест проверяет, что мутант
 действует. (а) лимит по касанию — mutations № 2; (б) стоп/тейк в баре — № 3; (в) выход в день входа (τ = 0);
 (г) гэп по уровню, не по open — № 4; (д) ключ кэша быстрого слоя константа — № 7 (Д5). Данные: FASTBT_BARS1M, FASTBT_MAIN.
+Поправка 28.10 (вердикт #444): прежний тест (д) не мог упасть — подменялись бары и σ, а единственный кэш с ключом
+в быстром слое (позиции Sk, `_group_key`) от них не зависит. Теперь `perturbed` подменяет и ряды Sk (`perturbed_sk`).
 """
 import importlib.util
 import sys
@@ -153,6 +155,7 @@ KEYPT = [P(sigma="rv22", vhod=0.5, k_s=2.0, R=1.5, **BARS), P(sigma="rv5", k_s=1
 def isolate_caches(mp, tmp_path):
     """Диск и память кэшей быстрого слоя — в пустое место (мутация ключа не должна травить настоящий кэш)."""
     mp.setenv("FASTBT_FS_CACHE", str(tmp_path / "fs"))
+    mp.setenv("FASTBT_E1_CACHE", str(tmp_path / "e1"))     # диск кэша позиций Sk быстрого слоя
     mp.setenv("FASTBT_CACHE", str(tmp_path / "c"))
     mp.setattr(cache, "CACHE", tmp_path / "c")
     for m in fast_mods():

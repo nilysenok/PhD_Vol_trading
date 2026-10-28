@@ -124,7 +124,22 @@ def perturbed(inp):
     bars = {t: [d if d.pusto else Day(d.o * f(i), d.h * f(i), d.l * f(i), d.c * f(i), d.pusto)
                 for i, d in enumerate(ds)] for t, ds in inp.bars.items()}
     sig = {n: {t: v * 1.5 for t, v in tv.items()} for n, tv in inp.sigma.items()}
-    return dataclasses.replace(inp, bars=bars, sigma=sig)
+    return dataclasses.replace(inp, bars=bars, sigma=sig, sk=perturbed_sk(inp.sk))
+
+
+def perturbed_sk(sk):
+    """Подмена рядов Sk (Д5): цены ×(1 + 0,08·sin(i/9)) → другие сигналы и позиции. Кэш позиций быстрого слоя зависит
+    ТОЛЬКО от рядов Sk, кода и параметров (не от баров и σ оценщика), поэтому проверять его ключ можно лишь так."""
+    import copy
+    import dataclasses
+    from fastbt.indicators import compute_base
+    sk2, td2 = copy.copy(sk), {}
+    for t, (td, _) in sk._td.items():
+        f = 1.0 + 0.08 * np.sin(np.arange(td.n) / 9.0)
+        o, h, l, c = (np.ascontiguousarray(x * f) for x in (td.open, td.high, td.low, td.close))
+        td2[t] = (dataclasses.replace(td, open=o, high=h, low=l, close=c), compute_base(c, h, l, o, td.volume))
+    sk2._td = td2
+    return sk2
 
 
 def evaluator(sid: str):
