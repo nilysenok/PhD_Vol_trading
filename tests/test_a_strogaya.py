@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from fastbt import exec_e_run, exec_e_vremya
+from fastbt import exec_e, exec_e_run, exec_e_vremya
 from fastbt import progon_osnovnaya as P
 from fastbt.etap1_eval import YAKOR
 from fastbt.etap1_eval_v2 import NOVYE, EvaluatorV2
@@ -95,6 +95,7 @@ def test_mut_yakor_ispolnyaetsya_strogo(monkeypatch):
         finally:
             s.p = p
     monkeypatch.setattr(exec_e_run.Run, "_decide", decide)
+    monkeypatch.setattr(exec_e, "_new_axes", lambda p, ed: True)     # и движок Run2, который умеет открытый вход
     with pytest.raises(AssertionError):
         check_yakor_po_close()
 
