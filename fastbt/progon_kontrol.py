@@ -144,6 +144,8 @@ def run_kandidat(ev, pt: dict, pisatel, period: str = "train4", kod_slit: bool =
             row, x, tik = ev.evaluate_v2(z.pt, period, z.ev_vozm)
         row = _row(ev, row, z, kod, vhody, kod_slit)
         pisatel.add(row, x, tik)
+        from fastbt.tejk_signal import pisat_diag
+        pisat_diag(pisatel, row, getattr(ev, "diag", None) if row["status"] == "ok" else None)                 # Ж-087
         out.append((z, row))
     return out
 
