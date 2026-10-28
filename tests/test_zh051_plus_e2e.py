@@ -2,6 +2,7 @@
 net → побайтно родитель; top_k=1 оставляет одну сделку на старте; сектор по тренду пропускает/режет стороны."""
 import numpy as np
 import pandas as pd
+import pytest
 
 from fastbt.e1_portfel import ball_sily
 from fastbt.e1_sektor import Ctx
@@ -84,3 +85,43 @@ def test_kontrol_sdvig_menyaet_maski(spy):
     got = _sig(spy)["AAA"]
     assert not base[:6].any() and not got[:6].any()                 # прогрев остаётся запретом (не едет в окно)
     assert (got[60:66] == 1).all()                                  # валидная часть (всегда «вверх») сдвигом не меняется
+
+
+# --- #370: дивиденд идёт в PnL через настоящий run_e1 (без подмены spy) ---
+from test_zh047_pomoshch import D as _Day, F as _Flat  # noqa: E402
+
+DIV_D, GAP_I = 10.0, 3
+
+
+class DivInp(FakeInp):
+    """Цена 100, с дня GAP_I — 90 (отсечка); дивиденд только у AAA (лонг на днях 0…5). Бары настоящие."""
+    def __init__(self, d):
+        super().__init__()
+        px = np.where(np.arange(N) < GAP_I, 100.0, 90.0)
+        self.close_n6 = {t: px.copy() for t in TICKS}
+        self.bars = {t: [_Day(_Flat(float(x))) for x in px] for t in TICKS}
+        self.div["AAA"][GAP_I] = d
+
+
+def _aaa_pnl(monkeypatch, d, drop_div=False):
+    from fastbt import etap1_plus_eval as PE
+    orig = PE.run_e1
+    e = FakePlus()
+    e.inp = DivInp(d)
+    with monkeypatch.context() as m:                                # патч живёт только внутри одного вызова
+        if drop_div:                                                # мутация: div не передан в run_e1
+            m.setattr(PE, "run_e1", lambda *a, **k: orig(*a, **{**k, "div": None}))
+        res = e._rows(e.full({"top_k": 3}), "train", False)[0][1]   # новый путь (top_k≠net); вход по рынку, закрытие
+    return float(np.asarray(res.g).sum())                          # тикер 0 — AAA
+
+
+def test_dividend_longa_idet_v_pnl_s_nalogom_087(monkeypatch):
+    base = _aaa_pnl(monkeypatch, 0.0)
+    got = _aaa_pnl(monkeypatch, DIV_D) - base
+    assert got > 0                                                  # лонг получает, не платит
+    assert got == pytest.approx(np.log((90 + 0.87 * DIV_D) / 90), rel=1e-6)   # D·0,87: цена 90 → 90 + 8,7
+
+
+def test_mutatsiya_div_ne_peredan_v_run_e1_lovitsya(monkeypatch):
+    assert _aaa_pnl(monkeypatch, DIV_D, drop_div=True) == pytest.approx(_aaa_pnl(monkeypatch, 0.0), abs=1e-12)  # мутант слеп
+    assert _aaa_pnl(monkeypatch, DIV_D) - _aaa_pnl(monkeypatch, DIV_D, drop_div=True) > 1e-3   # тест на правке это видит
