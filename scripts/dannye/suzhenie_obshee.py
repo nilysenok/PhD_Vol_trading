@@ -143,7 +143,8 @@ def classify(rel, m, dates):
     cut = granitsa(dates, h)
     if m["dmin"] >= H25_LO or cut is None:
         return "б", cut, h
-    return ("а" if cut >= m["dmax"] else "в"), cut, h
+    # h=0: цель строки — она сама, нерабочая дата <= 31.12.2024 (строка 31.12.2024) остаётся открытой
+    return ("а" if (T1_HI if h == 0 else cut) >= m["dmax"] else "в"), cut, h
 
 
 def find_files(koren, vkhod, skip=()):

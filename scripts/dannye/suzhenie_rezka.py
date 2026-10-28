@@ -108,8 +108,9 @@ def rezat_file(koren, rel, m, dirs, primenit, itog):
         ob.vyvod(**base, status="ne_rezhetsya")
         return False
     orig = pq.read_table(src)
-    parts = razrezat(src, m["date_col"], cut)
-    proveri(orig, parts, m["date_col"], dates, h, cut)
+    gr = ob.T1_HI if h == 0 else cut  # h=0: граница Z2/Z3 — 31.12.2024 (см. classify)
+    parts = razrezat(src, m["date_col"], gr)
+    proveri(orig, parts, m["date_col"], dates, h, gr)
     pre, t1, h25 = parts
     cnt = dict(n_pre=len(pre), n_t1=len(t1), n_h25=len(h25))
     reason, mn, n24 = proverka_chastey(parts, m["date_col"], h)
