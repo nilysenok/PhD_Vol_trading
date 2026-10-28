@@ -37,9 +37,17 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from fastbt.cache import MAIN
+from fastbt.cache import MAIN, code_hash
 
-ROOT = Path(__file__).resolve().parent.parent
+
+def numba_cache_dir() -> Path:
+    """Д5: каталог numba-кэша зависит от хэша кода fastbt/*.py — правка любого исходника строит кэш заново."""
+    return MAIN / "data" / "fastbt" / "numba_cache" / code_hash()[:16]
+
+
+os.environ.setdefault("NUMBA_CACHE_DIR", str(numba_cache_dir()))     # до первого импорта numba; явный env побеждает
+
+ROOT =Path(__file__).resolve().parent.parent
 REGEN = MAIN / "data" / "regen"
 OUT = MAIN / "data" / "fastbt" / "s9"
 TABLES = Path(os.environ.get("S9_TABLES", ROOT / "docs" / "tables" / "strat_dev"))
