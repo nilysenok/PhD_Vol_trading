@@ -154,7 +154,7 @@ def pravilo_etapa(led, axes: dict, plan: list, base: dict, yakor: dict, period: 
     from fastbt import etap1_poisk_vorota as V
     ys = V.PERIOD_YEARS[period]
     coords, dop, n = [], [], {}
-    for (k, per), (prm, res) in led.cache.items():
+    for (k, per), (prm, res) in list(led.cache.items()):      # list: dopustima может досчитать якорь в Ledger
         if per != period or not set(ys) <= set(s := V.series(res)):
             continue
         n = n or {y: len(s[y]) for y in ys}
