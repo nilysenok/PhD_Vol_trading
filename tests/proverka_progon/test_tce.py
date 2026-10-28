@@ -12,6 +12,9 @@
  A5 sem_e_strogiy.cena_vhoda(days, d, tochka) и cena_vyhoda(days, x, tochka, prichina) — цена входа/выхода E (days — exec_e.Day).
  A6 perescet_ce_aprim.perescet(zamorozhennye: list, aprim, otbor) -> список точек; otbor — вызываемый, вызывать нельзя.
  A7 «внутридневной шорт»: в дневной строке шорт, держимый в ночь, = pos[t−1]; решение pos[t] = −1 в день t платы в строке t не даёт.
+Правка 28.10 (#484): время бара в load_bars5m лежит в `ts`, `date` — только день (ошибка теста, автор кода был прав); тест на данных
+требует FASTBT_BARS1M=<data/regen/D25/bars1m>. test_konec_okna усилен: ненулевые ноги последней строки и три знака pos[T], иначе
+мутация «конец окна по close» не ловилась.
 Мутации (каждая роняет тест из скобок): М-CE1 весь lr на pos[t] (test_znanie_otvet, test_close_v_osnovnoy_*); М-CE2 patched не подменяет
 port (test_patched_*); М-CE3 E вход по close d (test_e_vhod_*); М-CE4 τ по close x (test_e_vyhod_*); М-CE5 к2 старым ядром (test_k2_*);
 М-CE6 конец окна по close (test_konec_okna_*); М-CE7 плата по барам (test_zaem_*); ночь у новой позиции (test_znanie_otvet);
@@ -82,11 +85,14 @@ def test_toghdestvo_o10_ravno_c():                               # якорь s9
 def test_konec_okna_zakryvaet_po_o10():                          # М-CE6
     from fastbt import strogoe
     e, (nr, dr) = eng(), nogi_true()
-    pos = np.array([0, 0, 0, 0, 0, 0, 1, 1.0])
-    p = strogoe.port_strogiy(e, pos, C, zaem=0.0, nogi=(nr, dr))
-    assert p["gross"].values[-1] == pytest.approx(nr[-1]), "ночь прежней позиции; решение close T не исполняется"
-    assert p["turnover"].values[-1] == pytest.approx(1.0), "комиссия выхода |pos[T−1]| на последней строке"
-    assert p["r"].values[-1] == pytest.approx(nr[-1] - C)
+    nr, dr = nr.copy(), dr.copy()
+    nr[-1], dr[-1] = 0.004, 0.007                                 # ненулевые ноги последней строки (иначе мутация не видна)
+    for last in (1.0, 0.0, -1.0):                                 # решение close T любого знака не исполняется
+        pos = np.array([0, 0, 0, 0, 0, 0, 1, last])
+        p = strogoe.port_strogiy(e, pos, C, zaem=0.0, nogi=(nr, dr))
+        assert p["gross"].values[-1] == pytest.approx(nr[-1]), "ночь прежней позиции; решение close T не исполняется"
+        assert p["turnover"].values[-1] == pytest.approx(1.0), "комиссия выхода |pos[T−1]| на последней строке"
+        assert p["r"].values[-1] == pytest.approx(nr[-1] - C)
 
 
 def test_zaem_tri_sluchaya_zh089():                              # М-CE7; пт→пн = 3 дня, шорт 1 день = 1, лонг = 0
@@ -257,7 +263,8 @@ def test_dannye_do_2020_o10_otlichaetsya_ot_close():             # реальн�
     assert pd.to_datetime(b["date"]).max() < pd.Timestamp("2020-01-01")
     days = []
     for _, g in b.groupby(pd.to_datetime(b["date"]).dt.normalize()):
-        t = (g["date"].dt.hour * 60 + g["date"].dt.minute).to_numpy() if hasattr(g["date"], "dt") else None
+        ts = pd.to_datetime(g["ts"])                              # время бара — в `ts`; `date` — только день (ошибка теста, 28.10)
+        t = (ts.dt.hour * 60 + ts.dt.minute).to_numpy()
         days.append(Day(g["open"].to_numpy(), g["high"].to_numpy(), g["low"].to_numpy(), g["close"].to_numpy(), False, t=t))
     assert len(days) == 5
     c = np.array([d.c[-1] for d in days])
