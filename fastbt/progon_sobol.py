@@ -159,7 +159,7 @@ def schitat_kusok(zad: tuple) -> tuple:
             continue
         r, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, _W["ist"], _W["kod_slit"], _W["fast"])
         w.add(r, ex_p, ex_t)
-        importlib.import_module("fastbt.tejk_signal").pisat_diag(w, r, getattr(sr.evr, "diag", None) if r["status"] == "ok" else None)   # Ж-087
+        importlib.import_module("fastbt.tejk_signal").pisat_diag(w.pd, r, getattr(sr.evr, "diag", None) if r["status"] == "ok" else None)   # Ж-087
         zak = zak | {r["klyuch_sha"]}
         t.append(r["t_sek"])
         oshibok += r["status"] == "oshibka"

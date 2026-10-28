@@ -123,14 +123,14 @@ def test_diag_ne_v_stroke_ledger_a_v_diag_jsonl(ev, tmp_path):
         assert not set(r) & {"dolya_tejk_y", "dolya_pribyl_y", "vyigrysh_sredn_y", "proigrysh_sredn_y", "top5_pnl_y", "n_bez_tejka"}
         d = ev.diag
         assert list(d["top5_pnl_y"]) == ["2016", "2017", "2018", "2019"] and "n_bez_tejka" in d
-        ts.pisat_diag(w, {"klyuch_sha": f"h{i}", "kod": "k"}, d)
+        ts.pisat_diag(w.pd, {"klyuch_sha": f"h{i}", "kod": "k"}, d)
         if i == 0:
             assert d["n_bez_tejka"] == 0 and all(v == 0 for v in d["dolya_tejk_y"].values())
         else:
             assert any(v > 0 for v in d["dolya_tejk_y"].values())
     got = ts.chitat_diag(tmp_path / "S1")
     assert set(got) == {"h0", "h1"} and got["h1"]["n_bez_tejka"] >= 0
-    ts.pisat_diag(w, {"klyuch_sha": "h2"}, None)                                    # не ok — запись с null, а не пропуск
+    ts.pisat_diag(w.pd, {"klyuch_sha": "h2"}, None)                                    # не ok — запись с null, а не пропуск
     assert ts.chitat_diag(tmp_path / "S1")["h2"] is None
 
 
