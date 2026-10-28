@@ -5,6 +5,15 @@
  S3_GRID/S4_GRID; текст Ж-091 п. 1.2 тоже S3 = канал, S4 = ST. Но fastbt/designs/progon/kub_S3.yaml несёт atr_period/multiplier, а kub_S4.yaml —
  dc_window: файлы куба перепутаны. Тесты следуют коду и Ж-091 (S3 = dc_window, S4 = atr_period+multiplier); проверка куба — только по оси.
 
+ПОДГОНКА ПОД КОД (28.10, после PR #459 Л-21 и #462 Л-22; требования Ж-091 те же, меняются только сигнатуры):
+ П1. Л-21: `rodnoy_uroven(sid, sp, dn, sd=1)` — kwarg `sd`, не `side`; в движок уровень идёт как `tejk_M` формы [2, days] (строка 0 лонг, 1 шорт), не `rod_L`;
+     canon при rodnoy схлопывает ещё и tau (= net) — добавлено в test_canon_rodnoy_skhlopyvaet_t_vyhod.
+ П2. Л-22: уровни — `stop_zayavki.urovni(sid, sp, td, ind, storona)` по ОДНОМУ тикеру (td: close/high/low/volume; ind: adx14, vol_sma20, vf_pass),
+     ключи up/dn (вход buy-/sell-stop), xl/xs (выход лонга/шорта); фильтры сигнала и прогрев WARMUP=200 внутри (до прогрева nan).
+     В движок — `run(..., urovni=dict(up, dn, xl, xs))`, вход OCO-парой, sig вход не задаёт; `Params(stop_touch=True, exit_signal=False)` обязательны,
+     k_e в Params при stop_zayavka — ValueError. canon при stop_zayavka у S1/S2/S5/S6 — ValueError. Было А4/А5 ниже — заменено.
+ Параллельность Л-21 и Л-22: ветки конфликтуют в exec_e.py, ledger_v2.py, etap1_eval_v2.py; тесты Л-21 гоняются на ветке Л-21, Л-22 — на ветке Л-22.
+
 ДОПУЩЕНИЯ (в контракте сигнатур нет; поправить здесь, если Л-21/Л-22 назвали иначе):
  А1. `fastbt.tejk_signal.rodnoy_uroven(sid, sig_params, dannye_do_d, side=1) -> ndarray[ticker, d]`; dannye_do_d как у `uroven_M`
      (close/high/low/volume + dates). side=+1 лонг (S1: SMA − z_exit·STD, S6: VWAP − 0,5·dev), side=−1 шорт (знак +); S2/S5 от side не зависят.
@@ -76,15 +85,19 @@ def go_rod(days, L, side=1, sig=None, tejk=ROD, **kw):
     kw.setdefault("comm", 0.0)
     p = Params(side=side, tick=TK, check="bary", tejk=tejk, **kw)
     s = np.ones(n) if sig is None else np.asarray(sig, float)
-    return run("T", days, s, np.full(n, 0.02), p, rod_L=np.broadcast_to(np.asarray(L, float), (n,)).copy())
+    row = np.broadcast_to(np.asarray(L, float), (n,))
+    return run("T", days, s, np.full(n, 0.02), p, tejk_M=np.vstack([row, row]))                 # строка 0 — лонг, 1 — шорт (П1)
 
 
 def go_stop(days, vhod, vyhod, side=1, **kw):
+    """Вход OCO-парой на день d+1 (П2): лонг — up = vhod, шорт — dn = vhod; выход — xl/xs = vyhod."""
     n = len(days)
     kw.setdefault("comm", 0.0)
-    p = Params(side=side, tick=TK, check="bary", vhod_tip=STOP, **kw)
-    sl = {"vhod": np.broadcast_to(np.asarray(vhod, float), (n,)).copy(), "vyhod": np.broadcast_to(np.asarray(vyhod, float), (n,)).copy()}
-    return run("T", days, np.ones(n), np.full(n, 0.02), p, stop_L=sl)
+    p = Params(side=side, tick=TK, check="bary", vhod_tip=STOP, stop_touch=True, exit_signal=False, **kw)
+    a, nan = np.broadcast_to(np.asarray(vhod, float), (n,)).copy(), np.full(n, np.nan)
+    x = np.broadcast_to(np.asarray(vyhod, float), (n,)).copy()
+    u = dict(up=a if side == 1 else nan, dn=a if side == -1 else nan, xl=x, xs=x)
+    return run("T", days, np.ones(n), np.full(n, 0.02), p, urovni=u)
 
 
 # ===== Л-21: rodnoy_uroven, исполнение (лимит выхода на уровне; вход рынком на close d = 100) =====
@@ -156,7 +169,7 @@ S3P, S4P = {"dc_window": 5}, {"atr_period": 5, "multiplier": 2.0}
 
 def _rod(sid, dn, side=1):
     from fastbt.tejk_signal import rodnoy_uroven
-    return rodnoy_uroven(sid, SIG[sid], dn, side=side)
+    return rodnoy_uroven(sid, SIG[sid], dn, sd=side)
 
 
 @pytest.mark.parametrize("side", [1, -1])
@@ -222,8 +235,8 @@ def _canon(sid="S1", **kw):
 
 def test_canon_rodnoy_skhlopyvaet_t_vyhod():
     for tv in ("1500", "1700", "open2"):
-        q = _canon(tejk_signal=ROD, t_vyhod=tv, R=3.0, k_x=1.5)
-        assert q["t_vyhod"] == "close" and q["R"] == "net" and q["k_x"] == "net"
+        q = _canon(tejk_signal=ROD, t_vyhod=tv, R=3.0, k_x=1.5, tau=5)
+        assert q["t_vyhod"] == "close" and q["R"] == "net" and q["k_x"] == "net" and q["tau"] == "net"
     for t in ("net", "k_srednemu", "pol_puti"):                               # остальные значения t_vyhod не трогают
         assert _canon(tejk_signal=t, t_vyhod="1500")["t_vyhod"] == "1500"
 
@@ -296,59 +309,83 @@ def test_stop_k_e_ne_primenyaetsya():                                         # 
 
 
 # ===== Л-22: уровни stop_zayavki.urovni =====
-def _urovni(sid, dn):
+N22, W22 = 260, 200                                                           # WARMUP = 200: до него заявок нет (П2)
+
+
+def _td(n=N22):
+    from types import SimpleNamespace
+    r = np.random.default_rng(5)
+    c = 100 + np.cumsum(r.normal(0, 1, n))
+    v = r.uniform(1e3, 2e3, n)
+    td = SimpleNamespace(close=c, high=c + r.uniform(0.1, 1, n), low=c - r.uniform(0.1, 1, n), volume=v)
+    return td, dict(adx14=np.full(n, 30.0), vol_sma20=v * 0.5, vf_pass=np.ones(n, bool))     # фильтры сигнала пройдены везде
+
+
+def _cut22(td, ind, d):
+    from types import SimpleNamespace
+    return (SimpleNamespace(**{k: getattr(td, k)[:d + 1] for k in ("close", "high", "low", "volume")}), {k: v[:d + 1] for k, v in ind.items()})
+
+
+def _poison22(td, ind, d):
+    from types import SimpleNamespace
+    q = {k: getattr(td, k).copy() for k in ("close", "high", "low", "volume")}
+    for a in q.values():
+        a[d + 1:] *= 7.0
+    return SimpleNamespace(**q), ind
+
+
+def _urovni(sid, td, ind):
     from fastbt.stop_zayavki import urovni
-    return urovni(sid, S3P if sid == "S3" else S4P, dn)
+    return urovni(sid, S3P if sid == "S3" else S4P, td, ind)
 
 
 def test_urovni_S3_znachenie():
-    dn = _dannye()
-    u = _urovni("S3", dn)
-    for d in (4, 20, 59):
-        np.testing.assert_allclose(u["buy"][:, d], dn["high"][:, d - 4:d + 1].max(axis=1))     # окно включает d
-        np.testing.assert_allclose(u["sell"][:, d], dn["low"][:, d - 4:d + 1].min(axis=1))
-    np.testing.assert_array_equal(u["exit_long"], u["sell"])
-    np.testing.assert_array_equal(u["exit_short"], u["buy"])
+    td, ind = _td()
+    u = _urovni("S3", td, ind)
+    for d in (W22, 230, 259):
+        assert u["up"][d] == pytest.approx(td.high[d - 4:d + 1].max())            # окно включает d
+        assert u["dn"][d] == pytest.approx(td.low[d - 4:d + 1].min())
+        assert u["xl"][d] == pytest.approx(u["dn"][d]) and u["xs"][d] == pytest.approx(u["up"][d])    # выход — обратная граница
+    assert np.isnan(u["up"][:W22]).all() and np.isnan(u["dn"][:W22]).all()
 
 
 def test_urovni_S4_liniya_ST():
     from fastbt.signals.s34 import supertrend
-    dn = _dannye()
-    u = _urovni("S4", dn)
-    for i in range(2):
-        h, l, c = (np.asarray(dn[k][i], float) for k in ("high", "low", "close"))
-        st = supertrend(h, l, c, 5, 2.0)
-        up, dwn = st > c, st < c
-        np.testing.assert_allclose(u["buy"][i][up], st[up])
-        np.testing.assert_allclose(u["sell"][i][dwn], st[dwn])
-        assert np.isnan(u["buy"][i][~up]).all() and np.isnan(u["sell"][i][~dwn]).all()
-    np.testing.assert_array_equal(u["exit_long"], u["sell"])
-    np.testing.assert_array_equal(u["exit_short"], u["buy"])
+    td, ind = _td()
+    u = _urovni("S4", td, ind)
+    st = supertrend(td.high, td.low, td.close, 5, 2.0)
+    over, under = (st > td.close)[W22:], (st < td.close)[W22:]
+    np.testing.assert_allclose(u["up"][W22:][over], st[W22:][over])               # ST выше close — buy-stop
+    np.testing.assert_allclose(u["dn"][W22:][under], st[W22:][under])             # ниже — sell-stop
+    assert np.isnan(u["up"][W22:][~over]).all() and np.isnan(u["dn"][W22:][~under]).all()
+    np.testing.assert_allclose(u["xl"][W22:], st[W22:])
+    np.testing.assert_allclose(u["xs"][W22:], st[W22:])
 
 
 @pytest.mark.parametrize("sid", ["S3", "S4"])
 def test_urovni_ne_smotryat_vpered(sid):                                      # мутация 1
-    dn, d = _dannye(), 30
-    a, b = _urovni(sid, dn), _urovni(sid, _poison(dn, d))
-    c = _urovni(sid, _cut(dn, d))
+    td, ind = _td()
+    d = 230
+    a, b = _urovni(sid, td, ind), _urovni(sid, *_poison22(td, ind, d))
+    c = _urovni(sid, *_cut22(td, ind, d))
     for k in a:
-        np.testing.assert_array_equal(a[k][:, :d + 1], b[k][:, :d + 1])
-        np.testing.assert_array_equal(a[k][:, d], c[k][:, d])
+        np.testing.assert_array_equal(a[k][:d + 1], b[k][:d + 1])
+        np.testing.assert_array_equal(a[k][d], c[k][d])
 
 
 def test_urovni_kazhdyy_vecher():                                             # мутация 4
-    dn = _dannye()
-    u = _urovni("S3", dn)
-    for d in (20, 21, 40):
-        np.testing.assert_array_equal(u["buy"][:, d], _urovni("S3", _cut(dn, d))["buy"][:, d])
-    assert len(np.unique(u["buy"][0][~np.isnan(u["buy"][0])])) > 3
+    td, ind = _td()
+    u = _urovni("S3", td, ind)
+    for d in (210, 211, 240):
+        assert u["up"][d] == _urovni("S3", *_cut22(td, ind, d))["up"][d]
+    assert len(np.unique(u["up"][W22:])) > 3
 
 
 @pytest.mark.parametrize("sid", ["S1", "S2", "S5", "S6"])
 def test_urovni_tolko_S3_S4(sid):
     from fastbt.stop_zayavki import urovni
     with pytest.raises(ValueError):
-        urovni(sid, SIG[sid], _dannye())
+        urovni(sid, SIG[sid], *_td())
 
 
 # ===== Л-22: схлопывание (мутация 6) и путь podtverzhdenie (мутация 11) =====
@@ -361,6 +398,13 @@ def _canon3(sid="S3", **kw):
 def test_canon_stop_skhlopyvaet_vhod(sid):
     q = _canon3(sid, vhod_tip=STOP)
     assert (q["vhod"], q["ed_lim"], q["zhizn"], q["lestnica"], q["gap"]) == ("rynok", "sigma", "den", "net", "vhod")
+
+
+@pytest.mark.parametrize("sid", ["S1", "S2", "S5", "S6"])
+def test_canon_stop_tolko_S3_S4(sid):                                         # мутация 9: vhod_tip у S1/S2/S5/S6
+    from fastbt.ledger_v2 import canon_v2
+    with pytest.raises(ValueError):
+        canon_v2(sid, {"vhod": 0.5, "vhod_tip": STOP})
 
 
 def test_klyuch_stop_vhod_odin():
