@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from fastbt.metriki_e import sr_dnevnoy
-from fastbt.progon_region import vybor_region
+from fastbt.progon_region import ryad_regiona, vybor_region
 from fastbt.sweep_drivers import pbo_cscv
 
 PRAVILA = [(W, r, t) for W in (4, 8) for r in (1, 2) for t in ("mediana", "dolya")]
@@ -53,7 +53,7 @@ def wf(M, rows, daty, pravilo) -> dict:
         reg = vybor_region(M, rows, daty, kvartaly_idx=okno, radius=radius, tsel=tsel)
         mask = kd == q
         # нет допустимого региона — позиции нет, ряд нулевой (не подмена другим выбором)
-        part = np.zeros(int(mask.sum())) if reg is None else np.asarray(reg["ryad"], dtype=float)[mask]
+        part = np.zeros(int(mask.sum())) if reg is None else ryad_regiona(M, reg["chleny"])[mask]
         parts.append(part)
         by_q[_label(q)] = _sr(part)
         regiony[_label(q)] = None if reg is None else reg["centr"]
