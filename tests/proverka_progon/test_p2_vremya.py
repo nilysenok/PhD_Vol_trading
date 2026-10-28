@@ -166,3 +166,40 @@ def test_net_vyhoda_po_signalu_ne_menyaet_nichego(tv):
     r = go(days, [1, 1, 1, 1, 1], t_vyhod=tv)                  # ни τ, ни сигнала: позиция открыта на конце окна (Н5)
     assert r.trades[0].reason is None and r.x_t == 0
     assert r.cost[-1] == C                                     # комиссия выхода на последней строке
+
+
+# --- mutations.md № 2–5 на пути Run2 (новые поля включены — движок Run2, не прежний Run) ---
+def r2(days, sig, **kw):
+    kw = dict(dict(comm=C, tick=0.01), **kw)
+    return run("T", days, np.asarray(sig), np.full(len(days), 0.02), Params(**kw))
+
+
+def flat(x, n=3):
+    return Day(*(np.full(n, x),) * 4, False)
+
+
+def bars(o, h, lo, c):
+    return Day(*(np.array(v, float) for v in (o, h, lo, c)), False)
+
+
+def test_no2_kasanie_ne_ispolnenie_na_run2():
+    for low in (99.01, 99.0):                                  # L = 99: на тик выше и касание — не исполнение
+        d1 = bars([100] * 3, [100] * 3, [100, low, 100], [100] * 3)
+        assert r2([flat(100.0), d1, flat(100.0)], [1, 0, 0], k=0.5, zhizn=12).trades == []
+
+
+def test_no3_stop_i_tejk_v_odnom_bare_stop_pervyj():
+    d1 = bars([100, 100], [100, 103], [100, 97], [100, 100])
+    t = r2([flat(100.0), d1, flat(100.0)], [1, 1, 1], a=1.0, b=1.0, stop_tik=1).trades[0]
+    assert (t.reason, t.exit_px) == ("stop", pytest.approx(97.99))
+
+
+def test_no4_gep_cherez_stop_po_open():
+    d1 = bars([95, 95], [96, 96], [94, 94], [95, 95])
+    t = r2([flat(100.0), d1, flat(100.0)], [1, 1, 1], b=1.0, stop_tik=1).trades[0]
+    assert (t.reason, t.exit_px) == ("stop", 95.0)
+
+
+def test_no5_komissiya_vykhoda_na_konce_okna():
+    r = r2([flat(100.0)] * 3, [1, 1, 1], stop_tik=1, b=1.0)
+    assert r.trades[0].reason is None and r.cost[0] == C and r.cost[-1] == C
