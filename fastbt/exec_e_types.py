@@ -44,7 +44,9 @@ class Params:
     bar_plus: int = 0             # исполнение (лимит, стоп, тейк) — по open бара b+n, если хуже уровня
     stop_tik: int = 0             # цена стопа хуже на n тиков (нужен tick)
     vhod_open: bool = False       # Ж-086 п. 1: вход рынком (k = None) по open бара 10:00 дня d+1, а не по close d (exec_e_vremya.bar_at)
-    tejk: str = "net"             # Ж-084: net | k_srednemu | pol_puti — тейк от уровня сигнала M (fastbt/tejk_signal.py); нужен tejk_M в run
+    atr_m: float | None = None    # Ж-092 S3/S4 п. 4: трейлинг экстремум с входа ∓ m·ATR(14, дни до d−1), стоп не ослабляется; None — выкл
+    chast_1r: bool = False        # Ж-092: на +1R (R = расстояние входа до начального стопа, нужен b) закрыть ½ лимитом, со следующего бара
+    tejk: str = "net"           # Ж-084: net | k_srednemu | pol_puti — тейк от уровня сигнала M (fastbt/tejk_signal.py); нужен tejk_M в run
 
 
 @dataclass
@@ -61,7 +63,9 @@ class Trade:
     side: int = 1                 # +1 лонг, −1 шорт
     fee_in: float = 0.0
     fee_out: float = 0.0
-    row0: int = -1                # строка комиссии входа (день по close или начало интервала); для весов на сделку (К4)
+    frac: float = 1.0             # доля позиции сделки (частичный выход ½: у дочерней 0,5, у родителя после него 0,5)
+    parent: int | None = None     # индекс родительской сделки в Result.trades (частичный выход); иначе None
+    row0: int = -1               # строка комиссии входа (день по close или начало интервала); для весов на сделку (К4)
 
 
 @dataclass

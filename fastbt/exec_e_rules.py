@@ -26,22 +26,74 @@ def take_mult(p, sg: float) -> float | None:
     return p.a * sg if p.a is not None else None
 
 
-def stop_level(sd, px, sg, p, ext, be_on):
+def stop_level(sd, px, sg, p, ext, be_on, atr=None):
     """Стоп P(1 − sd·k_s σ); трейлинг ужесточает: экстремум с входа ∓ k_tr σ; безубыток — не хуже цены входа.
-    k_s = нет (b is None) — стопа нет вообще, ни трейла, ни безубытка.
-    Возвращает (уровень, причина): "stop" | "trail" (трейл строже базового стопа) | "bu" (безубыток строже всех)."""
-    if p.b is None:
+    k_s = нет (b is None) — стопа нет вообще, ни трейла, ни безубытка; исключение — atr_m (Ж-092): экстремум ∓ m·ATR
+    (atr — рублей, конечное; иначе кандидата нет). Возвращает (уровень, причина): "stop" | "trail" | "bu"."""
+    m = getattr(p, "atr_m", None)
+    atr_ok = m is not None and atr is not None and math.isfinite(atr)
+    if p.b is None and not atr_ok:
         return None, None
-    c = [(px * (1 - sd * p.b * sg), "stop")]
-    if p.k_tr is not None:
+    c = [(px * (1 - sd * p.b * sg), "stop")] if p.b is not None else []
+    if p.k_tr is not None and p.b is not None:
         c.append((ext * (1 - sd * p.k_tr * sg), "trail"))
-    if be_on:
+    if atr_ok:
+        c.append((ext - sd * m * atr, "trail"))
+    if be_on and p.b is not None:
         c.append((px, "bu"))
     best = c[0]
     for x in c[1:]:
         if (x[0] > best[0]) if sd > 0 else (x[0] < best[0]):
             best = x
     return best
+
+
+def atr_series(days, close=None, n: int = 14):
+    """ATR(n) — среднее истинного диапазона за n торговых дней, a[i] известен на close дня i (nan, пока нет n дней).
+    Дни pusto переносят прошлое значение. close[i] — Н6, иначе close последнего бара."""
+    a, tr, pc = [float("nan")] * len(days), [], None
+    for i, d in enumerate(days):
+        if d.pusto:
+            a[i] = a[i - 1] if i else float("nan")
+            continue
+        h, l = float(max(d.h)), float(min(d.l))
+        tr.append(h - l if pc is None else max(h - l, abs(h - pc), abs(l - pc)))
+        pc = float(close[i]) if close is not None else float(d.c[-1])
+        a[i] = sum(tr[-n:]) / n if len(tr) >= n else float("nan")
+    return a
+
+
+def atr_for_day(atr, ix, j):
+    """ATR для торгового дня ix[j]: по дням ДО него (последний закрытый), без самого дня. Первый день — нет (nan)."""
+    return atr[ix[j - 1]] if atr is not None and j > 0 else float("nan")
+
+
+def ratchet(sd, S, prev):
+    """Стоп не ослабляется: лонг — не ниже прежнего, шорт — не выше. prev None — первый уровень."""
+    if S is None or prev is None:
+        return S
+    return max(S, prev) if sd > 0 else min(S, prev)
+
+
+def part_level(sd, px, R, tick):
+    """Уровень частичной фиксации +1R от цены входа; с тиком — округление в сторону, где исполнить труднее (как тейк)."""
+    P = px + sd * R
+    return P if tick is None else (ceil_tick(P, tick) if sd > 0 else floor_tick(P, tick))
+
+
+def part_hit(sd, o, h, l, P, tick):
+    """Лимит ½ на +1R: проход на тик (тик не задан — строго сквозь P), цена max(open, P) для лонга."""
+    return take_hit(sd, o, h, l, P, tick)
+
+
+def part_allowed(day, bar, ent):
+    """Частичная фиксация — строго после бара входа ent = (день, бар); в самом баре входа её нет."""
+    return (day, bar) > ent
+
+
+def part_fee(comm, frac):
+    """Комиссия частичного выхода: доля позиции × ставка за сторону."""
+    return comm * frac
 
 
 def ext_next(sd, ext, hi, lo):
