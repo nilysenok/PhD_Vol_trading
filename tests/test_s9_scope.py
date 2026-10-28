@@ -141,20 +141,41 @@ def test_frozen_keys_equal_archive_choice(unlocked, fresh_s9, monkeypatch):
     assert (d1, b1) == ("D6", "cap1_band20")
 
 
+ARHIV_DIV = s9.MAIN / "arhiv" / "final3_do_dividendov_2026-10-28"   # вне git; хэши — docs/otchety/2026-10-28_arhiv_final3_do_dividendov.md
+
+
 def test_frozen_keys_equal_dev_choice(unlocked, fresh_s9, monkeypatch):
-    """Текущие эталоны final3 (после #259/#260): выбор D сменился D6 → D6lag1 на hyb_h1. Смена — на
-    слиянии #259 (78dd9b7, окна отбора платят выход): меняется ряд A (Шарп A −0,9297 → −0,92), у D6
-    число лет с выигрышем у A 3/4 → 2/4 и C8 не проходит, у D6lag1 3/4 — проходит; Шарп D6 и D6lag1
-    не изменился (−0,7908 / −0,7896). B и C прежние. Тест не перевыбирает: ключи = журнал run_log_final3."""
-    if not (s9.TABLES_DEV / "s9_D_zatvor_final3.csv").exists():
-        pytest.skip("нет таблиц разработки final3")
-    choice, (d1, b1) = _frozen_choice(s9.TABLES_DEV, monkeypatch)
-    assert choice == {"D": "D6lag1 на hyb_h1", "B": "cap1_band20 на hyb_h1",
-                      "C": "C1:W504_p70 на hyb_h5"}
+    """Замороженный выбор B/C/D (журнал заморозки run_log_final3.json, поле choice) = выбор по
+    эталонам final3 ДО дивидендов (архив, #370): D6lag1 / cap1_band20 / TEST_C. Тест не перевыбирает
+    по новым таблицам: они дают другой выбор (Ж-069 (а), см. test_dev_c_choice_differs_from_test_c)."""
     log = s9.OUT / "run_log_final3.json"
-    if log.exists():
-        assert choice == json.loads(log.read_text())["choice"]
+    if not log.exists() or not (ARHIV_DIV / "s9_D_zatvor_final3.csv").exists():
+        pytest.skip("нет журнала заморозки или архива до дивидендов")
+    frozen = json.loads(log.read_text())["choice"]
+    assert frozen == {"D": "D6lag1 на hyb_h1", "B": "cap1_band20 на hyb_h1",
+                      "C": "C1:W504_p70 на hyb_h5"}
+    assert s9.TEST_C == ("C1:W504_p70", "hyb_h5")
+    choice, (d1, b1) = _frozen_choice(ARHIV_DIV, monkeypatch)
+    assert choice == frozen
     assert (d1, b1) == ("D6lag1", "cap1_band20")
+
+
+def _record_select_keys(monkeypatch):
+    """Обёртка select_keys: пишет выбор по таблицам разработки, не меняя его."""
+    rec, orig = [], s9.select_keys
+    monkeypatch.setattr(s9, "select_keys", lambda *a: rec.append(orig(*a)) or rec[-1])
+    return rec
+
+
+def test_dev_c_choice_differs_from_test_c(unlocked, fresh_s9, monkeypatch):
+    """Тест-факт: выбор C на таблицах после дивидендов ≠ TEST_C — известно, Ж-069 (а). TEST_C
+    заморожен; защита frozen_keys отказывает (SystemExit), пока выбор расходится."""
+    if not (s9.TABLES_DEV / "s9_C_rezhim_final3.csv").exists():
+        pytest.skip("нет таблиц разработки final3")
+    rec = _record_select_keys(monkeypatch)
+    with pytest.raises(SystemExit, match="C в тест задан владельцем"):
+        _frozen_choice(s9.TABLES_DEV, monkeypatch)
+    assert rec[-1]["C"] != s9.TEST_C
 
 
 def test_split_c_one_main_point():
@@ -186,9 +207,14 @@ dev.SCOPES["test"] = dict(dev.SCOPES["dev"], val_end=2017 if frozen else 0)
 s9.TEST_YEARS, s9.TEST_CUT = s9.YEARS, s9.CUT
 s9.TEST_VAL_START, s9.TEST_VAL_END = 2017, (2017 if frozen else 0)
 s9.OUT, s9.TEST_TABLES = tmp, tmp
+_sel = s9.select_keys                                       # Ж-069 (а): C заморожен = TEST_C, D и B — по таблицам
+s9.select_keys = lambda *a: dict(_sel(*a), C=s9.TEST_C)
 for st in (["sources"], ["cache", "--workers", "1"], ["run", "--boot-reps", "300"]):
     s9.main(st + ["--scope", "test"])                       # σ по умолчанию — final3_full
 """
+
+
+C_DEPENDENT = ("s9_P2_multistrategiya", "s9_T1_komissii")   # таблицы с выбранной точкой C (по прогону)
 
 
 def _as_dev(df: pd.DataFrame) -> pd.DataFrame:
@@ -220,6 +246,8 @@ def test_test_path_on_dev_years(tmp_path):
     rd = lambda p: pd.read_csv(p, sep=";", decimal=",", encoding="utf-8-sig", dtype=str)
     for t in TABLES10:
         if t in ("s9_C_rezhim", "s9_T2_podperiody"):
+            continue
+        if t in C_DEPENDENT:                  # Ж-069 (а): тест берёт C = TEST_C, разработка — свой выбор
             continue
         a, b = _as_dev(rd(tmp_path / f"{t}_final3_test.csv")), rd(dv / f"{t}_final3pt.csv")
         pd.testing.assert_frame_equal(a[b.columns], b, obj=t)
