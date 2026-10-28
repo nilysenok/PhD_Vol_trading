@@ -20,8 +20,7 @@ def _row(kod, vhod):
     return {"klyuch": {"pt": pt}, "kod": kod, "istochnik": "sobol1"}
 
 
-@pytest.mark.xfail(strict=True, reason="блокер P-10: флаг RYNOK_ISPOLNENIE глобальный, строка прохода 1 (rynok по close d) ложно основная")
-def test_rynok_s_kodom_prohoda1_spravochnaya():
+def test_rynok_s_kodom_prohoda1_spravochnaya():       # красный до правки автора: блокер П-10 (Ж-081: без xfail/skip)
     assert P.osnovnaya_stroki(_row(KOD1, "rynok")) is False
 
 
