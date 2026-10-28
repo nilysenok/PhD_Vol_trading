@@ -246,6 +246,24 @@ def pokryto(pt: dict) -> bool:
     return pt.get("vyhod", NET) in (NET, "lim") and not set(pt) & {"k_x", "storona", "lestnica", "ed_lim", "zaem"}
 
 
+def ryady(evr, pt: dict, period: str) -> tuple:
+    """Ряды ledger v2.0 §1.4 (docs/otchety/2026-10-28_progon_etap1.md): (port float64 [T], tik float32 [17, T], daty).
+    port — df["excess"] годов периода (как v1.0 excess_d подряд); tik — ex_t = g − sides·comm − u·rf·cal, u = expo
+    (fdr = None) или noch; nan — у тикера нет строки на дату. Писатель — ledger_v2.Pisatel (Л-1), когда появится."""
+    from fastbt.etap1_eval import years_of
+    with patched():
+        df, inv, eng, _, rs = evr.excess(pt, period)
+    keep = np.isin(eng.dates.year, years_of(period))
+    tik = np.full((len(rs), len(eng.dates)), np.nan)
+    a = 0
+    for ti, r in enumerate(rs):
+        d = inv[a:a + len(r.g)]
+        u = r.expo if r.noch is None else r.noch
+        tik[ti, d] = r.g - r.sides * evr.comm - u * eng.rf[d] * eng.cal[d]
+        a += len(r.g)
+    return df["excess"].to_numpy()[keep], tik[:, keep].astype(np.float32), eng.dates[keep].to_numpy()
+
+
 # --- параллельно: fork с общими массивами баров ---
 _W: dict = {}
 
