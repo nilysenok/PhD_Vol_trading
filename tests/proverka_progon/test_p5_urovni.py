@@ -40,9 +40,15 @@ def test_umolchaniya_i_chislo_konfiguracij():
     assert len(u3["tsel_vol"]) * len(u3["okno_vol"]) * len(u3["tormoz_mdd"]) == 24
     vk = pu().konfiguracii()
     assert len(vk) == 1296 and len({tuple(sorted((k, str(v)) for k, v in c.items())) for c in vk}) == 1296
-    osn = [c for c in vk if c["osnovnaya"]]
-    assert len(osn) == 1 and {k: osn[0][k] for k in UMOL} == UMOL
-    assert sum(all(c[k] == v for k, v in UMOL.items()) for c in vk) == 1
+    # Ж-090 п. 2: основная одна и вне сетки (N = 1); умолчания «равный вес без таргета» (= A) — справочная строка сетки
+    assert not any(c["osnovnaya"] for c in vk)
+    ref = [c for c in vk if all(c[k] == v for k, v in UMOL.items())]
+    assert len(ref) == 1 and ref[0]["rol"] == "ravnyj_bez_targeta"
+    assert sum(c["rol"] == "chuvstvitelnost" for c in vk) == 1295
+    osn = pu().osnovnaya_konf()
+    assert osn["osnovnaya"] is True and not all(osn[k] == v for k, v in UMOL.items())
+    assert (osn["ves"], osn["tsel_vol"], osn["okno_vol"], osn["tormoz_mdd"], osn["L"]) == ("obr_vol_63", 10, 63, "net", 1)
+    assert dict(sk["osnovnaya"]) == {k: osn[k] for k in sk["osnovnaya"]}
 
 
 def test_a_shtrih_umolchaniya_sredneye_par():
@@ -177,10 +183,14 @@ def test_tablica_1296_odna_osnovnaya_bez_ranzhirovaniya(tmp_path):
     k = _komp(T)
     poz = {s: np.ones((17, T)) for s in k}
     t = pu().tablica_1296(k, _daty(T), pozicii=poz, proshli=["S1", "S2"], out=tmp_path / "u.csv")
-    assert len(t) == 1296 and int(t["osnovnaya"].sum()) == 1
+    assert len(t) == 1297 and int(t["osnovnaya"].sum()) == 1           # 1 основная (Ж-090 п. 2) + 1296 справочных
     assert not any(c.lower() in ("rang", "rank", "luchshaya", "vybrana") for c in t.columns)
-    assert dict(t[t["osnovnaya"]].iloc[0][list(UMOL)]) == UMOL
-    assert set(t[~t["osnovnaya"]]["status"]) == {"chuvstvitelnost"} and list(t.index) == list(range(1296))
+    osn = t[t["osnovnaya"]].iloc[0]
+    assert osn["ves"] == "obr_vol_63" and osn["tsel_vol"] == 10 and osn["status"] == "osnovnaya" and t.index[t["osnovnaya"]][0] == 0
+    sp = t[~t["osnovnaya"]]
+    assert list(sp["status"]).count("ravnyj_bez_targeta") == 1 and list(sp["status"]).count("chuvstvitelnost") == 1295
+    assert dict(sp[sp["status"] == "ravnyj_bez_targeta"].iloc[0][list(UMOL)]) == UMOL
+    assert list(t.index) == list(range(1297))                          # порядок сетки, без сортировки
     assert not hasattr(pu(), "vybrat_konfig") and not hasattr(pu(), "luchshaya_konfig")
 
 

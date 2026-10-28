@@ -136,9 +136,15 @@ def test_tormoz_sreza_posle_prosadki():
 
 def test_setka_54_na_24_odna_osnovnaya():
     cs = pu.konfiguracii()
-    assert len(cs) == 1296 and sum(c["osnovnaya"] for c in cs) == 1
-    assert len({tuple(sorted((k, str(v)) for k, v in c.items() if k != "osnovnaya")) for c in cs}) == 1296
-    assert [c for c in cs if c["osnovnaya"]][0] == {**DEF, "osnovnaya": True}
+    # Ж-090 п. 2: основная — одна и вне сетки; в сетке 1296 справочных (1 ravnyj_bez_targeta = A + 1295 чувствительности)
+    assert len(cs) == 1296 and sum(c["osnovnaya"] for c in cs) == 0
+    assert len({tuple(sorted((k, str(v)) for k, v in c.items() if k not in ("osnovnaya", "rol"))) for c in cs}) == 1296
+    ref = [c for c in cs if c["rol"] == "ravnyj_bez_targeta"]
+    assert len(ref) == 1 and {k: ref[0][k] for k in DEF} == DEF
+    assert sum(c["rol"] == "chuvstvitelnost" for c in cs) == 1295
+    osn = pu.osnovnaya_konf()
+    assert osn["osnovnaya"] is True and osn["ves"] == "obr_vol_63" and osn["tsel_vol"] == 10 and osn["L"] == 1
+    assert osn["tormoz_mdd"] == "net" and osn["okno_vol"] == 63
 
 
 def test_tablica_bez_rangirovaniya(tmp_path):
@@ -152,10 +158,13 @@ def test_tablica_bez_rangirovaniya(tmp_path):
         df = pu.tablica_1296(kom, DATY, poz, ["S1", "S2"], out=tmp_path / "u.csv")
     finally:
         m.konfiguracii = orig
-    assert df["osnovnaya"].sum() == 1 and set(df["status"]) == {"osnovnaya", "chuvstvitelnost"}
+    assert df["osnovnaya"].sum() == 1 and set(df["status"]) == {"osnovnaya", "ravnyj_bez_targeta", "chuvstvitelnost"}
+    assert list(df["status"]).count("ravnyj_bez_targeta") == 1
     assert "rang" not in df.columns and (tmp_path / "u.csv").exists()
     assert df.loc[df["osnovnaya"], "sharpe"].iloc[0] == pytest.approx(
-        pu.metriki(pu.a_shtrih(kom, DEF, DATY))["sharpe"])
+        pu.metriki(pu.a_shtrih(kom, pu.osnovnaya_konf(), DATY))["sharpe"])        # основная — Ж-090 п. 2
+    assert df.loc[df["status"] == "ravnyj_bez_targeta", "sharpe"].iloc[0] == pytest.approx(
+        pu.metriki(pu.a_shtrih(kom, DEF, DATY))["sharpe"])                         # справочная строка = прежние умолчания (A)
 
 
 # ---------------- мутации: каждая обязана ронять соответствующий тест ----------------
