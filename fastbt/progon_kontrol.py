@@ -143,7 +143,8 @@ def run_kandidat(ev, pt: dict, pisatel, period: str = "train4", kod_slit: bool =
         else:
             row, x, tik = ev.evaluate_v2(z.pt, period, z.ev_vozm)
         row = _row(ev, row, z, kod, vhody, kod_slit)
-        pisatel.add(row, x, tik)
+        from fastbt import zaem_v2
+        zaem_v2.pisat(pisatel, row, x, tik, getattr(ev, "zaem", None))                                    # Ж-089: ряд платы за заём
         from fastbt.tejk_signal import pisat_diag
         pisat_diag(pisatel, row, getattr(ev, "diag", None) if row["status"] == "ok" else None)                 # Ж-087
         out.append((z, row))
@@ -185,6 +186,8 @@ def run_strategiya(ev, centers: dict, root, csv, period: str = "train4", potok: 
     try:
         res = {n: run_kandidat(ev, pt, pis, period, kod_slit, **kw) for n, pt in centers.items()}
     finally:
+        from fastbt import zaem_v2
+        zaem_v2.zakryt(pis)
         pis.close()
     tablica(ev.sid, res, csv)
     return res
