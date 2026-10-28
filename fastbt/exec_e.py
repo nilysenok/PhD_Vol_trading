@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from fastbt.exec_e2 import Run2
 from fastbt.exec_e_run import Run
 from fastbt.exec_e_types import Day, Params, Result, Trade  # noqa: F401
 
@@ -69,9 +70,23 @@ def _check_params(p: Params) -> None:
         raise ValueError("tick должен быть ≥ 0 (0 — касание)")
     if p.vyhod_lim and (p.k is None or p.check != "bary"):
         raise ValueError("vyhod_lim требует k (лимитный вход) и check='bary'")
+    if p.t_vyhod not in ("close", "1500", "1700", "open2"):
+        raise ValueError("t_vyhod: close | 1500 | 1700 | open2")
+    if p.zhizn not in (None, 12, 36, 60):
+        raise ValueError("zhizn: None | 12 | 36 | 60")
+    if p.bar_plus < 0 or p.stop_tik < 0:
+        raise ValueError("bar_plus и stop_tik должны быть ≥ 0")
+    if p.stop_tik and p.tick is None:
+        raise ValueError("stop_tik требует tick")
+    if (p.bar_plus or p.t_vyhod != "close") and (p.check != "bary" or p.vyhod_lim):
+        raise ValueError("bar_plus и t_vyhod требуют check='bary' без vyhod_lim")
 
 
-def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None) -> Result:
+def _new_axes(p: Params, ed) -> bool:
+    return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik)
+
+
+def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None) -> Result:
     """rf_cal[t] — ставка/365·календарные дни [t, следующий торговый день) (msp.cal_days, Н2).
     close[t] — закрытие дня по Н6 (18:50); None — close последнего 5-мин бара (E).
     div[i] — полный дивиденд, руб./акция, на день гэпа i (fastbt/dividendy.gap_divs); None — без дивидендов (Ж-057 п. 1).
@@ -89,8 +104,11 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
                 raise ValueError(f"день {i}: close Н6 нечисловой")
     if div is not None and len(div) != len(days):
         raise ValueError("days, div разной длины")
+    if ed is not None and len(ed) != len(days):
+        raise ValueError("days, ed разной длины")
     from fastbt import dividendy
-    r = Run(ticker, days, sig, sigma, p, close, div, dividendy.DIV_NALOG if nalog is None else nalog)
+    nal = dividendy.DIV_NALOG if nalog is None else nalog
+    r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed) if _new_axes(p, ed) else Run(ticker, days, sig, sigma, p, close, div, nal)
     for j, i in enumerate(r.ix):
         r.step(j, i)
     n = len(days)
@@ -107,7 +125,8 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         if d.pusto:
             r.pos[i] = r.pos[i - 1] if i else 0.0
     rf = np.zeros(n) if rf_cal is None else np.asarray(rf_cal, float)
-    return Result(r.trades, gross, r.cost, r.pos, free, free * rf, r.n_orders, r.n_fills, r.x_orders, r.x_fills)
+    return Result(r.trades, gross, r.cost, r.pos, free, free * rf, r.n_orders, r.n_fills, r.x_orders, r.x_fills,
+                  getattr(r, "x_t", 0))
 
 
 def run_e1(*a, **kw):
