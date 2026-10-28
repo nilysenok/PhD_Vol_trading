@@ -8,10 +8,8 @@ Ledger (до дивидендов, архив) читается только н�
 from __future__ import annotations
 
 import argparse
-import functools
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from fastbt import etap1_poisk as P
@@ -35,26 +33,6 @@ def nayti_ledger() -> Path | None:
     return None
 
 
-def kolonki(L, yakor: dict) -> tuple:
-    """Столбцы как в V.matrix (порядок и отбор те же), но точки × дни; coords None у ансамблей."""
-    ys = V.PERIOD_YEARS["train"]
-    keys, coords, M, dop = [], [], [], []
-    for (k, per), (prm, res) in L.cache.items():
-        if per != "train" or not set(ys) <= set(s := V.series(res)):
-            continue
-        keys.append(k)
-        M.append(np.concatenate([s[y] for y in ys]))
-        coords.append(None if isinstance(k[0], str) else prm)
-        dop.append(False if coords[-1] is None else not res.get("vyrozhdena") and V.dopustima(L, prm, yakor))
-    return keys, coords, np.array(M), np.array(dop, bool)
-
-
-def pseudo_dates(L) -> np.ndarray:
-    """Дат в ledger нет: год каждого дня точный (excess_d по годам), внутри года — порядковые сутки с 1 января."""
-    res = next(r for _, (_, r) in L.cache.items() if r.get("excess_d"))
-    return np.concatenate([np.datetime64(f"{y}-01-01") + np.arange(len(res["excess_d"][y])) for y in V.PERIOD_YEARS["train"]])
-
-
 def plan_base(sid: str, S: dict) -> tuple:
     d = ROOT / "docs/tables/zh047"
     f = d / f"{sid}_itog_v2.csv"
@@ -72,18 +50,17 @@ def schitat(sid: str, it: int, led_dir: Path) -> dict:
     S = P.load_setka(sid)
     name = f"ledger_it{it}.pkl"
     L = K.load_ledger(sid, name, None, led_dir)
-    keys, coords, M, dop = kolonki(L, S["yakor"])
     plan, base = plan_base(sid, S)
-    kub = B.postroit_kub(coords, S["axes"], plan, base)
-    dates = pseudo_dates(L)
-    centr = functools.partial(B.vybor_centr_plato, kub=kub, dop=dop)
+    pr = B.pravilo_etapa(L, S["axes"], plan, base, S["yakor"])
+    M, kw = V.matrix(L).T, pr["select_fn"].keywords
+    assert M.shape[0] == len(pr["coords"]), "столбцы pravilo_etapa не совпали с V.matrix"
     oos = lambda X, d: B.min_msr(X, d)                                                  # noqa: E731
-    a = B.cscv(M, coords, B.vybor_argmax, dates=dates)
-    c = B.cscv(M, coords, centr, dates=dates)
-    c2 = B.cscv(M, coords, centr, dates=dates, oos_fn=oos)
+    a = B.cscv(M, pr["coords"], B.vybor_argmax, dates=pr["dates"])
+    c = B.cscv(M, pr["coords"], pr["select_fn"], dates=pr["dates"])
+    c2 = B.cscv(M, pr["coords"], pr["select_fn"], dates=pr["dates"], oos_fn=oos)
     old = staroe(sid, it)
-    return dict(strategiya=sid, iteraciya=it, N_tochek=M.shape[0], T_dney=M.shape[1], N_v_kube=int((kub.col >= 0).sum()),
-                N_dopustimyh=int(dop.sum()), pbo_argmax=a["pbo"], pbo_staroe=old, argmax_sovpal=bool(abs(a["pbo"] - old) < 1e-12),
+    return dict(strategiya=sid, iteraciya=it, N_tochek=M.shape[0], T_dney=M.shape[1], N_v_kube=int((kw["kub"].col >= 0).sum()),
+                N_dopustimyh=int(kw["dop"].sum()), pbo_argmax=a["pbo"], pbo_staroe=old, argmax_sovpal=bool(abs(a["pbo"] - old) < 1e-12),
                 pbo_centr_plato=c["pbo"], pbo_centr_plato_oos_msr=c2["pbo"], razbienij=c["n"], propusk_centr=c["n_propusk"],
                 osi_plana=" ".join(plan), ledger=name)
 

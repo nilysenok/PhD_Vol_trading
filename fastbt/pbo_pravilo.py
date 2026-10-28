@@ -16,6 +16,7 @@ dates_in) -> индекс точки | None (None: допустимой точк
 """
 from __future__ import annotations
 
+import functools
 import itertools
 import math
 from typing import Callable, NamedTuple
@@ -145,3 +146,20 @@ def cscv(M: np.ndarray, coords: list, select_fn: Callable, nblk: int = 8, dates=
 def pbo_cscv_pravilo(M: np.ndarray, coords: list, select_fn: Callable, nblk: int = 8, dates=None) -> float:
     """PBO по CSCV с выбором select_fn внутри каждого разбиения (Ж-080)."""
     return cscv(M, coords, select_fn, nblk, dates)["pbo"]
+
+
+def pravilo_etapa(led, axes: dict, plan: list, base: dict, yakor: dict, period: str = "train") -> dict:
+    """Аргументы V.pbo(M, pravilo=…) для Ledger: coords/dop в порядке столбцов V.matrix(led, period); даты — год каждого
+    дня точный (excess_d по годам), внутри года порядковые сутки с 1 января (в Ledger дат нет)."""
+    from fastbt import etap1_poisk_vorota as V
+    ys = V.PERIOD_YEARS[period]
+    coords, dop, n = [], [], {}
+    for (k, per), (prm, res) in led.cache.items():
+        if per != period or not set(ys) <= set(s := V.series(res)):
+            continue
+        n = n or {y: len(s[y]) for y in ys}
+        coords.append(None if isinstance(k[0], str) else prm)
+        dop.append(coords[-1] is not None and not res.get("vyrozhdena") and V.dopustima(led, prm, yakor, **V.kw(period)))
+    kub = postroit_kub(coords, axes, plan, base)
+    dates = np.concatenate([np.datetime64(f"{y}-01-01") + np.arange(n[y]) for y in ys]) if n else np.array([], "datetime64[D]")
+    return dict(coords=coords, dates=dates, select_fn=functools.partial(vybor_centr_plato, kub=kub, dop=np.array(dop, bool)))
