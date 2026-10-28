@@ -140,19 +140,6 @@ def _key(period: str):
         s9.PERIOD, s9.YEARS, s9.VAL_START = old
 
 
-def _a4_ready() -> bool:
-    if not bars5m.SRC.exists():
-        return False
-    try:
-        (k4, out), (k0, _) = _key("train4"), _key("train")
-        return k4 != k0 and (out / f"cache_{k4}.pkl").exists()
-    except Exception:                                    # noqa: BLE001 — «не готово» = любая причина, тест xfail
-        return False
-
-
-A4 = pytest.mark.xfail(not _a4_ready(), strict=True, reason="ждёт s9-a-train4")
-
-
 def a4_cache() -> dict:
     import pickle
     k4, out = _key("train4")
@@ -183,7 +170,6 @@ def ref_lr_nf(tickers) -> dict:
     return {t: (td.dates, td.log_ret) for t in tickers for td in [etap1.load_ticker_nf(t)]}
 
 
-@A4
 @pytest.mark.parametrize("comm", COMMS_A)
 def test_a_train4_equals_s9(comm):
     from fastbt import ekviv_s9
@@ -202,7 +188,6 @@ def test_a_train4_equals_s9(comm):
         assert r["max_dpnl"] <= TOL and r["sharpe_s9"] != 0 and dl <= TOL, (y, comm, r["max_dpnl"], dl)
 
 
-@A4
 def test_a_train4_period_v_kluche_kesha():
     """Кэш A по ключу `train` при запросе train4 недопустим: период обязан входить в cache_key."""
     assert _key("train4")[0] != _key("train")[0]
@@ -226,20 +211,11 @@ def test_mutation_a_bez_dividendov_2015_2016_caught(monkeypatch):
 
 
 # ---------------- Ж-080: anchor_s9_diff(period="train4") конечен и ≤ 1e-12 (S1–S6; A — тест выше) ----------------
-def _start_year_fixed() -> bool:
-    from fastbt import sweep_sk
-    return sweep_sk.START_YEAR != 2018 and sweep_sk.START_YEAR <= 2016
-
-
-ANCHOR = pytest.mark.xfail(not _start_year_fixed(), strict=True, reason="ждёт s9-a-train4 (START_YEAR=2018 -> inf на 2016–2017)")
-
-
 def _anchor_d(sid: str) -> dict:
     from fastbt import etap1
     return etap1.anchor_s9_diff(sid, make_evr(sid), COMM, PER)
 
 
-@ANCHOR
 @pytest.mark.parametrize("sid", [f"S{k}" for k in range(1, 7)])
 def test_anchor_s9_diff_train4_konechen(sid):
     d = _anchor_d(sid)
