@@ -20,7 +20,7 @@ from fastbt import etap1, etap1_ansambl as A, etap1_poisk as P, etap1_poisk_voro
 from fastbt.etap1_eval import YAKOR
 from fastbt.etap1_plus_eval import PlusEvaluator
 from fastbt.zh051_iter import OUT
-from fastbt.zh051_plato import GATES, PLUS_KEYS, ledger_cls, ledger_name
+from fastbt.zh051_plato import GATES, PLUS_KEYS, fdr_of, ledger_cls, ledger_name
 
 NUM = {"top_k": int, "ma_n": int, "porog_shiriny": float}
 
@@ -79,10 +79,11 @@ def run_10(sid: str) -> dict:
     def ev(p, per):                                        # точка с меткой ans — ансамбль вокруг P1, прочие оси — точки p
         q = {k: v for k, v in p.items() if k != "ans"}
         return evr.evaluate_ens({**YAKOR, **q}, sigpts, p["ans"].split("|")[1], per) if "ans" in p else evr.evaluate({**YAKOR, **q}, per)
-    cls = ledger_cls(evr.fdr)
-    led = K.load_ledger(sid, ledger_name(2, evr.fdr), ev, cls=cls)
+    fdr = fdr_of(evr)
+    cls = ledger_cls(fdr)
+    led = K.load_ledger(sid, ledger_name(2, fdr), ev, cls=cls)
     for n in (3, 4):
-        K.merge(led, K.load_ledger(sid, ledger_name(n, evr.fdr), ev, cls=cls))
+        K.merge(led, K.load_ledger(sid, ledger_name(n, fdr), ev, cls=cls))
     if K.sverka_ledger(led, ev):
         raise SystemExit(f"{sid}: СТОП, строки ledger не воспроизведены текущим кодом")
     pb0, n0, names = V.pbo(V.matrix(led)), led.n_unique, list(E)
@@ -133,5 +134,5 @@ def run_10(sid: str) -> dict:
                     proshla=bool(ok), verdikt="кандидат" if ok else ("не прошла: нет соседей, плато не пройдено"
                                                                      if best["net_sosedey"] else "не прошла"))
     K.write_table(OUT / "it10" / f"{sid}_itog.csv", [itog])
-    K.save_ledger(sid, led, ledger_name(10, evr.fdr))
+    K.save_ledger(sid, led, ledger_name(10, fdr))
     return itog

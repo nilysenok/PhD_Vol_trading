@@ -53,6 +53,11 @@ class PlusLedger(V.Ledger):
         return super().__call__(p if self.fdr is None else {**p, "fdr": self.fdr}, period)    # Д5: режим — в ключ строки
 
 
+def fdr_of(evr):
+    """Режим ФДР оценщика (у подставных оценщиков без атрибута — None)."""
+    return getattr(evr, "fdr", None)
+
+
 def ledger_cls(fdr=None):
     """Класс ledger под режим ФДР: None — `PlusLedger` как был; иначе подкласс с `fdr` (ключ строк и имя файла)."""
     if fdr is None:
