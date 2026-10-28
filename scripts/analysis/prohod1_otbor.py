@@ -8,7 +8,8 @@ import numpy as np
 
 import prohod1_lib as L  # noqa: F401  (путь и FASTBT_MAIN)
 from fastbt.pbo_pravilo import cscv, msr_oos, msr_stolbcy, vybor_argmax
-from fastbt.progon_region import _aktivna, _lvl, _pt, kodirovat, select_fn_region, vybor_region
+from fastbt.progon_region import (K_OSI, MIN_CHLENOV, NK, RADIUS, _aktivna, _cel_stolbcov, _lvl, _pt, kodirovat, osi_rows, rang_osey, regiony,
+                                  ryad_regiona, select_fn_region, vybor_region)
 from fastbt.progon_wf import OSNOVNOE, PRAVILA, _sr, pbo_wf, wf
 from fastbt.tselevaya import GODA_TRAIN4, msr_i_gody
 
@@ -46,6 +47,27 @@ def region_stroka(res, rows, daty, M5) -> tuple:
                 chlenov=len(res["chleny"]), chlenov_ustojchivyh=int(np.isfinite(t).sum()), score_msr=res["score"],
                 **{f"ansambl_{k}": v for k, v in ens.items()}, tsentr_klyuch_sha=rows[i]["klyuch_sha"],
                 **{f"tsentr_{k}": v for k, v in cen.items()}), i
+
+
+def diagnostika_regiona(M5, rows, daty) -> dict:
+    """Справочно: почему региона нет. Повторяет шаги vybor_region (оси по индексу Соболя, регионы радиуса 1) только как счётчики,
+    плюс регион по ослабленной целевой «dolya» (≥ 75 % годов с mSR > 0) — для сравнения, в ворота не идёт."""
+    tcol = _cel_stolbcov(M5, daty, list(range(NK)), "msr")
+    osi_all = osi_rows(rows)
+    st = rang_osey(rows, tcol, osi_all)
+    osi = [osi_all[i] for i in np.argsort(-np.asarray(st), kind="stable")[:K_OSI]]
+    X = kodirovat(rows, osi)
+    reg = regiony(rows, osi, RADIUS)
+    big = [(c, idx) for c, idx in reg.items() if len(idx) >= MIN_CHLENOV]
+    akt = [(c, idx) for c, idx in big if any(_aktivna(rows[i], None) for i in np.flatnonzero((X == np.array(c)).all(axis=1)))]
+    ust = [c for c, idx in big if math.isfinite(float(_cel_stolbcov(ryad_regiona(M5, idx)[:, None], daty, list(range(NK)), "msr")[0]))]
+    rd = vybor_region(M5, rows, daty, tsel="dolya")
+    a = np.array([_aktivna(r, None) for r in rows])
+    return dict(aktivnyh_strok_sdelok_ge30=int(a.sum()), aktivnyh_i_ustojchivyh=int((a & np.isfinite(tcol)).sum()),
+                osi_top=";".join(osi), regionov_vsego=len(reg), s_chlenov_ge10=len(big), s_aktivnym_tsentrom=len(akt),
+                s_ustojchivym_ryadom=len(ust), ustojchivyh_strok_vsego=int(np.isfinite(tcol).sum()),
+                dolya_sprav_region="est" if rd else "net", dolya_sprav_chlenov=len(rd["chleny"]) if rd else 0,
+                dolya_sprav_ansambl_mSR=msr_ryada(rd["ryad"], daty)["mSR"] if rd else NAN)
 
 
 def wf_tablica(M5, rows, daty) -> tuple:
@@ -93,6 +115,7 @@ def otbor_sid(d: dict) -> dict:
     M5 = d["M"] - L.STAVKA_SHORT * d["Z"]
     res = vybor_region(M5, rows, daty)
     reg, ic = region_stroka(res, rows, daty, M5)
+    reg.update(diagnostika_regiona(M5, rows, daty))
     wft, pbo_w = wf_tablica(M5, rows, daty)
     pbo = pbo_regiona(M5, rows, daty)
     v = vorota(reg, pbo, None if ic is None else rows[ic])

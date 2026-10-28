@@ -88,6 +88,18 @@ def _kv(x: np.ndarray) -> dict:
         {"p50": float("nan"), "p90": float("nan"), "max": float("nan")}
 
 
+def diagnostika_nan(X: np.ndarray, py: np.ndarray, daty: np.ndarray) -> dict:
+    """Справочно, не отбор: почему мало устойчивых. ploskij — год без движения (σ = 0, mSR не определён);
+    nan_pri_sigma — mSR года не определён при σ > 0 (mVaR ≤ 0); ust_esli_nan_pri_pol_srednem — устойчивость, если год с
+    неопределённым mSR считать «>0» при положительном среднем (допущение, в правилах Ж-090 его нет)."""
+    g = np.asarray(daty).astype("datetime64[Y]").astype(int) + 1970
+    mu = np.column_stack([X[g == y].mean(axis=0) for y in GODY])
+    flat = np.column_stack([X[g == y].std(axis=0, ddof=1) == 0 for y in GODY])
+    return dict(hotya_by_ploskij_god=int(flat.any(axis=1).sum()), nan_pri_sigma=int((np.isnan(py) & ~flat).any(axis=1).sum()),
+                srednee_pol_vse_gody=int((mu > 0).all(axis=1).sum()),
+                ust_esli_nan_pri_pol_srednem=int(((py > 0) | (np.isnan(py) & (mu > 0))).all(axis=1).sum()))
+
+
 def raspredelenie(M: np.ndarray, Z: np.ndarray, daty: np.ndarray) -> list:
     """Шаг 2: целевая основных строк — с платой 5 % (основная) и без неё (справочно)."""
     out = []
@@ -98,7 +110,7 @@ def raspredelenie(M: np.ndarray, Z: np.ndarray, daty: np.ndarray) -> list:
         q, qa = _kv(m[ok]), _kv(m[np.isfinite(m)])
         out.append(dict(variant=nazv, strok=len(m), mSR_nan=int((~np.isfinite(m)).sum()),
                         nan_hotya_by_god=int(np.isnan(py).any(axis=1).sum()), srednee_pol=int((X.mean(axis=0) > 0).sum()),
-                        ustojchivyh=int(ok.sum()),
+                        **diagnostika_nan(X, py, daty), ustojchivyh=int(ok.sum()),
                         dolya_ustojchivyh=float(ok.mean()), ust_p50=q["p50"], ust_p90=q["p90"], ust_max=q["max"],
                         vse_konech_p50=qa["p50"], vse_konech_p90=qa["p90"], vse_konech_max=qa["max"]))
     return out
