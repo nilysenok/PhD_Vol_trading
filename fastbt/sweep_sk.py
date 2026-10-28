@@ -62,11 +62,13 @@ class SkEvaluator:
         return {t: Unit(t, self.sid, td, ind, fam.generate(td, ind, [dict(sp)]))
                 for t, (td, ind) in self._td.items()}
 
-    def pnl(self, sigs: dict, p: dict, comm: float, end: pd.Timestamp) -> pd.DataFrame:
-        """p — плоские параметры (sweep_post.split): RM любыми значениями, маски, q_sily, исполнение, фильтр оборота."""
+    def pnl(self, sigs: dict, p: dict, comm: float, end: pd.Timestamp, start_year: int | None = None) -> pd.DataFrame:
+        """p — плоские параметры (sweep_post.split): RM любыми значениями, маски, q_sily, исполнение, фильтр оборота.
+        start_year — первый год метрик (train4: 2016); по умолчанию START_YEAR."""
+        start_year = START_YEAR if start_year is None else start_year
         pos, lr, tick, bar, date = [], [], [], [], []
         for ti, (t, u) in enumerate(sigs.items()):
-            i0 = year_bounds(u.dates, START_YEAR)[0]
+            i0 = year_bounds(u.dates, start_year)[0]
             i1 = int(np.searchsorted(u.dates, np.datetime64(end)))
             td_, ind = self._td[t]
             v, ex = build_view(self.sid, u, td_, ind, p, self.sig_names)
