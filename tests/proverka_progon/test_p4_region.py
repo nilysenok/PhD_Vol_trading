@@ -1,6 +1,10 @@
 """П-4 (проверяющий), Л-7: select_fn региона на синтетике с известным ответом. Контракт: docs/zadaniya/2026-10-28_progon_L7_region.md.
 Допущения о форме входа (контракт Chitatel §1.5): M — T × N; rows[i]["klyuch"] — токены осей (repr(float)), by_quarter, mediana_kv,
-dolya_pol_kv; daty — datetime64[D]. П-7, Ж-086: в klyuch добавлены постоянные оси t_vyhod = open2, vhod = 0.5 (без них ValueError; ожидания те же). Модуль progon_region импортируется внутри тестов: до кода каждый тест красный."""
+dolya_pol_kv; daty — datetime64[D]. П-7, Ж-086: в klyuch добавлены постоянные оси t_vyhod = open2, vhod = 0.5 (без них ValueError; ожидания те же). Модуль progon_region импортируется внутри тестов: до кода каждый тест красный.
+Ж-090 (перенацеливание, PR #455): целевая = mSR за окно при mSR каждого года окна > 0. Требования те же. Изменения: шум с общим фактором
+(mSR = nan при дневном m/σ > ~1,6); гауссов холм вместо ступеньки (ранг осей считается по устойчивым столбцам, на ступеньке целевая
+постоянна); тест «доля + кварталов 0,75/0,8125» -> «год с mSR <= 0 / один квартал в минус»; nan-квартал -> «год без дней не участвует»;
+масштабы сигнала в тесте осей подняты (0,0006 -> 0,002, шаг 1e-4 -> 5e-4)."""
 import itertools
 import sys
 from pathlib import Path
@@ -25,8 +29,14 @@ def kub(nvals, nnoise, mu_fn, seed=1, sigma=0.01):
     names = SIG + ["n1"]
     pts = list(itertools.product(*([range(nvals)] * 4 + [range(nnoise)])))
     mu = np.array([[mu_fn(dict(zip(names, p)), q) for q in range(16)] for p in pts])         # N × 16
-    M = mu[:, QI].T + np.random.default_rng(seed).normal(0, sigma, (len(DATY), len(pts)))
+    M = mu[:, QI].T + shum(np.random.default_rng(seed), (len(DATY), len(pts)), sigma)
     return M, rows_of(M, pts, names), pts, names
+
+
+def shum(rng, shape, sigma):
+    """Шум с общим фактором (корреляция столбцов 0,64). Ж-090: mSR (Фавр–Галеано) = nan при дневном m/σ > ~1,6, а у независимых шумов
+    ансамбль из сотен столбцов уходит за этот порог; общий фактор держит σ ансамбля на уровне σ столбца, как у столбцов одного ledger."""
+    return sigma * (0.8 * rng.normal(0, 1, (shape[0], 1)) + 0.6 * rng.normal(0, 1, shape))
 
 
 def rows_of(M, pts, names):
@@ -41,7 +51,9 @@ def rows_of(M, pts, names):
 
 
 def plato(c, w=1):
-    return lambda i, q: 0.0008 if all(abs(i[a] - c) <= w for a in SIG) else -0.0005
+    # Ж-090: было ступенька 0,0008 / -0,0005. mSR-целевая и ранг осей Соболя считаются только по устойчивым столбцам (mSR каждого года > 0):
+    # на ступеньке внутри плато целевая постоянна, и оси ранжируются шумом. Нужен гладкий склон: гауссов холм вокруг c, дальше база < 0.
+    return lambda i, q: 0.006 * np.exp(-sum((i[a] - c) ** 2 for a in SIG) / 2) - 0.0002
 
 
 def test_region_vybiraet_plato_a_ne_pik():
@@ -71,29 +83,33 @@ def test_ryad_regiona_srednee_a_ne_mediana():
 
 
 def _polovina_kub(k_dop):
-    """Плато положительно в k_dop кварталах из 16, в остальных сильно отрицательно; прочая сетка — минус."""
+    """Плато положительно в k_dop первых кварталах из 16, дальше отрицательно; прочая сетка — минус."""
     def mu(i, q):
         base = plato(2)(i, q)
-        return base if base < 0 or q < k_dop else -0.002
+        return base if base < 0 or q < k_dop else -0.004
     return kub(5, 2, mu, seed=5)
 
 
-def test_dolya_075_ne_dopustima_a_13_dopustima():
+def test_god_s_msr_nizhe_nulya_ne_dopustim_a_odin_kvartal_dopustim():
+    """Ж-090 (было: доля + кварталов 12/16 = 0,75 < 0,8 не допустима, 13/16 допустима). Теперь: целый год (2019 = 4 квартала, у
+    остальных 12 кварталов 0,75 те же) с mSR <= 0 -> нет допустимых регионов; один отрицательный квартал внутри года — допустим."""
     from fastbt import progon_region as R
     M, rows, *_ = _polovina_kub(12)
-    assert R.vybor_region(M, rows, DATY) is None, "доля + кварталов 12/16 = 0,75 < 0,8: допустимых регионов нет"
-    M, rows, *_ = _polovina_kub(13)
+    assert R.vybor_region(M, rows, DATY) is None, "2019 целиком в минус: mSR года <= 0, допустимых регионов нет"
+    M, rows, *_ = _polovina_kub(15)
     res = R.vybor_region(M, rows, DATY)
-    assert res is not None and len(res["chleny"]) >= R.MIN_CHLENOV                          # 13/16 = 0,8125 ≥ 0,8
+    assert res is not None and len(res["chleny"]) >= R.MIN_CHLENOV                          # один квартал в минус: год 2019 в плюс
 
 
-def test_nan_kvartal_ne_polozhitelnyj():
-    """Мутация: nan-квартал ряда региона считается положительным. 12 положительных + 4 кварталов без дней (SR = nan) = 0,75
-    -> не допустим. tsel="dolya": при "mediana" целевая с nan сама nan и мутацию не выдаёт."""
+def test_god_bez_dnej_ne_uchastvuet_v_uslovii():
+    """Ж-090 (было: кварталы без дней — nan, не положительные). Год с < MIN_DNEY днями в окне в условие не входит (описание #455):
+    данных 2019 нет -> условие по 2016–2018 -> допустим; при отрицательном 2018 — нет."""
     from fastbt import progon_region as R
     M, rows, *_ = _polovina_kub(16)
     keep = QI < 12
-    assert R.vybor_region(M[keep], rows, DATY[keep], tsel="dolya") is None
+    assert R.vybor_region(M[keep], rows, DATY[keep]) is not None
+    M, rows, *_ = _polovina_kub(8)
+    assert R.vybor_region(M[keep], rows, DATY[keep]) is None
 
 
 def test_osi_ranzhiruyutsya_tolko_na_perednyh_kvartalah():
@@ -103,9 +119,9 @@ def test_osi_ranzhiruyutsya_tolko_na_perednyh_kvartalah():
     pts = list(itertools.product(range(4), repeat=6))
     w = dict(a=4, b=3, c=2, d=1.5, e=0, f=0)
     w2 = dict(a=0, b=0, c=0, d=0, e=12, f=12)
-    mu = np.array([[0.0006 + (sum(w[n] * p[k] for k, n in enumerate(names)) if q < 8 else
-                    sum(w2[n] * p[k] for k, n in enumerate(names))) * 1e-4 / 3 for q in range(16)] for p in pts])
-    M = mu[:, QI].T + np.random.default_rng(7).normal(0, 0.01, (len(DATY), len(pts)))
+    mu = np.array([[0.002 + (sum(w[n] * p[k] for k, n in enumerate(names)) if q < 8 else
+                    sum(w2[n] * p[k] for k, n in enumerate(names))) * 5e-4 / 3 for q in range(16)] for p in pts])   # Ж-090: 0,0006 -> 0,002, шаг 1e-4 -> 5e-4
+    M = mu[:, QI].T + shum(np.random.default_rng(7), (len(DATY), len(pts)), 0.01)
     rows = rows_of(M, pts, names)
     top_half = R.vybor_region(M, rows, DATY, kvartaly_idx=list(range(8)))["osi"]
     top_all = R.vybor_region(M, rows, DATY)["osi"]

@@ -16,11 +16,12 @@ from pathlib import Path
 import numpy as np
 
 from fastbt.exec_e_rules import tejk_level
-from fastbt.indicators import calc_sma
+from fastbt.indicators import calc_sma, calc_std
 from fastbt.signals.s56 import _gid
 from fastbt.signals.s56_kern import _pivots, _vwap
 
 NET, ZNACHENIYA = "net", ("net", "k_srednemu", "pol_puti")
+RODNOY = "rodnoy_uroven"                                    # Ж-091 п. 1.1: заявка на родном уровне выхода, обновляется каждый вечер
 OKNO = {"S1": "ma_window", "S2": "bb_window"}               # SMA-окно сигнала
 DIAG = "diag.jsonl"
 SIDS = ("S1", "S2", "S5", "S6")
@@ -51,13 +52,42 @@ def uroven(sid: str, sp: dict, td) -> np.ndarray:
     return uroven_M(sid, sp, {**dn, "dates": td.dates})[0]
 
 
+def rodnoy_uroven(sid: str, sp: dict, dn: dict, sd: int = 1) -> np.ndarray:
+    """Ж-091 п. 1.1: L[тикер, d] — цена, где по close d сработал бы родной сигнальный выход стороны sd (+1 лонг, −1 шорт).
+    S1 — SMA − sd·z_exit·STD (|z| < z_exit); S2 — SMA; S5 — P; S6 — VWAP − sd·0,5·dev. Те же calc_sma/calc_std/_pivots/_vwap,
+    что в signals/s12 и s56 (копии нет). L[:, d] использует только столбцы ≤ d (данные ≤ 18:50 d). Нет уровня — nan."""
+    if sid not in SIDS:
+        raise ValueError(f"{sid}: у стратегии нет оси tejk_signal (только {', '.join(SIDS)})")
+    f = {k: np.asarray(dn[k], float) for k in ("close", "high", "low", "volume")}
+    rows = []
+    for i in range(f["close"].shape[0]):
+        c, h, l, v = (f[k][i] for k in ("close", "high", "low", "volume"))
+        if sid == "S1":
+            w = int(sp["ma_window"])
+            rows.append(calc_sma(c, w) - sd * float(sp["z_exit"]) * calc_std(c, w))
+        elif sid == "S6":
+            vw, dev = _vwap(c, h, l, v, int(sp["vwap_window"]))
+            rows.append(vw - sd * 0.5 * dev)
+        else:
+            rows.append(uroven_M(sid, sp, {k: f[k][i:i + 1] for k in f} | {"dates": dn["dates"]})[0])
+    return np.array(rows, float)
+
+
+def rodnoy_tikera(sid: str, sp: dict, td) -> np.ndarray:
+    """[2, d] одного тикера по дневному ряду td: строка 0 — уровень для лонга, строка 1 — для шорта."""
+    dn = {k: np.asarray(getattr(td, k))[None] for k in ("close", "high", "low", "volume")} | {"dates": td.dates}
+    return np.vstack([rodnoy_uroven(sid, sp, dn, sd)[0] for sd in (1, -1)])
+
+
 def uroven_tejka(tejk: str, sd: int, p_vh: float, M: float):
     """Уровень тейка без округления по тику (Ж-084); None — тейка нет (M не в сторону прибыли)."""
     return tejk_level(sd, p_vh, M, tejk, None)
 
 
-def m_tikera(evr, sp: dict, t: str, s0: int, b: int) -> np.ndarray:
-    """M для строк [s0; s0+b] тикера t оценщика evr."""
+def m_tikera(evr, sp: dict, t: str, s0: int, b: int, rodnoy: bool = False) -> np.ndarray:
+    """M для строк [s0; s0+b] тикера t оценщика evr; rodnoy — [2, b+1] (лонг, шорт), родной уровень выхода."""
+    if rodnoy:
+        return rodnoy_tikera(evr.sid, sp, evr.sk._td[t][0])[:, s0:s0 + b + 1]
     return uroven(evr.sid, sp, evr.sk._td[t][0])[s0:s0 + b + 1]
 
 
@@ -68,10 +98,10 @@ def pole_otcheta(evr, years) -> dict:
     return {**otchet(pary, years), "n_bez_tejka": sum(r.n_bez_tejka for r in rs)}
 
 
-def pisat_diag(pisatel, row: dict, diag) -> None:
-    """Ж-087: диагностика рядом с ledger — p{NN}/diag.jsonl, по строке на строку ledger; ключ — klyuch_sha (с kod).
+def pisat_diag(papka, row: dict, diag) -> None:
+    """Ж-087: papka — каталог потока писателя (Pisatel.pd), явно; диагностика рядом с ledger — p{NN}/diag.jsonl, по строке на строку ledger; ключ — klyuch_sha (с kod).
     diag = None у строк не ok. Формат ledger v2.0 и Chitatel не затронуты; дубль после обрыва — читатель берёт последнюю."""
-    with open(pisatel.pd / DIAG, "a", encoding="utf-8") as f:
+    with open(Path(papka) / DIAG, "a", encoding="utf-8") as f:
         f.write(json.dumps({"klyuch_sha": row["klyuch_sha"], "kod": row.get("kod"), "diag": diag}, sort_keys=True) + "\n")
 
 

@@ -62,8 +62,8 @@ def _check_params(p: Params) -> None:
         raise ValueError("R и a несовместимы")
     if p.R is not None and p.h is None and p.tau is None:
         raise ValueError("R требует h или tau (❓1)")
-    if p.tejk not in ("net", "k_srednemu", "pol_puti"):
-        raise ValueError("tejk: net | k_srednemu | pol_puti")
+    if p.tejk not in ("net", "k_srednemu", "pol_puti", "rodnoy_uroven"):
+        raise ValueError("tejk: net | k_srednemu | pol_puti | rodnoy_uroven")
     if p.tejk != "net" and (p.R is not None or p.a is not None):
         raise ValueError("tejk ≠ net несовместим с R и a: тейк один (Ж-084)")
     if p.check not in ("bary", "zakrytie"):
@@ -89,10 +89,12 @@ def _check_params(p: Params) -> None:
     if p.vhod_tip == "stop_zayavka" and (p.k is not None or p.check != "bary" or not p.stop_touch or p.exit_signal or p.vyhod_lim
                                            or p.zhizn or p.gap_propusk):
         raise ValueError("stop_zayavka: без лимита k, zhizn, gap, vyhod_lim и выхода по сигналу; check='bary', stop_touch (Ж-091)")
+    if p.vhod_open and (p.k is not None or p.check != "bary" or p.vyhod_lim):
+        raise ValueError("vhod_open — вход рынком (k = None), check='bary', без vyhod_lim")
 
 
 def _new_axes(p: Params, ed) -> bool:
-    return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik)
+    return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik) or p.vhod_open
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None,
@@ -119,8 +121,9 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         raise ValueError("days, ed разной длины")
     from fastbt import dividendy
     nal = dividendy.DIV_NALOG if nalog is None else nalog
-    if p.tejk != "net" and (tejk_M is None or len(tejk_M) != len(days)):
-        raise ValueError("tejk ≠ net требует tejk_M длины days")
+    if p.tejk != "net" and (tejk_M is None or np.shape(tejk_M)[-1] != len(days)
+                            or np.ndim(tejk_M) != (2 if p.tejk == "rodnoy_uroven" else 1)):
+        raise ValueError("tejk ≠ net требует tejk_M длины days (rodnoy_uroven — [2, days]: лонг, шорт)")
     if (p.vhod_tip == "stop_zayavka") != (urovni is not None):
         raise ValueError("urovni нужны ровно при vhod_tip = stop_zayavka")
     if urovni is not None and any(len(urovni[k]) != len(days) for k in ("up", "dn", "xl", "xs")):

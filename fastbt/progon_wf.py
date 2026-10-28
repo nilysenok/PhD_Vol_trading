@@ -14,8 +14,8 @@ from fastbt.metriki_e import sr_dnevnoy
 from fastbt.progon_region import ryad_regiona, vybor_region
 from fastbt.sweep_drivers import pbo_cscv
 
-PRAVILA = [(W, r, t) for W in (4, 8) for r in (1, 2) for t in ("mediana", "dolya")]
-OSNOVNOE = (8, 1, "mediana")  # объявлено до счёта
+PRAVILA = [(W, r, t) for W in (4, 8) for r in (1, 2) for t in ("msr", "dolya")]   # Ж-090: msr — устойчивы все годы окна; dolya — не меньше 75 % годов
+OSNOVNOE = (8, 1, "msr")  # объявлено до счёта
 OOS_KV = tuple(range(8, 16))  # 2018Q1…2019Q4 в нумерации 2016Q1 = 0
 SQRT252 = float(np.sqrt(252.0))
 

@@ -32,8 +32,12 @@ def canon_v2(sid: str, pt: dict) -> dict:
         q.update({k: v for k, v in (("q_sily", 0.0), ("proverka", "bars5m")) if k in q})   # сила и close-проверка не действуют
         if q.get("storona") == "short_shag1":
             q["storona"] = "obe"
+    if q.get("tejk_signal") == "rodnoy_uroven":     # Ж-091 п. 1.1: сигнальный выход выключен, τ остаётся и идёт по open2 — t_vyhod схлопнут
+        q.update(t_vyhod="open2")
     if q.get("vhod") == "rynok":
         q.update(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod")
+    if q.get("proverka") == "zakrytie" and str(q.get("t_vyhod", "close")) != "close":
+        q["proverka"] = "bars5m"                    # выход в 15:00/17:00/open2 существует только на барах (exec_e._check_params)
     if sid == "S5" and q.get("storona") == "short_shag1":
         q["storona"] = "obe"
     return q

@@ -7,7 +7,7 @@ sid: S4
 period: train4
 komissiya: 0.0004
 fdr: null
-sobol: {seed: 20261032, scramble: true, prohod1: 5000, prohod2: 30000}
+sobol: {seed: 20261032, scramble: true, prohod1: 5000, prohod2: 10000}
 
 signal:
   atr_period: {ishodnoe: 14, setka: [7, 9, 12, 14, 16, 19, 21]}
