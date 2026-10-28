@@ -1,5 +1,4 @@
-"""Проверка PR #488 (Ж-092): atr_m / chast_1r. Синтетика, без данных. xfail(strict) — найденные дефекты автора:
-когда их исправят, тест станет XPASS и упадёт — снять метку.
+"""Проверка PR #488 (Ж-092): atr_m / chast_1r. Синтетика, без данных. Красные до правки автора (Ж-081):
 1) быстрый слой молча считает atr_m / chast_1r как без режима; 2) run_e1/fdr считают дочернюю «part» отдельной сделкой."""
 import numpy as np
 import pytest
@@ -15,7 +14,6 @@ def _p(**kw):
     return Params(b=2.0, comm=0.001, reentry=False, **kw)
 
 
-@pytest.mark.xfail(strict=True, reason="#488: _slow_only не знает atr_m/chast_1r — быстрый слой считает как без режима")
 @pytest.mark.parametrize("kw", [dict(atr_m=2.0), dict(chast_1r=True)])
 def test_bystryj_sloy_uhodit_na_medlennyj(kw):
     d14 = [(100, 100, 100, 100), (100, 110, 100, 110), (110, 110, 105, 105)] + flat(105, 2)
@@ -44,14 +42,12 @@ def test_chast_dva_trade_odin_vhod():
     assert sum(t.frac for t in r.trades) == pytest.approx(1.0)
 
 
-@pytest.mark.xfail(strict=True, reason="#488: etap1_run считает part отдельной строкой — sides/cnt на входе = 2")
 def test_run_e1_chislo_sdelok():
     days, sig, sg = _lenta_part()
     e = run_e1("T", days, sig, sg, _p(chast_1r=True))
     assert e.sides[13] == pytest.approx(1.0) and e.cnt[13] == pytest.approx(1.0)
 
 
-@pytest.mark.xfail(strict=True, reason="#488: fdr.noch_iz_sdelok складывает вес родителя и part — занятость 2 > 1")
 def test_fdr_zanyatost_ne_bolshe_edinitsy():
     days, sig, sg = _lenta_part()
     r = exec_e.run("T", days, sig, sg, _p(chast_1r=True))
