@@ -33,4 +33,5 @@ novye:
   t_vyhod:  {setka: [close, 1500, 1700, open2], yakor: close}
   k_x:      {setka: [0.5, 1.0, 1.5, net], yakor: net}
   storona:  {setka: [obe, long, short_shag1], yakor: obe}
+  vhod_tip: {setka: [podtverzhdenie, stop_zayavka], yakor: podtverzhdenie}   # Ж-091 п. 1.3: второй проход, не в базе до решения дирижёра
   filtr:    {setka: [net, cbr, div, post_shok, szhatie, rv_perevorot, obyom, rel_sila_imoex, sektor_trend], yakor: net}

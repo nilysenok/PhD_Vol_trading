@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 EPS = 1e-6                                      # допуск на сетку тиков, доля тика
 
 
@@ -103,3 +105,17 @@ def limit_mask(sd, h, l, L, tick):
 def limit_px(sd, o, L):
     """Цена исполнения: L или open при гэпе через L."""
     return min(o, L) if sd > 0 else max(o, L)
+
+
+def stop_vhod(o, h, l, up, dn):
+    """Ж-091 п. 1.2: стоп-заявки входа дня d+1 (OCO): buy-stop на up, sell-stop на dn; nan — заявки нет.
+    Касание: h ≥ up / l ≤ dn. Цена — худшая из (open, уровень): гэп через уровень — open. Первый бар решает;
+    оба уровня в одном баре — исполняется ближайший к open (равенство — лонг). Возвращает (сторона, бар, цена) или None."""
+    bb, sb = np.flatnonzero(h >= up), np.flatnonzero(l <= dn)
+    if not bb.size and not sb.size:
+        return None
+    b = int(min(x[0] for x in (bb, sb) if x.size))
+    buy, sell = bool(bb.size and bb[0] == b), bool(sb.size and sb[0] == b)
+    if buy and sell:
+        buy = abs(o[b] - up) <= abs(o[b] - dn)
+    return (1, b, max(float(o[b]), up)) if buy else (-1, b, min(float(o[b]), dn))

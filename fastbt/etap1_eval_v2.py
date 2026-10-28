@@ -19,7 +19,7 @@ from fastbt.etap1_run import run_e1, sum_rows
 from fastbt.ledger_v2 import kvartaly, tselevaya
 
 NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net",
-             tejk_signal="net")
+             tejk_signal="net", vhod_tip="podtverzhdenie")
 POROG = {"S1": "z_entry", "S2": "bb_std", "S3": "dc_window", "S4": "multiplier", "S6": "dev_mult"}   # §1.1 storona
 ZAEM = (5, 10)                                                                 # % годовых, колонки by_quarter_zaem
 
@@ -87,6 +87,8 @@ class EvaluatorV2(Evaluator):
             p = replace(p, a=float(nov["k_x"]))                             # тейк без стопа; при k_s ≠ net k_x не действует
         if nov["tejk_signal"] != NET:                                       # Ж-084: один тейк, от M (canon_v2: R, k_x = net)
             p = replace(p, R=None, a=None, tejk=nov["tejk_signal"])
+        if nov["vhod_tip"] != "podtverzhdenie":                             # Ж-091: вход и выход стоп-заявками, сигнал не выходит
+            p = replace(p, vhod_tip=nov["vhod_tip"], exit_signal=False, k=None, check="bary", stop_touch=True)   # как canon_v2
         ext = {k: int(vz[k]) for k in ("bar_plus", "stop_tik") if k in vz}
         if nov["zhizn"] != "den":
             ext["zhizn"] = int(nov["zhizn"])
@@ -112,15 +114,20 @@ class EvaluatorV2(Evaluator):
                 sig = np.asarray(vz["sig_fn"](t, sig, dates), float)
             days = inp.bars[t][:b] + [_one_bar(float(inp.close_n6[t][b]))]
             sg = np.ones(len(sig)) if anchor else inp.sigma[pt["sigma"]][t][:b + 1] * float(vz.get("sigma_mult", 1.0))
-            if not anchor:
-                sig = gate_trades(sig, self._allow(pt, t, dates, sig, nov["filtr"]))
+            al = None if anchor else self._allow(pt, t, dates, sig, nov["filtr"])
+            if al is not None:
+                sig = gate_trades(sig, al)
+            uv = None
+            if nov["vhod_tip"] != "podtverzhdenie":                         # Ж-091: уровни стоп-заявок вместо подтверждения закрытием
+                from fastbt import stop_zayavki
+                uv = stop_zayavki.okno(stop_zayavki.urovni(self.sid, sp, *self.sk._td[t], nov["storona"]), s0, b, al)
             w = np.ones(len(sig))
             if not anchor and pt["razmer"] != "ravnyy":
                 w = rezhim_e1.razmer_ves(sg, "obratnyj", float(pt["razmer"]) / 100.0)
             ed = self._ed(t, "mediana" if vz.get("sigma_lim_mediana") else nov["ed_lim"], sg, dates, s0, b)
             p = self._params(pt, t, h, anchor, nov, vz)
             tm = None if nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, sp, t, s0, b)
-            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=ed, tejk_M=tm, **self.fdr_kw())
+            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=ed, tejk_M=tm, **self.fdr_kw(), **({} if uv is None else {"urovni": uv}))
             out.append((ti, self._ladder(t, days, sig, sg, p, w, nov["lestnica"], kw), a, b))
         return out
 
