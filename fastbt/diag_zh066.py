@@ -45,7 +45,11 @@ def deciles(trades: list) -> list:
     for k, g in grp.items():
         n, s, m, w = _stat([t["pnl"] for t in g])
         lo, hi = (min(t["sila"] for t in g), max(t["sila"] for t in g)) if g else (float("nan"),) * 2
-        rows.append((str(k), n, lo, hi, s, m, w, "шум" if n < NOISE else ""))
+        rows.append([str(k), n, lo, hi, s, m, w, ["шум"] if n < NOISE else []])
+    for a, b in zip(rows, rows[1:]):                     # одинаковая сила в соседних деци́лях (насыщение s = 1): границу задаёт порядок журнала
+        if a[1] and b[1] and a[3] == b[2]:
+            a[7].append("ничья по силе"), b[7].append("ничья по силе")
+    rows = [tuple(r[:7]) + ("; ".join(dict.fromkeys(r[7])),) for r in rows]
     if bad:
         n, s, m, w = _stat([t["pnl"] for t in bad])
         rows.append(("нет", n, float("nan"), float("nan"), s, m, w, "нет силы"))

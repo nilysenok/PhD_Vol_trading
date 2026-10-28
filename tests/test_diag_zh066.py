@@ -35,6 +35,12 @@ def test_deciles_sum_equals_total_and_nan_row():
     assert all(r[7] == "" for r in rows[:10])                                            # по 10 сделок — не шум
 
 
+def test_deciles_ties_in_strength_flagged():
+    trades = [tr(0.5 + 0.01 * i, 0.01) for i in range(10)] + [tr(1.0, 0.01) for _ in range(30)]      # 30 сделок с силой, равной 1
+    rows = dz.deciles(trades)
+    assert "ничья" not in rows[0][7] and all("ничья по силе" in r[7] for r in rows[3:])
+
+
 def test_deciles_empty_tape_no_crash():
     assert all(r[1] == 0 for r in dz.deciles([])[:10])
 
