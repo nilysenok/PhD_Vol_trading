@@ -23,7 +23,7 @@ DATY = pd.bdate_range("2016-01-01", "2019-12-31").values.astype("datetime64[D]")
 T = len(DATY)
 KD = pw.kvartal_dnya(DATY)
 NC = 16
-ROWS = [dict(klyuch={a: float(v) for a, v in zip("abcd", p)}, status="ok",
+ROWS = [dict(klyuch={**{a: float(v) for a, v in zip("abcd", p)}, "t_vyhod": "open2", "vhod": "0.5"}, status="ok",  # П-7, Ж-086: оси обязательны
              sdelok_y={str(y): 60 for y in range(2016, 2020)}, storony_y={str(y): 40 for y in range(2016, 2020)})
         for p in itertools.product((0, 1), repeat=4)]
 
