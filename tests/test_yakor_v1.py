@@ -141,16 +141,16 @@ def _key(period: str):
 
 
 def a4_cache() -> dict:
-    import pickle
-    k4, out = _key("train4")
-    res = pickle.loads((out / f"cache_{k4}.pkl").read_bytes())
+    from fastbt import s9
+    with s9.period_ctx("train4"):                       # указатель cache_latest_train4.txt (s9-a-train4)
+        res = s9.load_cache()
     return {t: dict(dates=c["dates"], lr=c["lr"], A={s: dict(v) for s, v in c["A"].items()}) for t, c in res.items()}
 
 
-def warmup_ok(cache: dict) -> bool:
-    """Годы A каждой пары начинаются с 2015 (прогрев) и доходят до 2019."""
+def warmup_ok(cache: dict, val_start: int) -> bool:
+    """Годы A кэша — ровно 2016–2019, начало окна валидации (прогрев) — 2015."""
     ys = {Y for c in cache.values() for v in c["A"].values() for Y in v}
-    return min(ys) == 2015 and max(ys) >= 2019
+    return ys == set(GODY) and val_start == 2015
 
 
 def lr_delta(cache_lr: dict, ref_lr: dict, y: int) -> float:
@@ -174,7 +174,8 @@ def ref_lr_nf(tickers) -> dict:
 def test_a_train4_equals_s9(comm):
     from fastbt import ekviv_s9
     cache = a4_cache()
-    assert warmup_ok(cache)
+    from fastbt import s9
+    assert warmup_ok(cache, s9.PERIODS_S9[PER][1])
     ref = ref_lr_nf(cache)
     for y in GODY:
         pt = dict(id=f"A_{y}", klass="A_ishodnaya", god=y)
@@ -225,12 +226,14 @@ def test_anchor_s9_diff_train4_konechen(sid):
 def test_mutation_start_year_2018_konstantoy_caught(monkeypatch):
     """START_YEAR = 2018 константой: ряд эталона 2016–2017 пуст, anchor_s9_diff даёт inf — проверка обязана это видеть."""
     from fastbt import sweep_sk
-    monkeypatch.setattr(sweep_sk, "START_YEAR", 2018)
+    orig = sweep_sk.SkEvaluator.pnl
+    monkeypatch.setattr(sweep_sk.SkEvaluator, "pnl", lambda self, sigs, p, comm, end, start_year=None: orig(self, sigs, p, comm, end))
     d = _anchor_d("S1")
     assert not (np.isfinite(d[2016]) and np.isfinite(d[2017])), d
 
 
 def test_mutation_a_progrev_ne_2015_caught():
-    """Кэш A, у которого годы начинаются с 2016, а не с 2015, warmup_ok обязан отвергнуть."""
+    """Прогрев не 2015 (val_start 2016) или лишний/пропавший год в кэше A — warmup_ok обязан отвергнуть."""
     mk = lambda ys: {"T": {"A": {"S1": {Y: np.zeros(3) for Y in ys}}}}      # noqa: E731
-    assert warmup_ok(mk(range(2015, 2020))) and not warmup_ok(mk(range(2016, 2020)))
+    assert warmup_ok(mk(GODY), 2015)
+    assert not warmup_ok(mk(GODY), 2016) and not warmup_ok(mk(range(2017, 2020)), 2015)
