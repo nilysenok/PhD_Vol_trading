@@ -14,7 +14,7 @@ import pandas as pd
 
 from fastbt import cache, dividendy, ekviv_s9
 from fastbt.etap1_data import LIMIT, START, START_V1, align_f, build_days, load_events, load_rezhim, load_sigma
-from fastbt.etap1_eval import PERIODS, YAKOR, Evaluator
+from fastbt.etap1_eval import PERIODS, YAKOR, Evaluator, years_of
 
 END_TRAIN = pd.Timestamp("2020-01-01")                 # окно train — до 2019-12-31; строка b−1 берёт close 2020-01-09 (Н5)
 
@@ -124,14 +124,18 @@ def base_point(sid: str) -> dict:
     return next(p["p"] for p in ekviv_s9.load_points()["tochki"] if p["id"] == f"{sid}_a")
 
 
-def anchor_s9_diff(sid: str, evr: Evaluator, comm: float = 0.0004) -> dict:
-    """Якорь: макс |Δ excess| режима «якорь» против SkEvaluator.pnl (= ekviv_s9.run_sk), годы 2018 и 2019."""
+def anchor_s9_diff(sid: str, evr: Evaluator, comm: float = 0.0004, period: str = "train") -> dict:
+    """Якорь: макс |Δ excess| режима «якорь» против SkEvaluator.pnl (= ekviv_s9.run_sk), годы периода
+    (train: 2018 и 2019; train4: 2016–2019 одним окном с прогревом 2015)."""
     ev, p = evr.sk, base_point(sid)
     sp = {k: v for k, v in p.items() if k in ev.sig_names}
     sigs = ev.signals(sp)
     out = {}
-    for god, per in ((2018, "tune2018"), (2019, "train")):
-        ref = ev.pnl(sigs, p, comm, pd.Timestamp(f"{god + 1}-01-01"))["excess"]
+    pairs = ((2018, "tune2018"), (2019, "train")) if period == "train" else \
+        tuple((g, period) for g in years_of(period))
+    for god, per in pairs:
+        end = PERIODS[per][1] + 1 if period != "train" else god + 1
+        ref = ev.pnl(sigs, p, comm, pd.Timestamp(f"{end}-01-01"))["excess"]
         mine = evr.excess(sp, per)[0]["excess"]
         m = ref.index.year == god
         ref, mine = ref[m], mine[mine.index.year == god]

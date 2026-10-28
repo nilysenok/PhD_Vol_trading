@@ -162,6 +162,28 @@ def set_scope(scope: str, val_start: int | None = None) -> None:
     T2_CUT, T2_LABELS = "2025-01-01", ("2022–2026", "2022–2024", "2025–01.2026")
 
 
+PERIOD = "train"
+# Ж-075 п. 1: период В1 — годы метрик и начало окна валидации (= год прогрева); путь A без σ-источников
+PERIODS_S9 = {"train": ((2018, 2019, 2020, 2021), 2017), "train4": ((2016, 2017, 2018, 2019), 2015)}
+
+
+def set_period(period: str) -> None:
+    """train — как было (умолчание). train4 — В1: 2016–2019, прогрев 2015; только dev, только путь A / «A только Sk»."""
+    global PERIOD, YEARS, VAL_START
+    if period not in PERIODS_S9:
+        raise ValueError(f"период {period!r}: есть {sorted(PERIODS_S9)}")
+    if SCOPE != "dev":
+        raise ValueError("период train4 — только в разработке (scope dev)")
+    PERIOD = period
+    YEARS, VAL_START = PERIODS_S9[period]
+
+
+def need_sigma(what: str) -> None:
+    """B/C/D читают σ-источники (SOURCES с 2017-01-03): на train4 — отказ, а не тихий пропуск."""
+    if PERIOD != "train":
+        raise NotImplementedError(f"{what}: на периоде {PERIOD} σ-источников нет (с 2017-01-03); считается только путь A")
+
+
 def use_sigma_h1(name: str, suffix: str | None = None) -> None:
     global SUFFIX
     SOURCES["hyb_h1"] = (SIGMA_H1[name], "sigma_pred_h1", "h1")
@@ -237,6 +259,7 @@ def to_csv(df: pd.DataFrame, name: str) -> Path:
 def build_sources() -> None:
     """Наивная sqrt(RV_w) (строка PIT дня t: RV по t−1), seed 42/43/44 финалиста h=1
     (sqrt(rv_pred·F года), val-прогнозы XGB, шаги 2–6 = 2017–2021), RVI (срез 18:50)."""
+    need_sigma("build_sources")
     OUT.mkdir(parents=True, exist_ok=True)
     f = pd.read_parquet(REGEN / "features_pit_v3.parquet",
                         columns=["date", "ticker", "rv_w", "close_RVI"])
@@ -278,6 +301,7 @@ def build_sources() -> None:
 
 
 def load_source(label: str) -> pd.DataFrame:
+    need_sigma(f"load_source({label})")
     p, col, _ = SOURCES[label]
     d = pd.read_parquet(p, columns=["date", "ticker", col])
     d["date"] = pd.to_datetime(d["date"])
@@ -420,6 +444,7 @@ def cache_key() -> str:
 
 def build_cache(workers: int = 2) -> Path:
     from fastbt.data import TICKERS
+    need_sigma("build_cache")
     os.environ["FASTBT_VPRED"] = str(SOURCES["hyb_h1"][0])
     srcs = {lab: (SOURCES[lab][2], load_source(lab)) for lab in SOURCES}
     extra = () if SCOPE == "dev" else ((SCOPE, VAL_START),)

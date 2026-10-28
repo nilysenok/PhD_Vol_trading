@@ -84,18 +84,30 @@ def boevoy_pos(sid: str, p: dict, t: str, td, ind) -> np.ndarray:
     return pos
 
 
+WINDOWS_TRAIN4 = {y: tuple(range(2016, y + 1)) for y in range(2016, 2020)}     # В1: 2016–2019, прогрев 2015
+
+
+def windows(period: str = "train") -> dict:
+    if period not in ("train", "train4"):
+        raise ValueError(f"период {period!r}: train или train4")
+    return WINDOWS if period == "train" else WINDOWS_TRAIN4
+
+
 @contextmanager
-def years(ys):
-    old = s9.YEARS
+def years(ys, val_start=None):
+    old = s9.YEARS, s9.VAL_START
     s9.YEARS = tuple(ys)
+    if val_start is not None:
+        s9.VAL_START = val_start
     try:
         yield
     finally:
-        s9.YEARS = old
+        s9.YEARS, s9.VAL_START = old
 
 
-def s9_engine(cache: dict, ys) -> "s9.Engine":
-    with years(ys):
+def s9_engine(cache: dict, ys, period: str = "train") -> "s9.Engine":
+    vs = None if period == "train" else s9.PERIODS_S9[period][1]
+    with years(ys, vs):
         return s9.Engine(cache)
 
 
@@ -137,7 +149,7 @@ def row(pt, god, comm, ev, ref, npos=0, status=None, why=""):
             "bar_poz_razl": npos, "status": status or ("совпало" if ok else "РАСХОЖДЕНИЕ"), "prichina": why}
 
 
-def run_sk(pt: dict, ev, comms) -> list:
+def run_sk(pt: dict, ev, comms, period: str = "train") -> list:
     """Точка Sk: оценщик (`SkEvaluator`) против боевого пути, окна 2018 и 2019, комиссии comms (доли)."""
     from fastbt.sweep_post import build_view, positions
     sid, p = pt["sid"], pt["p"]
@@ -149,7 +161,7 @@ def run_sk(pt: dict, ev, comms) -> list:
         bo, why = None, str(e)
     td = {t: ev._td[t][0] for t in sigs}
     out = []
-    for god, ys in WINDOWS.items():
+    for god, ys in windows(period).items():
         end = pd.Timestamp(f"{god + 1}-01-01")
         npos = 0
         if bo is not None:
@@ -158,7 +170,7 @@ def run_sk(pt: dict, ev, comms) -> list:
                 i1 = int(np.searchsorted(u.dates, np.datetime64(end)))
                 a, b = year_bounds(u.dates, ys[0])[0], i1
                 npos += int((positions(v, ex, i1)[a:b] != bo[t][a:b]).sum())
-            eng = s9_engine(sk_cache(sid, bo, td, ys), ys)
+            eng = s9_engine(sk_cache(sid, bo, td, ys), ys, period)
         for c in comms:
             df = ev.pnl(sigs, p, c, end)["excess"]
             m = df.index.year == god
@@ -167,10 +179,10 @@ def run_sk(pt: dict, ev, comms) -> list:
     return out
 
 
-def run_a(pt: dict, cache: dict, comms) -> list:
+def run_a(pt: dict, cache: dict, comms, period: str = "train") -> list:
     """Точка A: `Engine.port` против `assemble` на позициях боевой A."""
-    god, ys = pt["god"], WINDOWS[pt["god"]]
-    eng = s9_engine(cache, ys)
+    god, ys = pt["god"], windows(period)[pt["god"]]
+    eng = s9_engine(cache, ys, period)
     out = []
     for c in comms:
         ref = eng.port(eng.A_row, comm=c)["excess"]
