@@ -1,6 +1,6 @@
 """П-4 (проверяющий), Л-7: select_fn региона на синтетике с известным ответом. Контракт: docs/zadaniya/2026-10-28_progon_L7_region.md.
 Допущения о форме входа (контракт Chitatel §1.5): M — T × N; rows[i]["klyuch"] — токены осей (repr(float)), by_quarter, mediana_kv,
-dolya_pol_kv; daty — datetime64[D]. Модуль progon_region импортируется внутри тестов: до кода каждый тест красный."""
+dolya_pol_kv; daty — datetime64[D]. П-7, Ж-086: в klyuch добавлены постоянные оси t_vyhod = open2, vhod = 0.5 (без них ValueError; ожидания те же). Модуль progon_region импортируется внутри тестов: до кода каждый тест красный."""
 import itertools
 import sys
 from pathlib import Path
@@ -34,7 +34,7 @@ def rows_of(M, pts, names):
     for j, p in enumerate(pts):
         bq = {k: sr(M[QI == i, j]) for i, k in enumerate(KEYS)}
         v = np.array(list(bq.values()))
-        rows.append(dict(status="ok", klyuch={a: repr(float(i)) for a, i in zip(names, p)}, by_quarter=bq,
+        rows.append(dict(status="ok", klyuch={**{a: repr(float(i)) for a, i in zip(names, p)}, "t_vyhod": "open2", "vhod": "0.5"}, by_quarter=bq,
                          mediana_kv=float(np.median(v)), dolya_pol_kv=float((v > 0).sum() / 16),
                          sdelok_y={str(y): 60 for y in range(2016, 2020)}, storony_y={str(y): 40 for y in range(2016, 2020)}))
     return rows

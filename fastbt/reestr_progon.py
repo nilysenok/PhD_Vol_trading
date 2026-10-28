@@ -14,6 +14,7 @@ from typing import Optional
 
 from fastbt import ledger_v2 as L
 from fastbt import reestr_otbora_v1 as V1
+from fastbt.progon_osnovnaya import osnovnaya_stroki
 
 VYHOD = "docs/otbor/reestr_otbora_progon_v2.csv.gz"
 GODY = (2016, 2017, 2018, 2019)
@@ -31,7 +32,7 @@ def kolonki() -> list:
             + [f"kv_{k}" for k in KV]
             + ["mediana_kv", "dolya_pol_kv", "zaem5_mediana_kv", "zaem10_mediana_kv"]
             + [f"msr_{y}" for y in GODY]
-            + ["vyrozhdena", "kray", "region_id", "chlen_regiona", "kandidat", "wf_pravilo", "komissiya", "fdr"])
+            + ["vyrozhdena", "kray", "region_id", "chlen_regiona", "kandidat", "wf_pravilo", "komissiya", "fdr", "osnovnaya"])
 
 
 def _num(v) -> str:
@@ -65,7 +66,8 @@ def _stroka(r: dict) -> dict:
                klyuch=json.dumps(r["klyuch"], sort_keys=True, ensure_ascii=False, separators=(",", ":")),
                kod=r["kod"], kod_slit=_bit(r.get("kod_slit")), sloy=r.get("sloy", ""), status=r["status"],
                prichina=r.get("prichina") or "", komissiya=_num(r["komissiya"]), fdr=_num(r.get("fdr")),
-               mediana_kv=_num(r.get("mediana_kv")), dolya_pol_kv=_num(r.get("dolya_pol_kv")))
+               mediana_kv=_num(r.get("mediana_kv")), dolya_pol_kv=_num(r.get("dolya_pol_kv")),
+               osnovnaya=_bit(osnovnaya_stroki(r)))  # Ж-084 п. 2: пишутся все строки, признак — колонкой
     out.update({f"sharpe_{y}": _num(_godovoe(r.get("by_year"), y)) for y in GODY})
     out.update({f"sdelok_{y}": _num(_godovoe(r.get("sdelok_y"), y)) for y in GODY})
     out.update({f"msr_{y}": _num(_godovoe(r.get("msr_by_year"), y)) for y in GODY})

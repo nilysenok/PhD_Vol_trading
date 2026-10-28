@@ -1,7 +1,13 @@
 """Л-3: время 5-минутных баров — bar_do, vyhod_plan, Day.t в build_days, t в ключе кэша (Д5).
 
-Мутации (в отдельной копии, см. описание PR): bar_do берёт бар, кончающийся после hhmm (`t <= hhmm`);
-сигнал в 15:00 дня x (vyhod_plan по signal → 0); t не в _flat; build_days не заполняет t.
+Мутации (в отдельной копии, см. описание PR): сигнал в 15:00 дня x (vyhod_plan по signal → 0); t не в _flat;
+build_days не заполняет t.
+
+Переписано под Ж-086 п. 4 (тестировщик П-2б, 28.10): 15:00 и 17:00 — open бара, начинающегося в hhmm, а не close бара,
+кончающегося до hhmm. Удалены тесты bar_do (индекс «последнего бара, кончающегося не позже hhmm») — кодируют старое
+правило; поведение нового правила (граница, дыры, короткий день) проверяют test_p2_vremya.py и test_p2b_vremya10.py через
+движок. test_build_days_*: вместо bar_do — прямая проверка t (бар 15:00 — индекс 62, 17:00 — 86; без бара 14:55 — индекс
+61); остальное (vyhod_plan, ключ кэша Д5, пустой бар не входит в t) не менялось.
 """
 import numpy as np
 import pandas as pd
@@ -11,7 +17,7 @@ from fastbt import cache
 from fastbt import etap1 as E
 from fastbt import etap1_data as D
 from fastbt.exec_e_types import Day
-from fastbt.exec_e_vremya import bar_do, vyhod_plan
+from fastbt.exec_e_vremya import vyhod_plan
 
 
 def tday(p=100.0, n=108, start=590, skip=()):
@@ -22,34 +28,12 @@ def tday(p=100.0, n=108, start=590, skip=()):
     return Day(c - 0.005, c, c - 0.005, c, False, t=t)
 
 
-# --- bar_do: известный ответ ---
-def test_bar_do_izvestnyj_otvet_108_barov_s_0950():
+# --- сетка времени тестового дня (исполнение по ней — в test_p2b_vremya10.py) ---
+def test_setka_vremeni_bar_15_00_i_17_00():
     d = tday(n=108, start=590)
-    assert (bar_do(d, 900), bar_do(d, 1020)) == (61, 85)      # 900 = 15:00, 1020 = 17:00 (минуты)
-
-
-def test_bar_do_granica_15_00_vklyuchaet_bar_konchayushchijsya_rovno():
-    d = tday()
-    assert d.t[61] + 5 == 900 and d.t[62] + 5 > 900          # 61: 14:55–15:00; 62: 15:00–15:05
-    assert (bar_do(d, 899), bar_do(d, 900), bar_do(d, 904), bar_do(d, 905)) == (60, 61, 61, 62)
-
-
-def test_bar_do_korotkij_den_do_14_00_none():
-    assert bar_do(tday(n=40), 900) is None and bar_do(tday(n=40), 1020) is None   # последний бар 13:05
-
-
-def test_bar_do_den_do_14_55_dayet_indeks():
-    assert bar_do(tday(n=61), 900) == 60                       # последний бар 14:50–14:55, 14:55 нет
-
-
-def test_bar_do_propushchennyj_bar_14_55_sdvigaet_indeks():
-    assert bar_do(tday(skip=(61,)), 900) == 60                 # 14:55 нет: последний — 14:50 (индекс 60)
-    assert bar_do(tday(skip=(10,)), 900) == 60                 # дыра раньше — индекс сдвинут на 1
-
-
-def test_bar_do_bez_vremeni_none():
-    assert bar_do(Day(np.ones(1), np.ones(1), np.ones(1), np.ones(1)), 900) is None
-    assert bar_do(Day(np.empty(0), np.empty(0), np.empty(0), np.empty(0), True), 900) is None
+    assert (d.t[2], d.t[62], d.t[86]) == (600, 900, 1020)     # бары 10:00, 15:00, 17:00 (минуты от полуночи)
+    assert tday(skip=(61,)).t[61] == 900                       # 14:55 нет: на его месте бар 15:00
+    assert Day(np.ones(1), np.ones(1), np.ones(1), np.ones(1)).t is None
 
 
 # --- vyhod_plan: таблица контракта §1.1 ---
@@ -57,7 +41,7 @@ def test_bar_do_bez_vremeni_none():
     ("close", "signal", (0, None)), ("close", "vremya", (0, None)),
     ("1500", "vremya", (0, 900)), ("1500", "signal", (1, 900)),
     ("1700", "vremya", (0, 1020)), ("1700", "signal", (1, 1020)),
-    ("open2", "vremya", (1, None)), ("open2", "signal", (1, None)),
+    ("open2", "vremya", (1, 600)), ("open2", "signal", (1, 600)),      # Ж-086 п. 4: open2 = бар 10:00 (600 мин.)
 ])
 def test_vyhod_plan_tablica(tv, pr, ozhid):
     assert vyhod_plan(tv, pr) == ozhid
@@ -102,7 +86,7 @@ def test_build_days_zapolnyaet_t_i_pusto_none(monkeypatch):
     dates = np.array(["2019-06-03", "2019-06-04", "2019-06-05"], dtype="datetime64[D]")
     days, _ = D.build_days("T", dates, np.array([1.0, 1.0, 1.0]), 0, 2, pd.Timestamp("2019-12-31"))
     assert days[0].t[:3].tolist() == [590, 595, 600] and len(days[0].t) == 108
-    assert (bar_do(days[0], 900), bar_do(days[0], 1020)) == (61, 85)
+    assert (days[0].t[62], days[0].t[86]) == (900, 1020)
     assert days[1].pusto and days[1].t is None               # день без баров
     assert days[2].t is None                                 # строка i1 — одна свеча close Н6
 
@@ -113,4 +97,4 @@ def test_build_days_pustoj_bar_ne_vhodit_v_t(monkeypatch):
     monkeypatch.setattr(D, "load_bars5m", lambda *a, **k: bars)
     dates = np.array(["2019-06-03", "2019-06-04"], dtype="datetime64[D]")
     days, _ = D.build_days("T", dates, np.array([1.0, 1.0]), 0, 1, pd.Timestamp("2019-12-31"))
-    assert len(days[0].t) == 107 and bar_do(days[0], 900) == 60
+    assert len(days[0].t) == 107 and days[0].t[61] == 900 and 895 not in days[0].t

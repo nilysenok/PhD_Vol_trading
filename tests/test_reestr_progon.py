@@ -1,4 +1,7 @@
-"""Тесты реестра прогона Л-12 (fastbt/reestr_progon.py) на синтетическом ledger v2 (только 2016–2019)."""
+"""Тесты реестра прогона Л-12 (fastbt/reestr_progon.py) на синтетическом ledger v2 (только 2016–2019).
+
+Правка тестировщика (П-7, Ж-086): в точку строки добавлены оси t_vyhod = open2 и vhod = 0.5 (основные); без них реестр падает
+ValueError. Ожидания не менялись."""
 import csv
 import gzip
 
@@ -17,7 +20,7 @@ KVS = [f"{g}Q{q}" for g in (2016, 2017, 2018, 2019) for q in range(1, 5)]
 
 def _row(idx, status="ok", istochnik="sobol1", kv_keys=KVS):
     """Строка ledger §1.2: у ok — метрики и 16 кварталов, у ne_schitana — nan и пусто."""
-    kl = L.klyuch(SID, {"i": idx}, "train4", 0.0004, None)
+    kl = L.klyuch(SID, {"i": idx, "t_vyhod": "open2", "vhod": 0.5},"train4", 0.0004, None)
     ok = status == "ok"
     kv = {k: float(idx + n) for n, k in enumerate(kv_keys)} if ok else {}
     yrs = {str(y): float(idx) + 0.5 for y in (2016, 2017, 2018, 2019)} if ok else {}

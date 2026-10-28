@@ -10,8 +10,20 @@ import numpy as np
 
 STEP = 5                                   # длина бара, минуты
 HORIZON = 60                               # день должен доходить до hhmm − 60 (15:00 → 14:00)
-HHMM = {"1500": 900, "1700": 1020}         # 15:00 и 17:00 — минуты от полуночи
+HHMM = {"1500": 900, "1700": 1020, "open2": 600}   # 15:00, 17:00 и 10:00 (open2) — минуты от полуночи
 PRICHINY = ("signal", "vremya")
+
+
+def bar_at(day, hhmm: int) -> int | None:
+    """Ж-086 п. 4: индекс бара, начинающегося ровно в hhmm; нет такого — первый бар, начинающийся позже, в тот же день.
+
+    Выход идёт по open этого бара; стоп и тейк проверяются строго до него. Позже hhmm баров нет → len(t): вызывающий
+    переносит выход на open первого бара следующего торгового дня (умолчание дирижёра). None — времени нет (Day.t).
+    """
+    t = getattr(day, "t", None)
+    if t is None or len(t) == 0:
+        return None
+    return int(np.searchsorted(np.asarray(t), hhmm, side="left"))
 
 
 def bar_do(day, hhmm: int) -> int | None:
@@ -30,14 +42,14 @@ def vyhod_plan(t_vyhod: str, prichina: str) -> tuple[int, int | None]:
     """(сдвиг дня, hhmm | None) для выхода по `prichina` (signal | vremya).
 
     close → (0, None): поведение не меняется. 1500/1700: по τ — день x (известен заранее), по сигналу — x+1 (Д2).
-    open2 → (1, None): open первого бара дня x+1; hhmm не нужен, вызывающий берёт open.
+    open2 → (1, 600): open бара 10:00 дня x+1 (Ж-086 п. 4; `bar_at`).
     """
     if prichina not in PRICHINY:
         raise ValueError(f"причина выхода {prichina!r}: допустимо {PRICHINY}")
     if t_vyhod == "close":
         return 0, None
     if t_vyhod == "open2":
-        return 1, None
+        return 1, HHMM["open2"]
     if t_vyhod not in HHMM:
         raise ValueError(f"t_vyhod {t_vyhod!r}: допустимо close, 1500, 1700, open2")
     return (0 if prichina == "vremya" else 1), HHMM[t_vyhod]

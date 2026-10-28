@@ -1,6 +1,12 @@
 """Л-2: новые оси исполнения (fastbt/exec_e2.py, Run2). Синтетика с известным ответом, без данных.
 check_* — на правильном коде; *_mut — подложенная ошибка (check обязан упасть). Мутации: № 2, 3 (mutations.md) и из §7 контракта.
-Время баров (Л-3, fastbt/exec_e_vremya) подменено заглушкой по контракту: bar_do ищет бар, начатый за 5 минут до hhmm."""
+Время баров (Л-3, fastbt/exec_e_vremya) подменено заглушкой по контракту: bar_at ищет бар, начинающийся в hhmm.
+
+Тестировщик П-2б, 28.10 (Ж-086 п. 4, Ж-087 п. 2): заглушка была без bar_at/HHMM (5 тестов падали AttributeError). Теперь
+bar_at — первый бар с t ≥ hhmm (searchsorted), vyhod_plan отдаёт hhmm в минутах, выход — по open этого бара (T0 = 14:30:
+15:00 → бар 6). Старое поведение (close бара 14:55) при t_vyhod ≠ close больше недостижимо, поэтому ожидания изменены, не
+ослаблены: те же дни, стоп, комиссия, x_t; 17:00 без баров — open бара 10:00 следующего дня (запасное правило), x_t = 1;
+стоп в самом баре выхода не срабатывает (выход по его open), мутация scan_end = cut + 1 это ловит."""
 import sys
 import types
 
@@ -39,28 +45,29 @@ def rn(days, sig, sigma=0.02, close=None, **kw):
 
 
 # --- время баров: заглушка Л-3 по контракту ---
-def _bar_do(day, hhmm):
-    m = (int(hhmm) // 100) * 60 + int(hhmm) % 100 - 5
-    ix = np.flatnonzero(day.t == m)
-    return int(ix[0]) if ix.size else None
+HH = {"1500": 900, "1700": 1020, "open2": 600}
+
+
+def _bar_at(day, hhmm):
+    return None if day.t is None else int(np.searchsorted(day.t, hhmm, side="left"))
 
 
 def _plan(t_vyhod, prichina):
     if t_vyhod == "open2":
-        return 1, None
-    return (0 if prichina == "vremya" else 1), t_vyhod
+        return 1, HH["open2"]
+    return (0 if prichina == "vremya" else 1), HH[t_vyhod]
 
 
 @pytest.fixture(autouse=True)
 def vremya(monkeypatch):
     m = types.ModuleType("fastbt.exec_e_vremya")
-    m.bar_do, m.vyhod_plan = _bar_do, _plan
+    m.bar_at, m.vyhod_plan, m.HHMM = _bar_at, _plan, HH
     monkeypatch.setitem(sys.modules, "fastbt.exec_e_vremya", m)
     monkeypatch.setattr("fastbt.exec_e_vremya", m, raising=False)
     return m
 
 
-T0 = 870                                                      # 14:30: бар b кончается в 14:35 + 5b; 15:00 → b = 5; 17:00 → нет
+T0 = 870                                                      # 14:30: бар b начинается в 14:30 + 5b; 15:00 → b = 6; 17:00 → баров нет
 
 
 def L0(k=0.5, s=0.02):
@@ -182,20 +189,20 @@ def _tv(tv, d3, sig=(1, 1, 0, 0, 0), **kw):
     return rn(days, list(sig), t_vyhod=tv, comm=0.001, **kw)
 
 
-D3 = bars(20, b5=(100, 101.5, 100, 101), b0=(100.5, 100.5, 100, 100), b19=(100, 100, 99, 99))
+D3 = bars(20, b6=(101, 101.5, 100, 101), b0=(100.5, 100.5, 100, 100), b19=(100, 100, 99, 99))
 
 
 def check_t_vyhod_signal():
     r = _tv("close", D3)
     assert (r.trades[0].exit_day, r.x_t) == (2, 0)
-    for tv, bar, px in (("1500", 5, 101.0), ("open2", 0, 100.5)):
+    for tv, bar, px in (("1500", 6, 101.0), ("open2", 0, 100.5)):
         r = _tv(tv, D3)
         t = r.trades[0]
         assert (t.exit_day, t.exit_bar, t.exit_px, t.reason, r.x_t) == (3, bar, px, "signal", 1)
         assert r.gross[2] == pytest.approx(LN(px / 100.0)) and r.cost[2] == pytest.approx(0.001)   # выход — в начале интервала
-    r = _tv("1700", D3)                                                         # бара 17:00 нет: close Н6 дня x+1, флаг прежний
+    r = _tv("1700", D3)                                                         # баров ≥ 17:00 нет: open бара 10:00 дня x+2
     t = r.trades[0]
-    assert (t.exit_day, t.exit_px, t.reason, r.x_t, r.cost[3]) == (3, 99.0, "signal", 0, pytest.approx(0.001))
+    assert (t.exit_day, t.exit_px, t.reason, r.x_t, r.cost[3]) == (4, 100.0, "signal", 1, pytest.approx(0.001))
 
 
 def test_t_vyhod_signal():
@@ -203,7 +210,7 @@ def test_t_vyhod_signal():
 
 
 def test_t_vyhod_mut_signal_same_day(monkeypatch, vremya):
-    monkeypatch.setattr(vremya, "vyhod_plan", lambda tv, pr: (0, tv))            # выход по сигналу в 15:00 дня x
+    monkeypatch.setattr(vremya, "vyhod_plan", lambda tv, pr: (0, HH[tv]))        # выход по сигналу в 15:00 дня x
     with pytest.raises(AssertionError):
         check_t_vyhod_signal()
 
@@ -216,11 +223,11 @@ def test_t_vyhod_stop_first_before_bar_do():
 
 
 def check_stop_in_bar_do():
-    d3 = bars(20, b5=(100, 100, 97, 99))                        # стоп 98 внутри бара 15:00, close бара 99
+    d3 = bars(20, b5=(100, 100, 97, 99))                        # стоп 98 на баре 14:55 — до бара выхода: стоп первым
     t = _tv("1500", d3, b=1.0).trades[0]
     assert (t.exit_bar, t.exit_px, t.reason) == (5, 98.0, "stop")
-    t = _tv("1500", bars(20, b5=(100, 100, 99, 99)), b=1.0).trades[0]     # стопа нет — выход по c[bar_do]
-    assert (t.exit_bar, t.exit_px, t.reason) == (5, 99.0, "signal")
+    t = _tv("1500", bars(20, b6=(99, 100, 97, 99)), b=1.0).trades[0]      # стоп 98 лишь внутри бара 15:00: выход по его open
+    assert (t.exit_bar, t.exit_px, t.reason) == (6, 99.0, "signal")
 
 
 def test_stop_in_bar_do_first():
@@ -228,19 +235,19 @@ def test_stop_in_bar_do_first():
 
 
 def test_stop_in_bar_do_mut(monkeypatch):
-    monkeypatch.setattr(exec_e2, "scan_end", lambda cut: cut)     # bar_do исключён из скана стопа
+    monkeypatch.setattr(exec_e2, "scan_end", lambda cut: cut + 1)     # бар выхода сканируется на стоп
     with pytest.raises(AssertionError):
         check_stop_in_bar_do()
 
 
 def test_t_vyhod_tau_same_day():
-    days = [D(F(100.0, 20), T0), D(F(100.0, 20), T0), D(bars(20, b5=(100, 100.5, 100, 100.4)), T0), D(F(100.0, 20), T0)]
+    days = [D(F(100.0, 20), T0), D(F(100.0, 20), T0), D(bars(20, b6=(100.4, 100.5, 100, 100.4)), T0), D(F(100.0, 20), T0)]
     r = rn(days, [1, 1, 1, 1], t_vyhod="1500", tau=2, comm=0.001)
     t = r.trades[0]
-    assert (t.exit_day, t.exit_bar, t.exit_px, t.reason, r.x_t) == (2, 5, 100.4, "vremya", 1)
+    assert (t.exit_day, t.exit_bar, t.exit_px, t.reason, r.x_t) == (2, 6, 100.4, "vremya", 1)
     assert r.cost[1] == pytest.approx(0.001)
-    r = rn(days, [1, 1, 1, 1], t_vyhod="1700", tau=2, comm=0.001)             # бара нет: close этого дня
-    assert (r.trades[0].exit_day, r.x_t) == (2, 0)
+    r = rn(days, [1, 1, 1, 1], t_vyhod="1700", tau=2, comm=0.001)             # бара ≥ 17:00 нет: open 10:00 дня x+1
+    assert (r.trades[0].exit_day, r.x_t) == (3, 1)
     stp = days[:2] + [D(bars(20, b2=(100, 100, 97, 100)), T0)] + days[3:]
     t = rn(stp, [1, 1, 1, 1], t_vyhod="1500", tau=2, b=1.0).trades[0]         # стоп раньше среза
     assert (t.exit_bar, t.reason) == (2, "stop")
