@@ -94,13 +94,15 @@ def test_anchor_s9_diff_train4_konechen_i_nul(sid):
 
 
 def test_job_train4_stroit_A_2016_2019_na_realnykh_dannykh():
-    """_job на одном тикере: A по годам периода (в т.ч. 2016), C пуст, σ не нужна; train — прежние 2017–2021."""
-    with s9.period_ctx("train4"):
-        tk, out = s9._job(("SBER", {}, ("dev",), "train4"))
+    """_job в отдельном процессе (spawn, как build_cache; он ставит NUMBA_NUM_THREADS=1 — не в процессе pytest):
+    A по годам периода (в т.ч. 2016), C пуст, σ не нужна."""
+    import multiprocessing as mp
+    with mp.get_context("spawn").Pool(1) as pool:
+        tk, out = pool.map(s9._job, [("SBER", {}, ("dev",), "train4")])[0]
     assert tk == "SBER" and out["C"] == {}
     for sid in s9.SIDS:
         assert set(out["A"][sid]) == {2016, 2017, 2018, 2019}
-        assert out["A"][sid][2016].shape == out["dates"].shape or len(out["A"][sid][2016]) > 0
+        assert len(out["A"][sid][2016]) == len(out["dates"])
 
 
 def test_sweep_sk_start_year_parametr():
