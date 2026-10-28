@@ -121,3 +121,140 @@ def test_mutation_progrev_s9_ne_2015_caught(monkeypatch):
     monkeypatch.setitem(s9.PERIODS_S9, "train4", ((2016, 2017, 2018, 2019), 2016))
     with pytest.raises(ValueError, match="пустое окно"):
         deltas(make_evr("S1"), "S1", POINTS[0][1])
+
+
+# ---------------- A на train4 (Ж-075 п. 1, «20 точек» Ж-040): контракт ветки s9-a-train4 ----------------
+# Две точки A (портфель «все семейства», комиссия 0,04 и 0,035 %) × годы 2016–2019: Engine.port на боевом кэше A (train4)
+# против сборки оценщика A (`sweep_a_core.assemble`, ekviv_s9.run_a), max |Δ| ≤ 1e-12; плюс lr кэша = `etap1.load_ticker_nf`.
+# Контракт кода: при set_period("train4") период входит в cache_key(), кэш A лежит в cache_<key>.pkl, годы A — с 2015 (прогрев).
+COMMS_A = (0.0004, 0.00035)
+
+
+def _key(period: str):
+    from fastbt import s9
+    old = s9.PERIOD, s9.YEARS, s9.VAL_START
+    try:
+        s9.set_period(period)
+        return s9.cache_key(), s9.OUT
+    finally:
+        s9.PERIOD, s9.YEARS, s9.VAL_START = old
+
+
+def _a4_ready() -> bool:
+    if not bars5m.SRC.exists():
+        return False
+    try:
+        (k4, out), (k0, _) = _key("train4"), _key("train")
+        return k4 != k0 and (out / f"cache_{k4}.pkl").exists()
+    except Exception:                                    # noqa: BLE001 — «не готово» = любая причина, тест xfail
+        return False
+
+
+A4 = pytest.mark.xfail(not _a4_ready(), strict=True, reason="ждёт s9-a-train4")
+
+
+def a4_cache() -> dict:
+    import pickle
+    k4, out = _key("train4")
+    res = pickle.loads((out / f"cache_{k4}.pkl").read_bytes())
+    return {t: dict(dates=c["dates"], lr=c["lr"], A={s: dict(v) for s, v in c["A"].items()}) for t, c in res.items()}
+
+
+def warmup_ok(cache: dict) -> bool:
+    """Годы A каждой пары начинаются с 2015 (прогрев) и доходят до 2019."""
+    ys = {Y for c in cache.values() for v in c["A"].values() for Y in v}
+    return min(ys) == 2015 and max(ys) >= 2019
+
+
+def lr_delta(cache_lr: dict, ref_lr: dict, y: int) -> float:
+    """max |lr кэша − lr эталона| на датах года y по всем тикерам (даты и длины обязаны совпасть)."""
+    out = 0.0
+    for t, (dates, lr) in cache_lr.items():
+        rd, rl = ref_lr[t]
+        if len(rl) != len(lr) or not np.array_equal(rd, dates):
+            return float("inf")
+        m = pd.DatetimeIndex(dates).year == y
+        out = max(out, float(np.abs(lr[m] - rl[m]).max()))
+    return out
+
+
+def ref_lr_nf(tickers) -> dict:
+    from fastbt import etap1
+    return {t: (td.dates, td.log_ret) for t in tickers for td in [etap1.load_ticker_nf(t)]}
+
+
+@A4
+@pytest.mark.parametrize("comm", COMMS_A)
+def test_a_train4_equals_s9(comm):
+    from fastbt import ekviv_s9
+    cache = a4_cache()
+    assert warmup_ok(cache)
+    ref = ref_lr_nf(cache)
+    for y in GODY:
+        pt = dict(id=f"A_{y}", klass="A_ishodnaya", god=y)
+        old = ekviv_s9.s9.PERIOD, ekviv_s9.s9.YEARS, ekviv_s9.s9.VAL_START
+        try:
+            ekviv_s9.s9.set_period(PER)
+            r = ekviv_s9.run_a(pt, cache, (comm,), PER)[0]
+        finally:
+            ekviv_s9.s9.PERIOD, ekviv_s9.s9.YEARS, ekviv_s9.s9.VAL_START = old
+        dl = lr_delta({t: (c["dates"], c["lr"]) for t, c in cache.items()}, ref, y)
+        assert r["max_dpnl"] <= TOL and r["sharpe_s9"] != 0 and dl <= TOL, (y, comm, r["max_dpnl"], dl)
+
+
+@A4
+def test_a_train4_period_v_kluche_kesha():
+    """Кэш A по ключу `train` при запросе train4 недопустим: период обязан входить в cache_key."""
+    assert _key("train4")[0] != _key("train")[0]
+
+
+def test_mutation_a_bez_dividendov_2015_2016_caught(monkeypatch):
+    """Эталон lr без дивидендов до 2017: lr_delta 2016 обязана превысить допуск (кэш A — с дивидендами)."""
+    from fastbt import dividendy
+    good = ref_lr_nf(("SBER", "LKOH"))
+    orig = dividendy.adjust_lr
+
+    def bad(t, dates, c, lr):
+        out = np.array(orig(t, dates, c, lr), float)
+        keep = np.asarray(dates) < np.datetime64("2017-01-01")
+        out[keep] = lr[keep]
+        return out
+    monkeypatch.setattr(dividendy, "adjust_lr", bad)
+    mut = ref_lr_nf(("SBER", "LKOH"))
+    assert lr_delta(good, mut, 2016) > TOL, "мутация не ловится"
+    assert lr_delta(good, good, 2016) == 0.0
+
+
+# ---------------- Ж-080: anchor_s9_diff(period="train4") конечен и ≤ 1e-12 (S1–S6; A — тест выше) ----------------
+def _start_year_fixed() -> bool:
+    from fastbt import sweep_sk
+    return sweep_sk.START_YEAR != 2018 and sweep_sk.START_YEAR <= 2016
+
+
+ANCHOR = pytest.mark.xfail(not _start_year_fixed(), strict=True, reason="ждёт s9-a-train4 (START_YEAR=2018 -> inf на 2016–2017)")
+
+
+def _anchor_d(sid: str) -> dict:
+    from fastbt import etap1
+    return etap1.anchor_s9_diff(sid, make_evr(sid), COMM, PER)
+
+
+@ANCHOR
+@pytest.mark.parametrize("sid", [f"S{k}" for k in range(1, 7)])
+def test_anchor_s9_diff_train4_konechen(sid):
+    d = _anchor_d(sid)
+    assert set(d) == set(GODY) and all(np.isfinite(v) and v <= TOL for v in d.values()), d
+
+
+def test_mutation_start_year_2018_konstantoy_caught(monkeypatch):
+    """START_YEAR = 2018 константой: ряд эталона 2016–2017 пуст, anchor_s9_diff даёт inf — проверка обязана это видеть."""
+    from fastbt import sweep_sk
+    monkeypatch.setattr(sweep_sk, "START_YEAR", 2018)
+    d = _anchor_d("S1")
+    assert not (np.isfinite(d[2016]) and np.isfinite(d[2017])), d
+
+
+def test_mutation_a_progrev_ne_2015_caught():
+    """Кэш A, у которого годы начинаются с 2016, а не с 2015, warmup_ok обязан отвергнуть."""
+    mk = lambda ys: {"T": {"A": {"S1": {Y: np.zeros(3) for Y in ys}}}}      # noqa: E731
+    assert warmup_ok(mk(range(2015, 2020))) and not warmup_ok(mk(range(2016, 2020)))
