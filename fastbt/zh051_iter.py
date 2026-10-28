@@ -23,7 +23,7 @@ import yaml
 from fastbt import etap1, etap1_ansambl as A, etap1_poisk as P, etap1_poisk_vorota as V, zh051_kriteriy as K
 from fastbt.etap1_eval import YAKOR
 from fastbt.etap1_plus_eval import PlusEvaluator
-from fastbt.zh051_plato import PLUS_KEYS, PlusLedger, norm, vybor
+from fastbt.zh051_plato import PLUS_KEYS, ledger_cls, ledger_name, norm, vybor
 
 SETKI, OUT = Path("fastbt/designs/sweep"), Path("docs/tables/zh051")
 
@@ -54,7 +54,7 @@ def run_it(sid: str, it: int) -> dict:
     S, run_id = P.load_setka(sid), dt.datetime.now().isoformat(timespec="seconds")
     evr = PlusEvaluator(sid, etap1.build_inputs(sid), etap1.base_point(sid), 0.0004)
     ev = lambda p, per: evr.evaluate({**YAKOR, **p}, per)                    # noqa: E731
-    led = K.load_ledger(sid, "ledger_it2.pkl", ev, cls=PlusLedger)
+    led = K.load_ledger(sid, ledger_name(2, evr.fdr), ev, cls=ledger_cls(evr.fdr))
     if K.sverka_ledger(led, ev):
         raise SystemExit(f"{sid}: СТОП, строки ledger не воспроизведены текущим кодом")
     row = pd.read_csv(Path("docs/tables/zh047") / f"{sid}_itog_v2.csv", comment="#").iloc[-1]
@@ -78,7 +78,7 @@ def run_it(sid: str, it: int) -> dict:
                   [{"strategiya": sid, **c["e"], **{k: c[k] for k in ("objective", "plateau", "n", "sigma126", "adm", "edge")}}
                    for c in rows])
     K.write_table(OUT / f"it{it}" / f"{sid}_itog.csv", [itog])
-    K.save_ledger(sid, led, f"ledger_it{it}.pkl")
+    K.save_ledger(sid, led, ledger_name(it, evr.fdr))
     return itog
 
 
@@ -122,7 +122,7 @@ def run_26(sid: str) -> list:
     S = P.load_setka(sid)
     evr = PlusEvaluator(sid, etap1.build_inputs(sid), etap1.base_point(sid), 0.0004)
     ev = lambda p, per: evr.evaluate({**YAKOR, **p}, per)                    # noqa: E731
-    led = K.load_ledger(sid, "ledger_it10.pkl", ev, cls=PlusLedger)
+    led = K.load_ledger(sid, ledger_name(10, evr.fdr), ev, cls=ledger_cls(evr.fdr))
     stale = bool(K.sverka_ledger(led, ev))        # ledger_it10 посчитан до #370 (02:46 < 09:47): строки не воспроизводятся
     row = pd.read_csv(Path("docs/tables/zh047") / f"{sid}_itog_v2.csv", comment="#").iloc[-1]
     p1 = {k: P._coerce(str(row[f"p_{k}"]), S["axes"][k]) for k in S["axes"]}
@@ -144,7 +144,7 @@ def run_26(sid: str) -> list:
                     f"# коммит кода: {sha}; хэш входов: {out[0]['vhody']}; комиссия 0,04 %; плата за шорт — годовых, справочно\n", "utf-8")
     pd.DataFrame(out).to_csv(path, mode="a", index=False)
     if not stale:
-        K.save_ledger(sid, led, "ledger_it26.pkl")                             # устаревшую матрицу не размножаем
+        K.save_ledger(sid, led, ledger_name(26, evr.fdr))                            # устаревшую матрицу не размножаем
     return out
 
 

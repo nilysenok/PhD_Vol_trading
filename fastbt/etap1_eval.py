@@ -178,6 +178,8 @@ class Evaluator:
     def evaluate(self, pt: dict, period: str) -> dict:
         if period not in PERIODS:
             raise PermissionError(f"период {period!r}: этап 1 считает только {sorted(PERIODS)}")
+        if self.full(pt).get("fdr", self.fdr) != self.fdr:      # строка ledger другого режима (Д5): не считать молча
+            raise ValueError(f"точка с fdr={pt['fdr']!r} подана оценщику fdr={self.fdr!r}")
         if self.full(pt)["sobytiya"] in NE_SCHITANO:        # не считаем молча как net: строка «не считана», mSR = nan
             nan = {y: float("nan") for y in range(PERIODS[period][0], PERIODS[period][1] + 1)}
             return {"v": "1.0", "ne_schitana": "sobytiya div/cbr_div ждёт сверки дат (❓5)", "msr_by_year": nan,

@@ -42,14 +42,23 @@ def ledger_name(it: int, fdr=None) -> str:
 
 class PlusLedger(V.Ledger):
     """Ledger, в котором точки с выключенными осями итерации совпадают с P1 (один ключ, один раз в N).
-    Режим ФДР берётся у оценщика (`fdr`); имя файла — `name(it)`."""
+    Режим ФДР (`fdr`, класс из `ledger_cls`) входит в ключ строки (Д5) и в имя файла `name(it)`; None — ключ прежний."""
+    fdr = None
 
     def name(self, it: int) -> str:
-        owner = getattr(self.ev, "__self__", self.ev)            # ev — обычно метод Evaluator.evaluate
-        return ledger_name(it, getattr(owner, "fdr", None))
+        return ledger_name(it, self.fdr)
 
     def __call__(self, params: dict, period: str) -> dict:
-        return super().__call__(canon_plus(params), period)
+        p = canon_plus(params)
+        return super().__call__(p if self.fdr is None else {**p, "fdr": self.fdr}, period)    # Д5: режим — в ключ строки
+
+
+def ledger_cls(fdr=None):
+    """Класс ledger под режим ФДР: None — `PlusLedger` как был; иначе подкласс с `fdr` (ключ строк и имя файла)."""
+    if fdr is None:
+        return PlusLedger
+    ledger_name(0, fdr)                                                   # проверка режима
+    return type("PlusLedgerFdr", (PlusLedger,), {"fdr": fdr})
 
 
 def uniq_nbrs(p1: dict, e: dict, grid: dict) -> list:

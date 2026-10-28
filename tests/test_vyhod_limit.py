@@ -82,6 +82,13 @@ def chk_side():
     assert sd2 == -1 and x2 < c2, "шорт: X ниже close"
 
 
+def chk_gap_open():
+    """Гэп через X вверх (open 102 > X): исполнение по open, а не по уровню 100 (mutations.md № 4)."""
+    r = go([(102.0, 103.0, 101.0, 102.0)])
+    t = r.trades[0]
+    assert (t.reason, t.exit_day, t.exit_bar) == ("lim", 2, 0) and t.exit_px == 102.0 and r.x_fills == 1
+
+
 def chk_m6():
     for kw in (dict(k=None), dict(k=1.0, check="zakrytie")):
         try:
@@ -92,7 +99,7 @@ def chk_m6():
         assert isinstance(err, ValueError), f"{kw}: ждали ValueError, получено {err!r}"
 
 
-CHECKS = [chk_fill, chk_touch, chk_not_same_day, chk_stop_first, chk_dividend, chk_side, chk_m6]
+CHECKS = [chk_fill, chk_touch, chk_not_same_day, chk_stop_first, chk_dividend, chk_side, chk_gap_open, chk_m6]
 
 
 @pytest.mark.parametrize("chk", CHECKS, ids=lambda c: c.__name__)
@@ -190,6 +197,7 @@ MUTS = [
     ("М-В3_ne_zerkalno", lambda m: m.setattr(R_.Run, "_leave", leave_wrong_side(R_.Run._leave)), chk_side),
     ("М-В4_dv_ne_primenen", lambda m: m.setattr(R_.Run, "_exit", exit_no_dv(R_.Run._exit)), chk_dividend),
     ("М-В5_X_ranshe_stopa", lambda m: m.setattr(R_.Run, "_scan", scan_x_first), chk_stop_first),
+    ("М-В7_gep_po_urovnyu", lambda m: m.setattr(R_, "limit_px", lambda sd, o, L: L), chk_gap_open),
     ("М-В6_tihiy_otkat", lambda m: m.setattr(exec_e, "_check_params", check_noop), chk_m6),
 ]
 

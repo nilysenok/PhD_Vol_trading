@@ -28,9 +28,9 @@ def engine(n, npair=1, seed=0):
     return e
 
 
-def run1(days, sig, p, fdr):
+def run1(days, sig, p, fdr, w=None):
     n = len(days)
-    return etap1_run.run_e1("T", days, sig, np.full(n, SG), p, win=(0, n - 1), fdr=fdr)
+    return etap1_run.run_e1("T", days, sig, np.full(n, SG), p, w=w, win=(0, n - 1), fdr=fdr)
 
 
 def stavka(r):
@@ -224,12 +224,8 @@ def chk_mf6():
     assert zh051_plato.ledger_name(1, "t0") == "ledger_it1_fdr-t0.pkl"
     assert zh051_plato.ledger_name(3) == "ledger_it3.pkl", "умолчание — прежнее имя"
 
-    class Ev:
-        fdr = "t1"
-
-        def evaluate(self, pt, period):
-            return {}
-    assert zh051_plato.PlusLedger(Ev().evaluate).name(2) == "ledger_it2_fdr-t1.pkl"
+    assert zh051_plato.ledger_cls("t1")(lambda p, per: {}).name(2) == "ledger_it2_fdr-t1.pkl"
+    assert zh051_plato.ledger_cls(None)(lambda p, per: {}).name(2) == "ledger_it2.pkl"
 
 
 def test_mf6_ledger_po_rezhimu_otdelnyy_fayl():
@@ -242,6 +238,111 @@ def test_mutatsiya_mf6_rezhim_ne_v_imeni(monkeypatch):
     monkeypatch.setattr(zh051_plato, "ledger_name", lambda it, fdr=None: f"ledger_it{it}.pkl")
     with pytest.raises(AssertionError):
         chk_mf6()
+
+
+# ---- вес сделки в noch (w = 0,5 и ансамблевый w·mag) ----
+def chk_ves():
+    days, sig, p = at_close((1, 1, 0, 0, 0))
+    half = np.full(5, 0.5)
+    assert np.allclose(run1(days, sig, p, "t0", w=half).noch, [0.5, 0.5, 0.0, 0.0]), "w = 0,5"
+    assert np.allclose(run1(days, sig, p, "t1", w=half).noch, [0.5, 0.5, 0.5, 0.0])
+    w_mag = np.ones(5) * np.array([0.7, 0.7, 0.7, 0.7, 0.7])          # ансамбль: w · mag (etap1_ansambl_eval)
+    assert np.allclose(run1(days, sig, p, "t0", w=w_mag).noch, [0.7, 0.7, 0.0, 0.0]), "w·mag"
+
+
+def test_ves_sdelki_v_noch():
+    chk_ves()
+
+
+def test_mutatsiya_ves_raven_edinitse_lovitsya(monkeypatch):
+    orig = F_.noch_iz_sdelok
+    monkeypatch.setattr(F_, "noch_iz_sdelok", lambda t, w_tr, n, r: orig(t, {k: 1.0 for k in w_tr}, n, r))
+    with pytest.raises(AssertionError):
+        chk_ves()
+
+
+# ---- Д5: режим входит в ключ строки ledger ----
+def chk_klyuch():
+    calls = []
+
+    def ev(p, per):
+        calls.append(dict(p))
+        return {"n": len(calls)}
+    a, b = zh051_plato.ledger_cls(None)(ev), zh051_plato.ledger_cls("t0")(ev)
+    a({"k_s": 1.0}, "train")
+    b.cache = dict(a.cache)                          # ledger режима None подсунут режиму t0 (чужой файл)
+    b({"k_s": 1.0}, "train")
+    assert len(calls) == 2 and set(a.cache) != set(b.cache), "тот же params при другом fdr — промах кэша"
+    assert calls[1].get("fdr") == "t0" and "fdr" not in calls[0], "None — ключ прежний"
+
+
+def test_klyuch_ledger_nesyot_fdr():
+    chk_klyuch()
+    with pytest.raises(ValueError):
+        zh051_plato.ledger_cls("t2")
+
+
+def test_mutatsiya_fdr_ne_v_klyuche_lovitsya(monkeypatch):
+    V = zh051_plato.V
+    monkeypatch.setattr(zh051_plato.PlusLedger, "__call__",
+                        lambda self, p, per: V.Ledger.__call__(self, zh051_plato.canon_plus(p), per))
+    with pytest.raises(AssertionError):
+        chk_klyuch()
+
+
+def test_evaluator_otkazyvaet_stroke_chuzhogo_rezhima():
+    from types import SimpleNamespace
+
+    from fastbt.etap1_eval import Evaluator
+    e = Evaluator("S1", SimpleNamespace(sk=SimpleNamespace(sig_names=())), {})
+    with pytest.raises(ValueError):
+        e.evaluate({"fdr": "t0"}, "train")
+
+
+def test_drivery_berut_imya_ledger_cherez_ledger_name():
+    from pathlib import Path
+    for f in ("zh051_iter.py", "zh051_iter10.py"):
+        src = (Path(zh051_plato.__file__).parent / f).read_text("utf-8")
+        for lit in ('"ledger_it2.pkl"', '"ledger_it10.pkl"', '"ledger_it26.pkl"', 'f"ledger_it{'):
+            assert lit not in src.split('"""', 2)[-1], f"{f}: имя ledger задано строкой {lit}"
+
+
+# ---- проброс fdr через Evaluator / Ansambl / Plus до run_e1 ----
+def chk_probros(mp, fdr, strip=()):
+    import types
+
+    from test_zh051_plus import PT, FakeParent, FakePlus, PE, AE, EE
+    seen = {}
+
+    def spy(name):
+        def run(t, days, sig, sigma, p, close=None, w=None, win=None, div=None, **kw):
+            seen.setdefault(name, []).append(None if name in strip else kw.get("fdr", "<нет ключа>"))
+            return types.SimpleNamespace(g=None)
+        return run
+    for name, mod in (("EE", EE), ("AE", AE), ("PE", PE)):
+        mp.setattr(mod, "run_e1", spy(name))
+    mp.setattr(PE, "modul", lambda n: types.SimpleNamespace(
+        allow=lambda pt, t, dates, ctx: (np.ones(len(dates), bool), np.ones(len(dates), bool))))
+    for cls, pt, ens in ((FakeParent, PT, None), (FakeParent, PT, ([PT], "srednee")),
+                         (FakePlus, {**PT, "sektor_trend": "po_trendu"}, None)):
+        e = cls()
+        e.ens, e.fdr = ens, fdr
+        e._rows(e.full(pt), "train", False)
+    assert sorted(seen) == ["AE", "EE", "PE"], seen
+    want = "<нет ключа>" if fdr is None else fdr
+    assert all(v == want for vs in seen.values() for v in vs), seen
+
+
+def test_probros_fdr_do_run_e1_i_net_klyucha_pri_none(monkeypatch):
+    chk_probros(monkeypatch, "t1")
+    with pytest.MonkeyPatch.context() as mp:
+        chk_probros(mp, None)
+
+
+@pytest.mark.parametrize("strip", [("EE",), ("AE",), ("PE",)])
+def test_mutatsiya_probros_fdr_poteryan_lovitsya(monkeypatch, strip):
+    with pytest.raises(AssertionError):
+        chk_probros(monkeypatch, "t1", strip)
 
 
 def _net_dannyh():
