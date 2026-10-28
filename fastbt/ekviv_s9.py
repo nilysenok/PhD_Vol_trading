@@ -87,10 +87,13 @@ def boevoy_pos(sid: str, p: dict, t: str, td, ind) -> np.ndarray:
 WINDOWS_TRAIN4 = {y: tuple(range(2016, y + 1)) for y in range(2016, 2020)}     # В1: 2016–2019, прогрев 2015
 
 
+WINDOWS_V2 = {y: tuple(range(2015, y + 1)) for y in range(2015, 2020)}     # Ж-113: v2 — 2015–2019, прогрев с 26.08.2014
+
+
 def windows(period: str = "train") -> dict:
-    if period not in ("train", "train4"):
-        raise ValueError(f"период {period!r}: train или train4")
-    return WINDOWS if period == "train" else WINDOWS_TRAIN4
+    if period not in ("train", "train4", "v2"):
+        raise ValueError(f"период {period!r}: train, train4 или v2")
+    return {"train": WINDOWS, "train4": WINDOWS_TRAIN4, "v2": WINDOWS_V2}[period]
 
 
 @contextmanager

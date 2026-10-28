@@ -72,7 +72,20 @@ def _body_paging(tmp):
     assert [parse_qs(urlparse(u).query)['start'][0] for u in fake.calls] == ['0', '100', '200']
 
 
-@pytest.mark.parametrize('body', [_body_clip, _body_codes, _body_limit, _body_paging])
+def _body_from(tmp):
+    assert 'from=2015-01-01&till=2019-12-31' in vm.build_url('IMOEX')  # по умолчанию без изменений
+    u = vm.build_url('IMOEX', 0, '2014-01-01', '2014-12-31')
+    assert 'from=2014-01-01&till=2014-12-31' in u
+    with pytest.raises(ValueError):
+        vm.build_url('IMOEX', 0, '2014-01-01', '2020-01-03')
+    fake = FakeIss()
+    j, n = vm.run(tmp, _getter(fake), ['IMOEX'], '2014-01-01', '2014-12-31', '_2014')
+    assert 'from=2014-01-01&till=2014-12-31' in fake.calls[0] and n == 1
+    assert j[0][0] == 'IMOEX_2014.csv' and (tmp / 'sha_journal_2014.csv').exists()
+    assert not (tmp / 'sha_journal.csv').exists() and int(j[0][3]) == 36  # обрезка работает и с --from
+
+
+@pytest.mark.parametrize('body', [_body_from, _body_clip, _body_codes, _body_limit, _body_paging])
 def test_ok(tmp_path, body):
     body(tmp_path)
 
@@ -81,6 +94,12 @@ def test_mutatsiya_bez_obrezki_lovitsya(tmp_path, monkeypatch):
     monkeypatch.setattr(vm, 'clip', lambda cols, rows: (rows, 0))
     with pytest.raises((AssertionError, RuntimeError)):  # RuntimeError: вторая защита write() перед записью
         _body_clip(tmp_path)
+
+
+def test_mutatsiya_from_bez_obrezki_lovitsya(tmp_path, monkeypatch):
+    monkeypatch.setattr(vm, 'clip', lambda cols, rows: (rows, 0))
+    with pytest.raises((AssertionError, RuntimeError)):
+        _body_from(tmp_path)
 
 
 def test_mutatsiya_sufiks_ne_togo_goda_lovitsya(tmp_path, monkeypatch):

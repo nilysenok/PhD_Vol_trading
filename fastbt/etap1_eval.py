@@ -30,8 +30,8 @@ _ATR = {"rm_tip": "atr", "rm_atr.sl_mult": OFF, "rm_atr.tp_mult": OFF, "rm_atr.m
 RM_OFF = {"S1": dict(sl_mult=OFF, tp_mult=OFF, max_hold=FAR, breakeven_trigger=None, cooldown_bars=0),
           "S3": dict(initial_sl_mult=OFF, trail_atr_mult=OFF, breakeven_thresh=None, cooldown_bars=0), "S5": _ATR}
 RM_OFF.update(S2=RM_OFF["S1"], S4=RM_OFF["S3"], S6=_ATR)
-PERIODS = {"train": (2018, 2019), "ctrl2019": (2019, 2019), "tune2018": (2018, 2018), "train4": (2016, 2019)}
-HONEST = {"train": "net", "ctrl2019": "kontrol", "tune2018": "net", "train4": "net"}     # train4 — В1, 2015 — прогрев
+PERIODS = {"train": (2018, 2019), "ctrl2019": (2019, 2019), "tune2018": (2018, 2018), "train4": (2016, 2019), "v2": (2015, 2019)}
+HONEST = {"train": "net", "ctrl2019": "kontrol", "tune2018": "net", "train4": "net", "v2": "net"}     # train4 — В1, 2015 — прогрев
 
 
 def years_of(period: str) -> tuple:
