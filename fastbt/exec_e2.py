@@ -45,8 +45,8 @@ def later_px(sell, level, o_n, c6):
 
 
 def scan_end(cut):
-    """Скан до бара bar_do включительно: стоп в нём раньше выхода по времени (№ 3); не сработал — выход по c[bar_do]."""
-    return cut + 1
+    """Скан строго до бара выхода (Ж-086 п. 4): стоп и тейк — по барам до него; выход — по open бара cut."""
+    return cut
 
 
 def tik_stop(sd, S, tick, n):
@@ -109,6 +109,8 @@ class Run2(Run):
 
     # --- t_vyhod ---
     def _leave(s, i, j, nb, close, reason):
+        if s.pend is not None:                          # выход уже перенесён на open следующего дня (нет бара после hhmm)
+            return
         if s.p.t_vyhod != "close":
             sdv, hh = _vr().vyhod_plan(s.p.t_vyhod, reason)
             if sdv and j + 1 < len(s.ix):
@@ -121,20 +123,24 @@ class Run2(Run):
         cut = reason = None
         if pe:
             s.pend, reason = None, pe["reason"]
-            if pe["hhmm"] is None:                      # open2
-                return s._exit_t(i, j, 0, d.o[0], reason)
-            cut = _vr().bar_do(d, pe["hhmm"])
+            cut = _vr().bar_at(d, pe["hhmm"])
         elif s.p.t_vyhod in ("1500", "1700") and s.p.tau is not None and j > s.ej and j - s.ej >= s.p.tau:
             sdv, hh = _vr().vyhod_plan(s.p.t_vyhod, "vremya")
             if not sdv:
-                cut, reason = _vr().bar_do(d, hh), "vremya"
+                cut, reason = _vr().bar_at(d, hh), "vremya"
         if cut is None:
             super()._scan(i, j, d, b0)
-            if pe and s.tr is not None:                 # короткий день: выход по close Н6 этого дня
+            if pe and s.tr is not None:                 # времени баров нет: выход по close Н6 этого дня
                 s._exit(i, j, len(d.c) - 1, s.close_of(i), reason)
             return
         e = scan_end(cut)
         if b0 < e:
             super()._scan(i, j, Day(d.o[:e], d.h[:e], d.l[:e], d.c[:e]), b0)
-        if s.tr is not None:
-            s._exit_t(i, j, cut, d.c[cut], reason)
+        if s.tr is None:
+            return
+        if cut < len(d.c):
+            return s._exit_t(i, j, cut, d.o[cut], reason)   # Ж-086 п. 4: open бара hhmm (или первого после него)
+        if j + 1 < len(s.ix):                           # после hhmm баров нет: open бара 10:00 следующего дня (как open2)
+            s.pend = dict(reason=reason, due=j + 1, hhmm=_vr().HHMM["open2"])
+        else:
+            s._exit(i, j, len(d.c) - 1, s.close_of(i), reason)
