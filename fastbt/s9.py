@@ -25,6 +25,7 @@ C (u02) основного дизайна на том же σ. Все окна, 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import dataclasses
 import hashlib
 import json
@@ -176,6 +177,27 @@ def set_period(period: str) -> None:
         raise ValueError("период train4 — только в разработке (scope dev)")
     PERIOD = period
     YEARS, VAL_START = PERIODS_S9[period]
+
+
+@contextlib.contextmanager
+def period_ctx(period: str):
+    """Период на время блока; на выходе (в т.ч. при ошибке) возвращает прежние PERIOD/YEARS/VAL_START (#418)."""
+    old = PERIOD, YEARS, VAL_START
+    set_period(period)
+    try:
+        yield
+    finally:
+        _restore_period(*old)
+
+
+def _restore_period(period, years, val_start) -> None:
+    global PERIOD, YEARS, VAL_START
+    PERIOD, YEARS, VAL_START = period, years, val_start
+
+
+def _latest_name() -> str:
+    """Имя указателя на последний кэш; train4 — свой указатель, кэш train не затирается."""
+    return f"cache_latest{_csuf()}{'' if PERIOD == 'train' else '_' + PERIOD}.txt"
 
 
 def need_sigma(what: str) -> None:
@@ -380,10 +402,19 @@ def align(dates: np.ndarray, d: pd.DataFrame) -> np.ndarray:
 
 # ======================= кэш A и C основного дизайна =======================
 
+def period_cfg(cfg):
+    """Годы A и начало валидации — из периода. train — cfg как есть (2017–2021, побайтно прежнее)."""
+    if PERIOD == "train":
+        return cfg
+    return dataclasses.replace(cfg, years_a=tuple(range(YEARS[0], YEARS[-1] + 1)), val_start=VAL_START)
+
+
 def _job(args):
     ticker, srcs = args[:2]
     if len(args) > 2:                      # тест: в процессе spawn глобальные настройки заново
         set_scope(*args[2])
+    if len(args) > 3 and args[3] != "train":   # spawn: период заново
+        set_period(args[3])
     os.environ["NUMBA_NUM_THREADS"] = "1"
     from fastbt import dev, masks, turnover
     from fastbt import design as dsg
@@ -397,6 +428,7 @@ def _job(args):
     if SCOPE != "dev":
         cfg = dataclasses.replace(cfg, val_start=VAL_START, val_end=VAL_END)
         cfg5 = dataclasses.replace(cfg5, val_start=VAL_START, val_end=VAL_END)
+    cfg, cfg5 = period_cfg(cfg), period_cfg(cfg5)
     dsg.apply(cfg.design)
     td = load_ticker(ticker, cfg.corp_actions)
     sig = {lab: (h, align(td.dates, df)) for lab, (h, df) in srcs.items()}
@@ -439,15 +471,19 @@ def cache_key() -> str:
     h.update(dividendy.digest().encode())
     if SCOPE != "dev":
         h.update(f"{SCOPE}|{VAL_START}|{VAL_END}|{CUT.date()}".encode())
+    if PERIOD != "train":                  # Д5: период в ключе только при не-умолчании (ключ train не меняется)
+        h.update(f"period|{PERIOD}|{YEARS}|{VAL_START}".encode())
     return h.hexdigest()[:10]
 
 
 def build_cache(workers: int = 2) -> Path:
     from fastbt.data import TICKERS
-    need_sigma("build_cache")
-    os.environ["FASTBT_VPRED"] = str(SOURCES["hyb_h1"][0])
-    srcs = {lab: (SOURCES[lab][2], load_source(lab)) for lab in SOURCES}
-    extra = () if SCOPE == "dev" else ((SCOPE, VAL_START),)
+    if PERIOD == "train":
+        os.environ["FASTBT_VPRED"] = str(SOURCES["hyb_h1"][0])
+        srcs = {lab: (SOURCES[lab][2], load_source(lab)) for lab in SOURCES}
+    else:                                  # train4: только A и «A только Sk», σ-источники не читаются
+        srcs = {}
+    extra = (((SCOPE, VAL_START) if SCOPE != "dev" else ("dev",)), PERIOD)
     jobs = [(t, {lab: (h, df[df["ticker"] == t]) for lab, (h, df) in srcs.items()}) + extra
             for t in TICKERS]
     t0 = time.time()
@@ -467,7 +503,7 @@ def build_cache(workers: int = 2) -> Path:
         pool.join()
     p = OUT / f"cache_{cache_key()}.pkl"
     p.write_bytes(pickle.dumps(res, protocol=4))
-    (OUT / f"cache_latest{_csuf()}.txt").write_text(p.name)
+    (OUT / _latest_name()).write_text(p.name)
     print(f"кэш → {p} ({time.time() - t0:.0f} с)")
     return p
 
@@ -1277,7 +1313,7 @@ class S9:
 
 
 def load_cache() -> dict:
-    name = (OUT / f"cache_latest{_csuf()}.txt").read_text().strip()
+    name = (OUT / _latest_name()).read_text().strip()
     return pickle.loads((OUT / name).read_bytes())
 
 
