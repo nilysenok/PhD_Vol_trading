@@ -35,7 +35,7 @@ class RunStop(Run2):
         sd, b, px = r
         s.n_fills += 1
         s._enter(i, j, b, px, b, s.sigma[o["d_sig"]], o["d_sig"], sd)
-        S, _ = s._levels(j)
+        S, _ = Run2._levels(s, j)                   # в баре входа — только защитный стоп σ; стоп-заявка выхода активна со следующего бара
         if S is not None and stop_hit(sd, d.o[b], d.h[b], d.l[b], S, s.p.stop_touch)[0]:
             s._exit(i, j, b, S, s.sr)
         else:

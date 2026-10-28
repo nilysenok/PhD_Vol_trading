@@ -92,6 +92,12 @@ def test_mutatsii_urovnya_vyhoda_lovyatsya(xl):
     assert ok is (xl == [95, 108, 111.5, 50, 50])
 
 
+def test_vyhod_ne_v_bare_vkhoda():                                           # заявка выхода активна со следующего бара
+    days = [FLAT, D((100, 105, 90, 100), (100, 101, 94, 95)), FLAT]
+    t = go(days, U(3, up=[104, NAN, NAN], xl=[95, NAN, NAN])).trades[0]
+    assert (t.entry_bar, t.exit_day, t.exit_bar, t.exit_px) == (0, 1, 1, 95.0)
+
+
 def test_vyhod_po_kasaniyu_ne_po_prokhodu():
     days = [FLAT, D((100, 111, 99, 109)), D((109, 110, 108, 109)), FLAT]
     r = go(days, U(4, up=[110, NAN, NAN, NAN], xl=[95, 108, NAN, NAN]))
