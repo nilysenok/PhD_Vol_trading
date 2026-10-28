@@ -112,7 +112,8 @@ class Evaluator:
             if not anchor and pt["razmer"] != "ravnyy":
                 w = rezhim_e1.razmer_ves(sg, "obratnyj", float(pt["razmer"]) / 100.0)
             p = params_of(pt, inp.tick[t], h, anchor, self.comm)
-            out.append((ti, run_e1(t, days, sig, sg, p, close=inp.close_n6[t][:b + 1], w=w, win=(a, b)), a, b))
+            out.append((ti, run_e1(t, days, sig, sg, p, close=inp.close_n6[t][:b + 1], w=w, win=(a, b),
+                                         div=inp.div[t][:b + 1]), a, b))
         return out
 
     def _engine(self, period: str):

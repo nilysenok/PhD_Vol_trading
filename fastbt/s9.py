@@ -403,6 +403,8 @@ def cache_key() -> str:
     from fastbt import data as fd          # аудит FA2b-Н1: A и C строятся по барам и корп. событиям
     for p in (fd.OHLCV, fd.CORP):
         h.update(hashlib.sha1(Path(p).read_bytes()).digest())
+    from fastbt import dividendy           # Ж-057 п. 1 (Д5): lr и ряд сигналов зависят от таблицы дивидендов и множителя НДФЛ
+    h.update(dividendy.digest().encode())
     if SCOPE != "dev":
         h.update(f"{SCOPE}|{VAL_START}|{VAL_END}|{CUT.date()}".encode())
     return h.hexdigest()[:10]
