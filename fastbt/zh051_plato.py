@@ -10,6 +10,7 @@ import math
 
 from fastbt import etap1_poisk as P, etap1_poisk_vorota as V, sweep_drivers as sd
 from fastbt.etap1_eval import NET
+from fastbt.fdr import REZHIMY as REZHIMY_FDR
 
 PLUS_KEYS = ("top_k", "sektor_trend", "shirina", "ma_n", "porog_shiriny")
 GATES = ("G1_pbo", "G2_sdelki", "G3_plato", "G4_osi", "G5_s9")
@@ -30,8 +31,22 @@ def canon_plus(p: dict) -> dict:
     return {**{k: v for k, v in p.items() if k not in PLUS_KEYS}, **(n or {})}
 
 
+def ledger_name(it: int, fdr=None) -> str:
+    """Имя pickle-файла ledger итерации it. Режим ФДР (Ж-065 п. 3) — отдельный файл: режимы в одной матрице не смешиваются (Д7)."""
+    if fdr is None:
+        return f"ledger_it{int(it)}.pkl"
+    if fdr not in REZHIMY_FDR:
+        raise ValueError(f"fdr должен быть None или из {REZHIMY_FDR}, получено {fdr!r}")
+    return f"ledger_it{int(it)}_fdr-{fdr}.pkl"
+
+
 class PlusLedger(V.Ledger):
-    """Ledger, в котором точки с выключенными осями итерации совпадают с P1 (один ключ, один раз в N)."""
+    """Ledger, в котором точки с выключенными осями итерации совпадают с P1 (один ключ, один раз в N).
+    Режим ФДР берётся у оценщика (`fdr`); имя файла — `name(it)`."""
+
+    def name(self, it: int) -> str:
+        owner = getattr(self.ev, "__self__", self.ev)            # ev — обычно метод Evaluator.evaluate
+        return ledger_name(it, getattr(owner, "fdr", None))
 
     def __call__(self, params: dict, period: str) -> dict:
         return super().__call__(canon_plus(params), period)

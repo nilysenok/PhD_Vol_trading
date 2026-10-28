@@ -17,6 +17,7 @@ from fastbt.data import year_bounds
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_run import run_e1
 from fastbt.exec_e_types import Params
+from fastbt.fdr import REZHIMY as REZHIMY_FDR
 from fastbt.s9 import Engine
 from fastbt.sweep_post import build_view, positions
 from fastbt.sweep_sk import _Mini
@@ -66,8 +67,12 @@ def params_of(pt: dict, tick: float, h: float, anchor: bool, comm: float) -> Par
 
 
 class Evaluator:
-    def __init__(self, sid: str, inp, base_p: dict, commission: float = 0.0004):
-        self.sid, self.inp, self.base, self.comm = sid, inp, dict(base_p), commission
+    def __init__(self, sid: str, inp, base_p: dict, commission: float = 0.0004, fdr=None):
+        """fdr: None — ставка по доле баров (как раньше); "t0" | "t1" — занятость на 18:50 (Ж-065 п. 3, fastbt/fdr.py).
+        Режим — свойство оценщика, не точки: ledger на режим свой файл (zh051_plato.ledger_name), смешивать нельзя (Д7)."""
+        if fdr is not None and fdr not in REZHIMY_FDR:
+            raise ValueError(f"fdr должен быть None или из {REZHIMY_FDR}, получено {fdr!r}")
+        self.sid, self.inp, self.base, self.comm, self.fdr = sid, inp, dict(base_p), commission, fdr
         self.sk, self._sigs, self._pos, self._eng = inp.sk, {}, {}, {}
 
     def full(self, pt: dict) -> dict:
@@ -125,7 +130,7 @@ class Evaluator:
                 w = rezhim_e1.razmer_ves(sg, "obratnyj", float(pt["razmer"]) / 100.0)
             p = params_of(pt, inp.tick[t], h, anchor, self.comm)
             out.append((ti, run_e1(t, days, sig, sg, p, close=inp.close_n6[t][:b + 1], w=w, win=(a, b),
-                                         div=inp.div[t][:b + 1]), a, b))
+                                         div=inp.div[t][:b + 1], fdr=self.fdr), a, b))
         return out
 
     def _engine(self, period: str):
@@ -150,7 +155,8 @@ class Evaluator:
         rows = self._rows(pt, period, anchor)
         eng, inv = self._engine(period)
         cat = lambda f: np.concatenate([f(r) for _, r, _, _ in rows])           # noqa: E731
-        df = eng.port_rows(cat(lambda r: r.g), cat(lambda r: r.sides), cat(lambda r: r.expo), self.comm)
+        noch = cat(lambda r: r.noch) if self.fdr is not None else None
+        df = eng.port_rows(cat(lambda r: r.g), cat(lambda r: r.sides), cat(lambda r: r.expo), self.comm, noch=noch)
         return df, inv, eng, cat(lambda r: r.cnt), [r for _, r, _, _ in rows]
 
     def evaluate(self, pt: dict, period: str) -> dict:
@@ -169,7 +175,7 @@ class Evaluator:
         done = [tr for tr in trades if tr.reason]
         n_o, n_f = sum(r.n_orders for r in rs), sum(r.n_fills for r in rs)
         pt = self.full(pt)
-        return {"v": "1.0", "sharpe": me.sr_dnevnoy(x) * np.sqrt(252),
+        out = {"v": "1.0", "sharpe": me.sr_dnevnoy(x) * np.sqrt(252),
                 "by_year": {y: me.sr_dnevnoy(v) * np.sqrt(252) for y, v in yy.items()},
                 "msr": me.msr(x), "msr_by_year": {y: me.msr(v) for y, v in yy.items()},
                 "tselevaya": min(me.msr(v) for v in yy.values()), "sortino": me.sortino_e(x), "kalmar": me.kalmar(x),
@@ -183,3 +189,6 @@ class Evaluator:
                 "chestnaya": HONEST[period], "comm_pct": self.comm * 100,
                 "vyrozhdena": bool(pt["k_s"] == NET and pt["R"] != NET), "kod": cache.code_hash(),
                 "vhody": self.inp.digest(), "excess_d": {y: list(v) for y, v in yy.items()}}
+        if self.fdr is not None:                    # §1.3 Г: поля v1.1 — только при включённом флаге, иначе строка v1.0 как была
+            out.update(v="1.1", fdr=self.fdr)
+        return out
