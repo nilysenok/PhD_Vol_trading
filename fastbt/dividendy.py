@@ -49,18 +49,15 @@ def _calendar() -> np.ndarray:
     return np.sort(pd.to_datetime(d["date"]).dt.normalize().unique().astype("datetime64[ns]"))
 
 
-CONSERV = 3     # ↺ запас в торговых днях: календарь баров содержит дни, которых нет в календаре таблицы 2017–2021
-                # (торги в праздники и субботы); на 127 строках T+2 по барам даёт дату позже табличной на 1–3 дня
-
-
 def last_cum(record: pd.Series) -> pd.Series:
-    """T+2 минус запас CONSERV: торговый день на 2+CONSERV раньше последнего торгового дня <= даты реестра
-    (реестр в выходной — предыдущий день). Дата не позже таблицы 2017–2021 ни в одной из 127 строк."""
+    """T+2: торговый день на два раньше последнего торгового дня <= даты реестра (реестр в выходной — предыдущий день).
+    Календарь баров верен, а не ручной календарь таблицы 2017–2021: по ценам день гэпа 2017–2019 совпадает с T+2 по барам
+    (MOEX 13.05.2019, TATN 08.01.2019), а не с табличной датой (см. docs/otchety/2026-10-28_v1_dannye.md)."""
     cal = _calendar()
     i = np.searchsorted(cal, record.to_numpy("datetime64[ns]"), side="right") - 1
-    if (i < 2 + CONSERV).any():
+    if (i < 2).any():
         raise ValueError("дата реестра раньше начала календаря торгов")
-    return pd.Series(cal[i - 2 - CONSERV], index=record.index)
+    return pd.Series(cal[i - 2], index=record.index)
 
 
 def _read(path: Path, ticker: str) -> pd.DataFrame:
