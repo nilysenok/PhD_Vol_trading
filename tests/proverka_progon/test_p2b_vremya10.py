@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 
 from fastbt.exec_e import Day, Params, run
-from fastbt.exec_e_rules import limit_level
 
 C = 0.0004
 SIG_X = [1, 1, 0, 0, 0]                       # решение о выходе по сигналу — на close дня x = 2, исполнение в день 3
@@ -116,5 +115,6 @@ def test_ke_vhod_ne_izmenilsya():
         days = [tday(100.0), d1] + [tday(102.0 + d) for d in range(3)]
         t = go(days, [1] * 5, k=0.5, zhizn=12, tick=tick, t_vyhod=tv).trades[0]
         res.append((t.entry_day, t.entry_bar, t.entry_px))
-    assert res[0] == (1, 5, pytest.approx(limit_level(1, c0, 0.5, sg, tick)))
+    assert c0 == pytest.approx(101.07)
+    assert res[0] == (1, 5, pytest.approx(100.05))                          # 101.07·(1 − 0.5·0.02) = 100.0593 → тик вниз; число не из кода
     assert all(r == res[0] for r in res)                                    # ось выхода вход не трогает
