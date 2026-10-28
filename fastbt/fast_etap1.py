@@ -24,10 +24,11 @@ from pathlib import Path
 
 import numpy as np
 
-from fastbt import fast_exec as fx
+from fastbt import exec_e, fast_exec as fx
 from fastbt.exec_e_types import Params, Result, Trade
 
-TAIL = 512                                  # запас баров под последний день вызова (у оценщика — одна свеча close)
+_SLOW_RUN = exec_e.run                      # эталон; запасной путь для входов, которые ядро не берёт (NaN в sig)
+TAIL = 512                                 # запас баров под последний день вызова (у оценщика — одна свеча close)
 _FLAT: dict = {}
 _ALIGN: dict = {}
 _MEM: dict = {}
@@ -46,7 +47,7 @@ def _stack(days) -> tuple:
     off[~pusto] = np.r_[0, np.cumsum(nbar[~pusto])[:-1]] if (~pusto).any() else 0
     bad = ~pusto & (nbar == 0)
     if n:
-        good = np.isfinite(B[:, :n]).all(0) & (B[:, :n] > 0).all(0)
+        good = (np.isfinite(B[:, :n]).all(0) & (B[:, :n] > 0).all(0)).astype(np.int64)
         ok = np.add.reduceat(good, off[~pusto & (nbar > 0)]) == nbar[~pusto & (nbar > 0)]
         bad[np.flatnonzero(~pusto & (nbar > 0))[~ok]] = True
     return B, off, nbar, pusto, bad
@@ -92,13 +93,13 @@ def _trades(ticker, ti, tf, comm) -> list:
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None) -> Result:
     """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade)."""
-    from fastbt import dividendy, exec_e
+    from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.asarray(sigma, float)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
         raise ValueError("days, sig, sigma, close разной длины")
     exec_e._check_params(p)
     if not len(days) or not np.isfinite(sig.astype(float)).all():
-        return _ORIG["run"](ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog)
+        return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog)
     B, off, nbar, pusto, bad = flat(days)
     cl = B[3, off + np.maximum(nbar - 1, 0)] if close is None else np.asarray(close, float)
     if close is not None:
@@ -123,3 +124,143 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
     rf = np.zeros(len(days)) if rf_cal is None else np.asarray(rf_cal, float)
     return Result(_trades(ticker, ti, tf, p.comm), gross, cost, pos, free, free * rf, int(st[fx.NO]), int(st[fx.NF]),
                   int(st[fx.XN]), int(st[fx.XF]))
+
+
+# --- хэш входов один раз на набор (Д5: подмена любого поля или листа — новый id — пересчёт) ---
+def _leaves(x, out: list) -> None:
+    if isinstance(x, dict):
+        for k, v in x.items():
+            out.append(k)
+            _leaves(v, out)
+    elif isinstance(x, list):
+        out.append(x)
+        if x and not isinstance(x[0], (dict, list)):
+            out.extend(x)
+        else:
+            for v in x:
+                _leaves(v, out)
+    else:
+        out.append(x)
+
+
+def _digest_fast(inp) -> str:
+    """Тот же `E1Inputs.digest`; повтор — если все листы входов те же объекты (ссылки держатся — id не переиспользуется).
+    Замена массива внутри листа на месте (без нового объекта) не ловится — входы оценщика так не меняются."""
+    from fastbt import dividendy
+    leaves: list = []
+    for x in (inp.sk, inp.sigma, inp.bars, inp.close_n6, inp.rezhim, inp.sobytiya, inp.tick, inp.rate, inp.meta,
+              inp.div):
+        _leaves(x, leaves)
+    tag = (inp.commission, float(dividendy.DIV_NALOG), len(leaves))
+    hit = _MEM.get(("digest", id(inp)))
+    if hit is not None and hit[1] == tag and all(map(operator.is_, hit[0], leaves)):
+        return hit[2]
+    d = _ORIG["digest"](inp)
+    _MEM[("digest", id(inp))] = (leaves, tag, d, inp)
+    return d
+
+
+def _align_b_fast(series, dates):
+    """`etap1_data.align_b` один раз на (ряд, даты тикера): ключ — объект ряда и адрес/длина дат (держатся в кэше)."""
+    d = np.asarray(dates)
+    k = (id(series), d.__array_interface__["data"][0], len(d), d.dtype.str)
+    hit = _ALIGN.get(k)
+    if hit is None or hit[0] is not series:
+        hit = _ALIGN[k] = (series, d, _ORIG["align_b"](series, dates))
+    return hit[2].copy()
+
+
+# --- кэш позиций Sk по Д5 (память + диск, по образцу fs_cache) ---
+def _cache_dir() -> Path:
+    from fastbt.cache import MAIN
+    return Path(os.environ.get("FASTBT_E1_CACHE", MAIN / "data" / "fastbt" / "etap1_cache"))
+
+
+def _group_key(evr, sp: dict, q: float, anchor: bool) -> str:
+    """sha1: код fastbt, ряды Sk (series_digest), sid, база точки, сигнальные параметры, q, якорь, RM_OFF."""
+    from fastbt import cache
+    from fastbt.etap1_eval import RM_OFF
+    sk = evr.sk
+    sd = _MEM.get(("sk", id(sk)))
+    if sd is None or sd[0] is not sk:
+        sd = _MEM[("sk", id(sk))] = (sk, sk.series_digest())
+    p = {**evr.base, **sp, "q_sily": q, **({} if anchor else RM_OFF[evr.sid])}
+    parts = [cache.code_hash(), sd[1], evr.sid, sorted(sk.sig_names), list(sk.tickers), bool(anchor)]
+    s = json.dumps([parts, sorted((str(k), repr(v)) for k, v in p.items())], default=str)
+    return "e1pos_" + hashlib.sha1(s.encode()).hexdigest()[:24]
+
+
+def _positions_fast(self, t: str, sp: dict, q: float, anchor: bool, gi1: int) -> np.ndarray:
+    k = (t, tuple(sorted(sp.items())), q, anchor, gi1)
+    if k in self._pos:
+        return self._pos[k]
+    gk = _group_key(self, sp, q, anchor)
+    grp = _MEM.get(gk)
+    if grp is None:
+        f = _cache_dir() / f"{gk}.pkl"
+        use = os.environ.get("FASTBT_NO_CACHE", "") != "1"
+        grp = _MEM[gk] = pickle.loads(f.read_bytes()) if use and f.exists() else {}
+    if (t, gi1) not in grp:
+        grp[(t, gi1)] = _ORIG["positions"](self, t, sp, q, anchor, gi1)
+        if len(grp) % len(self.sk.tickers) == 0:
+            _save(gk, grp)
+    self._pos[k] = grp[(t, gi1)]
+    return self._pos[k]
+
+
+def _save(gk: str, grp: dict) -> None:
+    if os.environ.get("FASTBT_NO_CACHE", "") == "1":
+        return
+    d = _cache_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    tmp = d / f"{gk}.tmp{os.getpid()}"
+    tmp.write_bytes(pickle.dumps(grp, protocol=4))
+    os.replace(tmp, d / f"{gk}.pkl")
+
+
+_ORIG: dict = {}
+
+
+@contextlib.contextmanager
+def patched():
+    """Подменяет горячие функции оценщика этапа 1 быстрыми (результат тот же) и возвращает всё назад."""
+    from fastbt import etap1, etap1_eval
+    saved = [(exec_e, "run", exec_e.run), (etap1.E1Inputs, "digest", etap1.E1Inputs.digest),
+             (etap1_eval, "align_b", etap1_eval.align_b), (etap1_eval.Evaluator, "_positions",
+                                                            etap1_eval.Evaluator._positions)]
+    _ORIG.update(run=_SLOW_RUN, digest=saved[1][2], align_b=saved[2][2], positions=saved[3][2])
+    try:
+        exec_e.run = run
+        etap1.E1Inputs.digest = _digest_fast
+        etap1_eval.align_b = _align_b_fast
+        etap1_eval.Evaluator._positions = _positions_fast
+        yield
+    finally:
+        for mod, name, v in saved:
+            setattr(mod, name, v)
+
+
+def pokryto(pt: dict) -> bool:
+    """§1.8 контракта ledger v2.0: быстрый слой покрывает точки осей zh047 (v1.0); новые оси v2 — только в умолчании."""
+    from fastbt.etap1_eval import NET
+    return pt.get("vyhod", NET) in (NET, "lim") and not set(pt) & {"k_x", "storona", "lestnica", "ed_lim", "zaem"}
+
+
+# --- параллельно: fork с общими массивами баров ---
+_W: dict = {}
+
+
+def _one(args):
+    pt, period = args
+    with patched():
+        return _W["evr"].evaluate(pt, period)
+
+
+def map_points(evr, points: list, period: str, jobs: int = 10) -> list:
+    """evaluate по точкам в `jobs` процессах fork: входы (бары, σ) построены до fork и общие (копия при записи)."""
+    import multiprocessing as mp
+    _W["evr"] = evr
+    if jobs <= 1:
+        return [_one((p, period)) for p in points]
+    with mp.get_context("fork").Pool(jobs) as pool:
+        return pool.map(_one, [(p, period) for p in points], chunksize=max(1, len(points) // (jobs * 4)))
