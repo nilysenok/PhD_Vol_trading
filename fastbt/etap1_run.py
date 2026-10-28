@@ -32,6 +32,14 @@ class E1Rows:
     noch: np.ndarray | None = None  # занятость на 18:50 в окне [a; b) при fdr ≠ None (fastbt/fdr.py), иначе None
     x_orders: int = 0               # лимитных заявок выхода и из них исполнено (Ж-065 п. 3)
     x_fills: int = 0
+    short: np.ndarray | None = None  # вес × доля баров в рынке только у шорт-сделок (Л-5: плата за заём), [a; b)
+
+
+def sum_rows(rs: list) -> E1Rows:
+    """Л-5 (лестница): g, sides, expo, noch, short — суммой (run_e1 линеен по весу); счёт сделок — среднее половин."""
+    f = lambda k: sum(getattr(r, k) for r in rs)                             # noqa: E731
+    return E1Rows(f("g"), f("sides"), f("expo"), f("cnt") / len(rs), [t for r in rs for t in r.trades], f("n_orders"),
+                  f("n_fills"), None if rs[0].noch is None else f("noch"), f("x_orders"), f("x_fills"), f("short"))
 
 
 def _spans(res, ix, p: Params, n: int):
@@ -47,18 +55,20 @@ def _spans(res, ix, p: Params, n: int):
 
 
 def run_e1(ticker, days, sig, sigma, p: Params, close=None, w=None, win=None, div=None, nalog=None,
-           fdr=None) -> E1Rows:
+           fdr=None, ed=None) -> E1Rows:
     """fdr: None — как раньше; "t0" | "t1" — E1Rows.noch по fastbt/fdr.py (ставка на свободный капитал, Ж-065 п. 3)."""
     from fastbt import exec_e                       # ленивый импорт: exec_e.run_e1 — тот же объект
     n = len(days)
     a, b = (0, n) if win is None else win
     w = np.ones(n) if w is None else np.asarray(w, float)
-    res = exec_e.run(ticker, days, sig, sigma, p, close=close, div=div, nalog=nalog)
+    xk = {} if ed is None else {"ed": ed}           # ed (Л-5): единица смещения лимита по дням; None — σ, как раньше
+    res = exec_e.run(ticker, days, sig, sigma, p, close=close, div=div, nalog=nalog, **xk)
     ix = [i for i, d in enumerate(days) if not d.pusto]
-    wr, sides, cnt = np.zeros(n), np.zeros(b - a), np.zeros(b - a)
+    wr, sides, cnt, sh = np.zeros(n), np.zeros(b - a), np.zeros(b - a), np.zeros(n)
     for tr, r0, last_g, er in _spans(res, ix, p, n):
         wt = float(w[tr.d_sig])
         wr[r0:last_g + 1] = wt
+        sh[r0:last_g + 1] = float(tr.side < 0)
         if r0 < b and last_g >= a:
             for r in (max(r0, a), min(er, b - 1)):
                 sides[r - a] += wt
@@ -69,4 +79,4 @@ def run_e1(ticker, days, sig, sigma, p: Params, close=None, w=None, win=None, di
         from fastbt import fdr as fdr_mod
         noch = fdr_mod.noch_iz_sdelok(res.trades, {tr.d_sig: float(w[tr.d_sig]) for tr in res.trades}, n, fdr)[a:b]
     return E1Rows(g[a:b], sides, expo[a:b], cnt, res.trades, res.n_orders, res.n_fills, noch,
-                  res.x_orders, res.x_fills)
+                  res.x_orders, res.x_fills, ((1.0 - res.free) * wr * sh)[a:b])
