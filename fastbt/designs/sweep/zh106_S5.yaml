@@ -1,0 +1,43 @@
+# Сетка v3 по Ж-106, S5 Pivot (диапазон). Проект на просмотр владельцу. Общие правила — zh106_S1.yaml; спецификация §13.
+v: 3
+format: zh106-setka
+sid: S5
+semya: diapazon
+period: train4
+komissiya: 0.0004
+sobol: {seed: 20261105, scramble: true, prohod1: 20000, prohod2: 100000}
+
+signal:
+  pivot_period: {ishodnoe: weekly, setka: [weekly, monthly]}
+  pivot_type:   {ishodnoe: classic, setka: [classic, fibonacci]}
+  filter_set:   {ishodnoe: 3, setka: [1, 2, 3, 4]}
+
+vhod:
+  k_e:     {setka: [0.0, 0.25, 0.5, 0.75, 1.0, 1.5], ed: sigma, ot: uroven_S1_R1}   # лимит на S1/R1 ∓ k_e·σ_d (❓ Ф-30: значения как у контртренда)
+  T:       {setka: [1, 2, 3, 5]}
+  reentry: {setka: [net, da]}
+
+razmer:
+  rho_pct:  {setka: [0.2, 0.3, 0.5, 0.75, 1.0]}
+  m_score:  {setka: [net, lin_05_15, kvad_025_20]}
+  rang_tip: {setka: [tikernyy, obshchiy, srednee]}
+  sigma:    {setka: [rv5, ewma094, rv22, rv66]}
+
+vyhod:
+  tejk:         {setka: [rodnoy, kt0.5, kt1, kt1.5, kt2, kt3, sila_a05_b1, sila_a1_b1, sila_a05_b2, sila_a1_b2, net]}   # rodnoy: P; h = 3
+  k_s:          {setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0]}
+  b0:           {setka: [net, 0.5, 1.0, 1.5, 2.0, sila]}
+  stop_v_plyus: {setka: [net, p1.5_q0.5, p2_q1, p3_q1.5]}
+  trejling:     {setka: [net, ekstr1, ekstr1.5, ekstr2, ekstr3, stup0.5, stup1]}
+  chastichnyy:  {setka: [net, d1_3_r1, d1_3_r1.5, d1_3_r2, d1_2_r1, d1_2_r1.5, d1_2_r2]}
+  tau:          {setka: [5, 10, 20, net]}
+
+dengi:
+  L:                {setka: [1.0, 1.5, 2.0, 3.0, 4.0]}
+  sigma_target_pct: {setka: [8, 10, 15, 20]}
+  okno_targeta:     {setka: [21, 63]}
+
+fiksirovano: {fdr: t0, zaem_pct_god: 5, proverka: bars5m, vyhod_po_signalu: smena_storony_stop_zayavkoy, gap: open, odin_bar: stop_pervym}
+kanon:
+  - "m_score = net и tejk ∉ sila_* и b0 ≠ sila → rang_tip = obshchiy"
+obyom: {signal: 16, torgovye: 107296358400, polnyy: 1.717e+12, posle_kanona: 1.514e+12}

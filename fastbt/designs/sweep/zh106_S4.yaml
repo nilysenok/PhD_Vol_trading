@@ -1,0 +1,43 @@
+# Сетка v3 по Ж-106, S4 Supertrend (тренд). Проект на просмотр владельцу. Общие правила — zh106_S1.yaml; спецификация §13.
+v: 3
+format: zh106-setka
+sid: S4
+semya: trend
+period: train4
+komissiya: 0.0004
+sobol: {seed: 20261104, scramble: true, prohod1: 20000, prohod2: 100000}
+
+signal:
+  atr_period: {ishodnoe: 14, setka: [7, 9, 12, 14, 16, 19, 21]}
+  multiplier: {ishodnoe: 3.0, setka: [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]}
+
+vhod:
+  k_e:     {setka: [-0.5, -0.25, 0.0, 0.25], ed: atr14, ot: liniya_ST_d}   # стоп-заявка на линии ST + k_e·ATR (k_e < 0 — откат)
+  T:       {setka: [1, 2, 3, 5]}
+  reentry: {setka: [net, da]}
+
+razmer:
+  rho_pct:  {setka: [0.2, 0.3, 0.5, 0.75, 1.0]}
+  m_score:  {setka: [net, lin_05_15, kvad_025_20]}
+  rang_tip: {setka: [tikernyy, obshchiy, srednee]}
+  sigma:    {setka: [rv5, ewma094, rv22, rv66]}
+
+vyhod:
+  tejk:         {setka: [rodnoy, kt0.5, kt1, kt1.5, kt2, kt3, sila_a05_b1, sila_a1_b1, sila_a05_b2, sila_a1_b2, net]}   # rodnoy: линия ST (смена стороны); h = 20
+  k_s:          {setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0]}
+  b0:           {setka: [net, 0.5, 1.0, 1.5, 2.0, sila]}
+  stop_v_plyus: {setka: [net, p1.5_q0.5, p2_q1, p3_q1.5]}
+  trejling:     {setka: [net, ekstr1, ekstr1.5, ekstr2, ekstr3, stup0.5, stup1, liniya]}   # liniya: линия ST
+  chastichnyy:  {setka: [net, d1_3_r1, d1_3_r1.5, d1_3_r2, d1_2_r1, d1_2_r1.5, d1_2_r2]}
+  piramida:     {setka: [0, 0.5, 1.0]}
+  tau:          {setka: [5, 10, 20, net]}
+
+dengi:
+  L:                {setka: [1.0, 1.5, 2.0, 3.0, 4.0]}
+  sigma_target_pct: {setka: [8, 10, 15, 20]}
+  okno_targeta:     {setka: [21, 63]}
+
+fiksirovano: {fdr: t0, zaem_pct_god: 5, proverka: bars5m, vyhod_po_signalu: smena_storony_stop_zayavkoy, gap: open, odin_bar: stop_pervym}
+kanon:
+  - "m_score = net и tejk ∉ sila_* и b0 ≠ sila → rang_tip = obshchiy"
+obyom: {signal: 49, torgovye: 245248819200, polnyy: 1.202e+13, posle_kanona: 1.060e+13}
