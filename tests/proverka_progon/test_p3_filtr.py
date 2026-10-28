@@ -121,28 +121,31 @@ def test_sektor_trend_aflt_i_lsrg_ne_dejstvuet(mp):
         assert run("sektor_trend", inp, im, 1, ticker=tk, mp=mp).all()
 
 
-def _causal(name, mp, sd, shift=0, cut=200):
-    """Результат на днях <= cut не должен зависеть от рядов после cut (shift=-1 — подложенная утечка d+1)."""
-    rng = np.random.default_rng(3)
-    r = rng.normal(0, SIG, N)
-    r[cut - 3] = -0.04
-    vol = np.exp(rng.normal(0, 0.5, N))
-    w = 0.01 + 0.005 * rng.random(N)
-    out = []
-    for tail in (0, 1):
-        rr, vv, ww = r.copy(), vol.copy(), w.copy()
-        if tail:
-            rr[cut + 1:] = rng.normal(0, 0.05, N - cut - 1)
-            vv[cut + 1:] *= 9
-            ww[cut + 1:] *= 4
-        inp, im = make(r=rr, vol=vv, w=ww, imoex_r=rr * 0.5, rv5=np.abs(rr) + 0.005)
-        if shift:                                    # мутация: фильтр читает ряды сдвинутыми на -1
-            td = inp.sk._td[T][0]
-            for k in ("close", "high", "low", "volume"):
-                setattr(td, k, np.roll(getattr(td, k), shift))
-        a = run(name, inp, im, sd, mp=mp)
-        out.append(np.asarray(a)[:cut + 1])
-    return out[0].tobytes() == out[1].tobytes()
+def _causal(name, mp, sd, shift=0, cuts=range(150, 290, 7)):
+    """Результат на днях <= cut не должен зависеть от рядов после cut — для каждого cut из набора.
+    shift=-1 — подложенная утечка d+1. Данные с толстыми хвостами и убывающим диапазоном: каждый фильтр
+    срабатывает на части дней, поэтому подмена хвоста меняет ответ утёкшего фильтра (а не False в обоих вариантах)."""
+    for cut in cuts:
+        rng = np.random.default_rng(cut)
+        r = rng.normal(0, SIG, N) * np.where(rng.random(N) < 0.08, 4, 1)
+        vol = np.exp(rng.normal(0, 0.5, N)) * np.where(rng.random(N) < 0.05, 6, 1)
+        w = 0.05 - 0.00015 * np.arange(N) + 0.002 * rng.random(N)
+        out = []
+        for tail in (0, 1):
+            rr, vv, ww = r.copy(), vol.copy(), w.copy()
+            if tail:
+                rr[cut + 1:] = rng.normal(0, 0.05, N - cut - 1)
+                vv[cut + 1:] *= 9
+                ww[cut + 1:] *= 4
+            inp, im = make(r=rr, vol=vv, w=ww, imoex_r=rr * 0.5, rv5=np.abs(rr) + 0.005)
+            if shift:                                # мутация: фильтр читает ряды сдвинутыми на -1
+                td = inp.sk._td[T][0]
+                for k in ("close", "high", "low", "volume"):
+                    setattr(td, k, np.roll(getattr(td, k), shift))
+            out.append(np.asarray(run(name, inp, im, sd, mp=mp))[:cut + 1])
+        if out[0].tobytes() != out[1].tobytes():
+            return False
+    return True
 
 
 @pytest.mark.parametrize("name", NAMES[3:8])
@@ -153,7 +156,7 @@ def test_net_utechki_budushchego(name, sd, mp):
 
 @pytest.mark.parametrize("name", ["post_shok", "szhatie", "obyom", "rel_sila_imoex"])
 def test_mutaciya_dannye_d_plus_1_lovitsya(name, mp):
-    assert not _causal(name, mp, 1, shift=-1, cut=199)    # сдвиг -1 тянет день cut+1 в cut: утечка видна
+    assert not _causal(name, mp, 1, shift=-1)    # сдвиг -1 тянет день cut+1 в cut: утечка видна хотя бы на одном cut
 
 
 def test_ne_schitana_div_vozvrashchaet_none(mp):
