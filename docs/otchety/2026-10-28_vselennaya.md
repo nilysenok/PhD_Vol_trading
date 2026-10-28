@@ -1,0 +1,8 @@
+# К-а2: вселенная U_d (разработка, данные < 2022, после аудита не проверялось)
+
+1. Шаг 3 выгрузки (1-мин, 10-мин): 65 тикеров, хоть раз в U_d за 2015–2021 (k = 40); из них 49 не входят в нынешние 17. Таблица: `docs/tables/diag/vselennaya_U_2015_2021.csv` (|U_d| ≤ 40 во всех датах; в 2019-12-20 … 2020-06-19 — 38–39: тикеры без оборота в прошлом году в U не входят).
+2. Все 65: AFKS AFLT AGRO AKRN ALRS BANE BANEP CBOM CHMF DIXY DSKY ENPG EONR EPLN FEES FIVE GAZP GLTR GMKN HYDR IRAO LKOH LNTA LSRG MAGN MAIL MFON MGNT MOEX MSNG MTLR MTLRP MTSS MVID NLMK NVTK OZON PHOR PIKK PLZL POGR POLY QIWI RNFT ROSN RSTI RTKM RTKMP RUAL RUALR SBER SBERP SFIN SNGS SNGSP TATN TATNP TCSG TRMK TRNFP UPRO URKA UWGN VTBR YNDX
+3. Вне нынешних 17 (49): AFKS AGRO AKRN BANE BANEP CBOM CHMF DIXY DSKY ENPG EONR EPLN FEES FIVE GAZP GLTR GMKN LNTA MAGN MAIL MFON MSNG MTLRP MVID NLMK OZON PIKK PLZL POGR POLY QIWI RNFT ROSN RSTI RTKMP RUAL RUALR SBERP SFIN SNGS SNGSP TATNP TCSG TRMK TRNFP UPRO URKA UWGN YNDX
+4. Без оборота в прошлом году (в U не входят), по датам — в выводе скрипта: RUAL (2015), UPRO (2016), DSKY (2017), SFIN/FIVE (2018), TCSG (2019-12), MAIL/POGR/GLTR/OZON/HHRU (2020), FIXP/VKCO (2021). HHRU, FIXP, VKCO в 77 файлах оборота нет или без прошлого года.
+5. Вход: `data/regen/V40` (хэш входов — в шапке csv, `fastbt.vselennaya.digest()`), состав — `docs/issledovaniya/2026-10-28_sostav_imoex.csv`; не подключено к `etap1_plus_eval`. 1 января 2015 состав не определён (первая запись 2015-01-05) — строки нет.
+6. Оговорка: 2015–2016 — 1-й и 2-й год оборота прошлого года берётся из 2014–2015; «потолок», не итог.
