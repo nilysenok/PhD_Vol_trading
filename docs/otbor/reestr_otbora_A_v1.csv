@@ -1,3 +1,4 @@
 # реестр только дополняется (otbor_statistika п. 4); разработка, train4: 2016, 2017, 2018, 2019; validation не открыта
 strategiya,klyuch,rezhim,istochnik,sharpe_2016,sdelok_2016,sharpe_2017,sdelok_2017,sharpe_2018,sdelok_2018,sharpe_2019,sdelok_2019,sharpe_train4,komissiya,storon_god,plato,sosedey,aktivnost_ok,plato_ok,vyrozhdena,status,prichina
 progon1,sha256=6f75cc8394b90132ea3f95c1ef5eb80be78919bebe4d5910a91996c6697d3643,progon_v2,progon_v2,,,,,,,,,,,,,,,,,ukazatel,sha256 6f75cc8394b90132ea3f95c1ef5eb80be78919bebe4d5910a91996c6697d3643; строк 30000
+progon12,sha256=3eb11c8115316c661ba818d18327fb62e5b81e24a6da2517b5f3bceb73bf5089,progon_v2,progon_v2,,,,,,,,,,,,,,,,,ukazatel,sha256 3eb11c8115316c661ba818d18327fb62e5b81e24a6da2517b5f3bceb73bf5089; строк 60000
