@@ -47,9 +47,14 @@ def test_s9_engine_umolchanie_okno_2017():
     assert s9.VAL_START == 2017 and eng.year_of.min() == 2018
 
 
-def test_train4_BCD_otkaz_s_tekstom():
+def test_train4_BCD_otkaz_s_tekstom(monkeypatch, tmp_path):
+    """Ж-075/Ж-080: на train4 build_cache строит A (σ-источники не читаются), B/C/D (σ-источники) отказывают с текстом."""
+    monkeypatch.setattr(s9, "_job", lambda args: (args[0], {"A": {}}))
+    monkeypatch.setattr(s9, "OUT", tmp_path)
+    monkeypatch.setattr(s9, "cache_key", lambda: "k4")
     s9.set_period("train4")
-    for f in (lambda: s9.load_source("hyb_h1"), s9.build_cache, s9.build_sources):
+    assert s9.build_cache(workers=1).name == "cache_k4.pkl"          # A строится, а не отказ
+    for f in (lambda: s9.load_source("hyb_h1"), s9.build_sources):
         with pytest.raises(NotImplementedError, match="train4"):
             f()
 
