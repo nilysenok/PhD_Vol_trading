@@ -46,6 +46,9 @@ def daily_df() -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def vpred_df() -> pd.DataFrame:
+    if zona.name() != "dev" and os.environ.get("FASTBT_Z2_FINAL3"):      # Z2: dev ≤ 2021 + final_h*__t1 (fastbt/sigma_z2.py)
+        from fastbt import sigma_z2
+        return sigma_z2.sklei(pd.read_parquet(VPRED), Path(os.environ["FASTBT_Z2_FINAL3"]))
     v = pd.read_parquet(zona.path("vpred", VPRED))
     v["date"] = pd.to_datetime(v["date"])
     return v
@@ -55,7 +58,7 @@ zona.on_change(lambda: (daily_df.cache_clear(), vpred_df.cache_clear(), load_tic
 
 
 def align_sigma(dates: np.ndarray, ticker: str) -> dict:
-    if zona.name() != "dev" and not os.environ.get("FASTBT_Z2_VPRED"):
+    if zona.name() != "dev" and not (os.environ.get("FASTBT_Z2_VPRED") or os.environ.get("FASTBT_Z2_FINAL3")):
         return {h: np.full(len(dates), np.nan) for h in ("h1", "h5", "h22")}     # σ̂ зоны Z2 не задана: NaN, а не протянутый хвост dev
     vp = vpred_df()
     vp = vp[vp["ticker"] == ticker].sort_values("date")
