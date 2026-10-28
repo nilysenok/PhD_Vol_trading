@@ -73,7 +73,16 @@ def prichiny_vyhoda(sid: str, row: dict, port_ledger: np.ndarray) -> tuple:
     _, x, _ = evr.evaluate_v2(pt, "train4")
     trades = [tr for r in evr._last[4] for tr in r.trades]
     take = "tejk_signal" if pt.get("tejk_signal", "net") != "net" else "take"
-    done = [tr for tr in trades if tr.reason]                                       # как в Evaluator.evaluate: открытые не считаются
+    nog = 2 if str(pt.get("lestnica", "net")) != "net" else 1                       # лестница: sum_rows склеивает сделки обеих ступеней
+    dolya, nd, no = zakrytye(trades, nog, take)
+    return dolya, nd, no, float(np.abs(np.asarray(x) - port_ledger).max())
+
+
+def zakrytye(trades: list, nog: int, take: str = "take") -> tuple:
+    """(доли причин, закрытых сделок, открытых на конце) в единицах sdelok_y ledger: сделка ступени лестницы весит 1/nog
+    (E1Rows.cnt усредняет ступени, sum_rows — Л-5; список trades склеивает их). Открытые не считаются, как в Evaluator.evaluate."""
+    done = [tr for tr in trades if tr.reason]
     c = Counter(take if tr.reason == "take" else tr.reason for tr in done)
+    nd = len(done) / nog
     dolya = {k: c.get(k, 0) / max(len(done), 1) for k in ("signal", "vremya", "stop", take, "trail", "bu")}
-    return dolya, len(done), len(trades) - len(done), float(np.abs(np.asarray(x) - port_ledger).max())
+    return dolya, nd, (len(trades) - len(done)) / nog
