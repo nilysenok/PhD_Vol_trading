@@ -123,6 +123,9 @@ def skor(storona, rang, w, g):
 
 def reyting(sk: str, storona: pd.DataFrame, sila: pd.DataFrame, g: pd.DataFrame, faza_r: pd.Series,
             faza_s: pd.DataFrame, lam: float, porog: float = 0.0) -> pd.DataFrame:
-    """Панель score [d × тикер] для одной Sk; |score| < порога → NaN (кандидата нет)."""
+    """Панель score [d × тикер] для одной Sk. porog — квантиль (spec §11.2 п. 3, М-Ф34): ранг |score| за 252 дня
+    внутри Sk (пул по тикерам, окно d−252…d−1, без дня d) < porog → NaN (кандидата нет); ранга нет → NaN."""
     s = skor(storona, rang_sily(sila), ves_panel(sk, storona, faza_r, faza_s, lam), g)
-    return s.where(s.abs() >= porog) if porog > 0 else s
+    if porog <= 0:
+        return s
+    return s.where(rang_sily(s.abs()) >= porog)
