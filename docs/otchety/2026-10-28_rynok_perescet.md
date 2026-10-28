@@ -14,7 +14,7 @@
 | mSR не определён (nan) | 5015 | 4863 |
 | строк, где mSR изменился | | 3213 из 7998 |
 
-Ledger не в git: `/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/.claude/worktrees/agent-aa6c4eeab1a6c6a6b/docs/tables/progon_e1/_ledger_v2_rynok`, 710 МБ (старый: `/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/progon_e1/_ledger_v2`). sha256:
+Ledger не в git: `/private/tmp/claude-501/-Users-nilysenok-Desktop--------PhD-Vol-trading/b58320a0-0dac-4690-a8f8-b32419175dd9/scratchpad/_ledger_v2_rynok` (счёт шёл в `docs/tables/progon_e1/_ledger_v2_rynok/` копии, перенесён из-за чистоты дерева; нужен дирижёру — перенести в основную копию), 693 МБ по `du` (> 200 МБ — только sha) (старый: `/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/progon_e1/_ledger_v2`). sha256:
 
 - `S1/SHA256SUMS.txt` 9b556c1d8f2784d3c4e60123b5a22962c7bab3a30ec88316ba1724c83267fda9
 - `S1/SHA256SUMS_zaem.txt` bdd266ee55ec244b0a6a5b792dcfbe42533e1b4be143a7825dbffddefc22e23d
