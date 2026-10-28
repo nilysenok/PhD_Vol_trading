@@ -1,0 +1,44 @@
+# Сетка итерации 6 этапа 1 (Ж-051): режим ключевой ставки — направление или уровень, только известное на d. Коммитится до счёта.
+# Проект — docs/otchety/2026-10-28_zh051_iteracii.md (§2.6, §3, §4). net = выключено = путь P1 побайтно (golden).
+v: 1
+format: zh051-iteraciya
+punkt: "Ж-051"
+iteraciya: 6
+nazvanie: rezhim_stavki
+baza:
+  istochnik: "docs/tables/zh047/S{k}_itog_v2.csv"
+  zapusk: "2026-10-28T00:36:00"
+  sha256:
+    S1: ce28779d2d99286fcad388b6e6ee0eb54e1d398ffd73e763cfc21baa1fe5f308
+    S2: 2a3b1d2ed77aaff30882432a2c40eaa08a1d1ab361762a7ada20e150862f997a
+    S3: 5c1673fe95ee3ecb25d96df2b0f0991c7a7131008cccc7dffebb9708b4ec1c47
+    S4: 10ba1226dc73fcc0220e5ca14d1af8e6417073ca23406408ba76a00e3d7dc6aa
+    S5: 2b61897f32ebc36d848099b9b18678f4db6946ebffefdfd8b1895dd34d509f03
+    S6: 916921a1f092ad6eff7339c894426881ce292dc8393009c5feee54b9f7ed086c
+period: {otbor: train, validation: zakryto}
+komissiya: {otbor: 0.0004}
+tselevaya: min_msr_2018_2019
+dannye:
+  stavka: "msp.rate_vladelec() (fastbt/rates/key_rate_cbr_vladelec.csv) с 2017-12-18; до 2017-12-18 — parquet ЦБ (только прогрев; ❓4 — сверка дат 2017 у issledovatel)"
+  izvestno: "r_d — ставка, вступившая в силу не позже d (дата вступления ≥ даты объявления — консервативно, Д3)"
+reshenie: "Δ_d по r до d включительно; вход по close d, исполнение — по оси vhod P1"
+
+osi:
+  priznak:
+    setka: [napravlenie, uroven]
+    # napravlenie: Δ_d = r_d − r_{d−L};  uroven: Δ_d = r_d − среднее r за d−L+1…d (торговые дни)
+  L:
+    setka: [63, 126, 252]
+  uslovie:                               # вход разрешён, если …; порядок — по сжатию разрешённого множества
+    setka: [smyagchenie, ne_uzhestochenie, net, ne_smyagchenie, uzhestochenie]
+    vykl: net
+    # smyagchenie: Δ < 0; ne_uzhestochenie: Δ ≤ 0; ne_smyagchenie: Δ ≥ 0; uzhestochenie: Δ > 0
+
+nedopustimo:
+  - "uslovie == net and (priznak != napravlenie or L != 126)"   # выключено — одна точка
+N: {S1: 24, S2: 24, S3: 24, S4: 24, S5: 24, S6: 24}
+kontrol: {tip: krug_sdvig, n: 20, lag_min: 63, seed: 20261028, opisanie: "ряд Δ_d циклически сдвинут (к2)"}
+plato: {osi: [priznak, L, uslovie], radius: 1}
+aktivnost: "изменений ставки: 2018 — 4, 2019 — 5 (ряд владельца); режим с 0 переключений за год или долей разрешённых дней вне [0,1; 0,9] в каком-либо году — не проходит (§3, П6)"
+kriteriy: "docs/otchety/2026-10-28_zh051_iteracii.md §3"
+ledger: {iteraciya: 6, rol: kandidat}

@@ -1,0 +1,8 @@
+# статус: разработка, train 2018 (tune) / 2019 (ctrl); объект S3; 27.10.2026 19:55
+# код: f991180; evaluator b8fd18e8257532a5df3f0b0a76a1de473c41ebd3; sweep_drivers владельца без правок
+# вход: сетка e29cba37df75; ряд 06ea97fb19e8; проб в ledger (N в DSR) 104
+# режим morris; seed 20261027; params ['cooldown_bars', 'rm_parabolic.parabolic_step', 'rm_sqrt_rv.k_trail']; проб в ledger до 86, после 104
+param,mu_star,sigma,n,n_evaluations,comm_pct,N
+cooldown_bars,0.3504034625308668,0.4084494127244791,10,40,0.035,104
+rm_sqrt_rv.k_trail,0.32891413601299857,0.3845629827926567,10,40,0.035,104
+rm_parabolic.parabolic_step,0.0,0.0,10,40,0.035,104

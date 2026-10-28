@@ -1,0 +1,183 @@
+# R2, агент O: движок отбора (scripts/analysis/r2_loyo.py) и факторный скрининг (scripts/analysis/r2_factor.py).
+# Протокол v3 — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md (PR #160): правила — разд. 2 (кластер 9), план — разд. 3, гейты — 2.9, 4.
+# История: v2 (12:55) и решения 14:20 — в docs/otchety/dev_log_r2_O.md; режим protokol_v2 сохранён для самопроверки.
+agent: O
+data: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen   # данные — только общий data/, абсолютные пути
+out: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/R2/O
+schema: models/designs/r2/schema_v2.yaml   # v2 = v1 (extends) + кластеры 16, 18, 20 и boost.grid_point (S, PR #184); хэши v1 не меняются
+
+# ---- окно: только разработка, val 2017–2021 = шаги 2–6; читается step <= 6 (фильтр pyarrow + assert год <= 2021)
+steps_T: [2, 3, 4, 5, 6]
+max_step_read: 6
+
+# ---- режим отбора
+rezhim: v3                         # v3 (по умолчанию) | protokol_v2 (справочно: c1–c4 на складках, хвостовой ранг)
+v3:
+  vybor_kriterii: [c3]             # п. 2.1: вложенный выбор — мин. средний QLIKE на T\{Y} среди вариантов с c3 на T\{Y}
+  vhod_a_min: 3                    # п. 2.2 (а): q_u(Y) < q_E(Y) не меньше чем в 3 складках из 5
+  vhod_c: [c1, c2, c4]             # п. 2.2 (в), ❓ 1 (умолчание): на всех 5 годах T по варианту, выбранному на T, gibrid_designs.flags
+  c1_c3_etalon: E                  # c1 и c3 — против E_h (п. 2.2 б, в); c2 — против одиночных той же s² (HAR-J, ML, нога V0)
+  calib_jump_max: 0.5              # аналог c4 у калибровки кластера 3: скачок параметра > 50% между соседними шагами — отказ
+  rank_pool: proshedshie           # п. 2.3: ранги — среди прошедших вход (а)–(в) и F_h(d0)
+  shtraf: {rank_delta: 1, qlike_rel: 0.01}   # п. 2.4 (= schema_v1 selection.complexity_penalty)
+  finalisty_k: 3                   # п. 2.5, ❓ 3: до 3 лучших после штрафа + V0-кандидаты, прошедшие вход
+  v0_kandidaty: [HAR-X+s², RVI-anchor+s²]
+c2_leg_v0: true                    # c2 — ещё и против ноги единицы в роли V0 той же s² (у V0-ячейки — нет)
+etalon_bez: ord                    # эталон c2 у вариантов bez — ord (как gibrid_v17)
+c4_runs: true                      # c4 — по непрерывным отрезкам шагов
+
+# ---- эталон E_h и база F_h(d0) (разд. 1; заморожены, п. 2.8)
+etalon:                            # ВЫР-1: har_raw — HAR-J d0 сырой (эталон (а)), har_corr — с поправкой sm (эталон (б) = E_h);
+  file: "vyr/etalon_d0_h{h}_val.parquet"   # сверка 26.10: q(har_raw, sm OOS) = q(har_corr) = q(Э HARJ_emb_d0, sm) по шагам 2–6, Δ = 0
+  col: har_raw                     # c1/c3 — E = har_raw с sm (= har_corr); c2 «HAR-J той же s²» — har_raw с кодом варианта
+  s2: sm
+F_h_d0:                            # ВЫР-1, PR #158 (INDEX_VYR.csv); F_22(d0) = E_22, продублирован по seed
+  file: "R2/cache/VYR/F_d0_h{h}_s{seed}_val.parquet"
+  s2: bez                          # поправка уже в ряде
+  otstuplenie: "ВЫР-1: в F_h(d0) на d0 переведены только HAR-нога и ln HAR как признак; сырые признаки и обучение бустинга без эмбарго — как в первом раунде. 2σ R2 (бустинг с эмбарго) против F_h(d0) — разные режимы эмбарго в бустинге"
+seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+seeds_skrining: [42, 43, 44]
+
+# ---- п. 2.6: проверка информационного множества каждого ряда
+sdvig:
+  features: features_pit_v3.parquet   # дневная RV тикера — столбец rv (строка дня d); читается date <= 2021-12-31
+  rv_col: rv
+  sdvigi: [-2, -1, 0, 1]
+  data_max: "2021-12-31"
+  out: R2/O/blok_sdvig.csv
+  # «Последний известный день» (дирижёр 26.10 после PR #163): правило п. 2.6 — максимум на последнем известном дне ряда. Для столбца
+  # с лагом публикации последний известный день — свой (метаданные F: INDEX_F.csv, G1 — «PC1–PC3 … Yahoo — лаг доступности 1»).
+  # Ряд прогноза с входами из нескольких столбцов: K = множество их последних известных дней. ок: min K ≤ argmax ≤ 0;
+  # argmax = +1 — блок (заглядывание); argmax < min K — блок (отстаёт). При K = {0} это ровно правило протокола (argmax = 0).
+  izvestnyy_den_stolbcy: {g1_pc1: -1, g1_pc2: -1, g1_pc3: -1}   # остальные столбцы F и G0 — 0 (день d)
+  izvestnyy_den_grupp: {G1: [-1, 0]}                              # группа -> K её столбцов; не указанные — [0]
+  # решение дирижёра по ❓ 5 протокола (26.10): (а) K по метаданным входов ноги — RVI_anchor: k_i из окна 252 с эмбарго h, последний
+  # известный день цели d−h, RVI — день d; (б) допуск ε СИММЕТРИЧНЫЙ: ряд проходит, если на любом сдвиге вне диапазона [min K; max K]
+  # корреляция превышает максимум внутри диапазона не больше чем на ε (argmax вне диапазона — пометка «плоский профиль»); иначе блок.
+  # Детектор утечек обязателен: подложенная утечка d+1 и подложенный лаг d−1 блокируются.
+  izvestnyy_den_nog: {RVI_anchor: ['-h']}                         # leg.type -> добавки к K ('-h' — минус горизонт)
+  eps: 0.01
+  # Решение O по столбцам F (правило выше, профили F docs/otchety/r2_F/shift_check.csv; оконные уровни — по приращению, как у F):
+  blok_stolbcy:                      # блок — в R2 не используются (детектор чистый; вернуть — только решением владельца)
+    g7_ln_amihud_w: "K = {0}; уровень argmax −1 (окно), приращение argmax +1 (0,041 > 0,037) — +1, блок"
+    g7_ln_amihud_m: "K = {0}; уровень argmax −2 (окно), приращение argmax +1 (0,058 > 0,032) — +1, блок"
+    g4_jbig_n22: "K = {0}; уровень argmax +1 (|ρ| 0,035 — наибольший и по модулю), — +1, блок"
+  dopushcheny_stolbcy:
+    g1_pc1: "K = {−1}; уровень argmax −1 — на последнем известном дне, ок"
+    g1_pc2: "K = {−1}; |ρ| < 0,05; приращение argmax −1 — ок"
+    g1_pc3: "K = {−1}; уровень argmax −1 — ок"
+    G1: "ряд группы: K = {−1, 0}; argmax −1 ∈ [−1; 0] — ок (профиль плоский: 0,3148 / 0,3140)"
+
+# ---- п. 2.7: ожидаемое число ложных победителей
+lozhnye: {t_df: 9, t_porog: -2, skrining_alpha: 0.025, n_faktorov: 14}
+
+# ---- разд. 3: факторный скрининг (r2_factor.py)
+factor:
+  plan: models/designs/r2/factor_plan_v1.csv
+  plan_sha256: 31b2897751e5d81c776bcd11041dd2d7c2a5ba59b48d438102bbebcdcea3c9b8
+  generatory: {G: BCDEF, H: CDE, J: ABCDF, K: BCE, L: ACF, M: ACD, N: ABCDE, O: DEF}
+  t_975_4: 2.776
+  porog: -0.005                    # п. 3.4: оставить, если ē ≤ −0,005 и верхняя граница интервала < 0
+  dizainy: models/designs/r2/factor_v1   # h{h}.yaml — 64 дизайна по схеме v1 (r2_factor.py plan)
+  q_vhod: R2/O/factor/q_h{h}.csv          # таблица шагов прогонов (unit = run, variant = точка сетки ноги), из кэша S
+  out: R2/O/factor
+
+# ---- проверка механики на сохранённых рядах первого раунда (не выбор)
+F_h:
+  1:  {name: F_1 (D22_h1), designs_val: final3/gibrid/D22_h1/designs_val_D22_h1_h1.csv, design: "top5|V0_XGB|B-sm|L0"}
+  5:  {name: F_5 (D12_h5), designs_val: final2/gibrid/D12_h5/designs_val_D12_h5_h5.csv, design: "wrap2|V0_XGB|B-sm|L0"}
+  22: {name: F_22 (HARJ_corr), designs_val: final2/gibrid/D12_h22/designs_val_D12_h22_h22.csv, design: "single|V0_HAR|B-sm|L0"}
+proverka_r1:
+  kandidaty: final3/kandidaty
+  gibrid_dirs: [final3/gibrid, final3_dry/gibrid]
+  isklyuchit_designs: '\|V0_(?:HAR|HCJ)\|'   # HAR-J и HAR-CJ — не вклад кандидата; V0_HCJ к тому же по d−1 (PR #154)
+  out: R2/O/proverka_r1
+
+s2_codes: [bez, ord, rob, sm, smrob]
+harcj_d0: vyr/ref_harcj_d0/REF_HARCJ_d0_h{h}_val.parquet   # HAR-CJ — только d0 (PR #154); assert в series_tab
+
+# ---- уровни (спецификация рядов): R2/O/spec_level{L}_h{h}.csv — unit, role, leg, variant, files (';' — агрегат seed × lib),
+# s2, design_yaml (путь к yaml дизайна — для сложности и хэша), [agg: mean|median], [weights], [calib_param — csv step,param]
+# эталоны c2: R2/O/spec_ref_h{h}.csv — key (xgb_v0, lgb_v0, leg_v0:<нога>), file. E_h подставляется сам.
+level:
+  spec: R2/O/spec_level{L}_h{h}.csv
+  ref: R2/O/spec_ref_h{h}.csv
+  boost_roles: [feature, residual, offset, residual_std]
+  versii:                          # дирижёр 26.10: нога _emb_d0 + бустинг с эмбарго — основная; без эмбарго — контроль; _emb, _d0 — не брать
+    noga: _emb_d0
+    isklyuchit: [_emb, _d0]
+
+# ---- протокол v4 (PR #173), раздел 2: ворота кластера 17 и мощность кластера 20 (r2_gates.py); решение владельца 16:25
+gates17:
+  etalon: "В2 = HAR-J + s² sm, d0 (E_h, ВЫР-1)"
+  vlozhennyy_vybor: "среди вариантов с c3 на T\\{Y} — макс. средняя панельная t на обучающих годах; равенство — меньший средний QLIKE"
+  t_skladka: 1.0                   # t_Y ≥ 1,0 …
+  skladok_min: 3                   # … не меньше чем в 3 складках из 5
+  t_srednyaya: 1.5                 # t̄ = (1/5) Σ t_Y ≥ 1,5
+  hit_min: 0.55                    # доля дней объединённых отложенных лет с d_t > 0
+  tikerov_min: 12                  # тикеры, у которых средняя потеря кандидата по отложенным годам ниже, чем у эталона
+  konc_dolya_dney: 0.02            # v4, ❓ 2: 2% дней с наибольшей потерей эталона (средней по тикерам) в объединении отложенных лет …
+  konc_max: 0.40                   # … дают не больше 40% Σ d_t; Σ d_t ≤ 0 — вход не пройден
+  dt: 0.2                          # выбор: при Δt̄ ≤ 0,2 — больший средний выигрыш (mean d по отложенным годам)
+  dvyigrysh_otn: 0.01              # и если выигрыш различается не больше чем на 1% (относительно, в долях QLIKE эталона:
+                                   # (mean d* − mean d_u) / средняя потеря E ≤ 0,01) — более простой дизайн
+  alpha: 0.05                      # кластер 20: P(p < 0,05) = Φ(E[t] − 1,645), одностороннее
+  moshchnost_porogi: {znachimyy: 0.8, granica: 0.5}   # решение владельца 16:45 (заменяет прежний порог 0,70):
+                                   # P ≥ 0,8 — на открытие «значимый»; 0,5 ≤ P < 0,8 — «не хуже, ожидание на границе»;
+                                   # P < 0,5 — на этом h остаётся нога (финал = эконометрическая компонента, V0)
+  n_test: {1: 1088, 5: 1084, 22: 1067}   # дирижёр 26.10: число дат контрольного периода 2022–2026 по h (только счёт дней, без метрик)
+  test_s: "2022-01-01"             # запасной расчёт (h нет в n_test): будние дни календаря 2022-01-01 … 2026-02-28
+  test_po: "2026-02-28"
+
+# ---- протокол v4, разделы 2, 4–6: сборка ворот C, D, E (r2_gates.gate_C_v4 / gate_D_v4 / gate_E_v4; драйвер S пишет их через write_gate)
+gates_v4:
+  k_C: 2                           # v4 § 4: две ячейки с ролью ≠ none (boost.role) идут в D — первые две в порядке выбора кластера 17
+  k_E: 3                           # v4 § 2, ❓ 3: до 3 финалистов по порядку выбора + V0, прошедшие вход (вход на 10 seed — заново)
+  v0_nogi: [HARX, RVI_anchor]      # V0-кандидаты (роль none): HAR-X+s² и RVI-anchor+s² (v4 § 2); другие ноги в роли none — справочно
+  noga_lestnica: "+калибровка"     # P < 0,5 и нет V0 с той же ногой: нога победителя = ступень лестницы «нога + калибровка» (leg.*, calib.*)
+  opora:                           # решение владельца 20:05: опорная строка в таблицах ворот C, D, E (не кандидат, opora = True)
+    unit: F_R1_d0
+    podpis: "финал R1 на данных по день d"
+    file: "R2/cache/VYR/F_d0_s2emb_h{h}_s{seed}_val.parquet"   # от data/regen; seed 42 — метрики, 10 seed (seeds) — 2σ
+    seed: 42
+  gipoteza: {znachimyy: "лучше эталона", granica: "не хуже эталона (ожидание на границе)", noga: "не хуже эталона"}
+
+# ---- протокол v4, раздел 5: уровень 2 — последовательное отсечение (r2_halving.py)
+halving:
+  stupeni:
+    - {gody: [2020, 2021], seeds: [42], ostavit: 30}
+    - {gody: [2018, 2019, 2020, 2021], seeds: [42], ostavit: 15}
+    - {gody: [2017, 2018, 2019, 2020, 2021], seeds: [42, 43, 44], ostavit: 8}
+  kriteriy: "средняя t панельного DM против E_h по складкам ступени (r2_gates.t_skladok); равенство — средний QLIKE, затем номер точки"
+
+# ---- формат data/regen/R2/O/gate_E_h{h}.yaml (пишет r2_loyo.gate_E; читают A — сборка, D — лестница и абляции; PR #165, #166)
+# Пути — абсолютные. design_sha — канонический хэш r2_core.design_hash агента S (полный yaml с default); кэш — R2/cache/<design_sha[:16]>/,
+# ряды в кэше — <имя>_h{h}_s{seed|det}_{val|test}.parquet (r2_core.series_path). Дизайны лестницы и абляций лежат в
+# R2/O/gate_E_h{h}_dizainy/*.yaml; их ряды считаются по этим yaml (кэш по design_sha), O их не считает.
+gate_E_format:
+  shapka: {phase: E, h: int, time: str, code_sha256: str, yaml_sha256: str, gibrid_designs_sha256: str,
+           inputs: "{путь: sha256} — спецификация уровня 3, эталон, ряды эталонов c2, yaml дизайнов финалистов"}
+  finalisty: "список: unit, tip (top | V0), R_bar, mean_q, slozhnost, vhod, design_yaml, design_sha, cache_dir, canonical_yaml_sha256,
+              yaml_file_sha256, s2_n, s2_d_mean, s2_sigma, s2_thr, s2_t, s2_passed, s2_n_better (2σ к F_h(d0) по 10 seed)"
+  pobeditel:
+    pobeditel: "unit победителя или 'F_h(d0)'"
+    V0: "true — финал = эконометрическая компонента"
+    poryadok: "финалисты в порядке п. 2.4, затем V0 по R̄"
+    design_sha: "sha256 канонического yaml (r2_core.design_hash); null, если победителя нет"
+    cache_dir: "design_sha[:16]"
+    design_yaml: "путь к yaml дизайна победителя"
+    yaml_file_sha256: "sha256 файла design_yaml как он лежит"
+    canonical_yaml_sha256: "= design_sha"
+    canonical_yaml: "текст канонического yaml"
+    ryady: "{cache_dir: R2/cache/<sha16>, shablon: '*_h{h}_s*_val.parquet', files: [val-файлы победителя из спецификации, files10]};
+            без победителя — {files: R2/cache/VYR/F_d0_h{h}_s{42..51}_val.parquet}"
+  lestnica: "список ступеней по порядку (null без победителя): stupen ∈ [HAR-J, +s², +HAR-X, +калибровка, +бустинг, +согласование, финал];
+             HAR-J и +s² — замороженные ряды ВЫР-1: design_sha null, ryad {file: vyr/etalon_d0_h{h}_val.parquet, col: har_raw,
+             s2: bez | sm} (+s² = E_h = col har_corr); остальные — design_yaml, design_sha, cache_dir, ryady_shablon, bez_izmeneniy.
+             Ступень = default + ключи победителя накопительно: +HAR-X — leg.*; +калибровка — calib.*; +бустинг — boost.*, features,
+             data.*; +согласование — mh.*, ens.*; ens.seeds — как у победителя на всех ступенях; финал = победитель"
+  ablyacii: "список (null без победителя): klaster (номер кластера схемы), klyuchi (пути ключей, вернувшихся к default), design_yaml,
+             design_sha, cache_dir, ryady_shablon; по одному на каждый кластер, где у победителя есть ключи ≠ default
+             (те же ключи, что считает сложность п. 2.4)"
+  lozhnye: "п. 2.7: p0, n_fin, E_FW_2sigma, skrining_lozhno_vklyuchennyh, urovni, vhod_a_pri_nule, ogovorka"
+  primechanie_Fd0: "отступление ВЫР-1 (бустинг F_h(d0) без эмбарго)"

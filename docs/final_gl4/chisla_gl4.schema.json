@@ -1,0 +1,140 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Числа главы 4 — одно открытие теста по FINAL-B (C, E, B, D против A′)",
+ "description": "Пишет только scripts/otkrytie_gl4.py --scope test, один раз, под замком. Файл: docs/final_gl4/chisla_gl4.json. Чисел здесь нет — только поля, единицы и источник (x-istochnik). Доли — доли единицы (0,05 = 5 %); владельцу в тексте — проценты. Шарп и его производные — годовые (mean/sd, ddof = 1, ·√252) по избыточной над ставкой ЦБ дневной доходности, если не сказано иное. Строка оценщика — контракт docs/kanon/v24/kontrakty/sweep_evaluate.md v1.1.",
+ "type": "object",
+ "required": ["v", "status", "meta", "sha_do_zamka", "ryad_1850", "osnovnaya", "lestnica", "kontroli", "gipotezy", "po_godam", "tablicy"],
+ "additionalProperties": false,
+ "properties": {
+  "v": {"const": "1", "description": "Версия формата (К21). Смена полей — новая версия и новая схема."},
+  "status": {"const": "тест", "description": "Статус результата (proverka.md п. 4)."},
+  "meta": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": ["sozdan", "git_head", "spec_sha256", "final_b_sha256", "zamok", "okno_testa", "lag_ispolneniya_dney", "chestnaya", "komissii_pct", "lw", "pometka", "da_vladeltsa", "vhody_agg_sha256"],
+   "properties": {
+    "sozdan": {"type": "string", "description": "Время записи по часам Мака, ГГГГ-ММ-ДД ЧЧ:ММ:СС.", "x-istochnik": "time.strftime"},
+    "git_head": {"type": "string", "description": "Коммит кода в момент открытия.", "x-istochnik": "git rev-parse HEAD"},
+    "spec_sha256": {"type": "string", "description": "SHA-256 файла спецификации открытия.", "x-istochnik": "docs/final_gl4/spec_otkrytiya.json"},
+    "final_b_sha256": {"type": "string", "description": "SHA-256 FINAL-B, сверенный до замка.", "x-istochnik": "spec.final_b.sha256"},
+    "zamok": {"type": "string", "description": "Путь замка открытия.", "x-istochnik": "Puti.lock"},
+    "okno_testa": {"$ref": "#/$defs/okno"},
+    "lag_ispolneniya_dney": {"const": 1, "description": "Задержка исполнения: решение по данным до 18:50 дня d исполняется d+1 (Д2, Н6).", "x-istochnik": "spec.lag_ispolneniya_dney"},
+    "chestnaya": {"const": "test", "description": "Признак честной половины: тест 2022+, одно открытие; подбора на этих данных нет."},
+    "komissii_pct": {"type": "array", "items": {"enum": [0.035, 0.04]}, "description": "Комиссии, % на сторону (Ж-031): 0,035 и 0,04.", "x-istochnik": "spec.komissii_pct"},
+    "lw": {"type": "object", "additionalProperties": false, "required": ["reps", "block", "seed"], "properties": {
+     "reps": {"type": "integer", "minimum": 1, "description": "Повторы бутстрапа Ледуа–Вольфа."},
+     "block": {"type": "integer", "minimum": 1, "description": "Длина блока, торговых дней."},
+     "seed": {"type": "integer", "description": "Зерно бутстрапа."}}, "x-istochnik": "spec.lw"},
+    "pometka": {"type": "string", "description": "«до аудита» / «после аудита» (otchety.md).", "x-istochnik": "spec.pometka"},
+    "da_vladeltsa": {"type": "object", "additionalProperties": false, "required": ["stroka", "data", "zhurnal", "sha_spec"], "properties": {
+     "stroka": {"type": "string", "description": "«Да» владельца дословно."},
+     "data": {"type": "string", "description": "ГГГГ-ММ-ДД ЧЧ:ММ по часам Мака."},
+     "zhurnal": {"type": "string", "description": "Номер блока Ж-NNN в docs/resheniya/resheniya.md."},
+     "sha_spec": {"type": "string", "description": "SHA-256 спецификации без поля «да» в момент «да»."}}, "x-istochnik": "spec.da_vladeltsa"},
+    "vhody_agg_sha256": {"type": "string", "description": "SHA-256 склейки всех SHA до замка (код, входы, гейты, FINAL-B) — «хэш входов» в шапке таблиц.", "x-istochnik": "scripts/otkrytie_gl4.py:zapisat"}
+   }
+  },
+  "sha_do_zamka": {"type": "object", "additionalProperties": {"type": "string"}, "description": "{что: SHA-256} всего, что сверено до замка: FINAL-B, каждый файл кода, fastbt/**, гейты, входы, 10-минутки по тикерам.", "x-istochnik": "scripts/otkrytie_gl4.py:verify_sha"},
+  "ryad_1850": {
+   "type": "object", "additionalProperties": false,
+   "required": ["vremya", "etap", "chto", "put", "sha256", "strok", "daty_po"],
+   "description": "Дневной ряд OHLCV до 18:50 по конец окна теста, собран под замком функциями fastbt/daily_1850.py (Н6, толкование Ж-029).",
+   "x-istochnik": "scripts/otkrytie_gl4.py:ryad_1850",
+   "properties": {
+    "vremya": {"type": "string"}, "etap": {"const": "posle_zamka"}, "chto": {"const": "ряд 18:50"},
+    "put": {"type": "string"}, "sha256": {"type": "string"},
+    "strok": {"type": "integer", "minimum": 0, "description": "Строк (тикер × день), с прогревом до теста."},
+    "daty_po": {"type": ["string", "null"], "description": "Последняя дата ряда, ≤ okno_testa.po."}
+   }
+  },
+  "osnovnaya": {"type": "array", "items": {"$ref": "#/$defs/stroka_osnovnaya"}, "description": "База A′ и семьи C/E/B/D: каждая точка FINAL-B × ступень σ × комиссия. Без выбора."},
+  "lestnica": {"type": "array", "items": {"$ref": "#/$defs/stroka_lestnica"}},
+  "kontroli": {"type": "array", "items": {"$ref": "#/$defs/stroka_kontrol"}},
+  "gipotezy": {"type": "array", "items": {"$ref": "#/$defs/stroka_gipoteza"}},
+  "po_godam": {"type": "array", "items": {"$ref": "#/$defs/stroka_god"}},
+  "tablicy": {"type": "object", "description": "Выходные файлы: CSV таблиц (шапки — docs/final_gl4/zagotovki/) и ряды избыточной доходности.", "additionalProperties": {
+   "type": "object", "additionalProperties": false, "required": ["put", "sha256"],
+   "properties": {"put": {"type": "string"}, "sha256": {"type": "string"}}}}
+ },
+ "$defs": {
+  "okno": {"type": "object", "additionalProperties": false, "required": ["s", "po"], "description": "Окно данных теста, ГГГГ-ММ-ДД, включительно.", "x-istochnik": "spec.okno_testa", "properties": {"s": {"type": "string"}, "po": {"type": "string"}}},
+  "chislo": {"type": ["number", "null"], "description": "null — не определено (nan/inf у источника)."},
+  "dolya": {"type": ["number", "null"], "description": "Доля единицы."},
+  "p": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+  "komissiya": {"enum": [0.035, 0.04], "description": "% на сторону."},
+  "stupen": {"enum": ["konst", "naivnaya", "harj_b", "gibrid", "-"], "description": "Ступень лестницы σ: константная → наивная √RV → HAR-J (б) → гибрид; «-» — база A′."},
+  "stroka_osnovnaya": {
+   "type": "object", "additionalProperties": false,
+   "required": ["id", "semya", "tochka", "sigma", "komissiya_pct", "sharpe", "msr", "sortino", "kalmar", "mdd", "psr", "dsr", "N", "oborot_y", "dni_v_rynke", "sdelok_y", "dolya_ispolneniy", "delta_k_baze", "se_delta", "p_lw", "T", "okno_s", "okno_po", "chestnaya", "status", "pometka"],
+   "properties": {
+    "id": {"type": "string", "description": "<семья>/<точка>/<ступень σ>/<комиссия>/osnova; база — A′/-/-/<комиссия>/osnova."},
+    "semya": {"enum": ["A′", "C", "E", "B", "D"]},
+    "tochka": {"type": "string", "description": "id точки из FINAL-B; «-» у базы."},
+    "sigma": {"$ref": "#/$defs/stupen"},
+    "komissiya_pct": {"$ref": "#/$defs/komissiya"},
+    "sharpe": {"$ref": "#/$defs/chislo", "description": "Избыточный Шарп, годовой.", "x-istochnik": "row.sharpe (оценщик)"},
+    "msr": {"$ref": "#/$defs/chislo", "description": "Модифицированный Шарп (Cornish–Fisher), годовой.", "x-istochnik": "row.msr = metriki_e.msr"},
+    "sortino": {"$ref": "#/$defs/chislo", "description": "Сортино, годовой.", "x-istochnik": "row.sortino = metriki_e.sortino_e"},
+    "kalmar": {"$ref": "#/$defs/chislo", "description": "Кальмар: mean·252 / MDD.", "x-istochnik": "row.kalmar = metriki_e.kalmar"},
+    "mdd": {"$ref": "#/$defs/dolya", "description": "Максимальная просадка капитала, доля от пика, ≥ 0.", "x-istochnik": "row.mdd"},
+    "psr": {"$ref": "#/$defs/p", "description": "PSR при SR* = 0, дневная шкала.", "x-istochnik": "sweep_drivers.psr(sr_d, 0, T, skew, kurt)"},
+    "dsr": {"$ref": "#/$defs/p", "description": "DSR с N и V дневных SR проб из FINAL-B.", "x-istochnik": "sweep_drivers.psr(sr_d, expected_max_sharpe(N, V), T, skew, kurt)"},
+    "N": {"type": "integer", "minimum": 1, "description": "Число проб семьи на разработке (FINAL-B), идёт в DSR.", "x-istochnik": "spec.semi.<семья>.N / spec.baza.N"},
+    "oborot_y": {"$ref": "#/$defs/chislo", "description": "Σ|Δпоз| в год.", "x-istochnik": "row.oborot_y"},
+    "dni_v_rynke": {"$ref": "#/$defs/dolya", "description": "Доля дней с экспозицией > 0.", "x-istochnik": "row.dni_v_rynke"},
+    "sdelok_y": {"$ref": "#/$defs/chislo", "description": "Сторон в год на пару.", "x-istochnik": "row.sdelok_y"},
+    "dolya_ispolneniy": {"$ref": "#/$defs/dolya", "description": "Доля исполненных лимитных заявок (E); null у семей без лимита.", "x-istochnik": "row.dolya_ispolneniy (если есть)"},
+    "delta_k_baze": {"$ref": "#/$defs/chislo", "description": "Шарп семьи − Шарп A′ при той же комиссии, годовой; null у базы.", "x-istochnik": "s9_stats.lw_sharpe_diff"},
+    "se_delta": {"$ref": "#/$defs/chislo", "description": "HAC-с.о. Δ, годовая.", "x-istochnik": "s9_stats.lw_sharpe_diff"},
+    "p_lw": {"$ref": "#/$defs/p", "description": "p Ледуа–Вольфа (двусторонний, студентизированный блочный бутстрап).", "x-istochnik": "s9_stats.lw_sharpe_diff"},
+    "T": {"type": "integer", "minimum": 0, "description": "Дней в окне.", "x-istochnik": "row.T"},
+    "okno_s": {"type": "string"}, "okno_po": {"type": "string"},
+    "chestnaya": {"const": "test"},
+    "status": {"const": "тест"},
+    "pometka": {"type": "string"}
+   }
+  },
+  "stroka_lestnica": {
+   "type": "object", "additionalProperties": false,
+   "required": ["semya", "tochka", "komissiya_pct", "ot", "k", "sharpe_ot", "sharpe_k", "delta", "se_delta", "p_lw", "status"],
+   "description": "Соседние ступени лестницы σ в одной точке: Δ = Шарп(k) − Шарп(ot).",
+   "properties": {
+    "semya": {"enum": ["C", "E", "B", "D"]}, "tochka": {"type": "string"}, "komissiya_pct": {"$ref": "#/$defs/komissiya"},
+    "ot": {"$ref": "#/$defs/stupen"}, "k": {"$ref": "#/$defs/stupen"},
+    "sharpe_ot": {"$ref": "#/$defs/chislo"}, "sharpe_k": {"$ref": "#/$defs/chislo"},
+    "delta": {"$ref": "#/$defs/chislo", "x-istochnik": "s9_stats.lw_sharpe_diff"}, "se_delta": {"$ref": "#/$defs/chislo"},
+    "p_lw": {"$ref": "#/$defs/p"}, "status": {"const": "тест"}
+   }
+  },
+  "stroka_kontrol": {
+   "type": "object", "additionalProperties": false,
+   "required": ["semya", "tochka", "sigma", "komissiya_pct", "kontrol", "sharpe_osnova", "sharpe_kontrol", "delta", "se_delta", "p", "sposob_p", "n_k2", "seed_k2", "status"],
+   "description": "к2 — сдвиг σ̂ по кругу (n, seed из FINAL-B), p по перестановкам считает оценщик; к3 — A′ без того, что глушит затвор, p Ледуа–Вольфа. Δ = основа − контроль.",
+   "properties": {
+    "semya": {"enum": ["C", "E", "B", "D"]}, "tochka": {"type": "string"}, "sigma": {"$ref": "#/$defs/stupen"},
+    "komissiya_pct": {"$ref": "#/$defs/komissiya"}, "kontrol": {"enum": ["k2", "k3"]},
+    "sharpe_osnova": {"$ref": "#/$defs/chislo"}, "sharpe_kontrol": {"$ref": "#/$defs/chislo", "description": "к2 — Шарп по сдвигам в определении оценщика (row.sharpe задания к2)."},
+    "delta": {"$ref": "#/$defs/chislo"}, "se_delta": {"$ref": "#/$defs/chislo"}, "p": {"$ref": "#/$defs/p", "x-istochnik": "к2: row.p_k2; к3: s9_stats.lw_sharpe_diff"},
+    "sposob_p": {"type": "string"}, "n_k2": {"type": ["integer", "null"]}, "seed_k2": {"type": ["integer", "null"]},
+    "status": {"const": "тест"}
+   }
+  },
+  "stroka_gipoteza": {
+   "type": "object", "additionalProperties": false,
+   "required": ["gipoteza", "formulirovka", "a", "b", "metrika", "znak", "delta", "se_delta", "p", "p_holm", "alfa", "vyvod", "status"],
+   "description": "Гипотеза FINAL-B (H2a/H2b/H3/H4; формулировки — владелец): Δ = Шарп(a) − Шарп(b), двусторонний p ЛВ, Холм по всем гипотезам; «подтверждена» — p_holm < alfa и знак Δ совпал с znak.",
+   "properties": {
+    "gipoteza": {"type": "string"}, "formulirovka": {"type": "string"}, "a": {"type": "string"}, "b": {"type": "string"},
+    "metrika": {"const": "sharpe"}, "znak": {"enum": ["+", "-"]},
+    "delta": {"$ref": "#/$defs/chislo"}, "se_delta": {"$ref": "#/$defs/chislo"}, "p": {"$ref": "#/$defs/p"}, "p_holm": {"$ref": "#/$defs/p"},
+    "alfa": {"type": "number", "minimum": 0, "maximum": 1},
+    "vyvod": {"enum": ["подтверждена", "не подтверждена"]}, "status": {"const": "тест"}
+   }
+  },
+  "stroka_god": {
+   "type": "object", "additionalProperties": false, "required": ["id", "god", "sharpe", "status"],
+   "properties": {"id": {"type": "string"}, "god": {"type": "integer", "minimum": 2022}, "sharpe": {"$ref": "#/$defs/chislo", "x-istochnik": "row.by_year"}, "status": {"const": "тест"}}
+  }
+ }
+}

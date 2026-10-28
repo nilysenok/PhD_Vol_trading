@@ -1,0 +1,14 @@
+# Д12.6: s01 (трендовые без направления и гистерезиса + окна 252/504/756), σ_pred_q80(h=5) вместо σ_pred(h=1)
+vpred: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/sigma_pred_h5_q80.parquet
+fix_c_s12_val: true
+fix_b_median: true
+fix_d_units: true
+fix_c_fill: true
+fix_rate: true
+fix_sharpe: true
+comm: 0.0005
+msp_comm: 0.0005
+horizons: [h5]
+c_trend_direction: ["OFF"]
+c_trend_hysteresis: [0]
+c_lookbacks: [252, 504, 756]

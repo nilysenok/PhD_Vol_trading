@@ -1,0 +1,8 @@
+# статус: разработка, train 2018 (tune) / 2019 (ctrl); объект S4; 27.10.2026 19:57
+# код: f991180; evaluator b8fd18e8257532a5df3f0b0a76a1de473c41ebd3; sweep_drivers владельца без правок
+# вход: сетка 75b730deb92e; ряд 06ea97fb19e8; проб в ledger (N в DSR) 129
+# режим morris; seed 20261027; params ['rm_sqrt_rv.k_trail', 'trail_n', 'multiplier']; проб в ledger до 90, после 129
+param,mu_star,sigma,n,n_evaluations,comm_pct,N
+rm_sqrt_rv.k_trail,0.7298401122546001,0.6026306803326951,10,40,0.04,129
+multiplier,0.6705844275244027,0.7879093146978122,10,40,0.04,129
+trail_n,0.23115663101248485,0.2654260304847334,10,40,0.04,129

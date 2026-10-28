@@ -1,0 +1,16 @@
+# Д17.1 — остаточный ученик как GLM с офсетом (агент A, 26.10). Отчёт — docs/otchety/2026-10-26_d17.md
+name: d17_1_h22
+horizon: 22
+seeds: [42, 43, 44]
+data: {features: data/regen/features_pit_v3.parquet}
+lever: "objective gamma на уровне RV (LGBM gamma / XGB reg:gamma), init_score/base_margin = ln(основа) + s²/2 (s² — остатки ln основы на обучающем окне шага); ES — нативная gamma-метрика val-года; без поправки на выходе; linear_tree λ=1 как в D12_h22"
+bases: {harj: "HAR-J (l2_lib.har_ln)", harx: "HAR-X (harx.py агента d16-harx через d17_1_harx_base.py; D17_BASE=harx); на шаге 6 HAR-X = HAR-J (сеть обнулила все слагаемые)"}
+rule: "OOS шаги 2-5 (2017-2020): >=1% и лучше на каждом seed; 2021 (шаг 6) не хуже текущего; c1-c4 — gibrid_v17 --dev-eval oos --etalon same"
+current: "D12_h22 (V9 + linear_tree λ=1, seeds3/V0_XGB/B-smrob); финал h=22 — HAR-J с поправкой smrob"
+trees: data/regen/D17/trees_h22.csv
+variants:
+  - {name: G22, points: "D12_h22", base: harj, cfg: '{"obj":"gamma","v9":true,"b01":true,"linear_lambda":1}', boost: D17_1_h22_G22, decision: "отброшен: -1,9%, хуже на seed 42 (+1,5%)"}
+  - {name: G22n, points: "D12_h22", base: harj, cfg: '{"obj":"gamma","v9":true,"b01":true}', boost: D17_1_h22_G22n, decision: "отброшен: -1,1%, хуже на seed 42"}
+  - {name: G22opt, points: "optuna-30", base: harj, cfg: '{"obj":"gamma","v9":true,"b01":true,"linear_lambda":1}', boost: D17_1_h22_G22opt, decision: "отброшен: -12,0% (порог пройден), 2021 хуже (+3,3%)"}
+  - {name: G22X, points: "D12_h22", base: harx, cfg: '{"obj":"gamma","v9":true,"b01":true,"linear_lambda":1}', boost: D17_1_h22_G22X, decision: "отброшен: +1,3%"}
+  - {name: G22Xopt, points: "optuna-30", base: harx, cfg: '{"obj":"gamma","v9":true,"b01":true,"linear_lambda":1}', boost: D17_1_h22_G22Xopt, decision: "отброшен: -20,2% (порог пройден), 2021 хуже (+3,3%); основа D12_h22 исключена из финалистов"}

@@ -1,0 +1,53 @@
+# R2, агент А1: кэш бустинга h=1 на 10 seed (протокол docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, строка «А1»).
+# Гиперпараметры бустинга НЕ переподбираются: точки, cfg и матрицы — сохранённые первого раунда.
+agent: A1
+h: 1
+seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+models: [xgb, lgbm]
+steps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]   # шаг k: val 2015+k, тест 2016+k; шаг 10 — обучение <= 2024, val 2025, тест 2026
+top5_steps: [1, 2, 3, 4, 5, 6]           # top5 — пять точек top5 шага, каждая с seed s; на шагах 7–10 — точка шага 6 (как gibrid_io)
+order: [D22_h1, D16_5_h1, D16_h1_d812x, D24_10_h1]   # порядок счёта: сначала ноги F_1
+boosts:
+  D22_h1:
+    matrix: features_pit_v3_rrv.parquet
+    cfg: {harf: true, wins: true}
+    mech: "d22_h1.patch(): ln HAR-X⁺ модели шага как признак har_ln (D22/HXP_lnall), календарь окна, RRV, гэп; split шага 10"
+    points: tune_L2        # D22_h1_grid.csv, D22_h1_{m}_h1_top5_val.parquet (point), D22_h1_selected_h1.csv (шаг 6 -> 7–10)
+    btag: D22_h1           # исключения признаков D22_h1_excluded_features.csv
+    saved: {single: "D22_h1_{m}_h1_val.parquet", top5: "D22_h1_{m}_h1_top5_val.parquet", s4344: "D22_h1_{m}_h1_seeds4344_val.parquet"}
+  D16_5_h1:
+    matrix: features_pit_v3_d165.parquet
+    cfg: {}
+    mech: "чистый бустинг + регрессоры HAR-X как признаки (матрица Д16.5); split шага 10 как final2_step10"
+    points: optuna         # D16_5_h1_trials.csv (trial), D16_5_h1_{m}_h1_top5_val.parquet (trial), D16_5_h1_selected_h1.csv
+    btag: Bv2b
+    saved: {single: "D16_5_h1_{m}_h1_val.parquet", top5: "D16_5_h1_{m}_h1_top5_val.parquet", s4344: "D16_5_h1_{m}_h1_seeds4344_val.parquet"}
+  D16_h1_d812x:
+    matrix: features_pit_v3.parquet
+    cfg: {harf: true}
+    mech: "d16_v9: l2_lib.har_ln -> ln HAR-X шага (hx1..hx10 = harx.ln_all_steps(1, default_terms(1, True))), split шага 10"
+    points: bv2b           # Bv2b_grid_*, Bv2b_{m}_h1_top5_val.parquet, Bv2b_selected_h1.csv
+    btag: Bv2b
+    saved: {single: "D16_h1_d812x_{m}_h1_val.parquet", top5: "D16_h1_d812x_{m}_h1_top5_val.parquet", s4344: "D16_h1_d812x_{m}_h1_seeds4344_val.parquet",
+            s4551: "D24_3_D16_h1_d812x_{m}_h1_seeds4551_val.parquet"}
+  D24_10_h1:
+    matrix: features_pit_v3h.parquet
+    cfg: {harf: true}
+    mech: "Д8.12 на матрице с историей ISS (обучающие окна от 2011-12); split шага 10 как final2_step10 (в первом раунде шага 10 не было)"
+    points: bv2b
+    btag: Bv2b
+    saved: {single: "D24_10_h1_{m}_h1_val.parquet", top5: "D24_10_h1_{m}_h1_top5_val.parquet", s4344: "D24_10_h1_{m}_h1_seeds4344_val.parquet"}
+derived:
+  seeds3: [42, 43, 44]     # среднее single по seed (уровень RV), как gibrid_io
+  seeds10: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+  F1:                      # F_1 = D22_h1 top5/V0_XGB/B-sm/L0 (FD §1): нога top5 XGB seed s × exp(s²_sm/2)
+    leg: D22_h1_xgb_top5
+    code: sm               # val шага t: s² по val шагов t−3..t−1 (шаг 1 — 1,0); тест шага t: по val шагов t−2..t (gibrid_bias.correct, final2_build)
+    control: {design_file: final3/gibrid/D22_h1/designs_val_D22_h1_h1.csv, design: "top5|V0_XGB|B-sm|L0", mean_1720: 0.2857237110986891, q2021: 0.2291744344713429}
+control_tol: 1.0e-7        # max |Δ ln rv_pred| с сохранённым рядом первого раунда (шаги 1–6)
+workers: 3                 # + ведущий процесс = 4 (потолок задания)
+leak_steps: [3, 10]
+paths:
+  cache: data/regen/R2/cache/A1                 # val шагов 1–6
+  locked: data/regen/test_locked/R2/cache/A1    # val шагов 7–10 и тест шагов 1–10 (столбец part), только запись, SHA256.txt
+  index: data/regen/R2/cache/INDEX_A1.csv
