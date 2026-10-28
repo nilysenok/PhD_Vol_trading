@@ -28,7 +28,7 @@ def take_mult(p, sg: float) -> float | None:
     return p.a * sg if p.a is not None else None
 
 
-def stop_level(sd, px, sg, p, ext, be_on, atr=None):
+def stop_level(sd, px, sg, p, ext, be_on, atr=None, extra=()):
     """Стоп P(1 − sd·k_s σ); трейлинг ужесточает: экстремум с входа ∓ k_tr σ; безубыток — не хуже цены входа.
     k_s = нет (b is None) — стопа нет вообще, ни трейла, ни безубытка; исключение — atr_m (Ж-092): экстремум ∓ m·ATR
     (atr — рублей, конечное; иначе кандидата нет). Возвращает (уровень, причина): "stop" | "trail" | "bu"."""
@@ -43,6 +43,7 @@ def stop_level(sd, px, sg, p, ext, be_on, atr=None):
         c.append((ext - sd * m * atr, "trail"))
     if be_on and p.b is not None:
         c.append((px, "bu"))
+    c += extra                                      # V6-b: «стоп в плюс», ступенчатый (exec_e_v6); нужен b
     best = c[0]
     for x in c[1:]:
         if (x[0] > best[0]) if sd > 0 else (x[0] < best[0]):
