@@ -13,8 +13,8 @@ import numpy as np
 import pandas as pd
 
 from fastbt import cache, dividendy, ekviv_s9
-from fastbt.etap1_data import LIMIT, START, align_f, build_days, load_events, load_rezhim, load_sigma
-from fastbt.etap1_eval import YAKOR, Evaluator
+from fastbt.etap1_data import LIMIT, START, START_V1, align_f, build_days, load_events, load_rezhim, load_sigma
+from fastbt.etap1_eval import PERIODS, YAKOR, Evaluator
 
 END_TRAIN = pd.Timestamp("2020-01-01")                 # окно train — до 2019-12-31; строка b−1 берёт close 2020-01-09 (Н5)
 
@@ -89,21 +89,29 @@ def sk_evaluator(sid: str):
         sweep_sk.load_ticker = old
 
 
-def build_inputs(sid: str, ev=None, end: pd.Timestamp = END_TRAIN) -> E1Inputs:
+def window_idx(dates, start, y0: int, end) -> tuple:
+    """(s0, a0, i1): начало прогрева, первый день метрик (1 января y0), конец окна. a0 — граница ex-ante для h (❓1)."""
+    f = lambda d: int(np.searchsorted(dates, np.datetime64(d)))      # noqa: E731
+    return f(start), f(f"{y0}-01-01"), f(end)
+
+
+def build_inputs(sid: str, ev=None, end: pd.Timestamp = END_TRAIN, period: str = "train") -> E1Inputs:
+    """period: «train» (2018–2019, прогрев с 2017) или «train4» (В1: 2016–2019, прогрев с 2015)."""
     from fastbt import msp
     if end >= LIMIT or end > END_TRAIN:
         raise PermissionError("этап 1: только окна до 2019-12-31; validation открывает дирижёр")
+    y0, y1 = PERIODS[period]
+    start = START if period == "train" else START_V1
     ev = ev or sk_evaluator(sid)
     meta, bars, close, tick, div = {}, {}, {}, {}, {}
     for t in ev.tickers:
         td = ev._td[t][0]
-        s0, i1 = int(np.searchsorted(td.dates, np.datetime64(START))), int(np.searchsorted(td.dates, np.datetime64(end)))
-        a18 = int(np.searchsorted(td.dates, np.datetime64("2018-01-01")))
+        s0, a18, i1 = window_idx(td.dates, start, y0, end)           # ключ a18 = начало метрик (2018; в В1 — 2016)
         meta[t] = dict(dates=td.dates[s0:i1 + 1], s0=s0, i1=i1, a18=a18)
         rc = real_close(t)                                  # исполнение — по реальным ценам; td.close скорректирован
         close[t] = rc[s0:i1 + 1].astype(float)
         div[t] = dividendy.gap_divs(t, td.dates)[s0:i1 + 1]
-        bars[t], tick[t] = build_days(t, td.dates, rc, s0, i1, end)
+        bars[t], tick[t] = build_days(t, td.dates, rc, s0, i1, end, start=start, last_year=y1)
     sg = load_sigma(ev.tickers, end)
     sigma = {n: {t: align_f(sg[n][t], meta[t]["dates"]) for t in ev.tickers} for n in sg}
     ev_ = load_events({t: pd.DatetimeIndex(meta[t]["dates"]) for t in ev.tickers}, end)

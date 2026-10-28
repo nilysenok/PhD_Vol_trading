@@ -29,11 +29,23 @@ _ATR = {"rm_tip": "atr", "rm_atr.sl_mult": OFF, "rm_atr.tp_mult": OFF, "rm_atr.m
 RM_OFF = {"S1": dict(sl_mult=OFF, tp_mult=OFF, max_hold=FAR, breakeven_trigger=None, cooldown_bars=0),
           "S3": dict(initial_sl_mult=OFF, trail_atr_mult=OFF, breakeven_thresh=None, cooldown_bars=0), "S5": _ATR}
 RM_OFF.update(S2=RM_OFF["S1"], S4=RM_OFF["S3"], S6=_ATR)
-PERIODS = {"train": (2018, 2019), "ctrl2019": (2019, 2019), "tune2018": (2018, 2018)}
-HONEST = {"train": "net", "ctrl2019": "kontrol", "tune2018": "net"}
+PERIODS = {"train": (2018, 2019), "ctrl2019": (2019, 2019), "tune2018": (2018, 2018), "train4": (2016, 2019)}
+HONEST = {"train": "net", "ctrl2019": "kontrol", "tune2018": "net", "train4": "net"}     # train4 — В1, 2015 — прогрев
+
+
+def years_of(period: str) -> tuple:
+    """Годы метрик периода (прогрев в них не входит)."""
+    y0, y1 = PERIODS[period]
+    return tuple(range(y0, y1 + 1))
 NET = "net"
 REZHIM = {"imoex_ma200": "ma200", "rang_sigma_rynka_08": "rank08"}     # имена оси в zh047_S*.yaml → rezhim_e1
 NE_SCHITANO = ("div", "cbr_div")                                         # ❓5: даты дивидендов не сверены с эмитентом
+
+
+def split_years(x: np.ndarray, yrs: np.ndarray, years: tuple) -> tuple:
+    """(ряд только по годам периода, {год: ряд}); дни прогрева (годы вне периода) в метрики не входят."""
+    keep = np.isin(yrs, years)
+    return x[keep], {int(y): x[yrs == y] for y in sorted(set(yrs[keep]))}
 
 
 def is_anchor(pt: dict) -> bool:
@@ -151,8 +163,7 @@ class Evaluator:
         df, inv, eng, cnt, rs = self.excess(pt, period)
         ex = df["excess"]
         yrs = ex.index.year
-        x = ex.to_numpy()
-        yy = {int(y): x[yrs == y] for y in sorted(set(yrs))}
+        x, yy = split_years(ex.to_numpy(), np.asarray(yrs), years_of(period))
         ryear = eng.dates.year.to_numpy()[inv]
         trades = [tr for r in rs for tr in r.trades]
         done = [tr for tr in trades if tr.reason]
