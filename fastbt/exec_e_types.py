@@ -13,6 +13,7 @@ class Day:
     l: np.ndarray
     c: np.ndarray
     pusto: bool = False
+    t: np.ndarray | None = None   # начало бара, минуты от полуночи (заполняет Л-3); None — времени нет
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,12 @@ class Params:
     check: str = "bary"           # bary | zakrytie (выходы только по close Н6)
     reentry: bool = True          # False — блок повторного входа до sig == 0 или смены знака
     vyhod_lim: bool = False       # Ж-065 п. 3: выход по signal/vremya — лимитом на d+1 (иначе close дня решения); нужен k, check="bary"
+    # --- прогон этапа 1, Л-2 (контракт §1.1); умолчания = прежнее поведение, Run2 включается только при отличиях ---
+    zhizn: int | None = None      # исполнение лимита только на барах b < N дня d+1 (None — весь день)
+    gap_propusk: bool = False     # open бара 0 уже за лимитом → заявка снята, blocked = сторона
+    t_vyhod: str = "close"        # close | 1500 | 1700 | open2 — исполнение выхода по signal/vremya (exec_e_vremya)
+    bar_plus: int = 0             # исполнение (лимит, стоп, тейк) — по open бара b+n, если хуже уровня
+    stop_tik: int = 0             # цена стопа хуже на n тиков (нужен tick)
 
 
 @dataclass
@@ -67,6 +74,7 @@ class Result:
     n_fills: int = 0              # из них исполнено
     x_orders: int = 0             # лимитных заявок выхода поставлено (vyhod_lim); n_orders/n_fills — только входы
     x_fills: int = 0              # из них исполнено (причина "lim")
+    x_t: int = 0                  # выходов исполнено не по close (t_vyhod ≠ close)
 
     @property
     def pnl(self):
