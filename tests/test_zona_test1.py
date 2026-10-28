@@ -114,6 +114,31 @@ def test_b_test1_poslednyaya_stroka_ryada():
     assert etap1_eval.Evaluator._b(ev, "A", "train4") == 1            # прежнее поведение: первый день после окна
 
 
+def test_umolchanie_perioda_chitaetsya_pri_vyzove(monkeypatch):
+    """AS.PER = "test1" после импорта действует на вызовы без period (мутация: умолчание, связанное при импорте, роняет тест)."""
+    from fastbt import a_strogaya as AS
+    seen = []
+
+    def bi(sid, ev=None, period=None):
+        seen.append(period)
+        raise StopIteration
+    monkeypatch.setattr(AS.etap1, "build_inputs", bi)
+    monkeypatch.setattr(AS, "PER", "test1")
+    with pytest.raises(StopIteration):
+        AS.evaluatory("S1")
+    assert seen == ["test1"]
+
+    def ev2(pt, per):
+        seen.append(per)
+        raise StopIteration
+    with pytest.raises(StopIteration):
+        AS.schitat(SimpleNamespace(comm=0.0004, evaluate_v2=ev2), False)
+    assert seen[-1] == "test1"
+    r = dict(dates=np.array(["2022-01-03"], "datetime64[D]"), x=np.zeros(1), baza=np.zeros(1), expo=np.ones(1),
+             cnt=np.zeros(1), god=np.array([2022]))
+    assert {row["god"] for row in AS.pasport("A", "v", r)} == {2022, 2023, 2024, "все"}
+
+
 def test_periods_test1_v_oschenshchike():
     assert etap1_eval.years_of("test1") == (2022, 2023, 2024)
     assert etap1_eval.years_of("train4") == (2016, 2017, 2018, 2019)

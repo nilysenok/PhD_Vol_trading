@@ -39,16 +39,18 @@ class AStrogaya(EvaluatorV2):
         return gate_trades(pos, np.arange(len(pos)) != len(pos) - 2)
 
 
-def evaluatory(sid: str, ev=None, period: str = PER) -> tuple:
+def evaluatory(sid: str, ev=None, period: str | None = None) -> tuple:
     """(якорь, строгий) на общих входах периода (train4 — умолчание; test1 — реверс раунд 1): EvaluatorV2 без осей — эталон;
     AStrogaya — A_strogaya."""
+    period = PER if period is None else period             # PER читается при вызове: AS.PER = "test1" действует
     inp = etap1.build_inputs(sid, ev=ev, period=period)
     base = etap1.base_point(sid)
     return EvaluatorV2(sid, inp, base, COMM), AStrogaya(sid, inp, base, COMM)
 
 
-def schitat(ev: EvaluatorV2, strogo: bool, period: str = PER) -> dict:
+def schitat(ev: EvaluatorV2, strogo: bool, period: str | None = None) -> dict:
     """Ряд Sk через EvaluatorV2: x [T], tik [17, T], baza платы за шорт [T], занятость и счёт сторон по строкам, даты."""
+    period = PER if period is None else period
     row, x, tik = ev.evaluate_v2({"t_vyhod": "open2"} if strogo else {}, period)
     _, _, dts, _, _, rdates = ev._series(period, ev.comm)
     rs = ev._last[4]
@@ -74,8 +76,10 @@ def metriki_goda(x: np.ndarray) -> dict:
     return dict(msr=me.msr(x), sharpe=me.sr_dnevnoy(x) * np.sqrt(252), dohodnost=float(x.sum()), mdd=me.mdd(x))
 
 
-def pasport(imya: str, variant: str, r: dict, GODY: tuple = GODY) -> list:  # noqa: N803
+def pasport(imya: str, variant: str, r: dict, gody: tuple | None = None) -> list:
     """Строки паспорта по годам периода (умолчание — train4) и «все» — с платой 5 % за шорт и без; доля времени в позиции и сделки в год."""
+    from fastbt.etap1_eval import years_of
+    GODY = years_of(PER) if gody is None else tuple(gody)          # noqa: N806  годы — из текущего PER (при вызове)
     yr, rows = r["dates"].astype("datetime64[Y]").astype(int) + 1970, []
     for plata in (0.0, PLATA):
         x = r["x"] - plata * r["baza"]
