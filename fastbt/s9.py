@@ -209,8 +209,16 @@ def _latest_name() -> str:
 
 def need_sigma(what: str) -> None:
     """B/C/D читают σ-источники (SOURCES с 2017-01-03): на train4 — отказ, а не тихий пропуск."""
-    if PERIOD != "train":
+    if PERIOD not in ("train", "test1"):
         raise NotImplementedError(f"{what}: на периоде {PERIOD} σ-источников нет (с 2017-01-03); считается только путь A")
+
+
+TEST1_LABELS = {"hyb_h1": "sigma_pred_h1", "hyb_h5": "sigma_pred_h5"}   # TEST_C (h5) и D (h1, h5): σ̂ зоны Z2
+
+
+def _cut() -> pd.Timestamp:
+    """Последний день σ: CUT; на test1 — конец зоны Z2 (31.12.2024), а не 2021."""
+    return zona.END_Z2 - pd.Timedelta(days=1) if PERIOD == "test1" else CUT
 
 
 def use_sigma_h1(name: str, suffix: str | None = None) -> None:
@@ -331,6 +339,13 @@ def build_sources() -> None:
 
 def load_source(label: str) -> pd.DataFrame:
     need_sigma(f"load_source({label})")
+    if PERIOD == "test1":                  # dev ≤ 2021 + final_h*__t1 (data.vpred_df); ничего ≥ 2025
+        if label not in TEST1_LABELS:
+            raise NotImplementedError(f"load_source({label}): на test1 только {sorted(TEST1_LABELS)}")
+        from fastbt import data
+        d = data.vpred_df()[["date", "ticker", TEST1_LABELS[label]]].rename(columns={TEST1_LABELS[label]: "sigma"})
+        zona.check(d["date"].max(), f"σ̂ {label}")
+        return d[d["date"] <= _cut()].dropna(subset=["sigma"]).sort_values(["ticker", "date"])
     p, col, _ = SOURCES[label]
     d = pd.read_parquet(p, columns=["date", "ticker", col])
     d["date"] = pd.to_datetime(d["date"])
@@ -402,7 +417,7 @@ def align(dates: np.ndarray, d: pd.DataFrame) -> np.ndarray:
     arr = np.full(len(dates), np.nan)
     vd = pd.to_datetime(d["date"].values)
     idx = np.searchsorted(vd, pd.to_datetime(dates), side="right") - 1
-    ok = (idx >= 0) & (pd.to_datetime(dates) <= CUT)
+    ok = (idx >= 0) & (pd.to_datetime(dates) <= _cut())
     arr[ok] = d["sigma"].values.astype(float)[idx[ok]]
     return arr
 
@@ -484,6 +499,9 @@ def cache_key() -> str:
         h.update(f"{SCOPE}|{VAL_START}|{VAL_END}|{CUT.date()}".encode())
     if PERIOD != "train":                  # Д5: период в ключе только при не-умолчании (ключ train не меняется)
         h.update(f"period|{PERIOD}|{YEARS}|{VAL_START}".encode())
+    if PERIOD == "test1" and os.environ.get("FASTBT_Z2_FINAL3"):    # Д5: σ̂ Z2 в ключе
+        for hh in (1, 5, 22):
+            h.update(hashlib.sha1((Path(os.environ["FASTBT_Z2_FINAL3"]) / f"final_h{hh}__t1.parquet").read_bytes()).digest())
     if PERIOD == "v2":                     # прогрев и правило качества — в ключе (train4 не меняется)
         h.update(f"start|{period_v2.START.date()}|hold_invalid".encode())
         h.update(Path(period_v2.__file__).read_bytes())
@@ -495,6 +513,8 @@ def build_cache(workers: int = 2) -> Path:
     if PERIOD == "train":
         os.environ["FASTBT_VPRED"] = str(SOURCES["hyb_h1"][0])
         srcs = {lab: (SOURCES[lab][2], load_source(lab)) for lab in SOURCES}
+    elif PERIOD == "test1":                # TEST_C и D: σ̂ зоны Z2 (dev ≤ 2021 + final_h*__t1)
+        srcs = {lab: (SOURCES[lab][2], load_source(lab)) for lab in TEST1_LABELS}
     else:                                  # train4: только A и «A только Sk», σ-источники не читаются
         srcs = {}
     extra = (((SCOPE, VAL_START) if SCOPE != "dev" else ("dev",)), PERIOD)
