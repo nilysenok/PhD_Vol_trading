@@ -14,6 +14,7 @@ import numpy as np
 
 OSNOVNYE_T = ("open2", "1500", "1700")
 RYNOK_ISPOLNENIE = "open_d1"  # close_d | open_d1: по какой цене исполняется vhod = rynok при t_vyhod ≠ close (Params.vhod_open, a-strogaya)
+KODY_RYNOK_CLOSE = ("d4711aa5",)  # префиксы kod проходов 1 и 2: rynok исполнялся по close d — такие строки справочные
 ISTOCHNIKI_YAKORYA = ("yakor",)  # ❓ значение istochnik строк якоря в ledger не зафиксировано; умолчание
 
 
@@ -51,7 +52,13 @@ def osnovnaya_stroki(row: dict):
     """Признак строки ledger / реестра: bool; якорь — False; нет t_vyhod или vhod в ключе — ValueError."""
     if row.get("istochnik") in ISTOCHNIKI_YAKORYA:
         return False
-    return osnovnaya(row)
+    osn = osnovnaya(row)
+    pt = _pt(row)
+    if osn and str(pt["vhod"]) == "rynok":              # rynok: цена входа зависит от кода, которым посчитана строка (формат ledger не меняем)
+        if not row.get("kod"):
+            raise ValueError("у строки rynok нет kod: основная/справочная не определена")
+        return not str(row["kod"]).startswith(KODY_RYNOK_CLOSE)
+    return osn
 
 
 def maska(rows: list) -> np.ndarray:

@@ -159,6 +159,17 @@ def check_tochka_podklyucheniya():
     assert _vhod_open("rynok", "close") is False and _vhod_open("0.5", "open2") is False
 
 
+def _row(kod, vhod="rynok"):
+    return {"klyuch": {"pt": {"t_vyhod": "open2", "vhod": vhod}}, "kod": kod, "istochnik": "sobol1"}
+
+
+def test_rynok_po_kodu_stroki():
+    assert P.osnovnaya_stroki(_row("d4711aa5" + "0" * 32)) is False       # проходы 1–2: rynok по close d
+    assert P.osnovnaya_stroki(_row("f" * 40)) is True and P.osnovnaya_stroki(_row("d4711aa5", "0.5")) is True
+    with pytest.raises(ValueError, match="kod"):
+        P.osnovnaya_stroki({"klyuch": {"pt": {"t_vyhod": "open2", "vhod": "rynok"}}})
+
+
 def test_tochka_podklyucheniya():
     check_tochka_podklyucheniya()
 
