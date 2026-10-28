@@ -19,9 +19,9 @@ def _cal(monkeypatch):
 
 
 def _check_2016_otsechka():
-    """ALRS: реестр 19.07.2016 (вт) → last_cum 15.07 (пт), день гэпа 18.07 — D = 2,09."""
+    """ALRS: реестр 19.07.2016 (вт) → last_cum 12.07 (T+2 даёт 15.07, запас 3 дня), день гэпа 13.07 — D = 2,09."""
     d = dividendy.gap_divs("ALRS", DATES16)
-    g = int(np.searchsorted(DATES16, np.datetime64("2016-07-18")))
+    g = int(np.searchsorted(DATES16, np.datetime64("2016-07-13")))
     assert d[g] == pytest.approx(2.09)
     assert d.sum() == pytest.approx(2.09)                      # в 2016 у ALRS одна выплата
 
@@ -82,7 +82,7 @@ def test_golden_dni_2017_2021_pobaytno_prezhnie():
 
 def test_last_cum_t_plus_2_s_vyhodnymi():
     r = dividendy.last_cum(pd.Series(pd.to_datetime(["2016-07-19", "2016-06-11", "2015-01-11"])))
-    assert list(r) == list(pd.to_datetime(["2016-07-15", "2016-06-08", "2015-01-07"]))
+    assert list(r) == list(pd.to_datetime(["2016-07-12", "2016-06-03", "2015-01-02"]))   # T+2 и запас CONSERV = 3
 
 
 def test_last_cum_do_nachala_kalendarya_oshibka():
@@ -90,12 +90,30 @@ def test_last_cum_do_nachala_kalendarya_oshibka():
         dividendy.last_cum(pd.Series(pd.to_datetime(["2014-06-02"])))
 
 
-def test_pravilo_t2_na_realnom_kalendare_sovpadaet_s_tablicey_2017(monkeypatch):
-    monkeypatch.undo()
+def _real_vs_table():
     from fastbt.daily_1850 import out_path
     if not out_path().exists():
         pytest.skip("нет ряда 18:50")
     old = pd.read_csv(dividendy.TABLE, parse_dates=["record_date", "last_cum_date"])
     old = old[old["dps_rub"] > 0]
-    ok = (dividendy.last_cum(old["record_date"]) == old["last_cum_date"]).mean()
-    assert ok >= 0.9, ok
+    return len(old), dividendy.last_cum(old["record_date"]), old["last_cum_date"]
+
+
+def _assert_nikogda_ne_pozzhe_tablicy():
+    n, calc, tab = _real_vs_table()
+    assert n == 127
+    assert not (calc > tab).any(), int((calc > tab).sum())            # ни одна дата не позже табличной
+    assert int((calc == tab).sum()) == 2                               # совпадений 2 из 127 (запас CONSERV = 3)
+
+
+def test_pravilo_na_realnom_kalendare_ni_odna_data_ne_pozzhe_tablicy_2017(monkeypatch):
+    monkeypatch.undo()
+    _assert_nikogda_ne_pozzhe_tablicy()
+
+
+@pytest.mark.parametrize("conserv", [0, 1, 2])
+def test_mutatsiya_sdvig_plyus_den_lovitsya(monkeypatch, conserv):
+    monkeypatch.undo()
+    monkeypatch.setattr(dividendy, "CONSERV", conserv)                 # запас меньше нужного = даты позже таблицы
+    with pytest.raises(AssertionError):
+        _assert_nikogda_ne_pozzhe_tablicy()
