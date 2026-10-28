@@ -28,7 +28,8 @@ def _flat(x):
     if isinstance(x, pd.Series):
         return [np.asarray(x.to_numpy()), np.asarray(x.index.astype("int64"))] if x.dtype != object else [str(x.tolist())]
     if hasattr(x, "o") and hasattr(x, "pusto"):                     # Day
-        return [np.stack([x.o, x.h, x.l, x.c]) if len(x.c) else np.empty(0), bool(x.pusto)]
+        out = [np.stack([x.o, x.h, x.l, x.c]) if len(x.c) else np.empty(0), bool(x.pusto)]
+        return out + ([np.ascontiguousarray(x.t)] if getattr(x, "t", None) is not None else [])   # Д5: время баров в ключе
     if isinstance(x, np.ndarray):
         return [np.ascontiguousarray(x)]
     return [x]
