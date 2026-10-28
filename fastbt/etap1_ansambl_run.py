@@ -20,6 +20,7 @@ import pandas as pd
 
 from fastbt import etap1, etap1_ansambl as A, etap1_poisk as P, sweep_drivers as sd
 from fastbt import etap1_poisk_vorota as V
+from fastbt import pbo_pravilo as PR
 from fastbt.etap1_ansambl_eval import AnsamblEvaluator, sverka_s9
 from fastbt.etap1_eval import YAKOR
 
@@ -107,7 +108,9 @@ def run_sid(sid: str, period: str = "train") -> dict:  # xtask: длинная �
     if abs(ob(res_c) - float(it1["obj_min_msr"])) > 1e-9:
         raise SystemExit(f"{sid}: СТОП, центр не воспроизведён: {ob(res_c)} ≠ {it1['obj_min_msr']}")
     save_ledger(sid, led, "ledger_it1.pkl", period)
-    pb1 = V.pbo(V.matrix(led, period))
+    plan = str(it1["osi_plana"]).split()                                   # Ж-080: G1 — PBO с выбором центра плато, argmax — справочно
+    prav = lambda: PR.pravilo_etapa(led, S["axes"], plan, {a: center[a] for a in S["axes"] if a not in plan}, S["yakor"], period)  # noqa: E731
+    pb1, pb1a = V.pbo(V.matrix(led, period), pravilo=prav()), V.pbo(V.matrix(led, period))
     run_id, rows, cfg, s9r = dt.datetime.now().isoformat(timespec="seconds"), [], {}, {}
     for nab in A.NABORY:
         osi = A.osi_nabora(nab, ranked, S["axes"])
@@ -121,7 +124,7 @@ def run_sid(sid: str, period: str = "train") -> dict:  # xtask: длинная �
             rows.append(dict(strategiya=sid, zapusk=run_id, nabor=nab, rezhim_ans=mode, osi=" ".join(osi), n_tochek=len(pts),
                              n_signal=len(sig), sverka_s9=str(s9r[nab]), objective=ob(res), **V.po_godam(res, period)))
     M = V.matrix(led, period)
-    pb = V.pbo(M)
+    pb, pba = V.pbo(M, pravilo=prav()), V.pbo(M)
     base = V.storony(led(S["yakor"], "train")).get(2018)
     adm = {c: all(v >= 0.5 * base for v in V.storony(r).values()) and V.sdelok_ok(r["sdelok_y"], period) for c, r in cfg.items()}
     cand = [dict(c=c, o=ob(r), sigma126=V.sigma126(r), objective=ob(r)) for c, r in cfg.items() if adm[c]]
@@ -138,8 +141,8 @@ def run_sid(sid: str, period: str = "train") -> dict:  # xtask: длинная �
     m1 = res_c["msr_by_year"]
     psr = V.psr_dsr(np.concatenate(list(V.series(rb).values())), M, led.n_unique)
     itog = dict(strategiya=sid, zapusk=run_id, nabor=c[0], rezhim_ans=c[1],
-                obj_min_msr=ob(rb), **{f"it1_msr_{y}": m1[y] for y in V.PERIOD_YEARS[period]}, it1_obj=ob(res_c), pbo_it1=pb1,
-                pbo_obshchaya=pb, N_it1_itog_v2=n_drv, N_it1_unikalnykh=n0, N_obshchee=led.n_unique, N_pbo=M.shape[1], **V.po_godam(rb, period), **g,
+                obj_min_msr=ob(rb), **{f"it1_msr_{y}": m1[y] for y in V.PERIOD_YEARS[period]}, it1_obj=ob(res_c), pbo_it1=pb1, pbo_it1_argmax=pb1a,
+                pbo_obshchaya=pb, pbo_argmax=pba, N_it1_itog_v2=n_drv, N_it1_unikalnykh=n0, N_obshchee=led.n_unique, N_pbo=M.shape[1], **V.po_godam(rb, period), **g,
                 plato_sosedey=plato["n_sosedey"], plato_osi_centra=str(osi_c["per"]), dopustima=adm[c], T=psr["T"],
                 psr=psr["psr"], dsr=psr["dsr"], verdikt="кандидат на validation" if ok else "не дошла: ворота",
                 vremya_s=round(time.time() - t0))
