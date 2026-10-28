@@ -31,7 +31,7 @@
    - Отказ при периоде, отличном от `train4`, и при любой дате ≥ 2020 в рядах.
 
 ## Владение
-`fastbt/progon_sobol.py`, `fastbt/designs/progon/kub_S1.yaml` … `kub_S6.yaml`, `tests/test_progon_sobol.py`.
+`fastbt/progon_sobol.py`, `fastbt/designs/progon/kub_S1.yaml` … `kub_S6.yaml`, `tests/test_progon_sobol.py`, `docs/tables/progon_e1/zamer_*.csv`.
 
 ## Тесты и мутации
 Синтетический оценщик (подставной `evaluate_v2` без данных):

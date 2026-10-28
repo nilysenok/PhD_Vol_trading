@@ -8,6 +8,7 @@
 - Код: `fastbt/etap1_data.py` (`build_days`, строки 41+), `fastbt/etap1.py` (`_flat`, строки 22–34), `fastbt/bars5m.py` (источник времени баров), `fastbt/exec_e_types.py` (`Day`).
 - Поле `Day.t` добавляет Л-2 в `exec_e_types.py`: `t: np.ndarray | None = None`, начало бара в минутах от полуночи. До слияния Л-2 — merge его ветки в свою, без правок его файлов.
 - База ≥ `45a93e6`. Ветка `progon-L3-vremya`.
+- Если ветка `s9-a-train4` тоже меняет `fastbt/etap1.py`, правка `_flat` вносится после её слияния; порядок сводит дирижёр. Остальное делается сразу.
 
 ## Цель
 1. `fastbt/exec_e_vremya.py` (новый, чистые функции):
