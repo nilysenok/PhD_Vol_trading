@@ -1,6 +1,7 @@
 """П-4 (проверяющий), Л-8: walk-forward и PBO_wf на синтетике. Контракт: docs/zadaniya/2026-10-28_progon_L8_wf.md.
 wf(M, rows, daty, pravilo) -> {"oos_ryad", "oos_by_quarter", ...}; M — T × N; вызов vybor_region перехватывается шпионом (аргументы
-kvartaly_idx / radius / tsel). П-7, Ж-086: в klyuch добавлены постоянные оси t_vyhod = open2, vhod = 0.5 (без них ValueError; ожидания те же). Модули импортируются внутри тестов: до кода каждый тест красный (без skip и xfail, Ж-081)."""
+kvartaly_idx / radius / tsel). П-7, Ж-086: в klyuch добавлены постоянные оси t_vyhod = open2, vhod = 0.5 (без них ValueError; ожидания те же). Модули импортируются внутри тестов: до кода каждый тест красный (без skip и xfail, Ж-081).
+Ж-090 (PR #455): tsel "mediana" -> "msr" (правила и OSNOVNOE = (8, 1, "msr")); шум с общим фактором (mSR = nan при дневном m/σ > ~1,6)."""
 import importlib
 import inspect
 import itertools
@@ -29,7 +30,8 @@ def kub(mu_q, seed=1):
     """4 сигнальные оси × 3 значения + шумовая ×2 = 162 столбца. mu_q(q) -> дневной дрейф плато (все сигнальные ячейки)."""
     pts = list(itertools.product(*([range(3)] * 4 + [range(2)])))
     mu = np.array([mu_q(q) for q in range(16)])
-    M = mu[QI][:, None] + np.random.default_rng(seed).normal(0, 0.01, (len(DATY), len(pts)))
+    rng = np.random.default_rng(seed)       # Ж-090: шум с общим фактором (корреляция 0,64): у независимых mSR ансамбля = nan (m/σ > ~1,6)
+    M = mu[QI][:, None] + 0.01 * (0.8 * rng.normal(0, 1, (len(DATY), 1)) + 0.6 * rng.normal(0, 1, (len(DATY), len(pts))))
     rows = []
     for j, p in enumerate(pts):
         bq = {k: sr(M[QI == i, j]) for i, k in enumerate(KEYS)}
@@ -52,7 +54,7 @@ def _dvojnik_l7(monkeypatch):
         importlib.import_module("fastbt.progon_region")
     except ImportError:
         m = types.ModuleType("fastbt.progon_region")
-        m.vybor_region = lambda M, rows, daty, kvartaly_idx=None, radius=1, tsel="mediana": dict(
+        m.vybor_region = lambda M, rows, daty, kvartaly_idx=None, radius=1, tsel="msr": dict(
             centr=None, chleny=[], ryad=np.asarray(M).mean(axis=1), score=0.0, osi=[])
         monkeypatch.setitem(sys.modules, "fastbt.progon_region", m)
     monkeypatch.delitem(sys.modules, "fastbt.progon_wf", raising=False)
@@ -99,10 +101,10 @@ def test_okna_w4_i_w8_razlichayutsya(shpion):
     from fastbt import progon_wf as W
     M, rows = kub(lambda q: 0.0008)
     shpion.clear()
-    W.wf(M, rows, DATY, (4, 1, "mediana"))
+    W.wf(M, rows, DATY, (4, 1, "msr"))
     k4 = [c["kv"] for c in shpion]
     shpion.clear()
-    W.wf(M, rows, DATY, (8, 1, "mediana"))
+    W.wf(M, rows, DATY, (8, 1, "msr"))
     k8 = [c["kv"] for c in shpion]
     assert k4[0] == [4, 5, 6, 7] and k8[0] == list(range(8)) and k4 != k8
 
@@ -134,11 +136,11 @@ def test_statsionarnyj_signal_oos_polozhitelen():
 
 def test_osnovnoe_ne_menyaetsya_posle_scheta():
     from fastbt import progon_wf as W
-    assert W.OSNOVNOE == (8, 1, "mediana") and W.OSNOVNOE in W.PRAVILA
+    assert W.OSNOVNOE == (8, 1, "msr") and W.OSNOVNOE in W.PRAVILA
     M, rows = kub(lambda q: 0.002 if q < 8 else 0.0)
     snap = (W.OSNOVNOE, list(W.PRAVILA))
     W.tablica(M, rows, DATY)
-    assert (W.OSNOVNOE, list(W.PRAVILA)) == snap == ((8, 1, "mediana"), snap[1])
+    assert (W.OSNOVNOE, list(W.PRAVILA)) == snap == ((8, 1, "msr"), snap[1])
 
 
 def test_tablica_8_strok():

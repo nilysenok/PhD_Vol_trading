@@ -7,6 +7,8 @@
 3. Столбцов везде 16 (было 4-12): регион из < 10 членов Л-7 не допускает, и ряд был бы пустым.
 4. Дрейф сигнала повышен (0,004 -> 0,02; 0,01 -> 0,05):ансамбль из 16 столбцов разбавляет сигнал одного
    столбца в 16 раз, прежний сигнал не проходил доли + кварталов >= 0,8 и регион не выбирался.
+6. Ж-090 (целевая этапа 1 = mSR за окно при mSR каждого года > 0): tsel "mediana" -> "msr" в OSNOVNOE, в ожидаемом регионе и в
+   мутации OOS-старта; в test_pravila_osnovnoe добавлено: множество tsel правил = {"msr", "dolya"}. Требования те же.
 5. test_mutation_window_captures_oos_quarter: утверждение «OOS Шарп < 1,5» заменено сверкой OOS-ряда с рядом региона, выбранного
    по W кварталам строго до q. Причина: регион настоящего Л-7 здесь = все 16 столбцов, спайк квартала q законно входит в ансамбль,
    и «< 1,5» перестало отличать утечку от честного ряда (Шарп 17 без утечки). Вторая часть (ValueError на окне с q) прежняя.
@@ -70,14 +72,15 @@ def test_oos_common_for_all_rules_and_no_leak_window():
 
 def test_pravila_osnovnoe():
     assert len(pw.PRAVILA) == 8 and len(set(pw.PRAVILA)) == 8
-    assert pw.OSNOVNOE == (8, 1, "mediana") and pw.OSNOVNOE in pw.PRAVILA
+    assert pw.OSNOVNOE == (8, 1, "msr") and pw.OSNOVNOE in pw.PRAVILA
+    assert {t for _, _, t in pw.PRAVILA} == {"msr", "dolya"}
 
 
 def test_selection_never_sees_oos_quarter(monkeypatch):
     seen = []
     orig = pw.vybor_region
 
-    def spy(M, rows, daty, kvartaly_idx=None, radius=1, tsel="mediana"):
+    def spy(M, rows, daty, kvartaly_idx=None, radius=1, tsel="msr"):
         seen.append(list(kvartaly_idx))
         return orig(M, rows, daty, kvartaly_idx=kvartaly_idx, radius=radius, tsel=tsel)
 
@@ -96,7 +99,7 @@ def test_mutation_window_captures_oos_quarter(monkeypatch):
     oos = pw.wf(M, ROWS, DATY, pw.OSNOVNOE)["oos_ryad"]
     exp = []
     for q in pw.OOS_KV:  # ожидаемый OOS: регион, выбранный только по W кварталам строго до q
-        reg = vybor_region(M, ROWS, DATY, kvartaly_idx=list(range(q - 8, q)), radius=1, tsel="mediana")
+        reg = vybor_region(M, ROWS, DATY, kvartaly_idx=list(range(q - 8, q)), radius=1, tsel="msr")
         exp.append(np.zeros(int((KD == q).sum())) if reg is None else ryad_regiona(M, reg["chleny"])[KD == q])
     assert np.allclose(oos, np.concatenate(exp))
     monkeypatch.setattr(pw, "okno_otbora", lambda W, q: list(range(q - W + 1, q + 1)))
@@ -107,7 +110,7 @@ def test_mutation_window_captures_oos_quarter(monkeypatch):
 def test_mutation_oos_starts_2017_for_w4_is_caught(monkeypatch):
     n_oos = int(np.sum(KD >= 8))
     monkeypatch.setattr(pw, "OOS_KV", tuple(range(4, 16)))
-    r = pw.wf(_noise(16, 5), ROWS, DATY, (4, 1, "mediana"))
+    r = pw.wf(_noise(16, 5), ROWS, DATY, (4, 1, "msr"))
     assert len(r["oos_ryad"]) != n_oos  # проверка длины общего OOS ловит мутацию
 
 
