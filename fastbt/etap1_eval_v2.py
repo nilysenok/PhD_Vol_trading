@@ -12,14 +12,15 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 
-from fastbt import rezhim_e1, tejk_signal, zaem_v2
+from fastbt import fdr as fdr_mod, rangi_v6, rezhim_e1, tejk_signal, zaem_v2
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, is_anchor, params_of, years_of
 from fastbt.etap1_run import run_e1, sum_rows
 from fastbt.ledger_v2 import kvartaly, tselevaya
 
 NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net",
-             tejk_signal="net", vhod_tip="podtverzhdenie")
+             tejk_signal="net", vhod_tip="podtverzhdenie",
+             rho="net", m_tip="1", rang_tip="tikernyj")                        # V6-c (Ж-111 п. 4, 15): rho = net — прежний размер
 POROG = {"S1": "z_entry", "S2": "bb_std", "S3": "dc_window", "S4": "multiplier", "S6": "dev_mult"}   # §1.1 storona
 ZAEM = (5, 10)                                                                 # % годовых, колонки by_quarter_zaem
 
@@ -63,6 +64,11 @@ class EvaluatorV2(Evaluator):
         pos2 = self._positions(t, self._shift(sp), q, anchor, s0 + b)[s0:s0 + b + 1].astype(float)
         return np.where(pos > 0, pos, np.minimum(pos2, 0.0))               # лонг из точки, шорт — из сдвинутой
 
+    def _sig2(self, t, sp, q, anchor, s0, b, nov, vz, dates):
+        sig = self._sig(t, sp, q, anchor, s0, b, nov["storona"])
+        sig[-1] = 0.0
+        return np.asarray(vz["sig_fn"](t, sig, dates), float) if vz.get("sig_fn") else sig
+
     def _allow(self, pt, t, dates, sig, f):
         inp = self.inp
         allow = ~inp.sobytiya[pt["sobytiya"]][t]
@@ -105,16 +111,16 @@ class EvaluatorV2(Evaluator):
         nov, vz = c["nov"], c["vozm"]
         sp, q = {k: pt[k] for k in self.sk.sig_names}, float(pt.get("q_sily", 0.0))
         h = 5.0 if (anchor or pt["tau"] != NET or pt["R"] == NET) else self._h(sp, q)
+        v6 = None if nov["rho"] == NET else rangi_v6.ves_tikerov(self, pt, sp, q, nov, vz, period)
         out = []
         for ti, t in enumerate(self.sk.tickers):
             m, inp = self.inp.meta[t], self.inp
             s0, b = m["s0"], self._b(t, period)
             dates = m["dates"][:b + 1]
             a = int(np.searchsorted(dates, np.datetime64(f"{PERIODS[period][0]}-01-01")))
-            sig = self._sig(t, sp, q, anchor, s0, b, nov["storona"])
-            sig[-1] = 0.0
-            if vz.get("sig_fn"):
-                sig = np.asarray(vz["sig_fn"](t, sig, dates), float)
+            sig = self._sig2(t, sp, q, anchor, s0, b, nov, vz, dates)
+            if v6 is not None and v6[t][1] is not None:
+                sig = gate_trades(sig, v6[t][1])                            # кандидат без ранга (< 20 наблюдений) не входит
             days = inp.bars[t][:b] + [_one_bar(float(inp.close_n6[t][b]))]
             sg = np.ones(len(sig)) if anchor else inp.sigma[pt["sigma"]][t][:b + 1] * float(vz.get("sigma_mult", 1.0))
             al = None if anchor else self._allow(pt, t, dates, sig, nov["filtr"])
@@ -125,7 +131,9 @@ class EvaluatorV2(Evaluator):
                 from fastbt import stop_zayavki
                 uv = stop_zayavki.okno(stop_zayavki.urovni(self.sid, sp, *self.sk._td[t], nov["storona"]), s0, b, al)
             w = np.ones(len(sig))
-            if not anchor and pt["razmer"] != "ravnyy":
+            if v6 is not None:
+                w = v6[t][0]
+            elif not anchor and pt["razmer"] != "ravnyy":
                 w = rezhim_e1.razmer_ves(sg, "obratnyj", float(pt["razmer"]) / 100.0)
             ed = self._ed(t, "mediana" if vz.get("sigma_lim_mediana") else nov["ed_lim"], sg, dates, s0, b)
             p = self._params(pt, t, h, anchor, nov, vz)
@@ -142,6 +150,17 @@ class EvaluatorV2(Evaluator):
             raise ValueError("lestnica требует лимитного входа (vhod ≠ rynok)")
         return sum_rows([run_e1(t, days, sig, sg, pp, w=w / 2, **kw) for pp in (p, replace(p, k=p.k + float(lest)))])
 
+    @classmethod
+    def novaya_setka(cls, sid, inp, base_p, commission: float = 0.0004):
+        """Оценщик для новых сеток: ФДР t0d основной (Ж-111 п. 12). Якорь (`Evaluator(fdr=None)`, A_strogaya) этим не меняется."""
+        return cls(sid, inp, base_p, commission, fdr=fdr_mod.OSNOVNOY)
+
+    def _u(self, rs, eng, inv, anc) -> np.ndarray:
+        """Занятость строк для ставки: noch; при fdr = t0d (кроме якоря) ночь по noch, день по барам (fdr.zanyatost)."""
+        cat = lambda f: np.concatenate([f(r) for r in rs])                       # noqa: E731
+        u = cat(lambda r: r.noch)
+        return u if anc else fdr_mod.zanyatost(u, cat(lambda r: r.expo), eng.cal[inv], self.fdr)
+
     def excess(self, pt, period):
         """Как Evaluator.excess, но filtr ≠ net снимает режим «якорь» (как sobytiya ≠ net в v1): ось действует всегда."""
         pt = self.full(pt)
@@ -149,7 +168,7 @@ class EvaluatorV2(Evaluator):
         self._zctx = (pt, anc, rows := self._rows(pt, period, anc))                         # для zaem_v2.ryad (Ж-089)
         eng, inv = self._engine(period)
         cat = lambda f: np.concatenate([f(r) for _, r, _, _ in rows])             # noqa: E731
-        noch = cat(lambda r: r.noch) if self.fdr is not None else None
+        noch = self._u([r for _, r, _, _ in rows], eng, inv, anc) if self.fdr is not None else None
         df = eng.port_rows(cat(lambda r: r.g), cat(lambda r: r.sides), cat(lambda r: r.expo), self.comm, noch=noch)
         self._last = df, inv, eng, cat(lambda r: r.cnt), [r for _, r, _, _ in rows]
         return self._last
@@ -161,7 +180,7 @@ class EvaluatorV2(Evaluator):
         col = np.cumsum(keep) - 1
         ex_all = df["excess"].to_numpy()
         cat = lambda f: np.concatenate([f(r) for r in rs])                       # noqa: E731
-        u = cat(lambda r: r.noch) if self.fdr is not None else cat(lambda r: r.expo)
+        u = self._u(rs, eng, inv, self._zctx[1]) if self.fdr is not None else cat(lambda r: r.expo)
         ex_row = cat(lambda r: r.g) - cat(lambda r: r.sides) * comm - u * _carry(eng, inv)
         tik = np.full((len(rs), int(keep.sum())), np.nan)
         lo = 0
