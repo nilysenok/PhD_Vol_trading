@@ -28,6 +28,7 @@ from __future__ import annotations
 import numpy as np
 
 from fastbt.exec_e2 import Run2
+from fastbt.exec_e_rules import atr_series
 from fastbt.exec_e_run import Run
 from fastbt.exec_e_types import Day, Params, Result, Trade  # noqa: F401
 
@@ -84,6 +85,10 @@ def _check_params(p: Params) -> None:
         raise ValueError("stop_tik требует tick")
     if (p.bar_plus or p.t_vyhod != "close") and (p.check != "bary" or p.vyhod_lim):
         raise ValueError("bar_plus и t_vyhod требуют check='bary' без vyhod_lim")
+    if p.atr_m is not None and not p.atr_m > 0:
+        raise ValueError("atr_m должен быть > 0")
+    if p.chast_1r and (p.b is None or p.check != "bary"):
+        raise ValueError("chast_1r требует b (R = расстояние до начального стопа) и check='bary'")
     if p.vhod_tip not in ("podtverzhdenie", "stop_zayavka"):
         raise ValueError("vhod_tip: podtverzhdenie | stop_zayavka")
     if p.vhod_tip == "stop_zayavka" and (p.k is not None or p.check != "bary" or not p.stop_touch or p.exit_signal or p.vyhod_lim
@@ -124,6 +129,7 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
     if p.tejk != "net" and (tejk_M is None or np.shape(tejk_M)[-1] != len(days)
                             or np.ndim(tejk_M) != (2 if p.tejk == "rodnoy_uroven" else 1)):
         raise ValueError("tejk ≠ net требует tejk_M длины days (rodnoy_uroven — [2, days]: лонг, шорт)")
+    atr = atr_series(days, close) if p.atr_m is not None else None      # Ж-092: ATR(14) на close каждого дня
     if (p.vhod_tip == "stop_zayavka") != (urovni is not None):
         raise ValueError("urovni нужны ровно при vhod_tip = stop_zayavka")
     if urovni is not None and any(len(urovni[k]) != len(days) for k in ("up", "dn", "xl", "xs")):
@@ -132,13 +138,13 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         from fastbt.exec_e_stop import RunStop
         r = RunStop(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, urovni=urovni)
     else:
-        r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M) if _new_axes(p, ed) \
-            else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M)
+        r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr) if _new_axes(p, ed) \
+            else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr)
     for j, i in enumerate(r.ix):
         r.step(j, i)
     n = len(days)
     if r.ix and r.tr is not None:                  # Н5: открытая на последней строке окна платит выход
-        r.cost[r.ix[-1]] += p.comm
+        r.cost[r.ix[-1]] += p.comm * r.w
     gross, free = np.zeros(n), np.zeros(n)
     for j, i in enumerate(r.ix):                   # день i → интервал, начатый предыдущим торговым днём
         if j:

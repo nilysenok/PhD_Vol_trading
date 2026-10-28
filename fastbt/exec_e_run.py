@@ -5,14 +5,18 @@ import math
 
 import numpy as np
 
-from fastbt.exec_e_rules import (be_reached, ext_next, limit_level, limit_mask, limit_px, stop_hit, stop_level,
-                                 rodnoy_level, take_hit, take_level, tejk_level)
+from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level, limit_mask, limit_px, part_allowed,
+                                 part_fee, part_hit, part_level, ratchet, rodnoy_level, stop_hit, stop_level,
+                                 take_hit, take_level, tejk_level)
 from fastbt.exec_e_types import Trade
+
+FRAC = 0.5                                          # доля позиции, закрываемая на +1R (Ж-092)
 
 
 class Run:
-    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None):
+    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None, atr=None):
         n = len(days)
+        s.atr, s.w, s.smax, s.part, s.R, s.ent = atr, 1.0, None, False, float("nan"), (-1, -1)   # Ж-092: ATR, остаток, ratchet, ½, R, бар входа
         s.tejk_M, s.tT, s.n_bez = tejk_M, None, 0     # Ж-084: M по дням сигнала; тейк сделки фиксируется на входе; входов без тейка
         s.t, s.days, s.sig, s.sigma, s.p, s.cn6 = ticker, days, sig, sigma, p, close
         s.ix = [i for i, d in enumerate(days) if not d.pusto]
@@ -49,6 +53,8 @@ class Run:
         s.cost[s.tr.row0] += s.p.comm
         s.ref, s.i0, s.sg, s.ej = px, i0, sg, j
         s.ext, s.be_on, s.sh = px, False, 0.0
+        s.w, s.smax, s.part, s.ent = 1.0, None, False, (i, b)
+        s.R = px * s.p.b * sg if s.p.b is not None else float("nan")
         if s.p.tejk in ("k_srednemu", "pol_puti"):  # M зафиксирован на d_sig (≤ close d_sig), от P_вх — один раз
             s.tT = tejk_level(sd, px, float(s.tejk_M[d_sig]), s.p.tejk, s.p.tick)
             s.n_bez += s.tT is None
@@ -59,14 +65,25 @@ class Run:
 
     def _exit(s, i, j, b, px, reason):
         tr = s.tr
-        tr.exit_day, tr.exit_bar, tr.exit_px, tr.reason, tr.fee_out = i, b, px, reason, s.p.comm
-        s.gross[i] += tr.side * math.log((px + s.dv) / s.ref)       # dv: дивиденд позиции, пришедшей через отсечку (раз)
+        tr.exit_day, tr.exit_bar, tr.exit_px, tr.reason, tr.fee_out = i, b, px, reason, s.p.comm * s.w
+        s.gross[i] += tr.side * s.w * math.log((px + s.dv) / s.ref)       # dv: дивиденд позиции, пришедшей через отсечку (раз)
         s.dv = 0.0
-        s.cost[s._row(i, j, s.zak or reason in ("vremya", "signal"))] += s.p.comm
-        s.used[i] += b + 1 - s.i0
+        s.cost[s._row(i, j, s.zak or reason in ("vremya", "signal"))] += s.p.comm * s.w
+        s.used[i] += (b + 1 - s.i0) * s.w
         if not s.p.reentry:
             s.blocked = tr.side
         s.tr = s.ref = s.i0 = None
+
+    def _partial(s, i, j, b, px):
+        """Ж-092: ½ позиции лимитом на +1R — отдельная сделка (reason "part", parent — индекс родителя). Остаток живёт дальше."""
+        tr, fee = s.tr, part_fee(s.p.comm, FRAC)
+        s.trades.append(Trade(s.t, tr.d_sig, tr.entry_day, tr.entry_bar, tr.entry_px, exit_day=i, exit_bar=b, exit_px=px,
+                              reason="part", side=tr.side, fee_in=0.0, fee_out=fee, frac=FRAC,
+                              parent=s.trades.index(tr), row0=tr.row0))
+        s.gross[i] += tr.side * FRAC * math.log((px + s.dv) / s.ref)       # dv достаётся и закрытой, и оставшейся половине
+        s.cost[s._row(i, j, False)] += fee
+        s.used[i] += (b + 1 - s.i0) * s.w
+        s.i0, s.w, s.part, tr.frac = b + 1, s.w - FRAC, True, 1.0 - FRAC
 
     # --- уровни ---
     def _sg(s, j):
@@ -85,7 +102,11 @@ class Run:
         if sg is None:
             return None, None
         tr = s.tr
-        S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on)    # sr: stop | trail | bu
+        if s.p.atr_m is None:
+            S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on)    # sr: stop | trail | bu
+        else:                                       # Ж-092: ATR по дням до текущего; стоп трейла не ослабляется (ATR может падать)
+            S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on, atr_for_day(s.atr, s.ix, j))
+            S = s.smax = ratchet(tr.side, S, s.smax)
         S = s._stop_shift(S)
         if s.p.tejk == "rodnoy_uroven":
             T = s._rodnoy(j)
@@ -113,7 +134,7 @@ class Run:
         """Бары b0..: стоп раньше тейка; гэп — по open. Режим zakrytie — одна проверка по close Н6."""
         if s.zak:
             return s._scan_close(i, j, d)
-        sd, dyn = s.tr.side, s.p.k_tr is not None or s.p.be
+        sd, dyn = s.tr.side, s.p.k_tr is not None or s.p.be or s.p.atr_m is not None
         S, T = s._levels(j)
         for b in range(b0, len(d.c)):
             o, h, l = d.o[b], d.h[b], d.l[b]
@@ -121,6 +142,11 @@ class Run:
                 hit, px = stop_hit(sd, o, h, l, S, s.p.stop_touch)
                 if hit:
                     return s._exit(i, j, b, px, s.sr)
+            if s.p.chast_1r and not s.part and part_allowed(i, b, s.ent):     # после стопа, до тейка; не в баре входа
+                P = part_level(sd, s.tr.entry_px, s.R, s.p.tick)
+                hit, px = part_hit(sd, o, h, l, P, s.p.tick)
+                if hit:
+                    s._partial(i, j, b, px)
             if T is not None:
                 hit, px = take_hit(sd, o, h, l, T, s.p.tick)
                 if hit:
@@ -163,15 +189,15 @@ class Run:
             elif s._sig_exit(i):
                 s._leave(i, j, nb, close, "signal")
         if s.tr is not None:
-            s.gross[i] += s.tr.side * math.log((close + s.dv) / s.ref)
+            s.gross[i] += s.tr.side * s.w * math.log((close + s.dv) / s.ref)
             s.dv = 0.0
             s.ref = close
-            s.used[i] += nb - s.i0
+            s.used[i] += (nb - s.i0) * s.w
             s.i0 = nb
         if s.blocked and s.dir(i) != s.blocked:
             s.blocked = 0
         s._decide(i, j, close, nb)
-        s.pos[i] = float(s.tr.side) if s.tr is not None else 0.0
+        s.pos[i] = float(s.tr.side) * s.w if s.tr is not None else 0.0
         s.free[i] = 1.0 - s.used[i] / nb
 
     def _sig_exit(s, i):

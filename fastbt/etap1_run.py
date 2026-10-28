@@ -47,6 +47,8 @@ def _spans(res, ix, p: Params, n: int):
     """(сделка, строка входа, последняя строка дохода, строка комиссии выхода) по сделкам прогона."""
     jx = {i: j for j, i in enumerate(ix)}
     for tr in res.trades:
+        if tr.parent is not None:                   # Ж-092: частичный выход ½ — часть сделки-родителя, не отдельная сделка
+            continue
         if tr.exit_day is None:
             yield tr, tr.row0, ix[-1], n
             continue

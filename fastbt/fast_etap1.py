@@ -94,7 +94,7 @@ def _trades(ticker, ti, tf, comm) -> list:
 def _slow_only(p: Params, ed) -> bool:
     """Оси прогона Л-2 (Run2: ed, zhizn, gap_propusk, t_vyhod, bar_plus, stop_tik) ядро не повторяет — эталон."""
     f = getattr(exec_e, "_new_axes", None)
-    return ed is not None or p.tejk != "net" or p.vhod_tip != "podtverzhdenie" or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
+    return ed is not None or p.tejk != "net" or p.vhod_tip != "podtverzhdenie" or p.atr_m is not None or p.chast_1r or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None, urovni=None) -> Result:
