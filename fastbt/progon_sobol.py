@@ -48,6 +48,9 @@ def proverit_kub(c: dict) -> None:
         raise ValueError(f"период {c.get('period')!r}: прогон считает только {PERIOD} (Ж-082)")
     if c.get("komissiya") != KOMISSIYA or c.get("fdr") is not None:
         raise ValueError("куб: komissiya = 0.0004 и fdr = null")
+    from fastbt.signals.interface import get_family
+    if set(c["signal"]) != set(get_family(c["sid"]).grid):    # оценщик молча игнорирует чужие оси
+        raise ValueError(f"{c['sid']}: оси signal {sorted(c['signal'])} ≠ оси семьи {sorted(get_family(c['sid']).grid)}")
 
 
 def tochki(kub: dict, n0: int, n1: int) -> list:
@@ -155,10 +158,12 @@ def schitat_kusok(zad: tuple) -> tuple:
         if sha_tochki(sid, sr, pt) in zak:
             continue
         r, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, _W["ist"], _W["kod_slit"], _W["fast"])
-        w.add(r, ex_p, ex_t)
+        importlib.import_module("fastbt.zaem_v2").pisat(w, r, ex_p, ex_t, getattr(sr.evr, "zaem", None))   # Ж-089: ряд платы за заём
+        importlib.import_module("fastbt.tejk_signal").pisat_diag(w.pd, r, getattr(sr.evr, "diag", None) if r["status"] == "ok" else None)   # Ж-087
         zak = zak | {r["klyuch_sha"]}
         t.append(r["t_sek"])
         oshibok += r["status"] == "oshibka"
+    importlib.import_module("fastbt.zaem_v2").zakryt(w)
     w.close()
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1e6 if sys.platform == "darwin" else 1e3)
     return sid, len(t), oshibok, t, rss

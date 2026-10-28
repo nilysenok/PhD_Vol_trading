@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """etap1_poisk_vorota.py — части драйвера поиска этапа 1 (Ж-047): кэш точек, целевая, плато, ворота Ж-044, PBO, DSR.
-
 Контракт строки evaluate: msr_by_year {год: mSR}, excess_d {год: ряд}, sdelok_y {год: сделок}, vyrozhdena. Периоды: train, ctrl2019, train4 (В1). Данных не читает.
 """
 from __future__ import annotations
@@ -13,6 +12,7 @@ import pandas as pd
 
 from fastbt import pbo_pravilo as PR, sweep_drivers as sd
 from fastbt.etap1_data import psr_dsr  # noqa: F401  (перенесено в etap1_data: лимит 200 строк; V.psr_dsr остаётся)
+from fastbt.tselevaya import tselevaya_train4  # noqa: F401  (Ж-090: основная целевая; тут лимит 200 строк, код в tselevaya.py)
 
 TIE, WIN, NBLK, PBO_MAX, MIN_SDELOK, PLATO_NET = 0.05, 126, 8, 0.2, 30, 0.1
 OSI, NET = ("k_s", "R", "tau"), "net"

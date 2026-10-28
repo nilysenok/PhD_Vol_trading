@@ -5,6 +5,8 @@ M — точки × дни (транспонированная матрица V.
 конфигурация ансамбля; в матрице и в ранге остаётся, кандидатом центра плато не бывает). select_fn(M_in, coords,
 dates_in) -> индекс точки | None (None: допустимой точки нет — разбиение пропущено и считается в n_propusk).
 
+Ж-090: целевая — msr_celevaya (mSR за всю половину, nan если какой-то год половины ≤ 0); min_msr ниже — только справочная,
+в выборе и в ранге OOS не участвует. Описание ниже — прежнее (min по годам), сохранено как справка о min_msr.
 Правило vybor_centr_plato на половине (объявлено до счёта):
   * mSR по годам — из тех дней года, что попали в половину; год, в котором в половине < MIN_DNEY дней, в min не входит;
     целевая точки = min mSR по оставшимся годам (nan хотя бы в одном — nan), как V.obj;
@@ -78,6 +80,20 @@ def min_msr(M_in: np.ndarray, dates_in, rows: np.ndarray | None = None) -> np.nd
     return np.min(per_year, axis=0) if per_year else np.full(X.shape[0], np.nan)     # np.min: nan в любом году -> nan
 
 
+def msr_celevaya(M_in: np.ndarray, dates_in, rows: np.ndarray | None = None) -> np.ndarray:
+    """Ж-090: целевая точки на половине = mSR за все дни половины; nan, если mSR хотя бы одного года половины (≥ MIN_DNEY
+    дней) не > 0. Та же функция, что в регионе (tselevaya.msr_i_gody). M_in — точки × дни."""
+    from fastbt.tselevaya import msr_i_gody
+    X = M_in if rows is None else M_in[rows]
+    m, _, ust, _ = msr_i_gody(np.asarray(X, float).T, dates_in)
+    return np.where(ust & np.isfinite(m), m, np.nan)
+
+
+def msr_oos(M_out: np.ndarray, dates_out) -> np.ndarray:
+    """Ранг на out-of-sample по той же целевой; неустойчивые/неопределённые — хуже всех (-inf), не nan (nan ломает сравнение)."""
+    return np.nan_to_num(msr_celevaya(M_out, dates_out), nan=-np.inf)
+
+
 def sigma126(x: np.ndarray, dates_in) -> float:
     """σ скользящего 126-дневного Шарпа (годовая шкала, ddof=1); окна — внутри непрерывных кусков половины."""
     d = np.asarray(dates_in).astype("datetime64[D]")
@@ -98,7 +114,7 @@ def vybor_centr_plato(M_in: np.ndarray, coords, dates_in, *, kub: Kub, dop: np.n
     синтетике); допустимость dop[j] и «нет» на оси — как в pick_center. None — кандидатов нет."""
     used = kub.col >= 0
     o = np.full(len(kub.col), np.nan)
-    o[used] = (obj_fn or min_msr)(M_in, dates_in, kub.col[used])
+    o[used] = (obj_fn or msr_celevaya)(M_in, dates_in, kub.col[used])
     fin = np.isfinite(o)
     vals = np.where(kub.nb >= 0, o[np.where(kub.nb >= 0, kub.nb, 0)], np.nan)
     n = np.isfinite(vals).sum(axis=1)
@@ -164,4 +180,4 @@ def pravilo_etapa(led, axes: dict, plan: list, base: dict, yakor: dict, period: 
         dop.append(coords[-1] is not None and not res.get("vyrozhdena") and V.dopustima(led, prm, yakor, **V.kw(period)))
     kub = postroit_kub(coords, axes, plan, base)
     dates = np.concatenate([np.datetime64(f"{y}-01-01") + np.arange(n[y]) for y in ys]) if n else np.array([], "datetime64[D]")
-    return dict(coords=coords, dates=dates, oos_fn=min_msr, select_fn=functools.partial(vybor_centr_plato, kub=kub, dop=np.array(dop, bool)))
+    return dict(coords=coords, dates=dates, oos_fn=msr_oos, select_fn=functools.partial(vybor_centr_plato, kub=kub, dop=np.array(dop, bool)))

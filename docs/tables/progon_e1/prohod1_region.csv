@@ -1,0 +1,7 @@
+S,region,chlenov,aktivnyh_strok_sdelok_ge30,aktivnyh_i_ustojchivyh,osi_top,regionov_vsego,s_chlenov_ge10,s_aktivnym_tsentrom,s_ustojchivym_ryadom,ustojchivyh_strok_vsego,dolya_sprav_region,dolya_sprav_chlenov,dolya_sprav_ansambl_mSR
+S1,net,0,30,0,R;bezubytok;ed_lim;filtr,321,321,18,0,0,net,0,
+S2,net,0,36,0,R;bb_std;bb_window;bezubytok,471,471,23,0,1,net,0,
+S3,net,0,20,0,storona;ed_lim;filtr;tau,654,654,15,0,10,net,0,
+S4,net,0,65,0,R;atr_period;bezubytok;ed_lim,336,336,53,0,1,net,0,
+S5,net,0,71,0,R;bezubytok;ed_lim;filter_set,192,192,29,0,0,net,0,
+S6,net,0,67,0,R;bezubytok;dev_mult;dir_bias,168,168,32,0,0,net,0,

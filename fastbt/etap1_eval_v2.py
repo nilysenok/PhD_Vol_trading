@@ -12,13 +12,14 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 
-from fastbt import rezhim_e1
+from fastbt import rezhim_e1, tejk_signal, zaem_v2
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, is_anchor, params_of, years_of
 from fastbt.etap1_run import run_e1, sum_rows
 from fastbt.ledger_v2 import kvartaly, tselevaya
 
-NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net")
+NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net",
+             tejk_signal="net")
 POROG = {"S1": "z_entry", "S2": "bb_std", "S3": "dc_window", "S4": "multiplier", "S6": "dev_mult"}   # §1.1 storona
 ZAEM = (5, 10)                                                                 # % годовых, колонки by_quarter_zaem
 
@@ -39,7 +40,7 @@ def mediana_goda(sg: np.ndarray, dates) -> np.ndarray:
 
 class EvaluatorV2(Evaluator):
     _ctx = dict(nov=NOVYE, vozm={}, default=True)
-    _kray = False
+    _kray, STROGAYA = False, False                    # STROGAYA: якорь с новыми осями остаётся якорем (fastbt/a_strogaya.py)
 
     def _rows(self, pt, period, anchor):
         c = self._ctx
@@ -84,13 +85,18 @@ class EvaluatorV2(Evaluator):
         p = params_of(pt, self.inp.tick[t], h, anchor, self.comm)
         if nov["k_x"] != NET and p.b is None and not anchor:
             p = replace(p, a=float(nov["k_x"]))                             # тейк без стопа; при k_s ≠ net k_x не действует
+        if nov["tejk_signal"] != NET:                                       # Ж-084: один тейк, от M (canon_v2: R, k_x = net)
+            p = replace(p, R=None, a=None, tejk=nov["tejk_signal"])
+            if nov["tejk_signal"] == tejk_signal.RODNOY:                    # Ж-091 п. 1.1 (толк. дирижёра): выход по сигналу — заявка; τ остаётся
+                p = replace(p, exit_signal=False)
         ext = {k: int(vz[k]) for k in ("bar_plus", "stop_tik") if k in vz}
         if nov["zhizn"] != "den":
             ext["zhizn"] = int(nov["zhizn"])
         if nov["gap"] == "propusk":
             ext["gap_propusk"] = True
-        if str(nov["t_vyhod"]) != "close":
-            ext["t_vyhod"] = str(nov["t_vyhod"])
+        tv = "open2" if nov["tejk_signal"] == tejk_signal.RODNOY and p.tau is not None else str(nov["t_vyhod"])   # rodnoy: t_vyhod = open2 для τ
+        if tv != "close" and not (nov["tejk_signal"] == tejk_signal.RODNOY and p.tau is None):
+            ext.update(t_vyhod=tv, vhod_open=pt["vhod"] == "rynok" and p.k is None)   # строгая строка: rynok = open 10:00 d+1 (Ж-086 п. 1)
         return replace(p, **ext) if ext else p
 
     def _rows2(self, pt, period, anchor, c):
@@ -116,7 +122,8 @@ class EvaluatorV2(Evaluator):
                 w = rezhim_e1.razmer_ves(sg, "obratnyj", float(pt["razmer"]) / 100.0)
             ed = self._ed(t, "mediana" if vz.get("sigma_lim_mediana") else nov["ed_lim"], sg, dates, s0, b)
             p = self._params(pt, t, h, anchor, nov, vz)
-            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=ed, **self.fdr_kw())
+            tm = None if nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, sp, t, s0, b, nov["tejk_signal"] == tejk_signal.RODNOY)
+            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=ed, tejk_M=tm, **self.fdr_kw())
             out.append((ti, self._ladder(t, days, sig, sg, p, w, nov["lestnica"], kw), a, b))
         return out
 
@@ -131,7 +138,8 @@ class EvaluatorV2(Evaluator):
     def excess(self, pt, period):
         """Как Evaluator.excess, но filtr ≠ net снимает режим «якорь» (как sobytiya ≠ net в v1): ось действует всегда."""
         pt = self.full(pt)
-        rows = self._rows(pt, period, is_anchor(pt) and self._ctx["nov"]["filtr"] == NET)
+        anc = is_anchor(pt) and (self._ctx["nov"] == NOVYE or self.STROGAYA)                                 # любая новая ось ≠ умолчание снимает якорь
+        self._zctx = (pt, anc, rows := self._rows(pt, period, anc))                         # для zaem_v2.ryad (Ж-089)
         eng, inv = self._engine(period)
         cat = lambda f: np.concatenate([f(r) for _, r, _, _ in rows])             # noqa: E731
         noch = cat(lambda r: r.noch) if self.fdr is not None else None
@@ -160,7 +168,7 @@ class EvaluatorV2(Evaluator):
             cat(lambda r: r.cnt), pd.DatetimeIndex(eng.dates[inv])
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
-        t0 = time.perf_counter()
+        t0, self.diag, self.zaem = time.perf_counter(), None, None
         nov, vz = {k: pt.get(k, v) for k, v in NOVYE.items()}, dict(vozm or {})
         self._ctx, self._kray, comm0 = dict(nov=nov, vozm=vz, default=nov == NOVYE and not vz), False, self.comm
         self.comm = float(vz.get("komissiya", comm0))
@@ -180,6 +188,7 @@ class EvaluatorV2(Evaluator):
                     "by_quarter": {f"{y}Q{q}": nan for y in yrs for q in range(1, 5)}, "sharpe": nan, "msr": nan,
                     "flagi": {"vyrozhdena": True}}, None, None
         x, tik, dts, zaem, cnt, rdates = self._series(period, comm)
+        self.zaem = zaem_v2.ryad(self, period)                                  # Ж-089: база платы за заём, рядом с ledger
         bq = kvartaly(dts.to_numpy(), x)
         med, dolya = tselevaya(bq)
         qr = (rdates.year * 10 + rdates.quarter).to_numpy()
@@ -190,4 +199,5 @@ class EvaluatorV2(Evaluator):
                "flagi": {"vyrozhdena": v1["vyrozhdena"], "kray": [], "short_shag1_kray": self._kray}, "t_sek": time.perf_counter() - t0,
                **{k: v1[k] for k in ("sharpe", "msr", "sortino", "kalmar", "mdd", "T", "skew", "kurt", "prichiny", "by_year",
                                      "msr_by_year", "tselevaya", "sdelok_y", "storony_y", "dolya_ispolneniya_limita")}}
+        self.diag = tejk_signal.pole_otcheta(self, yrs)                    # Ж-087: ряды отчёта — в diag.jsonl, не в строку ledger
         return row, x, tik

@@ -15,8 +15,9 @@ import numpy as np
 
 from fastbt.pbo_pravilo import sigma126
 from fastbt.progon_osnovnaya import maska
+from fastbt.tselevaya import msr_i_gody
 
-K_OSI, RADIUS, DOLYA_MIN, MIN_CHLENOV = 4, 1, 0.8, 10
+K_OSI, RADIUS, DOLYA_GODOV, MIN_CHLENOV = 4, 1, 0.75, 10
 TIE, MIN_SDELOK, NK, POOL, NS, CHUNK = 0.05, 30, 16, 3000, 2000, 256
 
 
@@ -108,17 +109,16 @@ def _kv_sr(M: np.ndarray, daty, kv: list) -> np.ndarray:
     return out
 
 
-def _dolya_pol(sr) -> float:
-    """Доля кварталов с SR > 0; nan — не положительный."""
-    return float(np.mean(np.asarray(sr, float) > 0))
-
-
 def _cel_stolbcov(M, daty, kv, tsel) -> np.ndarray:
-    """Целевая каждого столбца по кварталам kv: «mediana» (nan, если есть nan) | «dolya»."""
-    sr = _kv_sr(M, daty, kv)
+    """Целевая каждого столбца на днях кварталов kv (Ж-090): mSR за всё окно; nan, если не прошло условие по годам окна.
+    «msr» — mSR каждого года окна > 0; «dolya» — ослабленное: доля годов с mSR > 0 ≥ DOLYA_GODOV (годы окна, ≥ MIN_DNEY дней)."""
+    mask = np.isin(_kv_dnei(daty), kv)
+    m, py, ust, ys = msr_i_gody(np.asarray(M, float)[mask], np.asarray(daty)[mask])
     if tsel == "dolya":
-        return (sr > 0).mean(axis=1)
-    return np.where(np.isnan(sr).any(axis=1), np.nan, np.median(np.nan_to_num(sr), axis=1))
+        ust = (py > 0).mean(axis=1) >= DOLYA_GODOV if ys else ust
+    elif tsel != "msr":
+        raise ValueError(f"tsel: {tsel!r}")
+    return np.where(ust & np.isfinite(m), m, np.nan)
 
 
 def _aktivna(row: dict, base) -> bool:
@@ -129,9 +129,10 @@ def _aktivna(row: dict, base) -> bool:
     return base is None or all(v >= 0.5 * base for v in st.values())
 
 
-def vybor_region(M, rows, daty, kvartaly_idx=None, radius=RADIUS, tsel="mediana", *, dop=None, storony_yakor=None):
+def vybor_region(M, rows, daty, kvartaly_idx=None, radius=RADIUS, tsel="msr", *, dop=None, storony_yakor=None):
     """Лучший допустимый регион на кварталах kvartaly_idx (None — все 16) или None. Допустимость: членов ≥ MIN_CHLENOV,
-    доля кварталов с SR ряда > 0 ≥ DOLYA_MIN, в центре есть строка, допустимая по активности (dop[j] или как dopustima)."""
+    ряд региона устойчив (Ж-090: mSR каждого года окна > 0; tsel «dolya» — не меньше DOLYA_GODOV годов), в центре есть строка,
+    допустимая по активности (dop[j] или как dopustima). Ранг — mSR ряда региона за всё окно."""
     M, daty = np.asarray(M, float), np.asarray(daty).astype("datetime64[D]")
     osn = maska(rows)
     if not osn.all():  # Ж-084 п. 2: справочные строки (close x) в выбор не идут; индексы результата — по исходной M
@@ -157,9 +158,7 @@ def vybor_region(M, rows, daty, kvartaly_idx=None, radius=RADIUS, tsel="mediana"
         if len(idx) < MIN_CHLENOV or not act[(X == np.array(centr)).all(axis=1)].any():
             continue
         ry = ryad_regiona(Ms, idx)
-        if _dolya_pol(_kv_sr(ry[:, None], ds, kv)[0]) < DOLYA_MIN:
-            continue
-        sc = float(_cel_stolbcov(ry[:, None], ds, kv, tsel)[0])
+        sc = float(_cel_stolbcov(ry[:, None], ds, kv, tsel)[0])    # nan = ряд региона не устойчив по годам -> не допущен
         if math.isfinite(sc):
             cand.append((sc, centr, idx, ry))
     if not cand:

@@ -3,8 +3,9 @@
 
 Признак — только по параметрам точки, не по исходам сделок. Основная: t_vyhod ∈ {open2, 1500, 1700} (выход по сигналу и τ —
 по тому же t_vyhod, τ от него не отделяется) и вход не по close d. Справочная: t_vyhod = close, либо vhod = rynok, пока
-rynok исполняется по close d. Вход rynok по open d+1 сделает отдельный лист после прохода 1: тогда RYNOK_ISPOLNENIE = "open_d1"
-(одна точка подмены), и rynok станет основным. Строки якоря A = s9 (istochnik из ISTOCHNIKI_YAKORYA) — эталон кода, в отбор не идут.
+rynok исполняется по close d. Вход rynok по open d+1 реализован (Params.vhod_open, ветка a-strogaya): RYNOK_ISPOLNENIE = "open_d1"
+(одна точка подмены), rynok с t_vyhod ≠ close — основной. Строки rynok прохода 1 (kod до этой правки) считались по close d: их
+пересчитывают до использования флага (ключ тот же, kod другой). Строки якоря A = s9 (istochnik из ISTOCHNIKI_YAKORYA) — эталон кода, в отбор не идут.
 Справочные строки и якорь остаются в ledger и реестре; из выбора (регион, WF, PBO, A′, N DSR) исключаются.
 """
 from __future__ import annotations
@@ -12,7 +13,8 @@ from __future__ import annotations
 import numpy as np
 
 OSNOVNYE_T = ("open2", "1500", "1700")
-RYNOK_ISPOLNENIE = "close_d"  # close_d | open_d1: по какой цене исполняется vhod = rynok сейчас
+RYNOK_ISPOLNENIE = "open_d1"  # close_d | open_d1: по какой цене исполняется vhod = rynok при t_vyhod ≠ close (Params.vhod_open, a-strogaya)
+KODY_RYNOK_CLOSE = ("d4711aa5",)  # префиксы kod проходов 1 и 2: rynok исполнялся по close d — такие строки справочные
 ISTOCHNIKI_YAKORYA = ("yakor",)  # ❓ значение istochnik строк якоря в ledger не зафиксировано; умолчание
 
 
@@ -50,7 +52,13 @@ def osnovnaya_stroki(row: dict):
     """Признак строки ledger / реестра: bool; якорь — False; нет t_vyhod или vhod в ключе — ValueError."""
     if row.get("istochnik") in ISTOCHNIKI_YAKORYA:
         return False
-    return osnovnaya(row)
+    osn = osnovnaya(row)
+    pt = _pt(row)
+    if osn and str(pt["vhod"]) == "rynok":              # rynok: цена входа зависит от кода, которым посчитана строка (формат ledger не меняем)
+        if not row.get("kod"):
+            raise ValueError("у строки rynok нет kod: основная/справочная не определена")
+        return not str(row["kod"]).startswith(KODY_RYNOK_CLOSE)
+    return osn
 
 
 def maska(rows: list) -> np.ndarray:

@@ -7,7 +7,7 @@ sid: S2
 period: train4
 komissiya: 0.0004
 fdr: null
-sobol: {seed: 20261030, scramble: true, prohod1: 5000, prohod2: 30000}
+sobol: {seed: 20261030, scramble: true, prohod1: 5000, prohod2: 10000}
 
 signal:
   bb_window: {ishodnoe: 20, setka: [10, 13, 17, 20, 23, 27, 30]}
@@ -35,3 +35,4 @@ novye:
   k_x:      {setka: [0.5, 1.0, 1.5, net], yakor: net}
   storona:  {setka: [obe, long, short_shag1], yakor: obe}
   filtr:    {setka: [net, cbr, div, post_shok, szhatie, rv_perevorot, obyom, rel_sila_imoex, sektor_trend], yakor: net}
+  tejk_signal: {setka: [net, k_srednemu, pol_puti], yakor: net}    # Ж-084: тейк от уровня сигнала M; последняя ось — прежние размерности Соболя целы

@@ -67,7 +67,22 @@ class Run2(Run):
         s.n_orders += 1
         s.order = dict(L=limit_level(sd, close, s.p.k, u, s.p.tick), due=j + 1, sd=sd, d_sig=i, **kw)
 
+    def _try_rynok(s, i, j, d):
+        """Ж-086 п. 1: вход рынком по open бара 10:00 (bar_at: нет бара — первый позже; после 10:00 баров нет — open 10:00
+        следующего дня; времени баров нет — open первого бара). Стоп и тейк — с самого бара входа, после его open."""
+        vr = _vr()
+        o, s.order = s.order, None
+        b = vr.bar_at(d, vr.HHMM["open2"])
+        b = 0 if b is None else b
+        if b >= len(d.c):
+            s.order = dict(o, due=j + 1) if j + 1 < len(s.ix) else None
+            return
+        s._enter(i, j, b, float(d.o[b]), b, s.sigma[o["d_sig"]], o["d_sig"], o["sd"])
+        s._scan(i, j, d, b)
+
     def _try_order(s, i, j, d):
+        if s.order.get("rynok"):                        # вход рынком по open 10:00 d+1: без уровня, жизни заявки и gap
+            return s._try_rynok(i, j, d)
         o = s.order
         sd, tick = o["sd"], s.p.tick
         if s.p.gap_propusk and gap_over(sd, d.o[0], o["L"], tick):
