@@ -4,7 +4,7 @@
 готовый `intraday_priznaki.tercile_cell` (окно d−252…d−1). Данные ≥ 2020 не читаются (ValueError).
 
 Отступления от «вызывать готовое» (модулей нет в базе; заменить вызовом, когда появятся):
-  * ранг силы — интерфейс будущего `rangi_v6`: `rang_sily(sila[date×тикер]) -> [date×тикер]` (пул по тикерам);
+  * ранг силы — `rangi_v6.rang_obshchiy` (обёртка `rang_sily(sila[date×тикер]) -> [date×тикер]`, пул по тикерам);
   * таблица весов §2.1 — `ves` (лист Ф1 `fazy_vesa`), g_нов / g_ликв — `uroven_v3`.
 """
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from fastbt import fazy
+from fastbt import fazy, rangi_v6
 from fastbt.daily_1850 import CUT_MIN
 from fastbt.intraday_priznaki import tercile_cell
 
@@ -83,16 +83,9 @@ def ves_panel(sk: str, storona: pd.DataFrame, faza_r: pd.Series, faza_s: pd.Data
 
 
 def rang_sily(sila: pd.DataFrame, okno: int = OKNO_RANG, min_nabl: int = MIN_NABL) -> pd.DataFrame:
-    """Ранг пулом по тикерам: доля значений силы окна d−okno…d−1 строго меньше силы d; < min_nabl наблюдений — NaN."""
-    a = sila.to_numpy(float)
-    out = np.full(a.shape, np.nan)
-    for i in range(len(a)):
-        w = a[max(0, i - okno):i].ravel()
-        w = np.sort(w[~np.isnan(w)])
-        ok = ~np.isnan(a[i])
-        if len(w) >= min_nabl:
-            out[i, ok] = np.searchsorted(w, a[i, ok], side="left") / len(w)
-    return pd.DataFrame(out, index=sila.index, columns=sila.columns)
+    """Ранг пулом по тикерам (Д7: `rangi_v6.rang_obshchiy`; окно d−okno…d−1, строго меньше, < min_nabl — NaN)."""
+    r = rangi_v6.rang_obshchiy(sila.to_numpy(float).T, okno, min_nabl).T
+    return pd.DataFrame(r, index=sila.index, columns=sila.columns)
 
 
 def g_novost(r: pd.Series, sigma_prev: pd.Series, obyom: pd.Series) -> pd.Series:
