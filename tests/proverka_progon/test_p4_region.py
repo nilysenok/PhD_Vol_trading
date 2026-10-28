@@ -88,12 +88,12 @@ def test_dolya_075_ne_dopustima_a_13_dopustima():
 
 
 def test_nan_kvartal_ne_polozhitelnyj():
-    """Мутация: nan-квартал ряда региона считается положительным. 12 положительных + 4 nan = 0,75 -> не допустим."""
+    """Мутация: nan-квартал ряда региона считается положительным. 12 положительных + 4 кварталов без дней (SR = nan) = 0,75
+    -> не допустим. tsel="dolya": при "mediana" целевая с nan сама nan и мутацию не выдаёт."""
     from fastbt import progon_region as R
     M, rows, *_ = _polovina_kub(16)
-    M = M.copy()
-    M[np.isin(QI, [12, 13, 14, 15])] = np.nan
-    assert R.vybor_region(M, rows, DATY) is None
+    keep = QI < 12
+    assert R.vybor_region(M[keep], rows, DATY[keep], tsel="dolya") is None
 
 
 def test_osi_ranzhiruyutsya_tolko_na_perednyh_kvartalah():
