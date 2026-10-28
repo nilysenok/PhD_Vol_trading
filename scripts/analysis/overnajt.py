@@ -89,8 +89,7 @@ def stroki_a(R: dict) -> list:
         x = np.nan_to_num(tik).sum((0, 1)) / nn - AS.PLATA * baza
         ref = urovni.a_shtrih({s: R[s]["tik"] for s in sids}, urovni.setka()["umolchaniya"], R[sids[0]]["dates"]) - AS.PLATA * baza
         assert np.allclose(x, ref, atol=1e-12), f"{imya}: excess категории ≠ a_shtrih"
-        pnl = (agg("g") - AS.COMM * agg("sides")) - AS.PLATA * baza
-        rows.append(L.stroka(imya, ",".join(sids), agg("I")[:-1], agg("N")[:-1], x, pnl, agg("eks") > 0))
+        rows.append(L.stroka(imya, ",".join(sids), agg("I")[:-1], agg("N")[:-1], x, agg("eks") > 0))
     return rows
 
 
@@ -120,15 +119,15 @@ def kross() -> dict:
         I, N = L.kniga_razlozhenie(W, P, C, Dv, tau, n, i0, ks.LAG)
         ecc = float(np.abs(I + N - o["pnl"]).max())
         assert ecc < 1e-12, f"{sid}: части ≠ pnl книги ({ecc})"
-        out[sid] = {k: v[win] for k, v in dict(I=I, N=N, x=o["excess"], pnl=o["pnl"] - o["kom"] - o["zaem"], d=o["gross"] > 0).items()}
+        out[sid] = {k: v[win] for k, v in dict(I=I, N=N, x=o["excess"], d=o["gross"] > 0).items()}
         print(sid, "кросс-секция готово; макс. |части − pnl| =", f"{ecc:.1e}", "; дней×тикеров без close:", int(np.isnan(C[win]).sum()), flush=True)
     return out
 
 
 def stroki_kross(K: dict) -> list:
-    rows = [L.stroka(f"{s}", s, k["I"], k["N"], k["x"], k["pnl"], k["d"]) for s, k in K.items()]
+    rows = [L.stroka(f"{s}", s, k["I"], k["N"], k["x"], k["d"]) for s, k in K.items()]
     m = lambda key: np.mean([K[s][key] for s in K], axis=0)                       # noqa: E731
-    rows.append(L.stroka(KATEGORII[5][0], "S7,S8,S9", m("I"), m("N"), m("x"), m("pnl"), np.any([K[s]["d"] for s in K], axis=0)))
+    rows.append(L.stroka(KATEGORII[5][0], "S7,S8,S9", m("I"), m("N"), m("x"), np.any([K[s]["d"] for s in K], axis=0)))
     return rows
 
 

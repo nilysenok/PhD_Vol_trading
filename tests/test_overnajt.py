@@ -93,8 +93,8 @@ def test_flag_granitsy():
 
 def test_sharpe_v_dele_otlichaetsya_ot_obychnogo():
     x = np.array([0.01, -0.01, 0.0, 0.0, 0.02, 0.0])
-    r = L.stroka("k", "S", x, x * 0, x, x, x != 0)
-    assert r["sharpe_v_dele"] != r["sharpe"] and r["dolya_dnej_v_dele"] == 0.5
+    r = L.stroka("k", "S", x, x * 0, x, x != 0)
+    assert r["sharpe_v_dele"] != r["sharpe"] and r["ekspoziciya"] == 0.5 and "sharpe_bez_fdr" not in r
 
 
 def test_kniga_razlozhenie_izvestnye_otvety():

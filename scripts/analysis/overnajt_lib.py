@@ -85,9 +85,9 @@ def flag_p2(disp: float, doh: float) -> str:
     return "да" if (disp > 0.5 and doh < 0.2) else "нет"
 
 
-def stroka(imya: str, sk: str, I, N, x, pnl, v_dele, god: float = 4.0) -> dict:
+def stroka(imya: str, sk: str, I, N, x, v_dele, god: float = 4.0) -> dict:
     """Строка разложения. I, N — ряды частей валовой доходности (без последней даты окна: день b не разложим), x — excess,
-    pnl — торговая компонента (без ФДР, без ставки), v_dele — маска дней с позицией (для x, pnl полной длины)."""
+    v_dele — маска дней с позицией (для x полной длины); ekspoziciya — доля дней в позиции."""
     k = dolya_noch(I, N)
     d = k["dolya_disp_noch"]
     vd = np.asarray(v_dele, bool)
@@ -95,5 +95,5 @@ def stroka(imya: str, sk: str, I, N, x, pnl, v_dele, god: float = 4.0) -> dict:
                 dolya_doh_noch=k["dolya_doh_noch"], dolya_doh_den=1 - k["dolya_doh_noch"],
                 flag_zh103_p2=flag_p2(d, k["dolya_doh_noch"]), valovaya_doh_pct_god=k["valovaya_doh"] / god * 100,
                 doh_noch_pct_god=float(np.sum(N)) / god * 100, doh_den_pct_god=float(np.sum(I)) / god * 100,
-                sharpe=sharpe(x), sharpe_v_dele=sharpe(np.asarray(x, float)[vd]), sharpe_bez_fdr=sharpe(pnl),
-                dolya_dnej_v_dele=float(vd.mean()), n_dnej=int(len(x)))
+                sharpe=sharpe(x), sharpe_v_dele=sharpe(np.asarray(x, float)[vd]), 
+                ekspoziciya=float(vd.mean()), n_dnej=int(len(x)))
