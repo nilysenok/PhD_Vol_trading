@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Основная и справочная строки прогона (Ж-084 п. 2, толкование [Ж-084] п. 2). Данных не читает.
+"""Основная и справочная строки прогона (Ж-086 п. 1, 3; Ж-085 п. 1–3, 5 отменены). Данных не читает.
 
-Признак ставится по параметрам точки, не по исходам сделок. Справочная строка — та, где сделка может выйти по сигналу
-на close x: t_vyhod = close и выход по сигналу включён правилами стратегии (VYHOD_PO_SIGNALU). Основные: open2 (open дня
-x+1, exec_e2._scan: pend due = j+1, hhmm None -> d.o[0]) и close, где выхода по сигналу нет. 1500 / 1700 — справочные
-до слова владельца. Справочные строки в ledger и реестре остаются; из выбора (регион, WF, PBO, A′, N DSR) исключаются.
+Признак — только по параметрам точки, не по исходам сделок. Основная: t_vyhod ∈ {open2, 1500, 1700} (выход по сигналу и τ —
+по тому же t_vyhod, τ от него не отделяется) и вход не по close d. Справочная: t_vyhod = close, либо vhod = rynok, пока
+rynok исполняется по close d. Вход rynok по open d+1 сделает отдельный лист после прохода 1: тогда RYNOK_ISPOLNENIE = "open_d1"
+(одна точка подмены), и rynok станет основным. Строки якоря A = s9 (istochnik из ISTOCHNIKI_YAKORYA) — эталон кода, в отбор не идут.
+Справочные строки и якорь остаются в ledger и реестре; из выбора (регион, WF, PBO, A′, N DSR) исключаются.
 """
 from __future__ import annotations
 
 import numpy as np
 
-SIDS = ("S1", "S2", "S3", "S4", "S5", "S6")
-# Params.exit_signal = True по умолчанию (exec_e_types.py:28), params_of (etap1_eval.py:63-67) и _params (etap1_eval_v2.py:77-93)
-# его не меняют, проверка в exec_e_run.step (exec_e_run.py:147): выход по сигналу включён у всех шести стратегий.
-VYHOD_PO_SIGNALU = {s: True for s in SIDS}
-OSNOVNYE_T = ("open2",)
-SPRAVOCHNYE_T = ("1500", "1700")
+OSNOVNYE_T = ("open2", "1500", "1700")
+RYNOK_ISPOLNENIE = "close_d"  # close_d | open_d1: по какой цене исполняется vhod = rynok сейчас
+ISTOCHNIKI_YAKORYA = ("yakor",)  # ❓ значение istochnik строк якоря в ledger не зафиксировано; умолчание
 
 
 def _pt(x: dict) -> dict:
@@ -34,45 +32,40 @@ def _tok(v) -> str:
         return s
 
 
-def osnovnaya(klyuch: dict, sid: str | None = None, tablica: dict | None = None) -> bool:
-    """True — основная строка. Только параметры точки: t_vyhod и таблица «выход по сигналу» по стратегии.
-    Оси t_vyhod нет — берётся умолчание оси close (контракт §1.1)."""
+def osnovnaya(klyuch: dict) -> bool:
+    """True — основная строка. Только параметры точки: t_vyhod и vhod. Оси t_vyhod нет — умолчание оси close (контракт §1.1)."""
     pt = _pt(klyuch)
     t = _tok(pt.get("t_vyhod", "close"))
-    if t in OSNOVNYE_T:
-        return True
-    if t in SPRAVOCHNYE_T:
-        return False
-    if t != "close":
+    if t != "close" and t not in OSNOVNYE_T:
         raise ValueError(f"t_vyhod {t!r}: допустимо close, 1500, 1700, open2")
-    tb = VYHOD_PO_SIGNALU if tablica is None else tablica
-    sid = sid or klyuch.get("strategiya")
-    if sid not in tb:
-        raise ValueError(f"для t_vyhod = close нужна стратегия из таблицы {sorted(tb)}, получено {sid!r}")
-    return not tb[sid]
+    if t == "close":
+        return False
+    return not (str(pt.get("vhod")) == "rynok" and RYNOK_ISPOLNENIE != "open_d1")
 
 
-def osnovnaya_stroki(row: dict, tablica: dict | None = None):
-    """Признак строки ledger / реестра: bool; None — оси t_vyhod в ключе нет (строка не прогона v2, не классифицируется)."""
+def osnovnaya_stroki(row: dict):
+    """Признак строки ledger / реестра: bool; якорь — False; None — оси t_vyhod в ключе нет (строка не прогона v2)."""
+    if row.get("istochnik") in ISTOCHNIKI_YAKORYA:
+        return False
     if "t_vyhod" not in _pt(row):
         return None
-    return osnovnaya(row, row.get("strategiya"), tablica)
+    return osnovnaya(row)
 
 
-def maska(rows: list, tablica: dict | None = None) -> np.ndarray:
-    """bool на каждую строку: не классифицируемая (нет оси) остаётся в выборе, справочная — нет."""
-    return np.array([osnovnaya_stroki(r, tablica) is not False for r in rows], bool)
+def maska(rows: list) -> np.ndarray:
+    """bool на каждую строку: не классифицируемая (нет оси) остаётся в выборе, справочная и якорь — нет."""
+    return np.array([osnovnaya_stroki(r) is not False for r in rows], bool)
 
 
-def rows_osnovnye(ch, tablica: dict | None = None, status="ok") -> list:
+def rows_osnovnye(ch, status="ok") -> list:
     """Основные строки Chitatel: ch.matrica(rows_osnovnye(ch)) — матрица PBO и региона без справочных столбцов."""
     rs = ch.rows(status)
-    return [r for r, m in zip(rs, maska(rs, tablica)) if m]
+    return [r for r, m in zip(rs, maska(rs)) if m]
 
 
-def chisla_N(rows: list, tablica: dict | None = None) -> dict:
+def chisla_N(rows: list) -> dict:
     """N для DSR по основным строкам и отдельно число справочных (уникальные klyuch_sha); в N DSR идёт только osnovnye."""
     osn, sp = set(), set()
-    for r, m in zip(rows, maska(rows, tablica)):
+    for r, m in zip(rows, maska(rows)):
         (osn if m else sp).add(r["klyuch_sha"])
     return dict(N_osnovnye=len(osn), N_spravochnye=len(sp))
