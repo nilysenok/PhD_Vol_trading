@@ -17,7 +17,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "analysis"))
-import razlozhenie_a as RA  # noqa: E402  (подмена run_e1 для записи сделок — только в этом процессе)
+import razlozhenie_a as RA  # noqa: E402  (подмена run_e1 для записи сделок — только внутри RA.zapis_sdelok())
 from fastbt import a_strogaya as AS, etap1, metriki_e as me, s9  # noqa: E402
 from fastbt.etap1_eval_v2 import EvaluatorV2  # noqa: E402
 
@@ -43,14 +43,15 @@ def schitat(arg: tuple) -> dict:
     sid, period = arg
     ustanovit_period(period)
     inp, base, out = etap1.build_inputs(sid, period=period), etap1.base_point(sid), {"yakor": {}, "strogaya": {}}
-    for imya, cls, strogo in (("yakor", EvaluatorV2, False), ("strogaya", AS.AStrogaya, True)):
-        for v, kw in VARIANTY.items():
-            i2 = RA.replace(inp, div={t: np.zeros_like(np.asarray(d, float)) for t, d in inp.div.items()}) if kw.get("div0") else inp
-            ev = RA.klass(cls)(sid, i2, base, kw.get("comm", AS.COMM), fdr=kw.get("fdr"))
-            ev.storona, ev.sdelki = kw.get("storona", 0), {}
-            RA.TEK["ev"] = ev
-            out[imya][v] = AS.schitat(ev, strogo)
-        print(sid, imya, "готово", flush=True)
+    with RA.zapis_sdelok():
+        for imya, cls, strogo in (("yakor", EvaluatorV2, False), ("strogaya", AS.AStrogaya, True)):
+            for v, kw in VARIANTY.items():
+                i2 = RA.replace(inp, div={t: np.zeros_like(np.asarray(d, float)) for t, d in inp.div.items()}) if kw.get("div0") else inp
+                ev = RA.klass(cls)(sid, i2, base, kw.get("comm", AS.COMM), fdr=kw.get("fdr"))
+                ev.storona, ev.sdelki = kw.get("storona", 0), {}
+                RA.TEK["ev"] = ev
+                out[imya][v] = AS.schitat(ev, strogo)
+            print(sid, imya, "готово", flush=True)
     return out
 
 
