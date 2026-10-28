@@ -15,25 +15,68 @@
 from __future__ import annotations
 
 import hashlib
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-TABLE = Path(__file__).resolve().parent.parent / "docs" / "issledovaniya" / "2026-10-27_dividendy_2017_2021.csv"
+_DOCS = Path(__file__).resolve().parent.parent / "docs" / "issledovaniya"
+TABLE = _DOCS / "2026-10-27_dividendy_2017_2021.csv"
+# 2015–2016 (PR #385): потолок — только dohod.ru, первичные не сверены (primary_checked=no); last_cum_date в файле нет,
+# считается здесь тем же правилом T+2, что и для 2017–2021 (docs/issledovaniya/2026-10-27_dividendy.md), по календарю дневных баров.
+TABLE_2015 = _DOCS / "2026-10-28_dividendy_2015_2016.csv"
 DIV_NALOG = 0.87          # доля дивиденда, попадающая в PnL (после НДФЛ 13 %); div_nalog = 1.0 — полный D
 
 
+def _tables() -> list[Path]:
+    return [Path(TABLE), Path(TABLE_2015)]
+
+
 def digest() -> str:
-    """Д5: хэш таблицы дивидендов и налогового множителя — входит в ключи кэшей."""
-    return hashlib.sha1(Path(TABLE).read_bytes() + repr(float(DIV_NALOG)).encode()).hexdigest()
+    """Д5: хэш обеих таблиц дивидендов и налогового множителя — входит в ключи кэшей."""
+    h = hashlib.sha1()
+    for p in _tables():
+        h.update(p.read_bytes())
+    return hashlib.sha1(h.digest() + repr(float(DIV_NALOG)).encode()).hexdigest()
+
+
+@lru_cache(maxsize=1)
+def _calendar() -> np.ndarray:
+    """Торговые дни: объединение дат дневных баров 17 тикеров (ряд 18:50, 2014-06…2021-12)."""
+    from fastbt.daily_1850 import out_path                                        # noqa: PLC0415
+    d = pd.read_parquet(out_path(), columns=["date"])
+    return np.sort(pd.to_datetime(d["date"]).dt.normalize().unique().astype("datetime64[ns]"))
+
+
+def last_cum(record: pd.Series) -> pd.Series:
+    """T+2: торговый день на два раньше последнего торгового дня <= даты реестра (реестр в выходной — предыдущий день).
+    Календарь баров верен, а не ручной календарь таблицы 2017–2021: по ценам день гэпа 2017–2019 совпадает с T+2 по барам
+    (MOEX 13.05.2019, TATN 08.01.2019), а не с табличной датой (см. docs/otchety/2026-10-28_v1_dannye.md)."""
+    cal = _calendar()
+    i = np.searchsorted(cal, record.to_numpy("datetime64[ns]"), side="right") - 1
+    if (i < 2).any():
+        raise ValueError("дата реестра раньше начала календаря торгов")
+    return pd.Series(cal[i - 2], index=record.index)
+
+
+def _read(path: Path, ticker: str) -> pd.DataFrame:
+    """Одна таблица в общий вид: last_cum_date, dps_rub тикера (строки без выплат — «выплат не было» — пропуск)."""
+    t = pd.read_csv(path)
+    t = t[(t["ticker"] == ticker) & (t["dps_rub"] > 0)].copy()
+    if "last_cum_date" in t:
+        t["last_cum_date"] = pd.to_datetime(t["last_cum_date"])
+    elif len(t):
+        t["last_cum_date"] = last_cum(pd.to_datetime(t["record_date"]))
+    else:
+        t["last_cum_date"] = pd.Series(dtype="datetime64[ns]")
+    return t[["last_cum_date", "dps_rub"]]
 
 
 def events(ticker: str) -> pd.DataFrame:
     """События тикера: last_cum_date (datetime64), dps_rub > 0; по возрастанию даты."""
-    t = pd.read_csv(TABLE, parse_dates=["last_cum_date"])
-    t = t[(t["ticker"] == ticker) & (t["dps_rub"] > 0)]
-    return t[["last_cum_date", "dps_rub"]].sort_values("last_cum_date").reset_index(drop=True)
+    t = pd.concat([_read(p, ticker) for p in _tables()], ignore_index=True)
+    return t.sort_values("last_cum_date").reset_index(drop=True)
 
 
 def gap_divs(ticker: str, dates: np.ndarray) -> np.ndarray:
