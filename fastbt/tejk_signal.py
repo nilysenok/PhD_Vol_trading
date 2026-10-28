@@ -9,7 +9,9 @@ M на день сигнала d — только по данным ≤ close d 
 """
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 
@@ -20,6 +22,7 @@ from fastbt.signals.s56_kern import _pivots, _vwap
 
 NET, ZNACHENIYA = "net", ("net", "k_srednemu", "pol_puti")
 OKNO = {"S1": "ma_window", "S2": "bb_window"}               # SMA-окно сигнала
+DIAG = "diag.jsonl"
 SIDS = ("S1", "S2", "S5", "S6")
 NAN = float("nan")
 
@@ -63,6 +66,23 @@ def pole_otcheta(evr, years) -> dict:
     rs = evr._last[4]
     pary = [(r.trades, evr.inp.meta[t]["dates"]) for t, r in zip(evr.sk.tickers, rs)]
     return {**otchet(pary, years), "n_bez_tejka": sum(r.n_bez_tejka for r in rs)}
+
+
+def pisat_diag(pisatel, row: dict, diag) -> None:
+    """Ж-087: диагностика рядом с ledger — p{NN}/diag.jsonl, по строке на строку ledger; ключ — klyuch_sha (с kod).
+    diag = None у строк не ok. Формат ledger v2.0 и Chitatel не затронуты; дубль после обрыва — читатель берёт последнюю."""
+    with open(pisatel.pd / DIAG, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"klyuch_sha": row["klyuch_sha"], "kod": row.get("kod"), "diag": diag}, sort_keys=True) + "\n")
+
+
+def chitat_diag(katalog) -> dict:
+    """{klyuch_sha: diag} по всем p*/diag.jsonl каталога стратегии."""
+    out = {}
+    for p in sorted(Path(katalog).glob("p*/" + DIAG)):
+        for ln in p.read_text(encoding="utf-8").splitlines():
+            r = json.loads(ln)
+            out[r["klyuch_sha"]] = r["diag"]
+    return out
 
 
 def dohodnost(tr) -> float:

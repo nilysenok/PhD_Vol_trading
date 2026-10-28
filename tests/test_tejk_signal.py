@@ -113,14 +113,32 @@ def ev():
     return EvaluatorV2("S1", etap1.build_inputs("S1", period="train4"), etap1.base_point("S1"), 0.0004)
 
 
-def test_stroka_ledger_polya_na_realnoy_lente(ev):
+def test_diag_ne_v_stroke_ledger_a_v_diag_jsonl(ev, tmp_path):
+    """Ж-087: строка ledger без полей отчёта (как до #450); diag.jsonl — на каждую строку, ключ klyuch_sha."""
+    from fastbt import ledger_v2
     pt = dict(vhod=0.5, proverka="bars5m")
-    r0 = ev.evaluate_v2(pt, "train4")[0]
-    r1 = ev.evaluate_v2({**pt, "tejk_signal": "k_srednemu"}, "train4")[0]
-    for r in (r0, r1):
-        assert list(r["top5_pnl_y"]) == ["2016", "2017", "2018", "2019"] and "n_bez_tejka" in r
-    assert r0["n_bez_tejka"] == 0 and all(v == 0 for v in r0["dolya_tejk_y"].values())
-    assert any(v > 0 for v in r1["dolya_tejk_y"].values()) and r1["n_bez_tejka"] >= 0
+    w = ledger_v2.Pisatel(tmp_path, "S1", 0, {"T": 4, "kod": "k", "vhody": "v"})
+    for i, extra in enumerate(({}, {"tejk_signal": "k_srednemu"})):
+        r = ev.evaluate_v2({**pt, **extra}, "train4")[0]
+        assert not set(r) & {"dolya_tejk_y", "dolya_pribyl_y", "vyigrysh_sredn_y", "proigrysh_sredn_y", "top5_pnl_y", "n_bez_tejka"}
+        d = ev.diag
+        assert list(d["top5_pnl_y"]) == ["2016", "2017", "2018", "2019"] and "n_bez_tejka" in d
+        ts.pisat_diag(w, {"klyuch_sha": f"h{i}", "kod": "k"}, d)
+        if i == 0:
+            assert d["n_bez_tejka"] == 0 and all(v == 0 for v in d["dolya_tejk_y"].values())
+        else:
+            assert any(v > 0 for v in d["dolya_tejk_y"].values())
+    got = ts.chitat_diag(tmp_path / "S1")
+    assert set(got) == {"h0", "h1"} and got["h1"]["n_bez_tejka"] >= 0
+    ts.pisat_diag(w, {"klyuch_sha": "h2"}, None)                                    # не ok — запись с null, а не пропуск
+    assert ts.chitat_diag(tmp_path / "S1")["h2"] is None
+
+
+def test_k3_obnulyaet_tejk_signal():
+    from fastbt import progon_kontrol as pk
+    z = [x for x in pk.plan({"tejk_signal": "pol_puti", "k_x": 1.0}) if x.kontrol == "k3"]
+    assert len(z) == 1 and z[0].pt["tejk_signal"] == "net" and z[0].pt["k_x"] == "net"
+    assert all(x.pt["tejk_signal"] == "pol_puti" for x in pk.plan({"tejk_signal": "pol_puti"}) if x.kontrol != "k3")   # к2/плацебо — на той же оси
 
 
 def test_S3_s_osyu_ne_schitaetsya_molcha():

@@ -164,7 +164,7 @@ class EvaluatorV2(Evaluator):
             cat(lambda r: r.cnt), pd.DatetimeIndex(eng.dates[inv])
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
-        t0 = time.perf_counter()
+        t0, self.diag = time.perf_counter(), None
         nov, vz = {k: pt.get(k, v) for k, v in NOVYE.items()}, dict(vozm or {})
         self._ctx, self._kray, comm0 = dict(nov=nov, vozm=vz, default=nov == NOVYE and not vz), False, self.comm
         self.comm = float(vz.get("komissiya", comm0))
@@ -194,5 +194,5 @@ class EvaluatorV2(Evaluator):
                "flagi": {"vyrozhdena": v1["vyrozhdena"], "kray": [], "short_shag1_kray": self._kray}, "t_sek": time.perf_counter() - t0,
                **{k: v1[k] for k in ("sharpe", "msr", "sortino", "kalmar", "mdd", "T", "skew", "kurt", "prichiny", "by_year",
                                      "msr_by_year", "tselevaya", "sdelok_y", "storony_y", "dolya_ispolneniya_limita")}}
-        row.update(tejk_signal.pole_otcheta(self, yrs))                    # Ж-084: ряды отчёта по годам, n_bez_tejka
+        self.diag = tejk_signal.pole_otcheta(self, yrs)                    # Ж-087: ряды отчёта — в diag.jsonl, не в строку ledger
         return row, x, tik
