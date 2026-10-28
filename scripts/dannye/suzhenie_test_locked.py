@@ -58,7 +58,7 @@ def main(argv=None):
     elif a.plan:
         plan(a.koren, a.vkhod, dirs)
     elif a.rezat:
-        rz.rezat(a.koren, a.vkhod, dirs, a.primenit)
+        return 1 if rz.rezat(a.koren, a.vkhod, dirs, a.primenit) else 0
     else:
         if not a.do_tsv:
             raise SystemExit("--manifest-posle требует --do-tsv")

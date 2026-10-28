@@ -4,7 +4,9 @@
 """
 import hashlib
 import re
+from bisect import bisect_right
 from datetime import date
+from functools import lru_cache
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -17,7 +19,8 @@ MSK = ZoneInfo("Europe/Moscow")
 DATE_COLS = ("date", "Date", "datetime", "timestamp", "TRADEDATE", "begin", "d0")
 T1_LO, T1_HI, H25_LO = date(2022, 1, 1), date(2024, 12, 31), date(2025, 1, 1)
 MANIFEST_COLS = ("path", "size", "mtime", "sha256", "columns", "nrows", "date_col", "dmin", "dmax")
-RAZRESHENO = frozenset(MANIFEST_COLS) | {"klass", "h", "cut", "status", "n_pre", "n_t1", "n_h25", "holdout_sha", "proveno"}
+RAZRESHENO = frozenset(MANIFEST_COLS) | {"klass", "h", "cut", "status", "n_pre", "n_t1", "n_h25", "holdout_sha", "proveno",
+                                                  "reason", "min_h25", "n_h25_2024"}
 
 
 def vyvod(**row):
@@ -103,19 +106,31 @@ def h_of(name):
     return int(m.group(1)) if m else 0
 
 
-def granitsa(dates, h):
-    """Последний день d0 для Z2: окно цели (d0 + h торговых дней) не заходит за 31.12.2024."""
-    ok = [d for d in dates if d <= T1_HI]
-    i = len(ok) - 1 - h
-    return ok[i] if i >= 0 else None
+KALENDAR = Path(__file__).resolve().parents[2] / "data/calendar/torgovye_dni_moex.csv"
 
 
-def okno_ok(dates, t1_max, h):
-    """Независимая проверка: цель строки t1_max (h-й следующий день) <= 31.12.2024."""
+@lru_cache(maxsize=1)
+def kalendar():
+    """Торговые дни MOEX <= 2024-12-31 (IMOEX 10м + MCFTR/RGBITR; позже 2024 в файле дат нет)."""
+    with open(KALENDAR, encoding="utf-8") as f:
+        next(f)
+        return tuple(date.fromisoformat(ln.strip()) for ln in f if ln.strip())
+
+
+def granitsa(dates, h, cal=None):
+    """Последний торговый день d0, у которого d0 + h торговых дней <= 31.12.2024 (по календарю MOEX, не по файлу)."""
+    cal = [d for d in (cal or kalendar()) if d <= T1_HI]
+    i = len(cal) - 1 - h
+    return cal[i] if i >= 0 else None
+
+
+def okno_ok(dates, t1_max, h, cal=None):
+    """Независимая проверка: цель строки t1_max (h-й торговый день после неё по календарю) <= 31.12.2024."""
     if t1_max is None:
         return True
-    i = dates.index(t1_max)
-    return i + h < len(dates) and dates[i + h] <= T1_HI
+    cal = [d for d in (cal or kalendar()) if d <= T1_HI]
+    i = bisect_right(cal, t1_max) - 1
+    return t1_max <= T1_HI and i >= 0 and i + h < len(cal)
 
 
 def classify(rel, m, dates):
@@ -128,7 +143,8 @@ def classify(rel, m, dates):
     cut = granitsa(dates, h)
     if m["dmin"] >= H25_LO or cut is None:
         return "б", cut, h
-    return ("а" if cut >= m["dmax"] else "в"), cut, h
+    # h=0: цель строки — она сама, нерабочая дата <= 31.12.2024 (строка 31.12.2024) остаётся открытой
+    return ("а" if (T1_HI if h == 0 else cut) >= m["dmax"] else "в"), cut, h
 
 
 def find_files(koren, vkhod, skip=()):
