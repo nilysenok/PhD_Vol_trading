@@ -70,5 +70,8 @@ def zanyatost(noch, expo, cal, rezhim) -> np.ndarray:
     noch, expo, cal = (np.asarray(x, dtype=float) for x in (noch, expo, cal))
     if rezhim != "t0d":
         return noch
+    for name, x in (("noch", noch), ("expo", expo)):
+        if not np.all((x >= -1e-9) & (x <= 1.0 + 1e-9)):      # u > 1 дал бы отрицательную ставку на свободный капитал
+            raise ValueError(f"t0d: {name} должна быть в [0; 1], получено min={np.nanmin(x)}, max={np.nanmax(x)}")
     s = np.minimum(SESSIYA, cal)
     return np.where(cal > 0, (noch * (cal - s) + expo * s) / np.where(cal > 0, cal, 1.0), noch)
