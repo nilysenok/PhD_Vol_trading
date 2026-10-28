@@ -8,7 +8,7 @@ sid: S5
 period: train4
 komissiya: 0.0004
 fdr: null
-sobol: {seed: 20261033, scramble: true, prohod1: 5000, prohod2: 30000}
+sobol: {seed: 20261033, scramble: true, prohod1: 5000, prohod2: 10000}
 
 signal:
   pivot_period: {ishodnoe: weekly, setka: [weekly, monthly]}
