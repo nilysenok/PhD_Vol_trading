@@ -89,7 +89,9 @@ def test_obr_korr_dayot_bolshe_nezavisimoj():
 @pytest.mark.parametrize("ves", ["ravnyj", "obr_korr_126", "obr_korr_252"])
 @pytest.mark.parametrize("rho", [None, 0.5, 0.7])
 def test_ves_i_rho_tolko_po_dannym_do_d_minus_1(ves, rho):
-    S, d = _kor(), 300
+    S = _kor()
+    m = _daty(S.shape[1]).to_period("M").asi8
+    d = next(i for i in range(290, len(m)) if m[i] != m[i - 1])               # первый день месяца: день пересмотра весов
     w0 = _w(S, ves, rho)
     S2 = S.copy()
     S2[:, d:] = np.random.default_rng(9).normal(0, 1.0, S2[:, d:].shape)     # день d и всё после — переписаны
