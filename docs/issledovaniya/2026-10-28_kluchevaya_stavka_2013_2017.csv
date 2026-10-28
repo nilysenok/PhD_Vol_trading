@@ -1,0 +1,21 @@
+data_vstupleniya,stavka_pct,data_resheniya,data_resheniya_status,source_url,accessed
+2013-09-17,5.50,2013-09-13,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2014-03-03,7.00,2014-03-03,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2014-04-28,7.50,2014-04-25,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2014-07-28,8.00,2014-07-25,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2014-11-05,9.50,2014-10-31,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2014-12-12,10.50,2014-12-11,подтверждено пресс-релизом cbr.ru,https://www.cbr.ru/press/pr/?file=11122014_133014dkp2014-12-11T13_08_33.htm,2026-10-28
+2014-12-16,17.00,2014-12-16,подтверждено пресс-релизом cbr.ru,http://cbr.ru/press/PR/?file=16122014_004533dkp2014-12-16T00_39_23.htm,2026-10-28
+2015-02-02,15.00,2015-01-30,подтверждено пресс-релизом cbr.ru,https://www.cbr.ru/press/pr/?file=30012015_133122dkp2015-01-30T13_15_49.htm,2026-10-28
+2015-03-16,14.00,2015-03-13,подтверждено заявлением председателя cbr.ru (дата заседания),https://www.cbr.ru/press/event/?id=5215,2026-10-28
+2015-05-05,12.50,2015-04-30,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2015-06-16,11.50,2015-06-11,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2015-08-03,11.00,2015-07-31,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2016-06-14,10.50,2016-06-10,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2016-09-19,10.00,2016-09-16,не подтверждено документацией,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2017-03-27,9.75,2017-03-24,по REESTR_dannyh.md,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2017-05-02,9.25,2017-04-28,по REESTR_dannyh.md,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2017-06-19,9.00,2017-06-16,по REESTR_dannyh.md,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2017-09-18,8.50,2017-09-15,по REESTR_dannyh.md,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2017-10-30,8.25,2017-10-27,по REESTR_dannyh.md,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
+2017-12-18,7.75,2017-12-15,по REESTR_dannyh.md,https://www.cbr.ru/hd_base/KeyRate/?UniDbQuery.Posted=True&UniDbQuery.From=13.09.2013&UniDbQuery.To=18.12.2017,2026-10-28
