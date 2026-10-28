@@ -1,4 +1,5 @@
 """П-1, лист Л-6: куб, Соболь, продолжение прохода 2, резюм, диск, kod_slit. Красные до кода (Ж-081: без skip/xfail).
+Ж-096 п. 3, 28.10: проход 2 сокращён до 10 000 точек (было 30 000).
 Допущение: драйвер имеет main(argv) и читает диск через shutil.disk_usage (задание Л-6, IG-6)."""
 import copy
 import subprocess
@@ -42,7 +43,7 @@ def _m():
 def test_kub_shapka_i_osi(k):
     c = kub(k)
     assert c["v"] == 2 and c["format"] == "progon-kub"
-    assert c["sobol"] == {"seed": 20261028 + k, "scramble": True, "prohod1": 5000, "prohod2": 30000}
+    assert c["sobol"] == {"seed": 20261028 + k, "scramble": True, "prohod1": 5000, "prohod2": 10000}
     assert c["komissiya"] == 0.0004 and c["fdr"] is None and c["period"] == "train4"
     o = osi(c)
     assert "sobytiya" not in o and "zaem" not in o

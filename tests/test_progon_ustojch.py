@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Л-10: LOYO, LOTO, бутстрап по кварталам, тикерная поправка — синтетика с известным ответом; мутации ловятся."""
+"""Л-10: LOYO, LOTO, бутстрап по кварталам, тикерная поправка — синтетика с известным ответом; мутации ловятся.
+
+Правка тестировщика (Ж-090, целевая = mSR за окно при mSR каждого года > 0): kub — сигнал 0,0032 вместо 0,02, база -0,0001 вместо -0,002,
+шум с общим фактором (mSR = nan при дневном m/σ > ~1,6); test_loyo...: flip (14, 15) -> (15,) (два квартала в минус делают год 2019
+отрицательным, и полный регион не допущен, а тест сверяет центры фолдов с полным). Утверждения те же."""
 import itertools
 import math
 
@@ -18,11 +22,12 @@ def kub(flip=(), seed=1):
     rows = [{"pt": {**p, **OSN}, "sdelok_y": {"2016": 40, "2017": 40}} for p in pts]
     rng = np.random.default_rng(seed)
     start = np.array(["2016-01-01"], "datetime64[M]")[0] + 3 * np.arange(16)
-    mu0 = np.array([0.02 * np.exp(-sum((p[a] - 2) ** 2 for a in AX) / 2) for p in pts])
+    mu0 = np.array([0.0032 * np.exp(-sum((p[a] - 2) ** 2 for a in AX) / 2) for p in pts])      # Ж-090: было 0,02 / -0,002 / независимый шум
     daty, cols = [], []
     for k in range(16):
         daty.append(start[k].astype("datetime64[D]") + np.arange(Q))
-        cols.append((-mu0 if k in flip else mu0)[None, :] - 0.002 + rng.normal(0, 0.005, (Q, len(pts))))
+        cols.append((-mu0 if k in flip else mu0)[None, :] - 0.0001
+                    + 0.005 * (0.8 * rng.normal(0, 1, (Q, 1)) + 0.6 * rng.normal(0, 1, (Q, len(pts)))))   # общий фактор: mSR ансамбля не nan
     return np.vstack(cols), rows, np.concatenate(daty)
 
 
@@ -35,7 +40,7 @@ def tik_ot(M, nt=4, nan_t0=True, seed=2):
 
 
 def test_loyo_chetyre_folda_i_mediana_goda():
-    M, rows, d = kub(flip=(14, 15))
+    M, rows, d = kub(flip=(15,))      # Ж-090: было (14, 15); при двух кварталах в минус год 2019 в целом отрицателен и полный регион не допущен
     out = U.loyo(M, rows, d)
     assert [r["god"] for r in out] == [2016, 2017, 2018, 2019]
     assert all(r["sovpal"] for r in out)

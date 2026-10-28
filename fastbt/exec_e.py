@@ -84,10 +84,12 @@ def _check_params(p: Params) -> None:
         raise ValueError("stop_tik требует tick")
     if (p.bar_plus or p.t_vyhod != "close") and (p.check != "bary" or p.vyhod_lim):
         raise ValueError("bar_plus и t_vyhod требуют check='bary' без vyhod_lim")
+    if p.vhod_open and (p.k is not None or p.check != "bary" or p.vyhod_lim):
+        raise ValueError("vhod_open — вход рынком (k = None), check='bary', без vyhod_lim")
 
 
 def _new_axes(p: Params, ed) -> bool:
-    return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik)
+    return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik) or p.vhod_open
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None) -> Result:

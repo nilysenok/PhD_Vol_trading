@@ -12,7 +12,7 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 
-from fastbt import rezhim_e1, tejk_signal
+from fastbt import rezhim_e1, tejk_signal, zaem_v2
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, is_anchor, params_of, years_of
 from fastbt.etap1_run import run_e1, sum_rows
@@ -40,7 +40,7 @@ def mediana_goda(sg: np.ndarray, dates) -> np.ndarray:
 
 class EvaluatorV2(Evaluator):
     _ctx = dict(nov=NOVYE, vozm={}, default=True)
-    _kray = False
+    _kray, STROGAYA = False, False                    # STROGAYA: якорь с новыми осями остаётся якорем (fastbt/a_strogaya.py)
 
     def _rows(self, pt, period, anchor):
         c = self._ctx
@@ -96,7 +96,7 @@ class EvaluatorV2(Evaluator):
             ext["gap_propusk"] = True
         tv = "open2" if nov["tejk_signal"] == tejk_signal.RODNOY and p.tau is not None else str(nov["t_vyhod"])   # rodnoy: t_vyhod = open2 для τ
         if tv != "close" and not (nov["tejk_signal"] == tejk_signal.RODNOY and p.tau is None):
-            ext["t_vyhod"] = tv
+            ext.update(t_vyhod=tv, vhod_open=pt["vhod"] == "rynok" and p.k is None)   # строгая строка: rynok = open 10:00 d+1 (Ж-086 п. 1)
         return replace(p, **ext) if ext else p
 
     def _rows2(self, pt, period, anchor, c):
@@ -138,7 +138,8 @@ class EvaluatorV2(Evaluator):
     def excess(self, pt, period):
         """Как Evaluator.excess, но filtr ≠ net снимает режим «якорь» (как sobytiya ≠ net в v1): ось действует всегда."""
         pt = self.full(pt)
-        rows = self._rows(pt, period, is_anchor(pt) and self._ctx["nov"] == NOVYE)           # любая новая ось ≠ умолчание снимает якорь
+        anc = is_anchor(pt) and (self._ctx["nov"] == NOVYE or self.STROGAYA)                                 # любая новая ось ≠ умолчание снимает якорь
+        self._zctx = (pt, anc, rows := self._rows(pt, period, anc))                         # для zaem_v2.ryad (Ж-089)
         eng, inv = self._engine(period)
         cat = lambda f: np.concatenate([f(r) for _, r, _, _ in rows])             # noqa: E731
         noch = cat(lambda r: r.noch) if self.fdr is not None else None
@@ -167,7 +168,7 @@ class EvaluatorV2(Evaluator):
             cat(lambda r: r.cnt), pd.DatetimeIndex(eng.dates[inv])
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
-        t0, self.diag = time.perf_counter(), None
+        t0, self.diag, self.zaem = time.perf_counter(), None, None
         nov, vz = {k: pt.get(k, v) for k, v in NOVYE.items()}, dict(vozm or {})
         self._ctx, self._kray, comm0 = dict(nov=nov, vozm=vz, default=nov == NOVYE and not vz), False, self.comm
         self.comm = float(vz.get("komissiya", comm0))
@@ -187,6 +188,7 @@ class EvaluatorV2(Evaluator):
                     "by_quarter": {f"{y}Q{q}": nan for y in yrs for q in range(1, 5)}, "sharpe": nan, "msr": nan,
                     "flagi": {"vyrozhdena": True}}, None, None
         x, tik, dts, zaem, cnt, rdates = self._series(period, comm)
+        self.zaem = zaem_v2.ryad(self, period)                                  # Ж-089: база платы за заём, рядом с ledger
         bq = kvartaly(dts.to_numpy(), x)
         med, dolya = tselevaya(bq)
         qr = (rdates.year * 10 + rdates.quarter).to_numpy()

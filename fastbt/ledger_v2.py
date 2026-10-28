@@ -29,6 +29,8 @@ def canon_v2(sid: str, pt: dict) -> dict:
         q.update(t_vyhod="open2")
     if q.get("vhod") == "rynok":
         q.update(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod")
+    if q.get("proverka") == "zakrytie" and str(q.get("t_vyhod", "close")) != "close":
+        q["proverka"] = "bars5m"                    # выход в 15:00/17:00/open2 существует только на барах (exec_e._check_params)
     if sid == "S5" and q.get("storona") == "short_shag1":
         q["storona"] = "obe"
     return q

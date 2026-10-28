@@ -38,18 +38,18 @@ def _proverit_pravilo(fn):
         assert fn({"t_vyhod": "close", "vhod": v}) is False          # close x справочная при любом входе
     for t in ("open2", "1500", "1700", 1500, "1700.0"):
         assert fn({"t_vyhod": t, "vhod": "0.5"}) is True             # open2, 15:00, 17:00 + лимитный вход — основные
-        assert fn({"t_vyhod": t, "vhod": "rynok"}) is False          # rynok по close d справочный (RYNOK_ISPOLNENIE = close_d)
+        assert fn({"t_vyhod": t, "vhod": "rynok"}) is True           # rynok по open d+1 основной (RYNOK_ISPOLNENIE = open_d1)
     assert fn({"pt": {"t_vyhod": "open2", "vhod": "1.0"}}) is True
 
 
 def test_pravilo_po_parametram():
     _proverit_pravilo(P.osnovnaya)
-    assert P.RYNOK_ISPOLNENIE == "close_d"
+    assert P.RYNOK_ISPOLNENIE == "open_d1"
 
 
-def test_rynok_open_d1_stanovitsya_osnovnym(monkeypatch):
-    monkeypatch.setattr(P, "RYNOK_ISPOLNENIE", "open_d1")        # подмена одной константой после прохода 1
-    assert P.osnovnaya({"t_vyhod": "open2", "vhod": "rynok"}) is True
+def test_rynok_close_d_ostayotsya_spravochnym(monkeypatch):
+    monkeypatch.setattr(P, "RYNOK_ISPOLNENIE", "close_d")        # подмена одной константой: rynok по close d — справочный
+    assert P.osnovnaya({"t_vyhod": "open2", "vhod": "rynok"}) is False
     assert P.osnovnaya({"t_vyhod": "close", "vhod": "rynok"}) is False
 
 
@@ -72,7 +72,7 @@ def _mut_1500(k):
 
 
 def _mut_rynok(k):
-    return P._tok(P._pt(k)["t_vyhod"]) != "close"
+    return False if str(P._pt(k)["vhod"]) == "rynok" else P.osnovnaya(k)     # rynok снова справочный (исполнение по close d)
 
 
 def _po_ishodam(k):
@@ -100,7 +100,7 @@ def test_yakor_ne_osnovnoj_a_sobol_osnovnye():
 
 # --- матрица: 125 точек × варианты (t_vyhod, vhod, istochnik); основные — первые два, остальные справочные или якорь
 VAR = [("open2", "0.5", "sobol1", 0.02), ("1700", "0.5", "sobol1", 0.02),     # основные, пик в центре
-       ("close", "0.5", "sobol1", 0.03), ("open2", "rynok", "sobol1", 0.03),  # справочные: среднее выше любого основного
+       ("close", "0.5", "sobol1", 0.03), ("close", "rynok", "sobol1", 0.03),  # справочные: среднее выше любого основного
        ("open2", "0.25", P.ISTOCHNIKI_YAKORYA[0], 0.04)]                      # якорь: среднее ещё выше
 
 
@@ -222,7 +222,7 @@ def _row(idx, sid, t_vyhod, vhod="0.5"):
             "by_quarter_zaem": {"5": kv, "10": kv}, "flagi": {"vyrozhdena": False, "kray": [], "short_shag1_kray": False}, "t_sek": 0.1}
 
 
-OZhID = {("close", "0.5"): "0", ("open2", "0.5"): "1", ("1500", "0.5"): "1", ("1700", "0.5"): "1", ("open2", "rynok"): "0"}
+OZhID = {("close", "0.5"): "0", ("open2", "0.5"): "1", ("1500", "0.5"): "1", ("1700", "0.5"): "1", ("close", "rynok"): "0", ("open2", "rynok"): "1"}
 
 
 @pytest.fixture
@@ -261,13 +261,13 @@ def test_chitatel_matrica_i_N_tolko_osnovnye(ledger):
     root, _ = ledger
     ch = L.Chitatel(root, "S5")
     rs = P.rows_osnovnye(ch)
-    assert len(rs) == 3 and ch.matrica(rs).shape == (T, 3)
-    assert sorted(float(c) for c in ch.matrica(rs)[0]) == [1.0, 2.0, 3.0]
-    assert P.chisla_N(ch.rows()) == {"N_osnovnye": 3, "N_spravochnye": 2}
+    assert len(rs) == 4 and ch.matrica(rs).shape == (T, 4)
+    assert sorted(float(c) for c in ch.matrica(rs)[0]) == [1.0, 2.0, 3.0, 5.0]
+    assert P.chisla_N(ch.rows()) == {"N_osnovnye": 4, "N_spravochnye": 2}
 
 
 def test_mut_chisla_N_po_vsem_strokam(ledger, monkeypatch):
     ch = L.Chitatel(ledger[0], "S5")
     monkeypatch.setattr(P, "maska", lambda rows: np.ones(len(rows), bool))
     with pytest.raises(AssertionError):
-        assert P.chisla_N(ch.rows()) == {"N_osnovnye": 3, "N_spravochnye": 2}
+        assert P.chisla_N(ch.rows()) == {"N_osnovnye": 4, "N_spravochnye": 2}

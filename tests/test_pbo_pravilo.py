@@ -107,6 +107,19 @@ def test_pravilo_etapa_stroit_stolbcy_kak_matrix():
     assert pr["select_fn"].keywords["dop"].tolist() == [True, True, False]
 
 
+def test_oos_ranzhirovanie_po_celevoy_mSR_a_ne_po_min_msr():
+    """Ж-090: ранг на out-of-sample — целевая «mSR за период, годы > 0»; неустойчивая точка = -inf. Мутация «ранг по прежней
+    min mSR» даёт конечное число там, где эталон -inf."""
+    rng = np.random.default_rng(2)
+    a, b = rng.normal(0.003, 0.01, 120), rng.normal(0.003, 0.01, 120)
+    M = np.array([np.concatenate([a, b]), np.concatenate([a, -np.abs(b) * 0.2 - 0.001])])    # точка 1: 2019 заведомо ≤ 0
+    ref = np.array([msr_celevaya_ref(r, DATES) for r in M])
+    assert np.isfinite(ref[0]) and np.isnan(ref[1])
+    got = B.msr_oos(M, DATES)
+    assert got[0] == ref[0] and got[1] == -np.inf
+    assert np.isfinite(B.min_msr(M, DATES)[1])                                                  # прежняя целевая различима
+
+
 def test_argmax_ravno_staromu_pbo_cscv():
     M = np.random.default_rng(7).normal(0, 0.01, (40, 240))
     assert B.pbo_cscv_pravilo(M, [None] * 40, B.vybor_argmax) == sd.pbo_cscv(M.T.tolist(), 8)["pbo"]
@@ -118,7 +131,26 @@ def test_argmax_na_realnoy_matritse_ravno_prezhnemu(sid, it):
     if led is None:
         pytest.skip("ledger (вне git) не найден: S.nayti_ledger() ищет docs/tables/zh051/_ledger в копии и предках")
     r = S.schitat(sid, it, led)
-    assert r["argmax_sovpal"] and r["razbienij"] == 70 and r["propusk_centr"] == 0
+    assert r["argmax_sovpal"] and r["razbienij"] + r["propusk_centr"] == 70
+    assert r["razbienij"] > 0 and r["propusk_centr"] >= bez_kandidatov_nezavisimo(sid, it, led)
+
+
+def msr_celevaya_ref(x, dates):
+    """Эталон целевой Ж-090 прямой формулой metriki_e.msr, без tselevaya/pbo_pravilo: mSR всех дней; nan, если mSR года не > 0."""
+    g = B._goda(dates)
+    por = [ME.msr(x[g == y]) for y in np.unique(g) if (g == y).sum() >= B.MIN_DNEY]
+    return ME.msr(x) if por and all(p > 0 for p in por) else float("nan")
+
+
+def bez_kandidatov_nezavisimo(sid, it, led):
+    """Разбиения, где среди допустимых точек нет ни одной с конечной целевой (по эталону): центр плато там None заведомо."""
+    from fastbt import etap1_poisk_vorota as V
+    from fastbt import zh051_kriteriy as K
+    St = P.load_setka(sid)
+    plan, base = S.plan_base(sid, St)
+    pr = B.pravilo_etapa(K.load_ledger(sid, f"ledger_it{it}.pkl", None, led), St["axes"], plan, base, St["yakor"])
+    M, ok = V.matrix(K.load_ledger(sid, f"ledger_it{it}.pkl", None, led)).T, np.flatnonzero(pr["select_fn"].keywords["dop"])
+    return sum(not any(np.isfinite(msr_celevaya_ref(M[j, tr], pr["dates"][tr])) for j in ok) for tr, _ in B.razbieniya(M.shape[1], 8))
 
 
 def test_pustaya_i_korotkaya_lenta_nan():
@@ -158,12 +190,14 @@ def test_konstanty_ravny_etapu():
 
 
 def test_centr_na_polnom_periode_ravno_pick_by_plateau():
-    """Двумерная сетка 5×4, случайные ряды, «половина» = весь период: тот же центр, что sd.pick_by_plateau по целевой min mSR."""
+    """Двумерная сетка 5×4, случайные ряды, «половина» = весь период: тот же центр, что sd.pick_by_plateau по целевой Ж-090
+    (mSR за период при mSR каждого года > 0), посчитанной независимо прямой формулой metriki_e.msr."""
     rng = np.random.default_rng(11)
     ax = {"a": list(range(5)), "b": list(range(4))}
     pts = [{"a": a, "b": b} for a in ax["a"] for b in ax["b"]]
-    M = rng.normal(0.0008, 0.01, (20, 240)) + rng.normal(0, 0.0006, (20, 1))
-    obj = B.min_msr(M, DATES)
+    M = rng.normal(0.0015, 0.01, (20, 240)) + rng.normal(0, 0.0006, (20, 1))
+    obj = np.array([msr_celevaya_ref(r, DATES) for r in M])
+    assert 8 <= np.isfinite(obj).sum() < 20 and np.allclose(obj, B.msr_celevaya(M, DATES), equal_nan=True)   # смесь устойчивых и нет
     fact = dict(rows=[{**p, "objective": float(o)} for p, o in zip(pts, obj)], keys=["a", "b"], grid=ax)
     top = next(r for r in sd.pick_by_plateau(fact, k=20, radius=1, min_neighbors=3) if not r["edge"] and math.isfinite(r["objective"]))
     kub = B.postroit_kub(pts, ax, ["a", "b"], {})
