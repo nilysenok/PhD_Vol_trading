@@ -1,6 +1,7 @@
 """Реестр отбора A на В1: годы-колонки, полнота записи, старый реестр нетронут. Мутации — в самих тестах."""
 import csv
 import hashlib
+import pickle
 import re
 from pathlib import Path
 
@@ -81,6 +82,66 @@ def test_shapka_drugogo_perioda_otkaz(tmp_path):
     R.dopisat(partiya(1, "train"), "train", 1, p)
     with pytest.raises(ValueError, match="шапка"):
         R.dopisat(partiya(1), "train4", 1, p)
+
+
+def sintet_ledger(tmp_path, n=6, sk="S1", it=3):
+    """Синтетический ledger В1: {(pkey, 'train4'): (params, res)} + SHA256SUMS.txt."""
+    cache = {((("z_entry", i),), "train4"): ({"z_entry": i}, {
+        "by_year": {y: 0.1 * i + (y - 2016) for y in (2016, 2017, 2018, 2019)},
+        "sdelok_y": {y: 10 + i for y in (2016, 2017, 2018, 2019)}, "vyrozhdena": i == 0}) for i in range(n)}
+    p = tmp_path / sk / f"ledger_it{it}.pkl"
+    p.parent.mkdir(parents=True)
+    p.write_bytes(pickle.dumps(cache, protocol=4))
+    (tmp_path / "SHA256SUMS.txt").write_text(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {sk}/ledger_it{it}.pkl  N={n}\n")
+    return cache
+
+
+def test_iz_ledger_chislo_strok_ravno_ledger(tmp_path):
+    sintet_ledger(tmp_path, 6)
+    out = tmp_path / "r.csv"
+    assert R.iz_ledger("train4", 3, "S1", tmp_path, out) == 6
+    rows = R.chitat(str(out))
+    assert len(rows) == 6 and rows[2]["sharpe_2016"] == repr(0.2) and rows[0]["vyrozhdena"] == "1"
+    assert rows[1]["sharpe_train4"] == repr(0.1) and rows[1]["sdelok_2019"] == "11.0"
+
+
+def test_iz_ledger_povtor_ne_dublirit(tmp_path):
+    sintet_ledger(tmp_path)
+    out = tmp_path / "r.csv"
+    R.iz_ledger("train4", 3, "S1", tmp_path, out)
+    pered = out.read_bytes()
+    assert R.iz_ledger("train4", 3, "S1", tmp_path, out) == 0 and out.read_bytes() == pered
+
+
+def test_povtor_it3_it4_ne_zadvaivaet_kandidatov(tmp_path):
+    sintet_ledger(tmp_path, 6, it=3)
+    sintet_ledger_kopiya = tmp_path / "S1" / "ledger_it4.pkl"
+    sintet_ledger_kopiya.write_bytes((tmp_path / "S1" / "ledger_it3.pkl").read_bytes())
+    with open(tmp_path / "SHA256SUMS.txt", "a") as f:
+        f.write(f"{hashlib.sha256(sintet_ledger_kopiya.read_bytes()).hexdigest()}  S1/ledger_it4.pkl  N=6\n")
+    out = tmp_path / "r.csv"
+    assert R.iz_ledger("train4", 3, "S1", tmp_path, out) == 6
+    assert R.iz_ledger("train4", 4, "S1", tmp_path, out) == 6   # повтор записан под другим источником
+    rows = R.chitat(str(out))
+    assert {r["istochnik"] for r in rows} == {"zh051_v1_it3", "zh051_v1_it4"} and len(rows) == 12
+    assert R.chislo_konfiguracij(rows) == 6                      # мутация len(rows) дала бы 12
+
+
+def test_mutaciya_propusk_stroki_ledger_lovitsya(tmp_path, monkeypatch):
+    sintet_ledger(tmp_path)
+    orig = R.dopisat
+    # мутация: последняя строка ledger теряется при переносе — ловится числом строк
+    monkeypatch.setattr(R, "dopisat", lambda rows, p, n, path: orig(rows[:-1], p, n, path))
+    with pytest.raises(ValueError, match="пропущен"):
+        R.iz_ledger("train4", 3, "S1", tmp_path, tmp_path / "r.csv")
+    assert not (tmp_path / "r.csv").exists()
+
+
+def test_iz_ledger_sha_ne_sovpal_otkaz(tmp_path):
+    sintet_ledger(tmp_path)
+    (tmp_path / "S1" / "ledger_it3.pkl").write_bytes(b"x")
+    with pytest.raises(ValueError, match="sha256"):
+        R.iz_ledger("train4", 3, "S1", tmp_path, tmp_path / "r.csv")
 
 
 def test_staryj_reestr_sha256_v_manifeste():

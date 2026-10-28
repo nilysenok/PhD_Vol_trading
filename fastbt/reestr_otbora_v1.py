@@ -4,7 +4,13 @@
 `train4` — 2016…2019 и итог train4 (новый `reestr_otbora_A_v1.csv`). Все кандидаты и все метрики — строка на
 оценённую конфигурацию; пропуск кандидата — ошибка. Данные >= 2020 не читаются."""
 import csv
+import hashlib
+import math
 import os
+import pickle
+from pathlib import Path
+
+LED_V1 = "docs/tables/zh051/_ledger_v1"
 
 PERIODY = {"train": (2018, 2019), "train4": (2016, 2017, 2018, 2019)}
 VYHOD = {"train": "docs/otbor/reestr_otbora_A.csv", "train4": "docs/otbor/reestr_otbora_A_v1.csv"}
@@ -62,3 +68,49 @@ def dopisat(rows, period, n_ocenennyh, path=None):
             w.writeheader()
         w.writerows(novye)
     return len(novye)
+
+
+def _chitat_ledger(root, sk, it):
+    """Pickle ledger_it{it}.pkl со сверкой sha256 по SHA256SUMS.txt (нет строки или хэш иной — отказ)."""
+    p, key = Path(root) / sk / f"ledger_it{it}.pkl", f"{sk}/ledger_it{it}.pkl"
+    sums = Path(root) / "SHA256SUMS.txt"
+    strok = [ln.split() for ln in sums.read_text(encoding="utf-8").splitlines()] if sums.exists() else []
+    h = next((s[0] for s in strok if len(s) > 1 and s[1] == key), None)
+    if h is None or not p.exists():
+        raise ValueError(f"{key}: нет файла или строки в SHA256SUMS")
+    if hashlib.sha256(p.read_bytes()).hexdigest() != h:
+        raise ValueError(f"{key}: sha256 не совпал")
+    return pickle.loads(p.read_bytes())
+
+
+def _stroka_ledger(sk, it, key, params, res, period):
+    """Строка реестра из записи ledger: Шарп и сделки по годам периода; итог — min по годам (нет года -> пусто)."""
+    by, sd = res.get("by_year") or {}, res.get("sdelok_y") or {}
+    r = {c: "" for c in kolonki(period)}
+    sh = []
+    for y in PERIODY[period]:
+        v, n = by.get(y, by.get(str(y))), sd.get(y, sd.get(str(y)))
+        r[f"sharpe_{y}"] = "" if v is None else repr(float(v))
+        r[f"sdelok_{y}"] = "" if n is None else repr(float(n))
+        sh.append(v)
+    ok = all(v is not None and math.isfinite(float(v)) for v in sh)
+    r["sharpe_" + period] = repr(min(float(v) for v in sh)) if ok else ""
+    if res.get("vyrozhdena") is not None:
+        r["vyrozhdena"] = str(int(bool(res["vyrozhdena"])))
+    kl = ";".join(f"{a}={b}" for a, b in sorted(params.items())) + f";period={key[1]}"
+    r.update(strategiya=sk, klyuch=kl, rezhim="ledger", istochnik=f"zh051_v1_it{it}", status="ledger",
+             prichina="строка ledger В1; ворота и плато в ledger не хранятся")
+    return r
+
+
+def chislo_konfiguracij(rows):
+    """Число различных конфигураций (стратегия, ключ); повтор под другой итерацией не новый кандидат."""
+    return len({(r["strategiya"], r["klyuch"]) for r in rows})
+
+
+def iz_ledger(period, iteraciya, sk, root=LED_V1, path=None):
+    """Дописывает ВСЕ записи ledger_it{iteraciya}.pkl стратегии sk; ключ — (итерация, sk, конфигурация);
+    повтор ничего не добавляет. Возвращает число добавленных."""
+    cache = _chitat_ledger(root, sk, iteraciya)
+    rows = [_stroka_ledger(sk, iteraciya, k, par, res, period) for k, (par, res) in cache.items()]
+    return dopisat(rows, period, len(cache), path)
