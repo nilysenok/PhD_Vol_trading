@@ -1,0 +1,40 @@
+# Куб прогона этапа 1, S5 (docs/otchety/2026-10-28_progon_etap1.md §1.1, Ж-082). Коммитится до счёта (otbor_statistika п. 1).
+# Порядок осей = порядок обхода (signal, obshchie, novye) = размерности Соболя; порядок значений = соседство.
+# Плата за заём (zaem) — колонки строки, не ось (↺ §0). sobytiya заменена осью filtr.
+# У S5 нет пороговой оси: storona = short_shag1 схлопывается canon_v2 в obe.
+v: 2
+format: progon-kub
+sid: S5
+period: train4
+komissiya: 0.0004
+fdr: null
+sobol: {seed: 20261033, scramble: true, prohod1: 5000, prohod2: 30000}
+
+signal:
+  pivot_period: {ishodnoe: weekly, setka: [weekly, monthly]}
+  pivot_type:   {ishodnoe: classic, setka: [classic, fibonacci]}
+  filter_set:   {ishodnoe: 3, setka: [1, 2, 3, 4]}
+
+obshchie:
+  q_sily:    {setka: [0.0, 0.5, 0.7, 0.8, 0.9], yakor: 0.0}
+  sigma:     {setka: [rv5, ewma094, rv22, rv66], yakor: rv22}
+  vhod:      {setka: [rynok, 0.25, 0.5, 0.75, 1.0], yakor: rynok}
+  k_s:       {setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, net], yakor: net}
+  R:         {setka: [1.0, 1.5, 2.0, 3.0, 4.0, net], yakor: net}
+  k_tr:      {setka: [1.5, 2.0, 3.0, net], yakor: net}
+  bezubytok: {setka: [net, plus1sigma], yakor: net}
+  tau:       {setka: [1, 2, 3, 5, 10, 20, net], yakor: net}
+  proverka:  {setka: [zakrytie, bars5m], yakor: zakrytie}
+  razmer:    {setka: [15, 20, 25, ravnyy], yakor: ravnyy}
+  rezhim:    {setka: [net, imoex_ma200, rang_sigma_rynka_08], yakor: net}
+
+novye:
+  ed_lim:   {setka: [sigma, atr14, diap, pct], yakor: sigma}
+  zhizn:    {setka: [den, 12, 36, 60], yakor: den}
+  lestnica: {setka: [net, 0.5, 1.0], yakor: net}
+  gap:      {setka: [vhod, propusk], yakor: vhod}
+  t_vyhod:  {setka: [close, 1500, 1700, open2], yakor: close}
+  k_x:      {setka: [0.5, 1.0, 1.5, net], yakor: net}
+  storona:  {setka: [obe, long, short_shag1], yakor: obe}
+  filtr:    {setka: [net, cbr, div, post_shok, szhatie, rv_perevorot, obyom, rel_sila_imoex, sektor_trend], yakor: net}
+  tejk_signal: {setka: [net, k_srednemu, pol_puti], yakor: net}    # Ж-084: тейк от уровня сигнала M; последняя ось — прежние размерности Соболя целы

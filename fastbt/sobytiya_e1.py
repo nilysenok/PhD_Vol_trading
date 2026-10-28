@@ -21,8 +21,9 @@ DIV_CSV = Path("docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv")
 
 def _dates(dates) -> pd.DatetimeIndex:
     d = pd.DatetimeIndex(dates)
-    if len(d) and d.max() >= END:
-        raise PermissionError("события: даты ≥ 2022")
+    from fastbt import zona
+    if len(d) and d.max() >= zona.end():
+        raise PermissionError(f"события: даты ≥ {zona.end().date()}")
     return d
 
 
@@ -55,7 +56,8 @@ def div_block(dates, div: pd.DataFrame, ticker: str) -> np.ndarray:
 
 def load_cbr(path=CBR_CSV) -> pd.DataFrame:
     c = pd.read_csv(path, parse_dates=["date", "known_from"])
-    return c[c["date"] < END]
+    from fastbt import zona
+    return c[c["date"] < zona.end()]
 
 
 def load_div(path=DIV_CSV) -> pd.DataFrame:

@@ -24,8 +24,9 @@ from pathlib import Path
 
 import numpy as np
 
-from fastbt import exec_e, fast_exec as fx
+from fastbt import exec_e, fast_exec as fx, fdr as fdr_mod
 from fastbt.exec_e_types import Params, Result, Trade
+from fastbt.exec_e_v6 import v6_on
 
 _SLOW_RUN = exec_e.run                      # эталон; запасной путь для входов, которые ядро не берёт (NaN в sig)
 TAIL = 512                                 # запас баров под последний день вызова (у оценщика — одна свеча close)
@@ -94,15 +95,15 @@ def _trades(ticker, ti, tf, comm) -> list:
 def _slow_only(p: Params, ed) -> bool:
     """Оси прогона Л-2 (Run2: ed, zhizn, gap_propusk, t_vyhod, bar_plus, stop_tik) ядро не повторяет — эталон."""
     f = getattr(exec_e, "_new_axes", None)
-    return ed is not None or p.tejk != "net" or p.vhod_tip != "podtverzhdenie" or p.atr_m is not None or p.chast_1r or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
+    return ed is not None or p.tejk != "net" or p.vhod_tip != "podtverzhdenie" or p.atr_m is not None or p.chast_1r or v6_on(p) or p.T != 1 or p.reentry_den or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
 
 
-def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None, urovni=None) -> Result:
+def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None, urovni=None, rang=None) -> Result:
     """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси Run2, tejk, stop_zayavka — медленным путём."""
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.asarray(sigma, float)
     if _slow_only(p, ed) or not len(days) or not np.isfinite(sig.astype(float)).all():
-        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni)) if v is not None}
+        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni), ("rang", rang)) if v is not None}
         return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
         raise ValueError("days, sig, sigma, close разной длины")
@@ -252,7 +253,7 @@ def pokryto(pt: dict) -> bool:
     `filtr` — только net | cbr (прежние `sobytiya`), заём — только 0. Остальное драйвер считает медленным путём."""
     from fastbt.etap1_eval import NET
     umolch = dict(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod", t_vyhod="close", k_x=NET, storona="obe",
-                  tejk_signal=NET)                  # Ж-084: tejk_signal ≠ net — медленный путь (эталон)
+                  tejk_signal=NET, rho=NET, m_tip="1", rang_tip="tikernyj")   # Ж-084: tejk_signal ≠ net; V6-c: rho ≠ net — медленный путь (эталон)
     return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and pt.get("filtr", NET) in (NET, "cbr")
             and pt.get("sobytiya", NET) in (NET, "cbr") and pt.get("vyhod", NET) in (NET, "lim")
             and pt.get("zaem", 0) in (0, "0", "0.0", NET, None))
@@ -267,10 +268,11 @@ def ryady(evr, pt: dict, period: str) -> tuple:
         df, inv, eng, _, rs = evr.excess(pt, period)
     keep = np.isin(eng.dates.year, years_of(period))
     tik = np.full((len(rs), len(eng.dates)), np.nan)
+    anc = getattr(evr, "_zctx", (None, False))[1]
     a = 0
     for ti, r in enumerate(rs):
         d = inv[a:a + len(r.g)]
-        u = r.expo if r.noch is None else r.noch
+        u = r.expo if r.noch is None else fdr_mod.zanyatost(r.noch, r.expo, eng.cal[d], "t0" if anc else evr.fdr)   # t0d: ночь + день по барам; якорь — noch
         tik[ti, d] = r.g - r.sides * evr.comm - u * eng.rf[d] * eng.cal[d]
         a += len(r.g)
     return df["excess"].to_numpy()[keep], tik[:, keep].astype(np.float32), eng.dates[keep].to_numpy()

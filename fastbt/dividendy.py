@@ -31,7 +31,9 @@ DIV_NALOG = 0.87         # доля дивиденда, попадающая в 
 
 
 def _tables() -> list[Path]:
-    return [Path(TABLE), Path(TABLE_2015)]
+    from fastbt import zona                              # noqa: PLC0415
+    z2 = [] if zona.name() == "dev" else [zona.path("div")]          # зона Z2: + таблица 2022–2024 (FASTBT_Z2_DIV)
+    return [Path(TABLE), Path(TABLE_2015), *z2]
 
 
 def digest() -> str:
@@ -45,9 +47,15 @@ def digest() -> str:
 @lru_cache(maxsize=1)
 def _calendar() -> np.ndarray:
     """Торговые дни: объединение дат дневных баров 17 тикеров (ряд 18:50, 2014-06…2021-12)."""
+    from fastbt import zona                                                       # noqa: PLC0415
     from fastbt.daily_1850 import out_path                                        # noqa: PLC0415
-    d = pd.read_parquet(out_path(), columns=["date"])
+    d = pd.read_parquet(zona.path("daily", out_path()), columns=["date"])
     return np.sort(pd.to_datetime(d["date"]).dt.normalize().unique().astype("datetime64[ns]"))
+
+
+from fastbt import zona as _zona                                                  # noqa: E402
+
+_zona.on_change(_calendar.cache_clear)
 
 
 def last_cum(record: pd.Series) -> pd.Series:

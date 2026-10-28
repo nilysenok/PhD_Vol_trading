@@ -16,7 +16,7 @@ from fastbt.tselevaya import tselevaya_train4  # noqa: F401  (Ж-090: основ
 
 TIE, WIN, NBLK, PBO_MAX, MIN_SDELOK, PLATO_NET = 0.05, 126, 8, 0.2, 30, 0.1
 OSI, NET = ("k_s", "R", "tau"), "net"
-PERIOD_YEARS = {"train": (2018, 2019), "ctrl2019": (2019,), "tune2018": (2018,), "train4": (2016, 2017, 2018, 2019)}
+PERIOD_YEARS = {"train": (2018, 2019), "ctrl2019": (2019,), "tune2018": (2018,), "train4": (2016, 2017, 2018, 2019), "test1": (2022, 2023, 2024)}
 OUTER = {"k_s": (0.75, 0.5), "R": (0.75, 0.5)}      # Ж-049: шаг наружу от края сетки; у τ = 1 день его нет
 
 

@@ -1,0 +1,71 @@
+"""Сужение test_locked/ до 2025+ (Ж-112 п. 1), процедура Ш1–Ш4:
+docs/otchety/2026-10-28_test_locked_suzhenie.md (ветка origin/arh-msp-fazy).
+
+Режимы: --manifest-do (Ш1), --plan (Ш2), --rezat (Ш3), --manifest-posle (Ш4).
+По умолчанию dry-run, без записи; запись — только с --primenit. Значения столбцов не читаются
+и не печатаются. Пути — параметрами, относительно --koren.
+"""
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import suzhenie_obshee as ob  # noqa: E402
+import suzhenie_rezka as rz  # noqa: E402
+
+
+def manifest_do(koren, vkhod, dirs, out, primenit):
+    rows = [ob.meta(Path(koren) / r, r) for r in ob.find_files(koren, vkhod, skip=dirs)]
+    for r in rows:
+        ob.vyvod(**{k: r[k] for k in ("path", "size", "nrows", "dmin", "dmax")})
+    if primenit:
+        ob.pishi_tsv(Path(koren) / out, rows)
+    return rows
+
+
+def plan(koren, vkhod, dirs):
+    for rel in ob.find_files(koren, vkhod, skip=dirs):
+        m = ob.meta(Path(koren) / rel, rel)
+        dates = ob.dates_of(Path(koren) / rel, m["date_col"]) if m["date_col"] and m["nrows"] else []
+        klass, cut, h = ob.classify(rel, m, dates)
+        ob.vyvod(path=rel, klass=klass, h=h, cut=cut)
+
+
+def razbor(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    g = ap.add_mutually_exclusive_group(required=True)
+    for f in ("manifest-do", "plan", "rezat", "manifest-posle"):
+        g.add_argument(f"--{f}", action="store_true")
+    ap.add_argument("--koren", required=True, help="корень, от него считаются все пути")
+    ap.add_argument("--vkhod", nargs="+", required=True, help="файлы/каталоги относительно --koren")
+    ap.add_argument("--z2-dir", default="data/regen/test1_2022_2024")
+    ap.add_argument("--z3-dir", default="data/regen/test_locked/holdout_2025")
+    ap.add_argument("--ishodnye-dir", default="data/regen/test_locked/_ishodnye")
+    ap.add_argument("--out", help="манифест на выходе (относительно --koren)")
+    ap.add_argument("--do-tsv", help="манифест «до» (для --manifest-posle)")
+    ap.add_argument("--primenit", action="store_true", help="писать на диск (иначе dry-run)")
+    ap.add_argument("--dry-run", action="store_true", help="по умолчанию; без записи")
+    return ap.parse_args(argv)
+
+
+def main(argv=None):
+    a = razbor(argv)
+    if a.primenit and a.dry_run:
+        raise SystemExit("--primenit и --dry-run несовместимы")
+    dirs = (a.z2_dir, a.z3_dir, a.ishodnye_dir)
+    if a.manifest_do:
+        manifest_do(a.koren, a.vkhod, dirs, a.out or "docs/resheniya/manifest_test_locked_do.tsv", a.primenit)
+    elif a.plan:
+        plan(a.koren, a.vkhod, dirs)
+    elif a.rezat:
+        rz.rezat(a.koren, a.vkhod, dirs, a.primenit)
+    else:
+        if not a.do_tsv:
+            raise SystemExit("--manifest-posle требует --do-tsv")
+        out = a.out or "docs/resheniya/manifest_test_locked_posle.tsv"
+        return 1 if rz.posle(a.koren, a.vkhod, dirs, a.do_tsv, out, a.primenit) else 0
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

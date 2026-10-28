@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import sys
+from contextlib import contextmanager
 from dataclasses import replace
 from multiprocessing import Pool
 from pathlib import Path
@@ -52,7 +53,16 @@ def run_e1_zapis(t, days, sig, sg, p, **kw):
 
 
 _run_e1 = E.run_e1
-E.run_e1 = run_e1_zapis
+
+
+@contextmanager
+def zapis_sdelok():
+    """Подмена E.run_e1 на run_e1_zapis только на время расчёта; на выходе — исходная функция (импорт модуля движок не трогает)."""
+    E.run_e1 = run_e1_zapis
+    try:
+        yield
+    finally:
+        E.run_e1 = _run_e1
 
 
 def klass(cls):
@@ -74,17 +84,18 @@ def klass(cls):
 def schitat(sid: str) -> dict:
     """Все варианты для одного Sk: {портфель: {вариант: ряд schitat + сделки}}."""
     inp, base, out = etap1.build_inputs(sid, period=AS.PER), etap1.base_point(sid), {"yakor": {}, "strogaya": {}}
-    for imya, cls, strogo in (("yakor", EvaluatorV2, False), ("strogaya", AS.AStrogaya, True)):
-        for v, kw in VARIANTY.items():
-            i2 = replace(inp, div={t: np.zeros_like(np.asarray(d, float)) for t, d in inp.div.items()}) if kw.get("div0") else inp
-            ev = klass(cls)(sid, i2, base, kw.get("comm", AS.COMM))
-            ev.storona, ev.sdelki = kw.get("storona", 0), {}
-            TEK["ev"] = ev
-            r = AS.schitat(ev, strogo)
-            r["sdelki"] = ev.sdelki
-            r["tikery"] = list(ev.sk.tickers)
-            out[imya][v] = r
-        print(sid, imya, "готово", flush=True)
+    with zapis_sdelok():
+        for imya, cls, strogo in (("yakor", EvaluatorV2, False), ("strogaya", AS.AStrogaya, True)):
+            for v, kw in VARIANTY.items():
+                i2 = replace(inp, div={t: np.zeros_like(np.asarray(d, float)) for t, d in inp.div.items()}) if kw.get("div0") else inp
+                ev = klass(cls)(sid, i2, base, kw.get("comm", AS.COMM))
+                ev.storona, ev.sdelki = kw.get("storona", 0), {}
+                TEK["ev"] = ev
+                r = AS.schitat(ev, strogo)
+                r["sdelki"] = ev.sdelki
+                r["tikery"] = list(ev.sk.tickers)
+                out[imya][v] = r
+            print(sid, imya, "готово", flush=True)
     return out
 
 
