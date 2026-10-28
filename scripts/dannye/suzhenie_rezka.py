@@ -38,9 +38,7 @@ def razrezat(src, col, cut):
 
 
 def put_z2(parent):
-    """Z2 открыт для чтения: в пути не должно быть сегмента test_locked.
-    data/regen/test_locked/final3 -> regen/final3; data/models_cache/test_locked/boost -> models_cache/boost.
-    Корни различаются сегментами до test_locked, поэтому коллизий нет; пути без test_locked не меняются."""
+    """Z2 открыт: из пути убран сегмент test_locked (data/regen/test_locked/x -> regen/x); пути без него не меняются."""
     parts = parent.parts
     if "test_locked" not in parts:
         return parent
@@ -105,7 +103,10 @@ def proverka_chastey(parts, col, h, cal=None):
 def rezat_file(koren, rel, m, dirs, primenit, itog):
     """Возвращает True при нарушении (status=FAIL); itog — счётчики классов для ITOG."""
     z2, z3, ish = dirs
-    src = Path(koren) / rel
+    src, dst = Path(koren) / rel, Path(koren) / ish / rel
+    if dst.exists():  # исходник уже перенесён: возобновление, без перезаписи
+        import suzhenie_vozobn as vz  # отложенный импорт: vz сам импортирует этот модуль
+        return vz.proverit(koren, rel, dirs, itog)
     dates = ob.dates_of(src, m["date_col"])
     klass, cut, h = ob.classify(rel, m, dates)
     itog[klass] += 1
@@ -125,7 +126,6 @@ def rezat_file(koren, rel, m, dirs, primenit, itog):
         return True
     cnt.update(min_h25=mn, n_h25_2024=n24)
     p1, p3 = chasti_puti(rel, Path(koren) / z2, Path(koren) / z3)
-    dst = Path(koren) / ish / rel
     if not primenit:
         ob.vyvod(**base, **cnt, status="dry-run")
         return
