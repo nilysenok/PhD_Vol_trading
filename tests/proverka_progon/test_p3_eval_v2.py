@@ -1,6 +1,9 @@
 """П-3 (проверяющий), лист Л-5: `EvaluatorV2` по контракту etap1 §1.1–1.4, §3 (IG-1…IG-4) и заданию Л-5. Пишется до кода.
 Свой IG-2: 20 случайных точек на стратегию, seed 7 (кодер — 20261028), сравнение sha256 `excess_d` и полей v1.0;
 значения метрик не печатаются (только булевы сравнения; запускать с --tb=no). Нужны данные <= 2019 (FASTBT_MAIN, FASTBT_BARS1M).
+Правка IG-теста (28.10, П-3б): первая версия требовала равенства ключей v2 (ключи-годы int против str, tselevaya/comm_pct/
+vyrozhdena переехали в mediana_kv/komissiya/flagi) — сверяются excess_d и значения полей v1.0, ключи v2 не сверяются.
+A в `Evaluator` отсутствует (только S1–S6; якорь — режим точки, не стратегия A): 3 точки A не набираются, отступление.
 Без данных тест красный, не пропущен. python3 -m pytest tests/proverka_progon/test_p3_eval_v2.py -q --tb=no"""
 import hashlib
 import math
@@ -56,6 +59,14 @@ def eq(a, b):
     return a == b
 
 
+PEREIMEN = ("v", "excess_d", "tselevaya", "comm_pct", "vyrozhdena")   # v2: версия, ряд отдельно, mediana_kv/dolya, komissiya, flagi
+
+
+def norm(x):
+    """Ключи-годы v1.0 (int) в v2 — строки: сверяются значения, а не тип ключа."""
+    return {str(k): norm(v) for k, v in x.items()} if isinstance(x, dict) else x
+
+
 def flat(v1):
     return np.concatenate([np.asarray(v1["excess_d"][y], float) for y in sorted(v1["excess_d"])])
 
@@ -68,7 +79,8 @@ def test_umolchaniya_ig2_svoj_nabor_seed7(sid, evs):
     for i, pt in enumerate(points(sid)):
         a = e1.evaluate(pt, PER)
         row, ex_port, ex_tik = e2.evaluate_v2({**pt, **NOVYE}, PER)
-        ok = sha(flat(a)) == sha(ex_port) and all(eq(a[k], row[k]) for k in a if k not in ("v", "excess_d"))
+        ok = sha(flat(a)) == sha(ex_port) and all(eq(norm(a[k]), norm(row[k])) for k in a if k not in PEREIMEN)
+        ok = ok and a["vyrozhdena"] == row["flagi"]["vyrozhdena"] and a["comm_pct"] == row["komissiya"] * 100
         ok = ok and ex_tik.shape[0] == 17 and ex_tik.dtype == np.float64
         if not ok:
             bad.append(i)
