@@ -1,6 +1,7 @@
 """Л-21: tejk_signal = rodnoy_uroven (Ж-091 п. 1.1, 1.3). Синтетика, данных нет.
 python3 -m pytest tests/test_rodnoy_uroven.py -q --tb=short
 Мутации (monkeypatch правил): уровень по d+1, уровень не обновлён, активен в баре выставления, t_vyhod не выключен, касание вместо прохода."""
+from dataclasses import replace
 from types import SimpleNamespace
 
 import numpy as np
@@ -78,9 +79,22 @@ def test_signal_vyhod_vyklyuchen():
     n = len(DAYS)
     p = Params(tick=TK, check="bary", comm=0.0, tejk="rodnoy_uroven", exit_signal=True)
     r = run("T", DAYS, np.array([1, 0, 0, 0, 0.0]), np.full(n, .02), p, tejk_M=np.vstack([[200.0] * n, [np.nan] * n]))
-    assert r.trades[0].reason == "signal"                       # сигнальный выход ещё есть в движке — его гасит только Params.exit_signal=False
-    r = go(DAYS, [200.0] * n, [1, 0, 0, 0, 0])
-    assert r.trades[0].reason is None                            # выключен: открыта на конце окна
+    assert r.trades[0].reason is None                            # выход по сигналу выключен в движке даже при exit_signal=True
+    p = Params(tick=TK, check="bary", comm=0.0, tejk="net", exit_signal=True)
+    assert run("T", DAYS, np.array([1, 0, 0, 0, 0.0]), np.full(n, .02), p, tejk_M=np.full(n, 200.0)).trades[0].reason == "signal"   # контроль
+
+
+def test_tau_ostayotsya():
+    r = go(DAYS, [200.0] * len(DAYS), [1, 1, 1, 1, 1], tau=2)
+    assert r.trades[0].reason == "vremya" and r.trades[0].exit_day == 2
+
+
+def test_mutatsiya_signal_vyhod_vklyuchen_lovitsya(monkeypatch):
+    n = len(DAYS)
+    p = Params(tick=TK, check="bary", comm=0.0, tejk="rodnoy_uroven", exit_signal=True)
+    args = ("T", DAYS, np.array([1, 0, 0, 0, 0.0]), np.full(n, .02), p)
+    monkeypatch.setattr(Run, "_sig_exit", lambda s, i: s.p.exit_signal and s.dir(i) != s.tr.side)    # мутация: guard rodnoy снят
+    assert run(*args, tejk_M=np.vstack([[200.0] * n, [np.nan] * n])).trades[0].reason == "signal"
 
 
 def test_toch_tik_a_ne_kasanie():
@@ -144,10 +158,10 @@ def test_uroven_ne_smotrit_vpered(sid, sp):
 # --- схлопывание ---
 def _canon_ok(f):
     q = f("S2", {"tejk_signal": "rodnoy_uroven", "R": 2.0, "k_x": 1.0, "t_vyhod": "1500", "tau": 3})
-    return q["t_vyhod"] == "close" and q["tau"] == "net" and q["R"] == "net" and q["k_x"] == "net"
+    return q["t_vyhod"] == "open2" and q["tau"] == 3 and q["R"] == "net" and q["k_x"] == "net"
 
 
-def test_canon_skhlopyvaet_t_vyhod_i_tau():
+def test_canon_skhlopyvaet_t_vyhod_tau_ostayotsya():
     assert _canon_ok(canon_v2)
     assert canon_v2("S2", {"tejk_signal": "pol_puti", "t_vyhod": "1500", "tau": 3})["t_vyhod"] == "1500"     # прочие значения — как были
 
@@ -159,9 +173,13 @@ def _params(pt_extra):
     return EvaluatorV2._params(ev, pt, "T", 5.0, False, nov, {})
 
 
-def test_evaluator_vyklyuchaet_signal_tau_t_vyhod():
-    p = _params({})
-    assert p.tejk == "rodnoy_uroven" and not p.exit_signal and p.tau is None and p.t_vyhod == "close"
+def _params_ok(p):
+    return p.tejk == "rodnoy_uroven" and not p.exit_signal and p.tau == 3 and p.t_vyhod == "open2"
+
+
+def test_evaluator_signal_vyklyuchen_tau_i_open2():
+    assert _params_ok(_params({}))
+    assert not _params_ok(replace(_params({}), tau=None))        # мутация: τ выключен — ловится
 
 
 # --- мутации ---
@@ -204,11 +222,11 @@ def ev():
 
 
 def test_realnaya_lenta_skhlopnutye_osi_ravny(ev):
-    """Данные ≤ 2019. t_vyhod и τ при rodnoy_uroven не влияют на строку; тейки по заявке есть."""
-    pt = dict(vhod=0.5, proverka="bars5m", tejk_signal="rodnoy_uroven")
-    a = ev.evaluate_v2(pt, "train4")[0]
+    """Данные ≤ 2019. t_vyhod при rodnoy_uroven не влияет на строку (схлопнут в open2); тейки по заявке есть."""
+    pt = dict(vhod=0.5, proverka="bars5m", tejk_signal="rodnoy_uroven", tau=3)
+    a = ev.evaluate_v2({**pt, "t_vyhod": "open2"}, "train4")[0]
     d = ev.diag
-    b = ev.evaluate_v2({**pt, "tau": 3, "t_vyhod": "1500"}, "train4")[0]
+    b = ev.evaluate_v2({**pt, "t_vyhod": "1500"}, "train4")[0]
     assert a["status"] == "ok" and a["by_quarter"] == b["by_quarter"] and any(v > 0 for v in d["dolya_tejk_y"].values())
 
 
