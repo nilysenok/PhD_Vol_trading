@@ -74,6 +74,88 @@ def vyyti_hesh(head):
     return kom, vh
 
 
+NET_MARK = "# дивиденды: НЕТ"
+METRIKA = re.compile(r"sharpe|шарп|msr|доходн|return|ret\b", re.I)
+
+
+def chislo(s):
+    try:
+        return float(s.replace(",", "."))
+    except ValueError:
+        return None
+
+
+def pary_net(tb_dir):
+    """Ж-121: пары (основная, NET) -> (строки сводки, FAIL). Разность = основная − NET.
+    Ключ = колонки, общие для обеих таблиц, кроме метрик; доходность без «%» в имени — доля, ×100."""
+    nd = tb_dir / "_net"
+    if not nd.is_dir():
+        return [], []
+    fails, L = [], ["", "## Справочно: как в версии предзащиты (без дивидендов 2022–2024)", ""]
+    nets = {p.name: p for p in sorted(nd.glob("*.csv"))}
+    pairs = {}
+    for name, p in nets.items():
+        main = name.replace("_net", "") if name.startswith("b_") else name
+        pairs[main] = (tb_dir / main, p)
+    for p in sorted(tb_dir.glob("*.csv")):
+        if p.name.startswith("a_") or p.name == "b_razlozhenie.csv":
+            exp = "b_razlozhenie_net.csv" if p.name.startswith("b_") else p.name
+            if exp not in nets:
+                fails.append(f"_net: нет справочной пары для {p.name}")
+    dif = ["", "## Цена дивидендной ошибки защищённой версии", "",
+           "Разность = основная (с дивидендами) − NET; доходность в процентах.", ""]
+    for main, (pm, pn) in pairs.items():
+        n_, hn, f = proverka_tablicy(pn)
+        fails += f
+        L.append(f"- `_net/{pn.name}` строк={n_} sha256={sha(pn)}")
+        if NET_MARK not in [x.strip() for x in hn]:
+            fails.append(f"_net/{pn.name}: нет «{NET_MARK}» в шапке")
+        if not pm.exists():
+            fails.append(f"_net/{pn.name}: нет основной пары {main}")
+            continue
+        hm, rm, _, cm = razbor_csv(pm)
+        if NET_MARK in [x.strip() for x in hm]:
+            fails.append(f"{main}: основная таблица помечена «{NET_MARK}»")
+        _, rn, _, cn = razbor_csv(pn)
+        dif += razn(main, cm, rm, cn, rn, fails)
+    return L + dif, fails
+
+
+def razn(main, cm, rm, cn, rn, fails):
+    com = [c for c in cm if c in cn]
+    met = [c for c in com if METRIKA.search(c)]
+    key = [c for c in com if c not in met]
+    if not key or not met:
+        fails.append(f"{main}: нет ключевых или метрических общих колонок")
+        return []
+    def idx(cols, rows):
+        d = {}
+        for r in rows:
+            k = tuple(r[cols.index(c)].strip() for c in key)
+            if k in d:
+                fails.append(f"{main}: повтор ключа {k}")
+            d[k] = r
+        return d
+    a, b = idx(cm, rm), idx(cn, rn)
+    out = [f"### {main}", "", "| " + " | ".join(key + [m + " Δ" for m in met]) + " |",
+           "|" + "---|" * (len(key) + len(met))]
+    for k in sorted(set(a) | set(b)):
+        if k not in a or k not in b:
+            fails.append(f"{main}: строка {k} без пары ({'нет NET' if k in a else 'нет основной'})")
+            continue
+        cells = []
+        for m in met:
+            x, y = chislo(a[k][cm.index(m)]), chislo(b[k][cn.index(m)])
+            if x is None or y is None:
+                fails.append(f"{main}: {k} {m}: не число")
+                cells.append("—")
+                continue
+            kf = 1 if ("%" in m or not re.search(r"доходн|return|ret\b", m, re.I)) else 100
+            cells.append(f"{(x - y) * kf:.4f}")
+        out.append("| " + " | ".join(list(k) + cells) + " |")
+    return out + [""]
+
+
 def sobrat(root, out):
     md_dir, tb_dir = root / "docs/otchety/revers_r1", root / "docs/tables/revers_r1"
     csvs = sorted(tb_dir.glob("*.csv")) if tb_dir.is_dir() else []
@@ -108,6 +190,9 @@ def sobrat(root, out):
     L += [f"- {NAZV[k]}) {PREREG[k]}: {'есть' if tabl[k] else 'нет'}" for k in LISTY]
     vne = [x for x in info if not any(x in v for v in tabl.values())]
     L += ["", "Вне предрегистрации (не удалены):"] + ([f"- `{x}`" for x in vne] or ["- нет"])
+    nl, nf = pary_net(tb_dir)
+    L += nl
+    fails += nf
     L += ["", "## Хэши", "", "| Лист | Таблица | Коммит кода | Входы |", "|---|---|---|---|"]
     for k in LISTY:
         for x in tabl[k]:
