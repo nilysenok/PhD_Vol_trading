@@ -147,7 +147,7 @@ ARHIV_DIV = s9.MAIN / "arhiv" / "final3_do_dividendov_2026-10-28"   # вне git
 def test_frozen_keys_equal_dev_choice(unlocked, fresh_s9, monkeypatch):
     """Замороженный выбор B/C/D (журнал заморозки run_log_final3.json, поле choice) = выбор по
     эталонам final3 ДО дивидендов (архив, #370): D6lag1 / cap1_band20 / TEST_C. Тест не перевыбирает
-    по новым таблицам: они дают другой выбор (Ж-069 (а), см. test_dev_c_choice_differs_from_test_c)."""
+    по новым таблицам (см. test_dev_*_choice_* ниже)."""
     log = s9.OUT / "run_log_final3.json"
     if not log.exists() or not (ARHIV_DIV / "s9_D_zatvor_final3.csv").exists():
         pytest.skip("нет журнала заморозки или архива до дивидендов")
@@ -167,15 +167,36 @@ def _record_select_keys(monkeypatch):
     return rec
 
 
-def test_dev_c_choice_differs_from_test_c(unlocked, fresh_s9, monkeypatch):
-    """Тест-факт: выбор C на таблицах после дивидендов ≠ TEST_C — известно, Ж-069 (а). TEST_C
-    заморожен; защита frozen_keys отказывает (SystemExit), пока выбор расходится."""
+def _dev_choice(monkeypatch):
     if not (s9.TABLES_DEV / "s9_C_rezhim_final3.csv").exists():
         pytest.skip("нет таблиц разработки final3")
-    rec = _record_select_keys(monkeypatch)
+    log = s9.OUT / "run_log_final3.json"
+    if not log.exists():
+        pytest.skip("нет журнала заморозки")
+    return _frozen_choice(s9.TABLES_DEV, monkeypatch)[0], json.loads(log.read_text())["choice"]
+
+
+def test_dev_c_choice_equals_test_c(unlocked, fresh_s9, monkeypatch):
+    """Ж-072: выбор C по таблицам разработки = TEST_C, защита frozen_keys не отказывает.
+    Мутация «TEST_C ≠ выбор по таблицам» ловится: защита отказывает (SystemExit)."""
+    choice, _ = _dev_choice(monkeypatch)
+    assert choice["C"] == f"{s9.TEST_C[0]} на {s9.TEST_C[1]}"
+    monkeypatch.setattr(s9, "TEST_C", ("C1:W252_p70", "hyb_h5"))
     with pytest.raises(SystemExit, match="C в тест задан владельцем"):
         _frozen_choice(s9.TABLES_DEV, monkeypatch)
-    assert rec[-1]["C"] != s9.TEST_C
+
+
+def test_dev_b_choice_equals_freeze_log(unlocked, fresh_s9, monkeypatch):
+    """Ж-072: выбор B по таблицам разработки = журнал заморозки."""
+    choice, frozen = _dev_choice(monkeypatch)
+    assert choice["B"] == frozen["B"]
+
+
+def test_dev_d_choice_differs_from_freeze_log(unlocked, fresh_s9, monkeypatch):
+    """Тест-факт: выбор D по таблицам после дивидендов ≠ журнал (D6lag1) — известно, вопрос
+    владельцу о заморозке D в пакете 18:00 (Ж-072). Только имена ключей."""
+    choice, frozen = _dev_choice(monkeypatch)
+    assert frozen["D"] == "D6lag1 на hyb_h1" and choice["D"] != frozen["D"]
 
 
 def test_split_c_one_main_point():
@@ -207,14 +228,9 @@ dev.SCOPES["test"] = dict(dev.SCOPES["dev"], val_end=2017 if frozen else 0)
 s9.TEST_YEARS, s9.TEST_CUT = s9.YEARS, s9.CUT
 s9.TEST_VAL_START, s9.TEST_VAL_END = 2017, (2017 if frozen else 0)
 s9.OUT, s9.TEST_TABLES = tmp, tmp
-_sel = s9.select_keys                                       # Ж-069 (а): C заморожен = TEST_C, D и B — по таблицам
-s9.select_keys = lambda *a: dict(_sel(*a), C=s9.TEST_C)
 for st in (["sources"], ["cache", "--workers", "1"], ["run", "--boot-reps", "300"]):
     s9.main(st + ["--scope", "test"])                       # σ по умолчанию — final3_full
 """
-
-
-C_DEPENDENT = ("s9_P2_multistrategiya", "s9_T1_komissii")   # таблицы с выбранной точкой C (по прогону)
 
 
 def _as_dev(df: pd.DataFrame) -> pd.DataFrame:
@@ -246,8 +262,6 @@ def test_test_path_on_dev_years(tmp_path):
     rd = lambda p: pd.read_csv(p, sep=";", decimal=",", encoding="utf-8-sig", dtype=str)
     for t in TABLES10:
         if t in ("s9_C_rezhim", "s9_T2_podperiody"):
-            continue
-        if t in C_DEPENDENT:                  # Ж-069 (а): тест берёт C = TEST_C, разработка — свой выбор
             continue
         a, b = _as_dev(rd(tmp_path / f"{t}_final3_test.csv")), rd(dv / f"{t}_final3pt.csv")
         pd.testing.assert_frame_equal(a[b.columns], b, obj=t)
