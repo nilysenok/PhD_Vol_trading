@@ -24,6 +24,8 @@ def noch_iz_sdelok(trades, w_tr: dict, n: int, rezhim) -> np.ndarray:
     noch = np.zeros(n)
     extra = np.zeros(n)
     for tr in trades:
+        if getattr(tr, "parent", None) is not None:     # Ж-092: частичный выход ½ — доля родителя, занятость не растёт
+            continue
         w = float(w_tr[tr.d_sig])
         a = max(0, int(tr.entry_day))
         x = n if tr.exit_day is None else min(n, int(tr.exit_day))

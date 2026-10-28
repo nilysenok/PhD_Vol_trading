@@ -25,6 +25,13 @@ def canon_v2(sid: str, pt: dict) -> dict:
         q["k_x"] = NET
     if q.get("tejk_signal", NET) != NET:
         q.update(R=NET, k_x=NET)                    # Ж-084: один тейк — от уровня сигнала
+    if q.get("vhod_tip") == "stop_zayavka":         # Ж-091: вход заявкой по касанию, не лимитом k_e и не закрытием
+        if sid not in ("S3", "S4"):
+            raise ValueError(f"{sid}: vhod_tip = stop_zayavka только у S3 и S4")
+        q["vhod"] = "rynok"                         # → ed_lim, zhizn, lestnica, gap схлопываются правилом ниже
+        q.update({k: v for k, v in (("q_sily", 0.0), ("proverka", "bars5m")) if k in q})   # сила и close-проверка не действуют
+        if q.get("storona") == "short_shag1":
+            q["storona"] = "obe"
     if q.get("tejk_signal") == "rodnoy_uroven":     # Ж-091 п. 1.1: сигнальный выход выключен, τ остаётся и идёт по open2 — t_vyhod схлопнут
         q.update(t_vyhod="open2")
     if q.get("vhod") == "rynok":
