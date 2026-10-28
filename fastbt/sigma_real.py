@@ -17,7 +17,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from fastbt.daily_1850 import CUT_MIN, END, OPEN_MIN, default_main, read_bars
+from fastbt import zona
+from fastbt.daily_1850 import CUT_MIN, END, OPEN_MIN, default_main, read_bars  # noqa: F401  (END — реэкспорт)
 
 WINDOWS = {"rv5": 5, "rv22": 22, "rv66": 66}
 LAMBDA = 0.94
@@ -57,10 +58,10 @@ def load_rv(tickers: list[str], main: Path | None = None) -> pd.DataFrame:
     src = (main or default_main()) / "moex_discovery" / "data" / "raw" / "candles_10m"
     parts = []
     for t in tickers:
-        s = rv_1850(read_bars(src / f"{t}.parquet", END))
+        s = rv_1850(read_bars(src / f"{t}.parquet"))          # граница — зона (zona.end())
         parts.append(s.rename("rv").reset_index().assign(ticker=t))
     d = pd.concat(parts, ignore_index=True)
-    return d[d["date"] < END][["date", "ticker", "rv"]].sort_values(["ticker", "date"]).reset_index(drop=True)
+    return d[d["date"] < zona.end()][["date", "ticker", "rv"]].sort_values(["ticker", "date"]).reset_index(drop=True)
 
 
 def sigma_frame(rv: pd.DataFrame, name: str) -> pd.DataFrame:

@@ -96,15 +96,23 @@ def _check_params(p: Params) -> None:
         raise ValueError("stop_zayavka: без лимита k, zhizn, gap, vyhod_lim и выхода по сигналу; check='bary', stop_touch (Ж-091)")
     if p.vhod_open and (p.k is not None or p.check != "bary" or p.vyhod_lim):
         raise ValueError("vhod_open — вход рынком (k = None), check='bary', без vyhod_lim")
+    if not isinstance(p.T, int) or p.T < 1:
+        raise ValueError("T — целое ≥ 1")
+    if (p.T > 1 or p.reentry_den) and (p.k is None or p.vhod_open or p.vhod_tip != "podtverzhdenie"):
+        raise ValueError("T > 1 и reentry_den — заявки по уровню (k задан), без vhod_open и stop_zayavka (Ж-111)")
+    if p.reentry_den and p.check != "bary":
+        raise ValueError("reentry_den требует check='bary'")
 
 
 def _new_axes(p: Params, ed) -> bool:
-    return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik) or p.vhod_open
+    return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik) or p.vhod_open \
+        or p.T != 1 or p.reentry_den
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None,
-        urovni=None) -> Result:
-    """urovni — уровни стоп-заявок по дням (vhod_tip = stop_zayavka, fastbt/stop_zayavki.py), обязателен при нём, иначе не принимается.
+        urovni=None, rang=None) -> Result:
+    """rang[d] — ранг силы сигнала дня d, [0; 1] (V6-b: Params.b0_c, fastbt/exec_e_v6.py); иначе не нужен.
+    urovni — уровни стоп-заявок по дням (vhod_tip = stop_zayavka, fastbt/stop_zayavki.py), обязателен при нём, иначе не принимается.
     tejk_M[d] — уровень M сигнала на день d (Params.tejk ≠ net, Ж-084). rf_cal[t] — ставка/365·календарные дни [t, следующий торговый день) (msp.cal_days, Н2).
     close[t] — закрытие дня по Н6 (18:50); None — close последнего 5-мин бара (E).
     div[i] — полный дивиденд, руб./акция, на день гэпа i (fastbt/dividendy.gap_divs); None — без дивидендов (Ж-057 п. 1).
@@ -138,8 +146,8 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         from fastbt.exec_e_stop import RunStop
         r = RunStop(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, urovni=urovni)
     else:
-        r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr) if _new_axes(p, ed) \
-            else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr)
+        r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr, rang=rang) if _new_axes(p, ed) \
+            else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr, rang=rang)
     for j, i in enumerate(r.ix):
         r.step(j, i)
     n = len(days)

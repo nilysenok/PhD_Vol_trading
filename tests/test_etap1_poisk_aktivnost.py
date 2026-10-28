@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Предел активности (толкование 27.10 19:35, Ж-044 п. 6) и плато «нет» (Ж-048 п. 1), режим --tolko-itog. Синтетика."""
+"""Предел активности (толкование 27.10 19:35, Ж-044 п. 6) и плато «нет» (Ж-048 п. 1), режим --tolko-itog. Синтетика.
+Правка теста (Ж-081, 28.10): в test_tolko_itog_... pbo сравнивается с nan_ok=True — после Ж-090 (51867f11) целевая PBO даёт nan
+на синтетике (год половины ≤ 0), это законно; проверяется, что повторный прогон даёт то же значение, включая nan."""
 from __future__ import annotations
 
 import math
@@ -187,7 +189,7 @@ def test_tolko_itog_dopisyvaet_i_ne_trogaet_faktor_morris(tmp_path):
     row = P.tolko_itog("S9", w.evaluate, lambda p: True, out=tmp_path, run_id="2", setka=SETKA_A)
     d = pd.read_csv(tmp_path / "S9_itog.csv", comment="#")
     assert len(d) == 2 and list(row) == list(first) and {"plato_staroe", "plato_novoe"} <= set(d.columns)
-    assert str(d.plato_staroe.iloc[1]) == str(d.G4_osi.iloc[0]) and row["pbo"] == pytest.approx(first["pbo"])
+    assert str(d.plato_staroe.iloc[1]) == str(d.G4_osi.iloc[0]) and row["pbo"] == pytest.approx(first["pbo"], nan_ok=True)
     assert row["p_a"] == first["p_a"] and row["N_unikalnykh"] >= first["N_unikalnykh"]
     assert before == {n: (tmp_path / f"S9_{n}.csv").read_bytes() for n in ("faktor", "morris")}
     assert set(w.calls) == {"train"}
