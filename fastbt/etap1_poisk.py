@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from fastbt import pbo_pravilo as PR
 from fastbt import sweep_drivers as sd
 from fastbt.etap1_poisk_vorota import kw as _kw
 from fastbt.etap1_poisk_vorota import (OSI, PERIOD_YEARS, Ledger, dopustima, gates, matrix, obj, obj_morris, pbo, pick_best, po_godam,
@@ -120,7 +121,7 @@ def tolko_itog(sid: str, evaluate, s9_check, out: Path = OUT, run_id: str = "", 
     if led.n_unique != int(old["N_do_dosheta"]):
         raise ValueError(f"{sid}: Ledger не восстановлен: {led.n_unique} ≠ N_do_dosheta {int(old['N_do_dosheta'])}")
     picked = pick_center(led, fact, axes, float(old["pbo"]), s9_check, S["yakor"])
-    head = {k: old[k] for k in ("N_morris", "N_faktor", "N_do_dosheta", "N_unikalnykh", "N_pbo", "pbo")}
+    head = {k: old[k] for k in ("N_morris", "N_faktor", "N_do_dosheta", "N_unikalnykh", "N_pbo", "pbo", *(["pbo_argmax"] if "pbo_argmax" in old else []))}
     head["N_unikalnykh"] = led.n_unique         # все уникальные точки: Моррис + факторный + пробы плато, без двойного счёта
     psr = lambda x: dict(T=len(x), psr=nan, dsr=nan, N_dsr=head["N_unikalnykh"])        # noqa: E731  (справочно, нужен полный M)
     row = itog_row(sid, run_id, old["morris_period"], plan, axes, led, picked, head, psr, old.get("G4_osi", nan))
@@ -158,10 +159,10 @@ def run_strategy(sid: str, evaluate, s9_check, out: Path | None = None, morris_2
     base = {**S["yakor"], **{a: best[a] for a in ("sigma", "proverka") if a in axes and a not in plan}}
     fact = sd.factorial_sweep(led, base, {a: axes[a] for a in plan}, period, objective=ob)
     M, n_mf = matrix(led, period), led.n_unique
-    pb = pbo(M)
+    pb, pb_argmax = pbo(M, pravilo=PR.pravilo_etapa(led, axes, plan, base, S["yakor"], period)), pbo(M)      # Ж-080: G1 — центр плато, argmax — справочно
     c, pt, n_dop = pick_center(led, fact, axes, pb, s9_check, S["yakor"], period)
     head = dict(N_morris=mo["n_evaluations"], N_faktor=fact["n_trials"], N_do_dosheta=n_mf, N_unikalnykh=led.n_unique,
-                N_pbo=M.shape[1], pbo=pb)
+                N_pbo=M.shape[1], pbo=pb, pbo_argmax=pb_argmax)
     row = itog_row(sid, run_id, mper, plan, axes, led, (c, pt, n_dop), head, lambda x: psr_dsr(x, M, led.n_unique), period=period)
     append_csv(out / f"{sid}_morris.csv", [dict(strategiya=sid, zapusk=run_id, period=mper, os=a, rang=i, mu_star=e["mu_star"],
                sigma=e["sigma"], n=e["n"], v_plane=a in plan) for i, (a, e) in enumerate(mo["effects"].items(), 1)])
