@@ -14,7 +14,13 @@ import numpy as np
 import pytest
 import yaml
 
-PER, COMM, SEED, NPT = "train4", 0.0004, 7, 20
+from fastbt import bars5m, cache
+
+_MAIN_BARS = cache.MAIN / "data" / "regen" / "D25" / "bars1m"       # 1-минутки лежат в основной копии (только чтение)
+if not bars5m.SRC.exists() and _MAIN_BARS.exists():
+    bars5m.SRC = _MAIN_BARS
+
+PER, COMM, SEED, NPT ="train4", 0.0004, 7, 20
 SIDS = [f"S{k}" for k in range(1, 7)]
 NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net")
 GRID = Path("fastbt/designs/sweep")
