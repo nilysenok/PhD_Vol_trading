@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Л-7: регион и плато на синтетике с известным ответом (куб 4 оси × 5 + 2 шумовые оси), мутации ловятся."""
+"""Л-7: регион и плато на синтетике с известным ответом (куб 4 оси × 5 + 2 шумовые оси), мутации ловятся.
+
+Правка тестировщика (П-7, Ж-086): строка без осей t_vyhod / vhod теперь ValueError (progon_osnovnaya), поэтому в pt каждой строки
+добавлены постоянные оси OSN с основными значениями. Ожидания и требования тестов не менялись."""
 import itertools
 
 import numpy as np
@@ -8,13 +11,14 @@ import pytest
 from fastbt import pbo_pravilo as PR, progon_region as R
 
 AX = ["a", "b", "c", "d"]
+OSN = {"t_vyhod": "open2", "vhod": "0.5"}
 CENTR = (2, 2, 2, 2)
 Q = 20
 
 
 def kub(spike=0.0, flip=(), n1_second_half=0.0, days_q=range(16), seed=1):
     pts = [dict(zip(AX + ["n1", "n2"], v)) for v in itertools.product(range(5), range(5), range(5), range(5), (0, 1), (0, 1))]
-    rows = [{"pt": p, "sdelok_y": {"2016": 40, "2017": 40}} for p in pts]
+    rows = [{"pt": {**p, **OSN}, "sdelok_y": {"2016": 40, "2017": 40}} for p in pts]
     rng = np.random.default_rng(seed)
     start = np.array(["2016-01-01"], "datetime64[M]")[0] + 3 * np.arange(16)
     daty, cols = [], []
