@@ -31,6 +31,7 @@ class FakeInp:
         self.tick = {t: 0.01 for t in TICKS}
         self.sobytiya = {"net": {t: np.zeros(N, bool) for t in TICKS}}
         self.rezhim = {}
+        self.div = {t: np.zeros(N) for t in TICKS}      # E1Inputs.div (#370): {тикер: D на день гэпа}, без событий
 
 
 POS = {t: np.where(np.arange(N) % 20 < 6, 1.0 if i != 1 else -1.0, 0.0) for i, t in enumerate(TICKS)}
@@ -71,8 +72,8 @@ PT = {**YAKOR, "tau": 5, "k_s": 2.0, "R": 2.0, "a": 1, "proverka": "bars5m", "vh
 def spy(monkeypatch):
     calls = []
 
-    def run(t, days, sig, sigma, p, close=None, w=None, win=None):
-        calls.append(dict(t=t, sig=np.array(sig), w=np.array(w), p=p, win=win))
+    def run(t, days, sig, sigma, p, close=None, w=None, win=None, div=None):
+        calls.append(dict(t=t, sig=np.array(sig), w=np.array(w), p=p, win=win, div=div))
         return types.SimpleNamespace(g=None)
     monkeypatch.setattr(PE, "run_e1", run)
     monkeypatch.setattr(EE, "run_e1", run)
