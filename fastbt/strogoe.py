@@ -46,8 +46,14 @@ def o10_ryad(eng, days_by_ticker: list) -> tuple[np.ndarray, dict]:
     return out, {"podmen": sch[0]}
 
 
-def nogi(eng, o10: np.ndarray, div: np.ndarray, close: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """(n_row, dn_row) по строкам Engine. div[тикер, бар] — D дня гэпа (`dividendy.gap_divs`), close[тикер, бар] — c[t]."""
+MAX_DYR = 0.01                                    # доля дыр на тикер, выше — отказ
+
+
+def nogi(eng, o10: np.ndarray, div: np.ndarray, close: np.ndarray, max_dyr: float = MAX_DYR) -> tuple:
+    """(n_row, dn_row, {"n_dyr": …}) по строкам Engine. div[тикер, бар] — D дня гэпа (`dividendy.gap_divs`), close[тикер, бар] — c[t].
+
+    Дыра (нет o10 или close в строке, кроме последней строки пары) — как у `exec_e` для дня pusto: позиция переносится,
+    доход дня 0; каждая такая подстановка считается в n_dyr. Доля дыр тикера > max_dyr — ValueError (Д4)."""
     ti, b = eng.r["tick"], eng.r["bar"]
     o, c = o10[ti, b], close[ti, b]
     c1 = close[ti, np.minimum(b + 1, close.shape[1] - 1)]
@@ -56,7 +62,13 @@ def nogi(eng, o10: np.ndarray, div: np.ndarray, close: np.ndarray) -> tuple[np.n
     with np.errstate(invalid="ignore", divide="ignore"):
         n_row = np.where(last, 0.0, np.log((o + d) / c))
         dn_row = np.where(last, 0.0, np.log(c1 / o))
-    return np.nan_to_num(n_row), np.nan_to_num(dn_row)
+    dyra = ~last & ~(np.isfinite(n_row) & np.isfinite(dn_row))
+    for t in np.unique(ti):
+        m = ti == t
+        if dyra[m].mean() > max_dyr:
+            raise ValueError(f"тикер {t}: дыр {dyra[m].sum()} из {m.sum()} строк > {max_dyr:.0%}")
+    n_row, dn_row = np.where(dyra, 0.0, n_row), np.where(dyra, 0.0, dn_row)
+    return n_row, dn_row, {"n_dyr": int(dyra.sum())}
 
 
 def port_strogiy(eng, pos_row, comm=None, zaem: float = 0.05, nogi=None, cap: float = 1.0):
@@ -64,7 +76,7 @@ def port_strogiy(eng, pos_row, comm=None, zaem: float = 0.05, nogi=None, cap: fl
     if nogi is None:
         raise ValueError("port_strogiy: нужны ноги (n_row, dn_row)")
     comm = COMM if comm is None else comm
-    n_row, dn_row = nogi
+    n_row, dn_row = nogi[:2]
     pos = np.asarray(pos_row, float)
     first = eng.first
     last = np.r_[first[1:], True]

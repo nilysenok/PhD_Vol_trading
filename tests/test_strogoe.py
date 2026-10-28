@@ -78,9 +78,24 @@ def test_o10_ryad_i_nogi_s_dividendom():
     close = np.array([[100, 105, 107, 108.0]] * 2)
     div = np.zeros((2, 4))
     div[:, 1] = 5.0                                              # гэп в день 1: дивиденд попадает в ночную ногу строки 0
-    n, dn = strogoe.nogi(e, o10, div, close)
+    n, dn, inf = strogoe.nogi(e, o10, div, close)
+    assert inf["n_dyr"] == 0
     assert n[0] == pytest.approx(np.log((110 + 5 * 0.87) / 100)) and dn[0] == pytest.approx(np.log(105 / 110))
     assert n[1] == pytest.approx(np.log(106 / 105)) and n[3] == 0.0 and dn[3] == 0.0, "последняя строка пары: цен 'после' нет"
+
+
+def test_dyra_v_cene_schitaetsya_i_porog_otkazyvaet():
+    """Дыра не молчит (Д4): n_dyr > 0, нога дыры 0 с отметкой; много дыр — ValueError. Мутация nan_to_num: n_dyr бы остался 0."""
+    e = eng2()
+    o10 = np.array([[110, 106, 107, np.nan]] * 2)
+    close = np.array([[100, 105, 107, 108.0]] * 2)
+    o10[1, 1] = np.nan                                           # дыра в тикере 1, строка 5
+    div = np.zeros((2, 4))
+    n, dn, inf = strogoe.nogi(e, o10, div, close, max_dyr=0.5)
+    assert inf["n_dyr"] == 1 and n[5] == 0.0 and dn[5] == 0.0
+    assert n[1] != 0.0 and not np.isnan(n).any()
+    with pytest.raises(ValueError):
+        strogoe.nogi(e, o10, div, close)                         # 1 из 4 строк тикера > 1 %
 
 
 def test_o10_zapasnoe_pravilo_schitaet_podmeny():
