@@ -1,6 +1,6 @@
 """П-4 (проверяющий), Л-8: walk-forward и PBO_wf на синтетике. Контракт: docs/zadaniya/2026-10-28_progon_L8_wf.md.
 wf(M, rows, daty, pravilo) -> {"oos_ryad", "oos_by_quarter", ...}; M — T × N; вызов vybor_region перехватывается шпионом (аргументы
-kvartaly_idx / radius / tsel). Модули импортируются внутри тестов: до кода каждый тест красный (без skip и xfail, Ж-081)."""
+kvartaly_idx / radius / tsel). П-7, Ж-086: в klyuch добавлены постоянные оси t_vyhod = open2, vhod = 0.5 (без них ValueError; ожидания те же). Модули импортируются внутри тестов: до кода каждый тест красный (без skip и xfail, Ж-081)."""
 import importlib
 import inspect
 import itertools
@@ -34,7 +34,7 @@ def kub(mu_q, seed=1):
     for j, p in enumerate(pts):
         bq = {k: sr(M[QI == i, j]) for i, k in enumerate(KEYS)}
         v = np.array(list(bq.values()))
-        rows.append(dict(status="ok", klyuch={a: repr(float(i)) for a, i in zip(NAMES, p)}, by_quarter=bq,
+        rows.append(dict(status="ok", klyuch={**{a: repr(float(i)) for a, i in zip(NAMES, p)}, "t_vyhod": "open2", "vhod": "0.5"}, by_quarter=bq,
                          mediana_kv=float(np.median(v)), dolya_pol_kv=float((v > 0).sum() / 16),
                          sdelok_y={str(y): 60 for y in range(2016, 2020)}, storony_y={str(y): 40 for y in range(2016, 2020)}))
     return M, rows

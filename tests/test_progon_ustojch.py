@@ -9,12 +9,13 @@ import pytest
 from fastbt import progon_region as R, progon_ustojch as U
 
 AX = ["a", "b", "c", "d"]
+OSN = {"t_vyhod": "open2", "vhod": "0.5"}  # П-7, Ж-086: оси t_vyhod / vhod обязательны в ключе (иначе ValueError); основные значения
 Q = 20
 
 
 def kub(flip=(), seed=1):
     pts = [dict(zip(AX + ["n1", "n2"], v)) for v in itertools.product(range(5), range(5), range(5), range(5), (0, 1), (0, 1))]
-    rows = [{"pt": p, "sdelok_y": {"2016": 40, "2017": 40}} for p in pts]
+    rows = [{"pt": {**p, **OSN}, "sdelok_y": {"2016": 40, "2017": 40}} for p in pts]
     rng = np.random.default_rng(seed)
     start = np.array(["2016-01-01"], "datetime64[M]")[0] + 3 * np.arange(16)
     mu0 = np.array([0.02 * np.exp(-sum((p[a] - 2) ** 2 for a in AX) / 2) for p in pts])

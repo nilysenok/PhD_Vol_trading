@@ -14,6 +14,7 @@ import math
 import numpy as np
 
 from fastbt.pbo_pravilo import sigma126
+from fastbt.progon_osnovnaya import maska
 
 K_OSI, RADIUS, DOLYA_MIN, MIN_CHLENOV = 4, 1, 0.8, 10
 TIE, MIN_SDELOK, NK, POOL, NS, CHUNK = 0.05, 30, 16, 3000, 2000, 256
@@ -132,6 +133,16 @@ def vybor_region(M, rows, daty, kvartaly_idx=None, radius=RADIUS, tsel="mediana"
     """Лучший допустимый регион на кварталах kvartaly_idx (None — все 16) или None. Допустимость: членов ≥ MIN_CHLENOV,
     доля кварталов с SR ряда > 0 ≥ DOLYA_MIN, в центре есть строка, допустимая по активности (dop[j] или как dopustima)."""
     M, daty = np.asarray(M, float), np.asarray(daty).astype("datetime64[D]")
+    osn = maska(rows)
+    if not osn.all():  # Ж-084 п. 2: справочные строки (close x) в выбор не идут; индексы результата — по исходной M
+        g = np.flatnonzero(osn)
+        res = vybor_region(M[:, g], [rows[i] for i in g], daty, kvartaly_idx, radius, tsel,
+                           dop=None if dop is None else np.asarray(dop, bool)[g], storony_yakor=storony_yakor)
+        if res is not None:
+            full = np.full(len(rows), np.nan)
+            full[g] = res["tstolb"]
+            res.update(chleny=[int(g[i]) for i in res["chleny"]], tstolb=full)
+        return res
     kv = list(range(NK)) if kvartaly_idx is None else sorted(kvartaly_idx)
     mask = np.isin(_kv_dnei(daty), kv)
     Ms, ds = M[mask], daty[mask]

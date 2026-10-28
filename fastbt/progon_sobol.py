@@ -48,6 +48,9 @@ def proverit_kub(c: dict) -> None:
         raise ValueError(f"период {c.get('period')!r}: прогон считает только {PERIOD} (Ж-082)")
     if c.get("komissiya") != KOMISSIYA or c.get("fdr") is not None:
         raise ValueError("куб: komissiya = 0.0004 и fdr = null")
+    from fastbt.signals.interface import get_family
+    if set(c["signal"]) != set(get_family(c["sid"]).grid):    # оценщик молча игнорирует чужие оси
+        raise ValueError(f"{c['sid']}: оси signal {sorted(c['signal'])} ≠ оси семьи {sorted(get_family(c['sid']).grid)}")
 
 
 def tochki(kub: dict, n0: int, n1: int) -> list:
@@ -156,6 +159,7 @@ def schitat_kusok(zad: tuple) -> tuple:
             continue
         r, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, _W["ist"], _W["kod_slit"], _W["fast"])
         w.add(r, ex_p, ex_t)
+        importlib.import_module("fastbt.tejk_signal").pisat_diag(w.pd, r, getattr(sr.evr, "diag", None) if r["status"] == "ok" else None)   # Ж-087
         zak = zak | {r["klyuch_sha"]}
         t.append(r["t_sek"])
         oshibok += r["status"] == "oshibka"
