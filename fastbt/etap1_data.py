@@ -13,14 +13,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from fastbt import rezhim_e1, sigma_real, sobytiya_e1
+from fastbt import rezhim_e1, sigma_real, sobytiya_e1, zona
 from fastbt.bars5m import load_bars5m
 from fastbt.exec_e_types import Day
 
 START = pd.Timestamp("2017-01-01")                      # прогрев: σ, режим, состояние выходов
 ROOT = Path(__file__).resolve().parent.parent
 LIMIT = pd.Timestamp("2022-01-01")
-START_V1 = pd.Timestamp("2015-01-01")                   # К-в1: train 2016–2019, 2015 — прогрев (в метрики не входит)
+START_Z2 = pd.Timestamp("2021-01-01")                  # реверс раунд 1: тест-1 2022–2024, прогрев 2021 (разработка, разрешён)
+START_V1 = pd.Timestamp("2015-01-01")                 # К-в1: train 2016–2019, 2015 — прогрев (в метрики не входит)
 
 
 def _one_bar(c: float) -> Day:
@@ -51,7 +52,8 @@ def build_days(t: str, dates: np.ndarray, close: np.ndarray, s0: int, i1: int, e
     """Day по датам s0…i1 (дни без баров — pusto; i1 — одна свеча close Н6) и тик тикера.
     start — начало прогрева (по умолчанию START = 2017-01-01; В1 — START_V1). Чтение ≥ LIMIT запрещено;
     last_year — последний год train: end > 1 января last_year+1 запрещено (В1: 2019 — validation 2020–2021 закрыта)."""
-    cap = LIMIT if last_year is None else min(LIMIT, pd.Timestamp(f"{last_year + 1}-01-01"))
+    lim = zona.end()                                       # 2022-01-01 в dev (= LIMIT); зона Z2 — 2025-01-01
+    cap = lim if last_year is None else min(lim, pd.Timestamp(f"{last_year + 1}-01-01"))
     if end > cap:
         raise PermissionError(f"чтение баров до {end.date()}: граница периода {cap.date()}")
     b = load_bars5m(t, str((start or START).date()), str((end - pd.Timedelta(days=1)).date()), "s_predotkrytiem", src=src)

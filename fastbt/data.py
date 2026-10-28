@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from fastbt import dividendy
+from fastbt import dividendy, zona
 from fastbt.signals.interface import TickerData
 
 MAIN = Path(os.environ.get("FASTBT_MAIN",
@@ -38,19 +38,25 @@ if "FASTBT_DATA_ROOT" not in os.environ:
 
 @lru_cache(maxsize=1)
 def daily_df() -> pd.DataFrame:
-    d = pd.read_parquet(OHLCV)
+    d = pd.read_parquet(zona.path("daily", OHLCV))      # зона Z2: FASTBT_Z2_DAILY; умолчание — как было
     d["date"] = pd.to_datetime(d["date"])
+    zona.check(d["date"].max(), "дневной ряд")
     return d
 
 
 @lru_cache(maxsize=1)
 def vpred_df() -> pd.DataFrame:
-    v = pd.read_parquet(VPRED)
+    v = pd.read_parquet(zona.path("vpred", VPRED))
     v["date"] = pd.to_datetime(v["date"])
     return v
 
 
+zona.on_change(lambda: (daily_df.cache_clear(), vpred_df.cache_clear(), load_ticker.cache_clear()))
+
+
 def align_sigma(dates: np.ndarray, ticker: str) -> dict:
+    if zona.name() != "dev" and not os.environ.get("FASTBT_Z2_VPRED"):
+        return {h: np.full(len(dates), np.nan) for h in ("h1", "h5", "h22")}     # σ̂ зоны Z2 не задана: NaN, а не протянутый хвост dev
     vp = vpred_df()
     vp = vp[vp["ticker"] == ticker].sort_values("date")
     vp_dates = pd.to_datetime(vp["date"].values)

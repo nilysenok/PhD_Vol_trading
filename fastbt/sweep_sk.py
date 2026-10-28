@@ -12,7 +12,7 @@ import hashlib
 import numpy as np
 import pandas as pd
 
-from fastbt import cache, grids, msp, s9
+from fastbt import cache, grids, msp, s9, zona
 from fastbt.sweep_post import build_view, positions
 from fastbt.data import TICKERS, load_ticker, year_bounds
 from fastbt.indicators import compute_base
@@ -48,7 +48,7 @@ class SkEvaluator:
         self._td = {}
         for t in self.tickers:
             td = load_ticker(t)
-            assert pd.Timestamp(td.dates.max()) < END, "ряд содержит даты ≥ 2022"
+            assert pd.Timestamp(td.dates.max()) < zona.end(), f"ряд содержит даты ≥ {zona.end().date()}"
             self._td[t] = (td, compute_base(td.close, td.high, td.low, td.open, td.volume))
 
     def series_digest(self) -> str:

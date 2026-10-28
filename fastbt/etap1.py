@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
-from fastbt import cache, dividendy, ekviv_s9
-from fastbt.etap1_data import LIMIT, START, START_V1, align_f, build_days, load_events, load_rezhim, load_sigma
+from fastbt import cache, dividendy, ekviv_s9, zona
+from fastbt.etap1_data import LIMIT, START, START_V1, START_Z2, align_f, build_days, load_events, load_rezhim, load_sigma
 from fastbt.etap1_eval import PERIODS, YAKOR, Evaluator, years_of
 
 END_TRAIN = pd.Timestamp("2020-01-01")                 # окно train — до 2019-12-31; строка b−1 берёт close 2020-01-09 (Н5)
@@ -97,14 +97,33 @@ def window_idx(dates, start, y0: int, end) -> tuple:
     return f(start), f(f"{y0}-01-01"), f(end)
 
 
+def _konec_z2(ev) -> pd.Timestamp:
+    """Последний день ряда зоны Z2 — общий у всех тикеров (иначе ошибка), строго < 2025-01-01."""
+    last = {pd.Timestamp(ev._td[t][0].dates.max()) for t in ev.tickers}
+    if len(last) != 1:
+        raise ValueError(f"тест-1: ряды тикеров кончаются в разные дни: {sorted(last)}")
+    zona.check(next(iter(last)), "тест-1")
+    return last.pop()
+
+
 def build_inputs(sid: str, ev=None, end: pd.Timestamp = END_TRAIN, period: str = "train") -> E1Inputs:
     """period: «train» (2018–2019, прогрев с 2017) или «train4» (В1: 2016–2019, прогрев с 2015)."""
-    from fastbt import msp
+    if period == "test1":                                   # реверс раунд 1: зона Z2, окно 2022–2024, прогрев 2021
+        with zona.zone_ctx("test1"):
+            return _build(sid, ev, None, period)
     if end >= LIMIT or end > END_TRAIN:
         raise PermissionError("этап 1: только окна до 2019-12-31; validation открывает дирижёр")
+    return _build(sid, ev, end, period)
+
+
+def _build(sid: str, ev, end, period: str) -> E1Inputs:
+    """end=None (test1): окно кончается последним днём ряда зоны Z2 (< 2025-01-01); он же — строка Н5 (закрытия 2025 нет)."""
+    from fastbt import msp
     y0, y1 = PERIODS[period]
-    start = START if period == "train" else START_V1
+    start = {"train": START, "train4": START_V1, "test1": START_Z2}[period]
     ev = ev or sk_evaluator(sid)
+    if end is None:
+        end = _konec_z2(ev)
     meta, bars, close, tick, div = {}, {}, {}, {}, {}
     for t in ev.tickers:
         td = ev._td[t][0]

@@ -53,7 +53,11 @@ def aggregate(bars: pd.DataFrame, ticker: str, cut_min: int = CUT_MIN) -> pd.Dat
     return out[COLS]
 
 
-def read_bars(path: Path, end: pd.Timestamp = END) -> pd.DataFrame:
+def read_bars(path: Path, end: pd.Timestamp | None = None) -> pd.DataFrame:
+    """end по умолчанию — граница зоны (zona.end(): 2022-01-01, в зоне Z2 — 2025-01-01); за HARD — отказ."""
+    from fastbt import zona
+    end = zona.end() if end is None else end
+    zona.check(end - pd.Timedelta(days=1), "бары")
     t = pq.read_table(path, filters=[("timestamp", "<", end.to_pydatetime())])
     return t.to_pandas()
 
@@ -66,7 +70,8 @@ def build(main: Path | None = None, tickers: list[str] | None = None) -> pd.Data
         tickers = TICKERS
     parts = [aggregate(read_bars(src / f"{t}.parquet"), t) for t in tickers]
     d = pd.concat(parts, ignore_index=True)
-    d = d[d["date"] < END]
+    from fastbt import zona
+    d = d[d["date"] < zona.end()]
     return d.sort_values(["ticker", "date"]).reset_index(drop=True)
 
 

@@ -39,17 +39,18 @@ class AStrogaya(EvaluatorV2):
         return gate_trades(pos, np.arange(len(pos)) != len(pos) - 2)
 
 
-def evaluatory(sid: str, ev=None) -> tuple:
-    """(якорь, строгий) на общих входах train4: EvaluatorV2 без осей — эталон; AStrogaya — A_strogaya."""
-    inp = etap1.build_inputs(sid, ev=ev, period=PER)
+def evaluatory(sid: str, ev=None, period: str = PER) -> tuple:
+    """(якорь, строгий) на общих входах периода (train4 — умолчание; test1 — реверс раунд 1): EvaluatorV2 без осей — эталон;
+    AStrogaya — A_strogaya."""
+    inp = etap1.build_inputs(sid, ev=ev, period=period)
     base = etap1.base_point(sid)
     return EvaluatorV2(sid, inp, base, COMM), AStrogaya(sid, inp, base, COMM)
 
 
-def schitat(ev: EvaluatorV2, strogo: bool) -> dict:
+def schitat(ev: EvaluatorV2, strogo: bool, period: str = PER) -> dict:
     """Ряд Sk через EvaluatorV2: x [T], tik [17, T], baza платы за шорт [T], занятость и счёт сторон по строкам, даты."""
-    row, x, tik = ev.evaluate_v2({"t_vyhod": "open2"} if strogo else {}, PER)
-    _, _, dts, _, _, rdates = ev._series(PER, ev.comm)
+    row, x, tik = ev.evaluate_v2({"t_vyhod": "open2"} if strogo else {}, period)
+    _, _, dts, _, _, rdates = ev._series(period, ev.comm)
     rs = ev._last[4]
     return dict(x=x, tik=tik, baza=np.asarray(ev.zaem), dates=dts.to_numpy().astype("datetime64[D]"), row=row,
                 expo=np.concatenate([r.expo for r in rs]), cnt=np.concatenate([r.cnt for r in rs]), god=rdates.year.to_numpy())
@@ -73,8 +74,8 @@ def metriki_goda(x: np.ndarray) -> dict:
     return dict(msr=me.msr(x), sharpe=me.sr_dnevnoy(x) * np.sqrt(252), dohodnost=float(x.sum()), mdd=me.mdd(x))
 
 
-def pasport(imya: str, variant: str, r: dict) -> list:
-    """Строки паспорта по годам train4 и «все» — с платой 5 % за шорт и без; доля времени в позиции и сделки в год."""
+def pasport(imya: str, variant: str, r: dict, GODY: tuple = GODY) -> list:  # noqa: N803
+    """Строки паспорта по годам периода (умолчание — train4) и «все» — с платой 5 % за шорт и без; доля времени в позиции и сделки в год."""
     yr, rows = r["dates"].astype("datetime64[Y]").astype(int) + 1970, []
     for plata in (0.0, PLATA):
         x = r["x"] - plata * r["baza"]
