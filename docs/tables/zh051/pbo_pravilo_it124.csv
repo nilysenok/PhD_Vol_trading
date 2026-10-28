@@ -1,0 +1,20 @@
+# статус: справочно, разработка train 2018–2019; ledger ДО дивидендов (#370), в архиве, нового счёта нет; вердикты итераций 1–10 не пересматриваются (Ж-080)
+strategiya,iteraciya,N_tochek,T_dney,N_v_kube,N_dopustimyh,pbo_argmax,pbo_staroe,argmax_sovpal,pbo_centr_plato,pbo_centr_plato_oos_msr,razbienij,propusk_centr,osi_plana,ledger
+S1,1,3591,506,3430,1541,0.700000,0.700000,True,0.600000,0.642857,70,0,vhod z_entry proverka ma_window tau,ledger_it1.pkl
+S1,2,3597,506,3430,1541,0.700000,0.700000,True,0.600000,0.642857,70,0,vhod z_entry proverka ma_window tau,ledger_it2.pkl
+S1,4,3657,506,3430,1541,0.700000,0.700000,True,0.600000,0.642857,70,0,vhod z_entry proverka ma_window tau,ledger_it4.pkl
+S2,1,1643,506,1470,732,0.628571,0.628571,True,0.714286,0.685714,70,0,vhod proverka tau rezhim bb_std,ledger_it1.pkl
+S2,2,1649,506,1470,732,0.628571,0.628571,True,0.714286,0.685714,70,0,vhod proverka tau rezhim bb_std,ledger_it2.pkl
+S2,4,1709,506,1470,732,0.657143,0.657143,True,0.714286,0.685714,70,0,vhod proverka tau rezhim bb_std,ledger_it4.pkl
+S3,1,2588,506,2450,210,0.714286,0.714286,True,0.285714,0.357143,70,0,tau vhod dc_window proverka q_sily,ledger_it1.pkl
+S3,2,2594,506,2450,210,0.714286,0.714286,True,0.285714,0.357143,70,0,tau vhod dc_window proverka q_sily,ledger_it2.pkl
+S3,4,2654,506,2450,210,0.714286,0.714286,True,0.300000,0.357143,70,0,tau vhod dc_window proverka q_sily,ledger_it4.pkl
+S4,1,2140,506,1960,914,0.471429,0.471429,True,0.357143,0.385714,70,0,multiplier tau proverka vhod sigma,ledger_it1.pkl
+S4,2,2146,506,1960,914,0.485714,0.485714,True,0.357143,0.385714,70,0,multiplier tau proverka vhod sigma,ledger_it2.pkl
+S4,4,2218,506,1960,929,0.428571,0.428571,True,0.357143,0.385714,70,0,multiplier tau proverka vhod sigma,ledger_it4.pkl
+S5,1,555,506,320,215,0.800000,0.800000,True,0.828571,0.700000,70,0,pivot_period vhod filter_set pivot_type sigma,ledger_it1.pkl
+S5,2,561,506,320,215,0.800000,0.800000,True,0.828571,0.700000,70,0,pivot_period vhod filter_set pivot_type sigma,ledger_it2.pkl
+S5,4,637,506,320,242,0.600000,0.600000,True,0.828571,0.728571,70,0,pivot_period vhod filter_set pivot_type sigma,ledger_it4.pkl
+S6,1,897,506,784,353,0.300000,0.300000,True,0.971429,0.857143,70,0,filter_set vwap_window tau bezubytok dir_bias,ledger_it1.pkl
+S6,2,903,506,784,353,0.300000,0.300000,True,0.971429,0.842857,70,0,filter_set vwap_window tau bezubytok dir_bias,ledger_it2.pkl
+S6,4,1020,506,784,429,0.385714,0.385714,True,0.971429,0.857143,70,0,filter_set vwap_window tau bezubytok dir_bias,ledger_it4.pkl
