@@ -62,6 +62,10 @@ def _check_params(p: Params) -> None:
         raise ValueError("R и a несовместимы")
     if p.R is not None and p.h is None and p.tau is None:
         raise ValueError("R требует h или tau (❓1)")
+    if p.tejk not in ("net", "k_srednemu", "pol_puti"):
+        raise ValueError("tejk: net | k_srednemu | pol_puti")
+    if p.tejk != "net" and (p.R is not None or p.a is not None):
+        raise ValueError("tejk ≠ net несовместим с R и a: тейк один (Ж-084)")
     if p.check not in ("bary", "zakrytie"):
         raise ValueError("check: bary | zakrytie")
     if p.side not in (1, -1):
@@ -86,8 +90,8 @@ def _new_axes(p: Params, ed) -> bool:
     return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik)
 
 
-def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None) -> Result:
-    """rf_cal[t] — ставка/365·календарные дни [t, следующий торговый день) (msp.cal_days, Н2).
+def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None) -> Result:
+    """tejk_M[d] — уровень M сигнала на день d (Params.tejk ≠ net, Ж-084). rf_cal[t] — ставка/365·календарные дни [t, следующий торговый день) (msp.cal_days, Н2).
     close[t] — закрытие дня по Н6 (18:50); None — close последнего 5-мин бара (E).
     div[i] — полный дивиденд, руб./акция, на день гэпа i (fastbt/dividendy.gap_divs); None — без дивидендов (Ж-057 п. 1).
     В PnL идёт D·nalog (None — dividendy.DIV_NALOG = 0,87), стоп переносимой позиции сдвигается на полный D (Ж-060)."""
@@ -108,7 +112,10 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         raise ValueError("days, ed разной длины")
     from fastbt import dividendy
     nal = dividendy.DIV_NALOG if nalog is None else nalog
-    r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed) if _new_axes(p, ed) else Run(ticker, days, sig, sigma, p, close, div, nal)
+    if p.tejk != "net" and (tejk_M is None or len(tejk_M) != len(days)):
+        raise ValueError("tejk ≠ net требует tejk_M длины days")
+    r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M) if _new_axes(p, ed) \
+        else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M)
     for j, i in enumerate(r.ix):
         r.step(j, i)
     n = len(days)
@@ -126,7 +133,7 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
             r.pos[i] = r.pos[i - 1] if i else 0.0
     rf = np.zeros(n) if rf_cal is None else np.asarray(rf_cal, float)
     return Result(r.trades, gross, r.cost, r.pos, free, free * rf, r.n_orders, r.n_fills, r.x_orders, r.x_fills,
-                  getattr(r, "x_t", 0))
+                  getattr(r, "x_t", 0), r.n_bez)
 
 
 def run_e1(*a, **kw):

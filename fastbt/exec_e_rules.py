@@ -62,6 +62,15 @@ def take_level(sd, px, sg, p):
     return T if p.tick is None else (ceil_tick(T, p.tick) if sd > 0 else floor_tick(T, p.tick))
 
 
+def tejk_level(sd, px, M, mode, tick):
+    """Тейк от уровня сигнала (Ж-084): k_srednemu — T = M; pol_puti — T = px + 0,5·(M − px) (шорт зеркально — той же формулой).
+    M не в сторону прибыли от цены входа (или нечисловой) — тейка нет (None). Округление по тику — как у take_level."""
+    if M is None or not math.isfinite(M) or sd * (M - px) <= 0:
+        return None
+    T = M if mode == "k_srednemu" else px + 0.5 * (M - px)
+    return T if tick is None else (ceil_tick(T, tick) if sd > 0 else floor_tick(T, tick))
+
+
 def stop_hit(sd, o, h, l, S, touch):
     """(сработал, цена): цена — S или open при гэпе через S. touch: l ≤ S, иначе l < S."""
     if sd > 0:

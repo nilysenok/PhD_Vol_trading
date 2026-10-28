@@ -6,13 +6,14 @@ import math
 import numpy as np
 
 from fastbt.exec_e_rules import (be_reached, ext_next, limit_level, limit_mask, limit_px, stop_hit, stop_level,
-                                 take_hit, take_level)
+                                 take_hit, take_level, tejk_level)
 from fastbt.exec_e_types import Trade
 
 
 class Run:
-    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0):
+    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None):
         n = len(days)
+        s.tejk_M, s.tT, s.n_bez = tejk_M, None, 0     # Ж-084: M по дням сигнала; тейк сделки фиксируется на входе; входов без тейка
         s.t, s.days, s.sig, s.sigma, s.p, s.cn6 = ticker, days, sig, sigma, p, close
         s.ix = [i for i, d in enumerate(days) if not d.pusto]
         # div — полный D на шаг (день гэпа без баров — на следующий торговый); dv — D·nalog переносимой позиции (PnL);
@@ -48,6 +49,9 @@ class Run:
         s.cost[s.tr.row0] += s.p.comm
         s.ref, s.i0, s.sg, s.ej = px, i0, sg, j
         s.ext, s.be_on, s.sh = px, False, 0.0
+        if s.p.tejk != "net":                       # M зафиксирован на d_sig (≤ close d_sig), от P_вх — один раз
+            s.tT = tejk_level(sd, px, float(s.tejk_M[d_sig]), s.p.tejk, s.p.tick)
+            s.n_bez += s.tT is None
 
     def _row(s, i, j, at_close):
         """Строка стоимости: по close — день исполнения, внутри дня — начало его интервала."""
@@ -83,7 +87,8 @@ class Run:
         tr = s.tr
         S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on)    # sr: stop | trail | bu
         S = s._stop_shift(S)
-        return S, None if s.xo is not None else take_level(tr.side, tr.entry_px, sg, s.p)    # висит заявка выхода: тейк снят (ОСО)
+        T = s.tT if s.p.tejk != "net" else take_level(tr.side, tr.entry_px, sg, s.p)
+        return S, None if s.xo is not None else T    # висит заявка выхода: тейк снят (ОСО)
 
     def _after_bar(s, j, hi, lo):
         """Экстремум и безубыток обновляются ПОСЛЕ бара: действуют со следующего (внутри бара уровни не меняются)."""
