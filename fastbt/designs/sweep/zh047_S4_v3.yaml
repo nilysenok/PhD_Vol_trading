@@ -17,7 +17,7 @@ fiks:
   g: [ne_novost_2.5, soglasie_imoex_ma50, likvidnost_5pct]
   otkat: {sdvig_atr: 0.5, dney: 3}   # лимит на линию ST дня сигнала ± 0,5·ATR14
   vyhod: {treyl_atr: 2.0, chast: {dolya: 0.5, na_R: 1.0}, tau: net}
-  t_vyhod: open2                     # обратный сигнал — стоп-заявка на линии ST, пересчёт каждый вечер (Ж-091 п. 1.2)
+  t_vyhod: open2                     # у тренда не действует: выходы — заявки; обратный сигнал — стоп-заявка на линии ST, пересчёт каждый вечер (Ж-091 п. 1.2)
   pauza_2_stopa: 5
   stop_div: sdvig
   sigma: rv22
