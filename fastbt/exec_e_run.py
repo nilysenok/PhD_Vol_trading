@@ -9,6 +9,7 @@ from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level,
                                  part_fee, part_hit, part_level, ratchet, rodnoy_level, stop_hit, stop_level,
                                  take_hit, take_level, tejk_level)
 from fastbt.exec_e_types import Trade
+from fastbt.exec_e_zayavki import prodlit, reenter
 
 FRAC = 0.5                                          # доля позиции, закрываемая на +1R (Ж-092)
 
@@ -37,6 +38,7 @@ class Run:
         s.xo, s.x_orders, s.x_fills = None, 0, 0    # заявка выхода {X, due, reason} (vyhod_lim, Ж-065 п. 3) и счётчики
         s.zak = p.check == "zakrytie"
         s.sr = "stop"
+        s.last_x, s.done_re = None, -1              # V6-a: последняя закрытая сделка; день последнего повторного входа
 
     def dir(s, i):
         """Сторона по сигналу дня i: Params.side · знак sig (side = −1 разворачивает сигнал 0/1 в шорт)."""
@@ -64,7 +66,7 @@ class Run:
         return i if at_close or j == 0 else s.ix[j - 1]
 
     def _exit(s, i, j, b, px, reason):
-        tr = s.tr
+        tr = s.last_x = s.tr
         tr.exit_day, tr.exit_bar, tr.exit_px, tr.reason, tr.fee_out = i, b, px, reason, s.p.comm * s.w
         s.gross[i] += tr.side * s.w * math.log((px + s.dv) / s.ref)       # dv: дивиденд позиции, пришедшей через отсечку (раз)
         s.dv = 0.0
@@ -178,6 +180,8 @@ class Run:
             s._try_order(i, j, d)
         elif s.tr is not None:
             s._scan(i, j, d, 0)
+        if s.p.reentry_den:                         # V6-a: повторный вход в тот же день после внутридневного выхода
+            reenter(s, i, j, d)
         close = s.close_of(i)
         if s.xo is not None:                        # заявка выхода не исполнилась за d+1: выход по close с прежней причиной
             if s.tr is not None:
@@ -244,6 +248,8 @@ class Run:
                 s._exit(i, j, b, S, s.sr)
             else:
                 s._scan(i, j, d, b + 1)
+            return
+        if prodlit(s, o, i, j):                     # V6-a: T > 1 — заявка живёт, пока сигнал активен
             return
         close, nb = s.close_of(i), len(d.c)
         live = bool(s.dir(i) == sd)        # без сигнала на d+1 вход по close / повтор не ставятся
