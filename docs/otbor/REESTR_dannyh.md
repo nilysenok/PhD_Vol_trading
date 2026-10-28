@@ -77,6 +77,20 @@
 - **Файл:** `docs/issledovaniya/2026-10-28_kluchevaya_stavka_2013_2017.csv` (`data_vstupleniya,stavka_pct` как в проектном ряду + `data_resheniya`, `data_resheniya_status`, `source_url`, `accessed`). Вставка в `fastbt/rates/key_rate_cbr_vladelec.csv` — отдельным PR кодера.
 - Дата вступления — первая строка с новым значением в hd_base.
 
+## Календарь событий `data/events.csv` (Ж-070 п. 2, 2026-10-28)
+
+Статус: справка, разработка (данные до 2022). Собирается `scripts/sobrat_events.py`; загрузчик `fastbt/sobytiya_pit.py` (`sobytiya_na(d, ticker)`: событие отдаётся, только если `data_obyavleniya ≤ d`; `*` — всем тикерам; ≥ 2022 — отказ; `digest()` для ключей кэша).
+
+- **Источник:** `docs/issledovaniya/2026-10-28_sobytiya_2016_2021.csv` (#392: cbr.ru, IMOEX, FORTS, 449 строк) и дивиденды `docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv` (dohod.ru; таблица `fastbt.dividendy.TABLE`, `dps_rub > 0`, 127 строк; `data_sobytiya` = `last_cum_date`, `data_obyavleniya` = `announce_date`).
+- **Типы (строк):** `cbr_zasedanie_klyuchevaya_stavka` 48, `forts_expiraciya` 332, `imoex_peresmotr` 24, `imoex_free_float` 39, `imoex_iskluchenie` 4, `imoex_vklyuchenie` 2, `div_last_cum` 127; всего 576. Дат события ≥ 2022 нет.
+- **Полнота:** ЦБ — заседания по ключевой ставке 2016–2021; IMOEX — пересмотры и изменения состава/free-float по тикерам из #392; FORTS — экспирации по перечисленным тикерам; дивиденды — 2017–2021 (2015–2016 добавляет отдельный PR; пересборка скриптом подхватит).
+- **Не учитывались: нет данных:** MSCI, отчётность, SPO, байбэки, публикация календаря ЦБ.
+- **Статус ЦБ:** «объявление = решение, консервативно» (дата публикации календаря не подтверждена).
+
+## Ключевая ставка ЦБ 2013–2017: подключение (дополнение от 2026-10-28)
+
+- Подключено к `rate_cbr()` PR stavka-2013-2017-v2, стык 2017-12-18 сверен (7,75 %): `fastbt/msp.py::rate_2013`, тест `tests/test_stavka_2013_2017.py`. Ряд владельца не менялся; исследовательский ряд читается отдельно.
+
 ## Дивиденды 2015–2016 в движке (дополнение от 2026-10-28)
 
 Статус: **потолок: только dohod.ru, первичные не сверены** (`primary_checked=no` во всех строках); разработка, данные до 2022.

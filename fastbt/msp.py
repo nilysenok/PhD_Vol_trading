@@ -24,6 +24,7 @@ from fastbt.data import MAIN, STRAT
 MSP_CSV = STRAT / "msp" / "perstrat_daily_returns"
 KEY_RATE = MAIN / "moex_discovery" / "data" / "external" / "macro" / "raw" / "key_rate_cbr.parquet"
 RATE_OWNER = Path(__file__).resolve().parent / "rates" / "key_rate_cbr_vladelec.csv"
+RATE_RESEARCH = Path(__file__).resolve().parents[1] / "docs" / "issledovaniya" / "2026-10-28_kluchevaya_stavka_2013_2017.csv"
 RATE_SPLICE = pd.Timestamp("2022-01-01")
 PRINTS ={"A": 1.32, "B": 1.47, "C": 2.51, "D": 2.54}
 # комиссия, с которой собраны печатные ряды (спецификация п. 8: A, D — без вычета; B — 0,05%)
@@ -55,10 +56,34 @@ def cal_days(index, forward: bool = True) -> np.ndarray:
     return cal
 
 
+def _read_rate(path: Path) -> pd.Series:
+    d = pd.read_csv(path, comment="#", parse_dates=["data_vstupleniya"])
+    return d.set_index("data_vstupleniya")["stavka_pct"].sort_index() / 100.0
+
+
 def rate_vladelec() -> pd.Series:
     """Ключевая ставка по датам вступления в силу (Ъ владельца 27.10, 12:00), доли; 40 решений."""
-    d = pd.read_csv(RATE_OWNER, comment="#", parse_dates=["data_vstupleniya"])
-    return d.set_index("data_vstupleniya")["stavka_pct"].sort_index() / 100.0
+    return _read_rate(RATE_OWNER)
+
+
+def rate_2013() -> pd.Series:
+    """Ряд владельца с исследовательским рядом cbr.ru 2013-09-17…2017-12-18 (#367) до него. Стык
+    2017-12-18 обязан совпасть, иначе ошибка. До первой даты ряда значения нет (Д4: без bfill)."""
+    o = rate_vladelec()
+    r = _read_rate(RATE_RESEARCH)
+    j = o.index[0]
+    if j not in r.index or abs(r[j] - o.iloc[0]) > 1e-12:
+        raise ValueError(f"стык рядов {j.date()}: исследовательский ряд не совпал с рядом владельца")
+    return pd.concat([r[r.index < j], o])
+
+
+def rate_on(days) -> pd.Series:
+    """Ставка на календарные дни по датам вступления (ffill только внутри ряда); день раньше
+    первой даты ряда — ValueError (Д4), не NaN и не bfill."""
+    r, days = rate_cbr(), pd.DatetimeIndex(days)
+    if len(days) and days.min() < r.index[0]:
+        raise ValueError(f"ставка на {days.min().date()}: ряд начинается {r.index[0].date()}")
+    return r.reindex(r.index.union(days)).sort_index().ffill().reindex(days)
 
 
 def rate_cbr() -> pd.Series:
@@ -66,7 +91,7 @@ def rate_cbr() -> pd.Series:
     12.02 и 29.10.2019 вместо 28.10); с 2022-01-01 — parquet ЦБ как был (≥ 2022 не пересчитывается)."""
     k = pd.read_parquet(KEY_RATE)
     p = k.set_index(pd.to_datetime(k["date"]))["value"].sort_index() / 100.0
-    o = rate_vladelec()
+    o = rate_2013()
     return pd.concat([o[o.index < RATE_SPLICE], p[p.index >= RATE_SPLICE]])
 
 
