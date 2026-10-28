@@ -1,0 +1,68 @@
+# Сетка v3 по Ж-111 («правила торговли v2»; владелец: «Ж-106»), S7 — кросс-секционный разворот. Проект архитектора-сменщика
+# на просмотр владельцу, до коммита в базу (Ф-32). Спецификация: docs/otchety/2026-10-28_msp_fazy_spec.md §13.1, §17.
+# Общие правила и порядок осей — zh106_S1.yaml. S7 торгуется по правилам контртренда (Ф-32), h = 3 (Ж-114 п. 5).
+# Сигнал — центр fastbt/kross_seksiya.skor_s7 (x = r_i − r_IMOEX за okno дней, скор = −(2·pct − 1)), оси ±50 % (Ж-114 п. 4).
+# Транши и τ-выход голой идеи заменены жизнью заявки и выходами по уровням Ж-111 (§17.2).
+v: 3
+format: zh106-setka
+sid: S7
+semya: kross_razvorot
+pravila: kontrtrend
+period: train4
+komissiya: 0.0004
+sobol: {seed: 20261107, scramble: true, prohod1: 20000, prohod2: 100000}
+
+signal:
+  okno:  {ishodnoe: 5, setka: [3, 4, 5, 6, 7]}                                  # ±50 % от 5; целых значений 5, не 7
+  porog: {ishodnoe: 0.5, setka: [0.25, 0.33, 0.42, 0.5, 0.58, 0.67, 0.75]}     # |скор| ≥ porog — кандидат
+
+vhod:
+  k_e:     {setka: [0.0, 0.25, 0.5, 0.75, 1.0, 1.5], ed: sigma, ot: close_d}   # лимит close_d·(1 − сторона·k_e·σ_d)
+  T:       {setka: [1, 2, 3, 5]}
+  reentry: {setka: [net, da]}
+
+razmer:
+  rho_pct:  {setka: [0.2, 0.3, 0.5, 0.75, 1.0]}
+  m_score:  {setka: [net, lin_05_15, kvad_025_20]}
+  rang_tip: {setka: [tikernyy, obshchiy, srednee]}
+  sigma:    {setka: [rv5, ewma094, rv22, rv66]}
+
+vyhod:
+  tejk:         {setka: [rodnoy, kt0.5, kt1, kt1.5, kt2, kt3, sila_a05_b1, sila_a1_b1, sila_a05_b2, sila_a1_b2, net]}
+                # rodnoy: цена, при которой r_i − r_IMOEX за okno = 0 (пересчёт вечером, лимит на d+1); kt*: h = 3
+  k_s:          {setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0]}
+  b0:           {setka: [net, 0.5, 1.0, 1.5, 2.0, sila_c1, sila_c2, sila_c3]}
+  stop_v_plyus: {setka: [net, p1.5_q0.5, p2_q1, p3_q1.5]}
+  trejling:     {setka: [net, ekstr1, ekstr1.5, ekstr2, ekstr3, stup0.5, stup1]}   # линии сигнала у кросс-секции нет
+  chastichnyy:  {setka: [net, d1_3_r1, d1_3_r1.5, d1_3_r2, d1_2_r1, d1_2_r1.5, d1_2_r2]}
+  tau:          {setka: [5, 10, 20, net]}
+
+dengi:
+  L:                {setka: [1.0, 1.5, 2.0, 3.0, 4.0]}
+  sigma_target_pct: {setka: [8, 10, 15, 20]}
+  okno_targeta:     {setka: [21, 63]}
+
+fiksirovano:
+  fdr: t0
+  zaem_pct_god: 5
+  proverka: bars5m
+  vyhod_po_signalu: smena_storony_stop_zayavkoy
+  gap: open
+  odin_bar: stop_pervym
+  rebalans: ezhednevno                   # Ж-103 п. 3: разворот — ежедневно
+  oborot_max_dolya_knigi: 0.20           # Ж-103 п. 3
+  min_tikerov: 10                        # Ж-114 п. 1; меньше — день пропускается
+  v_sektore_odnoy_storony: 3             # как kross_seksiya.V_SEKTORE
+  neytralnost: zayavki_porovnu          # ❓ Ф-38: заявки ставятся парами лонг/шорт по рангу; нейтрализация исполненного — слой МСП
+  lambda_f: iz_msp                       # ❓ Ф-37, умолчание дирижёра [Ж-115]: общая с МСП, не ось стратегии
+  kachestvo_dannyh: zh114_p1             # тикер-день < 30 баров невалиден; вселенная 95 % / 80 % за 60 дней
+
+kanon:
+  - "m_score = net и tejk ∉ sila_* и b0 ∉ sila_* → rang_tip = obshchiy"
+
+obyom:                                   # scratchpad/arh2/obyom_s1_s12.py
+  signal: 35
+  torgovye: 143061811200
+  polnyy: 5.007e+12
+  posle_kanona: 4.565e+12
+  polnyy_f37_x3: 1.502e+13               # если λ_ф — ось стратегии (альтернатива Ф-37)

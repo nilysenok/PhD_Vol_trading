@@ -1,0 +1,50 @@
+# Сетка v3 по Ж-111, S9 — сила к сектору. Проект архитектора-сменщика на просмотр (Ф-32). Спецификация §17.
+# Правила тренда (Ф-32), h = 10. Сигнал — центр kross_seksiya.skor_s9: x = r_i(okno) − r_сектора(okno) (среднее по остальным
+# тикерам сектора, Ж-101 к S9 не относится), скор = 2·pct − 1; оси ±50 % (Ж-114 п. 4).
+v: 3
+format: zh106-setka
+sid: S9
+semya: kross_sila_k_sektoru
+pravila: trend
+period: train4
+komissiya: 0.0004
+sobol: {seed: 20261109, scramble: true, prohod1: 20000, prohod2: 100000}
+
+signal:
+  okno:  {ishodnoe: 62, setka: [31, 41, 52, 62, 72, 83, 93]}
+  porog: {ishodnoe: 0.5, setka: [0.25, 0.33, 0.42, 0.5, 0.58, 0.67, 0.75]}
+
+vhod:
+  k_e:     {setka: [-0.5, -0.25, 0.0, 0.25], ed: atr14, ot: close_d}   # ❓ Ф-39
+  T:       {setka: [1, 2, 3, 5]}
+  reentry: {setka: [net, da]}
+
+razmer:
+  rho_pct:  {setka: [0.2, 0.3, 0.5, 0.75, 1.0]}
+  m_score:  {setka: [net, lin_05_15, kvad_025_20]}
+  rang_tip: {setka: [tikernyy, obshchiy, srednee]}
+  sigma:    {setka: [rv5, ewma094, rv22, rv66]}
+
+vyhod:
+  tejk:         {setka: [rodnoy, kt0.5, kt1, kt1.5, kt2, kt3, sila_a05_b1, sila_a1_b1, sila_a05_b2, sila_a1_b2, net]}
+                # rodnoy: |скор| < porog → выход open d+1 (❓ Ф-40); kt*: h = 10
+  k_s:          {setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0]}
+  b0:           {setka: [net, 0.5, 1.0, 1.5, 2.0, sila_c1, sila_c2, sila_c3]}
+  stop_v_plyus: {setka: [net, p1.5_q0.5, p2_q1, p3_q1.5]}
+  trejling:     {setka: [net, ekstr1, ekstr1.5, ekstr2, ekstr3, stup0.5, stup1]}
+  chastichnyy:  {setka: [net, d1_3_r1, d1_3_r1.5, d1_3_r2, d1_2_r1, d1_2_r1.5, d1_2_r2]}
+  piramida:     {setka: [0, 0.5, 1.0]}
+  tau:          {setka: [5, 10, 20, net]}
+
+dengi:
+  L:                {setka: [1.0, 1.5, 2.0, 3.0, 4.0]}
+  sigma_target_pct: {setka: [8, 10, 15, 20]}
+  okno_targeta:     {setka: [21, 63]}
+
+fiksirovano: {fdr: t0, zaem_pct_god: 5, proverka: bars5m, vyhod_po_signalu: smena_storony_stop_zayavkoy, gap: open,
+              odin_bar: stop_pervym, rebalans: ezhenedelno_posledniy_den_nedeli, oborot_max_dolya_knigi: 0.20,
+              min_tikerov: 10, v_sektore_odnoy_storony: 3, neytralnost: zayavki_porovnu, lambda_f: iz_msp,
+              kachestvo_dannyh: zh114_p1}
+kanon:
+  - "m_score = net и tejk ∉ sila_* и b0 ∉ sila_* → rang_tip = obshchiy"
+obyom: {signal: 49, torgovye: 286123622400, polnyy: 1.402e+13, posle_kanona: 1.278e+13, polnyy_f37_x3: 4.206e+13}
