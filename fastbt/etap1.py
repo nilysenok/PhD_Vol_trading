@@ -28,7 +28,8 @@ def _flat(x):
     if isinstance(x, pd.Series):
         return [np.asarray(x.to_numpy()), np.asarray(x.index.astype("int64"))] if x.dtype != object else [str(x.tolist())]
     if hasattr(x, "o") and hasattr(x, "pusto"):                     # Day
-        return [np.stack([x.o, x.h, x.l, x.c]) if len(x.c) else np.empty(0), bool(x.pusto)]
+        out = [np.stack([x.o, x.h, x.l, x.c]) if len(x.c) else np.empty(0), bool(x.pusto)]
+        return out + ([np.ascontiguousarray(x.t)] if getattr(x, "t", None) is not None else [])   # Д5: время баров в ключе
     if isinstance(x, np.ndarray):
         return [np.ascontiguousarray(x)]
     return [x]
@@ -135,7 +136,8 @@ def anchor_s9_diff(sid: str, evr: Evaluator, comm: float = 0.0004, period: str =
         tuple((g, period) for g in years_of(period))
     for god, per in pairs:
         end = PERIODS[per][1] + 1 if period != "train" else god + 1
-        ref = ev.pnl(sigs, p, comm, pd.Timestamp(f"{end}-01-01"))["excess"]
+        kw = {} if period == "train" else dict(start_year=PERIODS[per][0])      # train — прежний START_YEAR
+        ref = ev.pnl(sigs, p, comm, pd.Timestamp(f"{end}-01-01"), **kw)["excess"]
         mine = evr.excess(sp, per)[0]["excess"]
         m = ref.index.year == god
         ref, mine = ref[m], mine[mine.index.year == god]
@@ -143,9 +145,10 @@ def anchor_s9_diff(sid: str, evr: Evaluator, comm: float = 0.0004, period: str =
     return out
 
 
-def fabrika(sid: str, commission: float = 0.0004):
-    """sid → (evaluate(params, period), s9_check(point)); s9_check — якорь ≤ 1e-12 к s9 (считается один раз на sid)."""
-    inp = build_inputs(sid)
+def fabrika(sid: str, commission: float = 0.0004, period: str = "train"):
+    """sid → (evaluate(params, period), s9_check(point)); s9_check — якорь ≤ 1e-12 к s9 (считается один раз на sid).
+    period — окно входов и якоря (train4 — В1)."""
+    inp = build_inputs(sid, period=period)
     inp.commission = commission
     evr = Evaluator(sid, inp, base_point(sid), commission)
     state = {}
@@ -156,7 +159,7 @@ def fabrika(sid: str, commission: float = 0.0004):
 
     def s9_check(point: dict) -> bool:
         if "ok" not in state:
-            d = anchor_s9_diff(sid, evr, commission)
+            d = anchor_s9_diff(sid, evr, commission, period)
             state["ok"] = bool(max(d.values()) <= 1e-12)
         return state["ok"]
     return evaluate, s9_check

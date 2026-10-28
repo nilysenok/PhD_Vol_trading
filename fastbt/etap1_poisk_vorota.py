@@ -11,7 +11,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from fastbt import sweep_drivers as sd
+from fastbt import pbo_pravilo as PR, sweep_drivers as sd
 from fastbt.etap1_data import psr_dsr  # noqa: F401  (перенесено в etap1_data: лимит 200 строк; V.psr_dsr остаётся)
 
 TIE, WIN, NBLK, PBO_MAX, MIN_SDELOK, PLATO_NET = 0.05, 126, 8, 0.2, 30, 0.1
@@ -196,5 +196,5 @@ def matrix(led: Ledger, period: str = "train") -> np.ndarray:
     return np.column_stack(list(cols.values())) if cols else np.empty((0, 0))
 
 
-def pbo(M: np.ndarray, nblk: int = NBLK) -> float:
-    return sd.pbo_cscv(M.tolist(), nblk)["pbo"] if M.shape[1] >= 2 else float("nan")
+def pbo(M: np.ndarray, nblk: int = NBLK, pravilo: dict | None = None) -> float:   # Ж-080: pravilo = PR.pravilo_etapa(...); None — argmax (справочно)
+    return float("nan") if M.shape[1] < 2 else sd.pbo_cscv(M.tolist(), nblk)["pbo"] if pravilo is None else PR.pbo_cscv_pravilo(M.T, nblk=nblk, **pravilo)
