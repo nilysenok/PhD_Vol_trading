@@ -51,6 +51,40 @@ def test_mutatsiya_podmena_pravila_na_argmax_menyaet_pbo():
     assert abs(est - mut) > 0.4
 
 
+def etalon_3x2():
+    """Эталон проверяющего (docs/otchety/2026-10-28_proverka_pbo_pravilo.md): сетка 3×2, T = 8, блок = строка, 70 разбиений;
+    c0…c4 — константы 0,8 / 0,5 / 0,6 / 0,7 / 0,9, c5 — шип +10 (строки 0–3) и −10 (строки 4–7). Целевая — среднее."""
+    pts = [{"a": a, "b": b} for a in range(3) for b in range(2)]
+    M = np.array([[v] * 8 for v in (0.8, 0.5, 0.6, 0.7, 0.9)] + [[10.0] * 4 + [-10.0] * 4])
+    kub = B.postroit_kub(pts, {"a": [0, 1, 2], "b": [0, 1]}, ["a", "b"], {})
+    mean = lambda X, d, rows: X[rows].mean(axis=1)                                            # noqa: E731
+    return M, pts, functools.partial(B.vybor_centr_plato, kub=kub, dop=np.ones(6, bool), obj_fn=mean)
+
+
+def test_etalon_proveryayushchego_3x2_17_iz_70_i_0_iz_70():
+    M, pts, centr = etalon_3x2()
+    a, c = B.cscv(M, pts, B.vybor_argmax), B.cscv(M, pts, centr)
+    assert (round(a["pbo"] * 70), a["n"]) == (17, 70) and (round(c["pbo"] * 70), c["n"], c["n_propusk"]) == (0, 70, 0)
+    assert a["pbo"] == 17 / 70 and c["pbo"] == 0.0
+
+
+def test_etalon_3x2_mutatsiya_argmax_vnutri_centra_daet_17_vmesto_0():
+    M, pts, _ = etalon_3x2()
+    assert B.cscv(M, pts, lambda Mi, c, d: B.vybor_argmax(Mi, c, d))["pbo"] == 17 / 70 != 0.0
+
+
+def test_g1_beryot_centr_plato_a_argmax_spravochnyy(tmp_path, monkeypatch):
+    """Итог поиска: обе колонки; G1_pbo — по `pbo` (центр плато). Мутация «G1 по argmax» (pbo без pravilo) совпадает с pbo_argmax."""
+    from test_etap1_poisk import SETKA, World
+    fake = lambda M, nblk=V.NBLK, pravilo=None: 0.9 if pravilo is None else 0.05              # noqa: E731  правило -> 0,05, argmax -> 0,9
+    monkeypatch.setattr(P, "pbo", fake)
+    row = P.run_strategy("S9", World().evaluate, lambda p: True, out=tmp_path / "a", run_id="1", setka=SETKA)
+    assert (row["pbo"], row["pbo_argmax"], row["G1_pbo"]) == (0.05, 0.9, True)
+    monkeypatch.setattr(P, "pbo", lambda M, nblk=V.NBLK, pravilo=None: fake(M, nblk))          # мутация: G1 по argmax
+    mut = P.run_strategy("S9", World().evaluate, lambda p: True, out=tmp_path / "b", run_id="1", setka=SETKA)
+    assert (mut["pbo"], mut["G1_pbo"]) == (0.9, False) and mut["pbo"] != row["pbo"]
+
+
 def test_vorota_pbo_s_pravilom_i_bez():
     """V.pbo(M) без pravilo — прежний argmax (справочная колонка), с pravilo — правило этапа; эти два числа различны."""
     M, coords, centr = sintetika()

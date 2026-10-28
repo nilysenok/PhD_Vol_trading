@@ -93,11 +93,12 @@ def vybor_argmax(M_in: np.ndarray, coords, dates_in=None) -> int:
 
 
 def vybor_centr_plato(M_in: np.ndarray, coords, dates_in, *, kub: Kub, dop: np.ndarray,
-                      topk: int = TOPK, tie: float = TIE) -> int | None:
-    """Центр плато по min mSR на половине; допустимость dop[j] и «нет» на оси — как в pick_center. None — кандидатов нет."""
+                      topk: int = TOPK, tie: float = TIE, obj_fn: Callable | None = None) -> int | None:
+    """Центр плато по целевой на половине (умолчание min mSR; obj_fn(M_in, dates_in, rows) — подмена, для сверки на
+    синтетике); допустимость dop[j] и «нет» на оси — как в pick_center. None — кандидатов нет."""
     used = kub.col >= 0
     o = np.full(len(kub.col), np.nan)
-    o[used] = min_msr(M_in, dates_in, kub.col[used])
+    o[used] = (obj_fn or min_msr)(M_in, dates_in, kub.col[used])
     fin = np.isfinite(o)
     vals = np.where(kub.nb >= 0, o[np.where(kub.nb >= 0, kub.nb, 0)], np.nan)
     n = np.isfinite(vals).sum(axis=1)
@@ -143,9 +144,10 @@ def cscv(M: np.ndarray, coords: list, select_fn: Callable, nblk: int = 8, dates=
     return dict(pbo=pbo, n=len(logits), n_propusk=skipped, logits=logits)
 
 
-def pbo_cscv_pravilo(M: np.ndarray, coords: list, select_fn: Callable, nblk: int = 8, dates=None) -> float:
-    """PBO по CSCV с выбором select_fn внутри каждого разбиения (Ж-080)."""
-    return cscv(M, coords, select_fn, nblk, dates)["pbo"]
+def pbo_cscv_pravilo(M: np.ndarray, coords: list, select_fn: Callable, nblk: int = 8, dates=None,
+                     oos_fn: Callable | None = None) -> float:
+    """PBO по CSCV с выбором select_fn внутри каждого разбиения (Ж-080); oos_fn — целевая для ранга на out-of-sample."""
+    return cscv(M, coords, select_fn, nblk, dates, oos_fn)["pbo"]
 
 
 def pravilo_etapa(led, axes: dict, plan: list, base: dict, yakor: dict, period: str = "train") -> dict:
@@ -162,4 +164,4 @@ def pravilo_etapa(led, axes: dict, plan: list, base: dict, yakor: dict, period: 
         dop.append(coords[-1] is not None and not res.get("vyrozhdena") and V.dopustima(led, prm, yakor, **V.kw(period)))
     kub = postroit_kub(coords, axes, plan, base)
     dates = np.concatenate([np.datetime64(f"{y}-01-01") + np.arange(n[y]) for y in ys]) if n else np.array([], "datetime64[D]")
-    return dict(coords=coords, dates=dates, select_fn=functools.partial(vybor_centr_plato, kub=kub, dop=np.array(dop, bool)))
+    return dict(coords=coords, dates=dates, oos_fn=min_msr, select_fn=functools.partial(vybor_centr_plato, kub=kub, dop=np.array(dop, bool)))

@@ -54,14 +54,13 @@ def schitat(sid: str, it: int, led_dir: Path) -> dict:
     pr = B.pravilo_etapa(L, S["axes"], plan, base, S["yakor"])
     M, kw = V.matrix(L).T, pr["select_fn"].keywords
     assert M.shape[0] == len(pr["coords"]), "столбцы pravilo_etapa не совпали с V.matrix"
-    oos = lambda X, d: B.min_msr(X, d)                                                  # noqa: E731
     a = B.cscv(M, pr["coords"], B.vybor_argmax, dates=pr["dates"])
     c = B.cscv(M, pr["coords"], pr["select_fn"], dates=pr["dates"])
-    c2 = B.cscv(M, pr["coords"], pr["select_fn"], dates=pr["dates"], oos_fn=oos)
+    c2 = B.cscv(M, pr["coords"], pr["select_fn"], dates=pr["dates"], oos_fn=pr["oos_fn"])
     old = staroe(sid, it)
     return dict(strategiya=sid, iteraciya=it, N_tochek=M.shape[0], T_dney=M.shape[1], N_v_kube=int((kw["kub"].col >= 0).sum()),
                 N_dopustimyh=int(kw["dop"].sum()), pbo_argmax=a["pbo"], pbo_staroe=old, argmax_sovpal=bool(abs(a["pbo"] - old) < 1e-12),
-                pbo_centr_plato=c["pbo"], pbo_centr_plato_oos_msr=c2["pbo"], razbienij=c["n"], propusk_centr=c["n_propusk"],
+                pbo_centr_plato_oos_msr=c2["pbo"], pbo_centr_plato_oos_sredn=c["pbo"], razbienij=c["n"], propusk_centr=c["n_propusk"],
                 osi_plana=" ".join(plan), ledger=name)
 
 
