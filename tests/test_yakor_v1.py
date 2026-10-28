@@ -54,6 +54,7 @@ def deltas(evr, sid: str, sigp: dict) -> dict:
     for y in GODY:
         r, m = ref[ref.index.year == y], mine[mine.index.year == y]
         assert len(r) > 200, f"{sid} {y}: ряд s9 пуст/короток ({len(r)})"
+        assert np.abs(r.to_numpy()).max() > 0, f"{sid} {y}: ряд s9 нулевой — сверка тривиальна"
         out[y] = float(np.abs(m.to_numpy() - r.to_numpy()).max()) if m.index.equals(r.index) else float("inf")
     return out
 
@@ -77,7 +78,7 @@ def test_train4_anchor_equals_s9(sid, sigp, evrs):
     assert set(d) == set(GODY) and max(d.values()) <= TOL, d
 
 
-def test_20_tochek_mutatsii_ne_menyayut_spisok():
+def test_spisok_tochek_18_sk_po_3_na_strategiyu():
     assert len(POINTS) == 18 and len({(s, tuple(sorted(p.items()))) for s, p in POINTS}) == 18
     assert {s for s, _ in POINTS} == {f"S{k}" for k in range(1, 7)}
 
@@ -104,11 +105,19 @@ def test_mutation_progrev_ne_2015_caught(monkeypatch):
     """Прогрев начинается 2016-01-01, а не 2015: состояние сигналов/выходов на 2016 другое — якорь обязан разойтись."""
     from fastbt import etap1
     ev = etap1.sk_evaluator("S1")
-    monkeypatch.setattr(etap1, "START_V1", pd.Timestamp("2016-01-01"))
+    monkeypatch.setattr(etap1, "START_V1", pd.Timestamp("2017-01-01"))      # окно оценщика не покрывает 2016
     evr = make_evr("S1", ev=ev)
     monkeypatch.undo()
     try:
         d = deltas(evr, "S1", POINTS[0][1])
-    except AssertionError:
-        return                                       # ряд не сошёлся по индексу/длине — тоже падение сверки
+    except ValueError:                       # оценщик на смещённом окне ломается громко (длины рядов) — сверка не проходит
+        return
     assert max(d.values()) > TOL, d
+
+
+def test_mutation_progrev_s9_ne_2015_caught(monkeypatch):
+    """Прогрев s9 (VAL_START train4) = 2016: окно валидации 2016 пустое, боевой путь отказывает, а не считает молча."""
+    from fastbt import s9
+    monkeypatch.setitem(s9.PERIODS_S9, "train4", ((2016, 2017, 2018, 2019), 2016))
+    with pytest.raises(ValueError, match="пустое окно"):
+        deltas(make_evr("S1"), "S1", POINTS[0][1])
