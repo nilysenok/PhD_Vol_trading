@@ -72,7 +72,8 @@ def k2_sig_fn(lag: int):
         n = len(sig)
         k = lag if lag == 0 or n - 2 * MIN_LAG <= 0 else MIN_LAG + (lag - MIN_LAG) % max(n - 2 * MIN_LAG + 1, 1)
         out = sig[(np.arange(n) - k) % n] if n else sig.copy()
-        out[-1] = 0.0                                                      # день b — только close для строки b−1
+        if k:
+            out[-1] = 0.0                                                    # день b — только close для строки b−1
         return out
     return fn
 
