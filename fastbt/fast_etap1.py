@@ -26,6 +26,7 @@ import numpy as np
 
 from fastbt import exec_e, fast_exec as fx
 from fastbt.exec_e_types import Params, Result, Trade
+from fastbt.exec_e_v6 import v6_on
 
 _SLOW_RUN = exec_e.run                      # эталон; запасной путь для входов, которые ядро не берёт (NaN в sig)
 TAIL = 512                                 # запас баров под последний день вызова (у оценщика — одна свеча close)
@@ -94,15 +95,15 @@ def _trades(ticker, ti, tf, comm) -> list:
 def _slow_only(p: Params, ed) -> bool:
     """Оси прогона Л-2 (Run2: ed, zhizn, gap_propusk, t_vyhod, bar_plus, stop_tik) ядро не повторяет — эталон."""
     f = getattr(exec_e, "_new_axes", None)
-    return ed is not None or p.tejk != "net" or p.vhod_tip != "podtverzhdenie" or p.atr_m is not None or p.chast_1r or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
+    return ed is not None or p.tejk != "net" or p.vhod_tip != "podtverzhdenie" or p.atr_m is not None or p.chast_1r or v6_on(p) or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
 
 
-def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None, urovni=None) -> Result:
+def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None, urovni=None, rang=None) -> Result:
     """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси Run2, tejk, stop_zayavka — медленным путём."""
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.asarray(sigma, float)
     if _slow_only(p, ed) or not len(days) or not np.isfinite(sig.astype(float)).all():
-        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni)) if v is not None}
+        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni), ("rang", rang)) if v is not None}
         return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
         raise ValueError("days, sig, sigma, close разной длины")

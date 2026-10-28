@@ -9,13 +9,16 @@ from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level,
                                  part_fee, part_hit, part_level, ratchet, rodnoy_level, stop_hit, stop_level,
                                  take_hit, take_level, tejk_level)
 from fastbt.exec_e_types import Trade
+from fastbt.exec_e_v6 import V6, v6_check, v6_on
 
 FRAC = 0.5                                          # доля позиции, закрываемая на +1R (Ж-092)
 
 
-class Run:
-    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None, atr=None):
+class Run(V6):
+    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None, atr=None, rang=None):
         n = len(days)
+        v6_check(p, rang, n)
+        s.rang, s.be_m, s.pq_on, s.vlev, s.adds, s.n_add, s.v6 = rang, None, False, None, [], 0, v6_on(p)   # V6-b (exec_e_v6)
         s.atr, s.w, s.smax, s.part, s.R, s.ent = atr, 1.0, None, False, float("nan"), (-1, -1)   # Ж-092: ATR, остаток, ratchet, ½, R, бар входа
         s.tejk_M, s.tT, s.n_bez = tejk_M, None, 0     # Ж-084: M по дням сигнала; тейк сделки фиксируется на входе; входов без тейка
         s.t, s.days, s.sig, s.sigma, s.p, s.cn6 = ticker, days, sig, sigma, p, close
@@ -54,6 +57,7 @@ class Run:
         s.ref, s.i0, s.sg, s.ej = px, i0, sg, j
         s.ext, s.be_on, s.sh = px, False, 0.0
         s.w, s.smax, s.part, s.ent = 1.0, None, False, (i, b)
+        s.v6_enter(d_sig)
         s.R = px * s.p.b * sg if s.p.b is not None else float("nan")
         if s.p.tejk in ("k_srednemu", "pol_puti"):  # M зафиксирован на d_sig (≤ close d_sig), от P_вх — один раз
             s.tT = tejk_level(sd, px, float(s.tejk_M[d_sig]), s.p.tejk, s.p.tick)
@@ -65,7 +69,7 @@ class Run:
 
     def _exit(s, i, j, b, px, reason):
         tr = s.tr
-        tr.exit_day, tr.exit_bar, tr.exit_px, tr.reason, tr.fee_out = i, b, px, reason, s.p.comm * s.w
+        tr.exit_day, tr.exit_bar, tr.exit_px, tr.reason, tr.fee_out = i, b, px, reason, s.p.comm * (s.w - s.v6_exit(i, b, px))
         s.gross[i] += tr.side * s.w * math.log((px + s.dv) / s.ref)       # dv: дивиденд позиции, пришедшей через отсечку (раз)
         s.dv = 0.0
         s.cost[s._row(i, j, s.zak or reason in ("vremya", "signal"))] += s.p.comm * s.w
@@ -102,10 +106,11 @@ class Run:
         if sg is None:
             return None, None
         tr = s.tr
+        kx = dict(extra=s.v6_extra(sg)) if s.v6 else {}     # V6-b: «стоп в плюс», ступенчатый; выкл — вызов прежний
         if s.p.atr_m is None:
-            S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on)    # sr: stop | trail | bu
+            S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on, **kx)    # sr: stop | trail | bu
         else:                                       # Ж-092: ATR по дням до текущего; стоп трейла не ослабляется (ATR может падать)
-            S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on, atr_for_day(s.atr, s.ix, j))
+            S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on, atr_for_day(s.atr, s.ix, j), **kx)
             S = s.smax = ratchet(tr.side, S, s.smax)
         S = s._stop_shift(S)
         if s.p.tejk == "rodnoy_uroven":
@@ -127,14 +132,16 @@ class Run:
         sd, px = s.tr.side, s.tr.entry_px
         s.ext = ext_next(sd, s.ext, hi, lo)
         sg = s._sg(j)
-        if s.p.be and not s.be_on and sg is not None:
+        if s.v6 and sg is not None:
+            s.v6_after(sg, hi, lo)
+        elif s.p.be and not s.be_on and sg is not None:
             s.be_on = be_reached(sd, px, sg, hi, lo)
 
     def _scan(s, i, j, d, b0):
         """Бары b0..: стоп раньше тейка; гэп — по open. Режим zakrytie — одна проверка по close Н6."""
         if s.zak:
             return s._scan_close(i, j, d)
-        sd, dyn = s.tr.side, s.p.k_tr is not None or s.p.be or s.p.atr_m is not None
+        sd, dyn = s.tr.side, s.p.k_tr is not None or s.p.be or s.p.atr_m is not None or s.v6
         S, T = s._levels(j)
         for b in range(b0, len(d.c)):
             o, h, l = d.o[b], d.h[b], d.l[b]
@@ -154,6 +161,8 @@ class Run:
             if s.xo is not None and limit_mask(-sd, h, l, s.xo["X"], s.p.tick):     # после стопа: только проход на тик
                 s.x_fills += 1
                 return s._exit(i, j, b, limit_px(-sd, o, s.xo["X"]), "lim")
+            if s.p.pir and s._sg(j) is not None:    # V6-b: добавка после стопа, тейка и выхода-заявки (худший порядок)
+                s.v6_pir(i, j, b, o, h, l, S, s._sg(j))
             if dyn:
                 s._after_bar(j, h, l)
                 S, T = s._levels(j)

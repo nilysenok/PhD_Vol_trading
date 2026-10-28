@@ -47,7 +47,13 @@ class Params:
     vhod_open: bool = False       # Ж-086 п. 1: вход рынком (k = None) по open бара 10:00 дня d+1, а не по close d (exec_e_vremya.bar_at)
     atr_m: float | None = None    # Ж-092 S3/S4 п. 4: трейлинг экстремум с входа ∓ m·ATR(14, дни до d−1), стоп не ослабляется; None — выкл
     chast_1r: bool = False        # Ж-092: на +1R (R = расстояние входа до начального стопа, нужен b) закрыть ½ лимитом, со следующего бара
-    tejk: str = "net"           # Ж-084: net | k_srednemu | pol_puti — тейк от уровня сигнала M (fastbt/tejk_signal.py); нужен tejk_M в run
+    # --- V6-b (Ж-111 пп. 7, 8б, 10; fastbt/exec_e_v6.py): всё выключено, нужен b, check="bary"; медленный путь ---
+    b0: float | None = None       # безубыток: после +b0·σ стоп не хуже цены входа (взаимоисключающе с be и b0_c)
+    b0_c: float | None = None     # то же, порог b0 = b0_c·ранг силы (ранг на день сигнала — аргумент run(rang=…), [0; 1])
+    sp: tuple | None = None       # «стоп в плюс» (p, q): после +p·σ стоп на +q·σ от цены входа (q < p)
+    step_s: float | None = None   # ступенчатый трейлинг: каждые +s·σ стоп подтягивается на +s·σ
+    pir: float = 0.0              # пирамидинг: размер добавки (доля базовой ноги) на +1σ, +2σ; ≤ 2 добавок, риск ≤ 2ρ
+    tejk: str = "net"         # Ж-084: net | k_srednemu | pol_puti — тейк от уровня сигнала M (fastbt/tejk_signal.py); нужен tejk_M в run
 
 
 @dataclass
