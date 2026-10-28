@@ -40,7 +40,7 @@ def mediana_goda(sg: np.ndarray, dates) -> np.ndarray:
 
 class EvaluatorV2(Evaluator):
     _ctx = dict(nov=NOVYE, vozm={}, default=True)
-    _kray = False
+    _kray, STROGAYA = False, False                    # STROGAYA: якорь с новыми осями остаётся якорем (fastbt/a_strogaya.py)
 
     def _rows(self, pt, period, anchor):
         c = self._ctx
@@ -92,8 +92,8 @@ class EvaluatorV2(Evaluator):
             ext["zhizn"] = int(nov["zhizn"])
         if nov["gap"] == "propusk":
             ext["gap_propusk"] = True
-        if str(nov["t_vyhod"]) != "close":
-            ext["t_vyhod"] = str(nov["t_vyhod"])
+        if str(nov["t_vyhod"]) != "close":                                  # строгая строка: rynok = open 10:00 d+1 (Ж-086 п. 1)
+            ext.update(t_vyhod=str(nov["t_vyhod"]), vhod_open=pt["vhod"] == "rynok" and p.k is None)
         return replace(p, **ext) if ext else p
 
     def _rows2(self, pt, period, anchor, c):
@@ -135,7 +135,7 @@ class EvaluatorV2(Evaluator):
     def excess(self, pt, period):
         """Как Evaluator.excess, но filtr ≠ net снимает режим «якорь» (как sobytiya ≠ net в v1): ось действует всегда."""
         pt = self.full(pt)
-        anc = is_anchor(pt) and self._ctx["nov"] == NOVYE                                    # любая новая ось ≠ умолчание снимает якорь
+        anc = is_anchor(pt) and (self._ctx["nov"] == NOVYE or self.STROGAYA)                                 # любая новая ось ≠ умолчание снимает якорь
         self._zctx = (pt, anc, rows := self._rows(pt, period, anc))                         # для zaem_v2.ryad (Ж-089)
         eng, inv = self._engine(period)
         cat = lambda f: np.concatenate([f(r) for _, r, _, _ in rows])             # noqa: E731

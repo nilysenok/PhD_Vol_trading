@@ -181,7 +181,10 @@ class Run:
         sg, sd = s.sigma[i], s.dir(i)
         if s.tr is not None or s.order is not None or s.blocked or not sd or not np.isfinite(sg):
             return
-        if s.p.k is None:
+        if s.p.k is None and s.p.vhod_open:         # Ж-086 п. 1: рынком по open 10:00 дня d+1 (заявка без уровня)
+            if j + 1 < len(s.ix):
+                s.order = dict(L=None, due=j + 1, sd=sd, d_sig=i, rynok=True)
+        elif s.p.k is None:
             s._enter(i, j, nb - 1, close, nb, sg, i, sd)
         elif j + 1 < len(s.ix):
             s._place(close, sd, sg, j, i, retry=False)
