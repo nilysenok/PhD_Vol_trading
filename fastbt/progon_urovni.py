@@ -5,8 +5,11 @@
 с одним весом, лимит λ на совпадение сигналов (нужны `pozicii`), состав. Вес пары = вес её стратегии, пары нормируются
 по присутствующим на дату. Все веса и ρ — по данным до d−1, пересмотр раз в месяц (PIT, Д2).
 Уровень 3: `tsel_vol` (масштаб = min(1, цель/σ̂), без плеча), `tormoz_mdd` (при просадке накопленного excess до d−1
-глубже порога масштаб ×0,5). Умолчания: ряд = среднее по присутствующим парам (тождество §1.4 -> IG-4: A′ = A).
-Основная конфигурация — умолчания; остальные — чувствительность, без ранжирования и выбора (Ж-078).
+глубже порога масштаб ×0,5). Умолчания (`ravnyj_bez_targeta`): ряд = среднее по присутствующим парам (тождество §1.4 -> IG-4: A′ = A) — справочная строка.
+Основная A′ (Ж-090 п. 2, N = 1, вне сетки): `obr_vol_63` (a_k ∝ 1/σ_k, окно 63 до d−1, пересмотр раз в месяц, как уровень 2)
++ `tsel_vol` 10 % при окне 63, плечо ≤ L = 1 (таргет только снижает экспозицию), без тормоза. Свободная доля капитала
+получает ставку как в движке: excess пары = pos·lr − комиссия − |pos|·rf·cal, то есть rf платится только за занятую
+экспозицию; масштаб s < 1 оставляет (1−s) капитала на rf (excess этой доли 0). Сетка 1 296 — справочно, выбор запрещён.
 """
 from __future__ import annotations
 import itertools
@@ -26,16 +29,24 @@ def setka(path=YAML) -> dict:
 
 
 def konfiguracii(sk: dict | None = None) -> list:
-    """54 × 24 конфигурации в порядке сетки; основная (умолчания) помечена `osnovnaya`."""
+    """54 × 24 справочные конфигурации; `osnovnaya` False у всех, `rol`: ravnyj_bez_targeta (умолчания) | chuvstvitelnost.
+    Основная A′ — `osnovnaya_konf()`, в сетку не входит."""
     sk = sk or setka()
     keys = ["ves", "lam", "rho", "sostav", "tsel_vol", "okno_vol", "tormoz_mdd"]
     vals = [sk["uroven2"][k] for k in keys[:4]] + [sk["uroven3"][k] for k in keys[4:]]
     out = []
     for v in itertools.product(*vals):
         c = dict(zip(keys, v))
-        c["osnovnaya"] = all(c[k] == sk["umolchaniya"][k] for k in keys)
+        c["osnovnaya"] = False
+        c["rol"] = "ravnyj_bez_targeta" if all(c[k] == sk["umolchaniya"][k] for k in keys) else "chuvstvitelnost"
         out.append(c)
     return out
+
+
+def osnovnaya_konf(sk: dict | None = None) -> dict:
+    """Основная A′ по Ж-090 п. 2 (одно правило, N = 1)."""
+    sk = sk or setka()
+    return {**sk["osnovnaya"], "osnovnaya": True, "rol": "osnovnaya"}
 
 
 def _chislo(x):
@@ -78,7 +89,13 @@ def _vektor(h: np.ndarray, ves: str, porog, act: list, mini: int) -> np.ndarray:
     if h.shape[1] < mini:
         a[act] = 1.0 / len(act)
         return a
-    df = pd.DataFrame(h[act].T)
+    if ves.startswith("obr_vol"):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            sg = np.nanstd(h[act], axis=1, ddof=1)
+        a[act] = 1.0 / sg if np.all(np.isfinite(sg) & (sg > 0)) else 1.0 / len(act)
+        return a / a.sum()
+    df =pd.DataFrame(h[act].T)
     R = df.corr(min_periods=mini).fillna(0.0).to_numpy()
     cl = _klastery(R, porog)
     Rc = pd.DataFrame({j: df[c].mean(axis=1) for j, c in enumerate(cl)}).corr(min_periods=mini).fillna(0.0).to_numpy()
@@ -113,7 +130,7 @@ def _prosadka(cum: np.ndarray, i: int) -> float:
     return float(cum[:i].max() - cum[i - 1]) if i > 0 else 0.0
 
 
-def _uroven3(A2: np.ndarray, tsel, okno: int, tormoz, mnozh: float, mini: int = 20) -> np.ndarray:
+def _uroven3(A2: np.ndarray, tsel, okno: int, tormoz, mnozh: float, mini: int = 20, L: float = 1.0) -> np.ndarray:
     out = np.full(len(A2), np.nan)
     cum = np.cumsum(np.nan_to_num(A2))                  # просадка A′ до торможения: путь без обратной связи
     for i in range(len(A2)):
@@ -121,7 +138,7 @@ def _uroven3(A2: np.ndarray, tsel, okno: int, tormoz, mnozh: float, mini: int = 
         w = w[~np.isnan(w)]
         s = 1.0
         if tsel is not None and len(w) >= max(mini, 2) and w.std(ddof=1) > 0:
-            s = min(1.0, tsel / 100.0 / (w.std(ddof=1) * np.sqrt(252)))
+            s = min(L, tsel / 100.0 / (w.std(ddof=1) * np.sqrt(252)))
         if tormoz is not None and _prosadka(cum, i) > tormoz / 100.0:
             s *= mnozh
         out[i] = A2[i] * s
@@ -157,7 +174,8 @@ def a_shtrih(komponenty: dict, konf: dict, daty, pozicii: dict | None = None, pr
     den = (a * M.sum(1)).sum(0)
     with np.errstate(divide="ignore", invalid="ignore"):
         A2 = np.where(den > 0, num / den, np.nan)
-    return _uroven3(A2, _chislo(konf["tsel_vol"]), int(konf["okno_vol"]), _chislo(konf["tormoz_mdd"]), mnozh, mini)
+    return _uroven3(A2, _chislo(konf["tsel_vol"]), int(konf["okno_vol"]), _chislo(konf["tormoz_mdd"]), mnozh, mini,
+                    min(1.0, float(konf.get("L", 1.0))))
 
 
 def metriki(x: np.ndarray) -> dict:
@@ -173,9 +191,9 @@ def tablica_1296(komponenty: dict, daty, pozicii=None, proshli=None, out=OUT) ->
     """Таблица всех конфигураций в порядке сетки: без сортировки, ранга и выбора; основная помечена `osnovnaya`."""
     sk = setka()
     rows = []
-    for c in konfiguracii(sk):
+    for c in [osnovnaya_konf(sk)] + konfiguracii(sk):
         m = metriki(a_shtrih(komponenty, c, daty, pozicii, proshli, sk))
-        rows.append({**c, "status": "osnovnaya" if c["osnovnaya"] else "chuvstvitelnost", **m})
+        rows.append({**c, "status": c["rol"], **m})
     df = pd.DataFrame(rows)
     if out is not None:
         Path(out).parent.mkdir(parents=True, exist_ok=True)
