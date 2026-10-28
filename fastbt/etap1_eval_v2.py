@@ -14,7 +14,7 @@ import pandas as pd
 
 from fastbt import rezhim_e1
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
-from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, params_of, years_of
+from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, is_anchor, params_of, years_of
 from fastbt.etap1_run import run_e1, sum_rows
 from fastbt.ledger_v2 import kvartaly, tselevaya
 
@@ -129,7 +129,14 @@ class EvaluatorV2(Evaluator):
         return sum_rows([run_e1(t, days, sig, sg, pp, w=w / 2, **kw) for pp in (p, replace(p, k=p.k + float(lest)))])
 
     def excess(self, pt, period):
-        self._last = super().excess(pt, period)
+        """Как Evaluator.excess, но filtr ≠ net снимает режим «якорь» (как sobytiya ≠ net в v1): ось действует всегда."""
+        pt = self.full(pt)
+        rows = self._rows(pt, period, is_anchor(pt) and self._ctx["nov"]["filtr"] == NET)
+        eng, inv = self._engine(period)
+        cat = lambda f: np.concatenate([f(r) for _, r, _, _ in rows])             # noqa: E731
+        noch = cat(lambda r: r.noch) if self.fdr is not None else None
+        df = eng.port_rows(cat(lambda r: r.g), cat(lambda r: r.sides), cat(lambda r: r.expo), self.comm, noch=noch)
+        self._last = df, inv, eng, cat(lambda r: r.cnt), [r for _, r, _, _ in rows]
         return self._last
 
     def _series(self, period, comm):
@@ -176,13 +183,11 @@ class EvaluatorV2(Evaluator):
         bq = kvartaly(dts.to_numpy(), x)
         med, dolya = tselevaya(bq)
         qr = (rdates.year * 10 + rdates.quarter).to_numpy()
-        sk = lambda d: {str(k): v for k, v in d.items()}                         # noqa: E731
-        row = {**head, "status": "ok", "prichina": None, "kod": v1["kod"], "vhody": v1["vhody"],
-               "by_year": sk(v1["by_year"]), "msr_by_year": sk(v1["msr_by_year"]), "by_quarter": bq, "mediana_kv": med,
+        row = {**head, "status": "ok", "prichina": None, "kod": v1["kod"], "vhody": v1["vhody"],   # годы — int, как v1.0 (json сделает строки)
+               "by_quarter": bq, "mediana_kv": med, "vyrozhdena": v1["vyrozhdena"], "comm_pct": v1["comm_pct"],
                "dolya_pol_kv": dolya, "by_quarter_zaem": {str(s): kvartaly(dts.to_numpy(), z) for s, z in zaem.items()},
-               "sdelok_y": sk(v1["sdelok_y"]), "storony_y": sk(v1["storony_y"]),
                "sdelok_kv": {k: float(cnt[(qr == int(k[:4]) * 10 + int(k[5]))].sum()) / 2 for k in bq},
                "flagi": {"vyrozhdena": v1["vyrozhdena"], "kray": [], "short_shag1_kray": self._kray}, "t_sek": time.perf_counter() - t0,
-               **{k: v1[k] for k in ("sharpe", "msr", "sortino", "kalmar", "mdd", "T", "skew", "kurt", "prichiny",
-                                     "dolya_ispolneniya_limita")}}
+               **{k: v1[k] for k in ("sharpe", "msr", "sortino", "kalmar", "mdd", "T", "skew", "kurt", "prichiny", "by_year",
+                                     "msr_by_year", "tselevaya", "sdelok_y", "storony_y", "dolya_ispolneniya_limita")}}
         return row, x, tik
