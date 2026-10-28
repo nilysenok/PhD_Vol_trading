@@ -4,6 +4,9 @@
   placebo_dni -> placebo_sig_fn(seed)(t, sig, dates) + runs_of;  k2_pozicii -> k2_sig_fn(lag)(t, sig, dates);  K2_LAG_MIN -> MIN_LAG;
   k3_obnulit -> plan(pt) (задача 'k3');  sigma_mediana_goda -> etap1_eval_v2.mediana_goda;  p_placebo -> p_perm;
   vozmusheniya -> VOZM;  prognat_vozm / dlya_N / kontrol_katalog -> run_kandidat с подставным оценщиком и kontrol_pisatel.
+Правка 28.10 (П-6, отдельный тестировщик, Ж-081): NOVYE законно расширен осью tejk_signal (Ж-084, Л-13, PR #450) — ожидаемый набор
+в test_k3_obnulyaet_rovno_novye_osi_mutaciya10 дополнен tejk_signal: net, во входной точке ось стоит не в net; требование «к3 обнуляет все
+новые оси» не ослаблено.
 python3 -m pytest tests/proverka_progon/test_p5_kontrol.py -q"""
 import importlib
 from collections import Counter
@@ -110,10 +113,10 @@ def test_k2_sdvig_krugovoj_i_lag_ne_menshe_63():
 def test_k3_obnulyaet_rovno_novye_osi_mutaciya10():
     from fastbt.etap1_eval_v2 import NOVYE
     assert dict(NOVYE) == {"ed_lim": "sigma", "zhizn": "den", "lestnica": "net", "gap": "vhod", "t_vyhod": "close",
-                           "k_x": "net", "storona": "obe", "filtr": "net"}
+                           "k_x": "net", "storona": "obe", "filtr": "net", "tejk_signal": "net"}
     pt = {"ma_window": 13, "z_entry": 1.67, "vhod": 0.5, "tau": 5.0, "k_s": 2.0, "q_sily": 0.5,
           "ed_lim": "atr14", "zhizn": 12, "lestnica": 0.5, "gap": "propusk", "t_vyhod": "1500",
-          "k_x": 1.0, "storona": "long", "filtr": "szhatie"}
+          "k_x": 1.0, "storona": "long", "filtr": "szhatie", "tejk_signal": "pol_puti"}
     k3 = [z for z in pk().plan(pt) if z.kontrol == "k3"]
     assert len(k3) == 1
     out = k3[0].pt
