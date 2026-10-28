@@ -58,7 +58,7 @@ def test_klyuch_kanonicheskaya_zapis_i_sha():
 
 
 ZNACHENIYA = {"ed_lim": "atr14", "zhizn": "36", "lestnica": "0.5", "gap": "propusk", "t_vyhod": "1500",
-              "k_x": "net", "storona": "long", "filtr": "cbr", "z_entry": 2.33, "sigma": "rv66",
+              "storona": "long", "filtr": "cbr", "z_entry": 2.33, "sigma": "rv66",
               "q_sily": 0.8, "razmer": 20, "tau": 10, "rezhim": "imoex_ma200", "proverka": "bars5m"}
 
 
@@ -224,8 +224,9 @@ def test_poryadok_zapisi_shard_do_stroki(tmp_path, monkeypatch):
     """М-L8: если переименование шарда падает, строк шарда в rows.jsonl нет."""
     m = _lm()
     boom = lambda *a, **k: (_ for _ in ()).throw(OSError("обрыв"))
-    monkeypatch.setattr(os, "replace", boom)
-    monkeypatch.setattr(os, "rename", boom)
+    import pathlib
+    for obj, nm in ((os, "replace"), (os, "rename"), (pathlib.Path, "rename"), (pathlib.Path, "replace")):
+        monkeypatch.setattr(obj, nm, boom)
     with pytest.raises(OSError):
         pisat(m, tmp_path, 4, shard=4)
     assert stroki_jsonl(tmp_path) == []
@@ -272,10 +273,18 @@ def test_chitatel_otkaz_versiya(tmp_path):
 def test_chitatel_otkaz_dva_kod_i_sverka_kod(tmp_path):
     m = _lm()
     pisat(m, tmp_path, 4, potok=0)
-    pisat(m, tmp_path, 4, potok=1, kod="kod-B")
+    with pytest.raises(ValueError):  # писатель сам отказывает во втором kod в каталоге
+        pisat(m, tmp_path, 4, potok=1, kod="kod-B")
+    pisat(m, tmp_path, 4, potok=1, start=100)  # другие точки, иначе дубли p00 отбрасываются
+    rp = tmp_path / "S1" / "p01" / "rows.jsonl"  # строки поток 1 несут другой kod (шарды не тронуты)
+    rp.write_text(rp.read_text().replace(f'"kod": "{KOD}"', '"kod": "kod-B"'))
     with pytest.raises(ValueError):
         m.Chitatel(tmp_path, "S1").rows()
     assert len(m.Chitatel(tmp_path, "S1", sverka_kod=True).rows()) == 8
+    # vhody разный — отказ и при sverka_kod
+    rp.write_text(rp.read_text().replace(f'"vhody": "{VHODY}"', '"vhody": "другие"'))
+    with pytest.raises(ValueError):
+        m.Chitatel(tmp_path, "S1", sverka_kod=True)
 
 
 def test_chitatel_otkaz_god_vne_2016_2019(tmp_path):
