@@ -53,7 +53,7 @@ class AnsamblEvaluator(Evaluator):
                 w = rezhim_e1.razmer_ves(sg, "obratnyj", float(pt["razmer"]) / 100.0)
             p = params_of(pt, inp.tick[t], h, False, self.comm)
             out.append((ti, run_e1(t, days, d, sg, p, close=inp.close_n6[t][:b + 1], w=w * mag, win=(a, b),
-                                         div=inp.div[t][:b + 1], fdr=self.fdr), a, b))
+                                         div=inp.div[t][:b + 1], **self.fdr_kw()), a, b))
         return out
 
     def evaluate_ens(self, center: dict, pts: list, mode: str, period: str = "train") -> dict:

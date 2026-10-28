@@ -30,6 +30,8 @@ class E1Rows:
     n_orders: int = 0
     n_fills: int = 0
     noch: np.ndarray | None = None  # занятость на 18:50 в окне [a; b) при fdr ≠ None (fastbt/fdr.py), иначе None
+    x_orders: int = 0               # лимитных заявок выхода и из них исполнено (Ж-065 п. 3)
+    x_fills: int = 0
 
 
 def _spans(res, ix, p: Params, n: int):
@@ -66,4 +68,5 @@ def run_e1(ticker, days, sig, sigma, p: Params, close=None, w=None, win=None, di
     if fdr is not None:
         from fastbt import fdr as fdr_mod
         noch = fdr_mod.noch_iz_sdelok(res.trades, {tr.d_sig: float(w[tr.d_sig]) for tr in res.trades}, n, fdr)[a:b]
-    return E1Rows(g[a:b], sides, expo[a:b], cnt, res.trades, res.n_orders, res.n_fills, noch)
+    return E1Rows(g[a:b], sides, expo[a:b], cnt, res.trades, res.n_orders, res.n_fills, noch,
+                  res.x_orders, res.x_fills)

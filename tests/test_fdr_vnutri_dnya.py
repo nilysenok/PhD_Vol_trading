@@ -244,6 +244,23 @@ def test_mutatsiya_mf6_rezhim_ne_v_imeni(monkeypatch):
         chk_mf6()
 
 
+def _net_dannyh():
+    from fastbt import bars5m
+    return not bars5m.SRC.exists()
+
+
+@pytest.mark.skipif(_net_dannyh(), reason="нет 1-минуток D25 (FASTBT_BARS1M)")
+def test_g2_g3_yakor_S1_fdr_none_v10_t0_pobaytovo():
+    """Реальные данные 2018–2019, якорь S1: fdr=None — строка v1.0; t0 у A (все сделки по close) = база побайтно."""
+    from fastbt import etap1
+    from fastbt.etap1_eval import Evaluator
+    inp, base = etap1.build_inputs("S1"), etap1.base_point("S1")
+    ra, rb = Evaluator("S1", inp, base).evaluate({}, "train"), Evaluator("S1", inp, base, fdr="t0").evaluate({}, "train")
+    assert ra["v"] == "1.0" and "fdr" not in ra and rb["v"] == "1.1" and rb["fdr"] == "t0"
+    for y in ra["excess_d"]:
+        assert np.array_equal(np.array(ra["excess_d"][y]), np.array(rb["excess_d"][y])), y
+
+
 def test_nevernyy_rezhim_oshibka():
     from types import SimpleNamespace
 
