@@ -59,7 +59,7 @@ def eq(a, b):
     return a == b
 
 
-PEREIMEN = ("v", "excess_d", "tselevaya", "comm_pct", "vyrozhdena")   # v2: версия, ряд отдельно, mediana_kv/dolya, komissiya, flagi
+PEREIMEN = ("v", "excess_d")                        # v2: версия 2.0 и ряд excess_d отдельным массивом; остальные поля v1.0 — как есть
 
 
 def norm(x):
@@ -80,7 +80,6 @@ def test_umolchaniya_ig2_svoj_nabor_seed7(sid, evs):
         a = e1.evaluate(pt, PER)
         row, ex_port, ex_tik = e2.evaluate_v2({**pt, **NOVYE}, PER)
         ok = sha(flat(a)) == sha(ex_port) and all(eq(norm(a[k]), norm(row[k])) for k in a if k not in PEREIMEN)
-        ok = ok and a["vyrozhdena"] == row["flagi"]["vyrozhdena"] and a["comm_pct"] == row["komissiya"] * 100
         ok = ok and ex_tik.shape[0] == 17 and ex_tik.dtype == np.float64
         if not ok:
             bad.append(i)
