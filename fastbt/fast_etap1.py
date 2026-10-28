@@ -59,7 +59,7 @@ def flat(days) -> tuple:
     key = (id(head[0]) if head else 0, len(head))
     hit = _FLAT.get(key)
     if hit is None or not all(map(operator.is_, hit[0], head)):
-        if len(_FLAT) > 256:
+        if len(_FLAT) >= 64:                # ≈ 4–5 МБ на тикер train4: не больше ~3 наборов входов в памяти
             _FLAT.clear()
         hit = _FLAT[key] = (list(head), _stack(head))
     B, off, nbar, pusto, bad = hit[1]
@@ -91,15 +91,22 @@ def _trades(ticker, ti, tf, comm) -> list:
     return out
 
 
-def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None) -> Result:
-    """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade)."""
+def _slow_only(p: Params, ed) -> bool:
+    """Оси прогона Л-2 (Run2: ed, zhizn, gap_propusk, t_vyhod, bar_plus, stop_tik) ядро не повторяет — эталон."""
+    f = getattr(exec_e, "_new_axes", None)
+    return ed is not None or (f is not None and f(p, ed))
+
+
+def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None) -> Result:
+    """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси Run2 — медленным путём."""
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.asarray(sigma, float)
+    if _slow_only(p, ed) or not len(days) or not np.isfinite(sig.astype(float)).all():
+        kw = {} if ed is None else {"ed": ed}
+        return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
         raise ValueError("days, sig, sigma, close разной длины")
     exec_e._check_params(p)
-    if not len(days) or not np.isfinite(sig.astype(float)).all():
-        return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog)
     B, off, nbar, pusto, bad = flat(days)
     cl = B[3, off + np.maximum(nbar - 1, 0)] if close is None else np.asarray(close, float)
     if close is not None:
@@ -241,9 +248,13 @@ def patched():
 
 
 def pokryto(pt: dict) -> bool:
-    """§1.8 контракта ledger v2.0: быстрый слой покрывает точки осей zh047 (v1.0); новые оси v2 — только в умолчании."""
+    """§1.8 контракта ledger v2.0: быстрый слой покрывает точки осей zh047 (v1.0); новые оси §1.1 — только в умолчании,
+    `filtr` — только net | cbr (прежние `sobytiya`), заём — только 0. Остальное драйвер считает медленным путём."""
     from fastbt.etap1_eval import NET
-    return pt.get("vyhod", NET) in (NET, "lim") and not set(pt) & {"k_x", "storona", "lestnica", "ed_lim", "zaem"}
+    umolch = dict(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod", t_vyhod="close", k_x=NET, storona="obe")
+    return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and pt.get("filtr", NET) in (NET, "cbr")
+            and pt.get("sobytiya", NET) in (NET, "cbr") and pt.get("vyhod", NET) in (NET, "lim")
+            and pt.get("zaem", 0) in (0, "0", "0.0", NET, None))
 
 
 def ryady(evr, pt: dict, period: str) -> tuple:
