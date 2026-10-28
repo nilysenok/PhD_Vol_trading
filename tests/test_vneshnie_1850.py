@@ -94,6 +94,18 @@ def test_mutatsiya_chteniya_za_predelami_lovitsya(tmp_path, monkeypatch):
     assert v.read_bars(p)["timestamp"].max() >= pd.Timestamp("2022-01-01")
 
 
+def test_nepravilnyi_koren_daet_oshibku_a_data_prinimaetsya(tmp_path):
+    import pytest
+    with pytest.raises(FileNotFoundError, match="br_contracts"):
+        v.resolve_root(tmp_path)
+    with pytest.raises(FileNotFoundError):
+        v.load_series("rvi", tmp_path)
+    (tmp_path / "data" / "iss_ext").mkdir(parents=True)
+    (tmp_path / v.BR_JSON).write_text("[]")
+    assert v.resolve_root(tmp_path) == tmp_path
+    assert v.resolve_root(tmp_path / "data") == tmp_path
+
+
 # --- Д1: проверка сдвига -------------------------------------------------------------------
 def test_sdvig_maksimum_na_nule_i_utechka_lovitsya():
     r = np.random.default_rng(1)

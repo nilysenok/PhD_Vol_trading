@@ -13,8 +13,10 @@ ln(close_d / close_prev) внутри ОДНОГО контракта (уров�
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -62,6 +64,7 @@ def roll_date(lsttrade) -> pd.Timestamp:
 
 
 def contract_table(main: Path) -> pd.DataFrame:
+    main = resolve_root(main)
     c = pd.DataFrame(json.loads((main / BR_JSON).read_text()))
     c["lsttrade"] = pd.to_datetime(c["lsttrade"])
     c = c.sort_values("lsttrade").reset_index(drop=True)
@@ -97,7 +100,36 @@ def missing_days(brent: pd.DataFrame, calendar) -> pd.Series:
     return pd.Series(1, index=miss).groupby(miss.year).sum()
 
 
+def resolve_root(path) -> Path:
+    """Корень репозитория данных (с `data/iss_ext/br_contracts.json`). Принимает корень или его `data/`;
+    иначе FileNotFoundError — не тихий пустой ряд."""
+    p = Path(path)
+    for c in (p, p.parent):
+        if (c / BR_JSON).exists():
+            return c
+    raise FileNotFoundError(f"vneshnie_1850: в {p} (и в его родителе) нет {BR_JSON}; ждётся корень репозитория данных")
+
+
+def _sha(p: Path) -> str:
+    return hashlib.sha256(p.read_bytes()).hexdigest()[:12]
+
+
+def header(main: Path) -> str:
+    """Шапка CSV (proverka.md п. 4): статус, коммит, sha256[:12] входов."""
+    git = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
+                         cwd=Path(__file__).parent).stdout.strip()
+    brd = main / BR_DIR
+    br = hashlib.sha256("".join(f"{p.name}:{_sha(p)};" for p in sorted(brd.glob("BR*.parquet"))).encode()).hexdigest()[:12]
+    ins = f"BR(br_contracts.json {_sha(main / BR_JSON)}; BR*.parquet набор {br}), " + ", ".join(
+        f"{n.upper()} {_sha(main / PATHS[n])}" for n in ("usdrub", "rvi", "imoex"))
+    return ("# статус: диагностика, 2016–2021, до аудита\n"
+            f"# коммит кода: {git}\n# хэш входов sha256[:12]: {ins}\n"
+            "# максимум на сдвиге 0 к IMOEX — синхронная связь; отсутствие утечки обеспечивается отсечкой 18:50 "
+            "и тестом вечернего бара\n")
+
+
 def load_brent(main: Path) -> pd.DataFrame:
+    main = resolve_root(main)
     table = contract_table(main)
     per = {}
     for s in table["secid"]:
@@ -112,6 +144,7 @@ def load_brent(main: Path) -> pd.DataFrame:
 
 
 def load_series(name: str, main: Path) -> pd.Series:
+    main = resolve_root(main)
     return close_1850(read_bars(main / PATHS[name]), name)
 
 
@@ -140,11 +173,11 @@ def max_at_zero(t: pd.DataFrame) -> dict:
 
 
 if __name__ == "__main__":
-    main = Path(os.environ.get("VNESHNIE_DATA") or d18.default_main())   # корень данных, только чтение
+    main = resolve_root(os.environ.get("VNESHNIE_DATA") or d18.default_main())   # корень данных, только чтение
     t = sdvig_table(main)
     out = Path(__file__).resolve().parents[1] / "docs/tables/diag/vneshnie_1850_sdvig.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
-    t.to_csv(out, index=False, float_format="%.6f")
+    out.write_text(header(main) + t.to_csv(index=False, float_format="%.6f"))
     print(t.to_string(index=False))
     print("максимум |corr| на сдвиге 0:", max_at_zero(t))
     br = load_brent(main)
