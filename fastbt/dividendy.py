@@ -32,13 +32,24 @@ DIV_NALOG = 0.87         # доля дивиденда, попадающая в 
 
 def _tables() -> list[Path]:
     from fastbt import zona                              # noqa: PLC0415
-    z2 = [] if zona.name() == "dev" else [zona.path("div")]          # зона Z2: + таблица 2022–2024 (FASTBT_Z2_DIV)
+    if zona.div_net():                                   # NET: без таблицы 2022–2024, явно (не пустой файл)
+        z2 = []
+    else:
+        z2 = [] if zona.name() == "dev" else [zona.path("div")]      # зона Z2: + таблица 2022–2024 (FASTBT_Z2_DIV)
     return [Path(TABLE), Path(TABLE_2015), *z2]
+
+
+def bez_dividendov() -> bool:
+    """True — тест-1 считается без дивидендов 2022–2024 (FASTBT_Z2_DIV=NET); режим явный, шапки csv помечаются."""
+    from fastbt import zona                              # noqa: PLC0415
+    return zona.div_net()
 
 
 def digest() -> str:
     """Д5: хэш обеих таблиц дивидендов и налогового множителя — входит в ключи кэшей."""
     h = hashlib.sha1()
+    if bez_dividendov():
+        h.update(b"bez_dividendov:2022-2024")            # режим в ключе: кэш без дивидендов ≠ кэш с таблицей
     for p in _tables():
         h.update(p.read_bytes())
     return hashlib.sha1(h.digest() + repr(float(DIV_NALOG)).encode() + RULE.encode()).hexdigest()

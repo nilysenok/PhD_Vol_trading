@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts/analysis"))
 from prohod1_diag_metriki import metriki, sdelki, terciles  # noqa: E402
 from prohod1_diag_vybor import vybor  # noqa: E402
+from fastbt import zona  # noqa: E402
 
 LEDGER = Path("/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/progon_e1/_ledger_v2")
 PERIODS = {
@@ -49,7 +50,7 @@ def na_god(m: dict, godov: int, godov0: int = 4) -> dict:
 def zapis(df: pd.DataFrame, name: str, cfg: dict) -> None:
     out = ROOT / cfg["out"]
     out.mkdir(parents=True, exist_ok=True)
-    (out / name).write_text(cfg["shapka"] + df.to_csv(index=False), encoding="utf-8")
+    (out / name).write_text(cfg["shapka"] + zona.shapka_dividendy() + df.to_csv(index=False), encoding="utf-8")
 
 
 @contextlib.contextmanager

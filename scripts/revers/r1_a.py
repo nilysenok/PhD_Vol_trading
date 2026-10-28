@@ -18,7 +18,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "analysis"))
-from fastbt import a_strogaya as AS, etap1  # noqa: E402
+from fastbt import a_strogaya as AS, etap1, zona  # noqa: E402
 from fastbt.etap1_eval_v2 import EvaluatorV2  # noqa: E402
 import dve_metriki_a as D  # noqa: E402
 
@@ -83,7 +83,7 @@ def main() -> None:
     df = tablica(a.period)
     a.out.mkdir(parents=True, exist_ok=True)
     f = a.out / f"a_dve_metriki_{a.period}.csv"
-    f.write_text(f"# {SHAPKA}; период {a.period}\n" + df.to_csv(index=False), encoding="utf-8")
+    f.write_text(f"# {SHAPKA}; период {a.period}\n" + zona.shapka_dividendy() + df.to_csv(index=False), encoding="utf-8")
     print(df.round(3).to_string())
     if a.period == "train4":
         obr = pd.read_csv(ROOT / "docs" / "tables" / "dve_metriki" / "a_strogaya_yakor.csv")

@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "analysis"))
 import razlozhenie_a as RA  # noqa: E402  (подмена run_e1 для записи сделок — только внутри RA.zapis_sdelok())
-from fastbt import a_strogaya as AS, etap1, metriki_e as me, s9  # noqa: E402
+from fastbt import a_strogaya as AS, etap1, metriki_e as me, s9, zona  # noqa: E402
 from fastbt.etap1_eval_v2 import EvaluatorV2  # noqa: E402
 
 OUT = ROOT / "docs" / "tables" / "revers_r1"
@@ -101,7 +101,7 @@ def main(argv=None) -> None:
         print(f"сверка с образцом #476: макс |Δ| = {sverka(df, a.tol):.2e} (допуск {a.tol:.0e})")
     out = a.out or OUT / "b_razlozhenie.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(SHAPKA + f", период {a.period}\n" + df.to_csv(index=False), encoding="utf-8")
+    out.write_text(SHAPKA + f", период {a.period}\n" + zona.shapka_dividendy() + df.to_csv(index=False), encoding="utf-8")
     print(df.to_string())
 
 

@@ -20,7 +20,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from fastbt import fazy, metriki_e as me  # noqa: E402
+from fastbt import fazy, metriki_e as me, zona  # noqa: E402
 
 SHAPKA = "# реверс раунд 1, 2022–2024, справочно, без выбора"
 MIN_DNEY = 20
@@ -113,7 +113,7 @@ def zapis(period: str, tab: dict) -> None:
     out.mkdir(parents=True, exist_ok=True)
     for k, df in tab.items():
         with open(out / f"e_{k}_{period}.csv", "w", encoding="utf-8") as fh:
-            fh.write(f"{SHAPKA} — {PERIODY[period][3]}\n")
+            fh.write(f"{SHAPKA} — {PERIODY[period][3]}\n" + zona.shapka_dividendy())
             df.to_csv(fh, index=False)
 
 

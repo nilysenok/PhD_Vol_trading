@@ -16,6 +16,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "scripts" / "analysis")]
 import cd_s3_sigma as S  # noqa: E402
+from fastbt import zona  # noqa: E402
 
 PERIODS = {"train4": dict(gody=(2018, 2019), last="2019-12-31", n_k2=100),
            "test1": dict(gody=(2022, 2023, 2024), last="2024-12-31", n_k2=20)}
@@ -42,7 +43,7 @@ def zapisat(df: pd.DataFrame, path: Path, period: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         if period == "test1":
-            f.write("# реверс раунд 1, 2022–2024, справочно, без выбора\n")
+            f.write("# реверс раунд 1, 2022–2024, справочно, без выбора\n" + zona.shapka_dividendy())
         df.to_csv(f, index=False)
 
 

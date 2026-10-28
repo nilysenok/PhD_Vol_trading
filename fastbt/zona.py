@@ -51,6 +51,24 @@ def path(kind: str, default: Path | None = None) -> Path | None:
     return Path(p)
 
 
+NET = "NET"                      # FASTBT_Z2_DIV=NET — строка-маркер, не путь: тест-1 без дивидендов (Ж-117, вариант б)
+SHAPKA_DIV = "# дивиденды: НЕТ (2022–2024 без дивидендов, Ж-117, вариант б)\n"
+
+
+def div_net() -> bool:
+    """True — режим «без дивидендов 2022–2024». Маркер NET допустим только в зоне test1; в dev — ValueError."""
+    if os.environ.get("FASTBT_Z2_DIV") != NET:
+        return False
+    if _zone != "test1":
+        raise ValueError(f"FASTBT_Z2_DIV=NET допустим только в зоне test1, сейчас {_zone!r}")
+    return True
+
+
+def shapka_dividendy() -> str:
+    """Строка шапки csv реверса: «дивиденды: НЕТ», если задан NET; иначе пусто. Зону не проверяет (отказ — в div_net())."""
+    return SHAPKA_DIV if os.environ.get("FASTBT_Z2_DIV") == NET else ""
+
+
 def set_zone(zone: str) -> None:
     global _zone
     if zone not in _ENDS:
