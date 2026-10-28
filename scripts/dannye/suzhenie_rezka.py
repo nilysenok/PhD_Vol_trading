@@ -37,10 +37,22 @@ def razrezat(src, col, cut):
     return tuple(d.to_table(filter=x) for x in filtry(d.schema, col, cut))
 
 
+def put_z2(parent):
+    """Z2 открыт для чтения: в пути не должно быть сегмента test_locked.
+    data/regen/test_locked/final3 -> regen/final3; data/models_cache/test_locked/boost -> models_cache/boost.
+    Корни различаются сегментами до test_locked, поэтому коллизий нет; пути без test_locked не меняются."""
+    parts = parent.parts
+    if "test_locked" not in parts:
+        return parent
+    i = parts.index("test_locked")
+    pre = parts[1:i] if parts[:1] == ("data",) else parts[:i]
+    return Path(*pre, *parts[i + 1:])
+
+
 def chasti_puti(rel, z2, z3):
     p = Path(rel)
     base = re.sub(r"_test", "", p.stem)
-    return Path(z2) / p.parent / f"{base}__t1.parquet", Path(z3) / p.parent / f"{base}__h25.parquet"
+    return Path(z2) / put_z2(p.parent) / f"{base}__t1.parquet", Path(z3) / p.parent / f"{base}__h25.parquet"
 
 
 def proveri(orig, parts, col, dates, h, cut):
