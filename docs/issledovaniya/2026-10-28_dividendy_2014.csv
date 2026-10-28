@@ -1,0 +1,7 @@
+ticker,record_date,announce_date,dps_rub,dps_dohod_raw,source_url,primary_checked,accessed,note
+PHOR,2014-09-29,2014-08-19,25,25,https://www.dohod.ru/ik/analytics/dividend/phor,no,2026-10-28,
+MGNT,2014-10-10,2014-08-01,78.3,78.3,https://www.dohod.ru/ik/analytics/dividend/mgnt,no,2026-10-28,
+MTSS,2014-10-14,2014-08-01,6.2,6.2,https://www.dohod.ru/ik/analytics/dividend/mtss,no,2026-10-28,
+NVTK,2014-10-27,2014-09-01,5.1,5.1,https://www.dohod.ru/ik/analytics/dividend/nvtk,no,2026-10-28,
+LKOH,2014-12-26,2014-07-24,60,60,https://www.dohod.ru/ik/analytics/dividend/lkoh,no,2026-10-28,реестр сверить с первичным источником (dannye_v2.md строка 2)
+MGNT,2014-12-30,2014-10-30,152.07,152.07,https://www.dohod.ru/ik/analytics/dividend/mgnt,no,2026-10-28,реестр сверить с первичным источником (dannye_v2.md строка 2)
