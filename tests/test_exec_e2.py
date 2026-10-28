@@ -215,6 +215,24 @@ def test_t_vyhod_stop_first_before_bar_do():
     assert (t.exit_bar, t.exit_px, t.reason, r.x_t) == (2, 98.0, "stop", 0)
 
 
+def check_stop_in_bar_do():
+    d3 = bars(20, b5=(100, 100, 97, 99))                        # стоп 98 внутри бара 15:00, close бара 99
+    t = _tv("1500", d3, b=1.0).trades[0]
+    assert (t.exit_bar, t.exit_px, t.reason) == (5, 98.0, "stop")
+    t = _tv("1500", bars(20, b5=(100, 100, 99, 99)), b=1.0).trades[0]     # стопа нет — выход по c[bar_do]
+    assert (t.exit_bar, t.exit_px, t.reason) == (5, 99.0, "signal")
+
+
+def test_stop_in_bar_do_first():
+    check_stop_in_bar_do()
+
+
+def test_stop_in_bar_do_mut(monkeypatch):
+    monkeypatch.setattr(exec_e2, "scan_end", lambda cut: cut)     # bar_do исключён из скана стопа
+    with pytest.raises(AssertionError):
+        check_stop_in_bar_do()
+
+
 def test_t_vyhod_tau_same_day():
     days = [D(F(100.0, 20), T0), D(F(100.0, 20), T0), D(bars(20, b5=(100, 100.5, 100, 100.4)), T0), D(F(100.0, 20), T0)]
     r = rn(days, [1, 1, 1, 1], t_vyhod="1500", tau=2, comm=0.001)

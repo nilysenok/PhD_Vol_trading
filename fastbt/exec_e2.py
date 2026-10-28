@@ -5,7 +5,7 @@ ed (массив единиц лимита дня сигнала), zhizn, gap_pr
 Время баров — fastbt/exec_e_vremya (Л-3): bar_do(day, hhmm) -> int | None, vyhod_plan(t_vyhod, prichina) -> (сдвиг дня, hhmm | None).
 t_vyhod ≠ close: выход по signal/vremya переносится: сдвиг 1 — pend на день x+1 (бары до bar_do — как обычно, стоп первым; на баре
 bar_do — выход по c[b]; open2 — по o[0]); сдвиг 0 (τ в 15:00/17:00 дня x) — срез дня на bar_do. Нет бара — выход по close Н6, флаг прежний.
-Комиссия такого выхода — в строке начала интервала. ↺ Бар bar_do сканируется до него (исключая) — буквально по заданию.
+Комиссия такого выхода — в строке начала интервала. Бар bar_do сканируется включительно, стоп первым (решение дирижёра, класс B).
 """
 from __future__ import annotations
 
@@ -42,6 +42,11 @@ def later_px(sell, level, o_n, c6):
     if o_n is None:
         return c6
     return min(level, o_n) if sell else max(level, o_n)
+
+
+def scan_end(cut):
+    """Скан до бара bar_do включительно: стоп в нём раньше выхода по времени (№ 3); не сработал — выход по c[bar_do]."""
+    return cut + 1
 
 
 def tik_stop(sd, S, tick, n):
@@ -128,7 +133,8 @@ class Run2(Run):
             if pe and s.tr is not None:                 # короткий день: выход по close Н6 этого дня
                 s._exit(i, j, len(d.c) - 1, s.close_of(i), reason)
             return
-        if b0 < cut:
-            super()._scan(i, j, Day(d.o[:cut], d.h[:cut], d.l[:cut], d.c[:cut]), b0)
+        e = scan_end(cut)
+        if b0 < e:
+            super()._scan(i, j, Day(d.o[:e], d.h[:e], d.l[:e], d.c[:e]), b0)
         if s.tr is not None:
             s._exit_t(i, j, cut, d.c[cut], reason)
