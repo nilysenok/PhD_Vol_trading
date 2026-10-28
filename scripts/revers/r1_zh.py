@@ -69,6 +69,13 @@ def main(argv=None) -> int:
     rows = S.stroki("A_strogaya только S3 (база)", "baza", baza, None)
     for k, (nm, tip) in NAMES.items():
         rows += S.stroki(nm, tip, res[k], baza, p_k2=p_k2 if k == "hyb" else np.nan)
+    for g in (*p["gody"], VSE):
+        ids = p["gody"] if g == VSE else (g,)
+        r = dict(stroka="контроль: к2 (сдвиг маски σ̂, среднее %d)" % n_k2, tip="kontrol", god=g,
+                 msr=float(np.mean([S.stroki_msr(x, g) for x in k2])),
+                 sdelok=float(np.mean([x["cnt"][np.isin(x["god"], ids)].sum() / 2 for x in k2])))
+        r["d_vs_baza"] = r["msr"] - S.stroki_msr(baza, g)
+        rows.append(r)
     df = pd.DataFrame(rows)
     if a.period == "test1":
         df["god"] = df["god"].replace(VSE, "2022-2024")
