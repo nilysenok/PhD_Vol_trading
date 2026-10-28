@@ -47,12 +47,13 @@ class E1Inputs:
     validation_open: bool = False
     meta: dict = field(default_factory=dict)      # {тикер: dates, s0, i1, a18}
     div: dict = field(default_factory=dict)       # {тикер: полный D (руб.) на день гэпа по датам s0…i1}, Ж-057 п. 1
+    commission: float = 0.0004                    # Д5: в digest; 0,04 % — умолчание, хэш прежний
 
     def digest(self) -> str:
         """Д5: хэш всех входов (σ, бары, close, режим, события, тик, ставка, даты, дивиденды, ряды Sk) и кода."""
         parts = _flat([self.sigma, self.bars, self.close_n6, self.rezhim, self.sobytiya, self.tick,
                        self.rate, {t: m["dates"].astype("int64") for t, m in self.meta.items()},
-                       self.div, float(dividendy.DIV_NALOG)])
+                       self.div, float(dividendy.DIV_NALOG)] + ([] if self.commission == 0.0004 else ["komissiya", self.commission]))
         return cache.key("etap1_inputs", *parts, self.sk.series_digest() if self.sk is not None else "")
 
 
@@ -141,11 +142,13 @@ def anchor_s9_diff(sid: str, evr: Evaluator, comm: float = 0.0004) -> dict:
 def fabrika(sid: str, commission: float = 0.0004):
     """sid → (evaluate(params, period), s9_check(point)); s9_check — якорь ≤ 1e-12 к s9 (считается один раз на sid)."""
     inp = build_inputs(sid)
+    inp.commission = commission
     evr = Evaluator(sid, inp, base_point(sid), commission)
     state = {}
 
     def evaluate(params: dict, period: str) -> dict:
         return evr.evaluate({**YAKOR, **params}, period)
+    evaluate.comm = commission                                    # Ledger(evaluate) берёт комиссию в ключ (Д5)
 
     def s9_check(point: dict) -> bool:
         if "ok" not in state:

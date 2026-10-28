@@ -33,13 +33,13 @@ def pkey(p: dict) -> tuple:
 
 
 class Ledger:
-    """Кэш оценок по (эффективная точка, период); N в DSR = число уникальных точек за все периоды. Только дополняется."""
+    """Кэш оценок по (эффективная точка, период); N в DSR = число уникальных точек за периоды. Только дополняется. Д5: комиссия (evaluate.comm) в ключе; нет — 0,04 %."""
 
-    def __init__(self, evaluate):
-        self.ev, self.cache = evaluate, {}
+    def __init__(self, evaluate, comm=None):
+        self.ev, self.cache, self.comm = evaluate, {}, (getattr(evaluate, "comm", 0.0004) if comm is None else comm)
 
     def __call__(self, params: dict, period: str) -> dict:
-        k = (pkey(params), period)
+        k = (pkey(params) + (() if self.comm == 0.0004 else (("komissiya", self.comm),)), period)
         if k not in self.cache:
             self.cache[k] = (canon(params), self.ev(canon(params), period))
         return self.cache[k][1]
