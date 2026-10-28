@@ -1,0 +1,108 @@
+name: d16_10_h1
+block: Д16.10 размер обёртки (третий круг, 26.10)
+h: 1
+grid:
+  points:
+  - 3
+  - 5
+  - 10
+  seeds:
+  - 3
+  - 5
+  lgbm_xgb:
+  - false
+  - true
+select: размер = мин. OOS QLIKE 2017–2020 (шаги 2–5, Б0.1 ord вне выборки) по сетке;
+  принимается вместо текущей обёртки final2 (D15 — без обёртки), если не хуже её на
+  2017–2020 и на 2021; c1–c4 на 2016–2021
+candidates_same_year_biased:
+  D12_h1_A_d812:
+    v0: false
+    chosen: final2:1a+1b+2
+    model: lgbm+xgb
+    points: 5
+    seeds: 3
+    lgbm_xgb: true
+    cfg: &id001
+      harf: true
+    blocks: ''
+    final2_wrap: 1a+1b+2
+    grid_best:
+      variant: P10S3
+      model: xgb
+      oos1720: 0.290487
+      y2021: 0.237554
+    oos1720: 0.2914
+    y2021: 0.236499
+    c1: true
+    c2: true
+    c3: true
+    val: data/regen/D16_10_h1_D12_h1_A_d812_{lgbm,xgb}_h1_wrap10_val.parquet
+    test: data/regen/test_locked/D16_10_h1/D16_10_h1_D12_h1_A_d812_{lgbm,xgb}_h1_wrap10_test.parquet
+  D12_h1_V0:
+    v0: true
+    chosen: final2:1a+1b+2
+    model: lgbm+xgb
+    points: 5
+    seeds: 3
+    lgbm_xgb: true
+    cfg: &id002 {}
+    blocks: ''
+    final2_wrap: 1a+1b+2
+    grid_best:
+      variant: P3S3
+      model: xgb
+      oos1720: 0.288454
+      y2021: 0.237578
+    oos1720: 0.289828
+    y2021: 0.23722
+    c1: true
+    c2: true
+    c3: true
+    val: data/regen/D16_10_h1_D12_h1_V0_{lgbm,xgb}_h1_wrap10_val.parquet
+    test: data/regen/test_locked/D16_10_h1/D16_10_h1_D12_h1_V0_{lgbm,xgb}_h1_wrap10_test.parquet
+select_lag: 'честная оценка: на val-году шага s члены — точки и seed шага s−1 (обучены
+  на окне шага s); размер = мин. OOS 2017–2020 по сетке и «без обёртки»; принимается
+  вместо текущей обёртки final2 (D15 — без обёртки), если не хуже её на 2017–2020
+  и на 2021'
+candidates:
+  D12_h1_A_d812:
+    v0: false
+    chosen: P10S3
+    model: lgbm
+    points: 10
+    seeds: 3
+    lgbm_xgb: false
+    cfg: *id001
+    blocks: ''
+    reference: final2:1a+1b+2
+    oos1720: 0.291451
+    y2021: 0.237018
+    ref_oos1720: 0.292798
+    ref_y2021: 0.237321
+    c1: true
+    c2: true
+    c3: true
+    adopted: true
+    boost: D16_10_D12_h1_A_d812
+    kandidat_yaml: data/regen/final3/kandidaty/D16_10_D12_h1_A_d812.yaml
+  D12_h1_V0:
+    v0: true
+    chosen: P10S3
+    model: lgbm+xgb
+    points: 10
+    seeds: 3
+    lgbm_xgb: true
+    cfg: *id002
+    blocks: ''
+    reference: final2:1a+1b+2
+    oos1720: 0.291056
+    y2021: 0.237574
+    ref_oos1720: 0.291797
+    ref_y2021: 0.23766
+    c1: true
+    c2: true
+    c3: true
+    adopted: true
+    boost: D16_10_D12_h1_V0
+    kandidat_yaml: data/regen/final3/kandidaty/D16_10_D12_h1_V0.yaml

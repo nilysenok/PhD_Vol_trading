@@ -1,0 +1,98 @@
+# R2, агент D: диагностика кластера 10 — scripts/analysis/r2_diag.py.
+# Протокол v3: docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md (раздел 6, строка D; запреты — раздел 10).
+# Только разработка 2017–2021. Годы > 2021 код не принимает без флага --posle-otkrytiya (после «да» владельца и одного
+# открытия, раздел 9); test_locked/ без этого флага не читается (assert в r2_diag.guard_path).
+agent: D
+regen: /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen   # данные — только общий data/, абсолютный путь
+out: R2/D                                                             # выход: <regen>/R2/D/<profile>/*.csv + SHA256.txt
+period: [2017, 2021]          # по умолчанию; assert «годы <= 2021»
+warm_years: 3                 # годы до начала периода: только для s² по прошлым шагам и прогрева процентильных рангов (не метрики)
+hs: [1, 5, 22]
+profile: r1
+
+# ---- ряд: {files: шаблон пути от regen ({h}, {seed}), seeds: [...] (среднее по seed), s2: bez|ord|rob|sm|smrob}
+#      s2 != bez — поправка Б0.1: val шага k × exp(s²/2), s² по остаткам шагов < k (harx.s2_est, как r2_nogi.v0_tables), шаг 1 — F = 1.
+#      Ряды R2 приходят уже откалиброванными (s2: bez).
+profiles:
+  r1:
+    note: "проверка кода на рядах первого раунда в версии d0 (ВЫР-1, Э); ступени R2 (калибровка состояния, бустинг на HAR-X, согласование) в R1 отсутствуют"
+    series:
+      HAR-J:     {files: "R2/cache/VYR/ETA_a_d0_h{h}_sdet_val.parquet", s2: bez}                 # эталон (а)
+      HAR-J+s2:  {files: "R2/cache/VYR/ETA_b_d0_h{h}_sdet_val.parquet", s2: bez}                 # эталон (б) = E_h
+      HAR-X:     {files: "R2/cache/E/HARX_inner_emb_d0_h{h}_sdet_val.parquet", s2: bez}
+      HAR-X+s2:  {files: "R2/cache/E/HARX_inner_emb_d0_h{h}_sdet_val.parquet", s2: sm}
+      F_d0:      {files: "R2/cache/VYR/F_d0_h{h}_s{seed}_val.parquet", seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51], s2: bez}
+      F_d0_s42:  {files: "R2/cache/VYR/F_d0_h{h}_s{seed}_val.parquet", seeds: [42], s2: bez}
+    # лестница: [ступень, ряд | null]; null — ступени нет (строка «нет ряда»), прирост считается к последней существующей
+    ladder:
+      - [HAR-J, HAR-J]
+      - [+s2, HAR-J+s2]
+      - [+HAR-X, HAR-X+s2]
+      - [+kalibrovka_sostoyaniya, null]
+      - [+busting, null]          # R1: бустинг F_1, F_5 стоит на ноге HAR-J, а не HAR-X — в цепочку не вложен; он — финал
+      - [+soglasovanie, null]
+      - [final, F_d0]
+    # абляция: кластер -> [полный ряд, ряд без кластера]; Δ = Q(без)/Q(полный) − 1 (плюс — кластер помогает)
+    ablation:
+      "8 ансамбль seed (10 -> 1)": [F_d0, F_d0_s42]
+      "3 s² (на ноге HAR-X, справочно)": [HAR-X+s2, HAR-X]
+      "2 HAR-X (против HAR-J, обе с s²)": [HAR-X+s2, HAR-J+s2]
+    roles: {final: F_d0, etalon: HAR-J+s2, harj: HAR-J}
+    # стабильность калибровки: параметр s² и множитель F по шагам — из отношения рядов «с поправкой / без» (постоянно внутри шага)
+    calib_pairs:
+      "HAR-J s² sm (эталон б)": [HAR-J+s2, HAR-J]
+      "HAR-X s² sm": [HAR-X+s2, HAR-X]
+    param_files: []               # R2: csv h, step, param, value[, ryad] (L — калибровка, M — ρ_h); шаблоны от regen
+    # ρ_h — демонстрация на R1 (в R1 persist нет): e_h = ln y_h − ln ŷ_h(нога), r̂₁ = ln ŷ₁(финал) − ln ŷ₁(нога);
+    # ρ_h,k = Σ e·r̂ / Σ r̂² на val шага k (описательно, не выбор)
+    rho_demo: {leg: HAR-J+s2, fin_1: F_d0}
+  r2:
+    note: "заполняется после ворот E по R2/O/gate_E_h{h}.yaml: дизайн-победитель и его ступени с выключенными кластерами"
+    # ряд кэша ядра: {design: путь к yaml дизайна от корня репо | dict, name: имя ряда, seeds: [42, …, 51] | [det]};
+    # h подставляется; путь — RC.cache_dir(RC.validate(design)) / <name>_h{h}_s{seed}_val.parquet; rv_actual — из RC.load_d0
+    series: {}
+    ladder:
+      - [HAR-J, null]
+      - [+s2, null]
+      - [+HAR-X, null]
+      - [+kalibrovka_sostoyaniya, null]
+      - [+busting, null]
+      - [+soglasovanie, null]
+      - [final, null]
+    ablation: {}
+    roles: {final: null, etalon: null, harj: null}
+    calib_pairs: {}
+    param_files: ["R2/cache/*/params_calib_h{h}.csv", "R2/cache/*/params_rho_h{h}.csv"]
+    rho_demo: null
+
+stability: {jump_max: 0.5}        # аналог c4 кластера 3: скачок параметра > 50% между соседними шагами — флаг
+
+# ---- режимы
+regimes:
+  rvi_col: close_RVI              # уровень RVI дня d (features_pit_v3), терцили — по датам периода
+  rvm_col: rv_m                   # RV_m(d0) ядра (RC.load_d0): среднее RV_{d−21..d} тикера; терцили — внутри тикера по периоду
+  rvi_thr: null                   # null — пороги по периоду вызова; на тесте — пороги 2017–2021 из d_terciles.csv: [22.27, 26.9533]
+
+# ---- ранговые метрики главы 4
+rank:
+  models: [F_d0, HAR-J, HAR-J+s2]
+  pct_lookback: 252               # процентильный ранг σ_pred тикера: окно, min_periods = max(50, L/5), как fastbt.masks
+  c_pairs: [[F_d0, HAR-J], [F_d0, HAR-J+s2]]
+  c_cats: [Trend, Contrarian, Range]
+  c_v41: false
+
+# ---- SHAP остаточного ученика (кластер 4). R2: модели и признаки — от B и F; до них — дымовой ученик на малом срезе.
+shap:
+  smoke: {tickers: [SBER, LKOH, AFLT], steps: [1, 2, 3], seed: 42, base: "R2/cache/E/HARJ_emb_d0_h{h}_lnall.parquet",
+          params: {n_estimators: 150, learning_rate: 0.05, num_leaves: 15, min_child_samples: 50, subsample: 0.8, subsample_freq: 1,
+                   colsample_bytree: 0.8, verbose: -1}}
+  # группы признаков (регулярные выражения по имени столбца); до схемы групп G0–G10 агента F — рабочие группы
+  groups:
+    HAR_d0: "^(rv_d|rv_w|rv_m|jump)$"        # d0 из RC.load_d0: RV дня d и средние 5 / 22 дней по день d
+    RVI: "^(close_RVI|idx_RVI_rv_annualized_(ret1|ret5|ret22|vol22))$"
+    rynok: "^(rv_IMOEX|idx_IMOEX_rv_annualized_(ret1|ret5|ret22|vol22))$"
+    vnutridnev: "^(rsv_pos|rsv_neg|rskew|rkurt|rv_morning|rv_midday|rv_evening)$"
+    global: "^yahoo_(vix|brent|sp500)_(ret1|ret5|vol22)$"
+    makro: "^(key_rate_cbr|cpi_ru|si_fut)_(lag1|diff22)$"
+
+smoke: {tickers: [SBER, LKOH, AFLT], period: [2017, 2018], seeds: [42]}

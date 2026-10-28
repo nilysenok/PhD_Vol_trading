@@ -1,0 +1,39 @@
+# Сетка итерации 3 этапа 1 (Ж-051): ранжирование по тикерам, топ-k по рангу |сила сигнала| / √RV. Коммитится до счёта.
+# Проект — docs/otchety/2026-10-28_zh051_iteracii.md (§2.3, §3, §4). net = выключено = путь P1 побайтно (golden).
+v: 1
+format: zh051-iteraciya
+punkt: "Ж-051"
+iteraciya: 3
+nazvanie: top_k_po_rangu
+baza:
+  istochnik: "docs/tables/zh047/S{k}_itog_v2.csv"
+  zapusk: "2026-10-28T00:36:00"
+  sha256:
+    S1: ce28779d2d99286fcad388b6e6ee0eb54e1d398ffd73e763cfc21baa1fe5f308
+    S2: 2a3b1d2ed77aaff30882432a2c40eaa08a1d1ab361762a7ada20e150862f997a
+    S3: 5c1673fe95ee3ecb25d96df2b0f0991c7a7131008cccc7dffebb9708b4ec1c47
+    S4: 10ba1226dc73fcc0220e5ca14d1af8e6417073ca23406408ba76a00e3d7dc6aa
+    S5: 2b61897f32ebc36d848099b9b18678f4db6946ebffefdfd8b1895dd34d509f03
+    S6: 916921a1f092ad6eff7339c894426881ce292dc8393009c5feee54b9f7ed086c
+period: {otbor: train, validation: zakryto}
+komissiya: {otbor: 0.0004}
+tselevaya: min_msr_2018_2019
+reshenie: "балл s_t,d = |strength_t,d| / σ_t,d (σ — источник sigma точки P1, известен на close d); вход по close d, исполнение — по оси vhod P1"
+
+osi:
+  top_k:
+    setka: [3, 5, 8, 12, net]           # не больше k открытых позиций стратегии; net = без лимита (= P1)
+    vykl: net
+pravila:
+  kandidaty: "тикеры, у которых сделка Sk начинается в d (после фильтров входа)"
+  zanyatost: "слот занят от дня начала сделки Sk до её конца по сигнальной позиции Sk (σ-выходы только укорачивают — оценка сверху, без заглядывания)"
+  poryadok: "по убыванию s_t,d; ничья — порядок тикеров data.TICKERS"
+  vytesnenie: net                        # открытая позиция не вытесняется более сильным сигналом
+  kapital: slot                          # вес позиции не меняется (1/17 капитала стратегии на тикер); концентрация 1/k — ❓2 владельцу, не считается
+  vyrozhdeno: "k ≥ максимума одновременных сделок Sk P1 в 2017 (прогрев, ex-ante) — точка = P1, в N один раз"
+
+N: {S1: 4, S2: 4, S3: 4, S4: 4, S5: 4, S6: 4}
+kontrol: {tip: sluchaynyy_rang, n: 20, seed: 20261028, opisanie: "тот же top_k, баллы перемешаны между тикерами внутри дня"}
+plato: {osi: [top_k], radius: 1}
+kriteriy: "docs/otchety/2026-10-28_zh051_iteracii.md §3"
+ledger: {iteraciya: 3, rol: kandidat}

@@ -1,0 +1,7 @@
+raw/
+progress/
+bars_10m/
+bars_10m_full/
+index_d/
+t_start
+*.parquet

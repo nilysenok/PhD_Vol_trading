@@ -1,0 +1,4 @@
+iteratsiya,rezhim,N_do,N_posle,luchshaya_tsel_tune,ctrl_u_luchshey,plato,tochka
+1,oat,0,86,-0.4234934828681832,1.2822223055568205,-0.960314453508757,min_strength=0.7
+2,"morris 10 траекторий, 5 параметров",86,146,,,,mu*: см. S3_morris
+3,optuna 100,146,225,1.562341938827986,-0.6881320400155323,1.562341938827986,пик; соседей 1

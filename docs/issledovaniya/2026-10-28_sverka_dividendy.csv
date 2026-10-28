@@ -1,0 +1,27 @@
+ticker,record_date,field,dohod_csv,second_source_value,second_source,status,comment
+MTSS,2019-07-09,announce_date,2019-04-11,2019-04-10,1prime.ru (заседание СД МТС 10.04.2019; публикация 10.04.2019 18:56 МСК),расхождение,dohod на 1 день позже заседания СД; возможно дата публикации/следующий день; одна проверка
+MTSS,2020-01-10,last_cum_date,2019-12-31,2020-01-08,investmint.ru (Купить до),расхождение,доп. поле вне задания; дата реестра 2020-01-10 совпала
+PHOR,2018-03-12,last_cum_date,2018-03-06,2018-03-07,investmint.ru (Купить до),расхождение,доп. поле вне задания; дата реестра совпала
+PHOR,2018-06-13,last_cum_date,2018-06-08,2018-06-07 (investmint) / 2018-06-09 (investfuture),investmint.ru; investfuture.ru,источники расходятся,доп. поле вне задания; дата реестра совпала
+PHOR,2017-07-17,announce_date,2017-05-19,2017-07-05 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,у эмитента дата собрания акционеров а не рекомендация СД; смысл поля dohod не подтверждён
+PHOR,2017-10-13,announce_date,2017-08-23,2017-10-02 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2018-03-12,announce_date,2017-11-24,2018-02-26 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2018-06-13,announce_date,2018-03-21,2018-05-30 (ГОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2018-07-23,announce_date,2018-05-31,2018-07-06 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2018-10-12,announce_date,2018-08-23,2018-10-01 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2019-02-04,announce_date,2018-11-20,2019-01-22 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2019-06-10,announce_date,2019-03-20,2019-05-24 (ГОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2019-07-10,announce_date,2019-05-16,2019-06-24 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2019-10-15,announce_date,2019-09-02,2019-10-04 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2020-02-04,announce_date,2019-11-25,2020-01-24 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2020-06-02,announce_date,2020-02-21,2020-05-27 (в верхней таблице; во второй таблице той же страницы ГОСА 22.05.2020),phosagro.ru/investors/dividends,не сопоставимо,то же; у эмитента две таблицы дают разные даты собрания
+PHOR,2020-07-06,announce_date,2020-05-13,2020-06-19 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2020-10-15,announce_date,2020-08-28,2020-09-30 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2020-12-25,announce_date,2020-11-06,2020-11-13 (верхняя таблица; вторая таблица ВОСА 14.12.2020),phosagro.ru/investors/dividends,не сопоставимо,то же; у эмитента две таблицы дают разные даты собрания
+PHOR,2021-06-07,announce_date,2021-04-14,2021-05-25 (ГОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2021-07-05,announce_date,2021-05-18,2021-06-22 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2021-09-24,announce_date,2021-08-06,2021-09-13 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2021-12-20,announce_date,2021-11-03,2021-12-08 (ВОСА),phosagro.ru/investors/dividends,не сопоставимо,то же
+PHOR,2017-01-04,record_date,нет строки в CSV dohod,21 руб (н/расп 2016),investfuture.ru/dividends/phor,расхождение вторичных источников,строки нет ни у эмитента ни у investmint ни у dohod; вероятно ошибка investfuture; на CSV не влияет
+PHOR,2017-07-17,record_date,2017-07-17 21,нет строки,investfuture.ru/dividends/phor,расхождение вторичных источников,investfuture пропустил выплату; эмитент и investmint подтверждают
+PHOR,2018-03-12,record_date,2018-03-12 21,нет строки,investfuture.ru/dividends/phor,расхождение вторичных источников,investfuture пропустил выплату; эмитент и investmint подтверждают

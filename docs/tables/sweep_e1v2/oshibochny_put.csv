@@ -1,0 +1,30 @@
+# статус: разработка (сетки S{k}_setka_e1b.yaml, 2018–2019), справка Ж-040 п. 3; 27.10.2026
+# ошибочный путь: fastbt/sweep_post.py:160–162 до исправления Ж-038 (a51cb7a) — слой исполнения включался, если consec_entry > 1 или exec_min_hold > 0 или exec_cooldown > 0 или min_strength > 0;
+# внутри результат exec_layer (он уже со знаком) умножался на знак сырой позиции ещё раз -> шорты становились лонгами.
+# q_sily, tf_min_hold, tf_reentry путь не включали (q_sily — маска до сделок; tf_* — после слоя), исходные значения всех четырёх параметров пути в центрах S1–S6 тривиальны.
+# колонки: znacheniya_vklyuchayut_put — значения `setka`, при которых путь включался; v_A_vklyuchayut_put — то же среди v_A (сетка A); tsentr_vklyuchaet_put — путь включён в центре (исходной точке)?
+strategiya,parametr,ishodnoe,setka,znacheniya_vklyuchayut_put,v_A_vklyuchayut_put,tsentr_vklyuchaet_put
+S1,consec_entry,1,"1 2 3","2 3","2",False
+S1,min_strength,0.0,"0.0 0.1 0.2 0.3 0.5 0.7","0.1 0.2 0.3 0.5 0.7","0.3 0.5",False
+S1,exec_cooldown,0,"0 3 5 10 20","3 5 10 20","10",False
+S1,exec_min_hold,0,"0 3 5 10","3 5 10","5",False
+S2,consec_entry,1,"1 2 3","2 3","2",False
+S2,min_strength,0.0,"0.0 0.1 0.2 0.3 0.5 0.7","0.1 0.2 0.3 0.5 0.7","0.3 0.5",False
+S2,exec_cooldown,0,"0 3 5 10 20","3 5 10 20","10",False
+S2,exec_min_hold,0,"0 3 5 10","3 5 10","5",False
+S3,consec_entry,1,"1 2 3","2 3","2",False
+S3,min_strength,0.0,"0.0 0.1 0.2 0.3 0.5 0.7","0.1 0.2 0.3 0.5 0.7","0.3 0.5",False
+S3,exec_cooldown,0,"0 3 5 10 20","3 5 10 20","10",False
+S3,exec_min_hold,0,"0 3 5 10","3 5 10","5",False
+S4,consec_entry,1,"1 2 3","2 3","2",False
+S4,min_strength,0.0,"0.0 0.1 0.2 0.3 0.5 0.7","0.1 0.2 0.3 0.5 0.7","0.3 0.5",False
+S4,exec_cooldown,0,"0 3 5 10 20","3 5 10 20","10",False
+S4,exec_min_hold,0,"0 3 5 10","3 5 10","5",False
+S5,consec_entry,1,"1 2 3","2 3","2",False
+S5,min_strength,0.0,"0.0 0.1 0.2 0.3 0.5 0.7","0.1 0.2 0.3 0.5 0.7","0.3 0.5",False
+S5,exec_cooldown,0,"0 3 5 10 20","3 5 10 20","10",False
+S5,exec_min_hold,0,"0 3 5 10","3 5 10","5",False
+S6,consec_entry,1,"1 2 3","2 3","2",False
+S6,min_strength,0.0,"0.0 0.1 0.2 0.3 0.5 0.7","0.1 0.2 0.3 0.5 0.7","0.3 0.5",False
+S6,exec_cooldown,0,"0 3 5 10 20","3 5 10 20","10",False
+S6,exec_min_hold,0,"0 3 5 10","3 5 10","5",False
