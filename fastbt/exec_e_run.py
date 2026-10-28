@@ -8,7 +8,6 @@ import numpy as np
 from fastbt.exec_e_rules import (be_reached, ext_next, limit_level, limit_mask, limit_px, stop_hit, stop_level,
                                  take_hit, take_level, tejk_level)
 from fastbt.exec_e_types import Trade
-from fastbt.exec_e_vremya import HHMM, bar_at
 
 
 class Run:
@@ -190,21 +189,7 @@ class Run:
         elif j + 1 < len(s.ix):
             s._place(close, sd, sg, j, i, retry=False)
 
-    def _try_rynok(s, i, j, d):
-        """Вход рынком по open бара 10:00 (bar_at: нет бара — первый позже; после 10:00 баров нет — open 10:00 следующего дня).
-        Времени баров нет (Day.t) — open первого бара. Стоп и тейк проверяются с самого бара входа (после open)."""
-        o, s.order = s.order, None
-        b = bar_at(d, HHMM["open2"])
-        b = 0 if b is None else b
-        if b >= len(d.c):
-            s.order = dict(o, due=j + 1) if j + 1 < len(s.ix) else None
-            return
-        s._enter(i, j, b, float(d.o[b]), b, s.sigma[o["d_sig"]], o["d_sig"], o["sd"])
-        s._scan(i, j, d, b)
-
     def _try_order(s, i, j, d):
-        if s.order.get("rynok"):
-            return s._try_rynok(i, j, d)
         o, s.order = s.order, None
         sd = o["sd"]
         hit = np.flatnonzero(limit_mask(sd, d.h, d.l, o["L"], s.p.tick))
