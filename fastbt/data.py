@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from fastbt import dividendy
 from fastbt.signals.interface import TickerData
 
 MAIN = Path(os.environ.get("FASTBT_MAIN",
@@ -97,6 +98,8 @@ def load_ticker(ticker: str, corp: bool = False) -> TickerData:
     lr = np.zeros(n)
     lr[:-1] = np.log(c[1:] / np.maximum(c[:-1], 1e-12))
     dates = pd.to_datetime(x["date"].values).values
+    lr = dividendy.adjust_lr(ticker, dates, c, lr)      # Ж-057 п. 1: PnL по реальным ценам, в день отсечки — с дивидендом
+    o, h, l, c = dividendy.adjust_ohlc(ticker, dates, c, o, h, l, c)   # Ж-059 п. 2: сигналы — на ряду с поправкой
     return TickerData(ticker, dates, o, h, l, c, v, lr, align_sigma(dates, ticker))
 
 

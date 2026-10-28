@@ -11,10 +11,18 @@ from fastbt.exec_e_types import Trade
 
 
 class Run:
-    def __init__(s, ticker, days, sig, sigma, p, close=None):
+    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0):
         n = len(days)
         s.t, s.days, s.sig, s.sigma, s.p, s.cn6 = ticker, days, sig, sigma, p, close
         s.ix = [i for i, d in enumerate(days) if not d.pusto]
+        # div — полный D на шаг (день гэпа без баров — на следующий торговый); dv — D·nalog переносимой позиции (PnL);
+        # sh — сдвиг стопа вниз на полный D (Ж-060: цена падает на D, стоп открытой позиции — вместе с ней)
+        s.div, s.dv, s.sh, s.nal = np.zeros(n), 0.0, 0.0, float(nalog)
+        if div is not None:
+            for i in np.flatnonzero(np.asarray(div, float)):
+                k = next((x for x in s.ix if x >= i), None)
+                if k is not None:
+                    s.div[k] += float(div[i])
         s.gross, s.cost, s.pos = np.zeros(n), np.zeros(n), np.zeros(n)
         s.used, s.free = np.zeros(n), np.ones(n)
         s.trades, s.tr, s.order = [], None, None
@@ -38,7 +46,7 @@ class Run:
         s.tr.row0 = s._row(i, j, i0 >= len(s.days[i].c))
         s.cost[s.tr.row0] += s.p.comm
         s.ref, s.i0, s.sg, s.ej = px, i0, sg, j
-        s.ext, s.be_on = px, False
+        s.ext, s.be_on, s.sh = px, False, 0.0
 
     def _row(s, i, j, at_close):
         """Строка стоимости: по close — день исполнения, внутри дня — начало его интервала."""
@@ -47,7 +55,8 @@ class Run:
     def _exit(s, i, j, b, px, reason):
         tr = s.tr
         tr.exit_day, tr.exit_bar, tr.exit_px, tr.reason, tr.fee_out = i, b, px, reason, s.p.comm
-        s.gross[i] += tr.side * math.log(px / s.ref)
+        s.gross[i] += tr.side * math.log((px + s.dv) / s.ref)       # dv: дивиденд позиции, пришедшей через отсечку (раз)
+        s.dv = 0.0
         s.cost[s._row(i, j, s.zak or reason in ("vremya", "signal"))] += s.p.comm
         s.used[i] += b + 1 - s.i0
         if not s.p.reentry:
@@ -62,12 +71,17 @@ class Run:
             sg = v if np.isfinite(v) else sg
         return sg if (np.isfinite(sg) and sg > 0) else None
 
+    def _stop_shift(s, S):
+        """Стоп позиции, пережившей отсечку, — на D ниже (и лонг, и шорт); без отсечек S не меняется."""
+        return S if S is None or not s.sh else S - s.sh
+
     def _levels(s, j):
         sg = s._sg(j)
         if sg is None:
             return None, None
         tr = s.tr
         S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on)    # sr: stop | trail | bu
+        S = s._stop_shift(S)
         return S, take_level(tr.side, tr.entry_px, sg, s.p)
 
     def _after_bar(s, j, hi, lo):
@@ -110,8 +124,10 @@ class Run:
     # --- день ---
     def step(s, j, i):
         d, nb = s.days[i], len(s.days[i].c)
+        s.dv = s.div[i] * s.nal if s.tr is not None else 0.0   # позиция с прошлого close пересекает отсечку: лонг получит D, шорт заплатит
         if s.tr is not None:
             s.i0 = 0
+            s.sh += s.div[i]
         if s.order is not None and s.order["due"] == j:
             s._try_order(i, j, d)
         elif s.tr is not None:
@@ -123,7 +139,8 @@ class Run:
             elif s.p.exit_signal and s.dir(i) != s.tr.side:
                 s._exit(i, j, nb - 1, close, "signal")
         if s.tr is not None:
-            s.gross[i] += s.tr.side * math.log(close / s.ref)
+            s.gross[i] += s.tr.side * math.log((close + s.dv) / s.ref)
+            s.dv = 0.0
             s.ref = close
             s.used[i] += nb - s.i0
             s.i0 = nb

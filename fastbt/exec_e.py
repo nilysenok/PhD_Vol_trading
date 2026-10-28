@@ -69,9 +69,11 @@ def _check_params(p: Params) -> None:
         raise ValueError("tick должен быть ≥ 0 (0 — касание)")
 
 
-def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None) -> Result:
+def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None) -> Result:
     """rf_cal[t] — ставка/365·календарные дни [t, следующий торговый день) (msp.cal_days, Н2).
-    close[t] — закрытие дня по Н6 (18:50); None — close последнего 5-мин бара (E)."""
+    close[t] — закрытие дня по Н6 (18:50); None — close последнего 5-мин бара (E).
+    div[i] — полный дивиденд, руб./акция, на день гэпа i (fastbt/dividendy.gap_divs); None — без дивидендов (Ж-057 п. 1).
+    В PnL идёт D·nalog (None — dividendy.DIV_NALOG = 0,87), стоп переносимой позиции сдвигается на полный D (Ж-060)."""
     sig, sigma = np.asarray(sig), np.asarray(sigma, float)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
         raise ValueError("days, sig, sigma, close разной длины")
@@ -83,7 +85,10 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None) -> Result:
                 raise ValueError(f"день {i}: пустой или нечисловой набор баров (нужен pusto=True)")
             if close is not None and not (np.isfinite(close[i]) and close[i] > 0):
                 raise ValueError(f"день {i}: close Н6 нечисловой")
-    r = Run(ticker, days, sig, sigma, p, close)
+    if div is not None and len(div) != len(days):
+        raise ValueError("days, div разной длины")
+    from fastbt import dividendy
+    r = Run(ticker, days, sig, sigma, p, close, div, dividendy.DIV_NALOG if nalog is None else nalog)
     for j, i in enumerate(r.ix):
         r.step(j, i)
     n = len(days)

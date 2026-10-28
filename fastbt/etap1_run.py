@@ -43,12 +43,12 @@ def _spans(res, ix, p: Params, n: int):
         yield tr, tr.row0, ix[max(j - 1, 0)], (tr.exit_day if close_exit else ix[j - 1])
 
 
-def run_e1(ticker, days, sig, sigma, p: Params, close=None, w=None, win=None) -> E1Rows:
+def run_e1(ticker, days, sig, sigma, p: Params, close=None, w=None, win=None, div=None, nalog=None) -> E1Rows:
     from fastbt import exec_e                       # ленивый импорт: exec_e.run_e1 — тот же объект
     n = len(days)
     a, b = (0, n) if win is None else win
     w = np.ones(n) if w is None else np.asarray(w, float)
-    res = exec_e.run(ticker, days, sig, sigma, p, close=close)
+    res = exec_e.run(ticker, days, sig, sigma, p, close=close, div=div, nalog=nalog)
     ix = [i for i, d in enumerate(days) if not d.pusto]
     wr, sides, cnt = np.zeros(n), np.zeros(b - a), np.zeros(b - a)
     for tr, r0, last_g, er in _spans(res, ix, p, n):

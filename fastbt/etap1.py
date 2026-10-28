@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
-from fastbt import cache, ekviv_s9
+from fastbt import cache, dividendy, ekviv_s9
 from fastbt.etap1_data import LIMIT, START, align_f, build_days, load_events, load_rezhim, load_sigma
 from fastbt.etap1_eval import YAKOR, Evaluator
 
@@ -46,11 +46,13 @@ class E1Inputs:
     rate: pd.Series
     validation_open: bool = False
     meta: dict = field(default_factory=dict)      # {тикер: dates, s0, i1, a18}
+    div: dict = field(default_factory=dict)       # {тикер: полный D (руб.) на день гэпа по датам s0…i1}, Ж-057 п. 1
 
     def digest(self) -> str:
-        """Д5: хэш всех входов (σ, бары, close, режим, события, тик, ставка, даты, ряды Sk) и кода."""
+        """Д5: хэш всех входов (σ, бары, close, режим, события, тик, ставка, даты, дивиденды, ряды Sk) и кода."""
         parts = _flat([self.sigma, self.bars, self.close_n6, self.rezhim, self.sobytiya, self.tick,
-                       self.rate, {t: m["dates"].astype("int64") for t, m in self.meta.items()}])
+                       self.rate, {t: m["dates"].astype("int64") for t, m in self.meta.items()},
+                       self.div, float(dividendy.DIV_NALOG)])
         return cache.key("etap1_inputs", *parts, self.sk.series_digest() if self.sk is not None else "")
 
 
@@ -63,7 +65,17 @@ def load_ticker_nf(ticker: str):
     c, h, l, o, v = [x[k].values.astype(np.float64) for k in ("close", "high", "low", "open", "volume")]
     lr = np.zeros(len(c))
     lr[:-1] = np.log(c[1:] / np.maximum(c[:-1], 1e-12))
-    return TickerData(ticker, pd.to_datetime(x["date"].values).values, o, h, l, c, v, lr, {})
+    dates = pd.to_datetime(x["date"].values).values
+    lr = dividendy.adjust_lr(ticker, dates, c, lr)      # Ж-057 п. 1: тот же модуль, что в data.load_ticker
+    o, h, l, c = dividendy.adjust_ohlc(ticker, dates, c, o, h, l, c)   # Ж-059 п. 2: сигналы — на ряду с поправкой
+    return TickerData(ticker, dates, o, h, l, c, v, lr, {})
+
+
+def real_close(ticker: str) -> np.ndarray:
+    """Реальное (не скорректированное) close Н6 тикера: исполнение идёт по реальным ценам (Ж-059 п. 2)."""
+    from fastbt import data
+    x = data.daily_df()
+    return x[x["ticker"] == ticker].sort_values("date")["close"].values.astype(np.float64)
 
 
 def sk_evaluator(sid: str):
@@ -82,18 +94,20 @@ def build_inputs(sid: str, ev=None, end: pd.Timestamp = END_TRAIN) -> E1Inputs:
     if end >= LIMIT or end > END_TRAIN:
         raise PermissionError("этап 1: только окна до 2019-12-31; validation открывает дирижёр")
     ev = ev or sk_evaluator(sid)
-    meta, bars, close, tick = {}, {}, {}, {}
+    meta, bars, close, tick, div = {}, {}, {}, {}, {}
     for t in ev.tickers:
         td = ev._td[t][0]
         s0, i1 = int(np.searchsorted(td.dates, np.datetime64(START))), int(np.searchsorted(td.dates, np.datetime64(end)))
         a18 = int(np.searchsorted(td.dates, np.datetime64("2018-01-01")))
         meta[t] = dict(dates=td.dates[s0:i1 + 1], s0=s0, i1=i1, a18=a18)
-        close[t] = td.close[s0:i1 + 1].astype(float)
-        bars[t], tick[t] = build_days(t, td.dates, td.close, s0, i1, end)
+        rc = real_close(t)                                  # исполнение — по реальным ценам; td.close скорректирован
+        close[t] = rc[s0:i1 + 1].astype(float)
+        div[t] = dividendy.gap_divs(t, td.dates)[s0:i1 + 1]
+        bars[t], tick[t] = build_days(t, td.dates, rc, s0, i1, end)
     sg = load_sigma(ev.tickers, end)
     sigma = {n: {t: align_f(sg[n][t], meta[t]["dates"]) for t in ev.tickers} for n in sg}
     ev_ = load_events({t: pd.DatetimeIndex(meta[t]["dates"]) for t in ev.tickers}, end)
-    return E1Inputs(ev, sigma, bars, close, load_rezhim(end), ev_, tick, msp.rate_cbr(), meta=meta)
+    return E1Inputs(ev, sigma, bars, close, load_rezhim(end), ev_, tick, msp.rate_cbr(), meta=meta, div=div)
 
 
 def base_point(sid: str) -> dict:

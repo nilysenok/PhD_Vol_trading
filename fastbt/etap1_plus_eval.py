@@ -148,7 +148,8 @@ class PlusEvaluator(AnsamblEvaluator):
             if pt["razmer"] != "ravnyy":
                 w = rezhim_e1.razmer_ves(s["sg"], "obratnyj", float(pt["razmer"]) / 100.0)
             p = params_of(pt, inp.tick[t], h, False, self.comm)
-            res = run_e1(t, days, s["d"], s["sg"], p, close=inp.close_n6[t][:s["b"] + 1], w=w * s["mag"], win=(a, s["b"]))
+            res = run_e1(t, days, s["d"], s["sg"], p, close=inp.close_n6[t][:s["b"] + 1], w=w * s["mag"], win=(a, s["b"]),
+                          div=inp.div[t][:s["b"] + 1])
             out.append((ti, res, a, s["b"]))
         return out
 
