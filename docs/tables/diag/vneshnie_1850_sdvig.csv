@@ -1,0 +1,29 @@
+# статус: диагностика, 2016–2021, до аудита
+# коммит кода: c341fd7
+# хэш входов sha256[:12]: BR(br_contracts.json 81029001548f; BR*.parquet набор e95886c632e3), USDRUB d2d9b5ce6766, RVI fc4435c4f531, IMOEX 3ded96745d9a
+# максимум на сдвиге 0 к IMOEX — синхронная связь; отсутствие утечки обеспечивается отсечкой 18:50 и тестом вечернего бара
+ryad,cel,sdvig,corr
+brent,self,-2,-0.010436
+brent,self,-1,0.054036
+brent,self,0,1.000000
+brent,self,1,0.054036
+brent,imoex,-2,0.026641
+brent,imoex,-1,0.009537
+brent,imoex,0,0.457045
+brent,imoex,1,0.032140
+usdrub,self,-2,-0.054337
+usdrub,self,-1,0.013648
+usdrub,self,0,1.000000
+usdrub,self,1,0.013648
+usdrub,imoex,-2,-0.022783
+usdrub,imoex,-1,-0.083418
+usdrub,imoex,0,-0.385064
+usdrub,imoex,1,0.041464
+rvi,self,-2,0.087539
+rvi,self,-1,-0.226331
+rvi,self,0,1.000000
+rvi,self,1,-0.226331
+rvi,imoex,-2,-0.020676
+rvi,imoex,-1,-0.052736
+rvi,imoex,0,-0.524216
+rvi,imoex,1,0.173595

@@ -1,0 +1,8 @@
+# статус: разработка, train 2018 (tune) / 2019 (ctrl); объект S5; 27.10.2026 19:57
+# код: f991180; evaluator b8fd18e8257532a5df3f0b0a76a1de473c41ebd3; sweep_drivers владельца без правок
+# вход: сетка e91cbd92cee4; ряд 06ea97fb19e8; проб в ledger (N в DSR) 118
+# режим morris; seed 20261027; params ['pivot_period', 'min_strength', 'rm_pivot.cooldown_bars']; проб в ledger до 90, после 118
+param,mu_star,sigma,n,n_evaluations,comm_pct,N
+pivot_period,0.8898080627504292,0.9782363052667306,10,40,0.04,118
+min_strength,0.6362475756019543,0.4855326637418751,10,40,0.04,118
+rm_pivot.cooldown_bars,0.2807838196128941,0.4491364703129979,10,40,0.04,118

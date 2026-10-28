@@ -1,0 +1,65 @@
+# R2, агент A: спецификация тестовой сборки (r2_sborka_test.py) и замороженные файлы второго открытия (final_test_r2.py).
+# Протокол v3 — docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, разделы 2.8, 6, 8, 9. Формат сборки — шапка r2_sborka_test.py.
+# До ворот E статус «ждёт ворот E»: r2_sborka_test.py отказывает (СТОП), test_locked не читается.
+# После ворот E агент A заполняет gate_E_sha, h, F_h_d0 по R2/O/gate_E_h{h}.yaml и параметрам val (шаги <= 6), ставит
+# status: zamorozheno и коммитит до запуска сборки; дальше файл не меняется (SHA — в журнале и SHA256.txt выхода).
+
+# Решение владельца 26.10 (вечер): вариант 1 — победителей R2 нет, на h = 1, 5, 22 финал — F_h(d0) (F_d0_s2emb).
+# После «да» на FINAL_DESIGN_round2: сверить gate-SHA ниже с R2/O (если ворота E перепишутся счётом на исправленной основе —
+# обновить), поставить status: zamorozheno, закоммитить, затем `python3 scripts/analysis/r2_sborka_test.py`.
+status: zamorozheno     # «да» владельца 26.10 21:35 (по Маку 21:30); фиксация FD — 9fef1cc, слияние PR #227 — 526f897
+# s² калибровки у эталона (б) d0, F_h(d0) и победителя — одним правилом (решение владельца «s² последовательно при открытии»;
+# эмбарго s² — PR #194, #195, решение владельца 17:35): t−1 по OOS-остаткам val шагов окна, с эмбарго; на шагах 7–10 — остатки
+# val 2022–2025 из test_locked (только part = val, метка R2-guard-s2). zamorozka (раздел 8 протокола) — справочный режим.
+s2_pravilo: posledovatelno
+s2_etalon: {est: sm, kappa: 0.5, embargo: "on"}   # эталон (б) d0 и F_h(d0): Б0.1 sm, как ВЫР-1, плюс эмбарго
+gate_E_sha:             # sha256 R2/O/gate_E_h{h}.yaml (исправленная основа E: h=5 — 21:17:12, h=22 — 21:16:52; pobeditel F_h(d0);
+                        # E8 драйвера — gate_E8_h{5,22}.yaml: тоже F_h(d0), SHA — FINAL_DESIGN_round2, поле 4)
+  5: 17a4c64cb6bc60ba906e97bc85a7189aa16f3d5b1cd437a37f5061f163c39ff7
+  22: d95552ddd5c0a7a0943e19f1c95236a00dec51d107eab3d9348e515f93792f53
+gate_D_sha:             # h без gate_E: ворота D без лучшего дизайна (luchshiy: null) — на h остаётся F_h(d0) (STOP 21:06)
+  1: 44b964b675a0edb26734e7441061b55fe8e37236baebbc5845985cbd51d390ea
+h: {}                   # победителей R2 нет (вариант 1)
+F_h_d0: [1, 5, 22]      # строка гибрида — F_h(d0) с s² сборки (R2/final/final_d0_s2emb_h{h}_test.parquet)
+
+# Ворота E — формат r2_loyo.gate_E (PR #161): phase: E, h, pobeditel: {pobeditel: <единица> | 'F_h(d0)', V0, poryadok}.
+# ❓ A-1 (для O, умолчание): имени единицы мало для однозначной сборки — в спецификации A сам пишет design_sha и design_yaml
+# (файл и SHA) победителя; если O добавит design_sha в gate_E, сборка его сверит.
+# Победитель V0 — финал = эконометрическая компонента: pravilo single, одна компонента (нога L) со своей калибровкой (проверяется).
+
+# Замороженные ряды второго открытия (раздел 2.8: в R2 не пересчитываются). SHA-256 взяты до R2 из журналов записи,
+# без открытия test_locked: ВЫР-1 — data/regen/vyr/vyr1/lock_{etalon,f1,f5,f22}.csv; ВЫР-2 — docs/otchety/2026-10-26_vyr2.md;
+# кадр первого теста (ключи, цель, V0) — scripts/analysis/test_dop.py (SHA, = FINAL_DESIGN поле 10).
+# Пути — относительно data/regen/test_locked/.
+zamorozheno:
+  final3/final_h1_test.parquet: 4e56f6252a48cb47f6027a0ff86c1f197102a5e02f61123265287b119cf4e7d0
+  final3/final_h5_test.parquet: 4694991372bd95d3e2a7a091c2548444d77050ca4c75cc40170f5bd78b8652fc
+  final3/final_h22_test.parquet: 91f2a48e5f4ad431ac75c85bdd3dd7a58a449e4e0c9d731fed6dbd0a4937b059
+  vyr/etalon_d0_h1_test.parquet: 3657f85805fd2be5906892d63d56f709425ee19a1442de9c9cd76d4643556de6
+  vyr/etalon_d0_h5_test.parquet: d28f791f7cc5d92fe77e07d53133cce97082d6cd1290562ea2c6c7b0f9f892e5
+  vyr/etalon_d0_h22_test.parquet: f29cacef3f99d06362ca267412ed6af27c34aa8b2ad26fac929419e7ddd4ff19
+  vyr/final_d0_h1_test.parquet: e4c59d2f5a3fbf0a0a1b4269209e736fc93fcbf9d60d5e01f359e8edc088f432
+  vyr/final_d0_h5_test.parquet: ef81c061d85f2ab122b3e9f690d54d46938dde4479f6499aa4218138189077f0
+  vyr/final_d0_h22_test.parquet: a5c870caf15ed3112cc07651910d5bc1afe5bb5db64bc3236e33551b60783390
+  vyr/ref_harcj_d0/REF_HARCJ_d0_h1_test.parquet: a42b1ae379eb2388b8f7af4312a7702cf076ae30d8d38c5b17b2c97cd236f8ed
+  vyr/ref_harcj_d0/REF_HARCJ_d0_h5_test.parquet: 02959e651fdacded944a85be294b409ba372bf30b7e252e9a103eee508591496
+  vyr/ref_harcj_d0/REF_HARCJ_d0_h22_test.parquet: ee36287815153af9d2aee119908e90d7e7a57dc7271c38b0665005ba18b3da5c
+
+# Собрано r2_sborka_test.py (пишется после сборки, до «да»; без этих SHA final_test_r2 откажет до замка). Пути — от test_locked/.
+#   R2/final/etalon_d0_s2emb_h{1,5,22}_test.parquet, R2/final/final_d0_s2emb_h{1,5,22}_test.parquet, R2/final/final_r2_h{h}_test.parquet
+sobrano:                # r2_sborka_test.py, 26.10 21:35 по Маку; лог — data/regen/R2/S/otkrytie/sborka_2135.log
+  R2/final/etalon_d0_s2emb_h1_test.parquet: 1dce250bc913e93a7643094261eda5695288e10f72eeac3d0ae1d7d97f8665fc
+  R2/final/etalon_d0_s2emb_h5_test.parquet: de559a9ed66c892842b049964003509ab338bfbac87768dd5d63bf406041b51d
+  R2/final/etalon_d0_s2emb_h22_test.parquet: 3341184413c8923a71c0b78bd3e72020ecbaa93cd60a67b7a161a494d302c0fd
+  R2/final/final_d0_s2emb_h1_test.parquet: 5ebcf61a1ccfd0f6c660e03431e306f8fe7719f011a66b469d8431be147c92e4
+  R2/final/final_d0_s2emb_h5_test.parquet: 4c11df7660cb174e9d169abdc67d8fd16286c21aa052351fa36b49e9b63eb887
+  R2/final/final_d0_s2emb_h22_test.parquet: 059a8e664f490ea3cf9ff4ce25b0db9958c2b074b30c21a7e415e0f945b54c2f
+
+# Строки второго открытия в версии d0 (final_test_r2.py):
+#   HAR-J (а) d0 / HAR-J (б) d0  — R2/final/etalon_d0_s2emb_h{h}_test.parquet: har_raw (= ВЫР-1) / har_corr (s² t−1 с эмбарго);
+#                                  прежний (б) ВЫР-1 (vyr/etalon_d0_*, s² как R1) — только справочно;
+#   Гибридная                    — R2/final/final_r2_h{h}_test.parquet, иначе F_h(d0) = R2/final/final_d0_s2emb_h{h}_test.parquet;
+#   F_h(d0) отдельной строкой    — справочно, сравнение с победителем R2; прежний F_h(d0) ВЫР-1 — справочно;
+#   V0 XGBoost / LightGBM (raw, с поправкой) — кадр первого теста как есть (ВЫР-2: день d видят, не перестраивались);
+#   HAR-CJ d0                    — vyr/ref_harcj_d0 (справочно, в таблице периодов);
+#   HAR-X с поправкой (раскладка) — кадр первого теста, версия R1 (❓ A-2: d0-ряда HAR-X с поправкой на тесте нет).

@@ -1,0 +1,89 @@
+# Сетка Э1-б (Ж-031#Э1-б), S1 MeanRev. До счёта; N фиксируется этим коммитом.
+# Схема sweep-setka v1 и правила счёта N — docs/otchety/2026-10-27_setki_e1b.md §2–3.
+# dostup: kod — значение проходит в fastbt как есть (сетка семьи, dict RM, ручка дизайна);
+#         obertka — делает sweep.py поверх массивов fastbt, ядро не трогается;
+#         pravka — нужна правка fastbt; значения из pravka_znach до неё не считаются, но в N входят.
+v: 1
+format: sweep-setka
+punkt: "Ж-031#Э1-б"
+obekt: {tip: strategiya, sid: S1, semya: Contrarian}
+tochka: odna_konfiguratsiya   # сигнал + RM + исполнение фиксированы, общие для 17 тикеров; без годового переотбора и голосования
+etalon: A_ishodnaya           # ансамбль A (топ-10 на (тикер, год), голос ≥ 6) — сравнение, не точка сетки
+period: {tsel: tune2018, kontrol: ctrl2019, validation: zakryto}   # имена — контракт sweep_evaluate §4
+komissiya: {otbor: 0.0004, pereschet: [0.00035]}
+rezhimy: [oat, faktornyy, optuna]
+
+bloki:
+  signal:
+    parametry:
+      - {imya: ma_window, edinitsa: dni, ishodnoe: 20, v_A: [15, 20, 25], setka: [5, 10, 15, 20, 30, 40, 60], dostup: kod,
+         obosnovanie: "окно средней, к которой ждём возврата: неделя … квартал"}
+      - {imya: z_entry, edinitsa: sigma, ishodnoe: 2.0, v_A: [1.5, 2.0, 2.5], setka: [1.0, 1.5, 2.0, 2.5, 3.0], dostup: kod,
+         obosnovanie: "порог входа в σ окна: 1σ — частые слабые входы, 3σ — редкие экстремумы"}
+      - {imya: z_exit, edinitsa: sigma, ishodnoe: 0.5, v_A: [0.3, 0.5, 0.7], setka: [0.0, 0.25, 0.5, 0.75, 1.0], dostup: kod,
+         obosnovanie: "сколько возврата забираем: 0 — до средней, 1σ — половина хода от 2σ"}
+
+  filtry_zashity:   # константы s12.py:22-31; ужесточение — маска на sig в sweep.py, ослабление — правка
+    parametry:
+      - {imya: vol_regime_max, ishodnoe: 1.2, setka: [0.8, 0.9, 1.0, 1.1, 1.2, "off"], dostup: obertka, pravka_znach: ["off"],
+         obosnovanie: "ATR14/SMA50(ATR14): контртренд только в спокойном режиме; off — нужен ли фильтр"}
+      - {imya: svechi_min_iz5, ishodnoe: 3, setka: [2, 3, 4, 5], dostup: obertka, pravka_znach: [2],
+         obosnovanie: "истощение хода: красных (зелёных) свечей из 5 перед входом"}
+      - {imya: obyom_nizhe_sma5, ishodnoe: "on", setka: ["on", "off"], dostup: pravka, pravka_znach: ["off"],
+         obosnovanie: "вход на затухающем объёме; off — вклад фильтра"}
+      - {imya: vf_porog, edinitsa: dolya_SMA20_obyoma, ishodnoe: 0.5, setka: [0.25, 0.5, 0.75, 1.0], dostup: obertka, pravka_znach: [0.25],
+         obosnovanie: "ликвидность дня: запрет при объёме ниже доли SMA20"}
+
+  rm:
+    edinitsa: atr14   # ATR14 на баре входа, как в A
+    parametry:
+      - {imya: rm_edinitsa, ishodnoe: atr14, setka: [atr14, sqrt_rv], dostup: obertka,
+         obosnovanie: "переключатель на выходы в √RV (блок rm_sqrt_rv)"}
+      - {imya: sl_mult, ishodnoe: 1.5, v_A: [1.0, 1.5, 2.0], setka: [0.75, 1.0, 1.5, 2.0, 2.5, 3.0], dostup: kod,
+         obosnovanie: "стоп в ATR: от шума дня до хода, отменяющего гипотезу возврата"}
+      - {imya: tp_mult, ishodnoe: 3.0, v_A: [2.0, 3.0, 5.0], setka: [1.0, 1.5, 2.0, 3.0, 4.0, 5.0], dostup: kod,
+         obosnovanie: "тейк в ATR; z_exit обычно раньше — нужен ли тейк"}
+      - {imya: max_hold, edinitsa: dni, ishodnoe: 20, v_A: [15, 20, 30], setka: [5, 10, 15, 20, 30, 40, 60], dostup: kod,
+         obosnovanie: "время на возврат: неделя … квартал, в паре с ma_window"}
+      - {imya: breakeven_trigger, edinitsa: atr14, ishodnoe: null, v_A: [null, 1.0], setka: [null, 0.5, 1.0, 1.5, 2.0], dostup: kod,
+         obosnovanie: "стоп в цену входа после хода k·ATR"}
+      - {imya: cooldown_bars, edinitsa: dni, ishodnoe: 0, v_A: [0, 5], setka: [0, 2, 5, 10, 20], dostup: kod,
+         obosnovanie: "пауза после стопа: стоп — признак смены режима"}
+
+  rm_sqrt_rv:   # задел под E: ядро B kind=2 (batch.py), в слот σ — наивная √RV_w
+    uslovie: {rm_edinitsa: sqrt_rv}
+    parametry:
+      - {imya: k_sl, edinitsa: sqrt_rv, ishodnoe: 2.0, setka: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0], dostup: obertka,
+         obosnovanie: "стоп в σ дня; 2,0 ≈ 1,5 ATR при ATR14 ≈ 1,3·σ·P (оценка, коэффициент мерит кодер на 2018)"}
+      - {imya: ratio_tp_sl, ishodnoe: 2.0, setka: [0.5, 1.0, 1.5, 2.0, 3.0], dostup: obertka, obosnovanie: "тейк/стоп; 2 — как 3/1,5 у A"}
+      - {imya: k_be, edinitsa: sqrt_rv, ishodnoe: null, setka: [null, 0.5, 1.0, 1.5, 2.0], dostup: obertka, obosnovanie: "безубыток в σ"}
+      - {imya: gamma_hold, ishodnoe: null, setka: [null, 0.5, 1.0], dostup: obertka, obosnovanie: "срок ∝ (σ̄/σ)^γ: в шумном рынке короче"}
+      - {imya: okno_rv, edinitsa: dni, ishodnoe: 20, setka: [5, 10, 20, 60], dostup: obertka, obosnovanie: "окно реализованной σ: неделя … квартал"}
+
+  ispolnenie:   # слой исполнения (execlayer.py) и фильтр оборота (turnover.py)
+    parametry:
+      - {imya: consec_entry, edinitsa: dni, ishodnoe: 1, v_A: [1, 2], setka: [1, 2, 3], dostup: kod, obosnovanie: "подтверждение сигнала днями подряд"}
+      - {imya: min_strength, ishodnoe: 0.0, v_A: [0.0, 0.3, 0.5], setka: [0.0, 0.1, 0.2, 0.3, 0.5, 0.7], dostup: kod,
+         obosnovanie: "абсолютный порог силы min(|z|/3,1); обнуляет и посреди сделки (spec п. 13)"}
+      - {imya: q_sily, ishodnoe: 0.0, okno: 252, setka: [0.0, 0.5, 0.67, 0.75], dostup: obertka,
+         obosnovanie: "квантиль силы по своей истории тикера (как E0); 0 — без фильтра"}
+      - {imya: exec_cooldown, edinitsa: dni, ishodnoe: 0, v_A: [0, 10], setka: [0, 3, 5, 10, 20], dostup: kod, obosnovanie: "пауза после выхода"}
+      - {imya: exec_min_hold, edinitsa: dni, ishodnoe: 0, v_A: [0, 5], setka: [0, 3, 5, 10], dostup: kod,
+         obosnovanie: "по spec п. 13 почти не действует — торнадо должно дать ноль"}
+      - {imya: tf_min_hold, edinitsa: dni, ishodnoe: 0, v_A: [3, 5], setka: [0, 3, 5, 10, 20], dostup: kod, obosnovanie: "фильтр оборота: минимальное удержание; 0 — выкл"}
+      - {imya: tf_reentry, edinitsa: dni, ishodnoe: 0, v_A: [0, 1, 3, 5, 10], setka: [0, 1, 3, 5, 10], dostup: kod, obosnovanie: "запрет повторного входа"}
+
+zashito_bez_setki:   # не параметр и не в сетке: нужна правка fastbt, смысл новый
+  - "окна индикаторов ATR14, SMA50(ATR14), SMA20/SMA5 объёма — indicators.py:100-116"
+  - "нормировка силы |z|/3 — s12.py:46 (q_sily её снимает)"
+  - "partial_exit = False — после дискретизации >0,5 равен нулю (spec п. 13)"
+
+faktornyy:   # 3³, предварительно по экономике; окончательно — после торнадо OAT
+  ma_window: [10, 20, 40]
+  z_entry: [1.5, 2.0, 2.5]
+  max_hold: [10, 20, 40]
+
+optuna: {n_trials: 100, sampler: TPE, seed: 20261027, prostranstvo: vse_bloki,
+         tsel: "контракт sweep_evaluate §4: среднее годовых Шарпов tune2018 − 0,5·σ (= Шарп 2018)"}
+
+N: {oat: 95, faktornyy: 27, optuna: 100, itogo: 222}

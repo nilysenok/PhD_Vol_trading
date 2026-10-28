@@ -1,0 +1,66 @@
+# R2, агент G: воздержание (кластер 16), усадка к эталону (кластер 18), ограниченная коррекция «знак × δ» (кластер 20).
+# Протокол v4 docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, раздел 6 и раздел 7 (строка G). Модуль — scripts/analysis/r2_gate_abstain.py.
+# Ключи дизайна — schema_v2 (PR #184): k16.gate/tau/k/q/measure/regime_calib, k18.lam_to_ref/lam, k20.sign_delta/delta/base.
+# Боевой счёт (run --designs): ряды G_<ворота>__<точка сетки> по seed — в каталог дизайна (цепочка L → … → G, modul = G),
+# варианты выбирает O (r2_gates.ocenka); справочный выбор G и параметры по шагам — r2_core.params_path(дизайн, 'G') = <каталог>/params_G.csv (PR #201).
+# Разделы k16/k18/k20 ниже — сетки для дыма и справочного семейного счёта; в бою сетки берутся из ключей дизайна.
+max_year: 2021
+steps_out: [2, 3, 4, 5, 6]          # прогнозы — только val 2017–2021 (шаги кода 2–6); шаг 1 (2016) — только обучение привратника
+etalon:
+  path: vyr/etalon_d0_h{h}_val.parquet   # от data/regen; В2 = HAR-J + s² sm d0 (ВЫР-1)
+  ref: har_corr                         # столбец эталона для панельной t (ftp_stats.dm_main, лаг NW h − 1)
+vybor:
+  rezhim: loyo        # loyo — по обучающим годам складки T \ {Y} (протокол v4 § 2); proshlye — по шагам < t (справочно)
+  kriteriy: panel_t   # средняя по годам панельная t против эталона (r2_gates агента O; до него — ftp_stats.dm_main); равенство — средний QLIKE
+  eps_t: 1.0e-9
+vhod:                 # входы — через r2_core.load_series по хэшу дизайна-кандидата
+  dizayn: null        # путь к yaml или хэш (≥ 16 hex) дизайна-кандидата (ноги и роли B/M/E)
+  noga: {ryad: null, hash: null, seed: det}       # ряд ноги L (hash: null — тот же каталог)
+  korr: {ryad: [], modul: null, seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]}   # гибриды по seed × lib: коррекция = ln ŷ_гиб − ln ŷ_ноги
+  agg: mean           # коррекция ансамбля = ln mean(ŷ компонент) − ln ŷ_ноги (как r2_ens.uncert_shrink)
+k16:                  # ŷ = нога · exp(g_t · c_t), g_t ∈ [0, 1] — только по данным ≤ t
+  conf_seed:
+    rule: "g = 1{SD_{seed×lib}(c) < τ·|c̄|}, SD — ddof = 0"
+    tau: [0.25, 0.5, 1.0, 2.0, 4.0]
+  regime:
+    rule: "g = p0 из r2_ens.moe_proba (агент E, mode k2, слагаемые S3): P(спокойно) — ln y_h ниже медианы тикера на обучении шага"
+    gate: logit
+    kalibr: none      # none | isotonic (по OOS шагов < t, конец цели < 1 янв. vy)
+  shock_fresh:
+    rule: "g = 0 в первые k торговых дней (день скачка — первый) после дня s, где RV рынка (среднее rv_d по всем тикерам d0) > q-квантиля прошлых W дней"
+    k: [3, 5, 10]
+    q: [0.9, 0.95, 0.99]
+    okno: 250
+    mera: uroven      # uroven — RV рынка; prirost — Δ ln RV рынка
+  halt:
+    rule: "g = 0, если окно цели [d+1, d+h] пересекает остановку торгов; в отборе (даты < 2022) не действует — только сборка A"
+    start: '2022-02-28'
+    end: '2022-03-23'
+    zapas_dney: 3     # если конец окна неизвестен — d + h рабочих дней + запас (праздники)
+  soft:
+    rule: "g = 1/(1 + Var_seed/τ) — r2_ens.uncert_shrink агента E (импорт, не копия); τ — сетка E"
+    tau_from: r2_E_ens.yaml   # ens.uncert_shrink.tau
+k18:
+  rule: "ln ŷ = ln HAR + λ·(ln ŷ_канд − ln HAR), HAR — эталон (столбец har), кандидат — гибрид-ансамбль"
+  har: har_corr
+  lam: [0.25, 0.5, 0.75, 1.0]
+  ref: etalon        # k18.ref дизайна (❓ S: в schema), если ключа нет: etalon — эталон В2; noga — нога (E8: ŷ = нога + λ·(кандидат − нога))
+  # E8 (владелец 20:20): λ = 0 (= ref) и k16.k = 0 (= без воздержания) модуль допускает; в schema_v2 нулей нет — ❓ S
+k20:
+  rule: "ln ŷ = ln база + δ·s_t; s = sign(c̄) (znak) или 2p − 1, p — доля компонент seed × lib с c > 0 (dolya, аналог Д19.3)"
+  baza: noga          # noga | etalon
+  vid: [znak, dolya]
+  delta: [0.1, 0.2, 0.3]
+leak:
+  cuts_mid: ['2017-06-30', '2018-06-29']
+  cuts_year_end: ['2017-12-31']
+dym:
+  tickers: [SBER, LKOH, AFLT]
+  steps: [1, 2, 3]
+  seed: 42
+  hs: [1, 5, 22]
+  noga: 'E/HARJ_emb_d0_h{h}_sdet_val.parquet'            # от data/regen/R2/cache — переносится в кэш дыма через write_series
+  korr:
+    1: ['B1/HARJ_emb_d0__ostatok_xgb_h1_s42_val.parquet', 'B1/HARJ_emb_d0__ostatok_lgbm_h1_s42_val.parquet']
+    5: ['B2/ost_HARJ_emb_d0_xgb_h5_s42_val.parquet', 'B2/ost_HARJ_emb_d0_lgbm_h5_s42_val.parquet']
+    22: ['B2/ost_HARJ_emb_d0_xgb_h22_s42_val.parquet', 'B2/ost_HARJ_emb_d0_lgbm_h22_s42_val.parquet']

@@ -1,0 +1,12 @@
+# Д16.7 (третий круг): обратная подгонка HAR-X <-> остаточный бустинг; код — scripts/analysis/d16_79.py --task bf; выход D16_7_h22 (вариант bf_stop)
+name: d16_7_h22
+h: 22
+seeds: [42, 43, 44]
+features: data/regen/features_pit_v3.parquet
+blocks: ''
+boost_points: data/regen/D12_h22_selected_h22.csv   # без нового подбора
+boost_cfg: {v9: true, linear_lambda: 1}
+harx: {module: scripts/analysis/harx.py, terms: default_terms(22), net: 'ElasticNet, alpha/l1 по внутренней валидации шага (vy-1)'}
+backfit: {max_iter: 3, stop: '|dQLIKE val-года шага| < 0.2%', har_target: 'ln y - f_insample(x)', alpha_l1: 'фиксированы на шаге'}
+select: 'OOS шаги 2-5 (2017-2020), проверка шаг 6 (2021); c1-c4 — gibrid_v17 (oos, шаги 2-6, --etalon same)'
+outputs: {val: 'data/regen/D16_7_h22_{xgb,lgbm}_h22_val.parquet', seeds: '_seeds4344_val', test: 'data/regen/test_locked/D16_7_h22/'}

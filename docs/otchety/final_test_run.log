@@ -1,0 +1,29 @@
+/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/scripts/analysis/final_test.py:51: RuntimeWarning: invalid value encountered in scalar divide
+  out.append(('номинальный (пул, без HAC)', n, d.mean() / se))
+/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/scripts/analysis/final_test.py:52: RuntimeWarning: invalid value encountered in scalar divide
+  out.append((f'NW лаг {h - 1} на пуле', n, d.mean() / np.sqrt(nw_var(d, h - 1))))
+/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/scripts/analysis/final_test.py:54: RuntimeWarning: invalid value encountered in scalar divide
+  out.append((f'основной: дневной ряд средней по тикерам, NW лаг {h - 1}', len(daily), daily.mean() / np.sqrt(nw_var(daily, h - 1))))
+/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/scripts/analysis/ftp_stats.py:87: RuntimeWarning: invalid value encountered in scalar divide
+  lam = float((eA * (eA - eB)).mean() / ((eA - eB) ** 2).mean())
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_2_test.csv 11 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_3_test.csv 3 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_4_test.csv 3 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_6_test.csv 5 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_7_test.csv 5 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_4_rmse_test.csv 3 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_6_rmse_test.csv 5 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_7_rmse_test.csv 5 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_4_mae_test.csv 3 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_6_mae_test.csv 5 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_7_mae_test.csv 5 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_8_test.csv 3 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_9_test.csv 18 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_final_po_godam_test.csv 231 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_raskladka_test.csv 132 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_mz_test.csv 24 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_tickers_test.csv 54 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_subperiods_test.csv 12 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_terciles_test.csv 9 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_encompassing_test.csv 12 строк
+записано /Users/nilysenok/Desktop/Старое/PhD_Vol_trading/docs/tables/table_3_mcs_test.csv 12 строк
