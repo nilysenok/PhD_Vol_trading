@@ -43,6 +43,7 @@ class Params:
     t_vyhod: str = "close"        # close | 1500 | 1700 | open2 — исполнение выхода по signal/vremya (exec_e_vremya)
     bar_plus: int = 0             # исполнение (лимит, стоп, тейк) — по open бара b+n, если хуже уровня
     stop_tik: int = 0             # цена стопа хуже на n тиков (нужен tick)
+    tejk: str = "net"             # Ж-084: net | k_srednemu | pol_puti — тейк от уровня сигнала M (fastbt/tejk_signal.py); нужен tejk_M в run
 
 
 @dataclass
@@ -75,6 +76,7 @@ class Result:
     x_orders: int = 0             # лимитных заявок выхода поставлено (vyhod_lim); n_orders/n_fills — только входы
     x_fills: int = 0              # из них исполнено (причина "lim")
     x_t: int = 0                  # выходов исполнено не по close (t_vyhod ≠ close)
+    n_bez_tejka: int = 0          # Ж-084: входов без тейка (M не в сторону прибыли или нечисловой)
 
     @property
     def pnl(self):
