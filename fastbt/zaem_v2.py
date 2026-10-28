@@ -21,6 +21,7 @@ import numpy as np
 
 from fastbt import rezhim_e1
 from fastbt.etap1_eval import NET, years_of
+from fastbt.ledger_v2 import Pisatel
 
 SUB, SUMS, DNEI = "zaem", "SHA256SUMS_zaem.txt", 365.0
 
@@ -103,13 +104,15 @@ def _zp(pisatel) -> ZaemPisatel:
 
 def pisat(pisatel, row: dict, ex_port, ex_tik, zaem) -> None:
     """Вместо Pisatel.add: пишет ряд платы и ту же строку в ledger."""
-    _zp(pisatel).add(row, zaem)
+    if isinstance(pisatel, Pisatel):                                                 # подставной писатель (тесты) — без шардов
+        _zp(pisatel).add(row, zaem)
     pisatel.add(row, ex_port, ex_tik)
 
 
 def zakryt(pisatel) -> None:
     """Перед Pisatel.close: дописывает хвост шарда zaem/."""
-    _zp(pisatel).close()
+    if isinstance(pisatel, Pisatel):
+        _zp(pisatel).close()
 
 
 def zaem_ryad(root, sid: str, ref: dict) -> np.ndarray:

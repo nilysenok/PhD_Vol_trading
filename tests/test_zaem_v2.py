@@ -116,6 +116,21 @@ def test_excess_s_platoy_znak():
         check_znak(mutant("excess_s_platoy", "np.asarray(port, float) - ", "np.asarray(port, float) + "))
 
 
+def test_ocenshchik_daet_ryad_na_dannyh_do_2020():
+    """S1, train4: ряд float64 [T] ≥ 0, нан нет; у точки без шортов (storona=long) ряд нулевой; excess не затронут."""
+    from test_etap1_eval_v2 import PER, make, rand_points
+    ev = make("S1")
+    pt = rand_points("S1", 1, 20261028)[0]
+    row, x, _ = ev.evaluate_v2(pt, PER)
+    z = ev.zaem
+    assert row["status"] == "ok" and z.dtype == np.float64 and z.shape == x.shape
+    assert np.isfinite(z).all() and (z >= 0).all() and z.sum() > 0, "обе стороны: шорты платят за ночи"
+    assert (zaem_v2.excess_s_platoy(x, z, 0.05) <= x).all()
+    row2, x2, _ = ev.evaluate_v2({**pt, "storona": "long"}, PER)
+    assert not ev.zaem.any(), "только лонг → плата 0"
+    assert row2["status"] == "ok"
+
+
 # --- шарды рядом с ledger ---
 def make_pisatel(tmp_path, shard=3, T=5):
     man = dict(T=T, kod="k", vhody="v", period="train4")
