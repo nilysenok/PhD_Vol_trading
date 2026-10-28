@@ -26,12 +26,14 @@ TABLE = _DOCS / "2026-10-27_dividendy_2017_2021.csv"
 # 2015–2016 (PR #385): потолок — только dohod.ru, первичные не сверены (primary_checked=no); last_cum_date в файле нет,
 # считается здесь тем же правилом T+2, что и для 2017–2021 (docs/issledovaniya/2026-10-27_dividendy.md), по календарю дневных баров.
 TABLE_2015 = _DOCS / "2026-10-28_dividendy_2015_2016.csv"
+# 2014 (PR dividendy-2014): 6 выплат внутри периода В2 (с 26.08.2014), dohod.ru, primary_checked=no; те же правило и код.
+TABLE_2014 = _DOCS / "2026-10-28_dividendy_2014.csv"
 RULE = "last_cum=T+2bars:all-years"   # Д5: правило даты входит в ключ кэша
 DIV_NALOG = 0.87         # доля дивиденда, попадающая в PnL (после НДФЛ 13 %); div_nalog = 1.0 — полный D
 
 
 def _tables() -> list[Path]:
-    return [Path(TABLE), Path(TABLE_2015)]
+    return [Path(TABLE), Path(TABLE_2015), Path(TABLE_2014)]
 
 
 def digest() -> str:
