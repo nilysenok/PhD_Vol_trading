@@ -27,7 +27,10 @@ TABLE = _DOCS / "2026-10-27_dividendy_2017_2021.csv"
 # считается здесь тем же правилом T+2, что и для 2017–2021 (docs/issledovaniya/2026-10-27_dividendy.md), по календарю дневных баров.
 TABLE_2015 = _DOCS / "2026-10-28_dividendy_2015_2016.csv"
 RULE = "last_cum=T+2bars:all-years"   # Д5: правило даты входит в ключ кэша
-DIV_NALOG = 0.87         # доля дивиденда, попадающая в PnL (после НДФЛ 13 %); div_nalog = 1.0 — полный D
+# MOEX: расчёты по акциям T+1 с 31.07.2023 (источник уточняет исследователь отдельно; PR #535 — режим NET).
+T1_OT = "2023-07-31"
+RULE_T1 = f"last_cum=T+1bars:record>={T1_OT}"   # в ключ — только вне dev: dev-digest побайтно прежний
+DIV_NALOG = 0.87        # доля дивиденда, попадающая в PnL (после НДФЛ 13 %); div_nalog = 1.0 — полный D
 
 
 def _tables() -> list[Path]:
@@ -52,7 +55,9 @@ def digest() -> str:
         h.update(b"bez_dividendov:2022-2024")            # режим в ключе: кэш без дивидендов ≠ кэш с таблицей
     for p in _tables():
         h.update(p.read_bytes())
-    return hashlib.sha1(h.digest() + repr(float(DIV_NALOG)).encode() + RULE.encode()).hexdigest()
+    from fastbt import zona                              # noqa: PLC0415
+    rule = RULE if zona.name() == "dev" else RULE + ";" + RULE_T1   # все реестры dev <= 2021: правило T+1 их не касается
+    return hashlib.sha1(h.digest() + repr(float(DIV_NALOG)).encode() + rule.encode()).hexdigest()
 
 
 @lru_cache(maxsize=1)
@@ -74,10 +79,12 @@ def last_cum(record: pd.Series) -> pd.Series:
     Календарь баров верен, а не ручной календарь таблицы 2017–2021: по ценам день гэпа 2017–2019 совпадает с T+2 по барам
     (MOEX 13.05.2019, TATN 08.01.2019), а не с табличной датой (см. docs/otchety/2026-10-28_v1_dannye.md)."""
     cal = _calendar()
-    i = np.searchsorted(cal, record.to_numpy("datetime64[ns]"), side="right") - 1
-    if (i < 2).any():
+    rec = record.to_numpy("datetime64[ns]")
+    i = np.searchsorted(cal, rec, side="right") - 1
+    lag = np.where(rec >= np.datetime64(T1_OT), 1, 2)     # T+1 для реестров >= T1_OT (расчёты T+1 по акциям)
+    if (i < lag).any():
         raise ValueError("дата реестра раньше начала календаря торгов")
-    return pd.Series(cal[i - 2], index=record.index)
+    return pd.Series(cal[i - lag], index=record.index)
 
 
 def _read(path: Path, ticker: str) -> pd.DataFrame:
