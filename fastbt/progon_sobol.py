@@ -48,6 +48,9 @@ def proverit_kub(c: dict) -> None:
         raise ValueError(f"период {c.get('period')!r}: прогон считает только {PERIOD} (Ж-082)")
     if c.get("komissiya") != KOMISSIYA or c.get("fdr") is not None:
         raise ValueError("куб: komissiya = 0.0004 и fdr = null")
+    from fastbt.signals.interface import get_family
+    if set(c["signal"]) != set(get_family(c["sid"]).grid):    # оценщик молча игнорирует чужие оси
+        raise ValueError(f"{c['sid']}: оси signal {sorted(c['signal'])} ≠ оси семьи {sorted(get_family(c['sid']).grid)}")
 
 
 def tochki(kub: dict, n0: int, n1: int) -> list:
