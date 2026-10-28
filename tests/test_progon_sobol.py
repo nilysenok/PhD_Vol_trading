@@ -140,5 +140,15 @@ def test_sverka_zelenaya_i_lovit_raskhozhdenie(fake, monkeypatch, tmp_path):
     assert ps.sverka(20, tmp_path, False) == 1
 
 
+def test_seed_tot_zhe_chto_v_kube():
+    """Независимая сборка: первая ось (S1 — ma_window) из qmc.Sobol(22, seed из куба) совпадает с tochki."""
+    from scipy.stats import qmc
+    c = ps.load_kub("S1")
+    d = sum(len(c[s]) for s in ("signal", "obshchie", "novye"))
+    u = qmc.Sobol(d, scramble=True, seed=20261029).random(8)[:, 0]
+    g = c["signal"]["ma_window"]["setka"]
+    assert [p["ma_window"] for _, p in ps.tochki(c, 0, 8)] == [g[int(x * len(g))] for x in u]
+
+
 def test_seed_po_strategiyam():
     assert [ps.load_kub(f"S{k}")["sobol"]["seed"] for k in range(1, 7)] == [20261028 + k for k in range(1, 7)]
