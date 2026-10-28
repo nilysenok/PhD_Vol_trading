@@ -12,13 +12,14 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 
-from fastbt import rezhim_e1
+from fastbt import rezhim_e1, tejk_signal
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, is_anchor, params_of, years_of
 from fastbt.etap1_run import run_e1, sum_rows
 from fastbt.ledger_v2 import kvartaly, tselevaya
 
-NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net")
+NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net",
+             tejk_signal="net")
 POROG = {"S1": "z_entry", "S2": "bb_std", "S3": "dc_window", "S4": "multiplier", "S6": "dev_mult"}   # §1.1 storona
 ZAEM = (5, 10)                                                                 # % годовых, колонки by_quarter_zaem
 
@@ -84,6 +85,8 @@ class EvaluatorV2(Evaluator):
         p = params_of(pt, self.inp.tick[t], h, anchor, self.comm)
         if nov["k_x"] != NET and p.b is None and not anchor:
             p = replace(p, a=float(nov["k_x"]))                             # тейк без стопа; при k_s ≠ net k_x не действует
+        if nov["tejk_signal"] != NET:                                       # Ж-084: один тейк, от M (canon_v2: R, k_x = net)
+            p = replace(p, R=None, a=None, tejk=nov["tejk_signal"])
         ext = {k: int(vz[k]) for k in ("bar_plus", "stop_tik") if k in vz}
         if nov["zhizn"] != "den":
             ext["zhizn"] = int(nov["zhizn"])
@@ -116,7 +119,8 @@ class EvaluatorV2(Evaluator):
                 w = rezhim_e1.razmer_ves(sg, "obratnyj", float(pt["razmer"]) / 100.0)
             ed = self._ed(t, "mediana" if vz.get("sigma_lim_mediana") else nov["ed_lim"], sg, dates, s0, b)
             p = self._params(pt, t, h, anchor, nov, vz)
-            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=ed, **self.fdr_kw())
+            tm = None if nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, sp, t, s0, b)
+            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=ed, tejk_M=tm, **self.fdr_kw())
             out.append((ti, self._ladder(t, days, sig, sg, p, w, nov["lestnica"], kw), a, b))
         return out
 
@@ -131,7 +135,7 @@ class EvaluatorV2(Evaluator):
     def excess(self, pt, period):
         """Как Evaluator.excess, но filtr ≠ net снимает режим «якорь» (как sobytiya ≠ net в v1): ось действует всегда."""
         pt = self.full(pt)
-        rows = self._rows(pt, period, is_anchor(pt) and self._ctx["nov"]["filtr"] == NET)
+        rows = self._rows(pt, period, is_anchor(pt) and self._ctx["nov"] == NOVYE)           # любая новая ось ≠ умолчание снимает якорь
         eng, inv = self._engine(period)
         cat = lambda f: np.concatenate([f(r) for _, r, _, _ in rows])             # noqa: E731
         noch = cat(lambda r: r.noch) if self.fdr is not None else None
@@ -190,4 +194,5 @@ class EvaluatorV2(Evaluator):
                "flagi": {"vyrozhdena": v1["vyrozhdena"], "kray": [], "short_shag1_kray": self._kray}, "t_sek": time.perf_counter() - t0,
                **{k: v1[k] for k in ("sharpe", "msr", "sortino", "kalmar", "mdd", "T", "skew", "kurt", "prichiny", "by_year",
                                      "msr_by_year", "tselevaya", "sdelok_y", "storony_y", "dolya_ispolneniya_limita")}}
+        row.update(tejk_signal.pole_otcheta(self, yrs))                    # Ж-084: ряды отчёта по годам, n_bez_tejka
         return row, x, tik
