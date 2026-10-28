@@ -48,8 +48,9 @@ def test_post_shok_i_rel_sila_na_lokalnoj_setke(monkeypatch):
 
 
 def test_mutaciya_sdvig_s0_lovitsya():
-    """Ряд сдвинут на 1 день относительно сетки: молча считать нельзя — отказ."""
-    inp, _, dates = _inp(2, shift=1)
+    """В сетке дыра (нет одного дня полного ряда): молча считать нельзя — отказ."""
+    inp, _, dates = _inp(2)
+    dates = np.delete(dates, 100)
     with pytest.raises(ValueError, match="не совпали"):
         fr.razresheno("szhatie", "X", inp, np.ones(N), dates)
 
@@ -72,6 +73,9 @@ ZNAEM = ("filtr div: условие не определено на данных"
 @pytest.mark.parametrize("sid", ps.SIDS)
 def test_skvoznoj_30_tochek_bez_isklyuchenij(sid):
     """Интеграционный гейт: seed фиксирован; ошибок (status oshibka) — ноль."""
+    from fastbt import bars5m
+    if not bars5m.SRC.exists():
+        pytest.fail(f"{bars5m.SRC}: нет 1-минуток D25 — задать FASTBT_BARS1M (тест не пропускается)")
     pts = ps.tochki(ps.load_kub(sid), 0, 5000)
     idx = random.Random(20261028).sample(range(len(pts)), 30)
     sr, bad, st = ps.sreda(sid), [], {"ok": 0, "ne_schitana": 0}

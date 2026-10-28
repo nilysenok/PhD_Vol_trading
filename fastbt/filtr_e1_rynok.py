@@ -63,10 +63,12 @@ def _sektor_ctx(inp, dates):
 
 
 def _td_local(inp, t: str, dates: np.ndarray) -> SimpleNamespace:
-    """Ряды тикера на локальной сетке `dates` (σ, sd, сигнал живут на ней: с inp.meta[t]['s0'], до конца окна).
-    `sk._td[t]` — полный ряд (с прогрева, до конца разработки): режем по s0 и сверяем даты, а не обрезаем по длине."""
-    td, n, s0 = inp.sk._td[t][0], len(dates), int(inp.meta[t]["s0"])
-    if not np.array_equal(np.asarray(td.dates[s0:s0 + n], "datetime64[D]"), np.asarray(dates, "datetime64[D]")):
+    """Ряды тикера на локальной сетке `dates` (σ, sd, сигнал живут на ней: с первой даты окна прогрева до конца окна).
+    `sk._td[t]` — полный ряд (с 2014-06, до конца разработки): позиция — по первой дате сетки, затем сверка дат, а не обрезка по длине."""
+    td, n, d = inp.sk._td[t][0], len(dates), np.asarray(dates, "datetime64[D]")
+    all_d = np.asarray(td.dates, "datetime64[D]")
+    s0 = int(np.searchsorted(all_d, d[0])) if n else 0
+    if not np.array_equal(all_d[s0:s0 + n], d):
         raise ValueError(f"{t}: даты sk._td[s0:s0+n] не совпали с локальной сеткой dates — отказ")
     return SimpleNamespace(**{k: np.asarray(getattr(td, k))[s0:s0 + n] for k in ("close", "high", "low", "volume")})
 
