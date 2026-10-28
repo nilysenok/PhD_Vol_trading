@@ -94,15 +94,15 @@ def _trades(ticker, ti, tf, comm) -> list:
 def _slow_only(p: Params, ed) -> bool:
     """Оси прогона Л-2 (Run2: ed, zhizn, gap_propusk, t_vyhod, bar_plus, stop_tik) ядро не повторяет — эталон."""
     f = getattr(exec_e, "_new_axes", None)
-    return ed is not None or p.tejk != "net" or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
+    return ed is not None or p.tejk != "net" or p.vhod_tip != "podtverzhdenie" or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
 
 
-def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None) -> Result:
-    """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси Run2 и tejk — медленным путём."""
+def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None, urovni=None) -> Result:
+    """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси Run2, tejk, stop_zayavka — медленным путём."""
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.asarray(sigma, float)
     if _slow_only(p, ed) or not len(days) or not np.isfinite(sig.astype(float)).all():
-        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M)) if v is not None}
+        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni)) if v is not None}
         return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
         raise ValueError("days, sig, sigma, close разной длины")

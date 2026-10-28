@@ -43,6 +43,7 @@ class Params:
     t_vyhod: str = "close"        # close | 1500 | 1700 | open2 — исполнение выхода по signal/vremya (exec_e_vremya)
     bar_plus: int = 0             # исполнение (лимит, стоп, тейк) — по open бара b+n, если хуже уровня
     stop_tik: int = 0             # цена стопа хуже на n тиков (нужен tick)
+    vhod_tip: str = "podtverzhdenie"  # Ж-091: podtverzhdenie | stop_zayavka (S3/S4: вход и выход стоп-заявками, нужен urovni в run)
     vhod_open: bool = False       # Ж-086 п. 1: вход рынком (k = None) по open бара 10:00 дня d+1, а не по close d (exec_e_vremya.bar_at)
     tejk: str = "net"             # Ж-084: net | k_srednemu | pol_puti — тейк от уровня сигнала M (fastbt/tejk_signal.py); нужен tejk_M в run
 
