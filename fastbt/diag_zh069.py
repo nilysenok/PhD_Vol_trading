@@ -1,7 +1,7 @@
 """Ж-069 п. 5: PnL неисполненных лимиток, если бы вход был по close d+1 (правило движка `f = zakrytie_d1`: вход только
 при живом сигнале на d+1; выходы и комиссия — те же правила точки). Контрфакт считается на копии состояния Run в момент
 неисполнения (боевой прогон не меняется). Основа — журнал заявок diag_zh066 (#374). Диагностика, не выбор: train 2018–2019,
-комиссия 0,04 %, движок после #370; PnL — по ценам, как в журналах (дивидендный денежный поток в колонки не входит).
+комиссия 0,04 %, движок после #370; PnL — в определении движка (Д7): сторона·((выход + Σ D·0,87)/вход − 1) − комиссии.
 Сборка: FASTBT_MAIN=$PWD python3 -m fastbt.diag_zh069 (S1–S5; S6 входит рынком, лимиток нет)."""
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from fastbt import exec_e_run
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs/tables/diag/zh069_neispolnennye.csv"
-STATUS = ("диагностика, train 2018–2019, после дивидендов (#370), до аудита; комиссия 0,04 %; PnL по ценам; "
+STATUS = ("диагностика, train 2018–2019, после дивидендов (#370), до аудита; комиссия 0,04 %; PnL с дивидендом D·0,87 как в движке; "
           "в ledger и реестр отбора не добавлено")
 NAMES = ["S1", "S2", "S3", "S4", "S5"]
 COLS = ["S", "выставлено", "исп_закрыто", "исп_pnl_сумма_%", "исп_pnl_сделка_%", "исп_открыто_на_конце",
@@ -35,7 +35,7 @@ def _fork(s):
     f = copy.copy(s)
     for k in ("gross", "cost", "pos", "used", "free"):
         setattr(f, k, getattr(s, k).copy())
-    f.trades, f.order, f.tr = [], None, None
+    f.trades, f.order, f.tr, f._shadow = [], None, None, True
     return f
 
 
@@ -51,14 +51,24 @@ def close_entry(sh, i: int, j: int, o: dict) -> dict:
         if sh.tr is None:
             break
     t = sh.trades[0]
-    pnl = t.side * (t.exit_px / t.entry_px - 1.0) - t.fee_in - t.fee_out if t.reason else float("nan")
-    return dict(live=True, closed=bool(t.reason), pnl=pnl)
+    return dict(live=True, closed=bool(t.reason), pnl=trade_pnl(t) if t.reason else float("nan"))
+
+
+def div_cash(s, i: int) -> float:
+    """Дивиденд, пересёкший позицию на шаге дня i: D·nalog (как `Run.step`: dv = div[i]·nal, если позиция есть с прошлого close)."""
+    return float(s.div[i] * s.nal)
+
+
+def trade_pnl(t) -> float:
+    """PnL сделки в определении движка после #370: сторона·((выход + Σ D·0,87)/вход − 1) − комиссии (лонг получает D, шорт платит)."""
+    return t.side * ((t.exit_px + getattr(t, "dcash", 0.0)) / t.entry_px - 1.0) - t.fee_in - t.fee_out
 
 
 @contextmanager
 def log_counterfactual(sink: list):
-    """Поверх diag_zh066_run.log_orders: к записи неисполненной заявки добавляет `cf` (результат close_entry)."""
-    inner = exec_e_run.Run._try_order
+    """Поверх diag_zh066_run.log_orders: к записи неисполненной заявки добавляет `cf` (результат close_entry),
+    к записи исполненной — `ex` (закрытая боевая сделка с PnL в определении движка). Боевой счёт не меняется."""
+    inner, step, exit_ = exec_e_run.Run._try_order, exec_e_run.Run.step, exec_e_run.Run._exit
 
     def _try(s, i, j, d):
         o, nf, sh = s.order, s.n_fills, _fork(s)
@@ -66,11 +76,23 @@ def log_counterfactual(sink: list):
         if s.n_fills == nf:
             sink[-1]["cf"] = close_entry(sh, i, j, o)
 
-    exec_e_run.Run._try_order = _try
+    def _step(s, j, i):
+        if s.tr is not None:                       # позиция с прошлого close пересекает отсечку дня i
+            s.tr.dcash = getattr(s.tr, "dcash", 0.0) + div_cash(s, i)
+        step(s, j, i)
+
+    def _exit(s, i, j, b, px, reason):
+        t = s.tr
+        exit_(s, i, j, b, px, reason)
+        if not getattr(s, "_shadow", False):
+            rec = next(r for r in reversed(sink) if r["tiker"] == s.t and r["d_sig"] == t.d_sig and r["isp"])
+            rec["ex"] = dict(pnl=trade_pnl(t))
+
+    exec_e_run.Run._try_order, exec_e_run.Run.step, exec_e_run.Run._exit = _try, _step, _exit
     try:
         yield
     finally:
-        exec_e_run.Run._try_order = inner
+        exec_e_run.Run._try_order, exec_e_run.Run.step, exec_e_run.Run._exit = inner, step, exit_
 
 
 def unfilled(orders: list) -> list:
@@ -111,7 +133,8 @@ def main() -> None:
         finally:
             run66.log_orders = _LOG
         digests.append(f"{sid}:{r['vhody']}")
-        rows.append(row(sid, r["trades"], [o for o in r["orders"] if o["d_sig"] >= "2018-01-01"]))
+        orders = [o for o in r["orders"] if o["d_sig"] >= "2018-01-01"]
+        rows.append(row(sid, [o["ex"] for o in orders if "ex" in o], orders))
         print(sid, rows[-1], flush=True)
     for n in check_g2(rows):
         print("РАСХОЖДЕНИЕ:", n)

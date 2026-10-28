@@ -16,12 +16,30 @@ def day(o, h, l, c, n=3):
     return Day(*[np.full(n, float(x)) for x in (o, h, l, c)])
 
 
-def _run(sig, d1, d2c=101.0, comm=0.0):
+def _run(sig, d1, d2c=101.0, comm=0.0, div=None):
     days = [day(100, 100.5, 99.5, 100), d1, day(100, 102, 96, d2c), day(100, 100.5, 99.5, 100)]
     sink: list = []
     with dz9._LOG(sink), dz9.log_counterfactual(sink):
-        res = exec_e.run("AAA", days, np.array(sig), np.full(4, 0.02), Params(k=1.0, tick=0.1, comm=comm, exit_signal=True))
+        res = exec_e.run("AAA", days, np.array(sig), np.full(4, 0.02), Params(k=1.0, tick=0.1, comm=comm, exit_signal=True),
+                         div=div)
     return sink, res
+
+
+def test_dividend_d_x_087_in_counterfactual_and_executed():
+    div = np.array([0.0, 0.0, 2.0, 0.0])                                      # D = 2 на день гэпа 2; позиция с close 1 его пересекает
+    (o,), _ = _run([1, 1, 0, 0], UNF, div=div)
+    assert o["cf"]["pnl"] == pytest.approx((101 + 2 * 0.87) / 99 - 1)         # лонг получает D·0,87
+    (s,), _ = _run([-1, -1, 0, 0], day(100, 101.5, 99, 99), d2c=97.0, div=div)
+    assert s["cf"]["pnl"] == pytest.approx(-((97 + 2 * 0.87) / 99 - 1))      # шорт платит
+    (e,), _ = _run([1, 1, 0, 0], day(100, 100.5, 97.9, 99), div=div)         # исполнена: вход по L = 98, выход close 101
+    assert e["isp"] and e["ex"]["pnl"] == pytest.approx((101 + 2 * 0.87) / 98 - 1)
+
+
+def test_mutation_dividend_not_accrued_caught(monkeypatch):
+    monkeypatch.setattr(dz9, "div_cash", lambda s, i: 0.0)
+    (o,), _ = _run([1, 1, 0, 0], UNF, div=np.array([0.0, 0.0, 2.0, 0.0]))
+    with pytest.raises(AssertionError):
+        assert o["cf"]["pnl"] == pytest.approx((101 + 2 * 0.87) / 99 - 1)
 
 
 UNF = day(100, 100.5, 98.5, 99)        # лонг: L = 98, low 98.5 — не исполнено; close d+1 = 99
