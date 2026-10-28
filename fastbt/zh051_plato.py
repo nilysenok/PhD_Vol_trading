@@ -77,36 +77,38 @@ def uniq_nbrs(p1: dict, e: dict, grid: dict) -> list:
     return out
 
 
-def gates_plus(led, p1: dict, e: dict, grid: dict, axes: dict, pb: float, s9_ok: bool) -> dict:
+def gates_plus(led, p1: dict, e: dict, grid: dict, axes: dict, pb: float, s9_ok: bool, period: str = "train") -> dict:
     pt = {**p1, **e}
-    sdy = led(pt, "train").get("sdelok_y") or {}
-    nb, o = uniq_nbrs(p1, e, grid), V.gate_osi(led, pt, axes)
-    g = dict(G1_pbo=bool(pb < V.PBO_MAX), G2_sdelki=bool(sdy) and all(v >= V.MIN_SDELOK for v in sdy.values()),
-             G3_plato=V.n_pos(led, nb) >= 3, G4_osi=o["ok"], G5_s9=bool(s9_ok), osi_pos=str(o["per"]), n_sosedey=len(nb))
+    sdy = led(pt, period).get("sdelok_y") or {}
+    nb, o = uniq_nbrs(p1, e, grid), V.gate_osi(led, pt, axes, period)
+    g = dict(G1_pbo=bool(pb < V.PBO_MAX), G2_sdelki=bool(sdy) and V.sdelok_ok(sdy, period) and all(v >= V.MIN_SDELOK for v in sdy.values()),
+             G3_plato=V.n_pos(led, nb, **V.kw(period)) >= 3, G4_osi=o["ok"], G5_s9=bool(s9_ok), osi_pos=str(o["per"]), n_sosedey=len(nb))
     return {**g, "net_sosedey": len(nb) < 3, "ok": all(g[k] for k in GATES)}      # < 3 соседей: плато не пройти
 
 
-def vybor(led, p1: dict, grid: dict, axes: dict, yakor: dict, s9_ok: bool):
-    """(лучшая кандидатка | None, все кандидаты). Кандидатки — канонические точки сетки итерации, допустимые по активности."""
+def vybor(led, p1: dict, grid: dict, axes: dict, yakor: dict, s9_ok: bool, period: str = "train"):
+    """(лучшая кандидатка | None, все кандидаты). Кандидатки — канонические точки сетки итерации, допустимые по активности.
+    period: «train» (2018–2019) как раньше; «train4» (В1) — целевая, PBO и ворота по 4 годам."""
     keys, combos = list(grid), [dict(zip(grid, v)) for v in itertools.product(*grid.values())]
-    rows = [{**e, "objective": V.obj(led({**p1, **e}, "train"))} for e in combos]
-    pb, cands = V.pbo(V.matrix(led)), []
+    rows = [{**e, "objective": V.obj(led({**p1, **e}, period), period)} for e in combos]
+    pb, cands = V.pbo(V.matrix(led, period)), []
     for e in combos:
         if norm(e) != e:
             continue                                           # псевдоним P1 или дубль порога при shirina = net
-        r, o = led({**p1, **e}, "train"), V.obj(led({**p1, **e}, "train"))
+        r = led({**p1, **e}, period)
+        o = V.obj(r, period)
         ps, n = sd.plateau_score(rows, keys, grid, e)
         cands.append(dict(e=e, objective=o, plateau=ps, n=n, sigma126=V.sigma126(r), edge=n < 3, net_sosedey=False,
-                          adm=math.isfinite(o) and V.dopustima(led, {**p1, **e}, yakor) and not r.get("vyrozhdena")))
+                          adm=math.isfinite(o) and V.dopustima(led, {**p1, **e}, yakor, period) and not r.get("vyrozhdena")))
     ok = [c for c in cands if c["adm"] and not c["edge"] and math.isfinite(c["plateau"])]
     top = sorted(ok, key=lambda c: -c["plateau"])[:P.TOPK]
     for c in top:
-        c["gates"] = gates_plus(led, p1, c["e"], grid, axes, pb, s9_ok)
+        c["gates"] = gates_plus(led, p1, c["e"], grid, axes, pb, s9_ok, period)
         c["net_sosedey"] = c["gates"]["net_sosedey"]
     best = V.pick_best([c for c in top if c["gates"]["ok"]], "plateau") or V.pick_best(top, "plateau")
     if best is None:                                            # все допустимые — край (< 3 точек с самой): плато не пройдено
         best = V.pick_best([c for c in cands if c["adm"] and math.isfinite(c["plateau"])], "plateau")
         if best is not None:
-            g = gates_plus(led, p1, best["e"], grid, axes, pb, s9_ok)
+            g = gates_plus(led, p1, best["e"], grid, axes, pb, s9_ok, period)
             best.update(net_sosedey=True, gates={**g, "G3_plato": False, "ok": False})
     return best, cands
