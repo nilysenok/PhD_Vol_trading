@@ -13,9 +13,11 @@ import numpy as np
 import pandas as pd
 
 from fastbt import sweep_drivers as sd
+from fastbt.etap1_data import psr_dsr  # noqa: F401  (перенесено в etap1_data: лимит 200 строк; V.psr_dsr остаётся)
 
 TIE, WIN, NBLK, PBO_MAX, MIN_SDELOK, PLATO_NET = 0.05, 126, 8, 0.2, 30, 0.1
 OSI, NET = ("k_s", "R", "tau"), "net"
+PERIOD_YEARS = {"train": (2018, 2019), "ctrl2019": (2019,), "tune2018": (2018,), "train4": (2016, 2017, 2018, 2019)}
 OUTER = {"k_s": (0.75, 0.5), "R": (0.75, 0.5)}      # Ж-049: шаг наружу от края сетки; у τ = 1 день его нет
 
 
@@ -48,14 +50,16 @@ class Ledger:
         return len({k for k, _ in self.cache})
 
 
-def obj(res: dict) -> float:
-    """Целевая Ж-043: min mSR по годам окна; любой nan -> nan (точка недопустима)."""
-    v = [float(x) for x in (res.get("msr_by_year") or {}).values()]
-    return min(v) if v and all(math.isfinite(x) for x in v) else float("nan")
+def obj(res: dict, period: str = "train") -> float:
+    """Целевая Ж-043: min mSR по годам периода (train4 — по 4 годам); любой nan или нехватка года -> nan."""
+    m = {int(y): float(x) for y, x in (res.get("msr_by_year") or {}).items()}
+    v = [m[y] for y in PERIOD_YEARS[period] if y in m]
+    ok = len(v) == len(PERIOD_YEARS[period]) and all(math.isfinite(x) for x in v)
+    return min(v) if ok else float("nan")
 
 
-def obj_morris(res: dict) -> float:
-    o = obj(res)
+def obj_morris(res: dict, period: str = "train") -> float:
+    o = obj(res, period)
     return o if math.isfinite(o) else 0.0     # mSR не определён (нет сделок) = нейтрально, эффект не должен стать nan
 
 
@@ -93,20 +97,24 @@ def neighbors(pt: dict, names: list, axes: dict) -> list:
     return out
 
 
-def n_pos(led: Ledger, pts: list) -> int:
-    return sum(1 for q in pts if obj(led(q, "train")) > 0)       # nan > 0 ложно
+def kw(period: str) -> dict:     # period — только вне умолчания: путь «train» вызывает n_pos/one_sided ровно как раньше
+    return {} if period == "train" else {"period": period}
 
 
-def one_sided(led: Ledger, pt: dict, a: str, vals: list) -> bool:
+def n_pos(led: Ledger, pts: list, period: str = "train") -> int:
+    return sum(1 for q in pts if obj(led(q, period), period) > 0)       # nan > 0 ложно
+
+
+def one_sided(led: Ledger, pt: dict, a: str, vals: list, period: str = "train") -> bool:
     """Одностороннее плато: точки pt[a] -> vals не хуже точки больше чем на PLATO_NET по целевой. Недосчитанные
     соседи досчитываются через Ledger (идут в N)."""
-    o = obj(led(pt, "train"))
-    return bool(vals) and all(obj(led({**pt, a: v}, "train")) >= o - PLATO_NET for v in vals)     # nan -> ложь
+    o = obj(led(pt, period), period)
+    return bool(vals) and all(obj(led({**pt, a: v}, period), period) >= o - PLATO_NET for v in vals)     # nan -> ложь
 
 
-def net_plato(led: Ledger, pt: dict, a: str, axes: dict) -> bool:
+def net_plato(led: Ledger, pt: dict, a: str, axes: dict, period: str = "train") -> bool:
     """Ж-048 п. 1: при «нет» на оси — два ближайших конечных значения оси (k_s 4,3; R 4,3; τ 20,10)."""
-    return one_sided(led, pt, a, [v for v in axes[a] if v != NET][-2:])
+    return one_sided(led, pt, a, [v for v in axes[a] if v != NET][-2:], **kw(period))
 
 
 def kray_plato(led: Ledger, pt: dict, a: str) -> bool:
@@ -115,7 +123,7 @@ def kray_plato(led: Ledger, pt: dict, a: str) -> bool:
     return True
 
 
-def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:
+def gate_osi(led: Ledger, pt: dict, axes: dict, period: str = "train") -> dict:
     """Плато по k_s, R, τ: конечные значения — >= 3 положительных соседей в сумме и >= 1 на оси (Ж-048; крайнее значение —
     метка kray, соседи включают шаг наружу, Ж-049); ось с «нет» — одностороннее плато net_plato, в счёт >= 3 не входит."""
     per, net, kray, fiz = {}, {}, {}, {}
@@ -123,15 +131,15 @@ def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:
         if a == "R" and pt.get("k_s") == NET:
             continue                                                                  # R при k_s = нет вырождена
         if pt.get(a) == NET:
-            net[a] = net_plato(led, pt, a, axes)
+            net[a] = net_plato(led, pt, a, axes, **kw(period))
         elif nb := neighbors(pt, [a], axes):
             edge = pt[a] == axes[a][0]
             if edge:
                 kray[a] = kray_plato(led, pt, a)
             if edge and a == "tau":                                                   # Ж-050: τ = 1 — τ = 2, 3 не хуже на 0,1
-                fiz[a] = one_sided(led, pt, a, axes[a][1:3])
+                fiz[a] = one_sided(led, pt, a, axes[a][1:3], **kw(period))
                 continue
-            per[a] = n_pos(led, nb + ([{**pt, a: v} for v in OUTER.get(a, ())] if edge else []))
+            per[a] = n_pos(led, nb + ([{**pt, a: v} for v in OUTER.get(a, ())] if edge else []), **kw(period))
     ok = bool(per or net or fiz) and all(net.values()) and all(fiz.values()) and all(v >= 1 for v in per.values())
     ok = ok and (not per or sum(per.values()) >= 3) and all(kray.values())
     out = {**per, **{f"{a}_net": v for a, v in net.items()}, **{f"{a}_fiz": v for a, v in fiz.items()},
@@ -139,14 +147,20 @@ def gate_osi(led: Ledger, pt: dict, axes: dict) -> dict:
     return dict(per=out, ok=ok, kray=" ".join(kray) or "-")
 
 
-def gates(led: Ledger, pt: dict, axes: dict, plan: list, pbo: float, s9_check) -> dict:
-    sdy = led(pt, "train").get("sdelok_y") or {}
-    g = dict(G1_pbo=bool(pbo < PBO_MAX), G2_sdelki=bool(sdy) and all(v >= MIN_SDELOK for v in sdy.values()),
-             G3_plato=n_pos(led, neighbors(pt, plan, axes)) >= 3, G5_s9=bool(s9_check(pt)))
-    o = gate_osi(led, pt, axes)
+def gates(led: Ledger, pt: dict, axes: dict, plan: list, pbo: float, s9_check, period: str = "train") -> dict:
+    sdy = led(pt, period).get("sdelok_y") or {}
+    g = dict(G1_pbo=bool(pbo < PBO_MAX), G2_sdelki=sdelok_ok(sdy, period),
+             G3_plato=n_pos(led, neighbors(pt, plan, axes), **kw(period)) >= 3, G5_s9=bool(s9_check(pt)))
+    o = gate_osi(led, pt, axes, period)
     g.update(G4_osi=o["ok"], osi_pos=str(o["per"]), kray_setki=o["kray"])
     g["ok"] = all(g[k] for k in ("G1_pbo", "G2_sdelki", "G3_plato", "G4_osi", "G5_s9"))
     return g
+
+
+def sdelok_ok(sdy: dict, period: str = "train") -> bool:
+    """Ворота Ж-044 G2: сделок >= MIN_SDELOK в КАЖДОМ году периода (нет года или nan — не пройдено)."""
+    got = {int(y): v for y, v in sdy.items()}
+    return all(y in got and got[y] >= MIN_SDELOK for y in PERIOD_YEARS[period])
 
 
 def storony(res: dict) -> dict:
@@ -155,42 +169,32 @@ def storony(res: dict) -> dict:
     return dict(s) if s else {y: 2 * v for y, v in (res.get("sdelok_y") or {}).items()}
 
 
-def dopustima(led: Ledger, pt: dict, yakor: dict) -> bool:
+def dopustima(led: Ledger, pt: dict, yakor: dict, period: str = "train") -> bool:
     """Толкование 27.10 19:35: сторон/год в каждом году >= 0,5 × сторон якоря на 2018; плюс Ж-044: сделок >= MIN_SDELOK в год."""
-    base = storony(led(yakor, "train")).get(2018)
-    res = led(pt, "train")
+    base = storony(led(yakor, "train")).get(2018)     # якорь s9 — только 2018–2019: на 2016–2017 эталона s9 нет
+    res = led(pt, period)
     st, sdy = storony(res), res.get("sdelok_y") or {}
     if base is None or not math.isfinite(base) or not st or not sdy:
         return False
-    return all(v >= 0.5 * base for v in st.values()) and all(v >= MIN_SDELOK for v in sdy.values())
+    return all(v >= 0.5 * base for v in st.values()) and sdelok_ok(sdy, period)
 
 
-def po_godam(res: dict) -> dict:
+def po_godam(res: dict, period: str = "train") -> dict:
     """Колонки метрик по годам для факторного файла и итога: sharpe, msr, storon, sdelok."""
     nan, st, sdy = float("nan"), storony(res), res.get("sdelok_y") or {}
     cols = {"sharpe": res.get("by_year") or {}, "msr": res.get("msr_by_year") or {}, "storon": st, "sdelok": sdy}
-    return {f"{n}_{y}": d.get(y, nan) for n, d in cols.items() for y in (2018, 2019)}
+    return {f"{n}_{y}": d.get(y, nan) for n, d in cols.items() for y in PERIOD_YEARS[period]}
 
 
-def matrix(led: Ledger) -> np.ndarray:
-    cols = {k: np.r_[s[2018], s[2019]] for (k, per), (_, res) in led.cache.items()
-            if per == "train" and {2018, 2019} <= set(s := series(res))}
+def matrix(led: Ledger, period: str = "train") -> np.ndarray:
+    """T×N по годам периода подряд (train — 2018+2019, train4 — 2016…2019)."""
+    ys = PERIOD_YEARS[period]
+    cols = {k: np.concatenate([s[y] for y in ys]) for (k, per), (_, res) in led.cache.items()
+            if per == period and set(ys) <= set(s := series(res))}
     if len({len(v) for v in cols.values()}) > 1:
         raise ValueError("ряды точек разной длины: матрица T×N не строится")
     return np.column_stack(list(cols.values())) if cols else np.empty((0, 0))
 
 
-def pbo(M: np.ndarray) -> float:
-    return sd.pbo_cscv(M.tolist(), NBLK)["pbo"] if M.shape[1] >= 2 else float("nan")
-
-
-def psr_dsr(x: np.ndarray, M: np.ndarray, n_all: int) -> dict:
-    """Справочно (Ж-044): T = дней; var SR — по столбцам M, N = все посчитанные точки."""
-    sr = lambda v: float(v.mean() / v.std(ddof=1)) if v.std(ddof=1) > 0 else 0.0     # noqa: E731
-    if x.std(ddof=1) == 0:
-        return dict(T=len(x), psr=float("nan"), dsr=float("nan"), N_dsr=n_all)
-    z = (x - x.mean()) / x.std(ddof=1)
-    tr = [sr(M[:, j]) for j in range(M.shape[1])]
-    star = sd.expected_max_sharpe(n_all, float(np.var(tr, ddof=1)) if len(tr) > 1 else 0.0)
-    a = (len(x), float((z ** 3).mean()), float((z ** 4).mean()))
-    return dict(T=len(x), psr=sd.psr(sr(x), 0.0, *a), dsr=sd.psr(sr(x), star, *a), N_dsr=n_all)
+def pbo(M: np.ndarray, nblk: int = NBLK) -> float:
+    return sd.pbo_cscv(M.tolist(), nblk)["pbo"] if M.shape[1] >= 2 else float("nan")

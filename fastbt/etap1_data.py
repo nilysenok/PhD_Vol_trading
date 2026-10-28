@@ -20,6 +20,7 @@ from fastbt.exec_e_types import Day
 START = pd.Timestamp("2017-01-01")                      # прогрев: σ, режим, состояние выходов
 ROOT = Path(__file__).resolve().parent.parent
 LIMIT = pd.Timestamp("2022-01-01")
+START_V1 = pd.Timestamp("2015-01-01")                   # К-в1: train 2016–2019, 2015 — прогрев (в метрики не входит)
 
 
 def _one_bar(c: float) -> Day:
@@ -37,9 +38,15 @@ def tick_of(b: pd.DataFrame) -> float:
     return max(out) if out else 0.0
 
 
-def build_days(t: str, dates: np.ndarray, close: np.ndarray, s0: int, i1: int, end: pd.Timestamp, src=None):
-    """Day по датам s0…i1 (дни без баров — pusto; i1 — одна свеча close Н6) и тик тикера."""
-    b = load_bars5m(t, str(START.date()), str((end - pd.Timedelta(days=1)).date()), "s_predotkrytiem", src=src)
+def build_days(t: str, dates: np.ndarray, close: np.ndarray, s0: int, i1: int, end: pd.Timestamp, src=None, start: pd.Timestamp | None = None,
+               last_year: int | None = None):
+    """Day по датам s0…i1 (дни без баров — pusto; i1 — одна свеча close Н6) и тик тикера.
+    start — начало прогрева (по умолчанию START = 2017-01-01; В1 — START_V1). Чтение ≥ LIMIT запрещено;
+    last_year — последний год train: end > 1 января last_year+1 запрещено (В1: 2019 — validation 2020–2021 закрыта)."""
+    cap = LIMIT if last_year is None else min(LIMIT, pd.Timestamp(f"{last_year + 1}-01-01"))
+    if end > cap:
+        raise PermissionError(f"чтение баров до {end.date()}: граница периода {cap.date()}")
+    b = load_bars5m(t, str((start or START).date()), str((end - pd.Timedelta(days=1)).date()), "s_predotkrytiem", src=src)
     b = b[~b["pusto"]]
     bd = pd.to_datetime(b["date"]).dt.normalize()
     grp = {d: g[["open", "high", "low", "close"]].to_numpy(float) for d, g in b.groupby(bd)}
@@ -91,6 +98,19 @@ def align_f(series: pd.Series, dates) -> np.ndarray:
 def align_b(series: pd.Series, dates) -> np.ndarray:
     """Флаг на даты тикера; нет значения — False (вход запрещён)."""
     return series.astype(float).reindex(pd.DatetimeIndex(dates)).fillna(0.0).to_numpy() > 0.5
+
+
+def psr_dsr(x: np.ndarray, M: np.ndarray, n_all: int) -> dict:
+    """Справочно (Ж-044): T = дней; var SR — по столбцам M, N = все посчитанные точки."""
+    from fastbt import sweep_drivers as sd                                            # noqa: PLC0415
+    sr = lambda v: float(v.mean() / v.std(ddof=1)) if v.std(ddof=1) > 0 else 0.0     # noqa: E731
+    if x.std(ddof=1) == 0:
+        return dict(T=len(x), psr=float("nan"), dsr=float("nan"), N_dsr=n_all)
+    z = (x - x.mean()) / x.std(ddof=1)
+    tr = [sr(M[:, j]) for j in range(M.shape[1])]
+    star = sd.expected_max_sharpe(n_all, float(np.var(tr, ddof=1)) if len(tr) > 1 else 0.0)
+    a = (len(x), float((z ** 3).mean()), float((z ** 4).mean()))
+    return dict(T=len(x), psr=sd.psr(sr(x), 0.0, *a), dsr=sd.psr(sr(x), star, *a), N_dsr=n_all)
 
 
 def gate_trades(pos: np.ndarray, allow: np.ndarray) -> np.ndarray:
