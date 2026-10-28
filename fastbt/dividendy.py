@@ -26,7 +26,8 @@ TABLE = _DOCS / "2026-10-27_dividendy_2017_2021.csv"
 # 2015–2016 (PR #385): потолок — только dohod.ru, первичные не сверены (primary_checked=no); last_cum_date в файле нет,
 # считается здесь тем же правилом T+2, что и для 2017–2021 (docs/issledovaniya/2026-10-27_dividendy.md), по календарю дневных баров.
 TABLE_2015 = _DOCS / "2026-10-28_dividendy_2015_2016.csv"
-DIV_NALOG = 0.87          # доля дивиденда, попадающая в PnL (после НДФЛ 13 %); div_nalog = 1.0 — полный D
+RULE = "last_cum=T+2bars:all-years"   # Д5: правило даты входит в ключ кэша
+DIV_NALOG = 0.87         # доля дивиденда, попадающая в PnL (после НДФЛ 13 %); div_nalog = 1.0 — полный D
 
 
 def _tables() -> list[Path]:
@@ -38,7 +39,7 @@ def digest() -> str:
     h = hashlib.sha1()
     for p in _tables():
         h.update(p.read_bytes())
-    return hashlib.sha1(h.digest() + repr(float(DIV_NALOG)).encode()).hexdigest()
+    return hashlib.sha1(h.digest() + repr(float(DIV_NALOG)).encode() + RULE.encode()).hexdigest()
 
 
 @lru_cache(maxsize=1)
@@ -64,9 +65,7 @@ def _read(path: Path, ticker: str) -> pd.DataFrame:
     """Одна таблица в общий вид: last_cum_date, dps_rub тикера (строки без выплат — «выплат не было» — пропуск)."""
     t = pd.read_csv(path)
     t = t[(t["ticker"] == ticker) & (t["dps_rub"] > 0)].copy()
-    if "last_cum_date" in t:
-        t["last_cum_date"] = pd.to_datetime(t["last_cum_date"])
-    elif len(t):
+    if len(t):                                  # PR div-daty-t2: T+2 по барам для всех лет; колонка last_cum_date — только сверка
         t["last_cum_date"] = last_cum(pd.to_datetime(t["record_date"]))
     else:
         t["last_cum_date"] = pd.Series(dtype="datetime64[ns]")
