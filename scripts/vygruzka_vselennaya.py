@@ -74,8 +74,19 @@ def paginate(get, url):
         start += PAGE
 
 
+DROPPED = [0]  # отброшено обрезкой с последнего finish (выгрузка последовательная)
+
+
+def clip(rows):
+    """Граница и после ответа: begin (время МСК) >= 2022-01-01 00:00 отбрасывается, что бы ни вернул ISS."""
+    kept = [r for r in rows if r['begin'][:10] <= str(LAST_OK.date())]
+    return kept, len(rows) - len(kept)
+
+
 def fetch(get, t, interval, fr, till):
-    return paginate(get, BASE.format(t=t) + f'/candles.json?interval={interval}&from={fr}&till={till}&iss.meta=off')
+    rows, n = clip(paginate(get, BASE.format(t=t) + f'/candles.json?interval={interval}&from={fr}&till={till}&iss.meta=off'))
+    DROPPED[0] += n
+    return rows
 
 
 def months(fr, till):
@@ -92,17 +103,16 @@ def year_spans(start, end):
         yield y, max(start, pd.Timestamp(y, 1, 1)), min(end, pd.Timestamp(y, 12, 31))
 
 
-def sha_log(out, path, rows):
-    h = hashlib.sha256(Path(path).read_bytes()).hexdigest()
-    j = out / 'sha_journal.csv'
-    with open(j, 'a') as f:
-        if f.tell() == 0:
-            f.write('file,sha256,rows,time\n')
-        f.write(f'{Path(path).relative_to(out)},{h},{rows},{time.strftime("%F %T")}\n')
-
-
 def finish(out, path, rows, key):
-    sha_log(out, path, rows)
+    """Журнал SHA (с числом строк, отброшенных обрезкой по 2022) и метка .done."""
+    drop, DROPPED[0] = DROPPED[0], 0
+    if drop:
+        print(f'ВНИМАНИЕ: {path.name}: отброшено {drop} строк >= 2022-01-01 (ISS отдал их вопреки till)', flush=True)
+    with open(out / 'sha_journal.csv', 'a') as f:
+        if f.tell() == 0:
+            f.write('file,sha256,rows,dropped_2022,time\n')
+        h = hashlib.sha256(path.read_bytes()).hexdigest()
+        f.write(f'{path.relative_to(out)},{h},{rows},{drop},{time.strftime("%F %T")}\n')
     path.with_suffix('.done').write_text(json.dumps({'rows': rows, 'key': key, 'time': time.strftime('%F %T')}))
 
 

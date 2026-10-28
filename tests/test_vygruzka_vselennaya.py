@@ -23,8 +23,8 @@ BIG_MONTH = '2021-03-01'  # в этом месяце 1-мин баров 1200 = 
 class FakeIss:
     """Ответ ISS: candles.json с пагинацией по 500; запросы записываются."""
 
-    def __init__(self):
-        self.calls = []
+    def __init__(self, leak=False):
+        self.calls, self.leak = [], leak  # leak: на till=2021-12-31 ISS отдаёт ещё и свечи 2022-01-03
 
     def __call__(self, url):
         self.calls.append(url)
@@ -35,6 +35,8 @@ class FakeIss:
         step = {1: pd.Timedelta(minutes=1), 10: pd.Timedelta(minutes=10), 24: pd.Timedelta(days=1)}[iv]
         rows = [[str(t0 + k * step), 1.0, 2.0, 0.5, 1.5, 100 + k, 1000.0 + k] for k in range(n)]
         cols = ['begin', 'open', 'high', 'low', 'close', 'volume', 'value']
+        if self.leak and till == '2021-12-31':
+            rows += [[f'2022-01-03 10:{k:02d}:00', 1.0, 2.0, 0.5, 1.5, 7, 7.0] for k in (0, 10)]
         return {'candles': {'columns': cols, 'data': rows[start:start + 500]}}
 
 
@@ -64,6 +66,29 @@ def _body_no_d25(tmp):
     with pytest.raises(ValueError):
         vg.run(['SBER'], '2021-03-01', '2021-03-31', ['1m'], out=d25, get=FakeIss(), root=root)
     assert not (tmp / 'D25').exists()
+
+
+def _body_clip(tmp, capsys):
+    root = tmp / 'V40'
+    vg.run(['SBER'], '2021-12-01', '2021-12-31', ['1m', '10m', 'daily'], out=root, get=FakeIss(leak=True), root=root)
+    b = pd.read_csv(root / 'bars1m' / 'SBER_2021.csv')
+    p = pd.read_parquet(root / 'candles_10m' / 'SBER.parquet')
+    d = pd.read_csv(root / 'daily_value' / 'SBER.csv')
+    assert b['begin'].max() < '2022-01-01' and p['timestamp'].max() < pd.Timestamp('2022-01-01')
+    assert d['date'].max() < '2022-01-01' and len(b) == 3 and len(p) == 3 and len(d) == 3
+    j = pd.read_csv(root / 'sha_journal.csv')
+    assert (j['dropped_2022'] == 2).all() and len(j) == 3
+    assert 'ВНИМАНИЕ' in capsys.readouterr().out
+
+
+def test_rows_from_2022_clipped_before_write(tmp_path, capsys):
+    _body_clip(tmp_path, capsys)
+
+
+def test_mutation_no_clip_caught(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(vg, 'clip', lambda rows: (rows, 0))
+    with pytest.raises(BaseException):
+        _body_clip(tmp_path, capsys)
 
 
 def test_pagination_collects_all_pages(tmp_path):
