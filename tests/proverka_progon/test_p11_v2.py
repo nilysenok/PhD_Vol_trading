@@ -4,7 +4,12 @@
  (test_zayavka_zhivet_T_dney); M5 reentry при «нет» (test_reentry); M6 третья добавка (test_piramida_ne_bolshe_dvuh); M7 риск > 2ρ
  (test_piramida_risk_2rho); M8 ступенчатый трейлинг ослабил стоп (test_trejling_stupen); M9 безубыток по d+1 (test_bezubytok_po_sigma_d);
  M10–M12 (ФДР t0 занятому, ранг по всему периоду, m(score) вне [0,25; 2]) — в test_p11_v2_c.py.
-ДОПУЩЕНИЯ (сигнатур V6 в спецификации §13 нет; поправить здесь, если кодеры назвали иначе):
+ПОДГОНКА П-11б (тестировщик, Ж-081) под код #499/#501/#504; требования те же. Причины: (1) Params: reentry→reentry_den, trail_step→step_s, plus→sp (имена кода);
+ (2) go() не передавал T в test_zayavka_zhivet_T_dney / _smene_storony / _peresmotr_vecherom — ошибка теста (без T=1 заявка не живёт), добавлено T=…; (3) причины выхода в коде: безубыток "bu", трейлинг и «стоп в плюс» "trail",
+ «выхода нет» = закрытие по сигналу ("signal"), а не exit_px None; (4) контроль σ d+1 в безубытке инвертирован в тесте: при σ_d (верно) выход 99,0, при σ d+1 порога 108,9 нет — теперь assert == 99,0;
+ (5) риск 2ρ в коде — по расстоянию до стопа (Σ размер·(цена − стоп) ≤ 2·R), а не Σ frac ≤ 2: добавка 1,0 урезается до 0,8, пара 0,5 → 0,5 + 0,25; тест считает риск независимо. Толкование «риск ставки» — на подтверждение (класс A/B);
+ (6) бары AFLT без сделок (NaN, 48 из 4558) — не бары, отбрасываются.
+ДОПУЩЕНИЯ (были до кода; сигнатур V6 в спецификации §13 нет; п. А1–А2 после подгонки верны, А3 — устарело, см. test_p11_v2_c.py):
  А1. V6-a/b — `fastbt.exec_e.run(tk, days, sig, sigma, Params(...))`; новые поля Params: T (дней жизни заявки с первого вечера сигнала; после T заявка снята и
      не ставится заново, пока сигнал не исчез/сменил сторону), pir (0|0.5|1, добавка), trail_step (s, в σ), b0 (σ; безубыток: стоп = цена входа),
      plus=(p, q) (после +p·σ стоп на +q·σ). Уровни считаются по σ_d и close d вечером d; заявка на день j берёт уровень вечера j−1. reentry — прежнее поле.
@@ -57,7 +62,7 @@ def test_zayavka_zhivet_T_dney(T):
     for j, n in ((T, 1), (T + 1, 0)):                      # на день T исполняется, на T+1 заявка снята (M4)
         days = [D(F(100.0, 20)) for _ in range(T + 3)]
         days[j] = touch()
-        assert len(go(days, sig).trades) == n
+        assert len(go(days, sig, T=T).trades) == n
 
 
 def test_zayavka_snyata_pri_ischeznovenii():
@@ -69,16 +74,16 @@ def test_zayavka_snyata_pri_ischeznovenii():
 
 def test_zayavka_snyata_pri_smene_storony():              # M3
     days = [D(F(100.0, 20)), D(F(100.0, 20)), touch(), D(F(100.0, 20))]
-    assert go(days, [1, -1, -1, -1]).trades == []        # лонг-лимит снят вечером 1, шорт-лимит 101 не тронут
+    assert go(days, [1, -1, -1, -1], T=5).trades == []   # лонг-лимит снят вечером 1, шорт-лимит 101 не тронут
     days[1], days[2] = touch(), D(F(100.0, 20))
-    t = go(days, [1, -1, -1, -1]).trades
+    t = go(days, [1, -1, -1, -1], T=5).trades
     assert len(t) == 1 and t[0].side == 1 and t[0].entry_day == 1
 
 
 def test_uroven_peresmotr_vecherom():
     d1 = D([(100.0, 100.0, 100.0, 110.0)] + F(110.0, 19))
     d2 = D(F(110.0, 5) + [(110.0, 110.0, 108.5, 110.0)] + F(110.0, 14))
-    t = go([D(F(100.0, 20)), d1, d2, D(F(110.0, 20))], [1, 1, 1, 0]).trades
+    t = go([D(F(100.0, 20)), d1, d2, D(F(110.0, 20))], [1, 1, 1, 0], T=3).trades
     assert len(t) == 1 and t[0].entry_day == 2 and t[0].entry_px == pytest.approx(108.9)
 
 
@@ -91,9 +96,9 @@ def test_uroven_ne_po_d_plus_1():                          # M1: σ и close д�
 def test_reentry():                                        # M5; Ж-111 п. 3
     rows = [(100.0, 100.0, 100.0, 100.0), ENT, (99.0, 99.0, 97.0, 98.0), (98.0, 100.0, 98.0, 100.0), ENT] + F(100.0, 15)
     days = [D(F(100.0, 20)), D(rows), D(F(100.0, 20))]
-    on = go(days, [1, 1, 0], b=1.0, reentry=True).trades
+    on = go(days, [1, 1, 0], b=1.0, reentry_den=True).trades
     assert len(on) == 2 and on[0].reason == "stop" and on[1].entry_day == 1
-    assert len(go(days, [1, 1, 0], b=1.0, reentry=False).trades) == 1
+    assert len(go(days, [1, 1, 0], b=1.0, reentry_den=False).trades) == 1
 
 
 # --- V6-b: пирамидинг ---
@@ -109,7 +114,8 @@ UP = [ENT, (100.0, 101.5, 100.0, 101.5), (101.5, 103.5, 101.5, 103.5), (103.5, 1
 def test_piramida_odna_dobavka_pri_plyus_1_sigma():
     r = run_pir(UP[:2], pir=1.0)
     k = kids(r)
-    assert len(k) == 1 and k[0].entry_px == pytest.approx(99 * 1.02) and k[0].frac == 1.0 and k[0].side == 1
+    # риск 2ρ по расстоянию до стопа (код V6-b): R = 99·0,08 = 7,92; добавка на 100,98 при стопе 91,08: min(1; 7,92/9,9) = 0,8
+    assert len(k) == 1 and k[0].entry_px == pytest.approx(99 * 1.02) and k[0].frac == pytest.approx(0.8) and k[0].side == 1
     assert r.trades[k[0].parent].parent is None
     assert kids(run_pir(UP[:2], pir=0.0)) == []
 
@@ -120,10 +126,15 @@ def test_piramida_ne_bolshe_dvuh():                         # M6
 
 
 def test_piramida_risk_2rho():                              # M7
+    stop, r0 = 99 * 0.92, 99 * 0.08                          # стоп b = 4σ: 91,08; риск базовой ноги 7,92
+
+    def risk(r):                                             # риск ставки = Σ размер·(цена входа − стоп)
+        return sum(t.frac * (t.entry_px - stop) for t in r.trades)
     r = run_pir(UP, pir=1.0)
-    assert sum(t.frac for t in r.trades) <= 2.0 + 1e-12 and len(kids(r)) == 1
-    r = run_pir(UP, pir=0.5)
-    assert sum(t.frac for t in r.trades) == pytest.approx(2.0)
+    assert risk(r) <= 2 * r0 + 1e-9 and len(kids(r)) == 1 and sum(t.frac for t in r.trades) == pytest.approx(1.8)
+    r = run_pir(UP, pir=0.5)                                 # 0,5 на 100,98; вторая урезана до 0,25 (остаток риска 2,97 / 11,88)
+    assert risk(r) <= 2 * r0 + 1e-9 and [t.frac for t in kids(r)] == pytest.approx([0.5, 0.25])
+    assert risk(r) == pytest.approx(2 * r0)
 
 
 def test_piramida_protiv_pozitsii():                        # M2
@@ -138,25 +149,25 @@ def test_piramida_protiv_pozitsii():                        # M2
 
 def test_trejling_stupen():                                 # M8: s = 1, b = 2: S0 = 95,04, шаг 1,98
     path = [ENT, (100.0, 103.0, 100.0, 103.0), (103.0, 103.0, 100.0, 100.0), (100.0, 100.0, 98.5, 98.5)]
-    t = run_pir(path, b=2.0, trail_step=1.0).trades[0]
-    assert t.reason == "stop" and t.exit_px == pytest.approx(99.0)           # 95,04 + 2·1,98, после отката не ослаблен
-    assert run_pir(path, b=2.0).trades[0].exit_px is None                    # контроль: без трейлинга стоп 95,04 не тронут
+    t = run_pir(path, b=2.0, step_s=1.0).trades[0]
+    assert t.reason == "trail" and t.exit_px == pytest.approx(99.0)          # 95,04 + 2·1,98, после отката не ослаблен
+    assert run_pir(path, b=2.0).trades[0].reason == "signal"                 # контроль: без трейлинга стоп 95,04 не тронут, выход по сигналу
 
 
 def test_bezubytok_po_sigma_d():                            # M9, M1: порог 99·(1 + 1σ_d) = 100,98
     path = [ENT, (100.0, 101.5, 100.0, 101.5), (101.5, 101.5, 98.5, 98.5)]
     t = run_pir(path, b=2.0, b0=1.0).trades[0]
-    assert t.reason == "stop" and t.exit_px == pytest.approx(99.0)
+    assert t.reason == "bu" and t.exit_px == pytest.approx(99.0)
     days = [D(F(100.0, 20)), D(path + F(98.5, 17)), D(F(100.0, 20))]
-    assert go(days, [1, 1, 0], sg=[SG, 0.10, 0.10], b=2.0, b0=1.0).trades[0].exit_px is None   # σ d+1: порог 108,9
+    assert go(days, [1, 1, 0], sg=[SG, 0.10, 0.10], b=2.0, b0=1.0).trades[0].exit_px == pytest.approx(99.0)   # σ_d, не σ d+1 (при d+1 порог 108,9, выхода нет)
     low = [ENT, (100.0, 100.5, 100.0, 100.5), (100.5, 100.5, 98.5, 98.5)]
-    assert run_pir(low, b=2.0, b0=1.0).trades[0].exit_px is None             # порог не достигнут
+    assert run_pir(low, b=2.0, b0=1.0).trades[0].reason == "signal"          # порог не достигнут: выход по сигналу, не bu
 
 
 def test_stop_v_plyus():
     path = [ENT, (100.0, 102.0, 100.0, 102.0), (102.0, 102.0, 99.5, 99.5)]
-    t = run_pir(path, b=2.0, plus=(1.5, 0.5)).trades[0]
-    assert t.reason == "stop" and t.exit_px == pytest.approx(99 * 1.01)
+    t = run_pir(path, b=2.0, sp=(1.5, 0.5)).trades[0]
+    assert t.reason == "trail" and t.exit_px == pytest.approx(99 * 1.01)
 
 
 # --- данные <= 2019 ---
@@ -164,12 +175,12 @@ def test_dannye_aflt_2018_invarianty(tmp_path):
     assert bars5m.SRC.exists(), "нужен FASTBT_BARS1M=…/data/regen/D25/bars1m"
     df = bars5m.load_bars5m("AFLT", "2018-03-01", "2018-04-30", cache=tmp_path)
     days = []
-    for _, g in df.groupby("date", sort=True):
+    for _, g in df.dropna(subset=["open", "high", "low", "close"]).groupby("date", sort=True):   # бары без сделок (NaN) — не бары
         days.append(Day(g.open.values, g.high.values, g.low.values, g.close.values, False))
     assert 30 < len(days) <= 45
     sig = np.ones(len(days))
     sig[-3:] = 0
-    r = go(days, sig, sg=0.015, T=2, b=2.0, pir=0.5, trail_step=1.0, b0=1.0, reentry=True)
+    r = go(days, sig, sg=0.015, T=2, b=2.0, pir=0.5, step_s=1.0, b0=1.0, reentry_den=True)
     assert r.trades
     for t in r.trades:
         assert t.entry_day >= t.d_sig + 1

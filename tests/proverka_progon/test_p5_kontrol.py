@@ -114,10 +114,12 @@ def test_k2_sdvig_krugovoj_i_lag_ne_menshe_63():
 def test_k3_obnulyaet_rovno_novye_osi_mutaciya10():
     from fastbt.etap1_eval_v2 import NOVYE
     assert dict(NOVYE) == {"ed_lim": "sigma", "zhizn": "den", "lestnica": "net", "gap": "vhod", "t_vyhod": "close",
-                           "k_x": "net", "storona": "obe", "filtr": "net", "tejk_signal": "net", "vhod_tip": "podtverzhdenie"}
-    pt = {"ma_window": 13, "z_entry": 1.67, "vhod": 0.5, "tau": 5.0, "k_s": 2.0, "q_sily": 0.5,
+                           "k_x": "net", "storona": "obe", "filtr": "net", "tejk_signal": "net", "vhod_tip": "podtverzhdenie",
+                           "rho": "net", "m_tip": "1", "rang_tip": "tikernyj"}      # П-11б: оси V6-c (#504) в NOVYE, нейтральные значения
+    pt ={"ma_window": 13, "z_entry": 1.67, "vhod": 0.5, "tau": 5.0, "k_s": 2.0, "q_sily": 0.5,
           "ed_lim": "atr14", "zhizn": 12, "lestnica": 0.5, "gap": "propusk", "t_vyhod": "1500",
-          "k_x": 1.0, "storona": "long", "filtr": "szhatie", "tejk_signal": "pol_puti", "vhod_tip": "stop_zayavka"}
+          "k_x": 1.0, "storona": "long", "filtr": "szhatie", "tejk_signal": "pol_puti", "vhod_tip": "stop_zayavka",
+          "rho": 0.5, "m_tip": "kvadr", "rang_tip": "obshchiy"}
     k3 = [z for z in pk().plan(pt) if z.kontrol == "k3"]
     assert len(k3) == 1
     out = k3[0].pt
