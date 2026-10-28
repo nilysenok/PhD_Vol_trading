@@ -102,9 +102,10 @@ def imoex_daily(path=None) -> pd.DataFrame:
     sig_mkt = √(среднее RV за 22 дня), RV дня = Σ r² по 10-мин лог-доходностям внутри дня."""
     import pyarrow.parquet as pq
     from fastbt import daily_1850 as d18
-    p = path or (d18.default_main() / "moex_discovery/data/final_v6/candles_10m/external/IMOEX.parquet")
+    from fastbt import zona
+    p = path or zona.path("imoex", d18.default_main() / "moex_discovery/data/final_v6/candles_10m/external/IMOEX.parquet")
     # схема внешних рядов: begin (строка ISO), open/high/low/close/value/volume; фильтр < 2022 — на чтении
-    b = pq.read_table(p, filters=[("begin", "<", "2022-01-01")]).to_pandas()
+    b = pq.read_table(p, filters=[("begin", "<", str(zona.end().date()))]).to_pandas()
     b["timestamp"] = pd.to_datetime(b["begin"])
     day = d18.aggregate(b, "IMOEX")
     b = b.sort_values("timestamp")
@@ -117,6 +118,6 @@ def imoex_daily(path=None) -> pd.DataFrame:
     out = pd.DataFrame({"close": day.set_index("date")["close"], "rv": rv, "nbars": g.size()}).dropna()
     out["sig_mkt"] = np.sqrt(out["rv"].rolling(22).mean())
     out = out.reset_index().rename(columns={"index": "date"})
-    if out["date"].max() >= END:
-        raise PermissionError("IMOEX: даты ≥ 2022")
+    if out["date"].max() >= zona.end():
+        raise PermissionError(f"IMOEX: даты ≥ {zona.end().date()}")
     return out[["date", "close", "sig_mkt", "nbars"]]

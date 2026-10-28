@@ -30,8 +30,8 @@ _ATR = {"rm_tip": "atr", "rm_atr.sl_mult": OFF, "rm_atr.tp_mult": OFF, "rm_atr.m
 RM_OFF = {"S1": dict(sl_mult=OFF, tp_mult=OFF, max_hold=FAR, breakeven_trigger=None, cooldown_bars=0),
           "S3": dict(initial_sl_mult=OFF, trail_atr_mult=OFF, breakeven_thresh=None, cooldown_bars=0), "S5": _ATR}
 RM_OFF.update(S2=RM_OFF["S1"], S4=RM_OFF["S3"], S6=_ATR)
-PERIODS = {"train": (2018, 2019), "ctrl2019": (2019, 2019), "tune2018": (2018, 2018), "train4": (2016, 2019)}
-HONEST = {"train": "net", "ctrl2019": "kontrol", "tune2018": "net", "train4": "net"}     # train4 — В1, 2015 — прогрев
+PERIODS = {"train": (2018, 2019), "ctrl2019": (2019, 2019), "tune2018": (2018, 2018), "train4": (2016, 2019), "test1": (2022, 2024)}
+HONEST = {"train": "net", "ctrl2019": "kontrol", "tune2018": "net", "train4": "net", "test1": "net"}     # train4 — В1, 2015 — прогрев; test1 — реверс р.1
 
 
 def years_of(period: str) -> tuple:
@@ -98,7 +98,8 @@ class Evaluator:
     def _b(self, t: str, period: str) -> int:
         """Локальный индекс b первого дня после окна (строка b−1 — последняя строка окна, Н5)."""
         y1 = PERIODS[period][1]
-        return int(np.searchsorted(self.inp.meta[t]["dates"], np.datetime64(f"{y1 + 1}-01-01")))
+        d = self.inp.meta[t]["dates"]
+        return min(int(np.searchsorted(d, np.datetime64(f"{y1 + 1}-01-01"))), len(d) - 1)   # test1: ряд кончается 2024 — b = последний день
 
     def _positions(self, t: str, sp: dict, q: float, anchor: bool, gi1: int) -> np.ndarray:
         k = (t, tuple(sorted(sp.items())), q, anchor, gi1)
