@@ -68,6 +68,8 @@ class Run2(Run):
         s.order = dict(L=limit_level(sd, close, s.p.k, u, s.p.tick), due=j + 1, sd=sd, d_sig=i, **kw)
 
     def _try_order(s, i, j, d):
+        if s.order.get("rynok"):                        # вход рынком по open 10:00 d+1: без уровня, жизни заявки и gap (exec_e_run)
+            return s._try_rynok(i, j, d)
         o = s.order
         sd, tick = o["sd"], s.p.tick
         if s.p.gap_propusk and gap_over(sd, d.o[0], o["L"], tick):
