@@ -25,6 +25,8 @@ def canon_v2(sid: str, pt: dict) -> dict:
         q["k_x"] = NET
     if q.get("tejk_signal", NET) != NET:
         q.update(R=NET, k_x=NET)                    # Ж-084: один тейк — от уровня сигнала
+    if q.get("tejk_signal") == "rodnoy_uroven":     # Ж-091 п. 1.1: сигнальный выход выключен, τ остаётся и идёт по open2 — t_vyhod схлопнут
+        q.update(t_vyhod="open2")
     if q.get("vhod") == "rynok":
         q.update(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod")
     if q.get("proverka") == "zakrytie" and str(q.get("t_vyhod", "close")) != "close":

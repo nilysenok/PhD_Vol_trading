@@ -6,8 +6,8 @@ import math
 import numpy as np
 
 from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level, limit_mask, limit_px, part_allowed,
-                                 part_fee, part_hit, part_level, ratchet, stop_hit, stop_level, take_hit, take_level,
-                                 tejk_level)
+                                 part_fee, part_hit, part_level, ratchet, rodnoy_level, stop_hit, stop_level,
+                                 take_hit, take_level, tejk_level)
 from fastbt.exec_e_types import Trade
 
 FRAC = 0.5                                          # доля позиции, закрываемая на +1R (Ж-092)
@@ -55,7 +55,7 @@ class Run:
         s.ext, s.be_on, s.sh = px, False, 0.0
         s.w, s.smax, s.part, s.ent = 1.0, None, False, (i, b)
         s.R = px * s.p.b * sg if s.p.b is not None else float("nan")
-        if s.p.tejk != "net":                       # M зафиксирован на d_sig (≤ close d_sig), от P_вх — один раз
+        if s.p.tejk in ("k_srednemu", "pol_puti"):  # M зафиксирован на d_sig (≤ close d_sig), от P_вх — один раз
             s.tT = tejk_level(sd, px, float(s.tejk_M[d_sig]), s.p.tejk, s.p.tick)
             s.n_bez += s.tT is None
 
@@ -108,8 +108,19 @@ class Run:
             S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on, atr_for_day(s.atr, s.ix, j))
             S = s.smax = ratchet(tr.side, S, s.smax)
         S = s._stop_shift(S)
-        T = s.tT if s.p.tejk != "net" else take_level(tr.side, tr.entry_px, sg, s.p)
+        if s.p.tejk == "rodnoy_uroven":
+            T = s._rodnoy(j)
+        else:
+            T = s.tT if s.p.tejk != "net" else take_level(tr.side, tr.entry_px, sg, s.p)
         return S, None if s.xo is not None else T    # висит заявка выхода: тейк снят (ОСО)
+
+    def _rodnoy(s, j):
+        """Ж-091: заявка дня ix[j] стоит на L[ix[j−1]] (данные ≤ 18:50 прошлого торгового дня), обновляется каждый вечер;
+        активна с первого бара дня; tejk_M — [2, n]: строка 0 лонг, строка 1 шорт."""
+        if j == 0:
+            return None
+        sd = s.tr.side
+        return rodnoy_level(sd, float(s.tejk_M[0 if sd > 0 else 1][s.ix[j - 1]]), s.p.tick)
 
     def _after_bar(s, j, hi, lo):
         """Экстремум и безубыток обновляются ПОСЛЕ бара: действуют со следующего (внутри бара уровни не меняются)."""
@@ -175,7 +186,7 @@ class Run:
         if s.tr is not None:                        # сигнал дня входа тоже: sig[d+1] != стороне → выход по close d+1
             if s.p.tau is not None and j - s.ej >= s.p.tau and j > s.ej:
                 s._leave(i, j, nb, close, "vremya")
-            elif s.p.exit_signal and s.dir(i) != s.tr.side:
+            elif s._sig_exit(i):
                 s._leave(i, j, nb, close, "signal")
         if s.tr is not None:
             s.gross[i] += s.tr.side * s.w * math.log((close + s.dv) / s.ref)
@@ -188,6 +199,10 @@ class Run:
         s._decide(i, j, close, nb)
         s.pos[i] = float(s.tr.side) * s.w if s.tr is not None else 0.0
         s.free[i] = 1.0 - s.used[i] / nb
+
+    def _sig_exit(s, i):
+        """Сигнал ушёл от стороны сделки. rodnoy_uroven — сам родной сигнальный выход, выставленный заявкой: рыночного нет (Ж-091)."""
+        return s.p.exit_signal and s.p.tejk != "rodnoy_uroven" and s.dir(i) != s.tr.side
 
     def _leave(s, i, j, nb, close, reason):
         """Выход по signal/vremya: рынком по close дня решения; при vyhod_lim — лимитная заявка на d+1 (due = j+1, не раньше, Д2)

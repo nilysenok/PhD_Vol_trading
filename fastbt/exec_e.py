@@ -63,8 +63,8 @@ def _check_params(p: Params) -> None:
         raise ValueError("R и a несовместимы")
     if p.R is not None and p.h is None and p.tau is None:
         raise ValueError("R требует h или tau (❓1)")
-    if p.tejk not in ("net", "k_srednemu", "pol_puti"):
-        raise ValueError("tejk: net | k_srednemu | pol_puti")
+    if p.tejk not in ("net", "k_srednemu", "pol_puti", "rodnoy_uroven"):
+        raise ValueError("tejk: net | k_srednemu | pol_puti | rodnoy_uroven")
     if p.tejk != "net" and (p.R is not None or p.a is not None):
         raise ValueError("tejk ≠ net несовместим с R и a: тейк один (Ж-084)")
     if p.check not in ("bary", "zakrytie"):
@@ -119,8 +119,9 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         raise ValueError("days, ed разной длины")
     from fastbt import dividendy
     nal = dividendy.DIV_NALOG if nalog is None else nalog
-    if p.tejk != "net" and (tejk_M is None or len(tejk_M) != len(days)):
-        raise ValueError("tejk ≠ net требует tejk_M длины days")
+    if p.tejk != "net" and (tejk_M is None or np.shape(tejk_M)[-1] != len(days)
+                            or np.ndim(tejk_M) != (2 if p.tejk == "rodnoy_uroven" else 1)):
+        raise ValueError("tejk ≠ net требует tejk_M длины days (rodnoy_uroven — [2, days]: лонг, шорт)")
     atr = atr_series(days, close) if p.atr_m is not None else None      # Ж-092: ATR(14) на close каждого дня
     r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr) if _new_axes(p, ed) \
         else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr)

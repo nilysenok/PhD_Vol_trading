@@ -123,6 +123,14 @@ def tejk_level(sd, px, M, mode, tick):
     return T if tick is None else (ceil_tick(T, tick) if sd > 0 else floor_tick(T, tick))
 
 
+def rodnoy_level(sd, L, tick):
+    """Тейк rodnoy_uroven (Ж-091 п. 1.1): лимит выхода на родном уровне L дня d, без фильтра «в сторону прибыли» — если по close d
+    сигнальный выход уже сработал бы, заявка встаёт по рынку (исполнение max/min(open, L)). Округление по тику — как take_level."""
+    if L is None or not math.isfinite(L):
+        return None
+    return L if tick is None else (ceil_tick(L, tick) if sd > 0 else floor_tick(L, tick))
+
+
 def stop_hit(sd, o, h, l, S, touch):
     """(сработал, цена): цена — S или open при гэпе через S. touch: l ≤ S, иначе l < S."""
     if sd > 0:
