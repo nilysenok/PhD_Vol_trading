@@ -138,8 +138,11 @@ def test_stroki_kontrolya_v_kontrol_i_ne_v_n_osnovnogo_ledger(tmp_path):
     k = ledger_v2.Chitatel(root, "S1")
     assert k.n_unique() == len(res) - 1 == 39 and {r["istochnik"] for r in k.rows()} == {"kontrol", "vozm"}
     assert not (tmp_path / "main" / "S1" / "p01").exists()
-    with pytest.raises(ValueError):
-        pk.kontrol_pisatel(tmp_path / "main", "S1", 1, dict(T=20, kod="x", vhody="y"))
+    with pytest.raises(ValueError, match="kontrol"):
+        pk.kontrol_pisatel(tmp_path / "novyy", "S1", 1, dict(T=20, kod="x", vhody="y"))
+    with pytest.raises(ValueError, match="kontrol"):
+        pk.run_strategiya(Fake(), {"c0": BASE_PT}, tmp_path / "main", tmp_path / "x.csv", T=20)
+    assert not (tmp_path / "novyy").exists()
     assert "потолок" in csv.read_text(encoding="utf-8").splitlines()[0]
     t = pd.read_csv(csv, comment="#")
     assert len(t) == 40 and t.loc[t.kontrol == "sigma_mediana", "zaglyadyvanie"].all() and t[t.kontrol.str.startswith("placebo", na=False)].p.nunique() == 1
