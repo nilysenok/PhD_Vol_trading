@@ -1,0 +1,11 @@
+# Объявление N для C этапа Э3 (T3). Сама сетка — #296: fastbt/designs/s9/setka_C_v3.yaml (324 точки; C_setka_e2.yaml от T2 пока нет).
+# Ступень лестницы «константная σ» (sigma_e.const, как наивная: C1 и C2W, без C*) добавляет 36 точек: 324 + 36 = 360.
+# Наивная h5 ≡ h1 в сетке не считается; все 360 различны. Экрана у C нет.
+pometka: черновик, текущий A, train 2018–2019, без выбора точек
+osnova: fastbt/designs/s9/setka_C_v3.yaml
+lestnitsa: [const, naive, harj, hyb]
+tochek_vsego_296: 324
+tochek_const: 36
+tochek_vsego: 360
+tochek_razlichnyh: 360
+komissii: {osnovnaya_otbor: 0.0004, pereschet: 0.00035}

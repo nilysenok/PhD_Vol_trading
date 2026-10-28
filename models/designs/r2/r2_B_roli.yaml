@@ -1,0 +1,93 @@
+# R2 протокол v3, агент B (бывш. Б1 + Б2): модули r2_roli.py (кластер 4: роли; кластер 12: scale_boost, quantile5; кластер 15: boost_refit)
+# и r2_resid_grid.py (сетка остаточного ученика LHS-60, фаза D). Схема — models/designs/r2/schema_v1.yaml (ключи boost.*).
+# Записано до первого прогона R2. Модуль — функция build(design, ctx) (см. шапку r2_roli.py); ядро — r2_core.py агента S.
+agent: B
+schema: v1
+
+# grid = current: точки первого раунда «роль × h» (таблица протокола v2 + базовый дизайн скрининга протокола v3, п. 3.1).
+# src — префикс {src}_selected_h{h}.csv (параметры точки шага; шаги 7–10 — точка шага 6 и последнего шага), btag — исключения признаков
+# {btag}_excluded_features.csv на шагах >= 2 (как в R1), leg_feature — ln ноги ещё и признаком (так было у точки в R1).
+points:
+  1:
+    feature:      {src: D22_h1,            btag: D22_h1, leg_feature: true}    # базовый дизайн B h=1: точки D22_h1
+    residual:     {src: Bv2b,              btag: Bv2b,   leg_feature: false}   # D12_h1_B_b0.25 = точки ЛГК B v2b
+    residual_std: {src: Bv2b,              btag: Bv2b,   leg_feature: false}
+    offset:       {src: D17_1_h1_G1Xopt,   btag: Bv2b,   leg_feature: false}   # G1Xopt (optuna-30, Д17.1)
+  5:
+    feature:      {src: Bv3,               btag: Bv3,    leg_feature: true}    # точки V0 Bv3
+    residual:     {src: D12_h5,            btag: Bv2b,   leg_feature: true}    # D12_h5 (V9 + Д8.12) — базовый дизайн B h=5
+    residual_std: {src: D12_h5,            btag: Bv2b,   leg_feature: true}
+    offset:       {src: D17_1_h5_G5Xopt,   btag: Bv2b,   leg_feature: true}    # G5Xopt (gamma + harf)
+  22:
+    feature:      {src: Bv3,               btag: Bv3,    leg_feature: true}
+    residual:     {src: D12_h22,           btag: Bv2b,   leg_feature: false}   # D12_h22 (V9; linear_tree у LGBM снят схемой: linear_tree fixed off)
+    residual_std: {src: D12_h22,           btag: Bv2b,   leg_feature: false}
+    offset:       {src: D17_1_h22_G22Xopt, btag: Bv2b,   leg_feature: false}
+
+# monotone = on (только role = feature, протокол v3 п. 3.1): +1 по этим признакам, если они есть в матрице (как Д24.1, d24a)
+monotone_plus: [rv, rv_d, rv_w, rv_m, close_RVI, rv_IMOEX, leg_ln, hx_ln_rvi2, hx_ln_rvm_imoex, hx_ln_rvm_mkt]
+
+# Определения ключей, которые схема оставляет исполнителю (❓ — умолчание действует без ответа; записано до счёта):
+defs:
+  role:
+    feature: "ln ноги — признак leg_ln (Д8.12); цель ln RV; f = ln ŷ_boost − ln ноги"
+    residual: "цель ln RV − ln ноги, ln ŷ = ln ноги + f (V9, β = 1)"
+    residual_std: "❓ цель (ln RV − ln ноги)/σ_t, ln ŷ = ln ноги + σ_t·f; σ_t — СКО остатков ноги тикера за 66 строк, окна целей которых закончились к дню t (строки ≤ t−h)"
+    offset: "LightGBM/XGBoost gamma на уровне RV, base_margin = ln ноги + s²/2 (s² — остатки ln ноги на обучении), без поправки на выходе (Д17.1)"
+  resid_source:
+    cross_fit: "K = 5 последовательных блоков обучающего окна; прогноз ноги на блоке b — модель ноги, обученная на остальных блоках без h строк по обе стороны блока (эмбарго); нужен ctx['leg_refit']"
+  early_stop:
+    native: "ранняя остановка по нативной метрике на val-годе шага, patience 30, ≤ 1000 деревьев (как в R1)"
+    qlike_total: "❓ внутренняя складка — год vy−1 (обучение — годы < vy−1 с эмбарго h); остановка по QLIKE итога ln ноги + f, profile-калибровка (оптимальный множитель на складке, т. е. инвариантно к поправке s²), patience 30, ≤ 300 деревьев; затем обучение на годах < vy (с эмбарго) с найденным числом деревьев"
+  objective: {l2_log: "квадрат ошибки ln", huber_log: "pseudo-Huber ln (как Д11.4)", gamma_level: "gamma на уровне RV, base_margin = ln ноги (для feature — среднее)"}
+  clip_sigma: "❓ f обрезается до ±k·σ_res, σ_res — СКО ln RV − ln ноги на строках обучения (в той же версии resid_source)"
+  shrink: "ln ŷ = ln ноги + shrink·f"
+  lib: {lightgbm: "LGBM", xgboost: "XGB", both_avg: "(RV_xgb + RV_lgbm)/2 (как wrap2)"}
+  prob:
+    scale_boost: "❓ LightGBM масштаба: цель ln(e²) (e = ln RV − ln ноги на обучении), ŝ_t; ŷ = ŷ_точки·mean_i exp(ŝ_t·z_i), z_i = e_i/ŝ_i — эмпирика (prob_dist empirical, окно prob_window) или t-распределение (student, df по z, |z| ≤ 6)"
+    quantile5: "❓ пять квантильных LightGBM (α = 0,1; 0,3; 0,5; 0,7; 0,9) на ln RV − ln ноги; ŷ = нога·mean_k exp(q̂_k)"
+    note: "ряды prob — уже на уровне среднего (без отдельной поправки s²): в мета-строке calibrated = true"
+  boost_refit:
+    yearly: "одна модель на шаг (как R1)"
+    monthly: "❓ на каждый месяц val-года — обучение заново на строках, окна целей которых закончились до начала месяца, с числом деревьев годовой модели"
+    quarterly_warm: "❓ на каждый квартал — годовая модель + дообучение (init_model) на строках val-года, окна целей которых закончились до начала квартала: max(10, n/10) деревьев"
+  grid:
+    resid_small_v1: "LHS-60 (r2_resid_grid.py, список — models/designs/r2/r2_B_lhs60.csv), только LightGBM; XGB при lib = xgboost/both_avg — на текущих точках; ≤ 300 деревьев, early_stop = qlike_total; точка 61 — текущая (контроль)"
+  na_not_implemented: "data.target ≠ ln_mean, data.train_target_estimator ≠ RV10 — не в модуле B (ошибка, если пришли)"
+
+lhs:
+  file: models/designs/r2/r2_B_lhs60.csv
+  n: 60
+  seed: 20261026
+  levels:                     # протокол v3 п. 4 и v2 «Уровень 2»; уровень = floor(u·k)
+    num_leaves: [4, 8, 16]
+    max_depth: [2, 3]
+    min_data_in_leaf: [200, 500, 1000]
+    learning_rate: [0.01, 0.03]
+    lambda_l2: [1, 10, 100]
+    feature_fraction: [0.3, 0.5]
+    bagging_fraction: [0.7, 1.0]   # ❓ уровни не заданы протоколом; умолчание {0,7; 1,0}
+  nmax: 300
+  patience: 30
+
+# Протокол v4 (решение владельца 16:25), записано 26.10 до боевого счёта. Кто что задаёт:
+v4:
+  schema: "schema_v2 — проверка дизайна r2_core.validate; ключи B (boost.*, data.*) в v2 не менялись; boost.grid_point — точка LHS (p01…p60, p61_tekushchaya = текущая)"
+  features: "G0 (v3 на d0) + группы F из features_r2_v3.parquet (SHA 977a87d3… — r2_F_features.yaml combined; сверка при загрузке)"
+  rezhim_R2: "только шаги 1–6 (val ≤ 2021): build() проверяет year ≤ 2021, запись — r2_core.write_series (отказ ≥ 2022)"
+  skrining: "1 seed (42), lib = lightgbm — из дизайна (driver_v1/B_h*.yaml); 50% строк — run --row-frac 0.5 --row-seed 20261026 (драйвер); h = 1 — только группы J, K, L (драйвер)"
+  uroven_2: "BG run: 3 seed (42, 43, 44 — r2_S_driver.yaml D.seeds), LightGBM, grid = resid_small_v1, early_stop = qlike_total, ≤ lhs.nmax = 300 деревьев, patience = lhs.patience = 30; отсечение 60 → 30 → 15 → 8 — r2_halving.otsechenie (O) из r2_driver.gate_D, точка — boost.grid_point / --point"
+  finalisty: "10 seed (E.seeds_final), lib = both_avg (LightGBM + XGBoost; XGB — на текущих точках, ≤ 300 деревьев и qlike_total, если так в дизайне)"
+  early_stop: "Ъ дирижёр 26.10 ~17:45: ранняя остановка по году оценки недопустима ни в одной фазе, включая скрининг. Модуль переопределяет boost.early_stop дизайна (r2_roli.es_policy): всегда внутренняя складка — год vy−1 с эмбарго h (assert: год остановки < года оценки, окна целей складки кончаются до 1 января vy); ≤ 300 деревьев, patience 30; метрика — по цели (нативная метрика objective) в скрининге (--row-frac) и для роли feature, QLIKE итога — для остаточного ученика (residual, residual_std, offset). Остановка на val-году — только контроль движка с R1 (cmd_control)"
+  cross_fit: "K = 5 последовательных по дате блоков, эмбарго h торговых дней по обе стороны блока; оценщик — r2_nogi.fit_predict (L)"
+  kesh: "r2_dataset_cache (S): LightGBM Dataset — save_binary на /Volumes/RAMcache/r2_ds, XGBoost — массивы .npy + QuantileDMatrix в памяти процесса; ключ = ds_key(шаг, признаки, h, цель, SHA features_r2_v3) + SHA строк обучения, ln ноги, метки, весов, init_score, бинов шага 1 (reference) и отпечаток A (в родителе до fork); fork, num_threads = 1; R2_B_DSCACHE=0 — выкл. Детекторы leak — без кэша (портят A)"
+  es_kolbek: "qlike_total: обучение внутренней складки прекращается колбэком на n = best + patience (тот же n, что прежний цикл по 300 деревьям); R2_B_ES_CB=0 — прежний путь"
+  kontrol_kesha: "r2_roli.py kesh — ряды: прежний путь = без кэша = холодный = тёплый кэш, seed 43 тёплый = seed 43 без кэша, побайтно (np.array_equal)"
+
+smoke:                        # Мак: только код и дым (протокол v3 п. 6)
+  tickers: [SBER, LKOH, AFLT]
+  steps: [1, 2, 3]
+  seed: 42
+  hs: [1, 5, 22]
+  matrix: features_pit_v3.parquet          # до матрицы d0 агента F
+  legs: {main: "HARJ_emb_d0", alt: "HARX_inner_emb_d0"}   # ноги L (бывш. Э): R2/cache/E/<нога>_h{h}_lnall.parquet

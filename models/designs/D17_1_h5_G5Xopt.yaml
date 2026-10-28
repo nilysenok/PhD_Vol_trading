@@ -1,0 +1,13 @@
+boost: D17_1_h5_G5Xopt      # {boost}_{xgb|lgbm}_h5[_top5|_seeds4344]_val.parquet, шаги 1-9 (7-9 — точка шага 6)
+h: 5
+semeystvo: GLM с офсетом
+rychag: Д17.1
+opisanie: "бустинг gamma на уровне RV с офсетом ln HAR-X + s²/2 (init_score/base_margin), признаки V9-набора + ln HAR-X + блок Д7, без поправки на выходе; optuna-30 на v3"
+regen: data/regen
+test_dir: data/regen/test_locked/D17_1_h5_G5Xopt   # {boost}_{xgb|lgbm}_h5[_top5|_seeds4344]_test.parquet, шаги 1-9; не открывался
+osnova: D12_h5              # структура D12_h5 (V9 + Д8.12 + Д7), объектив и основа заменены (Huber -> gamma, HAR-J -> HAR-X)
+n_variantov: 4              # h=5: G5 (точки D12_h5, HAR-J), G5opt (optuna, HAR-J), G5X (точки D12_h5, HAR-X), G5Xopt (optuna, HAR-X)
+step10_dir: data/regen/final2/step10            # {boost}_{xgb|lgbm}_h5_s10_val.parquet (val 2025, seed 42/43/44; точка шага 6)
+step10_lock: data/regen/test_locked/final2/step10   # {boost}_{xgb|lgbm}_h5_s10_test.parquet (01-02.2026), не открывался
+kod: scripts/analysis/d17_1.py, d17_1_tune.py, d17_1_harx_base.py --steps 10, d17_1_step10.py (D17_BASE=harx, L2_FEAT=features_pit_v3.parquet, --blocks d7)
+cfg: '{"obj":"gamma","v9":true,"b01":true,"harf":true}'

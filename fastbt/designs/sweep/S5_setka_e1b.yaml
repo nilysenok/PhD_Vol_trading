@@ -1,0 +1,87 @@
+# Сетка Э1-б (Ж-031#Э1-б), S5 Pivot. До счёта; N фиксируется этим коммитом.
+# Схема sweep-setka v1, значения dostup и правила счёта N — docs/otchety/2026-10-27_setki_e1b.md §2–3.
+v: 1
+format: sweep-setka
+punkt: "Ж-031#Э1-б"
+obekt: {tip: strategiya, sid: S5, semya: Range}
+tochka: odna_konfiguratsiya
+etalon: A_ishodnaya
+period: {tsel: tune2018, kontrol: ctrl2019, validation: zakryto}
+komissiya: {otbor: 0.0004, pereschet: [0.00035]}
+rezhimy: [oat, faktornyy, optuna]
+
+bloki:
+  signal:
+    parametry:
+      - {imya: pivot_period, ishodnoe: weekly, v_A: [weekly, monthly], setka: [weekly, monthly], dostup: kod,
+         obosnovanie: "горизонт уровней: неделя (5 дней) или месяц (~21 день); дневные пивоты — только правкой"}
+      - {imya: pivot_type, ishodnoe: classic, v_A: [classic, fibonacci], setka: [classic, fibonacci], dostup: kod,
+         obosnovanie: "расстановка S1/R1; camarilla — только правкой"}
+      - {imya: filter_set, ishodnoe: 3, v_A: [2, 3, 4], setka: [1, 2, 3, 4], dostup: kod,
+         obosnovanie: "лестница «нет тренда»: fs1 ADX<35 … fs4 ADX<25, узкие BB, плоская SMA, спокойная σ; fs1 в коде есть, в A не бралась"}
+
+  filtry_zashity:
+    parametry:
+      - {imya: vf_porog, edinitsa: dolya_SMA20_obyoma, ishodnoe: 0.5, setka: [0.25, 0.5, 0.75, 1.0], dostup: obertka, pravka_znach: [0.25],
+         obosnovanie: "ликвидность дня"}
+
+  rm:
+    parametry:
+      - {imya: rm_tip, ishodnoe: pivot, v_A: [pivot, atr], setka: [pivot, atr, sqrt_rv], dostup: obertka,
+         obosnovanie: "уровни выхода: от пивотов, в ATR или в √RV (sqrt_rv — задел под E)"}
+
+  rm_pivot:
+    uslovie: {rm_tip: pivot}
+    parametry:
+      - {imya: sl_target, ishodnoe: next_level, v_A: [next_level, next_level_half], setka: [next_level, next_level_half], dostup: kod, obosnovanie: "стоп за следующим уровнем или на полпути"}
+      - {imya: tp_target, ishodnoe: P, v_A: [P, next_R, half_to_next], setka: [P, next_R, half_to_next], dostup: kod, obosnovanie: "цель: центр P, противоположный уровень или половина"}
+      - {imya: buffer, ishodnoe: 0.1, v_A: [0, 0.1, 0.2], setka: [0, 0.05, 0.1, 0.2, 0.3], dostup: kod, obosnovanie: "запас за уровнем в долях расстояния"}
+      - {imya: max_hold, edinitsa: dni, ishodnoe: 8, v_A: [5, 8, 10], setka: [3, 5, 8, 10, 15, 20], dostup: kod, obosnovanie: "диапазон живёт неделю … месяц"}
+      - {imya: breakeven, ishodnoe: false, v_A: [false, true], setka: [false, true], dostup: kod, obosnovanie: "безубыток после 0,5 пути к тейку"}
+      - {imya: cooldown_bars, edinitsa: dni, ishodnoe: 0, v_A: [0, 5], setka: [0, 2, 5, 10, 20], dostup: kod, obosnovanie: "пауза после стопа: пробой диапазона"}
+
+  rm_atr:
+    uslovie: {rm_tip: atr}
+    parametry:
+      - {imya: sl_mult, edinitsa: atr14, ishodnoe: 0.5, v_A: [0.3, 0.5, 0.75], setka: [0.3, 0.5, 0.75, 1.0, 1.5], dostup: kod, obosnovanie: "узкий стоп диапазона в ATR"}
+      - {imya: tp_mult, edinitsa: atr14, ishodnoe: 0.5, v_A: [0.3, 0.5, 0.75, 1.0], setka: [0.3, 0.5, 0.75, 1.0, 1.5], dostup: kod, obosnovanie: "тейк в ATR"}
+      - {imya: max_hold, edinitsa: dni, ishodnoe: 8, v_A: [5, 8, 10], setka: [3, 5, 8, 10, 15, 20], dostup: kod, obosnovanie: "срок диапазона"}
+      - {imya: breakeven_trigger, edinitsa: atr14, ishodnoe: null, v_A: [null, 1.0], setka: [null, 0.5, 1.0], dostup: kod, obosnovanie: "безубыток в ATR"}
+      - {imya: cooldown_bars, edinitsa: dni, ishodnoe: 0, v_A: [0, 5], setka: [0, 2, 5, 10, 20], dostup: kod, obosnovanie: "пауза после стопа"}
+      - {imya: time_decay, ishodnoe: false, v_A: [false, true], setka: [false, true], dostup: kod, obosnovanie: "сужение тейка со временем"}
+
+  rm_sqrt_rv:
+    uslovie: {rm_tip: sqrt_rv}
+    parametry:
+      - {imya: k_sl, edinitsa: sqrt_rv, ishodnoe: 0.75, setka: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0], dostup: obertka, obosnovanie: "стоп в σ (≈ 0,5 ATR, оценка)"}
+      - {imya: ratio_tp_sl, ishodnoe: 1.0, setka: [0.5, 1.0, 1.5, 2.0, 3.0], dostup: obertka, obosnovanie: "тейк/стоп; 1 — как 0,5/0,5 у A"}
+      - {imya: k_be, edinitsa: sqrt_rv, ishodnoe: null, setka: [null, 0.5, 1.0, 1.5, 2.0], dostup: obertka, obosnovanie: "безубыток в σ"}
+      - {imya: gamma_hold, ishodnoe: null, setka: [null, 0.5, 1.0], dostup: obertka, obosnovanie: "срок 10 дней ∝ (σ̄/σ)^γ"}
+      - {imya: okno_rv, edinitsa: dni, ishodnoe: 20, setka: [5, 10, 20, 60], dostup: obertka, obosnovanie: "окно реализованной σ"}
+
+  ispolnenie:
+    parametry:
+      - {imya: consec_entry, edinitsa: dni, ishodnoe: 1, v_A: [1, 2], setka: [1, 2, 3], dostup: kod, obosnovanie: "подтверждение"}
+      - {imya: min_strength, ishodnoe: 0.0, v_A: [0.0, 0.3, 0.5], setka: [0.0, 0.1, 0.2, 0.3, 0.5, 0.7], dostup: kod,
+         obosnovanie: "порог силы: глубина за S1/R1 в долях |R1−S1|"}
+      - {imya: q_sily, ishodnoe: 0.0, okno: 252, setka: [0.0, 0.5, 0.67, 0.75], dostup: obertka, obosnovanie: "квантиль силы по своей истории (как E0)"}
+      - {imya: exec_cooldown, edinitsa: dni, ishodnoe: 0, v_A: [0, 10], setka: [0, 3, 5, 10, 20], dostup: kod, obosnovanie: "пауза после выхода"}
+      - {imya: exec_min_hold, edinitsa: dni, ishodnoe: 0, v_A: [0, 5], setka: [0, 3, 5, 10], dostup: kod, obosnovanie: "по spec п. 13 почти не действует"}
+      - {imya: tf_min_hold, edinitsa: dni, ishodnoe: 0, v_A: [3, 5], setka: [0, 3, 5, 10, 20], dostup: kod, obosnovanie: "фильтр оборота: удержание"}
+      - {imya: tf_reentry, edinitsa: dni, ishodnoe: 0, v_A: [0, 1, 3, 5, 10], setka: [0, 1, 3, 5, 10], dostup: kod, obosnovanie: "запрет повторного входа"}
+
+zashito_bez_setki:
+  - "пороги внутри fs1–fs4: ADX 35/30/25, наклон SMA20 0,02/0,01, vol_regime 0,95/0,9, ширина BB < p30 за 252 (s56.py:23-34) — варьируются только лестницей filter_set"
+  - "выход по ADX14 > 30 для диапазона — движок (engine.py:127-130, unit.py:99); порог — только правкой"
+  - "вход на S1/R1 (не S2/R2) и выход на P — s56.py:51-58"
+  - "фильтр отбора A «≥ 1 сделка/год» — процедура A (approach_a.py:72), не параметр точки"
+
+faktornyy:
+  filter_set: [2, 3, 4]
+  max_hold: [5, 8, 15]
+  tp_target: [P, next_R, half_to_next]
+
+optuna: {n_trials: 100, sampler: TPE, seed: 20261027, prostranstvo: vse_bloki,
+         tsel: "контракт sweep_evaluate §4: среднее годовых Шарпов tune2018 − 0,5·σ (= Шарп 2018)"}
+
+N: {oat: 91, faktornyy: 27, optuna: 100, itogo: 218}
