@@ -12,6 +12,7 @@ import datetime as dt
 import functools
 import itertools
 import math
+import subprocess
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
@@ -100,16 +101,67 @@ def _ocenit(evr, led, y, p1, r1, best, pb0, it) -> dict:
                 verdikt="прошла" if ok else ("не прошла: нет соседей, плато не пройдено" if best["net_sosedey"] else "не прошла"))
 
 
+PLATA_SHORTA = (0.0, 0.05, 0.10, 0.15)       # годовых на шортовую ногу; 0 — основная колонка, остальные справочно (К-26)
+
+
+def sdvig_sigma(tickers: list) -> str:
+    """Д1 для σ̂ (ewma094) на 2018–2019: corr(Δσ², RV_{d+k}), k = −2…+1, по тикерам; пик обязан быть на k = 0."""
+    from fastbt import sigma_real as SR
+    rv, res = SR.load_rv(list(tickers)), []
+    for t, g in rv.groupby("ticker"):
+        r = g.set_index("date")["rv"].sort_index()
+        s, r = SR.sigma_all(r)["ewma094"], r[r.index < "2020-01-01"]
+        res.append(SR.proverka_sdvig(s.loc[r.index][r.index >= "2018-01-01"], r[r.index >= "2018-01-01"]))
+    ok = sum(x["ok"] for x in res)
+    return f"Д1 σ̂ ewma094, 2018–2019: пик на k=0 у {ok} из {len(res)} тикеров -> " + ("пройдена" if ok == len(res) else "НЕ ПРОЙДЕНА")
+
+
+def run_26(sid: str) -> list:
+    """Итерация 26: «только лонг» — одна конфигурация от P1 (`storona=long`), в ledger идёт только она; плата за шорт — справочно
+    (вне ledger, N не растёт). Стартует от ledger_it10 (вся матрица 1–10); пишет ledger_it26 один раз."""
+    S = P.load_setka(sid)
+    evr = PlusEvaluator(sid, etap1.build_inputs(sid), etap1.base_point(sid), 0.0004)
+    ev = lambda p, per: evr.evaluate({**YAKOR, **p}, per)                    # noqa: E731
+    led = K.load_ledger(sid, "ledger_it10.pkl", ev, cls=PlusLedger)
+    stale = bool(K.sverka_ledger(led, ev))        # ledger_it10 посчитан до #370 (02:46 < 09:47): строки не воспроизводятся
+    row = pd.read_csv(Path("docs/tables/zh047") / f"{sid}_itog_v2.csv", comment="#").iloc[-1]
+    p1 = {k: P._coerce(str(row[f"p_{k}"]), S["axes"][k]) for k in S["axes"]}
+    nan, n0 = float("nan"), led.n_unique
+    call = ev if stale else led                                                # устаревшая матрица не смешивается с новым движком
+    r_obe = call(p1, "train")
+    pb0 = nan if stale else V.pbo(V.matrix(led))
+    r_long = call({**p1, "storona": "long"}, "train")
+    pb1, out = (nan if stale else V.pbo(V.matrix(led))), []
+    for st, pl, r, pb in [("obe", 0.0, r_obe, pb0), ("long", 0.0, r_long, pb1)] + [
+            ("obe", f, ev({**p1, "plata_shorta": f}, "train"), nan) for f in PLATA_SHORTA[1:]]:
+        out.append(dict(strategiya=sid, storona=st, plata_shorta=pl, osnovnaya=pl == 0.0, **V.po_godam(r), obj=V.obj(r),
+                        pbo_obshchaya=pb, N_obshchee=nan if stale else led.n_unique, N_novyh=nan if stale else led.n_unique - n0,
+                        matrica="устарела: ledger до #370, PBO не считан" if stale else "ok", vhody=evr.inp.digest()[:16]))
+    path = OUT / "it26" / f"{sid}_itog.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
+    path.write_text(f"# статус: разработка 2018–2019, после аудита, после дивидендов; Ж-069 п. 3; validation не открыта\n"
+                    f"# коммит кода: {sha}; хэш входов: {out[0]['vhody']}; комиссия 0,04 %; плата за шорт — годовых, справочно\n", "utf-8")
+    pd.DataFrame(out).to_csv(path, mode="a", index=False)
+    if not stale:
+        K.save_ledger(sid, led, "ledger_it26.pkl")                             # устаревшую матрицу не размножаем
+    return out
+
+
 def vorota(r: dict) -> bool:
     return bool(r.get("proshla")) and all(bool(r.get(k)) for k in ("G1_pbo", "G2_sdelki", "G3_plato", "G4_osi", "G5_s9"))
 
 
 def main(argv=None) -> dict:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--it", type=int, required=True, choices=(3, 4, 10))
+    ap.add_argument("--it", type=int, required=True, choices=(3, 4, 10, 26))
     ap.add_argument("--strategii", nargs="+", required=True)
     ap.add_argument("--jobs", type=int, default=6)
     a = ap.parse_args(argv)
+    if a.it == 26:
+        print(sdvig_sigma(etap1.build_inputs(a.strategii[0]).sk.tickers))
+        with ProcessPoolExecutor(max_workers=max(1, min(a.jobs, 3))) as ex:
+            return dict(rows=list(ex.map(run_26, a.strategii)))
     if a.it == 10:
         from fastbt.zh051_iter10 import run_10 as fn
     else:

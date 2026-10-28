@@ -28,8 +28,12 @@ PLUS_NET = dict(top_k=NET, sektor_trend=NET, shirina=NET, ma_n=200, porog_shirin
 PLUS_OSI = ("top_k", "sektor_trend", "shirina")
 
 
+OBE, LONG = "obe", "long"          # правило стороны итерации 26 (не ось сетки): pt["storona"]; нет ключа = обе стороны
+
+
 def plus_on(pt: dict) -> bool:
-    return any(pt.get(a, NET) != NET for a in PLUS_OSI)
+    """Оси К3/К4 включены, либо правило «только лонг» (итерация 26), либо плата за шорт > 0."""
+    return any(pt.get(a, NET) != NET for a in PLUS_OSI) or pt.get("storona", OBE) != OBE or float(pt.get("plata_shorta", 0.0)) > 0
 
 
 def modul(name: str):
@@ -43,6 +47,23 @@ def modul(name: str):
 def side_gate(d: np.ndarray, long_ok: np.ndarray, short_ok: np.ndarray) -> np.ndarray:
     """Лонг-сделки гейтятся маской лонга, шорт-сделки — маской шорта; смена знака без нуля — две сделки."""
     return gate_trades(np.maximum(d, 0.0), long_ok) + gate_trades(np.minimum(d, 0.0), short_ok)
+
+
+def only_long(d: np.ndarray) -> np.ndarray:
+    """Правило «только лонг» (К-б1): `gate_trades` с allow_long=True, allow_short=False — шорт-сделки Sk пропущены целиком."""
+    return side_gate(d, np.ones(len(d), bool), np.zeros(len(d), bool))
+
+
+def charge_short(g: np.ndarray, trades: list, days: list, w: np.ndarray, win: tuple, plata: float) -> None:
+    """Справочная плата за шортовую ногу `plata` (годовых): вес сделки × plata/252 за каждую торговую строку шорта, из g окна."""
+    a, b = win
+    for tr in trades:
+        if tr.side >= 0:
+            continue
+        stop = len(days) if tr.exit_day is None else tr.exit_day          # строки дохода: row0 … последняя до дня выхода
+        for r in range(max(tr.row0, a), min(stop, b)):
+            if not days[r].pusto:
+                g[r - a] -= float(w[tr.d_sig]) * plata / 252.0
 
 
 class PlusEvaluator(AnsamblEvaluator):
@@ -133,6 +154,8 @@ class PlusEvaluator(AnsamblEvaluator):
                 lg, sh = modul("e1_sektor").allow(pt, t, dates, self._ctx())
                 lg, sh = self._kontrol_sdvig(pt, np.asarray(lg, bool), np.asarray(sh, bool))
                 d = side_gate(d, lg, sh)
+            if pt.get("storona", OBE) == LONG:
+                d = only_long(d)
             sg = inp.sigma[pt["sigma"]][t][:b + 1]
             S[t] = dict(d=d, mag=mag, dates=dates, b=b, s0=s0, sg=sg)
         if pt["top_k"] != NET:                                # проход 2: слоты по всем тикерам
@@ -148,8 +171,11 @@ class PlusEvaluator(AnsamblEvaluator):
             if pt["razmer"] != "ravnyy":
                 w = rezhim_e1.razmer_ves(s["sg"], "obratnyj", float(pt["razmer"]) / 100.0)
             p = params_of(pt, inp.tick[t], h, False, self.comm)
-            res = run_e1(t, days, s["d"], s["sg"], p, close=inp.close_n6[t][:s["b"] + 1], w=w * s["mag"], win=(a, s["b"]),
+            ww = w * s["mag"]
+            res = run_e1(t, days, s["d"], s["sg"], p, close=inp.close_n6[t][:s["b"] + 1], w=ww, win=(a, s["b"]),
                           div=inp.div[t][:s["b"] + 1])
+            if float(pt.get("plata_shorta", 0.0)) > 0:
+                charge_short(res.g, res.trades, days, ww, (a, s["b"]), float(pt["plata_shorta"]))
             out.append((ti, res, a, s["b"]))
         return out
 
