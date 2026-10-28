@@ -38,6 +38,14 @@ def tick_of(b: pd.DataFrame) -> float:
     return max(out) if out else 0.0
 
 
+def _minutes(b: pd.DataFrame) -> np.ndarray:
+    """Начало каждого бара (ts), минуты от полуночи (Л-3); без баров — пустой массив, колонка ts не читается."""
+    if not len(b):
+        return np.empty(0, np.int64)
+    ts = pd.to_datetime(b["ts"])
+    return (ts.dt.hour * 60 + ts.dt.minute).to_numpy(np.int64)
+
+
 def build_days(t: str, dates: np.ndarray, close: np.ndarray, s0: int, i1: int, end: pd.Timestamp, src=None, start: pd.Timestamp | None = None,
                last_year: int | None = None):
     """Day по датам s0…i1 (дни без баров — pusto; i1 — одна свеча close Н6) и тик тикера.
@@ -49,11 +57,14 @@ def build_days(t: str, dates: np.ndarray, close: np.ndarray, s0: int, i1: int, e
     b = load_bars5m(t, str((start or START).date()), str((end - pd.Timedelta(days=1)).date()), "s_predotkrytiem", src=src)
     b = b[~b["pusto"]]
     bd = pd.to_datetime(b["date"]).dt.normalize()
+    b = b.assign(_t=_minutes(b))
     grp = {d: g[["open", "high", "low", "close"]].to_numpy(float) for d, g in b.groupby(bd)}
+    grt = {d: g["_t"].to_numpy(np.int64) for d, g in b.groupby(bd)}
     days, empty = [], np.empty(0)
     for i in range(s0, i1):
-        a = grp.get(pd.Timestamp(dates[i]))
-        days.append(Day(empty, empty, empty, empty, True) if a is None else Day(a[:, 0], a[:, 1], a[:, 2], a[:, 3], False))
+        key = pd.Timestamp(dates[i])
+        a = grp.get(key)
+        days.append(Day(empty, empty, empty, empty, True) if a is None else Day(a[:, 0], a[:, 1], a[:, 2], a[:, 3], False, t=grt[key]))
     days.append(_one_bar(float(close[i1])))
     return days, tick_of(b)
 
