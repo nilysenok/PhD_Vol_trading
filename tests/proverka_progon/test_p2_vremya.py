@@ -2,7 +2,19 @@
 Код (fastbt/exec_e_vremya.py, Day.t, Result.x_t, Run2) пишется параллельно: до него тесты красные.
 Мутации (в отдельной копии): bar_do берёт бар, кончающийся после hhmm; выход по сигналу в 15:00 дня x вместо x+1 (Д2);
 выход по τ — не в день x; комиссия не в строке начала интервала (№5); стоп после лимита выхода не первый (№3);
-open2 берёт close/не open первого бара; нет бара — выход не по close Н6; x_t считает выходы по close."""
+open2 берёт close/не open первого бара; нет бара — выход не по close Н6; x_t считает выходы по close.
+
+Переписано под Ж-086 п. 4 (тестировщик П-2б, 28.10). Правило: open2 = open бара, начинающегося в 10:00; 15:00 и 17:00 =
+open бара, начинающегося в эту минуту (и для сигнала на x+1, и для τ); нет бара ровно в hhmm — open первого бара позже
+в тот же день, нет и его — open первого бара следующего дня. Что и почему изменено:
+- удалены тесты bar_do (индекс бара, кончающегося до hhmm): кодируют старое правило; новое проверяется через движок
+  (tests/proverka_progon/test_p2b_vremya10.py и ниже), потому что имя и форма вспомогательной функции — решение кодера Л-17;
+- test_signal_vyhod_na_x_plyus_1, test_tau_vyhod_*, test_signal_komissiya_*, test_shortovyj_*: цена выхода — open бара
+  15:00 (индекс 62) / 17:00 (86), а не close 14:55 (61) / 16:55 (85); день, комиссия, причина, знак — как были;
+- test_signal_open2, test_tau_open2_*: open бара 10:00 (индекс 2 при старте 09:50), а не d.o[0];
+- test_korotkij_den_*: день без бара ≥ 15:00 теперь выходит по open бара 10:00 следующего дня (уточнение дирижёра 28.10:
+  не первый бар дня), не по close Н6.
+Не связанные с правилом (стоп до бара выхода идёт первым, x_t, комиссия на конце окна, № 2–5) не менялись."""
 import numpy as np
 import pytest
 
@@ -19,40 +31,7 @@ def tday(p, n=108, start=590, skip=()):
     return Day(c - 0.005, c, c - 0.005, c, False, t=t)
 
 
-# --- bar_do: индекс последнего бара с t + 5 <= hhmm ---
-def test_bar_do_izvestnyj_otvet():
-    from fastbt.exec_e_vremya import bar_do
-    d = tday(100.0)
-    assert (bar_do(d, 900), bar_do(d, 1020)) == (61, 85)
-
-
-def test_bar_do_granitsa_vklyuchaet_konchayushchijsya_rovno():
-    from fastbt.exec_e_vremya import bar_do
-    d = tday(100.0)
-    assert d.t[61] + 5 == 900 and d.t[62] + 5 > 900          # бар 61 кончается в 15:00, бар 62 — позже
-    assert bar_do(d, 899) == 60 and bar_do(d, 900) == 61 and bar_do(d, 904) == 61 and bar_do(d, 905) == 62
-
-
-def test_bar_do_korotkij_den_none():
-    from fastbt.exec_e_vremya import bar_do
-    assert bar_do(tday(100.0, n=40), 900) is None and bar_do(tday(100.0, n=40), 1020) is None
-
-
-def test_bar_do_korotkij_den_do_14_55():
-    from fastbt.exec_e_vremya import bar_do
-    d = tday(100.0, n=61)                                      # последний бар 14:50–14:55 → индекс 60 при hhmm=900
-    assert bar_do(d, 900) == 60
-
-
-def test_bar_do_propushchennyj_bar_sdvigaet_indeks():
-    from fastbt.exec_e_vremya import bar_do
-    assert bar_do(tday(100.0, skip=(61,)), 900) == 60          # бара 14:55 нет — последний кончается в 14:55 (бар 60)
-    assert bar_do(tday(100.0, skip=(10,)), 900) == 60          # дыра раньше — индекс сдвигается на 1
-
-
-def test_bar_do_start_10_00():
-    from fastbt.exec_e_vremya import bar_do
-    assert bar_do(tday(100.0, n=100, start=600), 900) == 59
+B10, B15, B17 = 2, 62, 86              # индексы баров, начинающихся в 10:00 / 15:00 / 17:00 при старте дня 09:50, без дыр
 
 
 def test_day_t_po_umolchaniyu_none():
@@ -64,7 +43,7 @@ def test_day_t_po_umolchaniyu_none():
     ("close", "signal", (0, None)), ("close", "vremya", (0, None)),
     ("1500", "vremya", (0, 900)), ("1500", "signal", (1, 900)),
     ("1700", "vremya", (0, 1020)), ("1700", "signal", (1, 1020)),
-    ("open2", "vremya", (1, None)), ("open2", "signal", (1, None)),
+    ("open2", "vremya", (1, 600)), ("open2", "signal", (1, 600)),      # Ж-086 п. 4: open2 = бар 10:00 (600 мин.)
 ])
 def test_vyhod_plan(tv, pr, ожид):
     from fastbt.exec_e_vremya import vyhod_plan
@@ -84,20 +63,23 @@ def go(days, sig, **kw):
 SIG_X = [1, 1, 0, 0, 0]               # решение о выходе по сигналу — на close дня x = 2
 
 
-@pytest.mark.parametrize("tv,bar", [("1500", 61), ("1700", 85)])
+@pytest.mark.parametrize("tv,bar", [("1500", B15), ("1700", B17)])
 def test_signal_vyhod_na_x_plyus_1(tv, bar):
     days = lenta()
     r = go(days, SIG_X, t_vyhod=tv)
     t = r.trades[0]
     assert (t.exit_day, t.exit_bar, t.reason) == (3, bar, "signal")
-    assert t.exit_px == days[3].c[bar]
+    assert t.exit_px == days[3].o[bar]                          # Ж-086 п. 4: open бара, начинающегося в hhmm
+    assert t.exit_px != days[3].c[bar - 1]                      # не close предыдущего бара (старое правило)
     assert r.x_t == 1
 
 
 def test_signal_open2():
     days = lenta()
     t = go(days, SIG_X, t_vyhod="open2").trades[0]
-    assert (t.exit_day, t.exit_bar, t.reason, t.exit_px) == (3, 0, "signal", days[3].o[0])
+    assert days[3].t[B10] == 600                                # бар 10:00
+    assert (t.exit_day, t.exit_bar, t.reason, t.exit_px) == (3, B10, "signal", days[3].o[B10])
+    assert t.exit_px != days[3].o[0]                            # не open первого бара дня (09:50)
 
 
 def test_close_prezhnee_povedenie():
@@ -111,29 +93,29 @@ def test_tau_vyhod_v_den_x_i_komissiya_v_nachale_intervala():
     days = lenta()
     r = go(days, [1] * 5, tau=2, reentry=False, t_vyhod="1500")
     t = r.trades[0]
-    assert (t.exit_day, t.exit_bar, t.reason, t.exit_px) == (2, 61, "vremya", days[2].c[61])   # τ известен заранее: день x
+    assert (t.exit_day, t.exit_bar, t.reason, t.exit_px) == (2, B15, "vremya", days[2].o[B15])   # τ известен заранее: день x
     assert r.cost[0] == C and r.cost[1] == C and r.cost[2] == 0.0      # вход по close 0; выход внутри дня 2 — в строке 1
-    assert r.gross[1] == pytest.approx(np.log(days[2].c[61] / days[1].c[-1]))
+    assert r.gross[1] == pytest.approx(np.log(days[2].o[B15] / days[1].c[-1]))
 
 
 def test_tau_open2_na_sleduyushchij_den():
     days = lenta()
     t = go(days, [1] * 5, tau=2, reentry=False, t_vyhod="open2").trades[0]
-    assert (t.exit_day, t.exit_bar, t.reason, t.exit_px) == (3, 0, "vremya", days[3].o[0])
+    assert (t.exit_day, t.exit_bar, t.reason, t.exit_px) == (3, B10, "vremya", days[3].o[B10])
 
 
 def test_signal_komissiya_v_stroke_nachala_intervala_i_dokhod():
     days = lenta()
     r = go(days, SIG_X, t_vyhod="1500")
     assert r.cost[0] == C and r.cost[2] == C and r.cost[3] == 0.0         # выход дня 3 — в строке 2 (начало интервала)
-    assert r.gross[2] == pytest.approx(np.log(days[3].c[61] / days[2].c[-1]))
+    assert r.gross[2] == pytest.approx(np.log(days[3].o[B15] / days[2].c[-1]))
     assert r.gross[3] == 0.0 and r.pos[2] == 1.0 and r.pos[3] == 0.0
 
 
 def test_shortovyj_signal_1500():
     days = lenta()
     t = go(days, [-1, -1, 0, 0, 0], t_vyhod="1500").trades[0]
-    assert (t.side, t.exit_day, t.exit_bar, t.exit_px) == (-1, 3, 61, days[3].c[61])
+    assert (t.side, t.exit_day, t.exit_bar, t.exit_px) == (-1, 3, B15, days[3].o[B15])
 
 
 def test_stop_do_bar_do_idyot_pervym():
@@ -149,15 +131,14 @@ def test_stop_do_bar_do_idyot_pervym():
     assert r.x_t == 0                                          # стоп — не «не по close»
 
 
-def test_korotkij_den_vykhod_po_close_N6():
+def test_korotkij_den_vykhod_po_open_pervogo_bara_sleduyushchego_dnya():
     days = lenta()
-    days[3] = tday(103.0, n=40)
+    days[3] = tday(103.0, n=40)                                # последний бар 13:05: баров ≥ 15:00 в дне нет
     r = go(days, SIG_X, t_vyhod="1500")
     t = r.trades[0]
-    assert (t.exit_day, t.reason, t.exit_px) == (3, "signal", days[3].c[-1])
-    assert r.x_t == 0
-    r2 = run("T", days, np.asarray(SIG_X), np.full(5, 0.02), Params(comm=C, tau=None, t_vyhod="1500"), close=[101, 102, 103, 104.5, 105])
-    assert r2.trades[0].exit_px == 104.5                       # close Н6 дня исполнения, не последний 5-мин бар
+    assert (t.exit_day, t.exit_bar, t.reason, t.exit_px) == (4, B10, "signal", days[4].o[B10])   # open бара 10:00 дня x+2
+    assert t.exit_px != days[3].c[-1] and t.exit_px != days[4].o[0]    # не close последнего бара, не первый бар дня
+    assert r.x_t == 1
 
 
 @pytest.mark.parametrize("tv", ["close", "1500", "1700", "open2"])
