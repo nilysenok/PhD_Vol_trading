@@ -23,6 +23,8 @@ def canon_v2(sid: str, pt: dict) -> dict:
         q.update(R=NET, k_tr=NET, bezubytok=NET)
     else:
         q["k_x"] = NET
+    if q.get("tejk_signal", NET) != NET:
+        q.update(R=NET, k_x=NET)                    # Ж-084: один тейк — от уровня сигнала
     if q.get("vhod") == "rynok":
         q.update(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod")
     if sid == "S5" and q.get("storona") == "short_shag1":

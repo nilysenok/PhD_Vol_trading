@@ -94,15 +94,15 @@ def _trades(ticker, ti, tf, comm) -> list:
 def _slow_only(p: Params, ed) -> bool:
     """Оси прогона Л-2 (Run2: ed, zhizn, gap_propusk, t_vyhod, bar_plus, stop_tik) ядро не повторяет — эталон."""
     f = getattr(exec_e, "_new_axes", None)
-    return ed is not None or (f is not None and f(p, ed))
+    return ed is not None or p.tejk != "net" or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
 
 
-def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None) -> Result:
-    """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси Run2 — медленным путём."""
+def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None) -> Result:
+    """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси Run2 и tejk — медленным путём."""
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.asarray(sigma, float)
     if _slow_only(p, ed) or not len(days) or not np.isfinite(sig.astype(float)).all():
-        kw = {} if ed is None else {"ed": ed}
+        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M)) if v is not None}
         return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
         raise ValueError("days, sig, sigma, close разной длины")
@@ -251,7 +251,8 @@ def pokryto(pt: dict) -> bool:
     """§1.8 контракта ledger v2.0: быстрый слой покрывает точки осей zh047 (v1.0); новые оси §1.1 — только в умолчании,
     `filtr` — только net | cbr (прежние `sobytiya`), заём — только 0. Остальное драйвер считает медленным путём."""
     from fastbt.etap1_eval import NET
-    umolch = dict(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod", t_vyhod="close", k_x=NET, storona="obe")
+    umolch = dict(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod", t_vyhod="close", k_x=NET, storona="obe",
+                  tejk_signal=NET)                  # Ж-084: tejk_signal ≠ net — медленный путь (эталон)
     return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and pt.get("filtr", NET) in (NET, "cbr")
             and pt.get("sobytiya", NET) in (NET, "cbr") and pt.get("vyhod", NET) in (NET, "lim")
             and pt.get("zaem", 0) in (0, "0", "0.0", NET, None))
