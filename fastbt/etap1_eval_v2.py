@@ -87,12 +87,14 @@ class EvaluatorV2(Evaluator):
             p = replace(p, a=float(nov["k_x"]))                             # тейк без стопа; при k_s ≠ net k_x не действует
         if nov["tejk_signal"] != NET:                                       # Ж-084: один тейк, от M (canon_v2: R, k_x = net)
             p = replace(p, R=None, a=None, tejk=nov["tejk_signal"])
+            if nov["tejk_signal"] == tejk_signal.RODNOY:                    # Ж-091 п. 1.1: родной выход — только заявка; сигнал и τ выключены
+                p = replace(p, exit_signal=False, tau=None)
         ext = {k: int(vz[k]) for k in ("bar_plus", "stop_tik") if k in vz}
         if nov["zhizn"] != "den":
             ext["zhizn"] = int(nov["zhizn"])
         if nov["gap"] == "propusk":
             ext["gap_propusk"] = True
-        if str(nov["t_vyhod"]) != "close":
+        if str(nov["t_vyhod"]) != "close" and nov["tejk_signal"] != tejk_signal.RODNOY:     # rodnoy: t_vyhod схлопнут (canon_v2)
             ext["t_vyhod"] = str(nov["t_vyhod"])
         return replace(p, **ext) if ext else p
 
@@ -119,7 +121,7 @@ class EvaluatorV2(Evaluator):
                 w = rezhim_e1.razmer_ves(sg, "obratnyj", float(pt["razmer"]) / 100.0)
             ed = self._ed(t, "mediana" if vz.get("sigma_lim_mediana") else nov["ed_lim"], sg, dates, s0, b)
             p = self._params(pt, t, h, anchor, nov, vz)
-            tm = None if nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, sp, t, s0, b)
+            tm = None if nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, sp, t, s0, b, nov["tejk_signal"] == tejk_signal.RODNOY)
             kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=ed, tejk_M=tm, **self.fdr_kw())
             out.append((ti, self._ladder(t, days, sig, sg, p, w, nov["lestnica"], kw), a, b))
         return out
