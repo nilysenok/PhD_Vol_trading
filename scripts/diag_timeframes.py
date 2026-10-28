@@ -32,9 +32,13 @@ A, B = pd.Timestamp("2016-01-01"), pd.Timestamp("2020-01-01")
 STATUS = "разработка train4 2016-2019, до аудита; потолок, не результат"
 
 
-def frames(ticker: str) -> dict:
-    b10 = ba.load_10m(ticker, "2020-01-01", MAIN)
-    b10 = b10[b10["date"] >= pd.Timestamp("2015-01-01")]
+PERIODS = {"train4": ("2016-01-01", "2020-01-01", "2015-01-01"), "test1": ("2022-01-01", "2025-01-01", "2021-01-01")}
+
+
+def frames(ticker: str, per: str = "train4") -> dict:
+    _, end, warm = PERIODS[per]
+    b10 = ba.load_10m(ticker, end, MAIN)
+    b10 = b10[b10["date"] >= pd.Timestamp(warm)]
     dd = ba.daily(b10)
     fr = {k: ba.resample(b10, ba.K[k]) for k in ("10m", "30m", "1h", "2h")}
     fr["den"], fr["nedelya"] = dd, ba.weekly(dd)
@@ -74,18 +78,18 @@ def returns(f: pd.DataFrame, dclose: np.ndarray) -> np.ndarray:
     return out
 
 
-def one(f: pd.DataFrame, dclose, fam: str, mode: str, rng) -> tuple:
+def one(f: pd.DataFrame, dclose, fam: str, mode: str, rng, a=A, b=B, reps=REPS) -> tuple:
     side = signal(f, fam)
     dt = f["date"]
-    elig = ((dt >= A) & (dt < B)).values
+    elig = ((dt >= a) & (dt < b)).values
     if mode == "den_1850":
         elig &= (dt != dt.shift(-1)).values
     r = returns(f, dclose)[elig]
     x = r - np.nanmean(r, axis=0)
     s, d = side[elig], dt.values[elig]
     sg = s != 0
-    sh_s, sh_c = np.zeros((REPS, x.shape[1])), np.zeros((REPS, x.shape[1]))
-    for i in range(REPS):
+    sh_s, sh_c = np.zeros((reps, x.shape[1])), np.zeros((reps, x.shape[1]))
+    for i in range(reps):
         sp = s[rng.permutation(len(s))]
         v = sp[sp != 0, None] * x[sp != 0]
         sh_s[i], sh_c[i] = np.nansum(v, 0), (~np.isnan(v)).sum(0)
@@ -93,14 +97,15 @@ def one(f: pd.DataFrame, dclose, fam: str, mode: str, rng) -> tuple:
 
 
 def worker(args: tuple) -> dict:
-    k, ticker = args
-    fr, dclose = frames(ticker)
+    k, ticker, per, reps = args
+    a, b = (pd.Timestamp(x) for x in PERIODS[per][:2])
+    fr, dclose = frames(ticker, per)
     rng = np.random.default_rng(1000 + k)
     res = {}
     for tf in TFS:
         for fam in FAMS:
             for mode in (("den_1850",) if tf in ("den", "nedelya") else ("den_1850", "kazhdyj_bar")):
-                res[(tf, fam, mode)] = one(fr[tf], dclose, fam, mode, rng)
+                res[(tf, fam, mode)] = one(fr[tf], dclose, fam, mode, rng, a, b, reps)
     return res
 
 
@@ -111,7 +116,7 @@ def cluster_t(days: np.ndarray, x: np.ndarray) -> float:
     return float(m / se) if se > 0 else float("nan")
 
 
-def rows(key: tuple, parts: list) -> list:
+def rows(key: tuple, parts: list, years: int = 4, status: str = STATUS) -> list:
     tf, fam, mode = key
     d = np.concatenate([p[0] for p in parts])
     x = np.concatenate([p[1] for p in parts])
@@ -122,16 +127,16 @@ def rows(key: tuple, parts: list) -> list:
         ok = ~np.isnan(x[:, j])
         m = float(x[ok, j].mean()) if ok.any() else float("nan")
         sh = sh_s[:, j] / np.maximum(sh_c[:, j], 1)
-        out.append(dict(tf=tf, semejstvo=fam, rezhim=mode, gorizont=h, n_sig=int(ok.sum()), sig_v_god=len(d) / 4,
+        out.append(dict(tf=tf, semejstvo=fam, rezhim=mode, gorizont=h, n_sig=int(ok.sum()), sig_v_god=len(d) / years,
                         dolya_dnej=nds / nd, spred_pct=100 * m, t_klaster=cluster_t(d[ok], x[ok, j]),
                         spred_posle_izderzhek_pct=100 * (m - COST), ctrl_poz=float((sh < m).mean()),
-                        ctrl_sred_pct=100 * float(sh.mean()), status=STATUS))
+                        ctrl_sred_pct=100 * float(sh.mean()), status=status))
     return out
 
 
 def main() -> None:
     with Pool(4) as pool:
-        per = pool.map(worker, list(enumerate(TICKERS)))
+        per = pool.map(worker, [(k, t, "train4", REPS) for k, t in enumerate(TICKERS)])
     out = [r for key in per[0] for r in rows(key, [p[key] for p in per])]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(out).round(4).to_csv(OUT, index=False)
