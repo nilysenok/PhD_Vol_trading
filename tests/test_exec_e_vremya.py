@@ -41,7 +41,7 @@ def test_setka_vremeni_bar_15_00_i_17_00():
     ("close", "signal", (0, None)), ("close", "vremya", (0, None)),
     ("1500", "vremya", (0, 900)), ("1500", "signal", (1, 900)),
     ("1700", "vremya", (0, 1020)), ("1700", "signal", (1, 1020)),
-    ("open2", "vremya", (1, None)), ("open2", "signal", (1, None)),
+    ("open2", "vremya", (1, 600)), ("open2", "signal", (1, 600)),      # Ж-086 п. 4: open2 = бар 10:00 (600 мин.)
 ])
 def test_vyhod_plan_tablica(tv, pr, ozhid):
     assert vyhod_plan(tv, pr) == ozhid
