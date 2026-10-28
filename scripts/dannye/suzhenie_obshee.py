@@ -41,8 +41,28 @@ def sha_file(path):
     return h.hexdigest()
 
 
+def kanon_stolbec(c):
+    """Столбец без мусора под null: данные в пустых слотах произвольны (NaN->null в pandas, нули после parquet)."""
+    if c.null_count == 0:
+        return c
+    typ = c.type
+    if pa.types.is_string(typ) or pa.types.is_large_string(typ):
+        zero = pa.scalar("", typ)
+    elif pa.types.is_integer(typ) or pa.types.is_floating(typ) or pa.types.is_temporal(typ) or pa.types.is_boolean(typ):
+        zero = pa.scalar(0).cast(typ) if not pa.types.is_boolean(typ) else pa.scalar(False)
+    else:
+        return pa.chunked_array([pa.array(c.to_pylist(), typ)])
+    return c.fill_null(zero)
+
+
 def sha_tabl(t):
-    """sha сериализованной таблицы (без вывода значений)."""
+    """sha таблицы (без вывода значений) по содержимому: не зависит от разбиения на чанки (IPC-байты включают
+    границы батчей) и от мусора под null; чувствителен к именам, типам, значениям, null/NaN и порядку строк."""
+    t = t.combine_chunks()
+    cols = [t.column(i) for i in range(t.num_columns)]
+    arrs = [kanon_stolbec(c) for c in cols] + [c.is_valid() for c in cols if c.null_count]
+    names = t.column_names + [f"~valid:{i}" for i, c in enumerate(cols) if c.null_count]
+    t = pa.table(arrs, names=names).combine_chunks()
     sink = pa.BufferOutputStream()
     with ipc.new_stream(sink, t.schema) as w:
         w.write_table(t)

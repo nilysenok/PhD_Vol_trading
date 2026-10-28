@@ -11,6 +11,7 @@ test1:  2022–2024, ТЕ ЖЕ точки (перебора и выбора на
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 import warnings
 from pathlib import Path
@@ -51,9 +52,24 @@ def zapis(df: pd.DataFrame, name: str, cfg: dict) -> None:
     (out / name).write_text(cfg["shapka"] + df.to_csv(index=False), encoding="utf-8")
 
 
+@contextlib.contextmanager
+def modul_period(ps, period: str):
+    """progon_sobol.PERIOD (читает fabrika_real) и KUB — на время расчёта; прежние значения возвращаются в finally (без глобального следа)."""
+    old = ps.PERIOD, ps.KUB
+    ps.PERIOD, ps.KUB = period, KUB_DIR / "kub_x.yaml"   # кубы прохода 1 (коммит 63906a32): ledger не восстанавливается из кубов прохода 2
+    try:
+        yield
+    finally:
+        ps.PERIOD, ps.KUB = old
+
+
 def schet(sid: str, period: str, n_pl: int | None = None, n_k2: int = N_K2) -> None:
     from fastbt import progon_kontrol as pk, progon_sobol as ps
-    ps.KUB = KUB_DIR / "kub_x.yaml"                      # кубы прохода 1 (коммит 63906a32): ledger не восстанавливается из кубов прохода 2
+    with modul_period(ps, period):
+        _schet(ps, pk, sid, period, n_pl, n_k2)
+
+
+def _schet(ps, pk, sid: str, period: str, n_pl: int | None, n_k2: int) -> None:
     cfg, n_pl = PERIODS[period], n_pl if n_pl is not None else PERIODS[period]["n_placebo"]
     top, info = vybor(LEDGER, sid)                       # точки выбраны на train4 (ledger прохода 1); на test1 не перебираются
     print(sid, period, info, flush=True)

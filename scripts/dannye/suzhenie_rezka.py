@@ -38,9 +38,7 @@ def razrezat(src, col, cut):
 
 
 def put_z2(parent):
-    """Z2 открыт для чтения: в пути не должно быть сегмента test_locked.
-    data/regen/test_locked/final3 -> regen/final3; data/models_cache/test_locked/boost -> models_cache/boost.
-    Корни различаются сегментами до test_locked, поэтому коллизий нет; пути без test_locked не меняются."""
+    """Z2 открыт: из пути убран сегмент test_locked (data/regen/test_locked/x -> regen/x); пути без него не меняются."""
     parts = parent.parts
     if "test_locked" not in parts:
         return parent
@@ -53,6 +51,12 @@ def chasti_puti(rel, z2, z3):
     p = Path(rel)
     base = re.sub(r"_test", "", p.stem)
     return Path(z2) / put_z2(p.parent) / f"{base}__t1.parquet", Path(z3) / p.parent / f"{base}__h25.parquet"
+
+
+def put_kopii_a(rel):
+    """Класс «а» (Ж-118): копия в Z2 по правилу пути части «в», суффикс __a вместо __t1; относительно z2."""
+    p = Path(rel)
+    return put_z2(p.parent) / f"{re.sub('_test', '', p.stem)}__a{p.suffix}"
 
 
 def proveri(orig, parts, col, dates, h, cut):
@@ -99,7 +103,10 @@ def proverka_chastey(parts, col, h, cal=None):
 def rezat_file(koren, rel, m, dirs, primenit, itog):
     """Возвращает True при нарушении (status=FAIL); itog — счётчики классов для ITOG."""
     z2, z3, ish = dirs
-    src = Path(koren) / rel
+    src, dst = Path(koren) / rel, Path(koren) / ish / rel
+    if dst.exists():  # исходник уже перенесён: возобновление, без перезаписи
+        import suzhenie_vozobn as vz  # отложенный импорт: vz сам импортирует этот модуль
+        return vz.proverit(koren, rel, dirs, itog)
     dates = ob.dates_of(src, m["date_col"])
     klass, cut, h = ob.classify(rel, m, dates)
     itog[klass] += 1
@@ -119,7 +126,6 @@ def rezat_file(koren, rel, m, dirs, primenit, itog):
         return True
     cnt.update(min_h25=mn, n_h25_2024=n24)
     p1, p3 = chasti_puti(rel, Path(koren) / z2, Path(koren) / z3)
-    dst = Path(koren) / ish / rel
     if not primenit:
         ob.vyvod(**base, **cnt, status="dry-run")
         return
@@ -172,6 +178,7 @@ def posle(koren, vkhod, dirs, do_tsv, out, primenit):
     bad = 0
     for d in ob.chitai_tsv(do_tsv):
         p1, p3 = chasti_puti(d["path"], z2, z3)
+        ka = by.get((Path(z2) / put_kopii_a(d["path"])).as_posix())
         same = by.get(d["path"], {}).get("sha256") == d["sha256"]
         moved = by.get(f"{ish}/{d['path']}", {}).get("sha256") == d["sha256"]
         if same:
@@ -181,6 +188,7 @@ def posle(koren, vkhod, dirs, do_tsv, out, primenit):
             ok = n == int(d["nrows"])
         else:
             ok = moved
+        ok = ok and (ka is None or ka["sha256"] == d["sha256"])  # Ж-118: копия класса «а» совпала по sha
         bad += not ok
         ob.vyvod(path=d["path"], proveno=int(ok))
     z3rows = sorted(f"{r['path']}\t{r['size']}\t{r['sha256']}" for r in rows
