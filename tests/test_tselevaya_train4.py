@@ -161,6 +161,48 @@ def test_rezhima_mediana_net():
     assert W.OSNOVNOE[2] == "msr" and {p[2] for p in W.PRAVILA} == {"msr", "dolya"}
 
 
+# ---- PBO (Ж-080 + Ж-090): ранг OOS и выбор — по той же целевой ----
+def dve_tochki():
+    """P: высокий mSR за период, слабый последний год (min по годам низкий); Q: ровный. Обе устойчивы. Строки — точки."""
+    P = ryad({2016: 0.004, 2017: 0.004, 2018: 0.004, 2019: 0.0012}, seed=1)
+    Q_ = ryad({2016: 0.0025, 2017: 0.0025, 2018: 0.0025, 2019: 0.0025}, seed=2)
+    return np.vstack([P, Q_])
+
+
+def proverka_pbo_rang(oos_fn):
+    X = dve_tochki()
+    a = oos_fn(X, DATY)
+    assert a[0] > a[1]                                          # по mSR за период P лучше Q (по min годов было бы наоборот)
+
+
+def test_pbo_oos_rang_po_msr_vsego():
+    from fastbt import pbo_pravilo as B
+    proverka_pbo_rang(B.msr_oos)
+    assert B.min_msr(dve_tochki(), DATY)[0] < B.min_msr(dve_tochki(), DATY)[1]     # справочная min_msr ранжирует наоборот
+
+
+def test_mutatsiya_pbo_rang_po_prezhnej_celi_lovitsya():
+    from fastbt import pbo_pravilo as B
+    with pytest.raises(AssertionError):
+        proverka_pbo_rang(B.min_msr)
+
+
+def test_pbo_neustojchivaya_tochka_hudshaya_i_ne_kandidat():
+    from fastbt import pbo_pravilo as B
+    bad = ryad({2016: 0.004, 2017: -0.004, 2018: 0.004, 2019: 0.004}, seed=3)
+    X = np.vstack([bad, dve_tochki()[1]])
+    assert np.isnan(B.msr_celevaya(X, DATY)[0]) and np.isfinite(B.msr_celevaya(X, DATY)[1])
+    a = B.msr_oos(X, DATY)
+    assert a[0] == -np.inf and a[1] > a[0]
+
+
+def test_pravilo_etapa_oos_fn_novaya():
+    from fastbt import pbo_pravilo as B
+    from fastbt.etap1_poisk_vorota import Ledger
+    pr = B.pravilo_etapa(Ledger(lambda p, per: {}), {"k_s": [1]}, ["k_s"], {}, {})
+    assert pr["oos_fn"] is B.msr_oos
+
+
 def test_dolya_godov_slabee_msr():
     """Один провальный год из четырёх: «msr» отвергает, «dolya» (≥ 75 % годов) пропускает; два провальных — отвергает оба."""
     M, rows, d = kub()
