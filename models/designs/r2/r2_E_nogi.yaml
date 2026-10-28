@@ -1,0 +1,50 @@
+# R2, агент Э: ноги уровня 1 без бустинга (протокол v2, docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, строка «Э»)
+agent: E
+script: scripts/analysis/r2_nogi.py
+features: data/regen/features_pit_v3.parquet   # SHA-256 8c51bfa1eb6ee862…
+h: [1, 5, 22]
+steps: [1, 2, 3, 4, 5, 6]          # val 2016–2021; шаги 7–10 и тест не строятся
+seed: det                          # у HAR и HEAVY seed нет
+versii:   # суффикс имени ряда; решение дирижёра 26.10 (эмбарго) и PR #143 (RV дня d)
+  r1: {suffix: '', emb: false, d0: false}        # определение первого раунда — контроль
+  emb: {suffix: _emb, emb: true, d0: false}      # строки обучения с датой t+h >= 1 янв. vy исключены (и во внутренней валидации HAR-X)
+  d0: {suffix: _d0, emb: false, d0: true}        # rv_d = RV_d, rv_w = mean RV_{d−4..d}, rv_m = mean RV_{d−21..d}; нулевой RV — последним положительным
+  emb_d0: {suffix: _emb_d0, emb: true, d0: true} # ОСНОВНАЯ до решения владельца
+  HEAVY: все версии совпадают (целей в обучении нет; RV дня d уже на входе фильтра)
+  HARXreg: R1 (Д24.4 RX) был с эмбарго — его повторяет HARXreg_emb; HARXreg без суффикса — без эмбарго
+out:
+  val: data/regen/R2/cache/E/<ryad>_h{h}_sdet_val.parquet          # date, ticker, year, step, rv_actual, rv_pred (сырой, без s²)
+  lnall: data/regen/R2/cache/E/<ryad>_h{h}_lnall.parquet           # date, ticker, step, part (tr/va), base_ln, emb_ok (образец D17/harx_base_h1)
+  v0_F: data/regen/R2/cache/E/V0_F_h{h}.csv                        # множитель Б0.1 по (ряд, s², шаг)
+  v0_q: data/regen/R2/cache/E/V0_q_h{h}.csv                        # QLIKE 2017–2021 по (ряд, s², год)
+  index: data/regen/R2/cache/INDEX_E.csv
+s2: [bez, ord, rob, sm, smrob]     # val шага t — s² по остаткам val шага t−1 (sm/smrob — шагов t−3..t−1), шаг 1 — F = 1 (harx.add_bias)
+nogi:
+  HARJ:
+    kod: gibrid_har.har_forecasts (LinearRegression на ln HAR-J-регрессорах, годы < vy)
+  HARX:
+    kod: harx.fit_en / harx.forecast_step; слагаемые harx.default_terms(h, True)
+    tochki: 46   # HARX_ols; HARX_inner (внутренняя валидация шага, harx.INNER = 1); HARX_l<λ>_a<α>, λ ∈ harx.ALPHAS (11), α ∈ harx.L1S (4)
+    fiksirovana: true   # точка одна на все шаги
+    dlya_roley: [ols, inner, l0.001_a0.5, l0.001_a1, l0.01_a0.5, l0.01_a1, l0.1_a0.5, l0.1_a1]
+    embargo: нет (определение первого раунда harx.py)
+  HARXsub:
+    gruppy: {RVI: [ln_rvi2], rynok: [ln_rvm_imoex, ln_rvm_mkt], LHAR: [lhar_1, lhar_5, lhar_22], PC1: [pc1], sig1: [ln_sig1], D17: harx.D17_TERMS[h]}
+    sig1: только h=5/22
+    varianty: plus_<гр> (HAR-J + группа) и minus_<гр> (HAR-X без группы; minus_D17 = HARX0); OLS; h=1 — 10, h=5/22 — 12
+  HARXreg:
+    kod: d24_4.design(kind=RX) + fit_pred_factory; эмбарго d24b_lib.train_mask
+    indikator: 1{close_RVI > медианы за 252 прошлых дня}, до 126 дней истории 0
+  HEAVY:
+    kod: d24_6.fit_forecast (модель heavy), QMLE на годах < vy, фильтр
+sverka_r1:   # шаги 1–6, |Δ rv_pred| <= 1e-7, иначе стоп
+  HARX_inner: data/regen/HARX_h{h}_val.parquet (+ rv_pred_{ord,rob,sm,smrob} для проверки s²)
+  HARXreg: data/regen/D24b/d24_4/RX_h{h}_val.parquet
+  HEAVY: data/regen/GARCH_svheavy_h{h}_val.parquet
+  HARJ: gibrid_har.har_forecasts (код первого раунда)
+detektor:
+  srezy: ['2018-06-29', '2020-03-02', '2021-06-30']
+  porcha: все float-столбцы строк date > среза и цели строк <= среза с горизонтом за срезом × U(0,5; 2)
+  podlog: rv_d дня t+1 (HEAVY — RM дня t+1)
+  kriteriy: на строках <= среза Δ = 0 (val и lnall моделей с vy <= года среза); подлог Δ > 0
+resurs: {workers: 2}

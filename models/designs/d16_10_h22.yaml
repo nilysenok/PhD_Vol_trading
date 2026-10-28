@@ -1,0 +1,89 @@
+name: d16_10_h22
+block: Д16.10 размер обёртки (третий круг, 26.10)
+h: 22
+grid:
+  points:
+  - 3
+  - 5
+  - 10
+  seeds:
+  - 3
+  - 5
+  lgbm_xgb:
+  - false
+  - true
+select: размер = мин. OOS QLIKE 2017–2020 (шаги 2–5, Б0.1 ord вне выборки) по сетке;
+  принимается вместо текущей обёртки final2 (D15 — без обёртки), если не хуже её на
+  2017–2020 и на 2021; c1–c4 на 2016–2021
+candidates_same_year_biased:
+  D12_h22:
+    v0: false
+    chosen: final2:none
+    model: lgbm
+    points: 1
+    seeds: 1
+    lgbm_xgb: false
+    cfg:
+      v9: true
+      linear_lambda: 1
+    blocks: ''
+    final2_wrap: none
+    grid_best:
+      variant: P3S5
+      model: lgbm
+      oos1720: 0.219543
+      y2021: 0.155964
+    oos1720: 0.214799
+    y2021: 0.155495
+    c1: true
+    c2: false
+    c3: false
+    val: data/regen/D16_10_h22_D12_h22_{lgbm,xgb}_h22_wrap10_val.parquet
+    test: data/regen/test_locked/D16_10_h22/D16_10_h22_D12_h22_{lgbm,xgb}_h22_wrap10_test.parquet
+  D15_h22:
+    v0: true
+    chosen: single
+    model: xgb
+    points: 1
+    seeds: 1
+    lgbm_xgb: false
+    cfg: &id001 {}
+    blocks: ''
+    final2_wrap: nan
+    grid_best:
+      variant: P5S3
+      model: xgb
+      oos1720: 0.253688
+      y2021: 0.172452
+    oos1720: 0.250525
+    y2021: 0.169509
+    c1: false
+    c2: false
+    c3: true
+    val: data/regen/D16_10_h22_D15_h22_{lgbm,xgb}_h22_wrap10_val.parquet
+    test: data/regen/test_locked/D16_10_h22/D16_10_h22_D15_h22_{lgbm,xgb}_h22_wrap10_test.parquet
+select_lag: 'честная оценка: на val-году шага s члены — точки и seed шага s−1 (обучены
+  на окне шага s); размер = мин. OOS 2017–2020 по сетке и «без обёртки»; принимается
+  вместо текущей обёртки final2 (D15 — без обёртки), если не хуже её на 2017–2020
+  и на 2021'
+candidates:
+  D15_h22:
+    v0: true
+    chosen: P10S3
+    model: xgb
+    points: 10
+    seeds: 3
+    lgbm_xgb: false
+    cfg: *id001
+    blocks: ''
+    reference: single
+    oos1720: 0.262628
+    y2021: 0.183533
+    ref_oos1720: 0.268252
+    ref_y2021: 0.191237
+    c1: false
+    c2: false
+    c3: true
+    adopted: true
+    boost: D16_10_D15_h22
+    kandidat_yaml: data/regen/final3/kandidaty/D16_10_D15_h22.yaml

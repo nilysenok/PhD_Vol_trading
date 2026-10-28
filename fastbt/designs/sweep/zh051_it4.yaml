@@ -1,0 +1,49 @@
+# Сетка итерации 4 этапа 1 (Ж-051): секторный тренд и ширина рынка — фильтры входа с учётом стороны. Коммитится до счёта.
+# Проект — docs/otchety/2026-10-28_zh051_iteracii.md (§2.4, §3, §4). net = выключено = путь P1 побайтно (golden).
+v: 1
+format: zh051-iteraciya
+punkt: "Ж-051"
+iteraciya: 4
+nazvanie: sektor_i_shirina
+baza:
+  istochnik: "docs/tables/zh047/S{k}_itog_v2.csv"
+  zapusk: "2026-10-28T00:36:00"
+  sha256:
+    S1: ce28779d2d99286fcad388b6e6ee0eb54e1d398ffd73e763cfc21baa1fe5f308
+    S2: 2a3b1d2ed77aaff30882432a2c40eaa08a1d1ab361762a7ada20e150862f997a
+    S3: 5c1673fe95ee3ecb25d96df2b0f0991c7a7131008cccc7dffebb9708b4ec1c47
+    S4: 10ba1226dc73fcc0220e5ca14d1af8e6417073ca23406408ba76a00e3d7dc6aa
+    S5: 2b61897f32ebc36d848099b9b18678f4db6946ebffefdfd8b1895dd34d509f03
+    S6: 916921a1f092ad6eff7339c894426881ce292dc8393009c5feee54b9f7ed086c
+period: {otbor: train, validation: zakryto}
+komissiya: {otbor: 0.0004}
+tselevaya: min_msr_2018_2019
+reshenie: "ряды на close d (18:50 d, Н6), MA по d−n+1…d; вход по close d, исполнение — по оси vhod P1"
+dannye:
+  sektory: "docs/issledovaniya/2026-10-27_sektory.csv"    # (г) [Ж-051]: LSRG — «не подтверждено»
+  indeksy: "moex_discovery/data/final_v6/candles_10m/external/{MOEXCH,MOEXCN,MOEXEU,MOEXFN,MOEXMM,MOEXOG,MOEXTL}.parquet"   # < 2022, только чтение
+  bez_indeksa: [AFLT, LSRG]             # MOEXTN и MOEXRE в репо нет: секторный фильтр для них не действует (вход разрешён), число входов — в отчёт
+  shirina: "доля тикеров вселенной (17) с close Н6 d > MA_n своего close; тикер без n дней истории — вне знаменателя"
+
+osi:
+  sektor_trend:
+    setka: [protiv, net, po_trendu]     # po_trendu: лонг — индекс сектора > MA_n, шорт — < MA_n; protiv — наоборот
+    vykl: net
+  shirina:
+    setka: [protiv, net, po_trendu]     # po_trendu: лонг — доля ≥ p, шорт — доля ≤ 1 − p; protiv — лонг ≤ 1 − p, шорт ≥ p
+    vykl: net
+  ma_n:
+    setka: [50, 100, 200]
+  porog_shiriny:
+    setka: [0.4, 0.5, 0.6]
+
+nedopustimo:
+  - "sektor_trend == net and shirina == net and (ma_n != 200 or porog_shiriny != 0.5)"   # выключено — одна точка
+vyrozhdeno:
+  - "shirina == net: porog_shiriny не влияет — считается один раз (porog_shiriny = 0.5)"
+
+N: {S1: 60, S2: 60, S3: 60, S4: 60, S5: 60, S6: 60}   # 6 (только сектор) + 18 (только ширина) + 36 (оба)
+kontrol: {tip: krug_sdvig, n: 20, lag_min: 63, seed: 20261028, opisanie: "ряды индекса сектора и ширины циклически сдвинуты по дням (к2)"}
+plato: {osi: [sektor_trend, shirina, ma_n, porog_shiriny], radius: 1}
+kriteriy: "docs/otchety/2026-10-28_zh051_iteracii.md §3"
+ledger: {iteraciya: 4, rol: kandidat}

@@ -1,0 +1,23 @@
+{
+ "time": "2026-10-26 03:45:37",
+ "sha256": {
+  "features_pit_v3.parquet": "8c51bfa1eb6ee8624f7e9e0759c693152402a4c76b9e438d69a8f542aadfe0bc",
+  "features_pit_v3_28.parquet": "222701d8c2904db91c1e7e867765065f8e7336b96e4e253feec3152e93c77135",
+  "features_pit_v3_rrv.parquet": "b29d8f28b354470c33076549a1493a18c8a18d7d45f3366ba3bd1f9effe5b4c0",
+  "features_pit_v3_rrv_20.parquet": "0ca85db4a6efc04a8d1d9c49b1b6e6de07bff0f40c26e5df681c7f8ff297afca",
+  "features_pit_v3_d7_h5.parquet": "ce4aef543fb85e2b75497023df51e771dcf3973e03c6f6ee73a6e275b418398c",
+  "features_pit_v3_28_d7_h5.parquet": "d0253f36ea7969e44c338c63c980db135aa9253a9a0881228d380aafd7237547",
+  "intraday1850.parquet": "e757abc635359e96b5263721263165fad4799e5984d35fa514ddce699fd06653",
+  "intraday1850_20.parquet": "df72f31e78e9151db4cca29b684c823bea8b9f54841b5407b55129e8230b79d6",
+  "rrv_1850.parquet": "b37d153b4d386ebc1ed82b34124eaa34e8b05dd57abeaf364b9cdeb907780243",
+  "features_pit_v3.config.json": "557649804b910725a4b0597d526792b482be328a6124c213c6ecba132dcb14e1",
+  "features_pit_v3_rrv.config.json": "738d50890867c89cf2cd484ad213b3b5de2cde2c26d8418441518f84d376322e"
+ },
+ "log": [
+  "features_pit_v3_rrv_20: строк 59886 (17 основных 50906, новых 8980), колонок 286; строки 17 против features_pit_v3_rrv побайтно во всех 286 колонках: PASS",
+  "NaN в RRV у новых тикеров: rrv_pk_d 0.0000, rrv_pk_w 0.0000, rrv_pk_m 0.0000, rrv_gk_d 0.0000, rrv_gk_w 0.0000, rrv_gk_m 0.0000",
+  "intraday1850 пересчёт 17 тикеров против кэша D13: ключей общих 51360, только в кэше 0, только в пересчёте (17) 0; равенство колонок: {'rv_lasthour': True, 'rv_half2': True, 'gap_on': True, 'jshare': True}",
+  "intraday1850_20: строк 60421, у новых 9061; доля NaN gap_on у новых 0.0003",
+  "features_pit_v3_28_d7_h5: строки 17 против features_pit_v3_d7_h5 побайтно во всех 351 колонках: PASS"
+ ]
+}

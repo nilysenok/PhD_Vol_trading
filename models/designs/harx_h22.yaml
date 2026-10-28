@@ -1,0 +1,22 @@
+# Д16: HAR-X = HAR-J + линейные слагаемые (эластичная сеть, HAR-J-члены без штрафа - Фриш-Во), пул 17 тикеров, ln, расширяющееся окно.
+# Код: scripts/analysis/harx.py (forecast_step(A, h, step, harj, terms) -> OOS val/test одного шага). Решение владельца 26.10, 00:55.
+name: harx_h22
+h: 22
+data:
+  features: data/regen/features_pit_v3.parquet   # SHA 8c51bfa1...dfe0bc
+  target: rv_target_mean_h22
+  extra: data/regen/sigma_pred_h1_final2.parquet  # ln_sig1 (OOS по шагам; превышение над HAR-J h=1, без F шага)
+base: [rv_d, rv_w, rv_m, jump, jump_annualized, jump_lag1, jump_lag5, jump_lag22]
+terms_owner: [ln_rvi2, ln_rvm_imoex, ln_rvm_mkt, lhar_1, lhar_5, lhar_22, pc1, ln_sig1]
+terms_d17_3: [harq, ln_rsv_pos, ln_rsv_neg, ln_rv66, ln_rv132]
+elastic_net:
+  alpha: [1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2, 0]
+  l1_ratio: [0.1, 0.5, 0.9, 1.0]
+  selection: внутренняя валидация шага по времени - обучение < vy-1, MSE ln на vy-1; затем переобучение на < vy
+steps: 1-10
+bias: Б0.1 F=exp(s2/2), rv_pred_{ord,rob,sm,smrob}; val - оценка шага k-1, тест - оценка шага k
+outputs:
+  val: data/regen/HARX_h22_val.parquet
+  test: data/regen/test_locked/HARX/HARX_h22_test.parquet
+  coefs: data/regen/D16/HARX_h22_coefs.csv
+  reference_without_d17: data/regen/HARX0_h22_val.parquet

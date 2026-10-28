@@ -1,0 +1,33 @@
+# Сетка прогона 1 этапа 1 (Ж-047), S1: копия zh047_S1.yaml, ось sobytiya = {net, cbr} (div/cbr_div ждут сверки дат, ❓5). Исходный файл не менялся.
+v: 1
+format: zh047-setka
+punkt: "Ж-047"
+obekt: {tip: strategiya, sid: S1, semya: Contrarian}
+fiks: "fastbt/designs/sweep/ekviv_20.yaml#S1_a"
+period: {morris: train, faktornyy: train, validation: zakryto}
+komissiya: {otbor: 0.0004, pereschet: [0.00035]}
+tselevaya: min_msr_2018_2019
+
+signal:
+  ma_window: {ishodnoe: 20, setka: [10, 13, 17, 20, 23, 27, 30]}
+  z_entry:   {ishodnoe: 2.0, setka: [1.0, 1.33, 1.67, 2.0, 2.33, 2.67, 3.0]}
+  z_exit:    {ishodnoe: 0.5, setka: [0.25, 0.33, 0.42, 0.5, 0.58, 0.67, 0.75]}
+
+obshchie:
+  q_sily:    {setka: [0.0, 0.5, 0.7, 0.8, 0.9], yakor: 0.0, okno: 252, min_nabl: 20, primenenie: vhod}
+  sigma:     {setka: [rv5, ewma094, rv22, rv66], yakor: rv22}
+  vhod:      {setka: [rynok, 0.25, 0.5, 0.75, 1.0], yakor: rynok, neispolnen: propusk}
+  k_s:       {setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, net], yakor: net}
+  R:         {setka: [1.0, 1.5, 2.0, 3.0, 4.0, net], yakor: net}
+  k_tr:      {setka: [1.5, 2.0, 3.0, net], yakor: net}
+  bezubytok: {setka: [net, plus1sigma], yakor: net}
+  tau:       {setka: [1, 2, 3, 5, 10, 20, net], yakor: net}
+  proverka:  {setka: [zakrytie, bars5m], yakor: zakrytie}
+  razmer:    {setka: [15, 20, 25, ravnyy], yakor: ravnyy, limit_L: 1.0}
+  rezhim:    {setka: [net, imoex_ma200, rang_sigma_rynka_08], yakor: net}
+  sobytiya:  {setka: [net, cbr], yakor: net}
+
+morris: {r: 20, seed: 20261027, shag: sosed, k: 15, N: 320}
+faktornyy: {vybor: "топ-5 по μ*; если куб > 5000 — топ-4", potolok: 5000, ostalnye: yakor}
+plato: {osi: [k_s, R, tau], radius: 1, min_sosedey: 3, uslovie: "min mSR соседа > 0"}
+N_polnyy_kub: 3872332800              # 343 × 11 289 600

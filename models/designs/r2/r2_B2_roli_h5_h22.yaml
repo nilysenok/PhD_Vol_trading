@@ -1,0 +1,61 @@
+# R2 v2, агент Б2: роли «признак», «остаток», «офсет gamma» для ног уровня 1 на h=5 и h=22, seed 42, val шагов 1–6;
+# F_5 = D12_h5 wrap2 на seed 42–51 (протокол docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md, строка «Б2»).
+# Записано до счёта ролей. Гиперпараметры бустинга — текущие (сохранённые точки первого раунда), не переподбираются.
+# Выход: data/regen/R2/cache/B2/<ряд>_h{h}_s{seed}_val.parquet (date, ticker, year, step, rv_actual, rv_pred; rv_pred сырой, без s²).
+#   ряд роли: <роль>_<нога>_<модель>, роль ∈ {priz, ost, gam}, модель ∈ {xgb, lgbm, mean}; mean = (RV_xgb + RV_lgbm)/2 (как wrap2).
+# Тестовые прогнозы — только после заморозки и только для новых моделей победителей (раздел «Тестовая часть»), не здесь.
+seeds_f5: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+dev_steps: [1, 2, 3, 4, 5, 6]
+control_tol: 1.0e-7
+workers: 5                    # решение владельца 13:00: до 5 воркеров
+
+f5:                           # F_5 = D12_h5 wrap2/V0_XGB/B-sm/L0: XGB-слот = (RV_xgb + RV_lgbm)/2 одиночных ног seed s (final2_wrap, компонент 2)
+  h: 5
+  engine: d24
+  cfg: {v9: true, harf: true, huber: true}
+  matrix: features_pit_v3.parquet
+  blocks: d7
+  points: D12_h5
+  models: [xgb, lgbm]
+  saved:                      # ряды пишутся из сохранённых; переобучение seed 42–51 — только контроль (seed 42 ≤ 1e-7 — иначе стоп)
+    s42: D12_h5_{m}_h5_val.parquet
+    s4344: D12_h5_{m}_h5_seeds4344_val.parquet
+    s4551: D24_3_D12_h5_{m}_h5_seeds4551_val.parquet
+    wrap2_s42: D12_h5_xgb_h5_wrap2_val.parquet
+
+# Таблица «роль × h -> точки» (протокол, раздел «Данные, окно, общая механика»): структура ноги первого раунда с той же ролью;
+# ln прогноза ноги подставляется вместо ln HAR-J (подмена l2_lib.har_ln, как d16_v9.py): признак — столбец har_ln (Д8.12),
+# остаток — смещение V9 (и признак har_ln там, где он был), офсет — init_score = ln ноги + s²/2 (s² — остатки на окне шага, Д17.1).
+roles:
+  priz:
+    5:  {points: Bv2b, cfg: {harf: true}, matrix: features_pit_v3.parquet, blocks: '', models: [xgb, lgbm],
+         note: 'точки V0 Bv3 (= B v2b на v3, ref_v0_base); контроль V0 (cfg {}) против Bv3_{m}_h5_val'}
+    22: {points: Bv2b, cfg: {harf: true}, matrix: features_pit_v3.parquet, blocks: '', models: [xgb, lgbm],
+         note: 'точки V0 Bv3; контроль V0 против Bv3_{m}_h22_val'}
+  ost:
+    5:  {points: D12_h5, cfg: {v9: true, harf: true, huber: true}, matrix: features_pit_v3.parquet, blocks: d7, models: [xgb, lgbm],
+         note: 'D12_h5 (V9 + Д8.12 + Д7 + Huber, optuna-30); контроль: нога HAR-J -> D12_h5, нога HAR-X -> D16_h5_D12x'}
+    22: {points: D12_h22, cfg: {v9: true, linear_lambda: 1}, matrix: features_pit_v3.parquet, blocks: '', models: [xgb, lgbm],
+         note: 'D12_h22 (V9, linear_tree λ=1 у LGBM); контроль: нога HAR-J -> D12_h22'}
+  gam:
+    5:  {points: D17_1_h5_G5Xopt, cfg: {obj: gamma, v9: true, b01: true, harf: true}, matrix: features_pit_v3.parquet, blocks: d7, models: [lgbm],
+         note: 'G5Xopt (optuna-30); контроль: нога HAR-X (D17/harx_base_h5) -> D17_1_h5_G5Xopt_lgbm'}
+    22: {points: D17_1_h22_G22Xopt, cfg: {obj: gamma, v9: true, b01: true, linear_lambda: 1}, matrix: features_pit_v3.parquet, blocks: '', models: [lgbm],
+         note: 'G22Xopt (optuna-30); контроль: нога HAR-X (D17/harx_base_h22) -> D17_1_h22_G22Xopt_lgbm'}
+
+# Вход ролей — ln прогноза ноги на ВСЕХ строках шага: обучение (внутри выборки, как HAR-J в V9), val-год (OOS), тест-год (может отсутствовать).
+# Формат (как data/regen/D17/harx_base_h{h}.parquet): date, ticker, step, part ∈ {tr, va, te}, ln (или base_ln). Ноги — у агента Э (R2/cache/E/).
+# ↺ 26.10 13:30 — ноги Э (PR #146) в длинном формате: R2/cache/E/<ряд>_h{h}_lnall.parquet (step, part, base_ln, emb_ok), 4 версии;
+#   основная — _emb_d0, версия первого раунда (r1) — контроль (r2_B2_sverka.py).
+# ↺ 26.10 14:05 — решение дирижёра: эмбарго и в обучении бустинга роли. Строки обучения, у которых окно цели [t+1, t+h] заходит в
+#   val-год шага, исключаются (маска совпадает с emb_ok Э: _control/embcheck_h{5,22}.csv). Основная версия рядов — нога _emb_d0 +
+#   бустинг с эмбарго (суффикс _be); без эмбарго в бустинге — контроль (без _be). Точки бустинга не меняются. F_5 — как в первом раунде.
+versii:
+  osnovnaya: {noga: emb_d0, emb_bust: true, suffix: '_emb_d0_be'}
+  kontrol_bust: {noga: emb_d0, emb_bust: false, suffix: '_emb_d0'}
+  kontrol_r1: {noga: r1, emb_bust: false, suffix: '_r1'}
+control_legs:                 # известные ноги для контроля движка ролей до появления ног Э
+  HARJ: internal              # l2_lib.har_ln без подмены
+  HARX: D17/harx_base_h{h}.parquet
+leak:
+  step: 3

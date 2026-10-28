@@ -1,0 +1,512 @@
+[
+  {
+    "ticker": "SBER",
+    "a": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.0664928784323476e-15,
+      "max_rel_bv": 1.2136469701330665e-15,
+      "max_rel_j": 4.9124682915616274e-12,
+      "max_rel_rsv": 1.0007567423735226e-15
+    },
+    "b": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.0664928784323476e-15,
+      "max_rel_bv": 1.2136469701330665e-15,
+      "max_rel_j": 4.9124682915616274e-12,
+      "max_rel_rsv": 1.0007567423735226e-15
+    },
+    "c": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "VTBR",
+    "a": {
+      "days": 2994,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.1307662558086174e-15,
+      "max_rel_bv": 1.1130096741776886e-15,
+      "max_rel_j": 5.978244314767015e-11,
+      "max_rel_rsv": 8.944470837437107e-16
+    },
+    "b": {
+      "days": 2994,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 3.5871172667578096e-13,
+      "max_rel_bv": 6.831407790359397e-13,
+      "max_rel_j": 5.021725224704504e-9,
+      "max_rel_rsv": 1.1466004081060701e-12
+    },
+    "c": {
+      "days": 2994,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 8.767915561033748e-13,
+      "max_rel_bv": 8.87973601672698e-13,
+      "max_rel_j": 7.337854536752064e-10,
+      "max_rel_rsv": 1.3034229654138287e-12
+    }
+  },
+  {
+    "ticker": "MOEX",
+    "a": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.3411969236040378e-15,
+      "max_rel_bv": 1.2961389696187895e-15,
+      "max_rel_j": 5.0925757947942047e-11,
+      "max_rel_rsv": 8.231005473012469e-16
+    },
+    "b": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.3411969236040378e-15,
+      "max_rel_bv": 1.2961389696187895e-15,
+      "max_rel_j": 5.0925757947942047e-11,
+      "max_rel_rsv": 8.231005473012469e-16
+    },
+    "c": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "LKOH",
+    "a": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.0331597746569432e-15,
+      "max_rel_bv": 1.0637359895585782e-15,
+      "max_rel_j": 3.018517939038798e-12,
+      "max_rel_rsv": 1.0788742768245837e-15
+    },
+    "b": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.0331597746569432e-15,
+      "max_rel_bv": 1.0637359895585782e-15,
+      "max_rel_j": 3.018517939038798e-12,
+      "max_rel_rsv": 1.0788742768245837e-15
+    },
+    "c": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "TATN",
+    "a": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.1459565793323068e-15,
+      "max_rel_bv": 1.076454498599634e-15,
+      "max_rel_j": 2.3064565043496883e-12,
+      "max_rel_rsv": 8.47062216166792e-16
+    },
+    "b": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.1459565793323068e-15,
+      "max_rel_bv": 1.076454498599634e-15,
+      "max_rel_j": 2.3064565043496883e-12,
+      "max_rel_rsv": 8.47062216166792e-16
+    },
+    "c": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "NVTK",
+    "a": {
+      "days": 2994,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 9.152868825075554e-16,
+      "max_rel_bv": 1.2562527129244957e-15,
+      "max_rel_j": 1.7281308343406467e-11,
+      "max_rel_rsv": 8.453200601757348e-16
+    },
+    "b": {
+      "days": 2994,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 9.152868825075554e-16,
+      "max_rel_bv": 1.2562527129244957e-15,
+      "max_rel_j": 1.7281308343406467e-11,
+      "max_rel_rsv": 8.453200601757348e-16
+    },
+    "c": {
+      "days": 2994,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "ALRS",
+    "a": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.2359522930786118e-15,
+      "max_rel_bv": 1.0341741997518952e-15,
+      "max_rel_j": 3.4773199178946372e-12,
+      "max_rel_rsv": 9.049898668769842e-16
+    },
+    "b": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.2359522930786118e-15,
+      "max_rel_bv": 1.0341741997518952e-15,
+      "max_rel_j": 3.4773199178946372e-12,
+      "max_rel_rsv": 9.049898668769842e-16
+    },
+    "c": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "MTLR",
+    "a": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.2871062801375539e-15,
+      "max_rel_bv": 1.0848423183037476e-15,
+      "max_rel_j": 1.222130096054785e-12,
+      "max_rel_rsv": 9.679520544575342e-16
+    },
+    "b": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.2871062801375539e-15,
+      "max_rel_bv": 1.0848423183037476e-15,
+      "max_rel_j": 1.222130096054785e-12,
+      "max_rel_rsv": 9.679520544575342e-16
+    },
+    "c": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "HYDR",
+    "a": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.1629633725443918e-15,
+      "max_rel_bv": 1.0111509963610238e-15,
+      "max_rel_j": 1.1454263833202688e-11,
+      "max_rel_rsv": 1.0576337502795426e-15
+    },
+    "b": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.1629633725443918e-15,
+      "max_rel_bv": 1.0111509963610238e-15,
+      "max_rel_j": 1.1454263833202688e-11,
+      "max_rel_rsv": 1.0576337502795426e-15
+    },
+    "c": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "IRAO",
+    "a": {
+      "days": 2978,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.5315479961030376e-15,
+      "max_rel_bv": 1.160426017999365e-15,
+      "max_rel_j": 1.1556644436992448e-12,
+      "max_rel_rsv": 1.0033697899377283e-15
+    },
+    "b": {
+      "days": 2978,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.5315479961030376e-15,
+      "max_rel_bv": 1.160426017999365e-15,
+      "max_rel_j": 1.1556644436992448e-12,
+      "max_rel_rsv": 1.0033697899377283e-15
+    },
+    "c": {
+      "days": 2978,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "OGKB",
+    "a": {
+      "days": 2992,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.0329115429433274e-15,
+      "max_rel_bv": 8.727546815878681e-16,
+      "max_rel_j": 5.588545784425574e-13,
+      "max_rel_rsv": 7.805394924638905e-16
+    },
+    "b": {
+      "days": 2992,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.0329115429433274e-15,
+      "max_rel_bv": 8.727546815878681e-16,
+      "max_rel_j": 5.588545784425574e-13,
+      "max_rel_rsv": 7.805394924638905e-16
+    },
+    "c": {
+      "days": 2992,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "RTKM",
+    "a": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.277435756922025e-15,
+      "max_rel_bv": 1.268633445867546e-15,
+      "max_rel_j": 6.749950061484182e-12,
+      "max_rel_rsv": 8.599833465512536e-16
+    },
+    "b": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.277435756922025e-15,
+      "max_rel_bv": 1.268633445867546e-15,
+      "max_rel_j": 6.749950061484182e-12,
+      "max_rel_rsv": 8.599833465512536e-16
+    },
+    "c": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "MTSS",
+    "a": {
+      "days": 2988,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 9.906762664480783e-16,
+      "max_rel_bv": 1.0591534803350876e-15,
+      "max_rel_j": 4.95850070759393e-12,
+      "max_rel_rsv": 8.83429804893794e-16
+    },
+    "b": {
+      "days": 2988,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 9.906762664480783e-16,
+      "max_rel_bv": 1.0591534803350876e-15,
+      "max_rel_j": 4.95850070759393e-12,
+      "max_rel_rsv": 8.83429804893794e-16
+    },
+    "c": {
+      "days": 2988,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "MGNT",
+    "a": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.1634521979318852e-15,
+      "max_rel_bv": 1.2032941132988563e-15,
+      "max_rel_j": 6.334523744745714e-13,
+      "max_rel_rsv": 8.614069388673258e-16
+    },
+    "b": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.1634521979318852e-15,
+      "max_rel_bv": 1.2032941132988563e-15,
+      "max_rel_j": 6.334523744745714e-13,
+      "max_rel_rsv": 8.614069388673258e-16
+    },
+    "c": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "AFLT",
+    "a": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.2812122809527402e-15,
+      "max_rel_bv": 1.102831840302715e-15,
+      "max_rel_j": 4.118117602011786e-12,
+      "max_rel_rsv": 1.1142408411637493e-15
+    },
+    "b": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.2812122809527402e-15,
+      "max_rel_bv": 1.102831840302715e-15,
+      "max_rel_j": 4.118117602011786e-12,
+      "max_rel_rsv": 1.1142408411637493e-15
+    },
+    "c": {
+      "days": 2998,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "PHOR",
+    "a": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.7053541244540464e-15,
+      "max_rel_bv": 1.1280686985477351e-15,
+      "max_rel_j": 3.0262381508397717e-12,
+      "max_rel_rsv": 1.4427136918333471e-15
+    },
+    "b": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.7053541244540464e-15,
+      "max_rel_bv": 1.1280686985477351e-15,
+      "max_rel_j": 3.0262381508397717e-12,
+      "max_rel_rsv": 1.4427136918333471e-15
+    },
+    "c": {
+      "days": 2996,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  },
+  {
+    "ticker": "LSRG",
+    "a": {
+      "days": 2988,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.5824787424879319e-15,
+      "max_rel_bv": 9.585737736596453e-16,
+      "max_rel_j": 1.8580296944488153e-12,
+      "max_rel_rsv": 8.270152327250614e-16
+    },
+    "b": {
+      "days": 2988,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 1.5824787424879319e-15,
+      "max_rel_bv": 9.585737736596453e-16,
+      "max_rel_j": 1.8580296944488153e-12,
+      "max_rel_rsv": 8.270152327250614e-16
+    },
+    "c": {
+      "days": 2988,
+      "off": 0,
+      "missing": 0,
+      "max_rel_rv": 0.0,
+      "max_rel_bv": 0.0,
+      "max_rel_j": 0.0,
+      "max_rel_rsv": 0.0
+    }
+  }
+]
