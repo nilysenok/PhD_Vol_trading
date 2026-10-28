@@ -46,10 +46,48 @@ GOLDEN = dict(morris="1e11f6a054980fe5ce9f265076a3679223ba208110655ccec1e031bb2d
               itog="94d2c41c0469e94fd3fd98299bac42b9f1364126f54d54ebe206ae433ebbd48a")
 
 
+# Ж-080 (PR #424): в итог добавлена справочная колонка pbo_argmax; G1 — от центра плато (pbo), не от argmax.
+# Полный хэш итога после добавления колонки (записан рядом с проверкой прежних колонок, не вместо неё):
+ITOG_S_NOVYM = "a9077807ba25e96f364569331a409a8a93785f949da7b1ad430ad8334ac3c9ec"
+NOVYE_KOLONKI = ("pbo_argmax",)
+
+
+def _bez_novykh_kolonok(p: Path) -> bytes:
+    """Итог без новых колонок: поле pbo_argmax вырезается из шапки и каждой строки, остальной текст побайтно."""
+    out, idx = [], None
+    for ln in p.read_text("utf-8").split("\n"):
+        if ln.startswith("#") or not ln:
+            out.append(ln)
+            continue
+        f = ln.split(",")
+        idx = f.index("pbo_argmax") if idx is None else idx        # нет колонки — ValueError, тест падает
+        out.append(",".join(f[:idx] + f[idx + 1:]))
+    return "\n".join(out).encode("utf-8")
+
+
+def _itog_s_shapkoy(p: Path) -> tuple[list, dict]:
+    lines = [ln for ln in p.read_text("utf-8").splitlines() if not ln.startswith("#")]
+    head = lines[0].split(",")
+    return head, dict(zip(head, lines[1].split(",")))
+
+
 def test_umolchanie_train_pobaytno_staryy_put(tmp_path):
     P.run_strategy("S9", World().evaluate, lambda p: True, out=tmp_path, run_id="t", setka=SETKA)
-    assert {n: sha(tmp_path / f"S9_{n}.csv") for n in GOLDEN} == GOLDEN
+    itog = tmp_path / "S9_itog.csv"
+    assert {n: sha(tmp_path / f"S9_{n}.csv") for n in GOLDEN if n != "itog"} == {n: GOLDEN[n] for n in GOLDEN if n != "itog"}
+    assert hashlib.sha256(_bez_novykh_kolonok(itog)).hexdigest() == GOLDEN["itog"]          # (а) прежние колонки побайтно
+    head, row = _itog_s_shapkoy(itog)
+    assert set(NOVYE_KOLONKI) <= set(head) and sha(itog) == ITOG_S_NOVYM                   # (б) новые колонки + полный хэш
+    assert row["G1_pbo"] == str(float(row["pbo"]) < V.PBO_MAX)                              # (в) G1 — от центра плато
     assert AR.paths("train") == (AR.IT1, AR.OUT, AR.LED) and AR.LED.name == "_ledger"
+
+
+def test_g1_beret_tsentr_plato_a_ne_argmax(tmp_path, monkeypatch):
+    """Центр плато 0,1 (< PBO_MAX = 0,2), argmax 0,9: G1 обязан быть True по центру; мутация «G1 по argmax» даёт False."""
+    monkeypatch.setattr(P, "pbo", lambda M, pravilo=None: 0.1 if pravilo is not None else 0.9)
+    P.run_strategy("S9", World().evaluate, lambda p: True, out=tmp_path, run_id="t", setka=SETKA)
+    _, row = _itog_s_shapkoy(tmp_path / "S9_itog.csv")
+    assert (float(row["pbo"]), float(row["pbo_argmax"])) == (0.1, 0.9) and row["G1_pbo"] == "True"
 
 
 # --- итерация 1 на train4 --------------------------------------------------------------------------------------------------
