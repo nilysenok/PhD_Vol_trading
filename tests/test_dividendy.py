@@ -16,9 +16,14 @@ DATES = pd.bdate_range("2018-01-01", periods=N).values        # пн-пт
 
 
 def _table(tmp_path, monkeypatch, rows):
+    """last_cum_date теперь считается из record_date правилом T+2 по календарю (PR div-daty-t2): календарь синтетический
+    (пн–пт), record_date = c + 2 рабочих дня, поэтому last_cum = последний рабочий день <= c."""
+    cal = pd.bdate_range("2005-01-03", "2035-12-31").values.astype("datetime64[ns]")
+    monkeypatch.setattr(dividendy, "_calendar", lambda: cal)
     f = tmp_path / "div.csv"
+    rec = lambda c: (pd.Timestamp(c) + pd.offsets.BDay(2)).date()          # noqa: E731
     f.write_text("ticker,record_date,last_cum_date,announce_date,dps_rub\n"
-                 + "".join(f"{t},{c},{c},{c},{d}\n" for t, c, d in rows))
+                 + "".join(f"{t},{rec(c)},{c},{c},{d}\n" for t, c, d in rows))
     monkeypatch.setattr(dividendy, "TABLE", f)
     return f
 

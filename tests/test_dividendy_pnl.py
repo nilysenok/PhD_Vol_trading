@@ -58,8 +58,10 @@ def _lr_data(tmp_path, monkeypatch, nalog=1.0, cum_shift=0):
     from fastbt import dividendy
     dates = pd.date_range("2018-01-01", periods=N, freq="B")
     cum = dates[EX - 1 + cum_shift].date()
+    monkeypatch.setattr(dividendy, "_calendar", lambda: dates.values.astype("datetime64[ns]"))   # T+2 по календарю баров (PR div-daty-t2)
+    rec = dates[EX + 1 + cum_shift].date()
     f = tmp_path / "div.csv"
-    f.write_text(f"ticker,record_date,last_cum_date,announce_date,dps_rub\nT,{cum},{cum},{cum},{D}\n")
+    f.write_text(f"ticker,record_date,last_cum_date,announce_date,dps_rub\nT,{rec},{cum},{cum},{D}\n")
     monkeypatch.setattr(dividendy, "TABLE", f)
     c = np.full(N, P0)
     c[EX:] = P0 - D

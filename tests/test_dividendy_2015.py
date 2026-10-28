@@ -69,7 +69,8 @@ def test_stroki_bez_vyplat_propuskayutsya():
 
 
 def test_golden_dni_2017_2021_pobaytno_prezhnie():
-    old = pd.read_csv(dividendy.TABLE, parse_dates=["last_cum_date"])
+    old = pd.read_csv(dividendy.TABLE, parse_dates=["record_date"])
+    old["last_cum_date"] = dividendy.last_cum(old["record_date"])      # PR div-daty-t2: T+2 по барам для всех лет
     for t in TICKERS:
         o = old[(old["ticker"] == t) & (old["dps_rub"] > 0)].sort_values("last_cum_date")
         want = np.zeros(len(DATES17_21))
