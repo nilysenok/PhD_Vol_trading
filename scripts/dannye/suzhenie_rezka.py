@@ -55,6 +55,12 @@ def chasti_puti(rel, z2, z3):
     return Path(z2) / put_z2(p.parent) / f"{base}__t1.parquet", Path(z3) / p.parent / f"{base}__h25.parquet"
 
 
+def put_kopii_a(rel):
+    """Класс «а» (Ж-118): копия в Z2 по правилу пути части «в», суффикс __a вместо __t1; относительно z2."""
+    p = Path(rel)
+    return put_z2(p.parent) / f"{re.sub('_test', '', p.stem)}__a{p.suffix}"
+
+
 def proveri(orig, parts, col, dates, h, cut):
     """Проверки Ш3 п. 3 до записи; нарушение — исключение, ничего не тронуто."""
     pre, t1, h25 = parts
@@ -172,6 +178,7 @@ def posle(koren, vkhod, dirs, do_tsv, out, primenit):
     bad = 0
     for d in ob.chitai_tsv(do_tsv):
         p1, p3 = chasti_puti(d["path"], z2, z3)
+        ka = by.get((Path(z2) / put_kopii_a(d["path"])).as_posix())
         same = by.get(d["path"], {}).get("sha256") == d["sha256"]
         moved = by.get(f"{ish}/{d['path']}", {}).get("sha256") == d["sha256"]
         if same:
@@ -181,6 +188,7 @@ def posle(koren, vkhod, dirs, do_tsv, out, primenit):
             ok = n == int(d["nrows"])
         else:
             ok = moved
+        ok = ok and (ka is None or ka["sha256"] == d["sha256"])  # Ж-118: копия класса «а» совпала по sha
         bad += not ok
         ob.vyvod(path=d["path"], proveno=int(ok))
     z3rows = sorted(f"{r['path']}\t{r['size']}\t{r['sha256']}" for r in rows

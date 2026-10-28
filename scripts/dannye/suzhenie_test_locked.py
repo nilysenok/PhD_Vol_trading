@@ -1,11 +1,14 @@
 """Сужение test_locked/ до 2025+ (Ж-112 п. 1), процедура Ш1–Ш4:
 docs/otchety/2026-10-28_test_locked_suzhenie.md (ветка origin/arh-msp-fazy).
 
-Режимы: --manifest-do (Ш1), --plan (Ш2), --rezat (Ш3), --manifest-posle (Ш4).
+Режимы: --manifest-do (Ш1), --plan (Ш2), --rezat (Ш3), --kopirovat-a (класс «а», Ж-118), --manifest-posle (Ш4).
 По умолчанию dry-run, без записи; запись — только с --primenit. Значения столбцов не читаются
 и не печатаются. Пути — параметрами, относительно --koren.
 """
 import argparse
+import json
+import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -31,10 +34,59 @@ def plan(koren, vkhod, dirs):
         ob.vyvod(path=rel, klass=klass, h=h, cut=cut)
 
 
+ZAMKI = Path(__file__).resolve().parents[2] / ".claude/hooks/zamki.json"
+
+
+def proveri_a(koren, rel, m, h, dst_rel, pravila):
+    """Причина отказа копирования класса «а» (Ж-118) или None."""
+    dst = Path(koren) / dst_rel
+    if any(r.search(dst_rel) for r in pravila):
+        return "путь копии под замком чтения"
+    if m["dmax"] > ob.T1_HI or not ob.okno_ok([], m["dmax"], h):
+        return "дата или цель последней строки за 31.12.2024"
+    if dst.exists():
+        return "копия уже есть, перезапись запрещена"
+    return None
+
+
+def kopirovat_a(koren, vkhod, dirs, primenit):
+    """Ж-118: файлы класса «а» копируются (не переносятся) в Z2; число нарушений."""
+    z2 = dirs[0]
+    pravila = [re.compile(x) for x in json.loads(ZAMKI.read_text())["zakryto_chtenie"]]
+    n_a = n_ok = fail = 0
+    for rel in ob.find_files(koren, vkhod, skip=dirs):
+        m = ob.meta(Path(koren) / rel, rel)
+        if not (m["date_col"] and m["nrows"]):
+            continue
+        klass, _, h = ob.classify(rel, m, ob.dates_of(Path(koren) / rel, m["date_col"]))
+        if klass != "а":
+            continue
+        n_a += 1
+        dst_rel = (Path(z2) / rz.put_kopii_a(rel)).as_posix()
+        why = proveri_a(koren, rel, m, h, dst_rel, pravila)
+        if why:
+            ob.vyvod(path=rel, klass=klass, status="FAIL", reason=why)
+            fail += 1
+            continue
+        if primenit:
+            dst = Path(koren) / dst_rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(Path(koren) / rel, dst)
+            if ob.sha_file(dst) != m["sha256"]:
+                dst.unlink()
+                ob.vyvod(path=rel, klass=klass, status="FAIL", reason="sha копии не совпал")
+                fail += 1
+                continue
+            n_ok += 1
+        ob.vyvod(path=rel, klass=klass, status="skopirovano" if primenit else "dry-run")
+    print(f"ITOG_A fajlov={n_a} skopirovano={n_ok} fail={fail}")
+    return fail
+
+
 def razbor(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
-    for f in ("manifest-do", "plan", "rezat", "manifest-posle"):
+    for f in ("manifest-do", "plan", "rezat", "kopirovat-a", "manifest-posle"):
         g.add_argument(f"--{f}", action="store_true")
     ap.add_argument("--koren", required=True, help="корень, от него считаются все пути")
     ap.add_argument("--vkhod", nargs="+", required=True, help="файлы/каталоги относительно --koren")
@@ -59,6 +111,8 @@ def main(argv=None):
         plan(a.koren, a.vkhod, dirs)
     elif a.rezat:
         return 1 if rz.rezat(a.koren, a.vkhod, dirs, a.primenit) else 0
+    elif a.kopirovat_a:
+        return 1 if kopirovat_a(a.koren, a.vkhod, dirs, a.primenit) else 0
     else:
         if not a.do_tsv:
             raise SystemExit("--manifest-posle требует --do-tsv")
