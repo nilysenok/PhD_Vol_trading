@@ -2,6 +2,7 @@
 Данные ≤ 2019: FASTBT_MAIN=<копия>, FASTBT_BARS1M=…/data/regen/D25/bars1m. Значений метрик в выводе нет (сравнение — sha и ==).
 python3 -m pytest tests/test_etap1_eval_v2.py -q --tb=no"""
 import hashlib
+import os
 import sys
 import types
 from dataclasses import replace
@@ -10,7 +11,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from fastbt import etap1, etap1_eval_v2 as v2, exec_e
+from fastbt import cache
+os.environ.setdefault("FASTBT_BARS1M", str(cache.MAIN / "data" / "regen" / "D25" / "bars1m"))     # 1-минутки лежат в основной копии
+from fastbt import etap1, etap1_eval_v2 as v2, exec_e  # noqa: E402
 from fastbt.etap1_eval import Evaluator
 from fastbt.etap1_poisk import load_setka
 from fastbt.etap1_run import run_e1
