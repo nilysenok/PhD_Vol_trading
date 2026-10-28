@@ -29,9 +29,9 @@ razmer:                                 # Ж-106 А.4, Г.15
 
 vyhod:                                  # Ж-106 Б
   tejk:         {setka: [rodnoy, kt0.5, kt1, kt1.5, kt2, kt3, sila_a05_b1, sila_a1_b1, sila_a05_b2, sila_a1_b2, net]}
-                # rodnoy: SMA ∓ z_exit·STD; kt*: k_t·σ_d·√h, h = 3 (❓ Ф-30); sila_a*_b*: k_t = a + b·ранг (пары — ❓ Ф-30)
+                # rodnoy: SMA ∓ z_exit·STD; kt*: k_t·σ_d·√h, h = 3 (Ж-109 п. 5); sila_a*_b*: k_t = a + b·ранг, пары Ж-109 п. 5
   k_s:          {setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0]}    # стоп обязателен, net снят; сдвиг на дивиденд
-  b0:           {setka: [net, 0.5, 1.0, 1.5, 2.0, sila]}   # безубыток, σ; sila: b0 = 2·ранг (c = 2, ❓ Ф-30)
+  b0:           {setka: [net, 0.5, 1.0, 1.5, 2.0, sila_c1, sila_c2, sila_c3]}   # безубыток, σ; sila_c*: b0 = c·ранг, c ∈ {1, 2, 3} (Ж-109 п. 5)
   stop_v_plyus: {setka: [net, p1.5_q0.5, p2_q1, p3_q1.5]}
   trejling:     {setka: [net, ekstr1, ekstr1.5, ekstr2, ekstr3, stup0.5, stup1]}   # линия сигнала — только у тренда
   chastichnyy:  {setka: [net, d1_3_r1, d1_3_r1.5, d1_3_r2, d1_2_r1, d1_2_r1.5, d1_2_r2]}
@@ -51,10 +51,10 @@ fiksirovano:
   odin_bar: stop_pervym
 
 kanon:                                   # схлопывания (тест на каждое)
-  - "m_score = net и tejk ∉ sila_* и b0 ≠ sila → rang_tip = obshchiy"
+  - "m_score = net и tejk ∉ sila_* и b0 ∉ sila_* → rang_tip = obshchiy"
 
 obyom:                                   # scratchpad/msp/obyom_v3.py
   signal: 343
-  torgovye: 107296358400
-  polnyy: 3.680e+13
-  posle_kanona: 3.247e+13
+  torgovye: 143061811200
+  polnyy: 4.907e+13
+  posle_kanona: 4.473e+13

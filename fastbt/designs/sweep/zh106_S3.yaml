@@ -22,9 +22,9 @@ razmer:
   sigma:    {setka: [rv5, ewma094, rv22, rv66]}
 
 vyhod:
-  tejk:         {setka: [rodnoy, kt0.5, kt1, kt1.5, kt2, kt3, sila_a05_b1, sila_a1_b1, sila_a05_b2, sila_a1_b2, net]}   # rodnoy: обратная граница канала; h = 20
+  tejk:         {setka: [rodnoy, kt0.5, kt1, kt1.5, kt2, kt3, sila_a05_b1, sila_a1_b1, sila_a05_b2, sila_a1_b2, net]}   # rodnoy: обратная граница канала; h = 10 (Ж-109 п. 5)
   k_s:          {setka: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0]}
-  b0:           {setka: [net, 0.5, 1.0, 1.5, 2.0, sila]}
+  b0:           {setka: [net, 0.5, 1.0, 1.5, 2.0, sila_c1, sila_c2, sila_c3]}
   stop_v_plyus: {setka: [net, p1.5_q0.5, p2_q1, p3_q1.5]}
   trejling:     {setka: [net, ekstr1, ekstr1.5, ekstr2, ekstr3, stup0.5, stup1, liniya]}   # liniya: граница канала, пересчёт вечером
   chastichnyy:  {setka: [net, d1_3_r1, d1_3_r1.5, d1_3_r2, d1_2_r1, d1_2_r1.5, d1_2_r2]}
@@ -38,5 +38,5 @@ dengi:
 
 fiksirovano: {fdr: t0, zaem_pct_god: 5, proverka: bars5m, vyhod_po_signalu: smena_storony_stop_zayavkoy, gap: open, odin_bar: stop_pervym}
 kanon:
-  - "m_score = net и tejk ∉ sila_* и b0 ≠ sila → rang_tip = obshchiy"
-obyom: {signal: 7, torgovye: 245248819200, polnyy: 1.717e+12, posle_kanona: 1.514e+12}
+  - "m_score = net и tejk ∉ sila_* и b0 ∉ sila_* → rang_tip = obshchiy"
+obyom: {signal: 7, torgovye: 326998425600, polnyy: 2.289e+12, posle_kanona: 2.087e+12}
