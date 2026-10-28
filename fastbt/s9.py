@@ -38,6 +38,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from fastbt import period_v2, zona
 from fastbt.cache import MAIN, code_hash
 
 
@@ -165,23 +166,28 @@ def set_scope(scope: str, val_start: int | None = None) -> None:
 
 PERIOD = "train"
 # Ж-075 п. 1: период В1 — годы метрик и начало окна валидации (= год прогрева); путь A без σ-источников
-PERIODS_S9 = {"train": ((2018, 2019, 2020, 2021), 2017), "train4": ((2016, 2017, 2018, 2019), 2015)}
+PERIODS_S9 = {"train": ((2018, 2019, 2020, 2021), 2017), "train4": ((2016, 2017, 2018, 2019), 2015),
+              "v2": (period_v2.YEARS, period_v2.VAL_START),      # Ж-113: 2015–2019, прогрев с 26.08.2014
+              "test1": ((2022, 2023, 2024), 2021)}      # test1 — реверс раунд 1 (Ж-117): зона Z2, прогрев 2021
 
 
 def set_period(period: str) -> None:
-    """train — как было (умолчание). train4 — В1: 2016–2019, прогрев 2015; только dev, только путь A / «A только Sk»."""
+    """train — как было (умолчание). train4 — В1: 2016–2019, прогрев 2015; v2 — 2015–2019, прогрев с 26.08.2014;
+    test1 — 2022–2024, прогрев 2021 (зона Z2);
+    только dev, только путь A / «A только Sk»."""
     global PERIOD, YEARS, VAL_START
     if period not in PERIODS_S9:
         raise ValueError(f"период {period!r}: есть {sorted(PERIODS_S9)}")
     if SCOPE != "dev":
-        raise ValueError("период train4 — только в разработке (scope dev)")
+        raise ValueError("период train4/test1 — только в разработке (scope dev)")
     PERIOD = period
     YEARS, VAL_START = PERIODS_S9[period]
+    zona.set_zone("test1" if period == "test1" else "dev")
 
 
 @contextlib.contextmanager
 def period_ctx(period: str):
-    """Период на время блока; на выходе (в т.ч. при ошибке) возвращает прежние PERIOD/YEARS/VAL_START (#418)."""
+    """Период на время блока; на выходе (в т.ч. при ошибке) возвращает прежние PERIOD/YEARS/VAL_START (#418) и зону."""
     old = PERIOD, YEARS, VAL_START
     set_period(period)
     try:
@@ -193,6 +199,7 @@ def period_ctx(period: str):
 def _restore_period(period, years, val_start) -> None:
     global PERIOD, YEARS, VAL_START
     PERIOD, YEARS, VAL_START = period, years, val_start
+    zona.set_zone("test1" if period == "test1" else "dev")
 
 
 def _latest_name() -> str:
@@ -431,6 +438,8 @@ def _job(args):
     cfg, cfg5 = period_cfg(cfg), period_cfg(cfg5)
     dsg.apply(cfg.design)
     td = load_ticker(ticker, cfg.corp_actions)
+    if PERIOD == "v2":                     # прогрев с 26.08.2014
+        td = period_v2.trim_td(td)
     sig = {lab: (h, align(td.dates, df)) for lab, (h, df) in srcs.items()}
     out = {"dates": td.dates, "lr": td.log_ret, "A": {}, "C": {}, "Cmeta": {}}
     for sid in SIDS:
@@ -439,6 +448,8 @@ def _job(args):
         a = ApproachA(u, cfg).run()
         a_tf = turnover.apply(a, u, cfg, "A")
         out["A"][sid] = {Y: v[1].astype(np.float64) for Y, v in a_tf.items()}
+        if PERIOD == "v2":                 # Ж-114 п. 1: невалидный тикер-день — нет сигнала, позиция держится
+            out["A"][sid] = period_v2.hold_years(out["A"][sid], ticker, td.dates)
         if SCOPE != "dev":                 # п. 15 (10:05): A без фильтра оборота — рядом с основным
             out.setdefault("A0", {})[sid] = {Y: np.asarray(v[1], np.float64) for Y, v in a.items()}
         for lab, (h, arr) in sig.items():
@@ -465,7 +476,7 @@ def cache_key() -> str:
     for lab, (p, _, _) in SOURCES.items():
         h.update(lab.encode() + hashlib.sha1(Path(p).read_bytes()).digest())
     from fastbt import data as fd          # аудит FA2b-Н1: A и C строятся по барам и корп. событиям
-    for p in (fd.OHLCV, fd.CORP):
+    for p in (zona.path("daily", fd.OHLCV), fd.CORP):      # зона Z2: ряд из FASTBT_Z2_DAILY
         h.update(hashlib.sha1(Path(p).read_bytes()).digest())
     from fastbt import dividendy           # Ж-057 п. 1 (Д5): lr и ряд сигналов зависят от таблицы дивидендов и множителя НДФЛ
     h.update(dividendy.digest().encode())
@@ -473,6 +484,9 @@ def cache_key() -> str:
         h.update(f"{SCOPE}|{VAL_START}|{VAL_END}|{CUT.date()}".encode())
     if PERIOD != "train":                  # Д5: период в ключе только при не-умолчании (ключ train не меняется)
         h.update(f"period|{PERIOD}|{YEARS}|{VAL_START}".encode())
+    if PERIOD == "v2":                     # прогрев и правило качества — в ключе (train4 не меняется)
+        h.update(f"start|{period_v2.START.date()}|hold_invalid".encode())
+        h.update(Path(period_v2.__file__).read_bytes())
     return h.hexdigest()[:10]
 
 
