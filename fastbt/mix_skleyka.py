@@ -51,9 +51,11 @@ def skleit(kontrakty: dict, daty, dney: int = DNEY_DO_ROLLA) -> pd.DataFrame:
         o = kontrakty[s]["OPEN"] if s else None
         o0 = float(o.get(t, np.nan)) if s else np.nan
         o1 = float(o.get(daty[i + 1], np.nan)) if s and i + 1 < len(daty) else np.nan
+        if o0 <= 0 or o1 <= 0:                             # nan <= 0 ложно: дыра — nan, ноль — ошибка данных (Д4)
+            raise ValueError(f"OPEN <= 0 у {s} вокруг {t.date()}: ноль в данных не подменяется")
         sec.append(s)
         op.append(o0)
-        ret.append(o1 / o0 - 1.0 if o0 > 0 else np.nan)
+        ret.append(o1 / o0 - 1.0)                              # nan, если цены нет на t или t+1
     return pd.DataFrame({"secid": sec, "open": op, "ret_oo": ret}, index=daty)
 
 

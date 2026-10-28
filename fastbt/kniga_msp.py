@@ -36,7 +36,7 @@ def vybor_stavok(score, sigma, sektor, k, rho, ks=1.0, m_score=None, max_sek=MAX
         if zan.get(sektor[j], 0) >= max_sek:
             continue
         zan[sektor[j]] = zan.get(sektor[j], 0) + 1
-        u[j] = np.sign(score[j]) * rho * m[j] / (ks * sigma[j])
+        u[j] = np.sign(score[j]) * min(1.0, rho * m[j] / (ks * sigma[j]))   # §3.3 п. 7: не выше 100 % NAV
     return u
 
 
