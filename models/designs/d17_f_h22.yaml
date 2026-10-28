@@ -1,0 +1,29 @@
+# Д17 агент F, h=22: рычаги Д17.2 (RRV), Д17.5 (винзоризация цели), Д17.4 (итерированный HAR) на финалисте D12_h22.
+# Модуль scripts/analysis/d17_f.py, оценка scripts/analysis/d17_f_eval.py. Без переподбора: точки финалиста по шагам.
+name: d17_f_h22
+horizon: 22
+data:
+  features: data/regen/features_pit_v3.parquet
+  rrv: data/regen/features_pit_v3_rrv.parquet
+  target: rv_target_mean_h22
+train:
+  protocol: l2_lib.fit (ES на val-годе шага, patience 30, max_bin 255, бины окна шага 1 для шагов >= 2)
+  steps: [1, 2, 3, 4, 5, 6]
+  seeds: [42, 43, 44]
+  exclude_features: data/regen/Bv2b_excluded_features.csv
+selection:
+  oos: шаги 2-5 (val 2017-2020), Б0.1 вне выборки
+  check: шаг 6 (2021)
+  criteria: c1-c3 на 2016-2021
+  threshold: ">= 1% к base по среднему 3 seed, знак во всех 3 seed, 2021 не хуже > 2%"
+  confirm_and_test: не открываются (тестовые части шага не считаются)
+variants: [base, rrv_pk, rrv_gk, tgt_pk, wins, iterhar]
+designs:
+  D12_h22:
+    cfg: '{"v9": true, "linear_lambda": 1}'
+    points: data/regen/D12_h22_selected_h22.csv
+    models: [xgb]
+    leg: seeds3
+    b01: smrob
+output: data/regen/D17F_h22_{design}_{variant}_{model}_val.parquet
+iterhar: data/regen/iterhar_h22.parquet  # date, ticker, step 1-10, iterhar_ln — для агента B (слагаемое HAR-X)

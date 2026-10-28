@@ -1,0 +1,18 @@
+ticker,sektor_moex,indeks,source_url,accessed
+AFLT,Транспорт,MOEXTN,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXTN.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+ALRS,Металлы и добыча,MOEXMM,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXMM.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+HYDR,Электроэнергетика,MOEXEU,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXEU.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+IRAO,Электроэнергетика,MOEXEU,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXEU.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+LKOH,Нефть и газ,MOEXOG,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXOG.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+LSRG,Строительство и недвижимость (в составе MOEXRE на 2021-12-30; на 2018-01-10 и 2019-06-28 состав пуст),MOEXRE,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXRE.json?date=2021-12-30,2026-10-27
+MGNT,Потребительский сектор,MOEXCN,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXCN.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+MOEX,Финансы,MOEXFN,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXFN.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+MTLR,Металлы и добыча,MOEXMM,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXMM.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+MTSS,Телекоммуникации,MOEXTL,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXTL.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+NVTK,Нефть и газ,MOEXOG,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXOG.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+OGKB,Электроэнергетика,MOEXEU,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXEU.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+PHOR,Химия и нефтехимия,MOEXCH,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXCH.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+RTKM,Телекоммуникации,MOEXTL,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXTL.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+SBER,Финансы,MOEXFN,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXFN.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+TATN,Нефть и газ,MOEXOG,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXOG.json?date=2018-01-10 ; date=2021-12-30,2026-10-27
+VTBR,Финансы,MOEXFN,https://iss.moex.com/iss/statistics/engines/stock/markets/index/analytics/MOEXFN.json?date=2018-01-10 ; date=2021-12-30,2026-10-27

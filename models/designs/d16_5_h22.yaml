@@ -1,0 +1,24 @@
+name: d16_5_h22
+block: Д16.5 чистый бустинг + регрессоры HAR-X как признаки (без прогноза HAR)
+h: 22
+tag: D16_5_h22
+compared_with: D15_h22
+matrix: data/regen/features_pit_v3_d165.parquet
+harx_terms:
+- ln_rvi2
+- ln_rvm_imoex
+- ln_rvm_mkt
+- lhar_1
+- lhar_5
+- lhar_22
+- pc1
+cfg: {}
+search: optuna TPE-30 seed 42, пространство B v2 (d15_tune.py)
+selected: data/regen/D16_5_h22_selected_h22.csv
+gate: среднее по seed 42/43/44 OOS 2017–2020 лучше текущей ≥ 1% и лучше на каждом
+  seed
+mean_tag: 0.253272
+mean_cur: 0.260966
+rel: -0.02948
+accepted: true
+test: data/regen/test_locked/D16_5_h22/

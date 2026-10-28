@@ -1,0 +1,62 @@
+# R2, агент F: группы признаков кластера 5 (schema_v1: features). Строится scripts/analysis/r2_features.py --stage build.
+# Информационное множество d0: строка (d, ticker) — данные по день d включительно; RV_d до 18:50; без shift(1).
+# Ключи — features_pit_v3h (ISS_start); history_start = 2014 -> строки date >= 2014-06-09.
+agent: F
+version: features_r2_v3
+changed_v3: "G1 (ln_rvm_imoex: флаг imoex_low_bars; строки внешних рядов как harx), G9 ln_rvi2_m — как R1"
+removed_v2: [g4_jbig_n22, g7_ln_amihud_w, g7_ln_amihud_m]  # блок O (PR #167), разбор — stage razbor
+combined: {file: data/regen/R2/features/features_r2_v3.parquet, sha256: 977a87d31f0474c5f4d113aa524f040fe3fe1a5f290da1c27c22ff1878af7a72}
+key: [date, ticker]
+history_start: {"2014": "date >= 2014-06-09 (ключи v3)", ISS_start: "все строки (v3h, с 2011-12-08)"}
+groups:
+  G0: {file: data/regen/features_pit_v3.parquet, note: "база; в версии d0 — у агента S/L (rv_d, rv_w, rv_m, jump_lag* там сдвинуты на 1)"}
+  G1:
+    file: data/regen/R2/feat/G1.parquet
+    sha256: d8d259502c20a825d300d78acf50c3900edb14a17fe9a91f0c809209d4fe448a
+    note: "внешние as-of: RVI (18:50), RV_m IMOEX, RV_m рынка d0, PC1–PC3 глобальной вол. (Yahoo — лаг доступности 1 в матрице)"
+    columns: [g1_ln_rvi2, g1_ln_rvm_imoex, g1_ln_rvm_mkt, g1_pc1, g1_pc2, g1_pc3]
+  G2:
+    file: data/regen/R2/feat/G2.parquet
+    sha256: fab61536ad6f5e6439c688475831030ed48a682605f7e5cbd65bce68f88d8ef1
+    note: "календарь окна [t+1, t+h] h=1/5/22: будни, число событий ЦБ/экспираций/FOMC, дней до ближайшего; known_from ≤ t; до 2014 — NaN"
+    columns: [g2_bd_h1, g2_n_cbr_h1, g2_dte_cbr, g2_n_expirations_h1, g2_dte_expirations, g2_n_fomc_h1, g2_dte_fomc, g2_bd_h5, g2_n_cbr_h5, g2_n_expirations_h5, g2_n_fomc_h5, g2_bd_h22, g2_n_cbr_h22, g2_n_expirations_h22, g2_n_fomc_h22]
+  G3:
+    file: data/regen/R2/feat/G3.parquet
+    sha256: b7d96c3baa4da1c5ba369995f63ce995d409e59d19a3f8abdedaf05c29126348
+    note: "ночной гэп, доля RV последнего часа (крейт), RRV PK/GK d/w/m (Д17.2) — день d"
+    columns: [g3_gap_on, g3_ln_gap2, g3_lasthour, g3_rrv_pk_d, g3_rrv_pk_w, g3_rrv_pk_m, g3_rrv_gk_d, g3_rrv_gk_w, g3_rrv_gk_m]
+  G4:
+    file: data/regen/R2/feat/G4.parquet
+    sha256: b259fb05fa1a3bcf529782f4410d9bb48bf5dfa27198846f9561c1b3c677e711
+    note: "скачки: ln BV, J/RV, число дней J>0 и J/RV≥0,25 за 5/22, дней с последнего, сумма J за 22 — окна включают день d"
+    columns: [g4_ln_bv, g4_jshare, g4_jx_n5, g4_jx_n22, g4_jx_since, g4_jbig_n5, g4_jbig_since, g4_jx_sum22, g4_ln_jx_sum22]
+  G5:
+    file: data/regen/R2/feat/G5.parquet
+    sha256: f0028b32a1bae4b228c893decc10aa189b7902a6fab6bbe4ca008d687c8ab947
+    note: "кросс-секция (крейт r2_xs): корреляция 17 тикеров d/w/m, СКО ln RV (день, неделя), ln RV к среднему, ln RV SBER/LKOH/GAZP дня d"
+    columns: [g5_corr_d, g5_corr_w, g5_corr_m, g5_disp_lnrv, g5_disp_lnrv_w, g5_lnrv_rel, g5_ln_lead_SBER, g5_ln_lead_LKOH, g5_ln_lead_GAZP]
+  G6:
+    file: data/regen/R2/feat/G6.parquet
+    sha256: a0624219d6147f896758fb2adb4996f7e7946743fbf5e49745fa68190d3dc405
+    note: "RV USDRUB (CETS) и ближнего BR d/w/m, срез 18:40, день d (as-of, протяжка не дольше 10 дней)"
+    columns: [g6_usd_ln_rv_d, g6_usd_ln_rv_w, g6_usd_ln_rv_m, g6_br_ln_rv_d, g6_br_ln_rv_w, g6_br_ln_rv_m]
+  G7:
+    file: data/regen/R2/feat/G7.parquet
+    sha256: 26f00fb38d80f8bf28cc4e6c8d20e8760ba078df624afb52ddada7970f4e2948
+    note: "ликвидность: ln объёма, ln оборота, оборот к среднему 22, Amihud d/w/m (крейт)"
+    columns: [g7_ln_volume, g7_ln_value, g7_ln_value_rel22, g7_amihud, g7_ln_amihud_d]
+  G8:
+    file: data/regen/R2/feat/G8.parquet
+    sha256: 117d52c8b3fa35d012825c52ae805fc3d06d8d967b1cca9dcd6b0c73fa65c286
+    note: "ē_5/ē_10 (тикер, рынок), серия знака — OOS HAR-J h=1 d0 (переоценка 1 января); ē Д23 (финалист, с 2016)"
+    columns: [g8_ebar5, g8_ebar10, g8_ebar5_mkt, g8_ebar10_mkt, g8_run_sign, g8_d23_ebar5, g8_d23_ebar10, g8_d23_ebar5_mkt, g8_d23_ebar10_mkt]
+  G9:
+    file: data/regen/R2/feat/G9.parquet
+    sha256: eca655ea2b2b9049eff467c3aac9593da747bbbac73eb91c63506658d73214c2
+    note: "ln RV_d/RV_w, ln RV_w/RV_m, ln RVI²/RV_m, ln RV_m/RV_m(−22) — d0"
+    columns: [g9_ln_d_w, g9_ln_w_m, g9_ln_m_m22, g9_ln_rvi2_m]
+  G10:
+    file: data/regen/R2/feat/G10.parquet
+    sha256: 2755ff8126f20ce24c2f137747bfa917c6c3719ba642b11c08a5f9530bdaafcb
+    note: "день недели, месяц, день месяца, будних дней до конца месяца, последний месяц квартала"
+    columns: [g10_dow, g10_month, g10_dom, g10_bd_to_month_end, g10_qend_month]

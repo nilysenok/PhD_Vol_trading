@@ -1,0 +1,12 @@
+# Эталоны С9 final3 до Н6 (код после #259/#260, ЭТ2; σ final3_full, комиссия 0,05%, 1 000 повторов; дневной ряд — старый ohlcv_daily_full, с вечерними барами после 22.06.2020).
+# Заменены эталонами на дневном ряду до 18:50 (Ж-029 Н6, 27.10.2026). sha256sum:
+1a3d19434ad43f2314d5c5177e38883480acf9c55ccf9ae9f752990919703a34  s9_B_targetirovanie_final3.csv
+4a4acccdbf074ceba90e901e9fd1da52fb55e2397f73473d42873ac253fbecd7  s9_C_rezhim_final3.csv
+12cf79763c618c8d18a551dc76d04e7a0dc5d0287e36e8bb0324bbf8b34eae26  s9_C3_tochnost_v_rezultat_final3.csv
+11d8975db76c190aae833b0b819154387d3863fc2642716a56880c6c94bca3b4  s9_D_zatvor_final3.csv
+64da417e428a7eb6b3a6bac3673260553d67bb57677e4d9ab3d6d0e7bfc1ead2  s9_D_zatvor_harj_final3.csv
+9c19f253b595b2a2645fd51da5e892efc2d1b81bcee43194ee0b039b4d7c94a5  s9_P1_vesa_tikerov_final3.csv
+79f1df00dd28d58ba2e00932258261b586443e2d703cf73cc1ca861c4bbec8ca  s9_P2_multistrategiya_final3.csv
+d3d43f719d3b11f24fe6a666972385e0c31bdb91a74f9610a78b99c0adb41154  s9_P3_fko_final3.csv
+95786fa5ab5793e9ecb4b2022f2c841d298b242efed0d690b4b1da41371986f1  s9_T1_komissii_final3.csv
+f81ad886a5a514d666fd9a6cec1d77c7eba1c35048b43e7f0e32a79f71022010  s9_T2_podperiody_final3.csv

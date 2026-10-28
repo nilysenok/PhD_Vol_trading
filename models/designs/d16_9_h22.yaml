@@ -1,0 +1,13 @@
+# Д16.9 (третий круг): переменные коэффициенты HAR-X — дерево состояний (MOB) с ридж-поправкой коэффициентов HAR-X в листьях; код — d16_79.py --task pwlin|pw
+name: d16_9_h22
+h: 22
+seeds: [42, 43, 44]
+features: data/regen/features_pit_v3.parquet
+state_features: [st_rvm_pct, st_ln_rvi2, st_days_after_20200622, st_days_after_20220224, st_days_since_jump]
+leaf_linear: 'ln HAR-J члены + слагаемые HAR-X (отклонение от глобального HAR-X, ридж lambda, свободный член без штрафа)'
+tree: {depth: [0, 2, 3], lambda: [10, 100, 1000, 10000], thresholds: 'децили 0.1..0.9 узла', min_leaf: 'max(3000, 10% окна)', select: 'внутренняя валидация шага (vy-1)'}
+note: 'LightGBM linear_tree не используется: линейная модель листа в нём строится на признаках расщеплений ветви'
+boost_points: data/regen/D12_h22_selected_h22.csv
+boost_cfg: {v9: true, linear_lambda: 1}
+blocks: ''
+outputs: {linear: data/regen/D16_9_h22_pwlin_val.parquet, boost_val: 'data/regen/D16_9_h22_{xgb,lgbm}_h22_val.parquet', test: 'data/regen/test_locked/D16_9_h22/'}

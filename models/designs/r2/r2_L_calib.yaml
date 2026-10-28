@@ -1,0 +1,26 @@
+# R2, агент L: модуль L3 драйвера — слой калибровки r2_calib.py (кластер 3 + кластер 12 scale_har; calib.update — кластер 15).
+agent: L
+modul: L3
+fayl: scripts/analysis/r2_calib.py
+kontrakt:
+  run: "run --designs <yaml> --h --seeds --steps --workers  # калибровка рядов предыдущего модуля цепочки (r2_driver.route) -> ряды <ряд>__cal, модуль L3"
+  leak: "leak --designs <yaml> --h  # детектор каждой различной настройки calib.* / boost.prob (нога HARJ, 3 тикера, шаги 1–3)"
+vhod: "r2_core.load_series(design, modul=<предыдущий модуль>, seed) — сырой ряд (без s²)"
+vyhod: "<ряд>__cal_h{h}_s{seed}_val.parquet (+ q05–q95 при boost.prob = scale_har); params.csv: <ряд>__cal:calib_*"
+neprimenimye_faktory: []   # калибровка применима к любому ряду цепочки; факторы F, G, H (s2_state, kappa, c_qlike) — её ключи
+rezhim_R2: "шаги 1–6, годы ≤ 2021 (r2_core.write_series / check_no_future)"
+opredeleniya: models/designs/r2/r2_L_nogi.yaml   # раздел calib
+# 26.10 (решение дирижёра по находке R, PR #194; до ответа владельца): эмбарго s² в слое калибровки.
+s2_embargo:
+  kluch: calib.s2_embargo   # ключ слоя L, в схеме S его нет: r2_calib.split_emb вынимает его до r2_core.validate, в хэш не идёт
+  values: ["on", "off"]
+  default: "on"             # режим R2 по умолчанию — для кандидатов и эталона В2 (HAR-J + s² sm) симметрично
+  rezhim_on: >-
+    update = step: из прошлых OOS-строк всех параметров калибровки (s², κ, s²_state, c_qlike, MZ, prob scale_har)
+    исключаются строки, чьё окно цели [t+1, t+h] заходит в оцениваемый val-год vy (конец окна ≥ 1 янв. vy).
+    update = daily эмбаргирован по построению (конец окна < d).
+  rezhim_off: "только контроль: прежнее поведение Б0.1 R1 / эталона ВЫР-1 (все строки шагов < t)"
+  etalon: >-
+    эталон для ворот — версия с эмбарго: data/regen/vyr/etalon_d0_s2emb_h{h}_val.parquet (har_corr),
+    R2/cache/VYR/ETA_b_d0_s2emb_h{h}_sdet_val.parquet; F_h(d0) — R2/cache/VYR/F_d0_s2emb_h{h}_s{seed}_val.parquet
+  proverki: "r2_calib.py kontrol (9/9), etalon_emb (контроль off = ВЫР-1 33/33), leak_chain (on: 288/288, Δ = 0)"

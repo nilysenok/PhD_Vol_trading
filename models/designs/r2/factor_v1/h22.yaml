@@ -1,0 +1,2541 @@
+plan: models/designs/r2/factor_plan_v1.csv
+plan_sha256: 31b2897751e5d81c776bcd11041dd2d7c2a5ba59b48d438102bbebcdcea3c9b8
+fiktivnye:
+- D
+mh_vhod:
+  faza: B
+  base_1:
+    ryad: F_1(d0) — финал первого раунда h=1 на ногах d0 (hyb₁)
+    file: R2/cache/VYR/F_d0_h1_s{seed}_val.parquet
+    seed: как у прогона (скрининг — 42, 43, 44)
+    s2: bez (поправка в ряде)
+  leg_1:
+    ryad: HAR-J+s² d0 = E_1 (нога₁)
+    file: vyr/etalon_d0_h1_val.parquet
+    col: har_corr
+    seed: det
+  posle_C: 'лучшая ячейка h=1 из gate_C_h1.yaml (её ряд и её нога); вход меняет прогноз,
+    но не yaml дизайна — ❓ S/M: в хэш кэша должен входить вход h=1 (иначе ряды фазы
+    B и после C под одним design_sha)'
+dizainy:
+- design: B_h22_r01 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 3
+- design: B_h22_r02 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r03 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 3
+  data:
+    history_start: ISS_start
+  calib:
+    kappa: fit
+  mh:
+    reconcile: MinT
+- design: B_h22_r04 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    kappa: fit
+  mh:
+    persist: qlike
+- design: B_h22_r05 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r06 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+- design: B_h22_r07 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+- design: B_h22_r08 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+  mh:
+    reconcile: MinT
+- design: B_h22_r09 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 3
+    agg: median
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r10 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+- design: B_h22_r11 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+- design: B_h22_r12 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+  mh:
+    reconcile: MinT
+- design: B_h22_r13 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+- design: B_h22_r14 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r15 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    kappa: fit
+  mh:
+    reconcile: MinT
+- design: B_h22_r16 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    kappa: fit
+  mh:
+    persist: qlike
+- design: B_h22_r17 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 3
+    agg: median
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    reconcile: MinT
+- design: B_h22_r18 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+- design: B_h22_r19 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+- design: B_h22_r20 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r21 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  mh:
+    persist: qlike
+- design: B_h22_r22 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+  mh:
+    reconcile: MinT
+- design: B_h22_r23 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    kappa: fit
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r24 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    kappa: fit
+- design: B_h22_r25 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 3
+  mh:
+    persist: qlike
+- design: B_h22_r26 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+  mh:
+    reconcile: MinT
+- design: B_h22_r27 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 3
+  data:
+    history_start: ISS_start
+  calib:
+    kappa: fit
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r28 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    kappa: fit
+- design: B_h22_r29 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    reconcile: MinT
+- design: B_h22_r30 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+  calib:
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+- design: B_h22_r31 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+- design: B_h22_r32 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r33 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+- design: B_h22_r34 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r35 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+  mh:
+    reconcile: MinT
+- design: B_h22_r36 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+  mh:
+    persist: qlike
+- design: B_h22_r37 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 3
+    agg: median
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r38 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+- design: B_h22_r39 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+- design: B_h22_r40 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    reconcile: MinT
+- design: B_h22_r41 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r42 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+- design: B_h22_r43 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+- design: B_h22_r44 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    reconcile: MinT
+- design: B_h22_r45 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 3
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+- design: B_h22_r46 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r47 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 3
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+  mh:
+    reconcile: MinT
+- design: B_h22_r48 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+  mh:
+    persist: qlike
+- design: B_h22_r49 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+  mh:
+    reconcile: MinT
+- design: B_h22_r50 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+- design: B_h22_r51 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+- design: B_h22_r52 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r53 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 3
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+  mh:
+    persist: qlike
+- design: B_h22_r54 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+  mh:
+    reconcile: MinT
+- design: B_h22_r55 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 3
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r56 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+- design: B_h22_r57 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+  mh:
+    persist: qlike
+- design: B_h22_r58 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+  mh:
+    reconcile: MinT
+- design: B_h22_r59 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+  mh:
+    persist: qlike
+    reconcile: MinT
+- design: B_h22_r60 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+- design: B_h22_r61 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  ens:
+    seeds: 3
+    agg: median
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+  mh:
+    reconcile: MinT
+- design: B_h22_r62 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+  calib:
+    s2_state: RVI_volvol
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+- design: B_h22_r63 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G5
+  - G6
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+- design: B_h22_r64 (точки D12_h22)
+  h: 22
+  leg:
+    type: HARJ
+  boost:
+    role: residual
+    lib: both_avg
+    grid: current
+    resid_source: cross_fit
+    clip_sigma: 3
+  features:
+  - G0
+  - G1
+  - G2
+  - G3
+  - G5
+  - G6
+  - G8
+  - G9
+  ens:
+    seeds: 3
+    agg: median
+  data:
+    recency_halflife: 4y
+    history_start: ISS_start
+  calib:
+    s2_state: RVI_volvol
+    kappa: fit
+    c_qlike: roll_2y
+  mh:
+    persist: qlike
+    reconcile: MinT
+meta:
+- run: 1
+  slozhnost: 3
+  A: -1
+  B: -1
+  C: -1
+  D: -1
+  E: -1
+  F: -1
+  G: -1
+  H: -1
+  J: -1
+  K: -1
+  L: -1
+  M: -1
+  N: -1
+  O: -1
+- run: 2
+  slozhnost: 10
+  A: 1
+  B: -1
+  C: -1
+  D: -1
+  E: -1
+  F: -1
+  G: -1
+  H: -1
+  J: 1
+  K: -1
+  L: 1
+  M: 1
+  N: 1
+  O: -1
+- run: 3
+  slozhnost: 10
+  A: -1
+  B: 1
+  C: -1
+  D: -1
+  E: -1
+  F: -1
+  G: 1
+  H: -1
+  J: 1
+  K: 1
+  L: -1
+  M: -1
+  N: 1
+  O: -1
+- run: 4
+  slozhnost: 11
+  A: 1
+  B: 1
+  C: -1
+  D: -1
+  E: -1
+  F: -1
+  G: 1
+  H: -1
+  J: -1
+  K: 1
+  L: 1
+  M: 1
+  N: -1
+  O: -1
+- run: 5
+  slozhnost: 14
+  A: -1
+  B: -1
+  C: 1
+  D: -1
+  E: -1
+  F: -1
+  G: 1
+  H: 1
+  J: 1
+  K: 1
+  L: 1
+  M: 1
+  N: 1
+  O: -1
+- run: 6
+  slozhnost: 9
+  A: 1
+  B: -1
+  C: 1
+  D: -1
+  E: -1
+  F: -1
+  G: 1
+  H: 1
+  J: -1
+  K: 1
+  L: -1
+  M: -1
+  N: -1
+  O: -1
+- run: 7
+  slozhnost: 9
+  A: -1
+  B: 1
+  C: 1
+  D: -1
+  E: -1
+  F: -1
+  G: -1
+  H: 1
+  J: -1
+  K: -1
+  L: 1
+  M: 1
+  N: -1
+  O: -1
+- run: 8
+  slozhnost: 10
+  A: 1
+  B: 1
+  C: 1
+  D: -1
+  E: -1
+  F: -1
+  G: -1
+  H: 1
+  J: 1
+  K: -1
+  L: -1
+  M: -1
+  N: 1
+  O: -1
+- run: 9
+  slozhnost: 10
+  A: -1
+  B: -1
+  C: -1
+  D: 1
+  E: -1
+  F: -1
+  G: 1
+  H: 1
+  J: 1
+  K: -1
+  L: -1
+  M: 1
+  N: 1
+  O: 1
+- run: 10
+  slozhnost: 9
+  A: 1
+  B: -1
+  C: -1
+  D: 1
+  E: -1
+  F: -1
+  G: 1
+  H: 1
+  J: -1
+  K: -1
+  L: 1
+  M: -1
+  N: -1
+  O: 1
+- run: 11
+  slozhnost: 9
+  A: -1
+  B: 1
+  C: -1
+  D: 1
+  E: -1
+  F: -1
+  G: -1
+  H: 1
+  J: -1
+  K: 1
+  L: -1
+  M: 1
+  N: -1
+  O: 1
+- run: 12
+  slozhnost: 14
+  A: 1
+  B: 1
+  C: -1
+  D: 1
+  E: -1
+  F: -1
+  G: -1
+  H: 1
+  J: 1
+  K: 1
+  L: 1
+  M: -1
+  N: 1
+  O: 1
+- run: 13
+  slozhnost: 9
+  A: -1
+  B: -1
+  C: 1
+  D: 1
+  E: -1
+  F: -1
+  G: -1
+  H: -1
+  J: -1
+  K: 1
+  L: 1
+  M: -1
+  N: -1
+  O: 1
+- run: 14
+  slozhnost: 12
+  A: 1
+  B: -1
+  C: 1
+  D: 1
+  E: -1
+  F: -1
+  G: -1
+  H: -1
+  J: 1
+  K: 1
+  L: -1
+  M: 1
+  N: 1
+  O: 1
+- run: 15
+  slozhnost: 12
+  A: -1
+  B: 1
+  C: 1
+  D: 1
+  E: -1
+  F: -1
+  G: 1
+  H: -1
+  J: 1
+  K: -1
+  L: 1
+  M: -1
+  N: 1
+  O: 1
+- run: 16
+  slozhnost: 9
+  A: 1
+  B: 1
+  C: 1
+  D: 1
+  E: -1
+  F: -1
+  G: 1
+  H: -1
+  J: -1
+  K: -1
+  L: -1
+  M: 1
+  N: -1
+  O: 1
+- run: 17
+  slozhnost: 10
+  A: -1
+  B: -1
+  C: -1
+  D: -1
+  E: 1
+  F: -1
+  G: 1
+  H: 1
+  J: -1
+  K: 1
+  L: -1
+  M: -1
+  N: 1
+  O: 1
+- run: 18
+  slozhnost: 15
+  A: 1
+  B: -1
+  C: -1
+  D: -1
+  E: 1
+  F: -1
+  G: 1
+  H: 1
+  J: 1
+  K: 1
+  L: 1
+  M: 1
+  N: -1
+  O: 1
+- run: 19
+  slozhnost: 9
+  A: -1
+  B: 1
+  C: -1
+  D: -1
+  E: 1
+  F: -1
+  G: -1
+  H: 1
+  J: 1
+  K: -1
+  L: -1
+  M: -1
+  N: -1
+  O: 1
+- run: 20
+  slozhnost: 12
+  A: 1
+  B: 1
+  C: -1
+  D: -1
+  E: 1
+  F: -1
+  G: -1
+  H: 1
+  J: -1
+  K: -1
+  L: 1
+  M: 1
+  N: 1
+  O: 1
+- run: 21
+  slozhnost: 11
+  A: -1
+  B: -1
+  C: 1
+  D: -1
+  E: 1
+  F: -1
+  G: -1
+  H: -1
+  J: 1
+  K: -1
+  L: 1
+  M: 1
+  N: -1
+  O: 1
+- run: 22
+  slozhnost: 8
+  A: 1
+  B: -1
+  C: 1
+  D: -1
+  E: 1
+  F: -1
+  G: -1
+  H: -1
+  J: -1
+  K: -1
+  L: -1
+  M: -1
+  N: 1
+  O: 1
+- run: 23
+  slozhnost: 14
+  A: -1
+  B: 1
+  C: 1
+  D: -1
+  E: 1
+  F: -1
+  G: 1
+  H: -1
+  J: -1
+  K: 1
+  L: 1
+  M: 1
+  N: 1
+  O: 1
+- run: 24
+  slozhnost: 13
+  A: 1
+  B: 1
+  C: 1
+  D: -1
+  E: 1
+  F: -1
+  G: 1
+  H: -1
+  J: 1
+  K: 1
+  L: -1
+  M: -1
+  N: -1
+  O: 1
+- run: 25
+  slozhnost: 9
+  A: -1
+  B: -1
+  C: -1
+  D: 1
+  E: 1
+  F: -1
+  G: -1
+  H: -1
+  J: 1
+  K: 1
+  L: -1
+  M: 1
+  N: -1
+  O: -1
+- run: 26
+  slozhnost: 10
+  A: 1
+  B: -1
+  C: -1
+  D: 1
+  E: 1
+  F: -1
+  G: -1
+  H: -1
+  J: -1
+  K: 1
+  L: 1
+  M: -1
+  N: 1
+  O: -1
+- run: 27
+  slozhnost: 8
+  A: -1
+  B: 1
+  C: -1
+  D: 1
+  E: 1
+  F: -1
+  G: 1
+  H: -1
+  J: -1
+  K: -1
+  L: -1
+  M: 1
+  N: 1
+  O: -1
+- run: 28
+  slozhnost: 11
+  A: 1
+  B: 1
+  C: -1
+  D: 1
+  E: 1
+  F: -1
+  G: 1
+  H: -1
+  J: 1
+  K: -1
+  L: 1
+  M: -1
+  N: -1
+  O: -1
+- run: 29
+  slozhnost: 10
+  A: -1
+  B: -1
+  C: 1
+  D: 1
+  E: 1
+  F: -1
+  G: 1
+  H: 1
+  J: -1
+  K: -1
+  L: 1
+  M: -1
+  N: 1
+  O: -1
+- run: 30
+  slozhnost: 11
+  A: 1
+  B: -1
+  C: 1
+  D: 1
+  E: 1
+  F: -1
+  G: 1
+  H: 1
+  J: 1
+  K: -1
+  L: -1
+  M: 1
+  N: -1
+  O: -1
+- run: 31
+  slozhnost: 13
+  A: -1
+  B: 1
+  C: 1
+  D: 1
+  E: 1
+  F: -1
+  G: -1
+  H: 1
+  J: 1
+  K: 1
+  L: 1
+  M: -1
+  N: -1
+  O: -1
+- run: 32
+  slozhnost: 12
+  A: 1
+  B: 1
+  C: 1
+  D: 1
+  E: 1
+  F: -1
+  G: -1
+  H: 1
+  J: -1
+  K: 1
+  L: -1
+  M: 1
+  N: 1
+  O: -1
+- run: 33
+  slozhnost: 10
+  A: -1
+  B: -1
+  C: -1
+  D: -1
+  E: -1
+  F: 1
+  G: 1
+  H: -1
+  J: 1
+  K: -1
+  L: 1
+  M: -1
+  N: -1
+  O: 1
+- run: 34
+  slozhnost: 9
+  A: 1
+  B: -1
+  C: -1
+  D: -1
+  E: -1
+  F: 1
+  G: 1
+  H: -1
+  J: -1
+  K: -1
+  L: -1
+  M: 1
+  N: 1
+  O: 1
+- run: 35
+  slozhnost: 11
+  A: -1
+  B: 1
+  C: -1
+  D: -1
+  E: -1
+  F: 1
+  G: -1
+  H: -1
+  J: -1
+  K: 1
+  L: 1
+  M: -1
+  N: 1
+  O: 1
+- run: 36
+  slozhnost: 12
+  A: 1
+  B: 1
+  C: -1
+  D: -1
+  E: -1
+  F: 1
+  G: -1
+  H: -1
+  J: 1
+  K: 1
+  L: -1
+  M: 1
+  N: -1
+  O: 1
+- run: 37
+  slozhnost: 11
+  A: -1
+  B: -1
+  C: 1
+  D: -1
+  E: -1
+  F: 1
+  G: -1
+  H: 1
+  J: -1
+  K: 1
+  L: -1
+  M: 1
+  N: 1
+  O: 1
+- run: 38
+  slozhnost: 14
+  A: 1
+  B: -1
+  C: 1
+  D: -1
+  E: -1
+  F: 1
+  G: -1
+  H: 1
+  J: 1
+  K: 1
+  L: 1
+  M: -1
+  N: -1
+  O: 1
+- run: 39
+  slozhnost: 12
+  A: -1
+  B: 1
+  C: 1
+  D: -1
+  E: -1
+  F: 1
+  G: 1
+  H: 1
+  J: 1
+  K: -1
+  L: -1
+  M: 1
+  N: -1
+  O: 1
+- run: 40
+  slozhnost: 13
+  A: 1
+  B: 1
+  C: 1
+  D: -1
+  E: -1
+  F: 1
+  G: 1
+  H: 1
+  J: -1
+  K: -1
+  L: 1
+  M: -1
+  N: 1
+  O: 1
+- run: 41
+  slozhnost: 9
+  A: -1
+  B: -1
+  C: -1
+  D: 1
+  E: -1
+  F: 1
+  G: -1
+  H: 1
+  J: -1
+  K: -1
+  L: 1
+  M: 1
+  N: 1
+  O: -1
+- run: 42
+  slozhnost: 8
+  A: 1
+  B: -1
+  C: -1
+  D: 1
+  E: -1
+  F: 1
+  G: -1
+  H: 1
+  J: 1
+  K: -1
+  L: -1
+  M: -1
+  N: -1
+  O: -1
+- run: 43
+  slozhnost: 14
+  A: -1
+  B: 1
+  C: -1
+  D: 1
+  E: -1
+  F: 1
+  G: 1
+  H: 1
+  J: 1
+  K: 1
+  L: 1
+  M: 1
+  N: -1
+  O: -1
+- run: 44
+  slozhnost: 11
+  A: 1
+  B: 1
+  C: -1
+  D: 1
+  E: -1
+  F: 1
+  G: 1
+  H: 1
+  J: -1
+  K: 1
+  L: -1
+  M: -1
+  N: 1
+  O: -1
+- run: 45
+  slozhnost: 10
+  A: -1
+  B: -1
+  C: 1
+  D: 1
+  E: -1
+  F: 1
+  G: 1
+  H: -1
+  J: 1
+  K: 1
+  L: -1
+  M: -1
+  N: -1
+  O: -1
+- run: 46
+  slozhnost: 13
+  A: 1
+  B: -1
+  C: 1
+  D: 1
+  E: -1
+  F: 1
+  G: 1
+  H: -1
+  J: -1
+  K: 1
+  L: 1
+  M: 1
+  N: 1
+  O: -1
+- run: 47
+  slozhnost: 7
+  A: -1
+  B: 1
+  C: 1
+  D: 1
+  E: -1
+  F: 1
+  G: -1
+  H: -1
+  J: -1
+  K: -1
+  L: -1
+  M: -1
+  N: 1
+  O: -1
+- run: 48
+  slozhnost: 12
+  A: 1
+  B: 1
+  C: 1
+  D: 1
+  E: -1
+  F: 1
+  G: -1
+  H: -1
+  J: 1
+  K: -1
+  L: 1
+  M: 1
+  N: -1
+  O: -1
+- run: 49
+  slozhnost: 13
+  A: -1
+  B: -1
+  C: -1
+  D: -1
+  E: 1
+  F: 1
+  G: -1
+  H: 1
+  J: 1
+  K: 1
+  L: 1
+  M: -1
+  N: 1
+  O: -1
+- run: 50
+  slozhnost: 10
+  A: 1
+  B: -1
+  C: -1
+  D: -1
+  E: 1
+  F: 1
+  G: -1
+  H: 1
+  J: -1
+  K: 1
+  L: -1
+  M: 1
+  N: -1
+  O: -1
+- run: 51
+  slozhnost: 10
+  A: -1
+  B: 1
+  C: -1
+  D: -1
+  E: 1
+  F: 1
+  G: 1
+  H: 1
+  J: -1
+  K: -1
+  L: 1
+  M: -1
+  N: -1
+  O: -1
+- run: 52
+  slozhnost: 13
+  A: 1
+  B: 1
+  C: -1
+  D: -1
+  E: 1
+  F: 1
+  G: 1
+  H: 1
+  J: 1
+  K: -1
+  L: -1
+  M: 1
+  N: 1
+  O: -1
+- run: 53
+  slozhnost: 8
+  A: -1
+  B: -1
+  C: 1
+  D: -1
+  E: 1
+  F: 1
+  G: 1
+  H: -1
+  J: -1
+  K: -1
+  L: -1
+  M: 1
+  N: -1
+  O: -1
+- run: 54
+  slozhnost: 13
+  A: 1
+  B: -1
+  C: 1
+  D: -1
+  E: 1
+  F: 1
+  G: 1
+  H: -1
+  J: 1
+  K: -1
+  L: 1
+  M: -1
+  N: 1
+  O: -1
+- run: 55
+  slozhnost: 13
+  A: -1
+  B: 1
+  C: 1
+  D: -1
+  E: 1
+  F: 1
+  G: -1
+  H: -1
+  J: 1
+  K: 1
+  L: -1
+  M: 1
+  N: 1
+  O: -1
+- run: 56
+  slozhnost: 12
+  A: 1
+  B: 1
+  C: 1
+  D: -1
+  E: 1
+  F: 1
+  G: -1
+  H: -1
+  J: -1
+  K: 1
+  L: 1
+  M: -1
+  N: -1
+  O: -1
+- run: 57
+  slozhnost: 12
+  A: -1
+  B: -1
+  C: -1
+  D: 1
+  E: 1
+  F: 1
+  G: 1
+  H: -1
+  J: -1
+  K: 1
+  L: 1
+  M: 1
+  N: -1
+  O: 1
+- run: 58
+  slozhnost: 13
+  A: 1
+  B: -1
+  C: -1
+  D: 1
+  E: 1
+  F: 1
+  G: 1
+  H: -1
+  J: 1
+  K: 1
+  L: -1
+  M: -1
+  N: 1
+  O: 1
+- run: 59
+  slozhnost: 13
+  A: -1
+  B: 1
+  C: -1
+  D: 1
+  E: 1
+  F: 1
+  G: -1
+  H: -1
+  J: 1
+  K: -1
+  L: 1
+  M: 1
+  N: 1
+  O: 1
+- run: 60
+  slozhnost: 8
+  A: 1
+  B: 1
+  C: -1
+  D: 1
+  E: 1
+  F: 1
+  G: -1
+  H: -1
+  J: -1
+  K: -1
+  L: -1
+  M: -1
+  N: -1
+  O: 1
+- run: 61
+  slozhnost: 11
+  A: -1
+  B: -1
+  C: 1
+  D: 1
+  E: 1
+  F: 1
+  G: -1
+  H: 1
+  J: 1
+  K: -1
+  L: -1
+  M: -1
+  N: 1
+  O: 1
+- run: 62
+  slozhnost: 12
+  A: 1
+  B: -1
+  C: 1
+  D: 1
+  E: 1
+  F: 1
+  G: -1
+  H: 1
+  J: -1
+  K: -1
+  L: 1
+  M: 1
+  N: -1
+  O: 1
+- run: 63
+  slozhnost: 12
+  A: -1
+  B: 1
+  C: 1
+  D: 1
+  E: 1
+  F: 1
+  G: 1
+  H: 1
+  J: -1
+  K: 1
+  L: -1
+  M: -1
+  N: -1
+  O: 1
+- run: 64
+  slozhnost: 19
+  A: 1
+  B: 1
+  C: 1
+  D: 1
+  E: 1
+  F: 1
+  G: 1
+  H: 1
+  J: 1
+  K: 1
+  L: 1
+  M: 1
+  N: 1
+  O: 1

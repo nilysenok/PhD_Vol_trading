@@ -1,0 +1,113 @@
+# Единая схема дизайна R2, версия 1 (протокол v3: docs/zadaniya/2026-10-26_vtoroy_raund_gibrida.md;
+# постановка владельца: docs/zadaniya/2026-10-26_r2_klastery_vladelec.md). Записана до первого прогона R2.
+#
+# Формат записи: <ключ>: {values: [...], default: ..., cluster: N, prio: А|Б|В, note: ...}
+#   values  — исчерпывающий список допустимых значений; иное значение = ошибка валидации (стоп до счёта);
+#   default — «простое» значение: его используют, если ключ в дизайне не указан; число ключей со значением
+#             не равным default = сложность дизайна (штраф за сложность, кластер 9);
+#   fixed   — значение одно и не меняется.
+#
+# Кэш: ключ = SHA-256 канонического yaml дизайна (кроме поля `design`, которое — только имя):
+#   1) дизайн дополняется всеми default из этой схемы; 2) ключи сортируются, списки сохраняют порядок;
+#   3) числа — десятичные строки без лишних нулей, булевы — true/false; 4) yaml.safe_dump(sort_keys=True,
+#   allow_unicode=True, default_flow_style=False); 5) в хэш входит строка `schema: v1`.
+#   Каталог кэша — data/regen/R2/cache/<sha256[:16]>/ (сервер — локальный NVMe, один писатель на воркер).
+#   Изменение схемы — новая версия schema_v2.yaml и новый префикс хэша; старый кэш не переиспользуется.
+
+schema: v1
+
+design: {type: str, note: "имя дизайна, в хэш не входит"}
+h: {values: [1, 5, 22]}
+seed: {values: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51], default: 42, note: "одиночный прогон; набор seed — ens.seeds"}
+
+data:                                         # кластер 1
+  info_set: {values: [d], default: d, fixed: true, cluster: 1, note: "данные по день d включительно, RV_d до 18:50 (решение 14:20)"}
+  embargo: {values: [h], default: h, fixed: true, cluster: 1, note: "последние h наблюдений перед годом валидации не в обучении"}
+  train_halt: {values: [keep, drop], default: keep, cluster: 1, prio: А, note: "окна цели через 28.02–23.03.2022, шаги 8–10; только сборка тестовых прогнозов победителей"}
+  target: {values: [ln_mean, mean_ln_jensen, ln_sum], default: ln_mean, cluster: 1, prio: Б}
+  recency_halflife: {values: [inf, 4y, 2y], default: inf, cluster: 1, prio: А}
+  history_start: {values: [2014, ISS_start], default: 2014, cluster: 1, prio: А}
+  winsor: {values: [none, p1_99_by_ticker], default: none, cluster: 1, prio: Б}
+  train_target_estimator: {values: [RV10, RV5_subsampled], default: RV10, cluster: 1, prio: В}
+  window: {values: [expanding, rolling3y], default: expanding, cluster: 2, prio: В}
+
+leg:                                          # кластеры 2, 11, 13, 14, 15
+  type: {values: [HARJ, HARX, HARX_regime, HARX_pooled, HEAVY, RealizedGARCH, MIDAS_RV, HAR_perlead, RVI_anchor, factor], default: HARJ, cluster: 2}
+  regressors: {values: [none, S1, S2, S3, S4, S5], default: none, cluster: 2, note: "S1=+RVI; S2=S1+RV_IMOEX; S3=S2+LHAR+PC1; S4=S3+HARQ+RSV±; S5 (h=22)=S4+RV66+RV132"}
+  enet: {lambda: {values: [0.01, 0.1, 1]}, alpha: {values: [0, 0.5, 1]}, default: "сетка целиком, выбор вложенным LOYO внутри складки", cluster: 2}
+  pooled_kappa: {values: [0, 0.5, 1], default: 1, cluster: 2, note: "β_i=(1−κ)β_pool+κβ_i; список = выбор внутри складки"}
+  regime_count: {values: [2, 3], default: 2, cluster: 2, note: "3 — приоритет В"}
+  robust: {values: [OLS, Huber], default: OLS, cluster: 2, prio: В}
+  struct: {values: [single, tau_midas, tau_boost, tau_rvi], default: single, cluster: 11}
+  struct_split: {values: [rv_whole, bv_plus_jump], default: rv_whole, cluster: 11}
+  tau_window: {values: [22, 44, 66], default: 22, cluster: 11}
+  tau_extend: {values: [const, AR1], default: const, cluster: 11}
+  moe: {values: [off, k2, k3], default: off, cluster: 13}
+  moe_gate: {values: [boost, logit], default: logit, cluster: 13}
+  moe_calib: {values: [isotonic, none], default: none, cluster: 13}
+  moe_hard: {values: [off, 0.7], default: off, cluster: 13}
+  panel: {values: [off, factor, factor_shrink_025, factor_shrink_05, factor_shrink_state], default: off, cluster: 14}
+  panel_beta_window: {values: [126, 252], default: 252, cluster: 14}
+  panel_market: {values: [RV_IMOEX, RV_eq17], default: RV_IMOEX, cluster: 14}
+  refit: {values: [yearly, quarterly, monthly], default: yearly, cluster: 15}
+  rls_lambda: {values: [1, 0.995, 0.99], default: 1, cluster: 15}
+  estimator: {values: [log_ols_calib, qmle_level], default: log_ols_calib, cluster: 15}
+
+boost:                                        # кластеры 4, 12, 15
+  role: {values: [none, feature, residual, offset, residual_std], default: none, cluster: 4, note: "none=V0; feature=Д8.12; residual=V9; offset=Д17.1 gamma, init_score=ln ноги с поправкой"}
+  resid_source: {values: [in_sample, cross_fit], default: in_sample, cluster: 4, note: "cross_fit: K=5 временных блоков с эмбарго h между блоками; для feature — прогноз ноги на обучении"}
+  lib: {values: [lightgbm, xgboost, both_avg], default: lightgbm, cluster: 4}
+  grid: {values: [current, resid_small_v1], default: current, cluster: 4, note: "current — точки R1; resid_small_v1 — LHS-60, отсечение 60→30→15→8 (r2_T, фаза D)"}
+  early_stop: {values: [native, qlike_total], default: native, cluster: 4, note: "qlike_total — по QLIKE итогового прогноза на внутренней валидационной складке, patience 30, ≤300 деревьев"}
+  monotone: {values: [off, on], default: off, cluster: 4}
+  objective: {values: [l2_log, gamma_level, huber_log], default: l2_log, cluster: 4, prio: Б}
+  clip_sigma: {values: [off, 2, 3], default: off, cluster: 4}
+  shrink: {values: [1, 0.75, 0.5], default: 1, cluster: 4, prio: Б}
+  linear_tree: {values: [off], default: off, fixed: true, cluster: 4}
+  prob: {values: [off, scale_boost, scale_har, quantile5], default: off, cluster: 12}
+  prob_dist: {values: [empirical, student], default: empirical, cluster: 12}
+  prob_window: {values: [2y, all], default: all, cluster: 12}
+  boost_refit: {values: [yearly, quarterly_warm, monthly], default: yearly, cluster: 15}
+
+features: {values: [G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10], default: [G0], cluster: 5,
+           note: "список групп; G0 обязательна; сложность = число групп сверх G0"}
+
+calib:                                        # кластер 3 (общий слой, симметрично для эталона — справочно)
+  s2_est: {values: [sm, smrob, sm_pooled, sm_by_ticker, sm_roll1y, sm_roll2y, sm_ewma097], default: sm, cluster: 3}
+  kappa: {values: [0.5, fit], default: 0.5, cluster: 3, note: "fit — по QLIKE на окне прошлых OOS, κ ∈ [0; 1,5]"}
+  s2_state: {values: [const, RVI, RVI_volvol, regime2], default: const, cluster: 3}
+  c_qlike: {values: [off, roll_all, roll_2y], default: off, cluster: 3}
+  mz: {values: [off, on], default: off, cluster: 3, prio: Б}
+  update: {values: [step, daily], default: step, cluster: 15}
+  order: {values: ["s2_state_kappa>c_qlike>mz"], default: "s2_state_kappa>c_qlike>mz", fixed: true, cluster: 3}
+
+mh:                                           # кластер 6
+  scheme: {values: [direct, decomp, iterated, joint_h, perlead], default: direct, cluster: 6}
+  decomp_k: {values: [null, 1, 5], default: null, cluster: 6, note: "h=22: {1,5}; h=5: 1"}
+  iterated_k: {values: [null, 5, 10], default: null, cluster: 6}
+  persist: {values: [off, OLS, qlike, pos_neg, sqrtRQ], default: off, cluster: 6, note: "ŷ_h = нога_h + ρ_h·r̂₁; h=1 — не применим"}
+  slope: {values: [off, on], default: off, cluster: 6}
+  reconcile: {values: [off, MinT], default: off, cluster: 6, note: "h=1 — не применим"}
+
+ens:                                          # кластеры 7, 8
+  seeds: {values: [1, 3, 10], default: 1, cluster: 8, note: "скрининг — 3, финалисты — 10"}
+  agg: {values: [mean, median], default: mean, cluster: 7, note: "агрегирование компонент ансамбля (seed × lib)"}
+  lib_agg: {values: [best_by_LOYO, avg], default: best_by_LOYO, cluster: 8}
+  leg_ens: {values: [single, equal, median, qlike_shrunk_05, qlike_shrunk_075], default: single, cluster: 8, note: "веса без усадки запрещены"}
+  window_ens: {values: [off, on], default: off, cluster: 8, prio: Б}
+  ticker_bag: {values: [off, on], default: off, cluster: 8, prio: Б}
+  stack: {values: [off, nested_oos], default: off, cluster: 8, prio: В}
+  uncert_shrink: {values: [off, on], default: off, cluster: 7, prio: Б}
+  ec: {values: [off, m5, m10], default: off, cluster: 7, note: "ŷ += κ_h·ē_m"}
+  range_guard: {values: [off, on], default: off, cluster: 7}
+
+selection:                                    # кластер 9 — фиксировано протоколом, в хэш входит
+  loyo_folds: {values: [[2017, 2018, 2019, 2020, 2021]], fixed: true}
+  entry: {wins_min: 3, etalon: HARJ_s2_d0_sm, c3_all_folds: true, c124: as_R1, fixed: true}
+  sigma: {mult: 2, seeds: 10, rule: D24_3, paired_with: F_h_d0, on: finalists, fixed: true}
+  complexity_penalty: {rank_delta: 1, qlike_rel: 0.01, fixed: true}
+
+guards:                                       # кластер 9 — обязательны у каждого ряда
+  info_set_shift_check: {values: [true], fixed: true, note: "Спирмен ln ŷ_d с ln RV_{d+s}, s ∈ {−2,−1,0,+1}, только 2017–2021; argmax ≠ 0 — блок"}
+  leak_detector: {values: [true], fixed: true}
+  read_after_2021: {values: [forbidden], fixed: true}

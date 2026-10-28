@@ -1,0 +1,28 @@
+# Итерация 2 этапа 1 (Ж-051): ансамбль по плато — ВЫПОЛНЕНО по #359/#361; файл описывает то, что посчитано.
+# Заменено #359: проектная сетка 01:31 (signal_krest/kub, vyhody_krest, golos 0,67, N = 8) не считалась и не действует.
+# Код: fastbt/etap1_ansambl.py, etap1_ansambl_eval.py, etap1_ansambl_run.py; таблицы: docs/tables/zh051/it2/; ledger: docs/tables/zh051/_ledger/.
+v: 1
+format: zh051-iteraciya
+punkt: "Ж-051"
+iteraciya: 2
+status: vypolneno_359
+nazvanie: ansambl_po_plato
+baza:
+  istochnik: "docs/tables/zh047/S{k}_itog_v2.csv"
+  zapusk: "2026-10-28T00:36:00"
+period: {otbor: train, validation: zakryto}
+komissiya: {otbor: 0.0004}
+tselevaya: min_msr_2018_2019
+tochki: "центр P1 + соседи ±1 по каждой оси набора, по одной оси за раз (углы куба не считаются); точки с одинаковым сигналом схлопываются (signal_key); div/cbr_div пропускаются"
+
+osi:
+  nabor:
+    setka: [top2, top3, vse]            # top2/top3 — первые оси по μ* Морриса (S{k}_morris.csv); vse — все оси сетки
+  rezhim:
+    setka: [srednee, golos]
+    # srednee: m = среднее позиций точек, направление sign(m), вес сделки × |m|; golos: строгое большинство > n/2, вес 1
+    # выходы, σ, вход и размер — центральной точки
+
+N: {S1: 6, S2: 6, S3: 6, S4: 6, S5: 6, S6: 6}   # ключи ledger ("ansambl", nabor, rezhim); общий N после итерации 2 — SHA256SUMS.txt
+golden: "ансамбль из одной точки = точка побайтно; sverka_s9 — сигнальные точки против боевого s9"
+ledger: {iteraciya: 2, fayl: "docs/tables/zh051/_ledger/S{k}/ledger_it2.pkl"}

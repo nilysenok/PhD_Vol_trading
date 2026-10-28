@@ -1,0 +1,472 @@
+# протокол B v2 (tune_Bv2.py, финальное обучение на всех строках, точки из Bv2_selected_h*.csv) — ворота совпадения с Bv2_*
+# Д8.12: ln F_HARJ_corr как признак бустинга. Правило: >= 1% к bv2b_base или снятие нарушения
+name: d812
+seed: 42
+horizons:
+- 5
+- 22
+source: data/regen/Bv2b_selected_h*.csv
+train:
+  protocol: b_v2
+  n_estimators: 1000
+  es_metric: l2
+  patience: 30
+  max_bin: 255
+  force_col_wise: true
+  float32: true
+  exclude_features: data/regen/Bv2b_excluded_features.csv
+data:
+  features: data/regen/features_pit_v2.parquet
+  target:
+    1: rv_target_h1
+    5: rv_target_mean_h5
+    22: rv_target_mean_h22
+hybrid:
+  variants:
+  - single
+  select: правило 25.10 (мин. нарушенных c1-c4, затем мин. средний val-QLIKE 2016-2021)
+  v7_lag: h
+  ref: true
+levers:
+  harj_feature: true
+models:
+  lgbm:
+    h1:
+      1:
+        num_leaves: 47
+        learning_rate: 0.06682729847488707
+        bagging_fraction: 0.8010244258050845
+        feature_fraction: 0.910323837623096
+        min_data_in_leaf: 110
+        reg_alpha: 0.016458754381463256
+        reg_lambda: 0.0018888524425661765
+      2:
+        num_leaves: 99
+        learning_rate: 0.11958463675669846
+        bagging_fraction: 0.5308528569255864
+        feature_fraction: 0.5692190974700491
+        min_data_in_leaf: 28
+        reg_alpha: 6.588237039940968
+        reg_lambda: 0.2375523697532007
+      3:
+        num_leaves: 103
+        learning_rate: 0.07414977613707877
+        bagging_fraction: 0.8054077905224222
+        feature_fraction: 0.7013122357874109
+        min_data_in_leaf: 63
+        reg_alpha: 0.3631772315037431
+        reg_lambda: 2.5399899545680102
+      4:
+        num_leaves: 124
+        learning_rate: 0.03352366136541107
+        bagging_fraction: 0.7058766790477183
+        feature_fraction: 0.4341379919564556
+        min_data_in_leaf: 76
+        reg_alpha: 0.2774349566836915
+        reg_lambda: 0.02712556113968329
+      5:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+      6:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+      7:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+      8:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+      9:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+    h5:
+      1:
+        num_leaves: 84
+        learning_rate: 0.05532944198397986
+        bagging_fraction: 0.7539879770343714
+        feature_fraction: 0.7378312112270891
+        min_data_in_leaf: 8
+        reg_alpha: 0.020640294352900934
+        reg_lambda: 0.011361215833390965
+      2:
+        num_leaves: 100
+        learning_rate: 0.04838213487214192
+        bagging_fraction: 0.6650062831496661
+        feature_fraction: 0.638221827657933
+        min_data_in_leaf: 183
+        reg_alpha: 0.003931218192078284
+        reg_lambda: 0.0034435399264184565
+      3:
+        num_leaves: 188
+        learning_rate: 0.10165493329034461
+        bagging_fraction: 0.868811708183197
+        feature_fraction: 0.4968833132222085
+        min_data_in_leaf: 58
+        reg_alpha: 0.0033563420432068795
+        reg_lambda: 2.4436682937479968
+      4:
+        num_leaves: 100
+        learning_rate: 0.04838213487214192
+        bagging_fraction: 0.6650062831496661
+        feature_fraction: 0.638221827657933
+        min_data_in_leaf: 183
+        reg_alpha: 0.003931218192078284
+        reg_lambda: 0.0034435399264184565
+      5:
+        num_leaves: 103
+        learning_rate: 0.07414977613707877
+        bagging_fraction: 0.8054077905224222
+        feature_fraction: 0.7013122357874109
+        min_data_in_leaf: 63
+        reg_alpha: 0.3631772315037431
+        reg_lambda: 2.5399899545680102
+      6:
+        num_leaves: 232
+        learning_rate: 0.05361206562151762
+        bagging_fraction: 0.6836258747462247
+        feature_fraction: 0.6046806546269688
+        min_data_in_leaf: 79
+        reg_alpha: 0.0011929096075432254
+        reg_lambda: 0.018463878024322946
+      7:
+        num_leaves: 232
+        learning_rate: 0.05361206562151762
+        bagging_fraction: 0.6836258747462247
+        feature_fraction: 0.6046806546269688
+        min_data_in_leaf: 79
+        reg_alpha: 0.0011929096075432254
+        reg_lambda: 0.018463878024322946
+      8:
+        num_leaves: 232
+        learning_rate: 0.05361206562151762
+        bagging_fraction: 0.6836258747462247
+        feature_fraction: 0.6046806546269688
+        min_data_in_leaf: 79
+        reg_alpha: 0.0011929096075432254
+        reg_lambda: 0.018463878024322946
+      9:
+        num_leaves: 232
+        learning_rate: 0.05361206562151762
+        bagging_fraction: 0.6836258747462247
+        feature_fraction: 0.6046806546269688
+        min_data_in_leaf: 79
+        reg_alpha: 0.0011929096075432254
+        reg_lambda: 0.018463878024322946
+    h22:
+      1:
+        num_leaves: 91
+        learning_rate: 0.06443643197726283
+        bagging_fraction: 0.9018311511346537
+        feature_fraction: 0.4001091643147448
+        min_data_in_leaf: 6
+        reg_alpha: 0.1823474796695261
+        reg_lambda: 0.003711442165811283
+      2:
+        num_leaves: 69
+        learning_rate: 0.0365543261131331
+        bagging_fraction: 0.7367507669922259
+        feature_fraction: 0.9514933340731607
+        min_data_in_leaf: 91
+        reg_alpha: 0.09085219681321821
+        reg_lambda: 9.555212882450041
+      3:
+        num_leaves: 72
+        learning_rate: 0.060577311445828945
+        bagging_fraction: 0.8550226776370818
+        feature_fraction: 0.8453673706518725
+        min_data_in_leaf: 142
+        reg_alpha: 0.017885183405786372
+        reg_lambda: 0.00539242042954535
+      4:
+        num_leaves: 15
+        learning_rate: 0.19613359051710016
+        bagging_fraction: 0.8337958597097943
+        feature_fraction: 0.6931418687490002
+        min_data_in_leaf: 7
+        reg_alpha: 0.0012944099149856648
+        reg_lambda: 4.825857246506363
+      5:
+        num_leaves: 15
+        learning_rate: 0.19613359051710016
+        bagging_fraction: 0.8337958597097943
+        feature_fraction: 0.6931418687490002
+        min_data_in_leaf: 7
+        reg_alpha: 0.0012944099149856648
+        reg_lambda: 4.825857246506363
+      6:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+      7:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+      8:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+      9:
+        num_leaves: 73
+        learning_rate: 0.037422734517177585
+        bagging_fraction: 0.6493806511256789
+        feature_fraction: 0.7957543182382857
+        min_data_in_leaf: 46
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+  xgb:
+    h1:
+      1:
+        max_depth: 9
+        learning_rate: 0.12751220350805903
+        subsample: 0.6245775339058823
+        colsample_bytree: 0.5143843610637963
+        min_child_weight: 40
+        reg_alpha: 2.29956023571292
+        reg_lambda: 0.05345208285857362
+      2:
+        max_depth: 3
+        learning_rate: 0.07586399878988886
+        subsample: 0.5892675260011078
+        colsample_bytree: 0.40453947956410957
+        min_child_weight: 2
+        reg_alpha: 0.0025260257002651856
+        reg_lambda: 0.005295244646263357
+      3:
+        max_depth: 7
+        learning_rate: 0.03797008072903642
+        subsample: 0.6340011217416996
+        colsample_bytree: 0.7611752528429064
+        min_child_weight: 7
+        reg_alpha: 0.12315176481689166
+        reg_lambda: 0.0051851066061059025
+      4:
+        max_depth: 9
+        learning_rate: 0.04733011620759162
+        subsample: 0.9670197872338282
+        colsample_bytree: 0.5744018606703988
+        min_child_weight: 55
+        reg_alpha: 5.5119432301367
+        reg_lambda: 0.048821313773345885
+      5:
+        max_depth: 10
+        learning_rate: 0.07970744839254147
+        subsample: 0.627002032792387
+        colsample_bytree: 0.7304125825858594
+        min_child_weight: 72
+        reg_alpha: 0.06844092292495642
+        reg_lambda: 0.003284669210212886
+      6:
+        max_depth: 7
+        learning_rate: 0.04290543913812402
+        subsample: 0.5026106136298812
+        colsample_bytree: 0.4694986637884307
+        min_child_weight: 33
+        reg_alpha: 0.5562877898849982
+        reg_lambda: 7.334057355473567
+      7:
+        max_depth: 7
+        learning_rate: 0.04290543913812402
+        subsample: 0.5026106136298812
+        colsample_bytree: 0.4694986637884307
+        min_child_weight: 33
+        reg_alpha: 0.5562877898849982
+        reg_lambda: 7.334057355473567
+      8:
+        max_depth: 7
+        learning_rate: 0.04290543913812402
+        subsample: 0.5026106136298812
+        colsample_bytree: 0.4694986637884307
+        min_child_weight: 33
+        reg_alpha: 0.5562877898849982
+        reg_lambda: 7.334057355473567
+      9:
+        max_depth: 7
+        learning_rate: 0.04290543913812402
+        subsample: 0.5026106136298812
+        colsample_bytree: 0.4694986637884307
+        min_child_weight: 33
+        reg_alpha: 0.5562877898849982
+        reg_lambda: 7.334057355473567
+    h5:
+      1:
+        max_depth: 10
+        learning_rate: 0.07970744839254147
+        subsample: 0.627002032792387
+        colsample_bytree: 0.7304125825858594
+        min_child_weight: 72
+        reg_alpha: 0.06844092292495642
+        reg_lambda: 0.003284669210212886
+      2:
+        max_depth: 10
+        learning_rate: 0.07970744839254147
+        subsample: 0.627002032792387
+        colsample_bytree: 0.7304125825858594
+        min_child_weight: 72
+        reg_alpha: 0.06844092292495642
+        reg_lambda: 0.003284669210212886
+      3:
+        max_depth: 10
+        learning_rate: 0.03779818956795007
+        subsample: 0.5568701757763054
+        colsample_bytree: 0.4694380296365113
+        min_child_weight: 57
+        reg_alpha: 0.0017203368336304481
+        reg_lambda: 3.2940018494512917
+      4:
+        max_depth: 5
+        learning_rate: 0.037422734517177585
+        subsample: 0.6493806511256789
+        colsample_bytree: 0.7957543182382857
+        min_child_weight: 16
+        reg_alpha: 0.0288676884986149
+        reg_lambda: 0.0022939206619537545
+      5:
+        max_depth: 5
+        learning_rate: 0.03588847945253401
+        subsample: 0.5117294879525882
+        colsample_bytree: 0.5621811092997666
+        min_child_weight: 8
+        reg_alpha: 0.06144278182608279
+        reg_lambda: 0.5897254359439454
+      6:
+        max_depth: 7
+        learning_rate: 0.03797008072903642
+        subsample: 0.6340011217416996
+        colsample_bytree: 0.7611752528429064
+        min_child_weight: 7
+        reg_alpha: 0.12315176481689166
+        reg_lambda: 0.0051851066061059025
+      7:
+        max_depth: 7
+        learning_rate: 0.03797008072903642
+        subsample: 0.6340011217416996
+        colsample_bytree: 0.7611752528429064
+        min_child_weight: 7
+        reg_alpha: 0.12315176481689166
+        reg_lambda: 0.0051851066061059025
+      8:
+        max_depth: 7
+        learning_rate: 0.03797008072903642
+        subsample: 0.6340011217416996
+        colsample_bytree: 0.7611752528429064
+        min_child_weight: 7
+        reg_alpha: 0.12315176481689166
+        reg_lambda: 0.0051851066061059025
+      9:
+        max_depth: 7
+        learning_rate: 0.03797008072903642
+        subsample: 0.6340011217416996
+        colsample_bytree: 0.7611752528429064
+        min_child_weight: 7
+        reg_alpha: 0.12315176481689166
+        reg_lambda: 0.0051851066061059025
+    h22:
+      1:
+        max_depth: 9
+        learning_rate: 0.10635361031016151
+        subsample: 0.7403498445986126
+        colsample_bytree: 0.7500750810524837
+        min_child_weight: 54
+        reg_alpha: 0.024578384456087416
+        reg_lambda: 0.00668838152946551
+      2:
+        max_depth: 6
+        learning_rate: 0.14363595987988764
+        subsample: 0.8986387921907741
+        colsample_bytree: 0.981421654227079
+        min_child_weight: 33
+        reg_alpha: 0.07975702542752797
+        reg_lambda: 1.18006373856721
+      3:
+        max_depth: 7
+        learning_rate: 0.08976687048589793
+        subsample: 0.8722270760649208
+        colsample_bytree: 0.8076170964633749
+        min_child_weight: 4
+        reg_alpha: 0.0016395830654834216
+        reg_lambda: 7.756690989504359
+      4:
+        max_depth: 5
+        learning_rate: 0.08731652212303803
+        subsample: 0.779938486570557
+        colsample_bytree: 0.8892740922289495
+        min_child_weight: 73
+        reg_alpha: 0.002444475219269673
+        reg_lambda: 0.060486447294813915
+      5:
+        max_depth: 4
+        learning_rate: 0.06383188798450969
+        subsample: 0.609963188651245
+        colsample_bytree: 0.7792784537349872
+        min_child_weight: 22
+        reg_alpha: 0.235392913814018
+        reg_lambda: 0.012267917274227437
+      6:
+        max_depth: 4
+        learning_rate: 0.06682729847488707
+        subsample: 0.8010244258050845
+        colsample_bytree: 0.910323837623096
+        min_child_weight: 47
+        reg_alpha: 0.016458754381463256
+        reg_lambda: 0.0018888524425661765
+      7:
+        max_depth: 4
+        learning_rate: 0.06682729847488707
+        subsample: 0.8010244258050845
+        colsample_bytree: 0.910323837623096
+        min_child_weight: 47
+        reg_alpha: 0.016458754381463256
+        reg_lambda: 0.0018888524425661765
+      8:
+        max_depth: 4
+        learning_rate: 0.06682729847488707
+        subsample: 0.8010244258050845
+        colsample_bytree: 0.910323837623096
+        min_child_weight: 47
+        reg_alpha: 0.016458754381463256
+        reg_lambda: 0.0018888524425661765
+      9:
+        max_depth: 4
+        learning_rate: 0.06682729847488707
+        subsample: 0.8010244258050845
+        colsample_bytree: 0.910323837623096
+        min_child_weight: 47
+        reg_alpha: 0.016458754381463256
+        reg_lambda: 0.0018888524425661765
