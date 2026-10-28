@@ -104,7 +104,7 @@ def write_csv(path: Path, meta: dict, cols: list, rows: list) -> None:
         w = csv.writer(fh)
         w.writerow(cols)
         for r in rows:
-            w.writerow([f"{x:.6f}" if isinstance(x, float) else x for x in r])
+            w.writerow([f"{x:.8f}" if isinstance(x, float) else x for x in r])
 
 
 def build(runs: dict, journals: dict, meta: dict) -> None:
@@ -112,8 +112,12 @@ def build(runs: dict, journals: dict, meta: dict) -> None:
     for sid in NAMES:
         r = runs[sid]
         reconcile(r["trades"], journals[sid])
-        a += [(sid, *x) for x in deciles(r["trades"])]
-        v += [(sid, *x) for x in long_short(r["trades"])]
+        d_rows, ls_rows = deciles(r["trades"]), long_short(r["trades"])
+        tot = sum(x["pnl"] for x in journals[sid])                           # G2: суммы таблиц (а), (в) = Σ pnl журнала
+        for s in (sum(x[4] for x in d_rows) / 100, ls_rows[2][2] / 100, (ls_rows[0][2] + ls_rows[1][2]) / 100):
+            assert abs(s - tot) < 1e-9, (sid, s, tot)
+        a += [(sid, *x) for x in d_rows]
+        v += [(sid, *x) for x in ls_rows]
         orders = [o for o in r["orders"] if o["d_sig"] >= "2018-01-01"]
         g += [(sid, *x) for x in limit_rows(orders)] if orders else [(sid, "лимиток нет: вход рынком по close", 0, 0, float("nan"), float("nan"), 0, float("nan"))]
     ser = {s: pd.Series(runs[s]["excess"]) for s in NAMES}
@@ -134,7 +138,7 @@ def main(d: str) -> None:
     jr = {s: journal(s) for s in NAMES}
     h = hashlib.sha256(b"".join((OUT / f"{s}_sdelki.csv").read_bytes() for s in NAMES)).hexdigest()[:16]
     code = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    dg = ",".join(f"{s}:{str(runs[s]['vhody'])[:12]}" for s in NAMES)
+    dg = ",".join(f"{s}:{runs[s]['vhody']}" for s in NAMES)
     build(runs, jr, {"коммит кода": code, "хэш входов": f"журналы sha256[:16]={h}; digest входов движка {dg}"})
 
 
