@@ -26,6 +26,7 @@ rf_cal[t] = rf/365·календарные дни [t, след. торговый
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 
 from fastbt.exec_e2 import Run2
 from fastbt.exec_e_parab import parab_check, parab_new
@@ -127,14 +128,21 @@ def unit_series(days, close, kind: str, sigma, atr) -> np.ndarray | None:
     return np.asarray(atr, float) / cl
 
 
+def stale_steps(dates, ix, razryv: int) -> frozenset:
+    """Номера торговых шагов j, перед которыми разрыв с предыдущим торговым днём тикера > razryv календарных дней."""
+    d = pd.DatetimeIndex(dates)
+    return frozenset(j for j in range(1, len(ix)) if (d[ix[j]] - d[ix[j - 1]]).days > razryv)
+
+
 def _new_axes(p: Params, ed) -> bool:
     return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik) or p.vhod_open \
         or p.T != 1 or p.reentry_den or v5_new(p) or parab_new(p)     # Л6, П3b → медленный путь
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None,
-        urovni=None, rang=None) -> Result:
-    """rang[d] — ранг силы сигнала дня d, [0; 1] (V6-b: Params.b0_c, fastbt/exec_e_v6.py); иначе не нужен.
+        urovni=None, rang=None, dates=None) -> Result:
+    """dates[i] — календарная дата строки i (нужна при Params.razryv: заявка, поставленная вечером перед разрывом > razryv дней, снимается).
+    rang[d] — ранг силы сигнала дня d, [0; 1] (V6-b: Params.b0_c, fastbt/exec_e_v6.py); иначе не нужен.
     urovni — уровни стоп-заявок по дням (vhod_tip = stop_zayavka, fastbt/stop_zayavki.py), обязателен при нём, иначе не принимается.
     tejk_M[d] — уровень M сигнала на день d (Params.tejk ≠ net, Ж-084). rf_cal[t] — ставка/365·календарные дни [t, следующий торговый день) (msp.cal_days, Н2).
     close[t] — закрытие дня по Н6 (18:50); None — close последнего 5-мин бара (E).
@@ -173,6 +181,10 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
     else:
         r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr, rang=rang, **un) if _new_axes(p, ed) \
             else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr, rang=rang, **un)
+    if p.razryv is not None:
+        if dates is None or len(dates) != len(days):
+            raise ValueError("Params.razryv требует dates длины days")
+        r.stale = stale_steps(dates, r.ix, p.razryv)
     for j, i in enumerate(r.ix):
         r.step(j, i)
     n = len(days)
