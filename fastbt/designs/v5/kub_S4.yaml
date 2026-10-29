@@ -1,0 +1,55 @@
+# Куб отбора v5, S4 Supertrend (тренд). Формат и решения (1)–(5) — как в kub_S1.yaml; ограничения стоп-заявки и ↺ — как в kub_S3.yaml.
+# Сигнал — zh126_S4.yaml (atr_period 15 × mult 15) = fastbt/signals/v5_s34.S4_GRID_V5 (period, mnozh).
+v: 3
+format: progon-kub
+setka: v5
+sid: S4
+tip: trend
+period: train4
+periody: [train4, v2]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261030, seed2: 20261031, scramble: true, N1: 32768}
+istochniki: {zh126: fastbt/designs/zh126/zh126_S4.yaml, v4: c22a4b36, r: 6a7a4636, setka: docs/otchety/2026-10-29_setka_v5.md}
+zakrepleno: {tf: den, proverka: bars5m, vhod_tip: stop_zayavka}
+
+signal:
+  period: {setka: [3, 5, 7, 10, 12, 14, 18, 20, 25, 30, 35, 40, 50, 60, 80]}
+  mnozh:  {setka: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 5.0, 6.0]}
+
+filtr:
+  adx_th: {setka: [0, 15, 20, 25, 30], yakor: 0}
+  atr_lo: {setka: [0, 5, 10, 15, 20, 25], yakor: 0}
+  vol_th: {setka: [0, 0.5, 0.7, 1.0, 1.2, 1.5], yakor: 0}
+  rsi_th: {setka: [0, 20, 25, 30, 35, 40], yakor: 0}
+  mom_n:  {setka: [0, 1, 2, 3, 5, 7, 10], yakor: 0}
+  dow:    {setka: [0, 1, 2, 3], yakor: 0}
+
+vhod:
+  k_e: {setka: [-0.5, -0.25, 0, 0.25], yakor: 0}
+
+vyhod:
+  stop_nach:  {setka: [sigma:1.0, sigma:1.5, sigma:2.0, sigma:2.5, sigma:3.0, sigma:4.0], yakor: sigma:2.0}
+  tejk:       {setka: [net, rr:0.5, rr:1.0, rr:1.5, rr:2.0, rr:2.5, rr:3.0, rr:4.0,
+                       sigh:0.5, sigh:1.0, sigh:1.5, sigh:2.0, sigh:3.0, sila:0.5:1, sila:1:1, sila:0.5:2, sila:1:2], yakor: net}
+  trail:      {setka: [net, atr:0.5, atr:1.0, atr:1.5, atr:2.0, atr:2.5, atr:3.0, atr:4.0, atr:5.0,
+                       sigma:1.0, sigma:1.5, sigma:2.0, sigma:3.0, parab:0.01:0.1, parab:0.01:0.15, parab:0.02:0.1, parab:0.02:0.15],
+               yakor: net}
+  tau:        {setka: [3, 5, 7, 10, 15, 20, 30, 50, 100, 200, net], yakor: net}
+  chast:      {setka: [net, "1/3:1", "1/3:1.5", "1/3:2", "1/2:1", "1/2:1.5", "1/2:2"], yakor: net}
+  razmer_tip: {setka: [ravnyj, risk_sigma], yakor: ravnyj}
+  m_sily:     {setka: ["1", lin, kvadr], yakor: "1"}
+  rang_tip:   {setka: [tikernyj, obshchiy, srednee], yakor: tikernyj}
+
+k3:
+  period: [7, 10, 14, 20]
+  mnozh: [2.0, 2.5, 3.0, 3.5, 4.0]
+  stop_nach: [sigma:1.5, sigma:2.0, sigma:2.5, sigma:3.0]
+  trail: [net, atr:1.0, atr:2.0, atr:3.0, parab:0.02:0.1]
+  tau: [10, 20, 50, net]
+
+faza3: {consec: [1, 2], min_hold: [0, 5], cooldown: [0, 5, 10], min_sily: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
+msp: {uroven_razmera: [0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5],
+      rho: [0.002, 0.003, 0.005, 0.0075, 0.01], L: [1, 1.5, 2, 3, 4], sigma_cel: [0.08, 0.1, 0.15, 0.2], okno: [21, 63]}
+yakorya_progon: {sigma: rv22, proverka: bars5m, storona: obe, rezhim: net, ed_lim: sigma, zhizn: den, lestnica: net, gap: vhod,
+                 t_vyhod: close, k_x: net, filtr: net, tejk_signal: net, q_sily: 0.0}

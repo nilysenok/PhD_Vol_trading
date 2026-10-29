@@ -1,0 +1,69 @@
+# Куб отбора v5, S6 VWAP (диапазон, фильтры «kontr»). Формат, решения (1)–(5) и строки ↺ — как в kub_S1.yaml; коммитится до счёта.
+# Сигнал — §1.4 = fastbt/signals/v5_s56.G6: zh126_S6.yaml (окно 15 × порог 12) + v4 dir_bias и fs с net (s5s6_rerun.py:217-276).
+v: 3
+format: progon-kub
+setka: v5
+sid: S6
+tip: kontr
+period: train4
+periody: [train4, v2]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261030, seed2: 20261031, scramble: true, N1: 32768}
+istochniki: {zh126: fastbt/designs/zh126/zh126_S6.yaml, v4: c22a4b36, r: 6a7a4636, setka: docs/otchety/2026-10-29_setka_v5.md}
+zakrepleno: {tf: den, proverka: bars5m}
+
+signal:
+  vwap_window: {setka: [3, 5, 7, 10, 12, 15, 18, 20, 25, 30, 40, 50, 60, 80, 100]}
+  dev_mult:    {setka: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 3.5, 4.0]}
+  dir_bias:    {setka: ["OFF", "ON"]}
+  filter_set:  {setka: [net, 1, 2, 3, 4]}
+
+filtr:
+  adx_th:      {setka: [0, 15, 20, 25, 30, 35, 40], yakor: 0}
+  atr_lo:      {setka: [0, 5, 10, 15, 20, 25], yakor: 0}
+  vol_th:      {setka: [0, 0.5, 0.7, 1.0, 1.2, 1.5], yakor: 0}
+  rsi_th:      {setka: [0, 20, 25, 30, 35, 40], yakor: 0}
+  mom_n:       {setka: [0, 1, 2, 3, 5, 7, 10], yakor: 0}
+  dow:         {setka: [0, 1, 2, 3], yakor: 0}
+  squeeze_pct: {setka: [0, 25, 40, 50, 60], yakor: 0}
+
+vhod:
+  k_e:     {setka: [0, 0.25, 0.5, 0.75, 1.0, 1.5], yakor: 0}
+  T:       {setka: [1, 2, 3, 5], yakor: 1}
+  reentry: {setka: [net, da], yakor: net}
+
+vyhod:
+  stop_nach:    {setka: [pct:0.003, pct:0.005, pct:0.01, pct:0.015, pct:0.02, pct:0.03, pct:0.05, pct:0.07, pct:0.1,
+                         atr:0.5, atr:0.75, atr:1.0, atr:1.5, atr:2.0, atr:2.5, atr:3.0, atr:4.0, atr:5.0, atr:6.0, atr:8.0,
+                         sigma:1.0, sigma:1.5, sigma:2.0, sigma:2.5, sigma:3.0, sigma:4.0], yakor: sigma:2.0}
+  tejk:         {setka: [net, rr:0.5, rr:1.0, rr:1.5, rr:2.0, rr:2.5, rr:3.0, rr:4.0,
+                         pct:0.003, pct:0.005, pct:0.01, pct:0.02, pct:0.03, pct:0.05, pct:0.07, pct:0.1, pct:0.15,
+                         atr:0.5, atr:1.0, atr:1.5, atr:2.0, atr:3.0, atr:4.0, atr:5.0, atr:8.0, atr:10.0, rodnoy,
+                         sigh:0.5, sigh:1.0, sigh:1.5, sigh:2.0, sigh:3.0, sila:0.5:1, sila:1:1, sila:0.5:2, sila:1:2], yakor: net}
+  trail:        {setka: [net, atr:0.5, atr:1.0, atr:1.5, atr:2.0, atr:2.5, atr:3.0, atr:4.0, atr:5.0,
+                         sigma:1.0, sigma:1.5, sigma:2.0, sigma:3.0, step:0.5, step:1.0], yakor: net}
+  bezubytok:    {setka: [net, atr:0.5, atr:1.0, atr:1.5, atr:2.0, rang:1, rang:2, rang:3], yakor: net}
+  stop_v_plyus: {setka: [net, "1.5:0.5", "2:1", "3:1.5"], yakor: net}
+  tau:          {setka: [3, 5, 7, 10, 15, 20, 30, 50, 100, 200, net], yakor: net}
+  chast:        {setka: [net, "1/3:1", "1/3:1.5", "1/3:2", "1/2:1", "1/2:1.5", "1/2:2"], yakor: net}
+  pir:          {setka: [0, 0.5, 1], yakor: 0}
+  smena:        {setka: [da, net], yakor: da}
+  razmer_tip:   {setka: [ravnyj, risk_sigma], yakor: ravnyj}
+  m_sily:       {setka: ["1", lin, kvadr], yakor: "1"}
+  rang_tip:     {setka: [tikernyj, obshchiy, srednee], yakor: tikernyj}
+
+k3:
+  vwap_window: [5, 10, 20, 60]
+  dev_mult: [0.5, 1.0, 1.5, 2.0]
+  dir_bias: ["OFF", "ON"]
+  filter_set: [1, 2, 3, 4]
+  stop_nach: [atr:1.0, atr:1.5, atr:2.0, atr:2.5, atr:3.0]
+  tejk: [net, atr:1.0, atr:2.0, atr:3.0, atr:4.0]
+  tau: [5, 10, 20, net]
+
+faza3: {consec: [1, 2], min_hold: [0, 5], cooldown: [0, 5, 10], min_sily: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
+msp: {uroven_razmera: [0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5],
+      rho: [0.002, 0.003, 0.005, 0.0075, 0.01], L: [1, 1.5, 2, 3, 4], sigma_cel: [0.08, 0.1, 0.15, 0.2], okno: [21, 63]}
+yakorya_progon: {sigma: rv22, proverka: bars5m, storona: obe, rezhim: net, ed_lim: sigma, zhizn: den, lestnica: net, gap: vhod,
+                 t_vyhod: close, k_x: net, filtr: net, tejk_signal: net, q_sily: 0.0}
