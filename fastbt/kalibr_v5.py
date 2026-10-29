@@ -20,6 +20,7 @@ from fastbt import grids, ledger_v2 as lm, sweep_plato as SP
 from fastbt.approach_a import _desc
 from fastbt.data import year_bounds
 from fastbt.execlayer import vote
+from fastbt.kalibr_v5_golos import golos_v2
 from fastbt.sweep_pts import MIN_NB, TOR_MIN
 
 PERIODY = {"train4": ("2016-01-01", (2017, 2018, 2019)),     # §3: окно 2017 на train4 — один 2016
@@ -151,8 +152,9 @@ def ansambl(pul: Pul, k: int, chleny: list, s_t: int, e_t: int):
     return out[s_t:e_t]
 
 
-def god(pul: Pul, t: int, nachalo: str) -> dict:
-    """Отбор года t по всем тикерам пула: {okno, tikery: {k: {chleny, poz, ryad} | None}, n_proby}."""
+def god(pul: Pul, t: int, nachalo: str, poz_fn=None) -> dict:
+    """Отбор года t по всем тикерам пула: {okno, tikery: {k: {chleny, poz, ryad} | None}, n_proby}.
+    poz_fn(kl, k) -> pos[T] автомата v2 (П6, kalibr_v5_golos) — голос по ним; None — по позициям пула (`ansambl`, v4)."""
     s, e = int(np.searchsorted(pul.daty, np.datetime64(nachalo))), granica(pul.daty, t)
     s_t, e_t = year_bounds(pul.daty, t)
     if e - s < 2:
@@ -163,15 +165,16 @@ def god(pul: Pul, t: int, nachalo: str) -> dict:
         top20 = faza2(pul, k, s, e, sh, top50)
         chleny = _desc(top20, lambda c: c["sh"])[:grids.ENS_K]          # фаза 3 до П2 — тождество (§3)
         tik[k] = None if not chleny else {"chleny": [c["kl"] for c in chleny], "plato": [c["plato"] for c in chleny],
-                                          "poz": ansambl(pul, k, chleny, s_t, e_t),
+                                          "poz": ansambl(pul, k, chleny, s_t, e_t) if poz_fn is None
+                                          else golos_v2(poz_fn, chleny, k, pul.daty.size, s_t, e_t),
                                           "ryad": np.stack([pul.ex[c["i"], k, s_t:e_t] for c in chleny])}
     return {"god": t, "okno": (str(pul.daty[s]), str(pul.daty[e - 1])), "tikery": tik, "n_proby": pul.n_proby()}
 
 
-def kalibrovat(pul: Pul, period: str = "train4") -> dict:
+def kalibrovat(pul: Pul, period: str = "train4", poz_fn=None) -> dict:
     """{t: god(...)} по годам walk-forward периода (2017–2019)."""
     nachalo, gody = PERIODY[period]
-    return {t: god(pul, t, nachalo) for t in gody}
+    return {t: god(pul, t, nachalo, poz_fn) for t in gody}
 
 
 def pul_iz_ledger(root: Path, sid: str, osi: dict) -> Pul:
