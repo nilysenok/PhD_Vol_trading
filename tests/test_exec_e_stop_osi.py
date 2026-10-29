@@ -152,14 +152,13 @@ def test_mutaciya_edinitsa_dnya_d_plyus_1_lovitsya(monkeypatch):
     assert _t(bars, p).exit_px != ok
 
 
-def test_novaya_os_na_stop_zayavke_idet_etalonom(monkeypatch):
+def test_novaya_os_na_stop_zayavke_idet_yadrom():
+    """Ф-vhod_open: ed_s / chand на стоп-заявке считает ядро (прежде — эталон); побайтно равно эталону."""
     p = P(b=2.0, ed_s="atr", chand=1.5)
-    assert fast_exec.ne_znaet(p) == ["ed_s", "chand"] and not fast_etap1._yadro_v5(p, None, None, None)
+    assert fast_exec.ne_znaet(p) == [] and fast_etap1._yadro_v5(p, None, None, None)
     bars = [LONG, [(102, 102, 97, 99)]]
     assert _go(bars, p, f=fast_etap1.run)[0].trades == _go(bars, p)[0].trades
     assert fast_exec.ne_znaet(P(b=2.0, a=2.0)) == []                  # у прежних точек маршрут прежний
-    monkeypatch.setattr(exec_e_stop, "stop_novye", lambda p: [])
-    assert fast_exec.ne_znaet(p) == []                                  # подложенная ошибка: ядро «знает» ось — тест выше упал бы
 
 
 def test_T_i_smena_na_stop_zayavke_ne_prinimayutsya():
