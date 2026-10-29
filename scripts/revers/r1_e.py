@@ -98,8 +98,8 @@ def fazy_po_mesyacam(faza: pd.Series, gody) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def doli_po_godam(faza: pd.Series, gody) -> pd.DataFrame:
-    return fazy.doli_po_godam(pd.DataFrame({"faza": faza}), gody)
+def doli_po_godam(faza: pd.Series, gody, **kw) -> pd.DataFrame:
+    return fazy.doli_po_godam(pd.DataFrame({"faza": faza}), gody, **kw)
 
 
 def po_fazam(imya: str, x: np.ndarray, baza: np.ndarray, faza: pd.Series, plata: float) -> list:
@@ -144,7 +144,7 @@ def tablicy(period: str, imoex: pd.Series, serii: dict) -> dict:
     for imya, (d, x, b) in serii.items():
         for plata in (PLATA, 0.0):
             rows += po_fazam(imya, x, b, faza, plata)
-    return {"fazy_mesyacy": fazy_po_mesyacam(faza_k, gody), "fazy_doli": doli_po_godam(faza_k, gody),
+    return {"fazy_mesyacy": fazy_po_mesyacam(faza_k, gody), "fazy_doli": doli_po_godam(faza_k, gody, **({"status": SHAPKA[2:]} if period == "test1" else {})),
             "po_fazam": pd.DataFrame(rows)}
 
 

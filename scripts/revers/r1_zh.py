@@ -21,8 +21,17 @@ from fastbt import zona  # noqa: E402
 PERIODS = {"train4": dict(gody=(2018, 2019), last="2019-12-31", n_k2=100),
            "test1": dict(gody=(2022, 2023, 2024), last="2024-12-31", n_k2=20)}
 VSE = "2018-2019"   # метка итога в cd_s3_sigma (все годы окна); для test1 переименовывается в «2022-2024»
-NAMES = {"rv22": ("затвор по реализованной σ (rv22), справочно", "spravochno"), "hyb": ("затвор по σ̂ гибрида (H2)", "H2"),
+NAMES = {"rv22": ("затвор по реализованной σ (rv22), справочно", "spravochno"), "hyb": ("затвор по σ̂ гибрида (диагностика, не H2)", "диагностика (не H2)"),
          "harj": ("контроль: затвор по HAR-J (б)", "kontrol"), "naive": ("контроль: затвор по наивной √RV", "kontrol")}
+
+
+def p_k2_znachenie(fakt: float, msr_k2) -> float:
+    """p = (1 + #{k2 ≥ факт}) / (n + 1), n — число КОНЕЧНЫХ mSR k2; факт nan или n = 0 — nan (mSR не определён)."""
+    v = np.asarray(msr_k2, float)
+    v = v[np.isfinite(v)]
+    if not np.isfinite(fakt) or len(v) == 0:
+        return float("nan")      # неприменимо: mSR не определён
+    return (1 + int((v >= fakt).sum())) / (len(v) + 1)
 
 
 def nastroit(period: str, sigma_dir: Path | None):
@@ -66,7 +75,7 @@ def main(argv=None) -> int:
     rng = np.random.default_rng(S.SEED)
     k2 = [S.schitat(ev, S.sig_fn(S.k2_mask(zat["hyb"], rng))) for _ in range(n_k2)]
     msr_k2 = np.array([S.stroki_msr(r, VSE) for r in k2])
-    p_k2 = float((msr_k2 >= S.stroki_msr(res["hyb"], VSE)).mean())
+    p_k2 = p_k2_znachenie(S.stroki_msr(res["hyb"], VSE), msr_k2)
     rows = S.stroki("A_strogaya только S3 (база)", "baza", baza, None)
     for k, (nm, tip) in NAMES.items():
         rows += S.stroki(nm, tip, res[k], baza, p_k2=p_k2 if k == "hyb" else np.nan)
