@@ -79,8 +79,16 @@ def generate_s3_v5(td, ind, grid):
     return SignalSet(sig, el, es, stg, list(grid), split=True)
 
 
+def _period_s4(p):
+    """norm "okno" (умолчание) — ATR периода period; "s252" — ATR за 252 дня (К4 v6; ось period там неподвижна)."""
+    norm = p.get("norm", "okno")
+    if norm not in ("okno", "s252"):
+        raise ValueError(f"неизвестная norm: {norm!r}")
+    return 252 if norm == "s252" else int(p["period"])
+
+
 def generate_s4_v5(td, ind, grid):
-    old = [{"atr_period": int(p["period"]), "multiplier": float(p["mnozh"])} for p in grid]
+    old = [{"atr_period": _period_s4(p), "multiplier": float(p["mnozh"])} for p in grid]
     ss = generate_s4(td, ind, old)
     return SignalSet(ss.sig, ss.exit_l, ss.exit_s, ss.strength, list(grid), split=True)
 
