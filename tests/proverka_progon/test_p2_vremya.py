@@ -43,7 +43,7 @@ def test_day_t_po_umolchaniyu_none():
     ("close", "signal", (0, None)), ("close", "vremya", (0, None)),
     ("1500", "vremya", (0, 900)), ("1500", "signal", (1, 900)),
     ("1700", "vremya", (0, 1020)), ("1700", "signal", (1, 1020)),
-    ("open2", "vremya", (1, 600)), ("open2", "signal", (1, 600)),      # Ж-086 п. 4: open2 = бар 10:00 (600 мин.)
+    ("open2", "vremya", (0, None)), ("open2", "signal", (1, 600)),      # Ж-086 п. 4: open2 = бар 10:00 (600 мин.)
 ])
 def test_vyhod_plan(tv, pr, ожид):
     from fastbt.exec_e_vremya import vyhod_plan
@@ -98,10 +98,11 @@ def test_tau_vyhod_v_den_x_i_komissiya_v_nachale_intervala():
     assert r.gross[1] == pytest.approx(np.log(days[2].o[B15] / days[1].c[-1]))
 
 
-def test_tau_open2_na_sleduyushchij_den():
+def test_tau_open2_close_dnya_istecheniya():
+    # К-wf5b (Ж-137 п. 6): срок известен заранее — close дня истечения (день 2), не open дня 3
     days = lenta()
     t = go(days, [1] * 5, tau=2, reentry=False, t_vyhod="open2").trades[0]
-    assert (t.exit_day, t.exit_bar, t.reason, t.exit_px) == (3, B10, "vremya", days[3].o[B10])
+    assert (t.exit_day, t.reason, t.exit_px) == (2, "vremya", days[2].c[-1])
 
 
 def test_signal_komissiya_v_stroke_nachala_intervala_i_dokhod():

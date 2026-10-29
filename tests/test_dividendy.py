@@ -96,9 +96,9 @@ def test_obratnaya_korrektirovka_tsen(tmp_path, monkeypatch):
     _table(tmp_path, monkeypatch, [("T", "2018-06-15", 3.0)])
     g = int(np.searchsorted(DATES, np.datetime64("2018-06-15"), side="right"))
     (adj,) = dividendy.adjust_ohlc("T", DATES, c, c)
-    assert adj[g - 1] == pytest.approx(c[g - 1] - 3.0, abs=1e-12)          # c_cum·(1 − D/c_cum) = c_cum − D
-    assert adj[g:].tobytes() == c[g:].tobytes()                             # с дня гэпа — без изменений
-    assert adj[: g - 1] == pytest.approx(c[: g - 1] * (1 - 3.0 / c[g - 1]))
+    assert adj[:g].tobytes() == c[:g].tobytes()                             # до дня гэпа — сырой (Д3)
+    assert adj[g:] == pytest.approx(c[g:] / (1 - 3.0 / c[g - 1]), rel=1e-14)
+    assert adj[g] / adj[g - 1] == pytest.approx(c[g] / (c[g - 1] - 3.0))    # доходность через отсечку — полная, как у обратной
 
 
 def _td(o, h, l, c, v):
@@ -117,8 +117,8 @@ def _series(div):
     r = np.random.default_rng(7)
     p = 100 * np.exp(np.cumsum(r.normal(0, 0.012, N)))
     g = 200
-    f = p[g - 1] / (p[g - 1] + div)
-    raw = np.where(np.arange(N) < g, p / f, p)                              # реальный ряд: до отсечки цены выше на D
+    f = (p[g - 1] - div) / p[g - 1]
+    raw =np.where(np.arange(N) < g, p, p * f)                              # реальный ряд: с отсечки цены ниже (прямая)
     v = r.uniform(1e6, 2e6, N)
     return p, raw, v, g
 
@@ -147,8 +147,8 @@ def _series_ohlc(div, g=200):
     hi = np.maximum(p * (1 + np.abs(r.normal(0, 0.03, N))), op)
     lo = np.minimum(p * (1 - np.abs(r.normal(0, 0.03, N))), op)
     v = r.uniform(1e6, 2e6, N) * (1 + 3 * (r.random(N) < 0.1))
-    f = p[g - 1] / (p[g - 1] + div)
-    k = np.where(np.arange(N) < g, 1 / f, 1.0)
+    f = (p[g - 1] - div) / p[g - 1]
+    k =np.where(np.arange(N) < g, 1.0, f)
     return (op, hi, lo, p), tuple(x * k for x in (op, hi, lo, p)), v, g
 
 
@@ -185,11 +185,11 @@ def _wire_env(tmp_path, monkeypatch):
 
 def _check_wiring(td, c):
     m = 1 - DIV / c[G - 1]
-    assert td.close[G - 1] == pytest.approx(c[G - 1] - DIV, rel=1e-12)       # c_cum·(1 − D/c_cum)
-    assert td.open[:G] == pytest.approx(c[:G] * 1.001 * m, rel=1e-12)
-    assert td.high[:G] == pytest.approx(c[:G] * 1.01 * m, rel=1e-12)
-    assert td.low[:G] == pytest.approx(c[:G] * 0.99 * m, rel=1e-12)
-    assert td.close[G:].tobytes() == c[G:].tobytes()
+    assert td.close[:G].tobytes() == c[:G].tobytes()                         # до отсечки — сырой (прямая, Д3)
+    assert td.close[G] == pytest.approx(c[G] / m, rel=1e-12)
+    assert td.open[G:] == pytest.approx(c[G:] * 1.001 / m, rel=1e-12)
+    assert td.high[G:] == pytest.approx(c[G:] * 1.01 / m, rel=1e-12)
+    assert td.low[G:] == pytest.approx(c[G:] * 0.99 / m, rel=1e-12)
     assert td.log_ret[G - 1] == pytest.approx(np.log((c[G] + DIV * 0.87) / c[G - 1]), abs=1e-15)   # lr — по реальным ценам
 
 

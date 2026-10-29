@@ -9,6 +9,7 @@ from fastbt.exec_e_parab import pb_after, pb_level, pb_start
 from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level, limit_mask, limit_px, part_allowed,
                                  part_fee, part_hit, part_level, ratchet, rodnoy_level, stop_hit, stop_level,
                                  take_hit, take_level, tejk_level, v_bare)
+from fastbt.exec_e_piv import enter_levels, piv_check, piv_on
 from fastbt.exec_e_types import Trade
 from fastbt.exec_e_v6 import V6, chast_pair, v5_check, v6_check, v6_on
 from fastbt.exec_e_zayavki import prodlit, reenter
@@ -20,7 +21,11 @@ class Run(V6):
         s.us, s.ut = us, ut                         # Л5: ряды единицы стопа/безубытка и тейка по дню сигнала; None — σ̂ (путь прежний)
         v6_check(p, rang, n)
         v5_check(p, rang, n)                        # Л6: k_e, a_rang, chast
-        s.cf, s.p_take = chast_pair(p), p           # частичный выход (доля, r); параметры тейка сделки
+        if p.time_decay and (p.tau is None or p.tejk != "net"):
+            raise ValueError("time_decay: нужен tau и tejk = net (тейк a·σ или R — половина дистанции после tau//2 дней)")
+        piv_check(p, tejk_M, n)                     # V6-10: piv_sl, piv_tp, vwap_m; уровни — PivUrovni в tejk_M
+        s.lv, s.pv = (tejk_M if piv_on(p) else None), (None, None)    # (стоп, тейк) по уровням — на входе
+        s.cf, s.p_take = chast_pair(p), p          # частичный выход (доля, r); параметры тейка сделки
         s.rang, s.be_m, s.pq_on, s.vlev, s.adds, s.n_add, s.v6 = rang, None, False, None, [], 0, v6_on(p)   # V6-b (exec_e_v6)
         s.atr, s.w, s.smax, s.part, s.R, s.ent = atr, 1.0, None, False, float("nan"), (-1, -1)   # Ж-092: ATR, остаток, ratchet, ½, R, бар входа
         s.tejk_M, s.tT, s.n_bez = tejk_M, None, 0     # Ж-084: M по дням сигнала; тейк сделки фиксируется на входе; входов без тейка
@@ -85,6 +90,8 @@ class Run(V6):
         s.ext, s.be_on, s.sh = px, False, 0.0
         s.w, s.smax, s.part, s.ent = 1.0, None, False, (i, b)
         s.v6_enter(d_sig)
+        if s.lv is not None:                        # V6-10: уровни строки d_sig (≤ close d_sig), от цены входа; фиксируются
+            s.pv = enter_levels(s.p, s.lv, sd, px, d_sig, s.close_of(d_sig), s.p.tick)
         s.pb, s.pb_new = (pb_start(sd, px, s.sg, s.p, s.days[i].h[b], s.days[i].l[b]), True) if s.p.parab is not None else (None, False)   # П3b
         s.R =px * s.p.b * s.sg if s.p.b is not None else float("nan")
         if s.p.tejk in ("k_srednemu", "pol_puti"):  # M зафиксирован на d_sig (≤ close d_sig), от P_вх — один раз
@@ -155,13 +162,20 @@ class Run(V6):
             S = s.smax = ratchet(tr.side, S, s.smax)
         if s.pb is not None:                        # П3b: в баре входа — начальный стоп; далее по состоянию на конец прошлого бара
             S, s.sr = (s.pb[0] if s.pb_new else pb_level(tr.side, s.pb)), "trail"
+        S, s.sr = (s.pv[0], "stop") if s.pv[0] is not None else (S, s.sr)    # V6-10: стоп пивота / VWAP (единственный)
         S = s._stop_shift(S)
         if s.p.tejk == "rodnoy_uroven":
             T = s._rodnoy(j)
         else:
             st = s._sg(j, True)
+            st = st * s._td(j) if st is not None else st
             T = s.tT if s.p.tejk != "net" else (take_level(tr.side, tr.entry_px, st, s.p_take) if st is not None and s.p_take is not False else None)
+        T = s.pv[1] if s.pv[1] is not None else T    # V6-10: тейк пивота
         return S, None if s.xo is not None else T    # висит заявка выхода: тейк снят (ОСО)
+
+    def _td(s, j):
+        """V6-9: множитель дистанции тейка — ½ при time_decay, когда в позиции больше tau//2 торговых дней (j − ej > tau//2), иначе 1."""
+        return 0.5 if s.p.time_decay and j - s.ej > s.p.tau // 2 else 1.0
 
     def _rodnoy(s, j):
         """Ж-091: заявка дня ix[j] стоит на L[ix[j−1]] (данные ≤ 18:50 прошлого торгового дня), обновляется каждый вечер;
