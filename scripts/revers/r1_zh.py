@@ -2,6 +2,7 @@
 Запуск (один процесс): python3 scripts/revers/r1_zh.py --period {train4,test1} [--sigma-dir <каталог σ̂ зоны Z2>] [--n-k2 N]
 train4 — воспроизводит образец #483 (`scripts/analysis/cd_s3_sigma.py`, docs/tables/cd_s3/sigma_zatvor.csv): окно 2018–2019, к2 100 повторов.
 test1 — 2022–2024 (прогрев 2021), к2 20 повторов; требует поддержки period="test1" (лист R-P) и каталога σ̂ зоны Z2 (--sigma-dir).
+--obekt A_zashch (только test1): тот же затвор поверх позиций A (s9) — scripts/revers/r1_zh_zashch.py; по умолчанию A_strogaya (опубликованная таблица).
 Затвор: вход запрещён, если ранг σ̂ тикера в окне 252 (доля строго ниже) >= p67, т.е. торгуются два нижних терциля. Выбора и перебора нет: p67 заморожен.
 Логика — функции cd_s3_sigma (одно определение); здесь только параметры периода."""
 from __future__ import annotations
@@ -72,10 +73,15 @@ def main(argv=None) -> int:
     ap.add_argument("--sigma-dir", type=Path, default=None)
     ap.add_argument("--n-k2", type=int, default=None)
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--obekt", choices=("A_strogaya", "A_zashch"), default="A_strogaya")
+    ap.add_argument("--zamer", action="store_true", help="A_zashch: только замер времени частей, таблицу не пишет")
     a = ap.parse_args(argv)
+    out = a.out or ROOT / "docs/tables/revers_r1"
+    if a.obekt == "A_zashch":      # затвор поверх позиций ансамбля s9; логика — r1_zh_zashch.py
+        import r1_zh_zashch as Z
+        return Z.main_zashch(a.period, a.sigma_dir, a.n_k2 or PERIODS[a.period]["n_k2"], out, a.zamer)
     AS, p = nastroit(a.period, a.sigma_dir)
     n_k2 = a.n_k2 or p["n_k2"]
-    out = a.out or ROOT / "docs/tables/revers_r1"
     ev = AS.evaluatory("S3")[1]
     baza = S.schitat(ev)
     mod = {k: S.na_dates(S.citat_sigma(v)) for k, v in {**S.FILES, "naive": "sigma_naive_dev"}.items()}
