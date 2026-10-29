@@ -94,6 +94,11 @@ def sverka(df: pd.DataFrame, atol: float = 1e-9) -> bool:
     return bool(et.drop(columns=num).equals(df.drop(columns=num)) and np.allclose(et[num], df[num], atol=atol, equal_nan=True))
 
 
+def chislo_let(dates) -> float:
+    """Число календарных лет в ряду дат окна (знаменатель «процентов в год»): test1 2022–2024 → 3, train4 2016–2019 → 4."""
+    return float(len(np.unique(np.asarray(dates).astype("datetime64[D]").astype("datetime64[Y]"))))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--obekt", choices=("A_strogaya", "A_zashch"), default="A_strogaya", help="по умолчанию — прежний расчёт на A_strogaya")
@@ -111,7 +116,9 @@ def main() -> None:
     R = {AS.SIDS[0]: O.schitat_sk(AS.SIDS[0])}       # первый — один: общий кэш 5-мин баров (гонка tmp → parquet)
     with sozdat_pul(a.period, a.imoex, imoex_d=a.imoex_d) as p:
         R.update(zip(AS.SIDS[1:], p.map(O.schitat_sk, AS.SIDS[1:])))
-    df = pd.DataFrame(O.stroki_a(R) + O.stroki_kross(kross(last)))
+    god = chislo_let(R[AS.SIDS[0]]["dates"])        # проценты в год: лет в окне периода (test1 — 3, train4 — 4), не константа 4
+    assert god == len(PERIODS[a.period][0]), f"лет в датах {god} ≠ периоду {a.period}"
+    df = pd.DataFrame(O.stroki_a(R, god) + O.stroki_kross(kross(last), god))
     out = Path(a.out) if a.out else ROOT / "docs" / "tables" / "revers_r1" / ("v_overnajt.csv" if a.period == "test1" else "v_train4_proverka.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
