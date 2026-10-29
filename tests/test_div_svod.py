@@ -81,10 +81,16 @@ def test_svod_ne_chitaet_sam_sebya_i_zapis_chitaetsya(tmp_path):
     assert len(ds.svod(tmp_path)) == 1
 
 
-def test_realnyj_svod_76_godnyh_iz_173():
+def test_realnyj_svod_146_godnyh_iz_173():
     s = ds.svod()
-    assert (len(s), sum(x["godna"] for x in s)) == (173, 76)
+    assert (len(s), sum(x["godna"] for x in s)) == (173, 146)
     assert ds.SVOD.read_text(encoding="utf-8") == _tekst(s)
+    # круг 2 перекрывает круг 1 на реальных файлах
+    d = {(x["ticker"], x["record_date"]): x for x in s}
+    assert sum(x["godna"] for x in s if x["ticker"] == "PHOR") > 2  # после круга 1 было 2
+    v = d[("VTBR", "2021-07-15")]
+    assert v["godna"] == 0 and "reestr" in v["prichina"]
+    assert d[("RTKM", "2019-07-04")]["godna"] == 0
 
 
 def _tekst(rows):
