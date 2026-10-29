@@ -14,12 +14,12 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
   if [ -f "$KOD_DIR/fastbt/progon_server.py" ]; then
     for k in kuby/${PERENOS_KUBY:-*.yaml}; do
       say "progon_server: $k"
-      (cd "$P/cache" && "$PY" -m fastbt.progon_server --kub "$P/$k" --period "$per" --seed "${PERENOS_SEED:-20261029}" \
+      (cd "$KOD_DIR" &&"$PY" -m fastbt.progon_server --kub "$P/$k" --period "$per" --seed "${PERENOS_SEED:-20261029}" \
         --out "$P/ledger/$per/$(basename "$k" .yaml)" --procs "$(processov)" --prodolzhit)
     done
   else
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
-    (cd "$P/cache" && "$PY" "$KOD_DIR/scripts/server/sobol_zapusk.py" --root "$P/ledger/$per" --procs "$(processov)" $sl \
+    (cd "$KOD_DIR" &&"$PY" "$KOD_DIR/scripts/server/sobol_zapusk.py" --root "$P/ledger/$per" --procs "$(processov)" $sl \
       ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} ${PERENOS_TOCHEK:+--tochek "$PERENOS_TOCHEK"})
   fi
   say "цепочка $per завершена"
@@ -38,7 +38,7 @@ if [ "$rezhim" = status ]; then
   zhiv && say "прогон $per идёт: pid $(cat "$pidf")" || say "прогон $per не идёт"
   ls -t "$P"/logs/sobol_"$per"_*.log 2>/dev/null | head -1 | while read -r l; do say "лог $l"; tail -n 3 "$l"; done
   if [ $server = 0 ] && [ -d "$P/ledger/$per" ]; then
-    (cd "$P/cache" && "$PY" "$KOD_DIR/scripts/server/sobol_zapusk.py" --root "$P/ledger/$per" --sostoyanie \
+    (cd "$KOD_DIR" &&"$PY" "$KOD_DIR/scripts/server/sobol_zapusk.py" --root "$P/ledger/$per" --sostoyanie \
       ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} ${PERENOS_TOCHEK:+--tochek "$PERENOS_TOCHEK"}) 2>/dev/null
   fi
   exit 0

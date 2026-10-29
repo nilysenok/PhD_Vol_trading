@@ -40,6 +40,9 @@ def main(argv=None) -> int:
         moi, meta_moi = ekviv.poschitat(tochki, a.procs)
         meta_moi.update(ekviv.sreda_meta())
     ok, bad, dmax = ekviv.sravnit(eta, meta_eta, moi, meta_moi)
+    nf = ekviv.net_fajla(moi)
+    if nf:
+        ok, bad = False, [f"{nf[0]}: оценщик не нашёл файл — данных не хватает ({len(nf)} записей)"] + bad
     verdikt = dict(ok=ok, rashozhdeniy=len(bad), pervye=bad[:20], max_delta_yakor=dmax, tochek=len(tochki),
                    etalon=meta_eta, zdes=meta_moi, sekund=round(time.time() - t0, 1), vremya=time.strftime("%F %T %Z"))
     (otm.parent / f"verdikt_{time.strftime('%Y%m%d_%H%M%S')}.json").write_text(

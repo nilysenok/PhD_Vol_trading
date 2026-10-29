@@ -82,6 +82,11 @@ def poschitat(tochki: list, procs: int) -> tuple:
     return rez, dict(kod=kod.pop(), vhody=vhody)
 
 
+def net_fajla(rez: dict) -> list:
+    """Записи, где оценщик поймал отсутствие файла (status = oshibka, FileNotFoundError): данных не хватает — не эквивалентность."""
+    return sorted(m for m, (s, _, _) in rez.items() if "FileNotFoundError" in s or "No such file" in s)
+
+
 def sreda_meta() -> dict:
     import numba
     import pandas

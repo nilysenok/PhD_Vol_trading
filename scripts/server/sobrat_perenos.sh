@@ -31,13 +31,14 @@ say "коммит $FULL; каталог $OUT; рабочий каталог Ма
 say "1/6 tar кода (git archive $SHORT)"
 TAR="$OUT/kod_$SHORT.tar.gz"
 # БЕЛЫЙ список (в git есть файлы с данными 2022+): fastbt/**.py|yaml без tests/ и designs/; из designs/ — v5/, zh126/,
-# progon/kub_S*.yaml (кубы замены progon_sobol) и sweep/ekviv_20.yaml (базовая точка A_fix); scripts/server/*.py|sh; requirements.
+# progon/*.yaml (кубы замены progon_sobol) и sweep/*.yaml (базовая точка A_fix ekviv_20, сетки S{k}_setka_e1b — их читает
+# оценщик); scripts/server/*.py|sh; requirements.
 # Таблицы (csv/parquet) в tar не идут: справочные ≤ 2021 едут усечёнными копиями манифеста (накладка ниже).
 git -C "$REPO" ls-tree -r --name-only "$FULL" -- fastbt scripts/server env/requirements_server.txt | grep -E \
   '^(fastbt/.*\.(py|yaml)|scripts/server/[^/]*\.(py|sh)|scripts/server/perenos/[^/]*\.sh|env/requirements_server\.txt)$' \
   | grep -v -E '^fastbt/(tests|designs)/' > "$TMP/belyj.txt" || true
 git -C "$REPO" ls-tree -r --name-only "$FULL" -- fastbt/designs | grep -E \
-  '^fastbt/designs/((v5|zh126)/.*\.(py|yaml)|progon/kub_S[1-6]\.yaml|sweep/ekviv_20\.yaml)$' >> "$TMP/belyj.txt" || true
+  '^fastbt/designs/((v5|zh126)/.*\.(py|yaml)|(progon|sweep)/[^/]*\.yaml)$' >> "$TMP/belyj.txt" || true
 git -C "$REPO" show "$FULL:scripts/server/tar_iskluchit_2022plus.txt" > "$TMP/iskl.txt" || fail "нет scripts/server/tar_iskluchit_2022plus.txt в коммите"
 plohie=$(grep -v '^#' "$TMP/iskl.txt" | grep -Fx -f - "$TMP/belyj.txt" || true)
 [ -z "$plohie" ] || fail "в белый список попали пути из tar_iskluchit_2022plus.txt: $(echo "$plohie" | head -3 | tr '\n' ' ')"
@@ -81,7 +82,7 @@ printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%
 
 say "4/6 эталоны Мака: якорь A_fix × 6 Sk на train4 + ${PERENOS_ETALONY_TOCHEK:-200} точек (код tar, данные $OUT/data)"
 mkdir -p "$TMP/cache"
-(cd "$TMP/cache" && env PYTHONPATH="$K" FASTBT_MAIN="$OUT/data" FASTBT_BARS1M="$OUT/data/data/regen/D25/bars1m" \
+(cd "$K" && env PYTHONPATH="$K" FASTBT_MAIN="$OUT/data" FASTBT_BARS1M="$OUT/data/data/regen/D25/bars1m" \
   FASTBT_NO_CACHE=1 FASTBT_CACHE="$TMP/cache/fastbt" FASTBT_E1_CACHE="$TMP/cache/etap1" FASTBT_FS_CACHE="$TMP/cache/fs" \
   FASTBT_BARS5M_CACHE="$TMP/cache/bars5m" NUMBA_CACHE_DIR="$TMP/cache/numba" PYTHONPYCACHEPREFIX="$TMP/cache/pyc" \
   python3 "$K/scripts/server/etalony_mak.py" --out "$OUT/etalony_$SHORT.npz" \

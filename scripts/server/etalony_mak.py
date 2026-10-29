@@ -27,6 +27,11 @@ def main(argv=None) -> int:
     tochki = ekviv.vybor(a.tochek, a.seed)
     print(f"etalony: якорь A_fix × 6 Sk на train4 и {len(tochki)} точек (seed {a.seed}), процессов {a.procs}", flush=True)
     rez, meta = ekviv.poschitat(tochki, a.procs)
+    nf = ekviv.net_fajla(rez)
+    if nf:
+        print(f"FAIL etalony: в {len(nf)} записях оценщик не нашёл файл (данных не хватает), первая {nf[0]}: "
+              f"{rez[nf[0]][0][:300]}")
+        return 1
     meta.update(ekviv.sreda_meta(), seed=a.seed, tochek=len(tochki), sozdan=time.strftime("%F %T %Z"))
     ekviv.sohranit(a.out, rez, meta)
     h = hashlib.sha256(Path(a.out).read_bytes()).hexdigest()

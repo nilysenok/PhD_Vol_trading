@@ -18,7 +18,7 @@ n=$(processov)
 log="$P/logs/proverka_$(date +%Y%m%d_%H%M%S).log"
 say "2/3 пересчёт эталона: якорь A_fix × 6 Sk + 200 точек, процессов $n (по Sk — не больше 6); лог $log"
 set +e
-(cd "$P/cache" && "$PY" "$KOD_DIR/scripts/server/proverka_ekviv.py" --etalony "$ETALONY" --otmetka "$P/proverka/OK" \
+(cd "$KOD_DIR" &&"$PY" "$KOD_DIR/scripts/server/proverka_ekviv.py" --etalony "$ETALONY" --otmetka "$P/proverka/OK" \
   --kod-sha "$KOD_SHA" --dannye-sha "$(sha_file "$MANIFEST")" --procs "$n") > "$log" 2>&1
 rc=$?
 set -e
