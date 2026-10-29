@@ -12,7 +12,7 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 
-from fastbt import fdr as fdr_mod, rangi_v6, rezhim_e1, tejk_signal, zaem_v2
+from fastbt import fdr as fdr_mod, period_v2, rangi_v6, rezhim_e1, tejk_signal, zaem_v2
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, is_anchor, params_of, years_of
 from fastbt.etap1_run import run_e1, sum_rows
@@ -26,6 +26,29 @@ ZAEM = (5, 10)                                                                 #
 
 
 class NeSchitana(Exception): """razresheno → None: строка ne_schitana, а не молча net."""
+
+
+def gody_perioda(period: str) -> tuple:
+    return period_v2.gody(period) if period in period_v2.PERIODY else years_of(period)
+
+
+def kvartaly_perioda(period: str):
+    """f(даты, x) → {метка квартала: Шарп} за ВСЕ кварталы периода (train4 — ledger.kvartaly, как прежде; v2 — с 2015Q1;
+    wf — 2015Q1…2026Q1, 45; кварталы после последнего дня периода не выдаются: nan сделал бы целевую nan)."""
+    if period == "train4":
+        return kvartaly
+    yrs, metki = gody_perioda(period), metki_perioda(period)
+
+    def f(d, x):
+        kv = kvartaly_gody(d, x, yrs)
+        return {k: kv[k] for k in metki}
+    return f
+
+
+def metki_perioda(period: str) -> list:
+    if period in period_v2.PERIODY:
+        return period_v2.kvartaly_spisok(period)
+    return [f"{y}Q{q}" for y in years_of(period) for q in range(1, 5)]
 
 
 def _carry(eng, inv) -> np.ndarray:
@@ -212,6 +235,7 @@ class EvaluatorV2(Evaluator):
             cat(lambda r: r.cnt), pd.DatetimeIndex(eng.dates[inv])
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
+        period_v2.proverit_chtenie(period)                                      # wf до отметки владельца — отказ (Ж-136)
         t0, self.diag, self.zaem, self.poz = time.perf_counter(), None, None, None
         nov, vz = {k: pt.get(k, v) for k, v in NOVYE.items()}, dict(vozm or {})
         self._ctx, self._kray, comm0 = dict(nov=nov, vozm=vz, default=nov == NOVYE and not vz), False, self.comm
@@ -222,19 +246,20 @@ class EvaluatorV2(Evaluator):
             v1 = {"ne_schitana": str(e)}
         finally:
             self.comm, comm = comm0, self.comm
-        yrs, (y0, y1) = years_of(period), PERIODS[period]
+        yrs = gody_perioda(period)
+        y0, y1 = yrs[0], yrs[-1]
         head = {"v": "2.0", "format": "etap1-ledger", "period": period, "okno_s": f"{y0}-01-01", "okno_po": f"{y1}-12-31",
                 "progrev_s": f"{y0 - 1}-01-01", "zaderzhka": "d+1", "chestnaya": v1.get("chestnaya", "net"), "komissiya": comm,
                 "fdr": self.fdr, "vozm": vz or None}
         if "ne_schitana" in v1:
             nan = float("nan")
             return {**head, "status": "ne_schitana", "prichina": v1["ne_schitana"], "mediana_kv": nan, "dolya_pol_kv": nan,
-                    "by_quarter": {f"{y}Q{q}": nan for y in yrs for q in range(1, 5)}, "sharpe": nan, "msr": nan,
+                    "by_quarter": {k: nan for k in metki_perioda(period)}, "sharpe": nan, "msr": nan,
                     "flagi": {"vyrozhdena": True}}, None, None
         x, tik, dts, zaem, cnt, rdates = self._series(period, comm)
         self.poz = self._poz(period)                                            # Л7b: |pos| и сделки для F_X/F_E/F_R ledger 2.1
         self.zaem = zaem_v2.ryad(self, period)                              # Ж-089: база платы за заём, рядом с ledger
-        kv = kvartaly if period == "train4" else (lambda d, v: kvartaly_gody(d, v, yrs))   # не-train4 (test1): кварталы своих годов, ledger не пишется
+        kv = kvartaly_perioda(period)                                           # все кварталы периода (v2 с 2015Q1, wf 45)
         bq = kv(dts.to_numpy(), x)
         med, dolya = tselevaya(bq)
         qr = (rdates.year * 10 + rdates.quarter).to_numpy()

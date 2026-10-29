@@ -203,7 +203,7 @@ def kuby_iz_argv(a, ap) -> tuple:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Соболь на сервере: общие входы через fork, чекпоинт, каталог на стратегию")
     ap.add_argument("--kub", nargs="+", required=True, help="v5 (кубы designs/v5) или kub_<sid>.yaml (один каталог)")
-    ap.add_argument("--period", required=True, choices=["train4", "v2"])
+    ap.add_argument("--period", required=True, choices=["train4", "v2", "wf"])
     ap.add_argument("--seed", type=int, help="v5: 1 | 2 (sobol.seed | seed2); progon: sobol.seed вместо seed куба")
     ap.add_argument("--k3", action="store_true", help="v5: проход к3 — полная решётка раздела k3")
     ap.add_argument("--n1", help="v5: N1 вместо куба — число для всех или S1=65536,S2=65536")

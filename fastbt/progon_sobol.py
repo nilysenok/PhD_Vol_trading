@@ -42,7 +42,7 @@ SVERKA_PROPUSK = {"t_sek", "kod", "kod_slit", "klyuch_sha", "excess", "sloy"}
 Sreda = namedtuple("Sreda", "evr kod vhody daty tikery")
 KUB5, LEDGER5 = ROOT / "fastbt/designs/v5/kub_{sid}.yaml", ZAMER / "_ledger_v5"
 OCENSHCHIK_V5 = ("fastbt.eval_v5", "EvaluatorV5")        # лист Л9; контракт выхода = EvaluatorV2 (+ poz, fdr)
-OKNO = {"train4": ("2016-01-01", "2015-01-01"), "v2": ("2015-01-01", str(period_v2.START.date()))}   # (okno_s, progrev_s)
+OKNO = {n: (f"{p.y0}-01-01", str(p.progrev.date())) for n, p in period_v2.PERIODY.items()}   # (okno_s, progrev_s); train4, v2, wf
 Rezhim = namedtuple("Rezhim", "setka period seed k3 fdr")      # setka: progon | v5; seed: ключ sobol куба (seed | seed2)
 R0 = Rezhim("progon", PERIOD, "seed", False, None)            # прежний путь designs/progon
 fabrika = None      # sid -> Sreda; None — реальная (fabrika_real); тесты подставляют синтетику
@@ -64,6 +64,7 @@ def baza(rz: Rezhim) -> dict:
 def proverit_v5(c: dict, rz: Rezhim) -> None:
     """Куб v5 (canon_v5.proverit) + период объявлен в кубе, комиссия 0,04 %, fdr куба = fdr прохода и известен fdr.py."""
     cv5.proverit(c)
+    period_v2.proverit_chtenie(rz.period)                  # wf (дни ≥ 2022): отказ до отметки владельца
     if rz.period not in OKNO or rz.period not in c.get("periody", [c.get("period")]):
         raise ValueError(f"{c['sid']}: период {rz.period!r} не объявлен в кубе (periody) — отказ")
     if c.get("komissiya") != KOMISSIYA:
@@ -76,7 +77,7 @@ def proverit_ledger(rz: Rezhim, v: str) -> None:
     """ledger 2.1 режет кварталы по годам периода (ledger_v2.gody_perioda: train4 2016–2019, v2 2015–2019);
     окно периода шире годов ledger — отказ до старта, а не в процессе."""
     gody = lm.gody_perioda(rz.period)
-    if v == lm.V21 and not set(range(int(OKNO[rz.period][0][:4]), 2020)) <= set(gody):
+    if v == lm.V21 and not set(period_v2.gody(rz.period)) <= set(gody):
         raise SystemExit(f"ledger 2.1 считает кварталы {gody[0]}–{gody[-1]}, период {rz.period} шире — "
                          "--ledger 2.0 или расширение ledger_v2 — отказ")
 
