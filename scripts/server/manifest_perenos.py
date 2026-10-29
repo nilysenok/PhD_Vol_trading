@@ -22,7 +22,9 @@ import pyarrow.parquet as pq
 
 GRANICA = pd.Timestamp("2021-12-31")
 IMYA_DAT = {"begin", "end", "time", "datetime", "timestamp", "ts", "dt", "day", "period", "index", "__index_level_0__"}
-GOD_V_IMENI = re.compile(r"(?<!\d)20(2[2-9]|[3-9]\d)(?!\d)")
+GOD_V_IMENI = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
+OTMETKA = Path("docs/resheniya/wf_zamok_snyat.json")     # отметку снятого замка ставит владелец (Ж-136), не агент
+DO_WF = "2026-02-28"                                      # конец данных единого walk-forward
 
 
 def zapreshen(p: str) -> str | None:
@@ -103,10 +105,10 @@ def sha256(p: str) -> str:
     return h.hexdigest()
 
 
-def proverit(p: str, bez_dat: str) -> tuple[str, str]:
-    """(статус, текст): 'ok' -> текст = max дата или 'без дат'; 'net' -> причина."""
-    if GOD_V_IMENI.search(Path(p).name):
-        return "net", "имя содержит 202x, не читался"
+def proverit(p: str, bez_dat: str, do: pd.Timestamp = GRANICA) -> tuple[str, str]:
+    """(статус, текст): 'ok' -> текст = max дата или 'без дат'; 'net' -> причина. `do` — верхняя дата (умолчание 2021-12-31)."""
+    if any(int(g) > do.year for g in GOD_V_IMENI.findall(Path(p).name)):
+        return "net", f"имя содержит 202x (год > {do.year}), не читался"
     f = CHITATELI.get(Path(p).suffix.lower())
     try:
         r = f(p) if f else "NODATES"
@@ -116,8 +118,8 @@ def proverit(p: str, bez_dat: str) -> tuple[str, str]:
         return ("ok", "без дат") if bez_dat else ("net", "нет колонки дат и нет обоснования «без дат»")
     if r is None:
         return "net", "нет значений дат"
-    if r.normalize() > GRANICA:      # время внутри 31.12.2021 допустимо
-        return "net", f"max_data {r.date()} > 2021-12-31"
+    if r.normalize() > do:           # время внутри последнего дня допустимо
+        return "net", f"max_data {r.date()} > {do.date()}"
     return "ok", str(r.date())
 
 
@@ -130,7 +132,15 @@ def razobrat(spisok: Path) -> list[tuple[str, str, str]]:
     return out
 
 
-def sobrat(koren: str, zapisi) -> dict:
+def verhnyaya_data(do: str, otmetka: Path = OTMETKA) -> pd.Timestamp:
+    """Верхняя дата манифеста: > 2021-12-31 — только при отметке снятого замка (непустой файл), иначе PermissionError."""
+    d = pd.Timestamp(do)
+    if d > GRANICA and not (Path(otmetka).is_file() and Path(otmetka).stat().st_size > 0):
+        raise PermissionError(f"--do {do} > 2021-12-31: нет отметки снятого замка {otmetka} (её ставит владелец) — манифест не собирается")
+    return d
+
+
+def sobrat(koren: str, zapisi, do: pd.Timestamp = GRANICA) -> dict:
     ok, net, isk, vid = [], [], [], set()
     for shablon, chit, bez in zapisi:
         for p in sorted(glob.glob(os.path.join(koren, shablon), recursive=True)):
@@ -141,7 +151,7 @@ def sobrat(koren: str, zapisi) -> dict:
             if (pr := zapreshen(p)) is not None:
                 isk.append((rel, pr))
             elif os.path.isfile(p):
-                st, tx = proverit(p, bez)
+                st, tx = proverit(p, bez, do)
                 if st == "ok":
                     ok.append((rel, sha256(p), os.path.getsize(p), tx, chit))
                 else:
@@ -168,8 +178,15 @@ def main(argv=None) -> int:
     ap.add_argument("--koren", required=True)
     ap.add_argument("--spisok", type=Path, required=True)
     ap.add_argument("--vyhod", type=Path, default=Path("docs/server/manifest_dannyh_2021.tsv"))
+    ap.add_argument("--do", default="2021-12-31", help=f"верхняя дата; {DO_WF} (wf) — только при отметке снятого замка")
+    ap.add_argument("--otmetka", type=Path, default=OTMETKA)
     a = ap.parse_args(argv)
-    r = sobrat(a.koren, razobrat(a.spisok))
+    try:
+        do = verhnyaya_data(a.do, a.otmetka)
+    except PermissionError as e:
+        print(f"FAIL manifest: {e}")
+        return 1
+    r = sobrat(a.koren, razobrat(a.spisok), do)
     for rel, pr in r["isklyucheno"]:
         print(f"ИСКЛЮЧЕНО до чтения: {rel} ({pr})")
     print(zapisat(r, a.vyhod))

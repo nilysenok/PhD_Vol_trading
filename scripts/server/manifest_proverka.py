@@ -40,7 +40,16 @@ def _put_ok(put: str, n: int) -> None:
         raise Otkaz(f"строка {n}: путь {put!r} не относительный/не нормальный")
 
 
-def prochitat(manifest: Path) -> list:
+def granica_wf(do: str, otmetka: Path) -> str:
+    """Верхняя дата манифеста: > 2021-12-31 (wf) — только при отметке снятого замка (непустой файл), иначе Otkaz."""
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", do):
+        raise Otkaz(f"--do {do!r}: не дата")
+    if do > GRANICA and not (otmetka.is_file() and otmetka.stat().st_size > 0):
+        raise Otkaz(f"--do {do} > {GRANICA}: нет отметки снятого замка {otmetka} (её ставит владелец)")
+    return do
+
+
+def prochitat(manifest: Path, granica: str = GRANICA) -> list:
     """-> [(kuda, sha, bajty, max_data, otkuda)]; любое нарушение — Otkaz (весь перенос).
     Шапка 5 полей (put …) или 7 (… istochnik, sha256_istochnika): файл берётся на Маке по `put` (усечённая копия
     data/server_2021/…), а на сервере лежит по `istochnik` — пути, по которому его читает код."""
@@ -59,8 +68,8 @@ def prochitat(manifest: Path) -> list:
         put = f[5] if len(f) == 7 else otkuda
         _put_ok(otkuda, n)
         _put_ok(put, n)
-        if md != BEZ_DAT and (not re.fullmatch(r"\d{4}-\d{2}-\d{2}", md) or md > GRANICA):
-            raise Otkaz(f"строка {n}: {put}: max_data {md!r} > {GRANICA} или не дата; перенос отменён целиком")
+        if md != BEZ_DAT and (not re.fullmatch(r"\d{4}-\d{2}-\d{2}", md) or md > granica):
+            raise Otkaz(f"строка {n}: {put}: max_data {md!r} > {granica} или не дата; перенос отменён целиком")
         if not re.fullmatch(r"[0-9a-f]{64}", h) or not b.isdigit():
             raise Otkaz(f"строка {n}: {put}: sha256/байты не в формате")
         if put in vid:
@@ -101,9 +110,11 @@ def main(argv=None) -> int:
     ap.add_argument("--istochnik", type=Path, action="append", help="корень данных; можно несколько — берётся первый, где файл есть")
     ap.add_argument("--strogo", action="store_true")
     ap.add_argument("--spisok", type=Path)
+    ap.add_argument("--do", default=GRANICA, help="верхняя дата max_data; > 2021-12-31 (wf) — только при отметке --otmetka")
+    ap.add_argument("--otmetka", type=Path, default=Path("docs/resheniya/wf_zamok_snyat.json"))
     a = ap.parse_args(argv)
     try:
-        m = prochitat(a.manifest)
+        m = prochitat(a.manifest, granica_wf(a.do, a.otmetka))
         if a.istochnik:
             for put, h, b, _, otkuda in m:
                 src = next((r / otkuda for r in a.istochnik if (r / otkuda).exists()), a.istochnik[0] / otkuda)
