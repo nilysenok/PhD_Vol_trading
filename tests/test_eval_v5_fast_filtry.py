@@ -12,7 +12,7 @@ from fastbt import canon_v5, eval_v5, rangi_v6
 from fastbt.eval_v5_osi import yakor
 from fastbt.indicators import calc_adx, calc_atr
 from fastbt.signals.v5_filtr import maska_atr_expand, primenit
-from tests import test_eval_v5 as T
+import test_eval_v5 as T
 
 
 def maska_etalon(td, tip_, filtr, sig):
