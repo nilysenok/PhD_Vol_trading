@@ -135,3 +135,46 @@ def primenit_dlit(sid, td, ind, p, sig, k, cache=None):
     out[(sig == 1) & ~ok_l] = 0
     out[(sig == -1) & ~ok_s] = 0
     return out
+
+
+# ---- asim (К3, Ж-132 п. 3): порог шорта = порог лонга, сдвинутый на n узлов собственной оси порога семьи ----
+# Узлы — setka оси в кубе v5 (fastbt/designs/v5/kub_S*.yaml, порядок значений = порядок строгости: больше = строже).
+# Положительный n — шорт строже. На краю сетки — крайний узел, точка схлопывается в канон с флагом kray.
+# Семья считается дважды: лонги — из прогона с порогом лонга, шорты — из прогона со сдвинутым порогом.
+# Оба знака в один день → позиция 0. long — шортов нет (итерация 26). asim = 0 идёт тем же путём (шорт из той же точки)
+# и даёт sig v5 побайтно.
+ASIM = (0, -2, -1, 1, 2, "long")
+OS_POROGA = {"S1": "z_entry", "S2": "bb_std", "S3": "okno", "S4": "mnozh", "S5": "uroven", "S6": "dev_mult"}
+LONG = "long"
+
+
+def uzly(sid):
+    import pathlib
+
+    import yaml
+    f = pathlib.Path(__file__).resolve().parents[1] / "designs" / "v5" / f"kub_{sid}.yaml"
+    return list(yaml.safe_load(f.read_text(encoding="utf-8"))["signal"][OS_POROGA[sid]]["setka"])
+
+
+def porog_shorta(sid, p, n):
+    """(точка с порогом шорта, kray): сдвиг оси порога на n узлов; значение вне узлов — ошибка, не тихий канон."""
+    ax, nodes = OS_POROGA[sid], uzly(sid)
+    if p[ax] not in nodes:
+        raise ValueError(f"{sid}: {ax}={p[ax]!r} не узел сетки v5")
+    j = nodes.index(p[ax]) + n
+    jc = min(max(j, 0), len(nodes) - 1)
+    return {**p, ax: nodes[jc]}, jc != j
+
+
+def primenit_asim(sid, sig_fn, p, asim):
+    """sig_fn(точка) → int8[T] сигнал семьи v5. Возвращает (сигнал, kray)."""
+    if asim not in ASIM:
+        raise ValueError(f"asim вне {ASIM}: {asim!r}")
+    base = sig_fn(p)
+    if asim == LONG:
+        return np.where(base > 0, base, 0).astype(base.dtype), False
+    ps, kray = porog_shorta(sid, p, asim)
+    short = sig_fn(ps)
+    lg, sh = base > 0, short < 0
+    out = np.where(lg & ~sh, 1, np.where(sh & ~lg, -1, 0)).astype(base.dtype)
+    return out, kray
