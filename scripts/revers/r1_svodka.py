@@ -26,6 +26,9 @@ PREREG = {
     "e": "фазы рынка по месяцам и результат по фазам",
     "zh": "разрез по терцилям σ",
 }
+# префиксы таблиц листа; лист «д» пишет diag_* (r1_d.py), остальные — «<лист>_»
+PREFIKSY = {k: (k + "_",) for k in LISTY}
+PREFIKSY["d"] = ("d_", "diag_")
 MARKER = "реверс раунд 1, 2022–2024, справочно, без выбора"
 DATE_COLS = {"date", "data", "дата", "день", "day", "den"}
 BPS = re.compile(r"bps|б\.\s?п\.", re.I)
@@ -165,7 +168,7 @@ def sobrat(root, out):
         fails += f
         info[p.name] = (p, n, head)
     texts = {k: (md_dir / f"{k}.md").read_text(encoding="utf-8") if (md_dir / f"{k}.md").exists() else None for k in LISTY}
-    tabl = {k: [x for x in info if x.startswith(k + "_")] for k in LISTY}
+    tabl = {k: [x for x in info if x.startswith(PREFIKSY[k])] for k in LISTY}
     ozhid, gotovo = [], 0
     for k in LISTY:
         t = texts[k]
