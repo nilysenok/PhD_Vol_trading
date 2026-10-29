@@ -4,6 +4,8 @@ v2.1 (Л7, docs/otchety/2026-10-29_setka_v5.md §3): вместо рядов por
 (fastbt.stats) по кварталам 2016Q1…2019Q4: port [16,NF], tik [17,16,NF] float64, ≈ 20 КБ/точку; окно — stats.window."""
 import hashlib
 import json
+import os
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -147,6 +149,13 @@ def _shards(d: Path, pd: Path) -> list:
     return out
 
 
+def _zapis_atomarno(mp: Path, text: str) -> None:
+    """Уникальный tmp рядом + os.replace: читатель видит либо нет файла, либо целый (гонка первых кусков)."""
+    tmp = mp.with_name(f"{mp.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, mp)
+
+
 class Pisatel:
     """Один на процесс: p{NN}/ свой. Строки видны только после закрытия шарда."""
     VERSIYA, daty = V, None      # у Pisatel21 — 2.1 и даты рядов; версия из manifest (резюм по каталогу) приоритетнее
@@ -164,7 +173,7 @@ class Pisatel:
             raise ValueError("manifest: другой kod/vhody/poz_konec — отказ")
         self.poz_konec = bool(ex.get("poz_konec"))
         if not mp.exists():
-            mp.write_text(json.dumps(ex, ensure_ascii=False, sort_keys=True, indent=1), encoding="utf-8")
+            _zapis_atomarno(mp, json.dumps(ex, ensure_ascii=False, sort_keys=True, indent=1))
         [(self.pd / s).mkdir(parents=True, exist_ok=True) for s in ("port", "tik")]
         self.buf = []
         self._vosstanovit()
