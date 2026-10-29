@@ -27,13 +27,14 @@ def sreda():
 
 
 def _schitat(evr, pt):
-    """Точка с дивидендами (sob_tip ∋ div) отказывается ПО ЗАМЫСЛУ (div_verified=False, ❓5): ValueError «не сверены»."""
+    """Точка с дивидендами (sob_tip ∋ div): при div_verified=True (есть свод Д8, #717) считается без отказа; при
+    div_verified=False (свода нет, ❓5) отказывается ПО ЗАМЫСЛУ: ValueError «не сверены»."""
     try:
         r, ex_p, _ = evr.evaluate_v2(pt, PER)
     except ValueError as e:
-        assert "div" in str(pt.get("sob_tip", "")) and "дивиденды не сверены" in str(e), (e, pt)
+        assert not evr.ist.div_verified and "div" in str(pt.get("sob_tip", "")) and "дивиденды не сверены" in str(e), (e, pt)
         return {"status": "div_otkaz"}, None
-    assert "div" not in str(pt.get("sob_tip", "")) or r["status"] == "ne_schitana", r      # div без отказа — только если точка не считана раньше
+    assert evr.ist.div_verified or "div" not in str(pt.get("sob_tip", "")) or r["status"] == "ne_schitana", r
     return r, ex_p
 
 
@@ -70,3 +71,32 @@ def test_20_tochek_morrisa_s1_vse_poschitany(sreda):
     pts = pts[:20]
     assert len(pts) == 20
     assert all(_ok(_schitat(evr, pt)[0]) for pt in pts)
+
+
+def _tochka_div(sreda):
+    evr, kub, ox = sreda
+    baza = {n: g[0] for n, g, _ in ox}
+    sob = next(g for n, g, _ in ox if n == "sob_tip")
+    for v in sob:
+        if "div" in str(v):
+            pt = canon_v6.canon_v6(SID, {**baza, "sob_tip": v}, kub)
+            if pt is not None:
+                return evr, pt
+    raise AssertionError(("нет точки с div", sob))
+
+
+def test_div_schitaetsya_pri_svode(sreda):
+    evr, pt = _tochka_div(sreda)
+    assert evr.ist.div_verified is True
+    r, _ = _schitat(evr, pt)
+    assert _ok(r) == "ok", r
+
+
+def test_div_otkaz_bez_svoda(sreda):
+    import copy
+    import dataclasses
+    evr, pt = _tochka_div(sreda)
+    ev2 = copy.copy(evr)
+    # sha другой, как и без свода (div = полная таблица): кэши точек общие у копии и оригинала, ключ их разводит
+    ev2.ist = dataclasses.replace(evr.ist, div_verified=False, sha="bez_svoda")
+    assert _schitat(ev2, pt)[0] == {"status": "div_otkaz"}
