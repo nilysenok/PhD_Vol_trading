@@ -43,6 +43,21 @@ def nastroit(period: str, imoex: str | None) -> str:
     return last
 
 
+def init_vorker(period: str, imoex: str | None) -> None:
+    """Initializer пула: при spawn воркер импортирует модули заново (AS.PER = умолчание), поэтому период ставим в нём."""
+    nastroit(period, imoex)
+    assert AS.PER == period, f"воркер видит период {AS.PER}, нужен {period}"
+
+
+def period_vorkera() -> str:
+    return AS.PER
+
+
+def sozdat_pul(period: str, imoex: str | None, n: int = 2, ctx=None):
+    import multiprocessing
+    return (ctx or multiprocessing).Pool(n, initializer=init_vorker, initargs=(period, imoex))
+
+
 def kross(last: str) -> dict:
     """Книга S7–S9 — как overnajt.kross, но окно до last (там литерал 2019-12-31)."""
     import golaya_s7_s9 as G
@@ -83,8 +98,7 @@ def main() -> None:
     a = ap.parse_args()
     last = nastroit(a.period, a.imoex)
     R = {AS.SIDS[0]: O.schitat_sk(AS.SIDS[0])}       # первый — один: общий кэш 5-мин баров (гонка tmp → parquet)
-    from multiprocessing import Pool
-    with Pool(2) as p:
+    with sozdat_pul(a.period, a.imoex) as p:
         R.update(zip(AS.SIDS[1:], p.map(O.schitat_sk, AS.SIDS[1:])))
     df = pd.DataFrame(O.stroki_a(R) + O.stroki_kross(kross(last)))
     out = Path(a.out) if a.out else ROOT / "docs" / "tables" / "revers_r1" / ("v_overnajt.csv" if a.period == "test1" else "v_train4_proverka.csv")
