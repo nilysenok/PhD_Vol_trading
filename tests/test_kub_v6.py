@@ -126,6 +126,36 @@ def test_obem_sovpadaet_s_tablicej_inventarizacii(sid):
     assert C6.obem(kub) == pytest.approx(5 * v)
 
 
+def test_period_s4_svorachivaetsya_pri_norm_s252():                          # V6-5 (#648)
+    kub = KUBY["S4"]
+    baza = {n: g[0] for n, g in C5.osi(kub["v5"])}
+    a = C6.canon_v6("S4", {**baza, **vykl(kub), "norm": "s252", "period": 80}, kub)
+    b = C6.canon_v6("S4", {**baza, **vykl(kub), "norm": "s252", "period": 5}, kub)
+    assert a == b and a["norm"] == "s252"
+    assert C6.canon_v6("S4", {**baza, **vykl(kub), "period": 80}, kub)["period"] == 80   # при norm = okno period действует
+
+
+def test_piv_buf_tolko_pri_pivotnom_stope_ili_tejke():                      # S5, И11
+    kub = KUBY["S5"]
+    baza = {n: g[0] for n, g in C5.osi(kub["v5"])}
+    q = {**baza, **vykl(kub), "piv_buf": 0.1}
+    assert "piv_buf" not in C6.canon_v6("S5", q, kub)
+    assert C6.canon_v6("S5", {**q, "stop_nach": "piv:next"}, kub)["piv_buf"] == 0.1
+    assert C6.canon_v6("S5", {**q, "tejk": "piv:R"}, kub)["piv_buf"] == 0.1
+
+
+def test_zamorozka_zamorazhivaet_detej():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("obem_v6", C6.KUB6 / "obem_v6.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    kub = KUBY["S1"]
+    assert {"relf_k", "relf_okno", "relf_bench"} <= m.zamorozhennye(kub, ["relf_napr"])
+    assert "ma_n" not in m.zamorozhennye(kub, ["shirina"])                   # второй родитель (sektor_trend) не заморожен
+    for sid, _, v5, v6, bez, zam in m.tablica(list(C6.novye(kub)) + ["tejk"]):
+        assert v5 <= zam <= v6 and bez == pytest.approx(v6 / 5)
+
+
 def test_proverit_otvergaet_plokhoe():
     kub = copy.deepcopy(KUBY["S1"])
     plokhie = [
