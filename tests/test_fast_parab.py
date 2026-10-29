@@ -70,6 +70,21 @@ def test_sintetika_yadro_ravno_etalonu_na_1200_putyah():
     assert trail >= 200, trail                          # параболический стоп реально срабатывает, а не «ничего не делает»
 
 
+def test_open2_sintetika_400_putey():
+    """parab при t_vyhod = open2 (Ф-open2: скан дня до бара 10:00, выход по open): лента с временем баров из test_fast_open2."""
+    from test_fast_open2 import lenta as lenta_o2
+    plokho, trail = [], 0
+    for i in range(400):
+        p = dataclasses.replace(tochka(4 * i), t_vyhod="open2", vyhod_lim=False)
+        days, sig, sigma, close, div = lenta_o2(60_000 + i)
+        if not sverit(days, sig, sigma, p, close, div):
+            plokho.append(i)
+            continue
+        trail += sum(t.reason == "trail" for t in exec_e.run("T", days, sig, sigma, p, close=close, div=div).trades)
+    assert not plokho, plokho[:10]
+    assert trail >= 30, trail
+
+
 def _dni(o, h, lo, c):
     return [Day(np.array([a], float), np.array([b], float), np.array([x], float), np.array([y], float), False) for a, b, x, y in zip(o, h, lo, c)]
 

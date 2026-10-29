@@ -7,9 +7,9 @@ import numpy as np
 from numba import njit
 
 PBS, PBE, PBP = 18, 19, 20                  # fs: стоп бара (храповик), экстремум с входа, шаг
-PBN = 32                                    # st: 1 — бар входа ещё не пройден (действует только начальный стоп)
+PBN = 34                                    # st: 1 — бар входа ещё не пройден (действует только начальный стоп); после XT, PEND = 32, 33
 F_PS, F_PM = 22, 23                         # pf: (ps, pm)
-P_PARAB = 32                                # pi: ось включена
+P_PARAB = 33                                # pi: ось включена; после P_TV = 32 (open2)
 
 
 def params_parab(p) -> tuple:

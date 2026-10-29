@@ -58,7 +58,7 @@ def _spans(res, ix, p: Params, n: int):
 
 
 def run_e1(ticker, days, sig, sigma, p: Params, close=None, w=None, win=None, div=None, nalog=None,
-           fdr=None, ed=None, tejk_M=None, urovni=None) -> E1Rows:
+           fdr=None, ed=None, tejk_M=None, urovni=None, dates=None) -> E1Rows:
     """fdr: None — как раньше; "t0" | "t1" — E1Rows.noch по fastbt/fdr.py (ставка на свободный капитал, Ж-065 п. 3)."""
     from fastbt import exec_e                       # ленивый импорт: exec_e.run_e1 — тот же объект
     n = len(days)
@@ -69,6 +69,8 @@ def run_e1(ticker, days, sig, sigma, p: Params, close=None, w=None, win=None, di
         xk["tejk_M"] = tejk_M                       # Ж-084: уровень M сигнала по дням (только при Params.tejk ≠ net)
     if urovni is not None:
         xk["urovni"] = urovni                       # Ж-091: уровни стоп-заявок по дням (только при Params.vhod_tip = stop_zayavka)
+    if dates is not None:
+        xk["dates"] = dates                         # Д5-2: заявка не переживает остановку торгов (Params.razryv)
     res = exec_e.run(ticker, days, sig, sigma, p, close=close, div=div, nalog=nalog, **xk)
     ix = [i for i, d in enumerate(days) if not d.pusto]
     wr, sides, cnt, sh = np.zeros(n), np.zeros(b - a), np.zeros(b - a), np.zeros(n)

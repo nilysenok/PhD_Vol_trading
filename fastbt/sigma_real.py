@@ -6,7 +6,9 @@
  - rv5/rv22/rv66: σ_d = √(среднее RV за w дней, оканчивающихся днём d) — день d входит, он известен на 18:50;
    решение на d исполняется на d+1 (Н6), поэтому заглядывания вперёд нет;
  - ewma094: v_d = λ·v_{d−1} + (1−λ)·RV_d, v_первый = RV_первый, σ_d = √v_d; ряд даётся с EWMA_MIN-го наблюдения;
- - нет истории — NaN, не подстановка (Д4).
+ - нет истории — NaN, не подстановка (Д4);
+ - сокращённая сессия (Д5-1, умолчание дирижёра 29.10): день с числом баров < SHORT_FRAC медианы полного дня тикера за прошлые
+   SHORT_WIN дней (данные ≤ d−1, ≥ SHORT_MIN = 5 наблюдений) в ряд RV не входит (как дыра: окно по оставшимся дням, без подстановки).
 ❓6 (RV в features_pit_v3 до 18:50?) не подтверждён (отчёт К1): RV строится из 10-минуток здесь, `features_pit_v3.rv` не берётся.
 Данные ≥ 2022 не читаются (фильтр на чтении, `daily_1850.END`).
 """
@@ -24,6 +26,14 @@ WINDOWS = {"rv5": 5, "rv22": 22, "rv66": 66}
 LAMBDA = 0.94
 EWMA_MIN = 22
 NAMES = (*WINDOWS, "ewma094")
+SHORT_FRAC, SHORT_WIN, SHORT_MIN = 0.5, 252, 5       # сокращённый день: баров < 0,5 медианы за прошлые 252 дня (≥ 5 наблюдений; меньше — не судим)
+
+
+def korotkie_dni(n: pd.Series, frac: float = SHORT_FRAC, sdvig: int = 1) -> pd.Series:
+    """True — сокращённый день: число баров n_d < frac · медиана n за SHORT_WIN дней строго до d (sdvig = 1).
+    sdvig = 0 — заглядывание (день d в своей медиане): только для теста-мутации."""
+    med = n.shift(sdvig).rolling(SHORT_WIN, min_periods=SHORT_MIN).median()
+    return n < frac * med
 
 
 def rv_1850(bars: pd.DataFrame, cut_min: int = CUT_MIN) -> pd.Series:
@@ -34,6 +44,8 @@ def rv_1850(bars: pd.DataFrame, cut_min: int = CUT_MIN) -> pd.Series:
     day = b["timestamp"].dt.normalize()
     r2 = np.log(b["close"].astype("float64")).groupby(day).diff() ** 2
     rv = r2.groupby(day).sum(min_count=1).dropna()
+    n = b["close"].groupby(day).count()
+    rv = rv[~korotkie_dni(n).reindex(rv.index, fill_value=False)]
     rv.index.name = "date"
     return rv
 
