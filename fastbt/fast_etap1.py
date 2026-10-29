@@ -271,8 +271,11 @@ def pokryto(pt: dict) -> bool:
     """§1.8 контракта ledger v2.0: быстрый слой покрывает точки осей zh047 (v1.0); новые оси §1.1 — только в умолчании,
     `filtr` — только net | cbr (прежние `sobytiya`), заём — только 0. Остальное драйвер считает медленным путём."""
     from fastbt.etap1_eval import NET
+    from fastbt.rangi_v6 import RANG_TIPY
     umolch = dict(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod", t_vyhod="close", k_x=NET, storona="obe",
                   tejk_signal=NET, rho=NET, m_tip="1", rang_tip="tikernyj")   # Ж-084: tejk_signal ≠ net; V6-c: rho ≠ net — медленный путь (эталон)
+    if "stop_nach" in pt and pt.get("rang_tip") in RANG_TIPY:     # точка v5: rang_tip считает оценщик (rangi_v6), в run идёт только
+        umolch["rang_tip"] = pt["rang_tip"]                       # rang ≠ None — а такой вызов `run` сам отдаёт эталону (_slow_only)
     return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and pt.get("filtr", NET) in (NET, "cbr")
             and pt.get("sobytiya", NET) in (NET, "cbr") and pt.get("vyhod", NET) in (NET, "lim")
             and pt.get("zaem", 0) in (0, "0", "0.0", NET, None))
