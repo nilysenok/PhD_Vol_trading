@@ -78,7 +78,7 @@ def schitat_sk(sid: str) -> dict:
     return {k: r[k] for k in ("x", "tik", "baza", "dates", "I", "N", "g", "sides", "eks", "ecc")}
 
 
-def stroki_a(R: dict) -> list:
+def stroki_a(R: dict, god: float = 4.0) -> list:
     """Строки категорий S1–S6 (и каждого Sk): средние по парам, как a_shtrih с равными весами; сверка excess с a_shtrih."""
     rows = []
     for imya, sids in [(s, (s,)) for s in AS.SIDS] + KATEGORII[:5]:
@@ -89,7 +89,7 @@ def stroki_a(R: dict) -> list:
         x = np.nan_to_num(tik).sum((0, 1)) / nn - AS.PLATA * baza
         ref = urovni.a_shtrih({s: R[s]["tik"] for s in sids}, urovni.setka()["umolchaniya"], R[sids[0]]["dates"]) - AS.PLATA * baza
         assert np.allclose(x, ref, atol=1e-12), f"{imya}: excess категории ≠ a_shtrih"
-        rows.append(L.stroka(imya, ",".join(sids), agg("I")[:-1], agg("N")[:-1], x, agg("eks") > 0))
+        rows.append(L.stroka(imya, ",".join(sids), agg("I")[:-1], agg("N")[:-1], x, agg("eks") > 0, god))
     return rows
 
 
@@ -124,10 +124,10 @@ def kross() -> dict:
     return out
 
 
-def stroki_kross(K: dict) -> list:
-    rows = [L.stroka(f"{s}", s, k["I"], k["N"], k["x"], k["d"]) for s, k in K.items()]
+def stroki_kross(K: dict, god: float = 4.0) -> list:
+    rows = [L.stroka(f"{s}", s, k["I"], k["N"], k["x"], k["d"], god) for s, k in K.items()]
     m = lambda key: np.mean([K[s][key] for s in K], axis=0)                       # noqa: E731
-    rows.append(L.stroka(KATEGORII[5][0], "S7,S8,S9", m("I"), m("N"), m("x"), np.any([K[s]["d"] for s in K], axis=0)))
+    rows.append(L.stroka(KATEGORII[5][0], "S7,S8,S9", m("I"), m("N"), m("x"), np.any([K[s]["d"] for s in K], axis=0), god))
     return rows
 
 
