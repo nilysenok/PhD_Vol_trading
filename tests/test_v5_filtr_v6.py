@@ -5,7 +5,7 @@ import pytest
 
 from fastbt.indicators import calc_atr, calc_sma
 from fastbt.signals import v5_filtr as V
-from tests.test_v5_filtr import GRID, sig_for, synth
+from test_v5_filtr import GRID, sig_for, synth
 
 
 def ref_hurst(close, w=100):
