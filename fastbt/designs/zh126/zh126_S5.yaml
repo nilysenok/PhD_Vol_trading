@@ -1,0 +1,47 @@
+# Ж-127 п. 1: оси сигнала S5 (Pivot Points) из daily_upper_bound.py, полные списки.
+# Только определения осей; точки, выбранные значения и итоги того прогона
+# (in-sample 2022–2026) не переносились.
+strategiya: S5
+nazvanie_v_istochnike: S5_PivotPoints         # строки 575-576
+istochnik:
+  kommit: 6a7a4636
+  fajl: moex_volatility/scripts/daily_upper_bound.py
+  stroki: "275-285, 373-375, 408, 457-458, 496-498"
+  moduli:                                       # импорт, строки 29-34 источника
+    - {fajl: moex_volatility/scripts/strategies_walkforward.py, stroki: "470-510", chto: "calc_pivot_daily — уровни по H/L/C предыдущего дня"}
+pravilo_vhoda: >-
+  Против тренда: лонг, если close < S_el; шорт, если close > R_el; уровень el = 1, 2, 3
+  (S1/R1, S2/R2, S3/R3), строки 279-283. Пивоты дневные: из H/L/C дня t-1
+  (strategies_walkforward.py, 470-510).
+signal:
+  pivot_type:
+    imya_v_istochnike: pt
+    znacheniya: [classic, fibonacci, woodie, camarilla]
+    istochnik_stroki: "374, 458"
+  uroven:
+    imya_v_istochnike: el
+    znacheniya: [1, 2, 3]
+    istochnik_stroki: "375, 279-281"
+  pivot_period:
+    imya_v_istochnike: null                     # оси нет: всегда calc_pivot_daily (строки 457-458)
+    znacheniya: [daily]
+    istochnik_stroki: "457-458"
+zavisimye_osi: []
+obshchee: zh126_obshchee.yaml                   # риск-менеджмент и фильтры — там
+tip_filtrov: kontrtrend                         # IS_TREND["S5"] = False, строка 408
+filtry_tipa: [adx_th, atr_lo, vol_th, rsi_th, mom_n, dow]   # apply_filters_generic, строки 302-342; сетки — строки 381-392
+vyborka_v_istochnike: >-
+  Stage1 — 5000 случайных сочетаний сигнал × фильтр (строки 410, 476-515), Stage2 —
+  риск-менеджмент для лучших 10 (411-412, 522-546). Записан полный диапазон осей.
+suzheno_v_istochnike: false
+suzheno_na_teste: false                         # narrowed_grid*.json источник не читает (в нём нет ни narrow, ни json)
+# Названо в Ж-127 («5 типов пивотов», «неделя/месяц», подтверждения), но в daily_upper_bound.py
+# этого нет. Ниже — где оно лежит на том же коммите; в куб НЕ входит (решение — Ж-127 п. 2).
+# Сверка: «5 типов» = 4 типа строки 374 + demark из grid_scan_phase3.py; с demark объём был бы 5 × 3 × 1 = 15.
+net_v_istochnike:
+  - {chto: "5-й тип пивота demark (уровни по H/L/C/O дня t-1) и ось PIVOT_ATR_FILTERS", fajl: moex_volatility/scripts/grid_scan_phase3.py, stroki: "121-140, 366-378"}
+  - {chto: "подтверждения none/rsi30/rsi20/volume", fajl: moex_volatility/scripts/grid_scan_test.py, stroki: "88, 285-300, 501-502"}
+  - {chto: "период пивота weekly/monthly (дневные бары), daily (часовые)", fajl: moex_volatility/scripts/s5_rerun.py, stroki: "484-494"}
+  - {chto: "dir_bias (только по S6)", fajl: moex_volatility/scripts/s5s6_rerun.py, stroki: "217-266, 420-430"}
+# obem_signal = |pivot_type| × |uroven| × |pivot_period| = 4 × 3 × 1
+obem_signal: 12

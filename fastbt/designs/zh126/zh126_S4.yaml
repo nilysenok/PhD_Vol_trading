@@ -1,0 +1,41 @@
+# Ж-127 п. 1: оси сигнала S4 (Supertrend) из daily_upper_bound.py, полные списки.
+# Только определения осей; точки, выбранные значения и итоги того прогона
+# (in-sample 2022–2026) не переносились.
+strategiya: S4
+nazvanie_v_istochnike: S4_Supertrend          # строки 575-576
+istochnik:
+  kommit: 6a7a4636
+  fajl: moex_volatility/scripts/daily_upper_bound.py
+  stroki: "262-273, 369-371, 408, 452-454, 493-495"
+  moduli:                                       # импорт, строки 29-34 источника
+    - {fajl: moex_volatility/scripts/strategies_walkforward.py, stroki: "248-256, 301-328, 414-419", chto: "calc_atr, calc_supertrend, precompute_supertrend_cache"}
+pravilo_vhoda: >-
+  Пересечение линии Supertrend: лонг, если close[t] > st[t] и close[t-1] <= st[t-1];
+  шорт, если close[t] < st[t] и close[t-1] >= st[t-1] (gen_sig_s4, строки 262-273).
+  Supertrend: ATR(ap) = скользящее среднее TR за ap, полосы hl2 ± mult·ATR
+  (strategies_walkforward.py, 301-328).
+signal:
+  atr_period:
+    imya_v_istochnike: ap
+    znacheniya: [3, 5, 7, 10, 12, 14, 18, 20, 25, 30, 35, 40, 50, 60, 80]
+    istochnik_stroki: "370, 452"
+  mult:
+    imya_v_istochnike: mult
+    edinica: ATR
+    znacheniya: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 5.0, 6.0]
+    istochnik_stroki: "371, 453"
+zavisimye_osi: []                               # кэш строится на всём произведении ap × mult, строки 452-454
+obshchee: zh126_obshchee.yaml                   # риск-менеджмент и фильтры — там
+tip_filtrov: trend                              # IS_TREND["S4"] = True, строка 408
+filtry_tipa: [adx_th, atr_lo, vol_th, rsi_th, mom_n, dow]   # apply_filters_generic, строки 302-342; сетки — строки 381-392
+vyborka_v_istochnike: >-
+  Stage1 — 5000 случайных сочетаний сигнал × фильтр (строки 410, 476-515), Stage2 —
+  риск-менеджмент для лучших 10 (411-412, 522-546). Здесь записан полный диапазон осей,
+  а не выбранные значения; сам источник оси сигнала не сужает.
+suzheno_v_istochnike: false
+suzheno_na_teste: false                         # narrowed_grid*.json источник не читает (в нём нет ни narrow, ни json)
+# Названо в Ж-127 («подтверждения»), но в daily_upper_bound.py для S4 этого нет. В куб НЕ входит (Ж-127 п. 2).
+net_v_istochnike:
+  - {chto: "подтверждения none/rsi30/rsi20/volume", fajl: moex_volatility/scripts/grid_scan_test.py, stroki: "88, 285-300, 501-502"}
+# obem_signal = |atr_period| × |mult| = 15 × 15
+obem_signal: 225

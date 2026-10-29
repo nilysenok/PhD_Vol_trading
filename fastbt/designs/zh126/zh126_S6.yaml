@@ -1,0 +1,42 @@
+# Ж-127 п. 1: оси сигнала S6 (VWAP) из daily_upper_bound.py, полные списки.
+# Только определения осей; точки, выбранные значения и итоги того прогона
+# (in-sample 2022–2026) не переносились.
+strategiya: S6
+nazvanie_v_istochnike: S6_VWAP                # строки 575-576
+istochnik:
+  kommit: 6a7a4636
+  fajl: moex_volatility/scripts/daily_upper_bound.py
+  stroki: "287-295, 377-379, 408, 455-456, 499-501"
+  moduli:                                       # импорт, строки 29-34 источника
+    - {fajl: moex_volatility/scripts/strategies_walkforward.py, stroki: "421-433", chto: "precompute_vwap_cache — скользящий VWAP за vw дней и std(close − VWAP), ddof=1"}
+pravilo_vhoda: >-
+  Против тренда: лонг, если close < VWAP_vw − dm·dev; шорт, если close > VWAP_vw + dm·dev
+  (gen_sig_s6, строки 287-295); dev — std(close − VWAP) за то же окно vw
+  (strategies_walkforward.py, 421-433).
+signal:
+  vwap_okno:
+    imya_v_istochnike: vw
+    edinica: dni
+    znacheniya: [3, 5, 7, 10, 12, 15, 18, 20, 25, 30, 40, 50, 60, 80, 100]
+    istochnik_stroki: "378, 455"
+  porog:
+    imya_v_istochnike: dm
+    edinica: std(close − VWAP)
+    znacheniya: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 3.5, 4.0]
+    istochnik_stroki: "379"
+zavisimye_osi: []
+obshchee: zh126_obshchee.yaml                   # риск-менеджмент и фильтры — там
+tip_filtrov: kontrtrend                         # IS_TREND["S6"] = False, строка 408
+filtry_tipa: [adx_th, atr_lo, vol_th, rsi_th, mom_n, dow]   # apply_filters_generic, строки 302-342; сетки — строки 381-392
+vyborka_v_istochnike: >-
+  Stage1 — 5000 случайных сочетаний сигнал × фильтр (строки 410, 476-515), Stage2 —
+  риск-менеджмент для лучших 10 (411-412, 522-546). Записан полный диапазон осей.
+suzheno_v_istochnike: false
+suzheno_na_teste: false                         # narrowed_grid*.json источник не читает (в нём нет ни narrow, ни json)
+# Названо в Ж-127 («подтверждения», dir_bias), но в daily_upper_bound.py для S6 этого нет:
+# подтверждений, кроме общих фильтров (строки 302-342), нет. В куб НЕ входит (решение — Ж-127 п. 2).
+net_v_istochnike:
+  - {chto: "подтверждения none/rsi30/rsi20/volume", fajl: moex_volatility/scripts/grid_scan_test.py, stroki: "88, 285-300, 501-502"}
+  - {chto: "dir_bias OFF/ON и filter_set 1-4 (vwap_window 5,10,20,60; dev_mult 0.5-2.0)", fajl: moex_volatility/scripts/s5s6_rerun.py, stroki: "217-266, 420-430"}
+# obem_signal = |vwap_okno| × |porog| = 15 × 12
+obem_signal: 180
