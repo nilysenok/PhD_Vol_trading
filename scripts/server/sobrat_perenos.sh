@@ -30,7 +30,7 @@ say "коммит $FULL; каталог $OUT; рабочий каталог Ма
 
 say "1/6 tar кода (git archive $SHORT)"
 TAR="$OUT/kod_$SHORT.tar.gz"
-# БЕЛЫЙ список (в git есть файлы с данными 2022+): fastbt/**.py|yaml без tests/ и designs/; из designs/ — v5/, zh126/,
+# БЕЛЫЙ список (в git есть файлы с данными 2022+): fastbt/**.py|yaml без tests/ и designs/; из designs/ — v5/, v6/, zh126/,
 # progon/*.yaml (кубы замены progon_sobol) и sweep/*.yaml (базовая точка A_fix ekviv_20, сетки S{k}_setka_e1b — их читает
 # оценщик); scripts/server/*.py|sh; requirements.
 # Таблицы (csv/parquet) в tar не идут: справочные ≤ 2021 едут усечёнными копиями манифеста (накладка ниже).
@@ -38,7 +38,7 @@ git -C "$REPO" ls-tree -r --name-only "$FULL" -- fastbt scripts/server env/requi
   '^(fastbt/.*\.(py|yaml)|scripts/server/[^/]*\.(py|sh)|scripts/server/perenos/[^/]*\.sh|env/requirements_server\.txt)$' \
   | grep -v -E '^fastbt/(tests|designs)/' > "$TMP/belyj.txt" || true
 git -C "$REPO" ls-tree -r --name-only "$FULL" -- fastbt/designs | grep -E \
-  '^fastbt/designs/((v5|zh126)/.*\.(py|yaml)|(progon|sweep)/[^/]*\.yaml)$' >> "$TMP/belyj.txt" || true
+  '^fastbt/designs/((v5|v6|zh126)/.*\.(py|yaml)|(progon|sweep)/[^/]*\.yaml)$' >> "$TMP/belyj.txt" || true
 git -C "$REPO" show "$FULL:scripts/server/tar_iskluchit_2022plus.txt" > "$TMP/iskl.txt" || fail "нет scripts/server/tar_iskluchit_2022plus.txt в коммите"
 plohie=$(grep -v '^#' "$TMP/iskl.txt" | grep -Fx -f - "$TMP/belyj.txt" || true)
 [ -z "$plohie" ] || fail "в белый список попали пути из tar_iskluchit_2022plus.txt: $(echo "$plohie" | head -3 | tr '\n' ' ')"

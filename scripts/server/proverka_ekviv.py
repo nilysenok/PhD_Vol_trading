@@ -32,7 +32,7 @@ def main(argv=None) -> int:
     ap.add_argument("--moi", help="готовый npz вместо пересчёта")
     ap.add_argument("--rezhim", default="1", help="метка режима (1 — как есть, 2 — без AVX512/SVML) в отметке и вердикте")
     a = ap.parse_args(argv)
-    dopusk = float(os.environ.get("DOPUSK", "0"))
+    dopusk = float(os.environ.get("DOPUSK", "1e-12"))      # Ж-137 п. 3: якорь и точки ≤ 1e-12, дискретное — строго
     otm = Path(a.otmetka)
     otm.parent.mkdir(parents=True, exist_ok=True)
     otm.unlink(missing_ok=True)
