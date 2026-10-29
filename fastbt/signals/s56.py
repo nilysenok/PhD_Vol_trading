@@ -103,6 +103,9 @@ def _legacy_ctx(L, td):
         from fastbt.data import daily_df
         df = daily_df()
         tdf = df[df["ticker"] == td.ticker].sort_values("date").reset_index(drop=True)
+        for k in ("open", "high", "low", "close"):   # эталон на том же ряду, что td: с поправкой на дивиденды (#370)
+            tdf[k] = getattr(td, k)
+        df = pd.concat([df[df["ticker"] != td.ticker], tdf], ignore_index=True)
         ind = L.sw.compute_base(td.close, td.high, td.low, td.open, td.volume, False)
         pc = L.v41.prepare_pivot_cache(df, td.ticker, None, False, tdf)
         vc, _, dba = L.v41.prepare_vwap_cache_ext(td.close, td.high, td.low, td.volume,
