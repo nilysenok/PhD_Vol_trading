@@ -48,12 +48,16 @@ def kesh(per: str) -> dict:
     return pickle.loads(p.read_bytes())
 
 
-def portfeli(eng, S, comm: float) -> dict:
-    """{'A','C','D'}: порт s9 (excess, exposure) для A, TEST_C и замороженной D; D6lag1 без RVI на днях периода — {'prichina'}."""
+def portfeli(eng, S, comm: float, pos_out: dict | None = None) -> dict:
+    """{'A','C','D'}: порт s9 (excess, exposure) для A, TEST_C и замороженной D; D6lag1 без RVI на днях периода — {'prichina'}.
+    pos_out (лист плата за шорт): если dict — в него кладутся строки позиций {'A','C','D'}; на счёт не влияет."""
+    po = {} if pos_out is None else pos_out
+    po["A"] = eng.A_row
     out = {"A": eng.port(eng.A_row, comm=comm)}
     pts1, _ = S.c_points(C_SRC)
     G = dict(pts1)[C_POINT]
-    out["C"] = eng.port(eng.A_row * eng.g_row(G), comm=comm)
+    po["C"] = eng.A_row * eng.g_row(G)
+    out["C"] = eng.port(po["C"], comm=comm)
     pk = pokrytie_rvi(eng)
     if pk < RVI_MIN:        # s9.Engine.rvi режет по CUT=2021-12-31: на test1 RVI нет, ранг NaN ⇒ затвор открыт ⇒ D ≡ A (константа в данных, Д4)
         out["D"] = dict(prichina=f"RVI_(d-1) определён на {pk:.1%} дней периода (< {RVI_MIN:.0%}): D6lag1 вырождается в A")
@@ -64,7 +68,8 @@ def portfeli(eng, S, comm: float) -> dict:
         out["D"] = dict(prichina="ни одна точка D6lag1 не прошла экран закрытых баров 0,10–0,50")
         return out
     g, _ = eng.select(np.stack([G for _, G, _ in keep]), "mask", D_SCREEN)
-    out["D"] = eng.port(eng.A_row * g, comm=comm)
+    po["D"] = eng.A_row * g
+    out["D"] = eng.port(po["D"], comm=comm)
     return out
 
 
@@ -73,8 +78,9 @@ def pokrytie_rvi(eng) -> float:
     return float(np.isfinite(eng.rvi(1)[eng.r["tick"], eng.r["bar"]]).mean())
 
 
-def schitat(per: str) -> dict:
-    """Период берётся из состояния процесса (ustanovit_period); не совпал — отказ, а не молчаливый счёт на другом периоде."""
+def schitat(per: str, pos_out: dict | None = None) -> dict:
+    """pos_out — см. portfeli; плюс pos_out['_dni'] = (календарных дней на строку, индекс даты строки, число пар на дату).
+    Период берётся из состояния процесса (ustanovit_period); не совпал — отказ, а не молчаливый счёт на другом периоде."""
     if s9.PERIOD != per:
         raise RuntimeError(f"период в процессе {s9.PERIOD!r}, ожидался {per!r}: ustanovit_period не вызван")
     if per == "test1" and not os.environ.get("FASTBT_Z2_R2FINAL"):
@@ -84,7 +90,9 @@ def schitat(per: str) -> dict:
     S.c_points = lambda src: s9.S9.c_points(S, src)
     S.d_points = lambda src: s9.S9.d_points(S, src)
     comm = AS.COMM if per == "test1" else s9.COMM
-    res = portfeli(eng, S, comm)
+    res = portfeli(eng, S, comm, pos_out)
+    if pos_out is not None:
+        pos_out["_dni"] = (eng.cal[eng.r["date"]], eng.r["date"], eng.cnt)
     out = {k: (v if isinstance(v, dict) else {"x": v["excess"].to_numpy(float), "delo": (v["exposure"].to_numpy(float) > 0),
                                               "dates": v.index.to_numpy().astype("datetime64[D]"), "sharpe": s9.metrics(v)})
            for k, v in res.items()}
