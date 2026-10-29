@@ -26,6 +26,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import json_daty as jd  # noqa: E402
 import manifest_perenos as mp  # noqa: E402
 
 CUT = dt.date(2021, 12, 31)
@@ -129,6 +130,12 @@ def usech_pq(src: Path, dst: Path, kol: str, paket: int = PARQUET_BATCH, ostanov
     return st
 
 
+def usech_json(src: Path, dst: Path) -> Stat:
+    st = Stat()
+    st.stroki, st.otbrosheno, st.max_data = jd.usech(src, dst)
+    return st
+
+
 def usech(koren: Path, vyhod: Path, tolko: str = "") -> list[dict]:
     zap = []
     for shablon, vid, kol, och, chit in PRAVILA:
@@ -143,7 +150,7 @@ def usech(koren: Path, vyhod: Path, tolko: str = "") -> list[dict]:
             dst = vyhod / rel
             if rel.startswith("docs/issledovaniya/"):
                 dst = dst.with_name(dst.name.split("_", 1)[1])
-            st = usech_pq(src, dst, kol[0]) if vid == "pq" else usech_csv(src, dst, kol, och)
+            st = usech_pq(src, dst, kol[0]) if vid == "pq" else usech_json(src, dst) if vid == "json" else usech_csv(src, dst, kol, och)
             zap.append(dict(rel=rel, dst=dst, st=st, chit=chit, sha_src=mp.sha256(str(src)), bez=not kol))
             print(f"{rel}: строк {st.stroki}, отброшено {st.otbrosheno}, max {st.max_data}, остановка {st.ostanov}")
     return zap
