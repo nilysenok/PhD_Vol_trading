@@ -106,6 +106,7 @@ def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, **kw):
 
 class EvaluatorV5(EvaluatorV2):
     STROGAYA = True
+    rol: str | None = None          # роль прохода (spravka — Ж-137 п. 6); умолчание класса: оценщик без __init__ (тесты) — основной
 
     def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=OSNOVNOY, semya: str = "v5", rol: str | None = None):
         super().__init__(sid, inp, base_p, commission, fdr)
