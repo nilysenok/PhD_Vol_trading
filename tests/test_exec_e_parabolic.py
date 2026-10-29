@@ -111,7 +111,12 @@ def test_scenarii_na_pravke_prokhodyat():
 
 def test_mutatsiya_4_gep_po_urovnyu_lovitsya(monkeypatch):
     monkeypatch.setattr(exec_e_run, "stop_hit", lambda sd, o, h, l, S, touch: ((l <= S) if sd > 0 else (h >= S), S))
-    assert not _scen_all()
+    try:
+        ok = _scen_all()
+    except ValueError as e:                         # #617: исполнение вне бара — поймана кодом
+        assert "вне [low; high]" in str(e), str(e)
+        return
+    assert not ok
 
 
 def test_mutatsiya_3_stop_posle_signala_lovitsya(monkeypatch):

@@ -20,6 +20,7 @@ STATUS = "разработка train4 / В2, после аудита"
 OUT = Path("docs/tables/server_v5")
 FAJLY = ("svod_server_v5.py", "kalibr_v5.py", "kontroli_v5.py", "ledger_v2.py")
 TOP = 10
+N_PREFIKS = 4096      # К-3: к1 по префиксу Соболя (sobol_i < N_PREFIKS) из ledger 2.0
 
 
 def kod_sha() -> str:
@@ -78,6 +79,29 @@ def tablica_kontroli(pr: dict, pul, period: str, n_shift: int) -> list:
     return [[imya(pr["kl"]), f"{k2['sharpe']:.6f}", f"{kv.k1(pul):.6f}", f"{k2['p']:.6f}", n_shift, len(pul.tochki)]]
 
 
+def indeksy(pr: dict) -> list:
+    """sobol_i строк ledger 2.0 в порядке пула (None — точка не из Соболя: соседи, досчёт)."""
+    return [r.get("sobol_i") for r in lm.Chitatel(pr["root"], pr["sid"]).rows()]
+
+
+def k1_prefiks(pul, sobol_i: list, n: int = N_PREFIKS) -> tuple:
+    """к1 (равный вес) по точкам пула с sobol_i < n: (Шарп, отобранные индексы). Пусто — ValueError, не 0 молча."""
+    if len(sobol_i) != len(pul.tochki):
+        raise ValueError("sobol_i не совпадает с точками пула")
+    mask = np.array([i is not None and i < n for i in sobol_i], bool)
+    if not mask.any():
+        raise ValueError(f"в пуле нет точек Соболя с индексом < {n}")
+    return kv.k1(kv.podpul(pul, mask)), sorted(int(i) for i, m in zip(sobol_i, mask) if m)
+
+
+def tablica_k1(pr: dict, pul, n: int) -> tuple:
+    """(строка таблицы, строка шапки с seed и диапазоном индексов)."""
+    sh, idx = k1_prefiks(pul, indeksy(pr), n)
+    sha = hashlib.sha256(str(idx).encode()).hexdigest()[:12]
+    return ([imya(pr["kl"]), f"{sh:.6f}", len(idx), n],
+            f"# {imya(pr['kl'])}: seed={pr['mf'].get('sobol_seed')} индексы {idx[0]}..{idx[-1]} n={len(idx)} sha={sha}")
+
+
 def okna_v21(pr: dict) -> list:
     """Фаза 1 на 2.1: ворота v4 (sh > 0, mdd > −30 %, экспозиция > 5 %) и top-10 по Шарпу окна, год t = 2017–2019."""
     ch, rows, out = lm.Chitatel(pr["root"], pr["sid"]), None, []
@@ -111,9 +135,9 @@ def zapis(path: Path, shapka: list, kolonki: list, rows: list, vhody: list) -> N
         w.writerows(rows)
 
 
-def svod(katalog: Path, out: Path = OUT, osi: dict | None = None, n_shift: int = 199) -> list:
+def svod(katalog: Path, out: Path = OUT, osi: dict | None = None, n_shift: int = 199, n_prefiks: int = N_PREFIKS) -> list:
     """Таблицы по всем проходам каталога возврата; osi[sid] — оси (по умолчанию из kub_<sid>.yaml). Возвращает пути."""
-    prs, kal, kon, okn, pul_ = prohody(katalog), [], [], [], {}
+    prs, kal, kon, okn, pul_, k1p, sh1 = prohody(katalog), [], [], [], {}, [], []
     for pr in prs:
         sid, period = pr["sid"], pr["kl"][1]
         if pr["v"] == lm.V21:
@@ -123,16 +147,21 @@ def svod(katalog: Path, out: Path = OUT, osi: dict | None = None, n_shift: int =
         pul_[pr["kl"]] = (pr, pul)
         kal += tablica_kalibr(pr, pul, period)
         kon += tablica_kontroli(pr, pul, period, n_shift)
+        if not pr["kl"][2]:                       # k3 — решётка, не Соболь
+            r1, h1 = tablica_k1(pr, pul, n_prefiks)
+            k1p.append(r1)
+            sh1.append(h1)
     pary = [(pul_[k], pul_[(k[0], k[1], False, "seed2")]) for k in pul_ if not k[2] and k[3] == "seed" and (k[0], k[1], False, "seed2") in pul_]
     vh = [p["vhod"] for p in prs]
     seed = sravnenie(pary)
-    spec = [("kalibr_top10.csv", ["prohod", "god", "okno_s", "okno_po", "tiker", "rang", "tochka", "plato", "n_proby"], kal),
-            ("kontroli_k1_k2_k3.csv", ["prohod", "sharpe_ansambl_k2", "k1_sharpe", "k2_p", "n_shift", "tochek"], kon),
-            ("okna_ledger21.csv", ["prohod", "god", "rang", "tochka", "sharpe", "mdd", "expo_pct"], okn),
-            ("seed2_ustojchivost.csv", ["prohod1", "prohod2", "god", "sharpe1", "sharpe2", "rashozhdenie"], seed)]
+    spec = [("kalibr_top10.csv", ["prohod", "god", "okno_s", "okno_po", "tiker", "rang", "tochka", "plato", "n_proby"], kal, []),
+            ("kontroli_k1_k2_k3.csv", ["prohod", "sharpe_ansambl_k2", "k1_sharpe", "k2_p", "n_shift", "tochek"], kon, []),
+            ("okna_ledger21.csv", ["prohod", "god", "rang", "tochka", "sharpe", "mdd", "expo_pct"], okn, []),
+            ("k1_prefiks.csv", ["prohod", "k1_sharpe", "tochek_prefiksa", "n_prefiks"], k1p, sh1),
+            ("seed2_ustojchivost.csv", ["prohod1", "prohod2", "god", "sharpe1", "sharpe2", "rashozhdenie"], seed, [])]
     paths = []
-    for name, kol, rows in spec:
-        zapis(Path(out) / name, [], kol, rows, vh)
+    for name, kol, rows, shapka in spec:
+        zapis(Path(out) / name, shapka, kol, rows, vh)
         paths.append(Path(out) / name)
     return paths
 
