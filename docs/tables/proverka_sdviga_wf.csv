@@ -1,0 +1,21 @@
+# статус: разработка 2018–2021, после аудита; до 2021-12-31; Д1 НЕ ПРОЙДЕНА
+# код: 4646ef42
+# хэши входов: {'rv_1850_noquar.parquet': '9a8358c19a6a', 'ohlcv_daily_1850.parquet': 'b3999110d1c5', 'events.csv': '3e20e0f9ea5b'}
+ryad,tip,cel,corr_k-2,corr_k-1,corr_k+0,corr_k+1,ok,primechanie
+sigma_h1,uroven,ln RV_{d+k},0.6954,0.7634,0.8386,0.6710,True,максимум на k=0
+sigma_h1,prirashcheniya,ln RV_{d+k},-0.1022,0.0043,0.6239,-0.2774,True,максимум на k=0
+sigma_h5,prirashcheniya,ln RV_{d+k},-0.1208,0.2646,0.2834,-0.2096,True,максимум на k=0
+sigma_h22,prirashcheniya,ln RV_{d+k},-0.0677,0.3270,-0.0063,-0.1258,False,максимум на k=-1
+rv,uroven,ln range²_{d+k},0.5123,0.6006,0.8249,0.5353,True,максимум на k=0
+rv,prirashcheniya,ln range²_{d+k},-0.0687,-0.1504,0.6025,-0.2601,True,максимум на k=0
+atr14,prirashcheniya,ln RV_{d+k},0.0361,0.0653,0.3350,-0.2235,True,максимум на k=0
+bary_hl,uroven,sqrt RV_{d+k},0.4583,0.5097,0.8098,0.5774,True,максимум на k=0
+imoex,doxodnost,r тикера_{d+k},0.0070,0.0371,0.4330,0.0193,True,максимум на k=0
+td_rel,otnositelnyj,r тикера_{d+k},-0.0178,0.0059,0.8154,0.0255,True,максимум на k=0
+sektor,doxodnost,r тикера_{d+k},0.0220,0.0703,0.6316,0.0262,True,максимум на k=0
+vneshnie_usdrub,izmenenie,r IMOEX_{d+k},0.0075,-0.0984,-0.2183,0.0070,True,максимум на k=0
+vneshnie_rvi,izmenenie,r IMOEX_{d+k},-0.0082,-0.0790,-0.4228,0.1243,True,максимум на k=0
+vneshnie_brent,izmenenie,r IMOEX_{d+k},0.0164,0.0278,0.4074,0.0139,True,максимум на k=0
+stavka_cbr,stupenchataya,|r IMOEX|_{d+k},0.0502,-0.0296,-0.0087,-0.0284,True,вторая проверка (связанная величина)
+sobytiya,pit,,,,,,True,объявлено не позже события
+dividendy,gep_v_den_otsechki,−r тикера_{d+k},-0.0064,-0.0135,0.1155,0.0060,True,вторая проверка (связанная величина)
