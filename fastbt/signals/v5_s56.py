@@ -21,7 +21,7 @@ import pandas as pd
 from fastbt.indicators import calc_sma
 from fastbt.signals.interface import SignalSet, expand_grid, register_family
 from fastbt.signals.s56 import _filters, _gid
-from fastbt.signals.s56_kern import _entry, _s5_exit, _vwap
+from fastbt.signals.s56_kern import _entry, _roll_std, _s5_exit, _vwap
 
 PERIODS = {"den": None, "nedelya": "weekly", "mesyac": "monthly"}
 G5 = dict(pivot_type=["classic", "fibonacci", "woodie", "camarilla", "demark"],
@@ -132,6 +132,18 @@ def generate5(td, ind, grid):
     return SignalSet(sig, ex, ex.copy(), st, list(grid), False, extra)
 
 
+def _dev_norm(td, vwap, dev, norm, vc, w):
+    """К4 (v6): "okno" — dev окна w (v5 побайтно); "s252" — std(close − vwap_w) за 252 дня, зажим снизу 1e-12."""
+    if norm == "okno":
+        return dev
+    if norm != "s252":
+        raise ValueError(f"неизвестная norm: {norm!r}")
+    if ("s252", w) not in vc:
+        d = _roll_std(td.close - vwap, 252)   # прогрев 252 > WARMUP: NaN остаётся NaN (нет входов), не 1e-12
+        vc[("s252", w)] = np.where(d < 1e-12, 1e-12, d)
+    return vc[("s252", w)]
+
+
 def generate6(td, ind, grid, vwap_fn=_vwap):
     """vwap_fn(close, high, low, volume, w) -> (vwap, dev); на внутридневных ТФ — VWAP сессии (fastbt.tf_os_v5)."""
     n, K = td.n, len(grid)
@@ -148,6 +160,7 @@ def generate6(td, ind, grid, vwap_fn=_vwap):
         if fs not in flt:
             flt[fs] = _fs_mask(ind, fs, n)
         vwap, dev = vc[w]
+        dev = _dev_norm(td, vwap, dev, p.get("norm", "okno"), vc, w)
         with np.errstate(invalid="ignore"):
             lc = ~np.isnan(vwap) & (td.close < vwap - m * dev)
             sc = ~np.isnan(vwap) & (td.close > vwap + m * dev)

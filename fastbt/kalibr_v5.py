@@ -193,4 +193,5 @@ def pul_iz_ledger(root: Path, sid: str, osi: dict) -> Pul:
     rows = ch.rows()
     tochki = [{a: v for a, v in r["klyuch"].items() if a not in SLUZH} for r in rows]
     daty = np.load(Path(root) / sid / "daty.npy")
-    return Pul(sid, daty, {a: [lm.tok(v) for v in vals] for a, vals in osi.items()}, tochki, ch.tik(rows))
+    return Pul(sid, daty, {a: [lm.tok(v) for v in vals] for a, vals in osi.items()}, tochki, ch.tik(rows),
+               period=ch.manifest.get("period") or "train4")
