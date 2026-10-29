@@ -19,7 +19,7 @@ S, E = pd.Timestamp("2024-01-01"), pd.Timestamp("2025-01-01")
 
 def _den(day, last_hhmm, base):
     ts = pd.date_range(f"{day} 10:00", f"{day} {last_hhmm}", freq="10min")
-    return pd.DataFrame({"begin": ts.strftime("%Y-%m-%d %H:%M:%S"), "close": [base + i for i in range(len(ts))]})
+    return pd.DataFrame({"begin": ts.strftime("%Y-%m-%d %H:%M:%S"), "open": [base - 0.5 + i for i in range(len(ts))], "close": [base + i for i in range(len(ts))]})
 
 
 def _bars():
@@ -81,7 +81,7 @@ def test_sverka_2019_s_iss_csv():
 
 
 def _index_d(tmp_path):
-    d = pd.DataFrame({"date": pd.to_datetime(["2022-01-03", "2024-12-30", "2025-01-09", "2026-03-02"]).date, "close": [10.0, 20.0, 777.0, 888.0]})
+    d = pd.DataFrame({"date": pd.to_datetime(["2022-01-03", "2024-12-30", "2025-01-09", "2026-03-02"]).date, "open": [9.0, 19.0, 700.0, 800.0], "close": [10.0, 20.0, 777.0, 888.0]})
     p = tmp_path / "IMOEX_d.parquet"
     d.to_parquet(p)
     return p
