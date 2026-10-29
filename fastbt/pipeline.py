@@ -110,8 +110,15 @@ def run_all(cfg, tickers=TICKERS, sids=tuple(grids.STRATEGY_NAMES), workers=1, l
         it = map(run_ticker, jobs)
     else:
         import multiprocessing as mp
-        os.environ["NUMBA_NUM_THREADS"] = "1"
-        pool = mp.get_context("spawn").Pool(workers)
+        old = os.environ.get("NUMBA_NUM_THREADS")
+        os.environ["NUMBA_NUM_THREADS"] = "1"          # работники наследуют 1 поток; родитель — прежнее
+        try:
+            pool = mp.get_context("spawn").Pool(workers)
+        finally:
+            if old is None:
+                os.environ.pop("NUMBA_NUM_THREADS", None)
+            else:
+                os.environ["NUMBA_NUM_THREADS"] = old
         it = pool.imap_unordered(run_ticker, jobs)
     for tk, df, meta, dt in it:
         out.append(df)

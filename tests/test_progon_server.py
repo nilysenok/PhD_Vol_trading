@@ -286,3 +286,25 @@ def test_main_v5_komanda_servera(fake, monkeypatch, tmp_path):                  
     for bad in (["--k3", "--seed", "2"], ["--seed", "3"]):
         with pytest.raises(SystemExit):
             srv.main([*base, "--period", "train4", *bad, "--out", str(tmp_path / "x")])
+
+
+# ---- С-1: --ledger 2.0|2.1 (волна 17) ----
+def test_ledger_flag_2_0_na_train4_pishet_2_0_bez_flaga_2_1(fake, monkeypatch, tmp_path):   # мутация «флаг игнорируется»
+    monkeypatch.setattr(ps, "fabrika", lambda sid: sreda(sid, Fake5()))
+    base = ["--kub", "v5", "--strategii", "S1", "--procs", "2", "--period", "train4", "--n1", "S1=40"]
+    for nm, extra in (("a", []), ("b", ["--ledger", "2.0"]), ("c", ["--ledger", "2.1"])):
+        assert srv.main([*base, *extra, "--out", str(tmp_path / nm)]) == 0
+    v = [lm.Chitatel(tmp_path / nm, "S1").v for nm in "abc"]
+    assert v == [lm.V21, lm.V, lm.V21]
+    assert kanon(tmp_path / "a", "S1") == kanon(tmp_path / "c", "S1")          # без флага = явный 2.1 побайтно
+
+
+def test_ledger_flag_period_v2_umolchanie_2_0_i_otkaz_2_1_do_starta(fake, monkeypatch, tmp_path):
+    monkeypatch.setattr(ps, "fabrika", lambda sid: sreda(sid, Fake5()))
+    base = ["--kub", "v5", "--strategii", "S1", "--procs", "2", "--period", "v2", "--n1", "S1=40"]
+    assert srv.main([*base, "--out", str(tmp_path / "a")]) == 0 and lm.Chitatel(tmp_path / "a", "S1").v == lm.V
+    assert srv.main([*base, "--ledger", "2.0", "--out", str(tmp_path / "b")]) == 0
+    assert kanon(tmp_path / "a", "S1") == kanon(tmp_path / "b", "S1")
+    with pytest.raises(SystemExit, match="ledger 2.1"):
+        srv.main([*base, "--ledger", "2.1", "--out", str(tmp_path / "x")])
+    assert not (tmp_path / "x").exists()                                          # отказ до замка и каталога
