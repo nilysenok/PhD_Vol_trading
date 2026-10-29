@@ -100,7 +100,7 @@ def k2(pul, v: Vyhod, n_shift: int = 199, min_lag: int = fk.MIN_LAG, lagi=None) 
 def podpul(pul, mask: np.ndarray, osi: dict | None = None):
     poz = None if pul.poz is None else pul.poz[mask]
     return K.Pul(pul.sid, pul.daty, pul.osi if osi is None else osi, [p for p, m in zip(pul.tochki, mask) if m],
-                 pul.ex[mask], poz, pul.komissiya)
+                 pul.ex[mask], poz, pul.komissiya, period=pul.period)
 
 
 def k3(pul, imena, yakor: dict):
@@ -159,7 +159,7 @@ def prichinnost(proc, pul, gody=GODY, seed: int = 0) -> None:
 
 
 def podpul_ex(pul, ex: np.ndarray):
-    return K.Pul(pul.sid, pul.daty, pul.osi, pul.tochki, ex, pul.poz, pul.komissiya, pul.dosschitat)
+    return K.Pul(pul.sid, pul.daty, pul.osi, pul.tochki, ex, pul.poz, pul.komissiya, pul.dosschitat, period=pul.period)
 
 
 def sintez_pul(seed: int, daty, osi=None, amp: float = 1.5, m: int = 7, ntick: int = 2, rseed: int = 1):
