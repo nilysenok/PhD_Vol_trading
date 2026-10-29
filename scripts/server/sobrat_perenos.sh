@@ -60,7 +60,8 @@ say "   $(tar -tzf "$TAR" | grep -vc '/$') файлов, sha256 $TAR_SHA"
 say "2/6 данные по манифесту -> $OUT/data (sha256 источника и копии)"
 cp "$MANIFEST" "$OUT/manifest_dannyh.tsv"
 python3 "$K/scripts/server/manifest_proverka.py" --manifest "$OUT/manifest_dannyh.tsv" --koren "$OUT/data" \
-  --istochnik "$DANNYE" ${PERENOS_DANNYE_DOP:+--istochnik "$PERENOS_DANNYE_DOP"} --strogo --spisok "$TMP/spisok_dannyh.txt" || fail "манифест отвергнут — перенос не собран"
+  --istochnik "$DANNYE" ${PERENOS_DANNYE_DOP:+--istochnik "$PERENOS_DANNYE_DOP"} --strogo --spisok "$TMP/spisok_dannyh.txt" \
+  ${PERENOS_DO:+--do "$PERENOS_DO" --otmetka "${PERENOS_OTMETKA:-$REPO/docs/resheniya/wf_zamok_snyat.json}"} || fail "манифест отвергнут — перенос не собран"
 
 # fastbt читает часть таблиц от корня КОДА, не от FASTBT_MAIN (etap1_data: ROOT/data/calendar/cbr.csv; ставка
 # fastbt/rates/; dividendy, msp, fazy: docs/issledovaniya/): эти файлы манифеста (усечённые копии) кладутся в распакованный
@@ -106,7 +107,8 @@ say "5/6 SHA256SUMS и список rsync"
 mv "$TMP/SHA256SUMS" "$OUT/SHA256SUMS"
 { (cd "$OUT" && find . -path ./data -prune -o -type f -print | sed 's|^\./||' | sort); sed 's|^|data/|' "$TMP/spisok_dannyh.txt"; } > "$TMP/spisok"
 mv "$TMP/spisok" "$OUT/spisok_perenosa.txt"
-python3 "$K/scripts/server/manifest_proverka.py" --manifest "$OUT/manifest_dannyh.tsv" --koren "$OUT/data" --strogo >/dev/null \
+python3 "$K/scripts/server/manifest_proverka.py" --manifest "$OUT/manifest_dannyh.tsv" --koren "$OUT/data" --strogo \
+  ${PERENOS_DO:+--do "$PERENOS_DO" --otmetka "${PERENOS_OTMETKA:-$REPO/docs/resheniya/wf_zamok_snyat.json}"} >/dev/null \
   || fail "после эталонов в data/ появились файлы вне манифеста"
 
 say "6/6 готово"
