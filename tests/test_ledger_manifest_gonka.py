@@ -41,6 +41,30 @@ def test_gonka_n_processov_ne_chitaet_poluptoy(tmp_path):
     assert not bad, f"{len(bad)} падений из 200 повторов: {bad[:2]}"
 
 
+def test_chitatel_v_pauze_zapisi_determinirovanno(tmp_path, monkeypatch):
+    """Запись в два приёма с паузой; в паузе читатель смотрит manifest.json: нет файла или целый JSON."""
+    mpath = tmp_path / "S1" / "manifest.json"
+    vidno, pauzy = [], []
+
+    def dvuhpriemnaya(self, data, encoding=None, **kw):
+        with open(self, "w", encoding=encoding) as f:
+            f.write(data[: len(data) // 2])
+            f.flush()
+            pauzy.append(1)
+            try:
+                json.loads(mpath.read_text(encoding="utf-8"))
+                vidno.append("celyy")
+            except FileNotFoundError:
+                vidno.append("net")
+            except json.JSONDecodeError:
+                vidno.append("obrezan")
+            f.write(data[len(data) // 2:])
+
+    monkeypatch.setattr(Path, "write_text", dvuhpriemnaya)
+    L.Pisatel(tmp_path, "S1", 0, dict(BOLSHOY))
+    assert pauzy and set(vidno) <= {"net", "celyy"}, vidno
+
+
 def test_manifest_pobaytno_prezhniy_i_bez_tmp(tmp_path):
     L.Pisatel(tmp_path, "S1", 0, {"T": 6, "kod": "K1", "vhody": "V1"})
     ozhid = {"T": 6, "kod": "K1", "vhody": "V1", "v": L.V, "format": L.FORMAT, "strategiya": "S1"}
