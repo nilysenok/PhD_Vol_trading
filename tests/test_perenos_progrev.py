@@ -15,6 +15,7 @@ STUB = """#!/usr/bin/env bash
 if [ "$*" = "-m fastbt.progon_server --help" ]; then echo "--k3"; exit 0; fi
 echo "$*" >> "$STUB_LOG"
 [ -n "${STUB_FAIL:-}" ] && case "$*" in *--n1\\ 1\\ *|*--r\\ 1*) exit 7 ;; esac
+case "$*" in *--procs\\ 120*) exit "${STUB_RC_PUL:-0}" ;; esac
 exit 0
 """
 
@@ -54,6 +55,12 @@ def test_progrev_upal_pul_ne_startuet(tmp_path):
     r, calls = _ryad(_pakyet(tmp_path), STUB_FAIL="1")
     assert r.returncode != 0 and "прогрев упал" in r.stdout
     assert len(calls) == 1 and "--procs 1" in calls[0]
+
+
+def test_proxod_s_oshibkami_pechataet_yadro_i_govorit_pochemu_stop(tmp_path):
+    r, calls = _ryad(_pakyet(tmp_path), STUB_RC_PUL="1")
+    assert r.returncode != 0 and "FAIL: проход s1" in r.stdout and "код 1" in r.stdout
+    assert "svodka_ledger.py --yadro" in calls[-1]                        # строка «ядро» не теряется при ненулевом коде
 
 
 def test_perenos_fast_0_bez_fast(tmp_path):

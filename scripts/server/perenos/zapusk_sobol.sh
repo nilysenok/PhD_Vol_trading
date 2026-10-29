@@ -68,9 +68,11 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
         spravka) a="--seed 1 $n1v $zm --rol spravka --t-vyhod close"; od="${per}_${pv}spravka_close" ;;
         *) fail "проход $pr: s1 | s2 | k3 | spravka" ;; esac
       say "progon_server: $kub $per $pr ($a), ledger/$od/<Sk>/, процессов $(processov "$per")"
+      rc=0
       (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub "$kub" --period "$per" $a \
-        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/$od" --procs "$(processov "$per")" --prodolzhit $sl $fast)
+        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/$od" --procs "$(processov "$per")" --prodolzhit $sl $fast) || rc=$?
       dolya_yadra "$P/ledger/$od"
+      [ $rc = 0 ] || fail "проход $pr: progon_server вернул код $rc (ошибки точек — строки status = oshibka, причины выше) — цепочка остановлена"
     done
   else
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
