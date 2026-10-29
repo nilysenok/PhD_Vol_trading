@@ -23,7 +23,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "analysis"))
-from fastbt import a_strogaya as AS, dividendy, s9, sigma_z2, zona  # noqa: E402
+from fastbt import a_strogaya as AS, dividendy, metriki_e as me, s9, sigma_z2, zona  # noqa: E402
 import dve_metriki_a as D  # noqa: E402
 
 SHAPKA = "# реверс раунд 1, 2022–2024, справочно, без выбора"
@@ -120,11 +120,13 @@ def tablica(res: dict) -> pd.DataFrame:
             if k in NEPRIM:
                 rows.append(dict(portfel=nazv, stroka=nm, plata_zaem=0.0, primechanie=NEPRIM[k]))
                 continue
-            rows.append(dict(portfel=nazv, stroka=nm, plata_zaem=0.0, **D.stroka(x, delo, hv, 0.0, np.zeros(len(x)))))
+            rows.append(dict(portfel=nazv, stroka=nm, plata_zaem=0.0, **D.stroka(x, delo, hv, 0.0, np.zeros(len(x))),
+                             **me.stroka_ned(x, r["dates"], hv, 0.0, 0.0)))        # + недельные (Ж-124 п. 3)
         god = r["dates"].astype("datetime64[Y]").astype(int) + 1970
         for y in sorted(set(god)):
             m = god == y
-            rows.append(dict(portfel=nazv, stroka=f"по году {y}", plata_zaem=0.0, **D.stroka(x[m], delo[m], None, 0.0, np.zeros(int(m.sum())))))
+            rows.append(dict(portfel=nazv, stroka=f"по году {y}", plata_zaem=0.0, **D.stroka(x[m], delo[m], None, 0.0, np.zeros(int(m.sum()))),
+                             **me.stroka_ned(x[m], r["dates"][m], None, 0.0, 0.0)))
     df = pd.DataFrame(rows)
     pk = res["D"].get("pokrytie_rvi")
     if pk is not None:
@@ -136,7 +138,7 @@ def tablica(res: dict) -> pd.DataFrame:
                 df["primechanie"] = ""
             old = df.loc[m, "primechanie"].fillna("").astype(str)
             df.loc[m, "primechanie"] = np.where(old == "", pr, old + "; " + pr)
-    return df
+    return df[[c for c in df.columns if c not in me.KOLONKI_NED] + [c for c in me.KOLONKI_NED if c in df.columns]]    # недельные — в конце
 
 
 def sha(p: Path) -> str:

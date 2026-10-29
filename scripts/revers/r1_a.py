@@ -18,7 +18,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "analysis"))
-from fastbt import a_strogaya as AS, etap1, zona  # noqa: E402
+from fastbt import a_strogaya as AS, etap1, metriki_e as me, zona  # noqa: E402
 from fastbt.etap1_eval_v2 import EvaluatorV2  # noqa: E402
 import dve_metriki_a as D  # noqa: E402
 
@@ -65,7 +65,8 @@ def tablica(per: str) -> pd.DataFrame:
         for k, nazv, hv in D.STROKI:
             for plata in (AS.PLATA, 0.0):
                 a = port[k]
-                rows.append(dict(portfel=imya, stroka=nazv, plata_zaem=plata, **D.stroka(a["x"], a["delo"], hv, plata, a["baza"])))
+                rows.append(dict(portfel=imya, stroka=nazv, plata_zaem=plata, **D.stroka(a["x"], a["delo"], hv, plata, a["baza"]),
+                                 **me.stroka_ned(a["x"], a["dates"], hv, plata, a["baza"])))      # + недельные (Ж-124 п. 3)
     return pd.DataFrame(rows)
 
 
