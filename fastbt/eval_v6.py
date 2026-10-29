@@ -10,17 +10,16 @@ sigma_ist, ed_lim, zhizn, тень паузы pauza_*. 12c (eval_v6_ispoln): les
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Callable
-
 import numpy as np
 import pandas as pd
 
-from fastbt import canon_v6, eval_v6_ispoln as isp6, eval_v6_osi as osi6, kontekst_v6, sobytiya_e1, vneshnie_uslovie
-from fastbt.canon_v5 import NET, SIGNAL, tip
+from fastbt import canon_v6, eval_v6_ispoln as isp6, eval_v6_osi as osi6, eval_v6_piv as piv6, eval_v6_trend as trend6, kontekst_v6, \
+    sobytiya_e1, vneshnie_uslovie
+from fastbt.canon_v5 import NET, SIGNAL, TREND, tip
 from fastbt.eval_v5 import EvaluatorV5, UROVNI, maska
 from fastbt.eval_v5_osi import razbor
 from fastbt.etap1_eval_v2 import NOVYE, EvaluatorV2, NeSchitana
+from fastbt.eval_v6_ist import IstochnikiV6      # noqa: F401  (имя остаётся в eval_v6)
 from fastbt.eval_v6_osi import rel_td_ind
 from fastbt.signals.interface import get_family
 from fastbt.signals.v6_obertka import primenit_asim, primenit_dlit
@@ -31,20 +30,8 @@ KONTEKST = ("sektor_trend", "shirina", "ma_n", "porog_shiriny", "relf_napr", "re
             "szhatie", "rv_perevorot", "obyom_anom", "rezhim")
 FILTR6, SOB, VN = ("hurst_th", "naklon", "vol_regime_max", "tihiy_othod"), ("sob_tip", "sob_do", "sob_posle"), ("vn_uslovie", "vn_faktor")
 PODKLYUCHENO = frozenset(("rel_signal", "dlit", "asim", "norm", "vhod_tip") + KONTEKST + FILTR6 + SOB + VN + osi6.DVIG + osi6.PAUZA
-                         + isp6.ISPOLN)
+                         + isp6.ISPOLN + ("piv_buf", "reentry") + trend6.OSI)       # smena, T, tf — нет (eval_v6_trend)
 REZHIM_ALIAS = {"rang_sigma_rynka_08": "rank08"}
-
-
-@dataclass
-class IstochnikiV6:
-    """Готовые ряды (≤ 2021). dannye(t, td) → kontekst_v6.Dannye на td.dates; rel(t, rezhim) → дневной td_rel (колонки
-    daily_1850.COLS, rel_ryad.td_rel_rezhim); vn(t, faktor) → (z, beta) pd.Series по датам; cbr/div — таблицы sobytiya_e1."""
-    dannye: Callable | None = None
-    rel: Callable | None = None
-    vn: Callable | None = None
-    cbr: pd.DataFrame | None = None
-    div: pd.DataFrame | None = None
-    div_verified: bool = False
 
 
 def razdelit(sid: str, pt: dict) -> tuple[dict, dict]:
@@ -55,7 +42,7 @@ def razdelit(sid: str, pt: dict) -> tuple[dict, dict]:
     for k in sorted(set(v6) - PODKLYUCHENO):
         raise ValueError(f"{sid}: ось {k} ещё не подключена (V6-12b/c или лист оси)")
     for n, r in canon_v6.rasshireno(kub).items():
-        if n in pt and str(pt[n]) in map(str, r["v6_dobavleno"]):
+        if n in pt and str(pt[n]) in map(str, r["v6_dobavleno"]) and not canon_v6.gotovo(r["zhdet"], canon_v6.GOTOVY, n):
             raise ValueError(f"{sid}: значение {n}={pt[n]!r} (v6) ещё не подключено")
     return {k: v for k, v in pt.items() if k not in nov}, v6
 
@@ -68,7 +55,7 @@ def fkey(filtr: dict, v6: dict) -> tuple:
 class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
     def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=None, ist: IstochnikiV6 | None = None):
         super().__init__(sid, inp, base_p, commission, **({} if fdr is None else {"fdr": fdr}))
-        self.ist, self.v6, self._rel, self._dan, self._ten = ist or IstochnikiV6(), {}, {}, {}, None
+        self.ist, self.v6, self._rel, self._dan, self._ten, self.piv = ist or IstochnikiV6(), {}, {}, {}, None, {}
 
     def _need(self, name: str, ось: str):
         x = getattr(self.ist, name)
@@ -81,7 +68,7 @@ class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
         if rs == "syroy":
             return td, ind
         if (t, rs) not in self._rel:
-            self._rel[t, rs] = rel_td_ind(self._need("rel", "rel_signal")(t, rs), td)
+            self._rel[t, rs] = rel_td_ind(self._need("rel", "rel_signal")(t, rs), td, self.ist.rel_progrev)
         return self._rel[t, rs]
 
     def _blok(self, t, td) -> np.ndarray:
@@ -158,12 +145,18 @@ class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
         a = super()._allow(pt, t, dates, sig, f)
         return a if self._ten is None else a & osi6.razreshit(self.v6, t, dates, self._ten)
 
+    def _tm(self, t, s0, b):
+        """tejk_M: пивот / VWAP / pol_puti (V6-12d), иначе как v5."""
+        m = piv6.tm(self, self.piv, t, s0, b)
+        return super()._tm(t, s0, b) if m is None else m
+
     def _rows(self, pt, period, anchor):
         if self.r5 is not None and self.v6.get("norm") == "s252" and self.r5.nov["tejk_signal"] != NET:
             raise NeSchitana("norm=s252: родной уровень tejk считается по масштабу окна, не 252 дней")
         if self.r5 is not None:
             osi6.proverit(self.r5, self.v6)
             isp6.proverit(self.r5, self.v6)
+            piv6.proverit(self.r5, self.piv, self.sid)
         self._ten = None
         if "pauza_porog" in self.v6:                      # тень: та же точка без паузы (V6-12b), затем прогон с паузой
             self._ten = osi6.ten(self, self._legs(pt, period, anchor), period, anchor)
@@ -174,16 +167,19 @@ class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
         if vozm:
             raise ValueError("vozm у оценщика v6 не поддержан")
         pt5, self.v6 = razdelit(self.sid, pt)
+        pt5, self.piv = piv6.razobrat(trend6.vernut(self.sid in TREND, pt5, self.v6))
         self.r5 = r = razbor(self.sid, pt5, SIGNAL[self.sid])
         if "vhod_tip" in self.v6 and self.sid in ("S3", "S4"):
             r.nov["vhod_tip"] = self.v6["vhod_tip"]
         osi6.primenit(r, self.v6, self.inp.sigma)
         isp6.primenit(r, self.v6)
+        piv6.primenit(r, self.piv, self.v6)
+        trend6.primenit(self.sid in TREND, r, self.v6)
         t = tip(self.sid)
         for k in FILTR6:
             if k in self.v6:
                 self._filtr6(r.filtr, k, self.v6[k], t)
-        self._fkey = fkey(r.filtr, self.v6)
+        self._fkey = fkey(r.filtr, self.v6) + ((("ist", self.ist.sha),) if self.v6 and self.ist.sha else ())
         nov = {k: v for k, v in r.nov.items() if v != NOVYE[k]}
         return EvaluatorV2.evaluate_v2(self, {**r.pt4, **r.sp, **nov}, period)
 

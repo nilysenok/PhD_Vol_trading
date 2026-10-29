@@ -68,6 +68,26 @@ cd perenos && ./zabrat.sh user@host:perenos data/server_rezultaty/<ДД-ММ>
 4. Сводка: `svodka_ledger.py ledger/wf_*` на синтетике wf отвечает `ok` (тест `test_perenos_wf_svod.py`). `fastbt.svod_server_v5` на wf **ещё отказывает**: охрана К-wf2b (#645) требует `Pul.period = "wf"`, а `kalibr_v5.pul_iz_ledger` и пересборки пула в `kontroli_v5` (стр. 102, 162, 180) период не передают (`ValueError: даты ≥ 2020 …`). С пулом `period = "wf"` и отметкой свод проходит (тест). Правка вне P-2 (`fastbt/kalibr_v5.py`, `fastbt/kontroli_v5.py`): читать `period` из manifest и передавать дальше; в тесте — strict xfail, снять после неё.
 5. Код на сервере читает отметку из репозитория (`period_v2.OTMETKA` = `<код>/docs/resheniya/wf_zamok_snyat.json`), а `docs/` в tar не входит ❓ — до первого wf-счёта нужно решение дирижёра: класть отметку в tar (правка `sobrat_perenos.sh` после снятия) или передавать путь переменной. Не решено в P-2.
 
+## v6: Моррис → заморозка → полный проход
+Порядок (Ж-137 п. 2): сначала Моррис ~5 000 точек на Sk по кубу v6, потом `zamorozka.yaml`, потом полный проход с замороженными осями на «выкл.».
+1. Моррис (оценщик `EvaluatorV6` строится один раз в родителе, fork, flock на каталог, чекпоинт; повтор той же команды с `--prodolzhit` возобновляет):
+```
+python3 -m fastbt.progon_morris_v6 --kub v6 --period train4 --out <каталог> --procs <ядра − 4> [--strategii S1,S2] [--r N]
+```
+   `r` по умолчанию = 5 000 // (k + 1), k — готовые оси куба (`canon_v6.GOTOVY`). `--r 1` — малая проверка (одна траектория). Период — `train4` (план §3.3); `v2` допустим, `wf` отказывает (даты ≥ 2020 в рядах).
+2. Выход в `<каталог>/<Sk>/`: `morris_y.jsonl` (Y трёх окон ≤2016, ≤2017, ≤2018 по уникальным точкам), `morris_<Sk>.csv`, `zamorozka.yaml` (правило `morris_v6_zamorozka`: U95 < 0,05 в трёх окнах и n_akt ≥ 20; оси v5 не замораживаются; ось, все родители которой заморожены, — тоже). Печатается число ошибок точек с причинами (точка с ошибкой — Y = NaN, шаг не считается). Копии в репозиторий (`docs/tables/setka_v6/morris_<Sk>.csv`, `fastbt/designs/v6/zamorozka_<Sk>.yaml`) кладёт дирижёр после проверки, до Соболя.
+3. Полный проход (лист С-v6, «стоит поверх #679»): `progon_server --kub v6` (и `progon_sobol --kub v6`) берёт точки `tochki_polnye` сам: замороженные оси вынуты из куба (размерностей Соболя меньше), в каноне их нет; якоря куба v5 лежат в точке, как у v5.
+```
+python3 -m fastbt.progon_server --kub v6 --period train4 --seed 1|2 --zamorozka <каталог Морриса> [--n1 N] --out ledger/train4_s1 --procs <ядра − 4> [--strategii S1,..] [--prodolzhit]
+python3 -m fastbt.progon_server --kub v6 --period train4 --k3 --out ledger/train4_k3 ...     # без --zamorozka
+python3 -m fastbt.progon_server --kub v6 --period train4 --seed 1 --zamorozka <..> --rol spravka --t-vyhod close --out ledger/train4_spravka_close ...
+```
+   Всё пишется в ledger 2.2: manifest `setka = v6`, `setka_data`, `zamorozka_sha` (продолжение с другой заморозкой, в каталог v5 или другой роли — отказ), строки `setka`, `rol`, `klyuch_n`. Роль задаёт проход: s1 / s2 — `sobol`; k3 — `kontrol`; spravka — `spravka` (kontrol и spravka вне N). N₁ — `sobol.N` куба = 200 000 (Ж-137) на стратегию, `--n1` — явно; seed 1/2 — `sobol.seed` / `seed2` куба v6.
+   **k3 для v6** — контроль, не расширение: полная решётка раздела `k3` куба v5 (оси v4; остальные оси на якоре), все новые оси v6 «выкл.», расширения значений v5 не берутся, заморозка не нужна. Точки те же, что у k3 v5 (тот же `klyuch_n`), поэтому «v5 ⊂ v6» проверяется сравнением ledger.
+   `scripts/server/perenos/zapusk_sobol.sh`: `PERENOS_KUB=v6 ./zapusk_sobol.sh train4` — цепочка «Моррис (`ledger/train4_morris/<Sk>/zamorozka.yaml`; упал — полного прохода нет) → s1 → s2 → k3 → spravka». `PERENOS_MORRIS_R` — число траекторий (1 — малая проверка), `PERENOS_N1` — вместо 200 000, `PERENOS_PROHODY="s1 s2 k3 spravka"` — подмножество, `PERENOS_STRATEGII`. `status train4` показывает чекпоинты и Морриса, и проходов.
+   Оценщик `EvaluatorV6` получает ряды из `fastbt.istochniki_v6.zagruzit(period, tikery)` (лист Ист-v6); модуля нет — отказ до счёта. Если у `IstochnikiV6` есть `sha`, он входит в `vhody` (ключ кэша, Д5); иначе `vhody` покрывает только входы v5.
+Ограничение: `IstochnikiV6` (ряды для rel_signal, К9–К24, события, внешние условия) в базе не собирается ни одним загрузчиком, поэтому оси, которым нужны эти ряды, на реальных данных дают ошибку точки (`ось … включена, а в IstochnikiV6 нет …`) и остаются «не измерено» (n_akt < 20, не заморожены). Малая проверка на Маке (1 траектория S1, train4): 20 точек, 19 с этой ошибкой.
+
 ## Пины и кэши
 `requirements_server.txt` (и `env/requirements_r2.txt`) содержат `numba==0.60.0`, `llvmlite==0.43.0` и пины numpy 2.0.2, pandas 2.3.3, pyarrow 21.0.0, scipy 1.13.1 — версии Мака; сборщик сверяет их с этим Маком (`versii.py`, расхождение — FAIL), `razvernut.sh` — с сервером (строка `OK versii: ...`, расхождение — FAIL). В tar нет `__pycache__` и numba-кэша (сборщик и `razvernut.sh` проверяют); кэши numba — в `cache/numba/`.
 

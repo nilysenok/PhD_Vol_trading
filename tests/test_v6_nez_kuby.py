@@ -78,7 +78,7 @@ def test_vklyuchennaya_novaya_os_popadaet_v_kanon(sid):
     c = tochki_v5(sid, 1)[0][1]
     nprov = 0
     for n, v in novye_raw(k6).items():
-        if v.get("roditel") or n in ("dlit", "piv_buf", "lestnica", "ed_lim", "vyhod_lim", "time_decay"):   # time_decay — выброс без tau / при тейке ≠ net (V6-12c)
+        if v.get("roditel") or n in ("dlit", "piv_buf", "lestnica", "ed_lim", "vyhod_lim", "time_decay", "smena", "reentry"):   # time_decay — свёртка без tau / при тейке ≠ net; smena/reentry (тренд) — по vhod_tip (V6-12d)
             continue
         q = C6.canon_v6(sid, {**c, **vykl(k6), n: v["setka"][1]})
         assert q is not None and q.get(n) == v["setka"][1], n

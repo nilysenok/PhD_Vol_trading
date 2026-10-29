@@ -11,8 +11,9 @@ from fastbt.eval_v5_osi import yakor
 from fastbt.eval_v6 import EvaluatorV6
 
 SIDS = canon_v5.SIDS
-real = pytest.mark.skipif(not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(), reason="нет дневного ряда 18:50")
-tyazh = pytest.mark.skipif(os.environ.get("SDF_TYAZHELYE") != "1", reason="тяжёлый тест (> 60 с): SDF_TYAZHELYE=1")
+real = pytest.mark.skipif(os.environ.get("FASTBT_V6_REAL") != "1" or not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(),
+                          reason="тяжёлый реальный тест v6 (хук ≤ 300 с): FASTBT_V6_REAL=1 и дневной ряд 18:50")
+tyazh = real
 _KESH = {}
 SP = {"S1": dict(ma_tip="sma", ma_window=20, dev_tip="std", z_entry=1.0, z_exit=0.5),
       "S2": dict(ma_tip="sma", bb_window=20, bb_std=0.75, podtv="none"), "S3": dict(okno=5, podtv="none"),

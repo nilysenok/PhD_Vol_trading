@@ -34,7 +34,10 @@ def test_sobol_ne_variruet_nepodklyuchennuyu_os(sid):
     zakr = set(nov) - set(eval_v6.PODKLYUCHENO)
     pts = [c for _, c in canon_v6.tochki_v6(kub, 0, 1500)[0]]
     assert set().union(*[set(c) for c in pts]) & zakr == set()
-    assert not any(str(c[n]) in map(str, r["v6_dobavleno"]) for c in pts for n, r in ras.items() if n in c)
+    zakr_znach = lambda n, r: not canon_v6.gotovo(r["zhdet"], canon_v6.GOTOVY, n)       # noqa: E731  (V6-12d: расширенные значения открыты по токенам)
+    assert not any(str(c[n]) in map(str, r["v6_dobavleno"]) for c in pts for n, r in ras.items() if n in c and zakr_znach(n, r))
+    assert all(not zakr_znach(n, r) for n, r in ras.items())                           # все v6_dobavleno подключены — значит, должны выпадать
+    assert any(str(c[n]) in map(str, r["v6_dobavleno"]) for c in pts for n, r in ras.items() if n in c), "расширенное значение ни разу не выпало"
     assert {n for n in B_OSI if n in nov} <= set().union(*[set(c) for c in pts]), "подключённая ось ни разу не выпала"
     for c in pts[:400]:
         razdelit(sid, c)                                          # ни одна точка Соболя не даёт «ещё не подключена»

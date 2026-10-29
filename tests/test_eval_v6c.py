@@ -109,10 +109,13 @@ def _q(sid, **kw):
 
 
 def test_time_decay_vybros_bez_tau_ili_pri_tejke():
+    """V6-12d (решение дирижёра 29.10): без tau / при тейке ≠ net — не выброс точки, а свёртка в «выкл.» (точки Соболя сохраняются)."""
     kub, q = _q("S1", time_decay="da", tau=10, tejk="net")
     assert canon_v6.canon_v6("S1", q, kub)["time_decay"] == "da"
     for bad in (dict(tau="net"), dict(tejk="pct:0.05")):
-        assert canon_v6.canon_v6("S1", {**q, **bad}, kub) is None, bad
+        c = canon_v6.canon_v6("S1", {**q, **bad}, kub)
+        assert c is not None and "time_decay" not in c, bad
+        assert c == canon_v6.canon_v6("S1", {**q, **bad, "time_decay": "net"}, kub), bad       # ≡ точке с выключенной осью
     assert "time_decay" not in canon_v6.canon_v6("S1", {**q, "time_decay": "net", "tau": "net"}, kub)   # «выкл.» — не выброс
 
 
