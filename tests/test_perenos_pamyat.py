@@ -69,6 +69,14 @@ def test_zapusk_vyzyvaet_proverku_pamyati_i_n1_200000():
     assert "PERENOS_N1:-200000" in s and "262144" not in s
 
 
+def test_sborshchik_beryot_kuby_v6_v_tar():
+    """Находка сквозной проверки 29.10: белый список не содержал designs/v6 — Моррис v6 на сервере не нашёл бы кубов."""
+    s = (SH.parent / "sobrat_perenos.sh").read_text()
+    assert "(v5|v6|zh126)/" in s
+    ls = subprocess.run(["git", "ls-files", "fastbt/designs/v6"], capture_output=True, text=True, cwd=SH.parents[2]).stdout
+    assert "fastbt/designs/v6/kub_S1.yaml" in ls
+
+
 def test_dopusk_po_umolchaniyu_1e12():
     src = (Path(__file__).resolve().parents[1] / "scripts/server/proverka_ekviv.py").read_text()
     assert 'os.environ.get("DOPUSK", "1e-12")' in src
