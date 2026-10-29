@@ -15,7 +15,6 @@ import pickle
 import subprocess
 import sys
 import types
-from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
@@ -37,7 +36,7 @@ NEPRIM = {"stop": "неприменимо: позиции C/D = маска × п
 
 
 def ustanovit_period(per: str) -> None:
-    """initializer воркера: spawn не наследует глобали s9/zona — период ставится в самом воркере."""
+    """Период и зона в процессе расчёта; воркеры build_cache получают период аргументом задачи (s9._job, args[3])."""
     s9.set_period(per)
 
 
@@ -75,9 +74,9 @@ def pokrytie_rvi(eng) -> float:
 
 
 def schitat(per: str) -> dict:
-    """Период берётся из состояния воркера (ustanovit_period в initializer); не совпал — отказ, а не молчаливый счёт на другом периоде."""
+    """Период берётся из состояния процесса (ustanovit_period); не совпал — отказ, а не молчаливый счёт на другом периоде."""
     if s9.PERIOD != per:
-        raise RuntimeError(f"период в воркере {s9.PERIOD!r}, ожидался {per!r}: не передан в initializer")
+        raise RuntimeError(f"период в процессе {s9.PERIOD!r}, ожидался {per!r}: ustanovit_period не вызван")
     if per == "test1" and not os.environ.get("FASTBT_Z2_R2FINAL"):
         raise SystemExit("test1: не задан FASTBT_Z2_R2FINAL (σ̂ семейства R2 final_d0_s2emb)")
     eng = s9.Engine(kesh(per))
@@ -142,8 +141,8 @@ def main(argv=None) -> None:
     a = ap.parse_args(argv)
     if a.period == "train4":
         raise SystemExit("train4: в s9 нет σ-источников (s9.need_sigma), TEST_C/D считаются на train (контроль) и test1")
-    with Pool(1, initializer=ustanovit_period, initargs=(a.period,)) as p:
-        res = p.apply(schitat, (a.period,))
+    ustanovit_period(a.period)      # без внешнего пула: build_cache сам spawn'ит воркеров (daemonic-процесс детей иметь не может)
+    res = schitat(a.period)
     df = tablica(res)
     out = a.out or ROOT / "docs" / "tables" / "revers_r1" / ("" if a.period == "test1" else f"_sverka_{a.period}")
     out.mkdir(parents=True, exist_ok=True)
