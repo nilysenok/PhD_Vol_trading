@@ -69,8 +69,10 @@ class EvaluatorV2(Evaluator):
 
     def _poz(self, period):
         """Позиции рядом с _series (те же keep/col/inv, `expo` = |pos|, у якоря вес × доля баров в рынке); пусто → 0, не nan."""
+        if getattr(self, "_last", None) is None:      # рядов движка нет (excess не считался: _series подставлен) — позиций нет, F_X/F_E/F_R = 0
+            return None
         df, inv, eng, _, rs = self._last
-        keep = np.isin(df.index.year, years_of(period))
+        keep = np.isin(df.index.year, gody_perioda(period))
         col = np.cumsum(keep) - 1
         cat = lambda f: np.concatenate([f(r) for r in rs])                       # noqa: E731
         port = lambda v: (np.bincount(inv, v, len(eng.dates)) / eng.cnt)[keep]   # noqa: E731
