@@ -65,8 +65,10 @@ def test_stop_touch_and_gap():
 def test_stop_gap_at_level_mutation_caught(monkeypatch):                        # № 4
     orig = exec_e_run.stop_hit
     monkeypatch.setattr(exec_e_run, "stop_hit", lambda sd, o, h, l, S, t: (orig(sd, o, h, l, S, t)[0], S))
-    with pytest.raises(AssertionError):
+    with pytest.raises((AssertionError, ValueError)) as ei:                     # #617: исполнение вне бара — ValueError
         check_stop()
+    if ei.type is ValueError:
+        assert "вне [low; high]" in str(ei.value), str(ei.value)
 
 
 def test_stop_strict_instead_of_touch_mutation_caught(monkeypatch):

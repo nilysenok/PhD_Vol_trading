@@ -195,8 +195,10 @@ def _mut_stop_hit_never(sd, o, h, l, S, touch):
                                       (_scen_poryadok, _mut_stop_hit_never)])
 def test_mutatsii_2_3_4_lovyatsya(monkeypatch, scen, mut):
     monkeypatch.setattr(exec_e_run, "stop_hit", mut)
-    with pytest.raises(AssertionError):
+    with pytest.raises((AssertionError, ValueError)) as ei:           # #617: исполнение вне бара — ValueError
         scen()
+    if ei.type is ValueError:
+        assert "вне [low; high]" in str(ei.value), str(ei.value)
 
 
 # --- Chandelier ---
