@@ -117,7 +117,9 @@ def test_g4_svodka_i_svod_na_kataloge_v2_21(kat):
     assert rows[0]["sverka"] == "ok" and rows[-1]["sverka"] == "ok" and rows[0]["ok"] == ch.n_unique() > 0, rows
     assert rows[0]["top_sharpe_okna"] != "—" and SV.main([str(root)]) == 0
     paths = SVOD.svod(root, kat / "out")                                 # без отказа читателя
-    assert len(paths) == 4 and all(p.exists() for p in paths)
+    assert {p.name for p in paths} == {"kalibr_top10.csv", "kontroli_k1_k2_k3.csv", "okna_ledger21.csv", "k1_prefiks.csv",
+                                       "seed2_ustojchivost.csv"} and all(p.exists() for p in paths)
+    assert len([x for x in (kat / "out/k1_prefiks.csv").read_text(encoding="utf-8-sig").splitlines() if x[:1] != "#"]) == 1   # k1 на 2.1 не считается: только заголовок
 
 
 def test_mutaciya_god_2015_otrezan_lovitsya(kat, monkeypatch, tmp_path):
