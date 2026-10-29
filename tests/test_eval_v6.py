@@ -129,7 +129,7 @@ def test_filtry_v6_i_otobrazhenie():
 
 def test_razdelit_nepodklyuchennaya_i_vykl():
     pt5 = {"ma_tip": "sma"}
-    for ose in ({"time_decay": "da"}, {"tf": "10m"}, {"pauza_porog": 0.5}):
+    for ose in ({"tf": "10m"}, {"lestnica": 0.5}, {"gap": "propusk"}):         # V6-12b: time_decay и pauza_* уже подключены
         with pytest.raises(ValueError, match="ещё не подключена"):
             razdelit("S1", {**pt5, **ose})
     with pytest.raises(ValueError, match="не подключено"):

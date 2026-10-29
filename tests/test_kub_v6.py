@@ -63,17 +63,17 @@ def test_mutaciya_vykl_ne_vybrasyvaetsya_lovitsya():
 def test_sobol_bez_gotovykh_osej_raven_v5(sid):
     kub = copy.deepcopy(KUBY[sid])
     kub["sobol"] = kub["v5"]["sobol"]
-    assert C6.tochki_v6(kub, 0, 300)[0] == C5.tochki_v5(kub["v5"], 0, 300)[0]
+    assert C6.tochki_v6(kub, 0, 300, gotovy=frozenset())[0] == C5.tochki_v5(kub["v5"], 0, 300)[0]   # V6-12b: GOTOVY уже не пуст
 
 
 def test_gotovy_vhodyat_v_sobol_po_listam():
     kub = KUBY["S1"]
     imena = lambda g: {n for n, _, _ in C6.osi(kub, g)}                       # noqa: E731
-    assert not imena(C6.GOTOVY) & set(C6.novye(kub))
+    assert not imena(frozenset()) & set(C6.novye(kub))
     assert "tf" in imena({"V6-12"}) and "rel_signal" not in imena({"V6-12"})
     assert "pol_puti" in dict((n, g) for n, g, _ in C6.osi(kub, {"V6-12"}))["tejk"]
     assert imena(None) >= set(C6.novye(kub))
-    assert not any(set(c) & set(C6.novye(kub)) for _, c in C6.tochki_v6(kub, 0, 200)[0])
+    assert not any(set(c) & set(C6.novye(kub)) for _, c in C6.tochki_v6(kub, 0, 200, gotovy=frozenset())[0])
 
 
 def test_p_vykl_09_filtr_i_chislo_vklyuchennykh():

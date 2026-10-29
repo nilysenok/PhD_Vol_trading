@@ -5,7 +5,7 @@
 первое значение (`vykl`), поэтому точка v6 со всеми новыми осями «выкл.» есть точка v5 (v5 ⊂ v6). Ось с `roditel` — дочерняя:
 при выключенных родителях схлопывается в «выкл.» (в N один раз).
 Оси и значения, чьего кода ещё нет, несут `zhdet: [листы V6-…]` и в Соболь не входят, пока все листы не названы в `gotovy`
-(по умолчанию GOTOVY пуст: оценщик v6 ещё не принимает ничего нового). canon_v6 выбрасывает из точки новые оси со значением «выкл.»:
+(GOTOVY — см. ниже: открыты только оси, подключённые в eval_v6). canon_v6 выбрасывает из точки новые оси со значением «выкл.»:
 канон точки v6 без новых осей совпадает с canon_v5 (ключ `klyuch_n` ledger, §4).
 """
 from __future__ import annotations
@@ -24,7 +24,12 @@ from fastbt import canon_v5 as c5
 ROOT = c5.ROOT
 KUB6 = ROOT / "fastbt/designs/v6"
 SIDS, NET, NOVYE = c5.SIDS, c5.NET, ("kontekst", "ispolnenie")
-GOTOVY: frozenset = frozenset()           # листы V6-…, влитые в main; пополняется по мере слияния
+# GOTOVY: листы V6-…, влитые в main, плюс «V6-12:<ось>» — ось, подключённая в eval_v6 (лист V6-12 общий для 3 PR, один токен «V6-12»
+# открыл бы и неподключённые). Список осей V6-12 = eval_v6.PODKLYUCHENO ∩ новые оси куба (сверяет tests/test_eval_v6b.py).
+V12 = ("rel_signal", "dlit", "asim", "norm", "hurst_th", "naklon", "vol_regime_max", "tihiy_othod", "sektor_trend", "shirina", "ma_n",
+       "porog_shiriny", "relf_napr", "relf_k", "relf_okno", "relf_bench", "post_shok", "szhatie", "rv_perevorot", "obyom_anom", "rezhim",
+       "sob_tip", "sob_do", "sob_posle", "vn_uslovie", "vn_faktor", "time_decay", "sigma_ist", "ed_lim", "zhizn", "pauza_porog", "pauza_okno")
+GOTOVY: frozenset = frozenset(("V6-1a", "V6-1b", "V6-2", "V6-3", "V6-4", "V6-5", "V6-6", "V6-7", "V6-8", "V6-9")) | {f"V6-12:{o}" for o in V12}
 P_FILTR = 0.9                              # вероятность «выкл.» у запрещающих фильтров (Ж-132, решение 13:20; §3.5)
 KE_NUZHEN = ("ed_lim", "lestnica", "vyhod_lim")   # действуют, только если вход лимиткой (k_e > 0), §1.2 И2/И4/И7
 _K = c5.DOPUSK
@@ -36,8 +41,9 @@ DOPUSK = {                                 # допустимые единицы
 }
 
 
-def gotovo(zhdet, gotovy) -> bool:
-    return gotovy is None or set(zhdet or ()) <= set(gotovy)
+def gotovo(zhdet, gotovy, os: str | None = None) -> bool:
+    """Все листы zhdet названы в gotovy; лист "V6-12" оси `os` — также токеном "V6-12:<os>" (подключение по осям)."""
+    return gotovy is None or all(z in gotovy or (os is not None and f"{z}:{os}" in gotovy) for z in zhdet or ())
 
 
 def sha_v5(sid: str) -> str:
@@ -66,11 +72,11 @@ def osi(kub: dict, gotovy=GOTOVY) -> list:
     out, ras = [], rasshireno(kub)
     for n, g in c5.osi(kub["v5"]):
         r = ras.get(n)
-        if r and gotovo(r.get("zhdet"), gotovy):
+        if r and gotovo(r.get("zhdet"), gotovy, n):
             g = g + list(r["v6_dobavleno"])
         out.append((n, g, {}))
     for sec in NOVYE:
-        out += [(n, list(v["setka"]), v) for n, v in kub.get(sec, {}).items() if gotovo(v.get("zhdet"), gotovy)]
+        out += [(n, list(v["setka"]), v) for n, v in kub.get(sec, {}).items() if gotovo(v.get("zhdet"), gotovy, n)]
     return out
 
 
