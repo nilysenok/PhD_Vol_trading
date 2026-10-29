@@ -85,9 +85,18 @@ def schitat(per: str) -> dict:
     S.d_points = lambda src: s9.S9.d_points(S, src)
     comm = AS.COMM if per == "test1" else s9.COMM
     res = portfeli(eng, S, comm)
-    return {k: (v if isinstance(v, dict) else {"x": v["excess"].to_numpy(float), "delo": (v["exposure"].to_numpy(float) > 0),
-                                               "dates": v.index.to_numpy().astype("datetime64[D]"), "sharpe": s9.metrics(v)})
-            for k, v in res.items()}
+    out = {k: (v if isinstance(v, dict) else {"x": v["excess"].to_numpy(float), "delo": (v["exposure"].to_numpy(float) > 0),
+                                              "dates": v.index.to_numpy().astype("datetime64[D]"), "sharpe": s9.metrics(v)})
+           for k, v in res.items()}
+    pk = pokrytie_rvi(eng)
+    out["D"]["pokrytie_rvi"] = pk
+    out["D"]["bez_rvi_dnej"] = int(round((1 - pk) * len(np.unique(eng.r["bar"]))))
+    return out
+
+
+def primechanie_rvi(pk: float, k: int) -> str:
+    """Пустая строка при полном покрытии; иначе — сколько дней затвор D открыт из-за отсутствия ранга RVI."""
+    return "" if pk >= 1 else f"на {k} днях без ранга RVI затвор открыт (D = A)"
 
 
 def tablica(res: dict) -> pd.DataFrame:
@@ -108,7 +117,18 @@ def tablica(res: dict) -> pd.DataFrame:
         for y in sorted(set(god)):
             m = god == y
             rows.append(dict(portfel=nazv, stroka=f"по году {y}", plata_zaem=0.0, **D.stroka(x[m], delo[m], None, 0.0, np.zeros(int(m.sum())))))
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    pk = res["D"].get("pokrytie_rvi")
+    if pk is not None:
+        m = df.portfel.str.startswith("D:")
+        df["pokrytie_rvi"] = np.where(m, pk, np.nan)
+        pr = primechanie_rvi(pk, res["D"].get("bez_rvi_dnej", 0))
+        if pr:
+            if "primechanie" not in df:
+                df["primechanie"] = ""
+            old = df.loc[m, "primechanie"].fillna("").astype(str)
+            df.loc[m, "primechanie"] = np.where(old == "", pr, old + "; " + pr)
+    return df
 
 
 def sha(p: Path) -> str:
@@ -146,7 +166,9 @@ def main(argv=None) -> None:
     df = tablica(res)
     out = a.out or ROOT / "docs" / "tables" / "revers_r1" / ("" if a.period == "test1" else f"_sverka_{a.period}")
     out.mkdir(parents=True, exist_ok=True)
-    (out / f"a_cd_{a.period}.csv").write_text(shapka(a.period) + df.to_csv(index=False), encoding="utf-8")
+    pk = res["D"].get("pokrytie_rvi")
+    rvi_line = "" if pk is None else f"# покрытие RVI для D: {pk:.4f}\n"
+    (out / f"a_cd_{a.period}.csv").write_text(shapka(a.period) + rvi_line + df.to_csv(index=False), encoding="utf-8")
     print(df.round(3).to_string())
     if a.period == "train":
         d = kontrol_train(res)
