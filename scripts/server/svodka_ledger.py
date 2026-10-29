@@ -27,6 +27,8 @@ def obyom_mb(d: Path) -> float:
 
 
 def metka(mf: dict) -> str:
+    if mf.get("rol") == lm.SPRAVKA:      # справочная строка (Ж-137 п. 6): отдельной строкой, вне N
+        return f"spravka {mf.get('t_vyhod')} {mf.get('period', '?')}"
     return "k3" if mf.get("k3") else f"{mf.get('period', '?')} s{2 if mf.get('sobol_klyuch') == 'seed2' else 1}"
 
 
@@ -58,7 +60,7 @@ def top_okna(ch, n: int) -> str:
     rows = ch.rows()
     if not rows or n <= 0:
         return "—"
-    sh = np.asarray(ch.okno(2020, rows)[0] if ch.v == lm.V21 else sharpe_ryada(ch.matrica(rows)), float)
+    sh = np.asarray(ch.okno(2020, rows)[0] if ch.v in lm.SUMMY_V else sharpe_ryada(ch.matrica(rows)), float)
     por = sorted(range(len(rows)), key=lambda j: (np.isnan(sh[j]), -np.nan_to_num(sh[j])))[:n]
     return " ".join(f"{rows[j].get('sobol_i')}:{sh[j]:.3f}" for j in por)
 
