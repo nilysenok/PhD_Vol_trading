@@ -48,7 +48,8 @@ kod_cel
 say "   файлов кода $(wc -l < "$KOD_SUMS" | tr -d ' '), каталог только для чтения"
 
 say "5/5 данные: data/ по manifest_dannyh.tsv"
-"$PY" manifest_proverka.py --manifest "$MANIFEST" --koren data --strogo || fail "данные не совпадают с манифестом"
+"$PY" manifest_proverka.py --manifest "$MANIFEST" --koren data --strogo \
+  ${PERENOS_DO:+--do "$PERENOS_DO" --otmetka "${PERENOS_OTMETKA:-wf_zamok_snyat.json}"} || fail "данные не совпадают с манифестом"
 mkdir -p ledger tables logs proverka cache
 mv logs_versii.txt logs/versii.txt
 echo "OK razvernut: $(sed -n 's/^OK versii: //p' logs/versii.txt | cut -d';' -f1); kod $KOD_SHORT (tar sha256 ${KOD_SHA:0:16}…)"
