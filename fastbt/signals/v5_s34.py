@@ -14,7 +14,7 @@ import sys
 import numpy as np
 from numba import njit
 
-from fastbt.signals.interface import WARMUP, Family, SignalSet, register
+from fastbt.signals.interface import WARMUP, Family, SignalSet, register_family
 from fastbt.signals.s34 import generate_s4, rolling_ext
 
 SETKA = "v5"
@@ -91,4 +91,5 @@ def _no_legacy(L, td, p):  # эталон v5 — формулы @6a7a4636, не 
 
 S3_V5 = Family("S3", "Trend", S3_GRID_V5, generate_s3_v5, _no_legacy, module=sys.modules[__name__])
 S4_V5 = Family("S4", "Trend", S4_GRID_V5, generate_s4_v5, _no_legacy, module=sys.modules[__name__])
-# Регистрация register_family(sid, fn, setka="v5") — последним коммитом после слияния Л1.
+register_family("S3", generate_s3_v5, setka="v5")
+register_family("S4", generate_s4_v5, setka="v5")

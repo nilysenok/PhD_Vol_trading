@@ -133,6 +133,13 @@ def test_s4_novye_tochki_setki_schitayutsya():
     assert ss.sig.shape == (2, N) and (ss.sig[0] != 0).sum() > (ss.sig[1] != 0).sum()
 
 
+def test_registratsiya_v5():
+    from fastbt.signals.interface import get_family
+    assert get_family("S3", setka="v5") is V.generate_s3_v5
+    assert get_family("S4", setka="v5") is V.generate_s4_v5
+    assert get_family("S4").generate is not V.generate_s4_v5   # v4 не затронут
+
+
 def test_chislo_urovney_osey():
     assert (len(V.OKNO), len(V.PODTV), len(V.PERIOD), len(V.MNOZH)) == (17, 6, 15, 15)
 
