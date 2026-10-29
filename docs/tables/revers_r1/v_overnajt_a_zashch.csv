@@ -1,12 +1,14 @@
 # реверс раунд 1, 2022–2024, справочно, без выбора; период test1
-# коммит: 687e5bba41994d4022d7144ff58ec50c182e33b6
-# вход: sigma_hyb_h1_dev.parquet sha256=1a7dc719a47cd2cf397a5607ec90acfb9ef91c8f2fb6846a02a6d76de7df856e
-# вход: sigma_hyb_h5_dev.parquet sha256=7e93596df54b70f04e435a4c37f420b4dfb6c7ed795077da44cc124d2ff9d938
-# вход: final_d0_s2emb_h1__t1.parquet sha256=3cea157e9de471499c07224df9fc2c23fea7f8e5acd2f0983ac4f950bdeb6571
-# вход: final_d0_s2emb_h5__t1.parquet sha256=e926e14c05ec1d3fbdbf1997e9b0c0c729268706951714185614407bb6d804da
-# вход: 2026-10-27_dividendy_2017_2021.csv sha256=02290a342410c98fef10c767703b7bc8fc570b5e52a657e27aa04465d89a06ba
-# вход: 2026-10-28_dividendy_2015_2016.csv sha256=87a7374d4bc9ac31da2a97853f5871166942bed7ff4677f83bf0a9bc3b95dbb0
-# вход: 2026-10-29_dividendy_2022_2024.csv sha256=c655d0d72152e117ed92527f903bca2aed2d801dfd83515490dae5ab10578478
+# коммит: 3ae97dae9bdf4f083fedc22b9c68f04026149af7
+# вход: data/regen/ch4_dev/sigma_hyb_h1_dev.parquet sha256=1a7dc719a47cd2cf397a5607ec90acfb9ef91c8f2fb6846a02a6d76de7df856e
+# вход: data/regen/ch4_dev/sigma_hyb_h5_dev.parquet sha256=7e93596df54b70f04e435a4c37f420b4dfb6c7ed795077da44cc124d2ff9d938
+# вход: data/regen/test1_2022_2024/regen/R2/final/final_d0_s2emb_h1__t1.parquet sha256=3cea157e9de471499c07224df9fc2c23fea7f8e5acd2f0983ac4f950bdeb6571
+# вход: data/regen/test1_2022_2024/regen/R2/final/final_d0_s2emb_h5__t1.parquet sha256=e926e14c05ec1d3fbdbf1997e9b0c0c729268706951714185614407bb6d804da
+# вход: data/regen/test1_2022_2024/daily/ohlcv_daily_1850.parquet sha256=46f0a652362015e8302f7dd034255588fa405a1ef6720180b70889fbb8378688
+# вход: data/regen/test1_2022_2024/imoex/IMOEX.parquet sha256=5ff7cd45b879d1fb7771bba6ac28661ed089696b5606e7d63e8a6564a42ba20f
+# вход: docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv sha256=02290a342410c98fef10c767703b7bc8fc570b5e52a657e27aa04465d89a06ba
+# вход: docs/issledovaniya/2026-10-28_dividendy_2015_2016.csv sha256=87a7374d4bc9ac31da2a97853f5871166942bed7ff4677f83bf0a9bc3b95dbb0
+# вход: docs/issledovaniya/2026-10-29_dividendy_2022_2024.csv sha256=c655d0d72152e117ed92527f903bca2aed2d801dfd83515490dae5ab10578478
 # объект: A_zashch = A (s9); I = ln(close[d+1]/open[d+1]), N = lr − I; max|I+N−gross порта| = 1.4e-17; плата за шорт 5 % в x
 kategoriya,sk,dolya_disp_noch,dolya_disp_den,dolya_disp_noch_prostaya,dolya_doh_noch,dolya_doh_den,flag_zh103_p2,valovaya_doh_pct_god,doh_noch_pct_god,doh_den_pct_god,sharpe,sharpe_v_dele,ekspoziciya,n_dnej,sharpe_ned,sortino_ned,msr_ned,skew_ned,kurt_ned,n_nedel,msr_dn_opredelen
 S1,S1,0.24917620879807006,0.75082379120193,0.22426500047094292,,,нет,-1.947126727724476,-0.19371736214058224,-1.7534093655838936,-1.2260601115418632,-1.3924180243795312,0.760752688172043,744,-1.0455073733040945,-1.0554383399640699,-0.5214913469341775,-2.7843646568269635,21.383774940403704,154,True
