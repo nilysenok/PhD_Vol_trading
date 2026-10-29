@@ -23,7 +23,10 @@ def _synthetic(monkeypatch):
     monkeypatch.setattr(fd, "daily_df", lambda: df)
     monkeypatch.setattr(fd, "vpred_df", lambda: pd.DataFrame(
         {"date": pd.to_datetime(d), "ticker": "ZZZ", "sigma_h1": 0.02}))
-    monkeypatch.setattr(pd, "read_csv", lambda *a, **k: ev)           # data/corporate_actions.csv
+    # data/corporate_actions.csv; Р-6 (29.10): после #370 load_ticker читает через pd.read_csv и таблицы дивидендов —
+    # подмена только файла событий, остальное — настоящий read_csv (раньше подмена «всё» → KeyError dps_rub)
+    real = pd.read_csv
+    monkeypatch.setattr(pd, "read_csv", lambda p, *a, **k: ev if str(p) == str(fd.CORP) else real(p, *a, **k))
     fd.load_ticker.cache_clear()
     return close
 
