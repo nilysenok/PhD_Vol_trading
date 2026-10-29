@@ -50,7 +50,7 @@ if [ "$rezhim" = status ]; then
   if [ $server = 1 ]; then      # строка состояния по стратегии — из checkpoint.json (каждые 5 000 точек)
     for c in "$P"/ledger/"$per"_*/S*/checkpoint.json "$P"/ledger/"$per"/S*/checkpoint.json; do
       [ -f "$c" ] || continue
-      echo "  $(basename "$(dirname "$(dirname "$c")")")/$(basename "$(dirname "$c")"): $(sed -E 's/.*"N": ([0-9]+).*"posledniy_i": ([0-9]+).*/N=\1 чекпоинт i=\2/;t;s/.*"posledniy_i": ([0-9]+).*"N": ([0-9]+).*/N=\2 чекпоинт i=\1/' "$c") ($(sed -E 's/.*"vremya": "([^"]*)".*/\1/' "$c"))"
+      echo "  $(basename "$(dirname "$(dirname "$c")")")/$(basename "$(dirname "$c")"): N=$(grep -o '"N": [0-9]*' "$c" | grep -o '[0-9]*$') чекпоинт i=$(grep -o '"posledniy_i": [0-9]*' "$c" | grep -o '[0-9]*$') ($(sed -E 's/.*"vremya": "([^"]*)".*/\1/' "$c"))"
     done
   fi
   if [ $server = 0 ] && [ -d "$P/ledger/$per" ]; then
