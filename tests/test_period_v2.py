@@ -146,7 +146,7 @@ def deltas(evr, sid, sigp):
 @real
 @pytest.mark.parametrize("i", range(18))
 def test_v2_yakor_Sk_ravno_s9(i, evrs):
-    from tests.test_yakor_v1 import POINTS
+    from test_yakor_v1 import POINTS
     sid, sigp = POINTS[i]
     d = deltas(evrs(sid), sid, sigp)
     assert set(d) == set(GODY) and max(d.values()) <= TOL, (sid, sigp, d)
