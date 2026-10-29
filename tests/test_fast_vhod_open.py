@@ -67,7 +67,7 @@ def test_sintetika_1200_putej_yadro_ravno_etalonu():
 def test_ne_znaet_vhod_open_tolko_na_stop_zayavke():
     p = Params(vhod_tip="stop_zayavka", exit_signal=False, stop_touch=True, vhod_open=True, b=2.0)
     assert fx.ne_znaet(p) == []
-    assert fx.ne_znaet(dataclasses.replace(p, parab=(0.02, 0.2))) == ["parab"]            # parab (П3b) ядро по-прежнему не знает
+    assert fx.ne_znaet(dataclasses.replace(p, zhizn=3)) == ["zhizn"]                      # parab в ядре с #703; zhizn ядро не знает
     assert "vhod_open" in fx.ne_znaet(Params(vhod_open=True, check="bary"))               # рынок по open 10:00 — лимитный путь, эталон
 
 

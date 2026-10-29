@@ -36,12 +36,15 @@ PY="$P/.venv/bin/python3"
 
 yadra() { echo "${PERENOS_YADRA:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}"; }
 
-processov() {   # $1 — период (необязателен). На цепочку: (ядра − 4) / PERENOS_CEPOCHEK (умолчание 2: train4 и v2 идут вместе, Ж-131 п. 4),
-  # не меньше 1; wf — одна цепочка на сервер: PERENOS_PROCS_WF (умолчание 80: RSS 1,6–2,3 ГБ, потолок 2,8 на процесс, К-wf8; 124 не влезают
-  # в 256 ГБ без общих массивов), но не больше ядра − 4. PERENOS_PROCS — явное число (локальная проверка), главнее всех.
-  local n=${PERENOS_PROCS:-$(( ($(yadra) - 4) / ${PERENOS_CEPOCHEK:-2} ))} lim
+processov() {   # $1 — период (необязателен). По умолчанию 120 (Ж-137 п. 2; PERENOS_PROCS_DEF), но не больше ядра − 4 и не меньше 1;
+  # PERENOS_CEPOCHEK=k — (ядра − 4) / k, если сервер делят цепочки. wf — PERENOS_PROCS_WF (умолчание 80: RSS 1,6–2,3 ГБ, потолок 2,8
+  # на процесс, К-wf8). PERENOS_PROCS — явное число, главнее всех. Память после первого куска проверяет pamyat.sh.
+  local n lim=$(( $(yadra) - 4 ))
+  if [ -n "${PERENOS_PROCS:-}" ]; then n=$PERENOS_PROCS
+  elif [ -n "${PERENOS_CEPOCHEK:-}" ]; then n=$(( lim / PERENOS_CEPOCHEK ))
+  else n=${PERENOS_PROCS_DEF:-120}; [ "$n" -le "$lim" ] 2>/dev/null || n=$lim; fi
   if [ "${1:-}" = wf ] && [ -z "${PERENOS_PROCS:-}" ]; then
-    n=${PERENOS_PROCS_WF:-80}; lim=$(( $(yadra) - 4 )); [ "$n" -le "$lim" ] 2>/dev/null || n=$lim
+    n=${PERENOS_PROCS_WF:-80}; [ "$n" -le "$lim" ] 2>/dev/null || n=$lim
   fi
   [ "$n" -ge 1 ] 2>/dev/null || n=1
   echo "$n"

@@ -67,7 +67,7 @@ def ocenshchik(sid: str, inp, base_p, komissiya: float, rz):
             raise
         raise SystemExit(f"{IST} (лист Ист-v6) не слит — ряды v6 считать нечем — отказ") from e
     from fastbt.eval_v6 import EvaluatorV6
-    return EvaluatorV6(sid, inp, base_p, komissiya, fdr=rz.fdr, ist=mod.zagruzit(rz.period, list(inp.sk.tickers)))
+    return EvaluatorV6(sid, inp, base_p, komissiya, fdr=rz.fdr, ist=mod.zagruzit(rz.period, list(inp.sk.tickers)), **({"rol": rz.rol} if rz.rol == "spravka" else {}))
 
 
 def vhody(digest: str, evr) -> str:

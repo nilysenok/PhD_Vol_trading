@@ -131,11 +131,13 @@ def _yakorya_progon(sid: str) -> dict:
     return dict(load_kub(sid).get("yakorya_progon", {}))
 
 
-def razbor(sid: str, pt5: dict, signal=None) -> Razbor:
+def razbor(sid: str, pt5: dict, signal=None, rol: str | None = None) -> Razbor:
     """Точка v5 (после canon_v5) → Razbor. signal — имена сигнальных осей (None — семья v5). Неизвестная ось — ValueError."""
     signal, trend = tuple(SIGNAL[sid] if signal is None else signal), sid in TREND
     ya = _yakorya_progon(sid)                             # драйвер (#608) кладёт якоря zh047 в точку: допустимы только на якоре
-    chuzhie = {k: v for k, v in pt5.items() if k in ya and pt5[k] != ya[k]}
+    spr = {"t_vyhod": "close"} if rol == "spravka" else {}   # Ж-137 п. 6: выход по close — только справочная роль (Ж-129 п. 4 для остальных)
+    chuzhie = {k: v for k, v in pt5.items() if k in ya and pt5[k] != ya[k] and spr.get(k) != v}
+    pt_close = bool(spr) and pt5.get("t_vyhod") == "close"
     if chuzhie:
         raise ValueError(f"{sid}: оси zh047 {chuzhie} не на якоре — оценщик v5 их не считает")
     pt5 = {k: v for k, v in pt5.items() if k not in ya}
@@ -145,7 +147,7 @@ def razbor(sid: str, pt5: dict, signal=None) -> Razbor:
     if set(signal) - set(pt5) or "stop_nach" not in pt5:
         raise ValueError(f"{sid}: в точке нет сигнальных осей {sorted(set(signal) - set(pt5))} или stop_nach")
     r = Razbor({k: pt5[k] for k in signal}, dict(PT4), dict(NOVYE))
-    r.nov["t_vyhod"] = ya.get("t_vyhod", r.nov["t_vyhod"])   # Ж-137 п. 6: якорь куба (open2) доходит до исполнения, не молчит
+    r.nov["t_vyhod"] = "close" if pt_close else ya.get("t_vyhod", r.nov["t_vyhod"])   # Ж-137 п. 6: якорь куба (open2) доходит до исполнения, не молчит
     r.filtr = {k: pt5[k] for k in FILTR if k in pt5 and pt5[k]}
     r.sloj.update({k: pt5[k] for k in SLOJ if k in pt5})
     _vhod(r, trend, pt5.get("k_e", 0), pt5.get("T", 1), pt5.get("reentry", NET))

@@ -297,6 +297,12 @@ def os_osi3(pt: dict) -> bool:
             or pt.get("stop_v_plyus", N5) != N5 or edinica(pt.get("trail", N5)) == "step" or bool(float(pt.get("pir", 0) or 0)))
 
 
+def os_parab(pt: dict) -> bool:
+    """Точка v5 с параболическим трейлингом (П3b): его считает только ядро Ф-parab."""
+    from fastbt.canon_v5 import NET as N5, edinica
+    return "stop_nach" in pt and edinica(pt.get("trail", N5)) == "parab"
+
+
 def pokryto(pt: dict) -> bool:
     """§1.8 контракта ledger v2.0: быстрый слой покрывает точки осей zh047 (v1.0); новые оси §1.1 — только в умолчании,
     `filtr` — только net | cbr (прежние `sobytiya`), заём — только 0. Остальное драйвер считает медленным путём."""
@@ -307,7 +313,7 @@ def pokryto(pt: dict) -> bool:
     if "stop_nach" in pt and pt.get("rang_tip") in RANG_TIPY:     # точка v5: rang_tip считает оценщик (rangi_v6), в run идёт только
         umolch["rang_tip"] = pt["rang_tip"]                       # rang ≠ None — а такой вызов `run` сам отдаёт эталону (_slow_only)
     return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and (fx.YADRO_S34_GOTOV or not os_s34(pt))
-            and (fx.YADRO_OSI3_GOTOV or not os_osi3(pt))
+            and (fx.YADRO_OSI3_GOTOV or not os_osi3(pt)) and (fx.YADRO_PARAB_GOTOV or not os_parab(pt))
             and str(pt.get("t_vyhod", "close")) in fx.T_VYHOD       # open2 — якорь кубов v5/v6 (Ж-137 п. 6); 1500 / 1700 — эталон
             and pt.get("filtr", NET) in (NET, "cbr")
             and pt.get("sobytiya", NET) in (NET, "cbr") and pt.get("vyhod", NET) in (NET, "lim")

@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from numba import njit
 
+from fastbt import fast_exec_parab as pb
 from fastbt import fast_exec_v6 as v6
 
 EPS = 1e-6                                              # = exec_e_rules.EPS
@@ -22,7 +23,8 @@ TR, SD, I0, EJ, BE, BLK, OK, ODUE, OSD, ODS, ORT, XO, XR, SR, NO, NF, XN, XF, NT
 CUR, ENTD, ENTB, PART, OAGE, LXD, LXB, LXR, DNRE, PQ = range(19, 29)   # st: текущая сделка, бар входа, ½ взята, возраст заявки, последний выход, день повтора, «стоп в плюс» включён
 NAD, AD0, AD1 = 29, 30, 31                              # st: число добавок pir, индексы их ног в ti (−1 — нет)
 XT, PEND = 32, 33                                       # st: выходов не по close (t_vyhod open2); выход по сигналу отложен на open x+1
-NST = 34
+NST = 35                                                # + PBN = 34 (флаг бара входа parab, fast_exec_parab)
+P_PARAB, F_PS, F_PM = pb.P_PARAB, pb.F_PS, pb.F_PM
 F_PIR, P_PIR = v6.F_PIR, v6.P_PIR
 BEM, VLEV, TA = 15, 16, 17                              # fs: порог безубытка в σ, уровень v6-стопа (храповик), a тейка (ось a_rang); fast_exec_v6
 F_B0, F_B0C, F_SP, F_SQ, F_STEP, F_AA0, F_AA1 = v6.F_B0, v6.F_B0C, v6.F_SP, v6.F_SQ, v6.F_STEP, v6.F_AA0, v6.F_AA1
@@ -36,6 +38,7 @@ P_TV = 32                                               # pi: t_vyhod = open2 (�
 REASONS = (None, "stop", "trail", "bu", "take", "vremya", "signal", "lim", "kanal", "part", "pir")
 R_STOP, R_TRAIL, R_BU, R_TAKE, R_VREMYA, R_SIGNAL, R_LIM, R_KANAL, R_PART, R_PIR = range(1, 11)
 YADRO_S34_GOTOV = True      # оси stop_zayavka+urovni, atr_m, T, reentry_den, chast_1r/chast в ядре (включены в pokryto, #658)
+YADRO_PARAB_GOTOV = True    # Ф-parab: ось parab (П3b, параболический трейлинг) в ядре; снят — такие точки идут эталоном
 YADRO_OSI3_GOTOV = True     # Ф-сл3d: оси #653 (b0, b0_c, sp, step_s, a_rang + вход rang) и #660 (pir) в ядре; снят — эти точки идут эталоном
 F_CODES = {"propusk": 0, "zakrytie_d1": 1, "povtor": 2}
 ED_CODES = {"sigma": 0, "atr": 1, "pct": 2}            # Л5: единица уровней (exec_e.unit_series)
@@ -164,6 +167,8 @@ def _levels(fs, st, j, su, tu, ix, pf, pi, B, off, nbar, atr):
             if not np.isnan(fs[SMAX]):
                 S = max(S, fs[SMAX]) if sd > 0 else min(S, fs[SMAX])
             fs[SMAX] = S
+    if pi[P_PARAB]:                                     # П3b: в баре входа — начальный стоп; далее по состоянию на конец прошлого бара
+        S, r = pb.stop(fs, st, sd), R_TRAIL
     if not np.isnan(S):
         st[SR] = r
         if fs[SH] != 0.0:
@@ -194,7 +199,7 @@ def _row(i, j, at_close, ix):
 
 
 @njit(cache=True)
-def _enter(fs, st, ti, tf, tx, acc, i, j, b, px, i0, sg, d_sig, sd, nb_i, pf, pi, ix, su, tu, UR):
+def _enter(fs, st, ti, tf, tx, acc, i, j, b, px, i0, sg, d_sig, sd, nb_i, pf, pi, ix, su, tu, UR, B, off):
     n = st[NT]
     st[NT], st[CUR] = n + 1, n
     row0 = _row(i, j, i0 >= nb_i, ix)
@@ -209,6 +214,8 @@ def _enter(fs, st, ti, tf, tx, acc, i, j, b, px, i0, sg, d_sig, sd, nb_i, pf, pi
     st[TR], st[SD], st[I0], st[EJ], st[BE], st[PART], st[ENTD], st[ENTB] = 1, sd, i0, j, 0, 0, i, b
     fs[BEM], fs[TA], fs[VLEV], st[PQ] = UR[4, d_sig], UR[5, d_sig], np.nan, 0     # v6_enter: ранг дня сигнала d_sig, не дня входа
     st[NAD], st[AD0], st[AD1] = 0, -1, -1
+    if pi[P_PARAB]:                                     # П3b: экстремум на входе — high / low бара входа
+        pb.start(fs, st, sd, px, pf[F_B], fs[SG], B[1, off[i] + b], B[2, off[i] + b], pf[F_PS])
 
 
 @njit(cache=True)
@@ -250,6 +257,8 @@ def _partial(fs, st, ti, tf, tx, acc, i, j, b, px, pf, ix):
 @njit(cache=True)
 def _after_bar(fs, st, j, hi, lo, su, ix, pf, pi):
     sd, px = st[SD], fs[EPX]
+    if pi[P_PARAB]:
+        pb.after(fs, sd, hi, lo, pf[F_PS], pf[F_PM])
     fs[EXT] = max(fs[EXT], hi) if sd > 0 else min(fs[EXT], lo)
     sg = _sg(fs[SG], st, j, su, ix, pi)
     if np.isnan(sg):
@@ -319,7 +328,8 @@ def _scan(fs, st, ti, tf, tx, acc, i, j, b0, ne, B, off, nbar, cl, su, tu, atr, 
         else:
             _after_bar(fs, st, j, C, C, su, ix, pf, pi)
         return
-    dyn = (pi[P_HKTR] != 0 or pi[P_BE] != 0 or pi[P_ATRM] != 0 or pi[P_B0] != 0 or pi[P_B0C] != 0
+    st[pb.PBN] = 0                                      # П3b: бар входа пройден
+    dyn = (pi[P_PARAB] != 0 or pi[P_HKTR] != 0 or pi[P_BE] != 0 or pi[P_ATRM] != 0 or pi[P_B0] != 0 or pi[P_B0C] != 0
            or pi[P_SP] != 0 or pi[P_STEP] != 0 or pi[P_PIR] != 0)             # = Run._scan (v6 включая): chand в dyn не входит (уровень дня)
     S, T = _levels_k(fs, st, j, su, tu, ix, pf, pi, B, off, nbar, atr, UR)
     for b in range(b0, ne):
@@ -382,7 +392,7 @@ def _place(fs, st, close, sd, sg, j, i, retry, age, pf, pi):
 def _vhod(fs, st, ti, tf, tx, acc, i, j, b, px, sg, d_sig, sd, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi):
     """Вход в баре b по px, затем стоп в том же баре (Run._stop_vhoda, БЛОКЕР #596: «уже пробитый» выходит по px, не по S), затем скан."""
     nb, k0 = nbar[i], off[i]
-    _enter(fs, st, ti, tf, tx, acc, i, j, b, px, b, sg, d_sig, sd, nb, pf, pi, ix, su, tu, UR)
+    _enter(fs, st, ti, tf, tx, acc, i, j, b, px, b, sg, d_sig, sd, nb, pf, pi, ix, su, tu, UR, B, off)
     S, _ = _levels(fs, st, j, su, tu, ix, pf, pi, B, off, nbar, atr)      # в баре входа — только защитный стоп σ (Run2._levels)
     if not pi[P_ZAK] and not np.isnan(S) and _stop_hit(sd, B[1, k0 + b], B[2, k0 + b], S, pi):
         _exit(fs, st, ti, tf, tx, acc, i, j, b, min(px, S) if sd > 0 else max(px, S), st[SR], pf, pi, ix)
@@ -481,7 +491,7 @@ def _try_order(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su,
         st[BLK] = sd
     elif pi[P_F] == 1:
         if live:
-            _enter(fs, st, ti, tf, tx, acc, i, j, nb - 1, close, nb, sigma[i], st[ODS], sd, nb, pf, pi, ix, su, tu, UR)
+            _enter(fs, st, ti, tf, tx, acc, i, j, nb - 1, close, nb, sigma[i], st[ODS], sd, nb, pf, pi, ix, su, tu, UR, B, off)
     elif pi[P_F] == 2:
         v = sigma[i]
         if live and np.isfinite(v) and j + 1 < len(ix):
@@ -530,7 +540,7 @@ def _unit(kind, atr, cl, pusto):
 @njit(cache=True)
 def kernel(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, stale):
     """Прежний вход ядра (fast_etap1.run): pf[10], pi[21] — новые оси выключены; возврат (gross, cost, pos, free, ti[8], tf, st)."""
-    pf2, pi2 = np.zeros(22), np.zeros(33, np.int64)
+    pf2, pi2 = np.zeros(24), np.zeros(34, np.int64)
     pf2[:len(pf)], pi2[:len(pi)], pi2[P_T] = pf, pi, 1
     g, c, p, f, ti, tf, _, st = kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf2, pi2, np.empty((4, 0)), np.empty(0),
                                           np.empty(0, np.int64), stale)
@@ -554,7 +564,7 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut,
     atr = _atr(B, off, nbar, pusto, cl) if need else np.empty(0)
     su = _unit(pi[P_US], atr, cl, pusto) if pi[P_US] else sigma
     tu = _unit(pi[P_UT], atr, cl, pusto) if pi[P_UT] else sigma
-    fs, st = np.zeros(18), np.zeros(NST, np.int64)
+    fs, st = np.zeros(21), np.zeros(NST, np.int64)
     st[LXD], st[DNRE] = -1, -1
     cap = 3 * (1 + (pi[P_CHAST] != 0) + 2 * (pi[P_PIR] != 0)) * nix + 4   # входов за день ≤ 3 (заявка, повтор, close), у каждого ≤ 1 частичный выход и ≤ 2 добавок
     ti, tf, tx = np.full((cap, 9), -1, np.int64), np.zeros((cap, 2)), np.zeros((cap, 2))
@@ -621,7 +631,7 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut,
                     st[OK], st[ODUE], st[ODS] = 1, j + 1, i
         elif not (st[TR] or st[OK] or st[BLK] or not sd or not np.isfinite(sg)):
             if not pi[P_HK]:
-                _enter(fs, st, ti, tf, tx, acc, i, j, nb - 1, close, nb, sg, i, sd, nb, pf, pi, ix, su, tu, UR)
+                _enter(fs, st, ti, tf, tx, acc, i, j, nb - 1, close, nb, sg, i, sd, nb, pf, pi, ix, su, tu, UR, B, off)
             elif j + 1 < nix:
                 _place(fs, st, close, sd, sg, j, i, 0, 1, pf, pi)
         pos[i] = float(st[SD]) * fs[W] if st[TR] else 0.0
@@ -649,7 +659,7 @@ def ne_znaet(p) -> list:
     from fastbt import fast_etap1
     sz = p.vhod_tip == "stop_zayavka"           # Ф-vhod_open: на стоп-заявке vhod_open ничего не меняет (RunStop._decide не смотрит на него)
     bad = [n for n, d in fast_etap1._umolch(type(p)) if n not in NOVYE and not (YADRO_OSI3_GOTOV and n in v6.OSI)
-           and getattr(p, n) != d and not (sz and n == "vhod_open")]
+           and not (YADRO_PARAB_GOTOV and n == "parab") and getattr(p, n) != d and not (sz and n == "vhod_open")]
     return bad + ["t_vyhod"] * (p.t_vyhod not in T_VYHOD)
 
 
@@ -661,7 +671,8 @@ def params_v5(p, nal: float) -> tuple:
     pf = np.r_[pf, [0.0 if not p.k_e else p.k_e, p.atr_m or 0.0, cf[0] if cf else 0.0, cf[1] if cf else 0.0]]
     pi = np.r_[pi, [p.vhod_tip == "stop_zayavka", p.atr_m is not None, p.T, p.reentry_den, cf is not None]].astype(np.int64)
     f6, i6 = v6.params_v6(p)
-    return np.r_[pf, f6], np.r_[pi, i6, [p.t_vyhod == "open2"]].astype(np.int64)
+    fp, ip = pb.params_parab(p)
+    return np.r_[pf, f6, fp], np.r_[pi, i6, [p.t_vyhod == "open2"], ip].astype(np.int64)
 
 
 def stale_mask(dates, pusto, razryv) -> np.ndarray:

@@ -78,7 +78,7 @@ def test_vklyuchennaya_novaya_os_popadaet_v_kanon(sid):
     c = tochki_v5(sid, 1)[0][1]
     nprov = 0
     for n, v in novye_raw(k6).items():
-        if v.get("roditel") or n in ("dlit", "piv_buf", "lestnica", "ed_lim", "vyhod_lim"):
+        if v.get("roditel") or n in ("dlit", "piv_buf", "lestnica", "ed_lim", "vyhod_lim", "time_decay", "smena", "reentry"):   # time_decay — свёртка без tau / при тейке ≠ net; smena/reentry (тренд) — по vhod_tip (V6-12d)
             continue
         q = C6.canon_v6(sid, {**c, **vykl(k6), n: v["setka"][1]})
         assert q is not None and q.get(n) == v["setka"][1], n
@@ -195,7 +195,7 @@ def test_chastota_vykl_zapreshchayushchikh_filtrov_09(sid, sobol20k):
     flt = [n for n, v in nov.items() if v.get("filtr")]
     assert len(flt) == (12 if sid in ("S3", "S4") else 14)
     pts = sobol20k[sid]
-    assert len(pts) > 10000                          # часть точек несовместима по canon_v5 (~40 %) и выбрасывается
+    assert len(pts) > 5000     # несовместимые по canon_v5 (~40 %) и time_decay = da без tau / при тейке ≠ net (V6-12c, ~70 % всего) выбрасываются
     for f in flt:
         assert nov[f]["p_vykl"] == 0.9
         dolya = sum(f not in c for c in pts) / len(pts)

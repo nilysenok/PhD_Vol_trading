@@ -106,12 +106,13 @@ def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, **kw):
 
 class EvaluatorV5(EvaluatorV2):
     STROGAYA = True
+    rol: str | None = None          # роль прохода (spravka — Ж-137 п. 6); умолчание класса: оценщик без __init__ (тесты) — основной
 
-    def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=OSNOVNOY, semya: str = "v5"):
+    def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=OSNOVNOY, semya: str = "v5", rol: str | None = None):
         super().__init__(sid, inp, base_p, commission, fdr)
         if semya not in ("v5", "v4"):
             raise ValueError(f"semya: v5 | v4, получено {semya!r}")
-        self.semya, self.r5, self._fkey, self._days5 = semya, None, (), {}
+        self.semya, self.r5, self._fkey, self._days5, self.rol = semya, None, (), {}, rol
         importlib.import_module(f"fastbt.signals.{MODUL[sid]}")          # регистрация семей v5
         names = set(self.sk.sig_names) | set(SIGNAL[sid])
         self._names5 = tuple(sorted(names))
@@ -198,12 +199,17 @@ class EvaluatorV5(EvaluatorV2):
             w = np.nan_to_num(m / M_MAX[r.m_sily], nan=0.0)
         return w / (1.0 + 2.0 * r.ext.get("pir", 0.0))
 
+    def _tm(self, t, s0, b):
+        """tejk_M для exec_e.run: rodnoy — [2, b+1]; нет tejk_signal — None. Хук EvaluatorV6 (pol_puti, PivUrovni)."""
+        r = self.r5
+        return None if r.nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, r.sp, t, s0, b, True)
+
     def _rows(self, pt, period, anchor):
         if self.r5 is None:
             return super()._rows(pt, period, anchor)
         r, inp, out = self.r5, self.inp, []
-        if r.nov["vhod_tip"] == "stop_zayavka" and ("a_rang" in r.ext or "b0_c" in r.ext):
-            raise NeSchitana("тренд: exec_e.run не передаёт rang в RunStop (exec_e.py:172) — тейк от силы не считается")
+        if r.nov["vhod_tip"] == "stop_zayavka" and "a_rang" in r.ext:         # b0_c: RunStop получает rang с V6-11a (#666)
+            raise NeSchitana("тренд: тейк от силы (a_rang) на RunStop не считается")
         if r.nov["tejk_signal"] != NET and not rodnoy_ok(self.sid, r.sp):
             raise NeSchitana(f"{self.sid}: родной уровень tejk_signal.rodnoy_uroven — формула v4, с осями {r.sp} не совпадает")
         info = self._start(period)
@@ -215,7 +221,7 @@ class EvaluatorV5(EvaluatorV2):
                 rg, sig = rk[t][0], gate_trades(sig, rk[t][1])      # кандидат без ранга (< 20 наблюдений) не входит
             days = inp.bars[t][:b] + [_one_bar(float(inp.close_n6[t][b]))]
             p = replace(self._params(r.pt4, t, 5.0, False, r.nov, {}), **r.ext)
-            tm = None if r.nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, r.sp, t, s0, b, True)
+            tm = self._tm(t, s0, b)
             uv = {} if r.nov["vhod_tip"] == "podtverzhdenie" else {"urovni": self._urovni(t, s0, b, al)}
             kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], dates=dates, ed=self._ed(t, "sigma", sg, dates, s0, b),
                       tejk_M=tm, **self.fdr_kw(), **uv)
@@ -230,7 +236,7 @@ class EvaluatorV5(EvaluatorV2):
         """Точка v5 (после canon_v5) → (строка ledger v2.0, excess портфеля, excess тикеров) — контракт EvaluatorV2."""
         if vozm:
             raise ValueError("vozm у оценщика v5 не поддержан")
-        self.r5 = r = razbor(self.sid, pt, SIGNAL[self.sid] if self.semya == "v5" else self.sk.sig_names)
+        self.r5 = r = razbor(self.sid, pt, SIGNAL[self.sid] if self.semya == "v5" else self.sk.sig_names, self.rol)
         if self.semya == "v4" and (r.rang or r.filtr or self.sid in TREND and r.ext.get("k_e")):
             raise ValueError("semya v4 — только для сверки якоря: без ранга, фильтров v5 и k_e")
         self._fkey = tuple(sorted(r.filtr.items()))
