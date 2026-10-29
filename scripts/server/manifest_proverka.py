@@ -95,7 +95,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--manifest", type=Path, required=True)
     ap.add_argument("--koren", type=Path, required=True)
-    ap.add_argument("--istochnik", type=Path)
+    ap.add_argument("--istochnik", type=Path, action="append", help="корень данных; можно несколько — берётся первый, где файл есть")
     ap.add_argument("--strogo", action="store_true")
     ap.add_argument("--spisok", type=Path)
     a = ap.parse_args(argv)
@@ -103,7 +103,8 @@ def main(argv=None) -> int:
         m = prochitat(a.manifest)
         if a.istochnik:
             for put, h, b, _, otkuda in m:
-                src, dst = a.istochnik / otkuda, a.koren / put
+                src = next((r / otkuda for r in a.istochnik if (r / otkuda).exists()), a.istochnik[0] / otkuda)
+                dst = a.koren / put
                 sverit(src, otkuda, h, b, "источник")
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(src, dst.with_name(dst.name + ".tmp"))

@@ -58,7 +58,7 @@ say "   $(tar -tzf "$TAR" | grep -vc '/$') файлов, sha256 $TAR_SHA"
 say "2/6 данные по манифесту -> $OUT/data (sha256 источника и копии)"
 cp "$MANIFEST" "$OUT/manifest_dannyh.tsv"
 python3 "$K/scripts/server/manifest_proverka.py" --manifest "$OUT/manifest_dannyh.tsv" --koren "$OUT/data" \
-  --istochnik "$DANNYE" --strogo --spisok "$TMP/spisok_dannyh.txt" || fail "манифест отвергнут — перенос не собран"
+  --istochnik "$DANNYE" ${PERENOS_DANNYE_DOP:+--istochnik "$PERENOS_DANNYE_DOP"} --strogo --spisok "$TMP/spisok_dannyh.txt" || fail "манифест отвергнут — перенос не собран"
 
 # fastbt читает часть таблиц от корня КОДА, не от FASTBT_MAIN (etap1_data: ROOT/data/calendar/cbr.csv; ставка
 # fastbt/rates/; dividendy, msp, fazy: docs/issledovaniya/): эти файлы манифеста (усечённые копии) кладутся в распакованный

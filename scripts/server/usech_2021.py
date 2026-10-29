@@ -40,6 +40,17 @@ PRAVILA = [
     ("fastbt/rates/key_rate_cbr_vladelec.csv", "csv", ("data_vstupleniya",), (), "ставка ЦБ владельца (дата вступления; объявление раньше входа)"),
     *[(f"data/calendar/{n}.csv", "csv", KAL, ("retrieved_at",), f"календарь {n} (PIT: date и known_from)")
       for n in ("cbr", "expirations", "fomc", "imoex_rebal", "imoex_rebal_official", "cpi_us")],
+    # справочные таблицы исследователя: fastbt читает их от корня КОДА (накладка sobrat_perenos.sh / razvernut.sh);
+    # accessed — дата скачивания (2026), не дата данных: очищается; строки без даты реестра (нет выплат) отбрасываются
+    ("docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv", "csv", ("record_date", "announce_date", "last_cum_date"),
+     ("accessed",), "fastbt/dividendy.py TABLE, sobytiya_e1 (реестр и объявление PIT)"),
+    ("docs/issledovaniya/2026-10-28_dividendy_2015_2016.csv", "csv", ("record_date",), ("accessed",), "fastbt/dividendy.py TABLE_2015"),
+    ("docs/issledovaniya/2026-10-28_kluchevaya_stavka_2013_2017.csv", "csv", ("data_vstupleniya", "data_resheniya"),
+     ("accessed",), "fastbt/msp.py RATE_RESEARCH"),
+    ("docs/issledovaniya/2026-10-28_sobytiya_2016_2021.csv", "csv", ("data_obyavleniya", "data_sobytiya"),
+     ("accessed",), "fastbt события E (PIT: объявление и событие)"),
+    ("docs/issledovaniya/2026-10-28_sostav_imoex.csv", "csv", ("date_eff", "known_from"), (), "fastbt/vselennaya.py SOSTAV"),
+    ("docs/issledovaniya/2026-10-28_sostav_sektorov.csv", "csv", ("дата_ребалансировки",), (), "состав секторных индексов"),
 ]
 
 
@@ -136,14 +147,20 @@ def usech_pq(src: Path, dst: Path, kol: str, paket: int = PARQUET_BATCH, ostanov
     return st
 
 
-def usech(koren: Path, vyhod: Path) -> list[dict]:
+def usech(koren: Path, vyhod: Path, tolko: str = "") -> list[dict]:
     zap = []
     for shablon, vid, kol, och, chit in PRAVILA:
+        if tolko and tolko not in shablon:
+            continue
         for src in sorted(koren.glob(shablon)):
             rel = src.relative_to(koren).as_posix()
             if mp.zapreshen(str(src)) or rel.startswith("data/server_2021/"):
                 continue
+            # дата в начале имени справочной таблицы — день её создания (2026), не данные; manifest_perenos не читает файлы с
+            # годом 202x в имени, поэтому копия лежит без префикса даты, а в манифесте istochnik = исходное имя (его читает fastbt)
             dst = vyhod / rel
+            if rel.startswith("docs/issledovaniya/"):
+                dst = dst.with_name(dst.name.split("_", 1)[1])
             st = usech_pq(src, dst, kol[0]) if vid == "pq" else usech_csv(src, dst, kol, och)
             zap.append(dict(rel=rel, dst=dst, st=st, chit=chit, sha_src=mp.sha256(str(src))))
             print(f"{rel}: строк {st.stroki}, отброшено {st.otbrosheno}, max {st.max_data}, остановка {st.ostanov}")
@@ -180,10 +197,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--koren", type=Path, required=True)
     ap.add_argument("--vyhod", type=Path, default=None)
+    ap.add_argument("--tolko", default="", help="только правила, чей шаблон содержит подстроку (дополнение манифеста)")
     ap.add_argument("--tsv", type=Path, default=Path("docs/server/manifest_dannyh_2021.tsv"))
     a = ap.parse_args(argv)
     vyhod = a.vyhod or a.koren / "data" / "server_2021"
-    zap = usech(a.koren, vyhod)
+    zap = usech(a.koren, vyhod, a.tolko)
     print(obnovit_manifest(a.koren, zap, vyhod, a.tsv))
     return 0
 
