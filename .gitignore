@@ -48,5 +48,8 @@ data/fastbt/
 # Конвейер моделей: кэши (не коммитить)
 data/models_cache/
 
+# Усечённые копии <= 2021 для сервера (scripts/server/usech_2021.py)
+data/server_2021/
+
 # Перенос на сервер (Ж-133): собирается scripts/server/sobrat_perenos.sh, в git не идёт
 /perenos/

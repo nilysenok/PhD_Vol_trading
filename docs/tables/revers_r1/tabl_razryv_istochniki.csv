@@ -1,0 +1,242 @@
+# источники ячеек tabl_razryv_predzashchita.csv: колонка, файл (docs/tables/revers_r1), ключ строки (obekt/shag), Δ или значение
+obekt,period,kolonka,fajl,klyuch_stroki,znachenie
+A,2022,pechat,sverka_predzashchita_A.csv,A/печать,1.675700
+A,2023,pechat,sverka_predzashchita_A.csv,A/печать,2.987000
+A,2024,pechat,sverka_predzashchita_A.csv,A/печать,1.564400
+A,2022–2024,pechat,sverka_predzashchita_A.csv,A/печать,1.587600
+A,2022,utechka_okna,sverka_5a.csv,A/P1,-2.107636
+A,2023,utechka_okna,sverka_5a.csv,A/P1,-2.759179
+A,2024,utechka_okna,sverka_5a.csv,A/P1,-1.617477
+A,2022–2024,utechka_okna,sverka_5a.csv,A/P1,-1.763355
+A,2022,div_2224,a_cd_test1.csv − _net/a_cd_test1.csv,A (полные/по году),-0.110539
+A,2023,div_2224,a_cd_test1.csv − _net/a_cd_test1.csv,A (полные/по году),-0.138270
+A,2024,div_2224,a_cd_test1.csv − _net/a_cd_test1.csv,A (полные/по году),-0.053557
+A,2022–2024,div_2224,a_cd_test1.csv − _net/a_cd_test1.csv,A (полные/по году),-0.094077
+A,2022,div_progrev,sverka_5a.csv,A/P6,-0.403826
+A,2023,div_progrev,sverka_5a.csv,A/P6,-1.103126
+A,2024,div_progrev,sverka_5a.csv,A/P6,0.753625
+A,2022–2024,div_progrev,sverka_5a.csv,A/P6,-0.189371
+A,2022,bary_dannye,sverka_5a.csv,A/P0,0.158795
+A,2023,bary_dannye,sverka_5a.csv,A/P0,0.972085
+A,2024,bary_dannye,sverka_5a.csv,A/P0,-0.000417
+A,2022–2024,bary_dannye,sverka_5a.csv,A/P0,0.193940
+A,2022,bary_dannye,sverka_5a.csv,A/E5,1.237048
+A,2023,bary_dannye,sverka_5a.csv,A/E5,0.151834
+A,2024,bary_dannye,sverka_5a.csv,A/E5,0.463215
+A,2022–2024,bary_dannye,sverka_5a.csv,A/E5,0.744608
+A,2022,bary_dannye,_net/a_cd_test1.csv − sverka_5a.csv,A (полные/по году) − A/E5,-1.237048
+A,2023,bary_dannye,_net/a_cd_test1.csv − sverka_5a.csv,A (полные/по году) − A/E5,-0.087951
+A,2024,bary_dannye,_net/a_cd_test1.csv − sverka_5a.csv,A (полные/по году) − A/E5,-0.619889
+A,2022–2024,bary_dannye,_net/a_cd_test1.csv − sverka_5a.csv,A (полные/по году) − A/E5,-0.769185
+A,2022,ispolnenie,sverka_5a.csv,A/P2,0.000000
+A,2023,ispolnenie,sverka_5a.csv,A/P2,0.000000
+A,2024,ispolnenie,sverka_5a.csv,A/P2,0.000000
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P2,0.000000
+A,2022,ispolnenie,sverka_5a.csv,A/P3,0.000000
+A,2023,ispolnenie,sverka_5a.csv,A/P3,0.000000
+A,2024,ispolnenie,sverka_5a.csv,A/P3,0.000000
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P3,0.000000
+A,2022,ispolnenie,sverka_5a.csv,A/P4,0.483614
+A,2023,ispolnenie,sverka_5a.csv,A/P4,-0.043679
+A,2024,ispolnenie,sverka_5a.csv,A/P4,-1.518900
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P4,-0.044684
+A,2022,ispolnenie,sverka_5a.csv,A/P5,0.000000
+A,2023,ispolnenie,sverka_5a.csv,A/P5,0.000000
+A,2024,ispolnenie,sverka_5a.csv,A/P5,0.000000
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P5,0.000000
+A,2022,ispolnenie,sverka_5a.csv,A/P7,0.000000
+A,2023,ispolnenie,sverka_5a.csv,A/P7,0.000000
+A,2024,ispolnenie,sverka_5a.csv,A/P7,0.000000
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P7,0.000000
+A,2022,ispolnenie,sverka_5a.csv,A/P8,0.000000
+A,2023,ispolnenie,sverka_5a.csv,A/P8,0.000000
+A,2024,ispolnenie,sverka_5a.csv,A/P8,0.000000
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P8,0.000000
+A,2022,ispolnenie,sverka_5a.csv,A/P9,0.000000
+A,2023,ispolnenie,sverka_5a.csv,A/P9,0.000000
+A,2024,ispolnenie,sverka_5a.csv,A/P9,0.000000
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P9,0.000000
+A,2022,ispolnenie,sverka_5a.csv,A/P10,-0.716343
+A,2023,ispolnenie,sverka_5a.csv,A/P10,-0.517773
+A,2024,ispolnenie,sverka_5a.csv,A/P10,-0.332929
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P10,-0.547513
+A,2022,ispolnenie,sverka_5a.csv,A/P11,0.000000
+A,2023,ispolnenie,sverka_5a.csv,A/P11,0.000000
+A,2024,ispolnenie,sverka_5a.csv,A/P11,0.000000
+A,2022–2024,ispolnenie,sverka_5a.csv,A/P11,0.000000
+A,2022,ispolnenie,sverka_5a.csv (E0 − печать из sverka_predzashchita_A.csv),A/E0 − A/печать,-0.011417
+A,2023,ispolnenie,sverka_5a.csv (E0 − печать из sverka_predzashchita_A.csv),A/E0 − A/печать,-0.103876
+A,2024,ispolnenie,sverka_5a.csv (E0 − печать из sverka_predzashchita_A.csv),A/E0 − A/печать,-0.045224
+A,2022–2024,ispolnenie,sverka_5a.csv (E0 − печать из sverka_predzashchita_A.csv),A/E0 − A/печать,-0.032550
+A,2022,chestnoe,a_cd_test1.csv,A (полные/по году),-1.031652
+A,2023,chestnoe,a_cd_test1.csv,A (полные/по году),-0.642936
+A,2024,chestnoe,a_cd_test1.csv,A (полные/по году),-1.407152
+A,2022–2024,chestnoe,a_cd_test1.csv,A (полные/по году),-0.914586
+C,2022,pechat,sverka_predzashchita_CD.csv,C/0,2.859614
+C,2023,pechat,sverka_predzashchita_CD.csv,C/0,5.085695
+C,2024,pechat,sverka_predzashchita_CD.csv,C/0,2.981147
+C,2022–2024,pechat,sverka_predzashchita_CD.csv,C/0,2.756447
+C,2022,utechka_okna,sverka_5a.csv,C/P1,-2.632789
+C,2023,utechka_okna,sverka_5a.csv,C/P1,-5.359931
+C,2024,utechka_okna,sverka_5a.csv,C/P1,-4.055177
+C,2022–2024,utechka_okna,sverka_5a.csv,C/P1,-2.790797
+C,2022,div_2224,sverka_predzashchita_CD.csv,C/6,0.075546
+C,2023,div_2224,sverka_predzashchita_CD.csv,C/6,-0.311588
+C,2024,div_2224,sverka_predzashchita_CD.csv,C/6,0.059835
+C,2022–2024,div_2224,sverka_predzashchita_CD.csv,C/6,0.024743
+C,2022,div_progrev,sverka_5a.csv,C/P6,-0.066785
+C,2023,div_progrev,sverka_5a.csv,C/P6,-1.398086
+C,2024,div_progrev,sverka_5a.csv,C/P6,0.639966
+C,2022–2024,div_progrev,sverka_5a.csv,C/P6,0.047320
+C,2022,bary_dannye,sverka_5a.csv,C/P0,0.301716
+C,2023,bary_dannye,sverka_5a.csv,C/P0,0.286571
+C,2024,bary_dannye,sverka_5a.csv,C/P0,-0.000661
+C,2022–2024,bary_dannye,sverka_5a.csv,C/P0,0.207459
+C,2022,bary_dannye,sverka_5a.csv,C/E5,-0.248950
+C,2023,bary_dannye,sverka_5a.csv,C/E5,-0.063454
+C,2024,bary_dannye,sverka_5a.csv,C/E5,0.666296
+C,2022–2024,bary_dannye,sverka_5a.csv,C/E5,-0.112355
+C,2022,bary_dannye,sverka_predzashchita_CD.csv,C/5б,-0.077236
+C,2023,bary_dannye,sverka_predzashchita_CD.csv,C/5б,0.394214
+C,2024,bary_dannye,sverka_predzashchita_CD.csv,C/5б,-0.656026
+C,2022–2024,bary_dannye,sverka_predzashchita_CD.csv,C/5б,-0.047369
+C,2022,ispolnenie,sverka_5a.csv,C/P2,0.032190
+C,2023,ispolnenie,sverka_5a.csv,C/P2,1.107736
+C,2024,ispolnenie,sverka_5a.csv,C/P2,-0.350741
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P2,0.048067
+C,2022,ispolnenie,sverka_5a.csv,C/P3,0.000000
+C,2023,ispolnenie,sverka_5a.csv,C/P3,0.000000
+C,2024,ispolnenie,sverka_5a.csv,C/P3,0.000000
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P3,0.000000
+C,2022,ispolnenie,sverka_5a.csv,C/P4,0.107695
+C,2023,ispolnenie,sverka_5a.csv,C/P4,0.460963
+C,2024,ispolnenie,sverka_5a.csv,C/P4,-1.168236
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P4,-0.028895
+C,2022,ispolnenie,sverka_5a.csv,C/P5,0.000000
+C,2023,ispolnenie,sverka_5a.csv,C/P5,0.000000
+C,2024,ispolnenie,sverka_5a.csv,C/P5,0.000000
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P5,0.000000
+C,2022,ispolnenie,sverka_5a.csv,C/P7,-0.220775
+C,2023,ispolnenie,sverka_5a.csv,C/P7,-0.556939
+C,2024,ispolnenie,sverka_5a.csv,C/P7,0.771953
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P7,-0.167488
+C,2022,ispolnenie,sverka_5a.csv,C/P8,-0.210729
+C,2023,ispolnenie,sverka_5a.csv,C/P8,-0.204073
+C,2024,ispolnenie,sverka_5a.csv,C/P8,-0.187665
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P8,-0.247618
+C,2022,ispolnenie,sverka_5a.csv,C/P9,0.064986
+C,2023,ispolnenie,sverka_5a.csv,C/P9,-0.274497
+C,2024,ispolnenie,sverka_5a.csv,C/P9,0.066802
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P9,0.057769
+C,2022,ispolnenie,sverka_5a.csv,C/P10,-0.320142
+C,2023,ispolnenie,sverka_5a.csv,C/P10,0.706135
+C,2024,ispolnenie,sverka_5a.csv,C/P10,0.192680
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P10,-0.058846
+C,2022,ispolnenie,sverka_5a.csv,C/P11,0.333595
+C,2023,ispolnenie,sverka_5a.csv,C/P11,-1.023344
+C,2024,ispolnenie,sverka_5a.csv,C/P11,0.196033
+C,2022–2024,ispolnenie,sverka_5a.csv,C/P11,0.113977
+C,2022,ispolnenie,sverka_predzashchita_CD.csv,C/1,-0.000580
+C,2023,ispolnenie,sverka_predzashchita_CD.csv,C/1,0.000000
+C,2024,ispolnenie,sverka_predzashchita_CD.csv,C/1,-0.003588
+C,2022–2024,ispolnenie,sverka_predzashchita_CD.csv,C/1,-0.001142
+C,2022,ispolnenie,sverka_predzashchita_CD.csv,C/2,0.011718
+C,2023,ispolnenie,sverka_predzashchita_CD.csv,C/2,0.003694
+C,2024,ispolnenie,sverka_predzashchita_CD.csv,C/2,0.019375
+C,2022–2024,ispolnenie,sverka_predzashchita_CD.csv,C/2,0.007420
+C,2022,ispolnenie,sverka_predzashchita_CD.csv,C/3,-0.060801
+C,2023,ispolnenie,sverka_predzashchita_CD.csv,C/3,-0.333179
+C,2024,ispolnenie,sverka_predzashchita_CD.csv,C/3,-0.162884
+C,2022–2024,ispolnenie,sverka_predzashchita_CD.csv,C/3,-0.109878
+C,2022,ispolnenie,sverka_predzashchita_CD.csv,C/4,-0.303942
+C,2023,ispolnenie,sverka_predzashchita_CD.csv,C/4,0.031486
+C,2024,ispolnenie,sverka_predzashchita_CD.csv,C/4,-0.023578
+C,2022–2024,ispolnenie,sverka_predzashchita_CD.csv,C/4,-0.224162
+C,2022,chestnoe,a_cd_test1.csv,C (полные/по году),-0.355668
+C,2023,chestnoe,a_cd_test1.csv,C (полные/по году),-1.448597
+C,2024,chestnoe,a_cd_test1.csv,C (полные/по году),-1.014470
+C,2022–2024,chestnoe,a_cd_test1.csv,C (полные/по году),-0.525350
+D,2022,pechat,sverka_predzashchita_CD.csv,D/0,3.685528
+D,2023,pechat,sverka_predzashchita_CD.csv,D/0,3.894013
+D,2024,pechat,sverka_predzashchita_CD.csv,D/0,2.292297
+D,2022–2024,pechat,sverka_predzashchita_CD.csv,D/0,2.996058
+D,2022,utechka_okna,sverka_5a.csv,D/P1,-4.122148
+D,2023,utechka_okna,sverka_5a.csv,D/P1,-3.833436
+D,2024,utechka_okna,sverka_5a.csv,D/P1,-2.424113
+D,2022–2024,utechka_okna,sverka_5a.csv,D/P1,-3.172381
+D,2022,div_2224,sverka_predzashchita_CD.csv,D/6,-0.178830
+D,2023,div_2224,sverka_predzashchita_CD.csv,D/6,0.860449
+D,2024,div_2224,sverka_predzashchita_CD.csv,D/6,-0.214026
+D,2022–2024,div_2224,sverka_predzashchita_CD.csv,D/6,-0.040548
+D,2022,div_progrev,sverka_5a.csv,D/P6,-0.271232
+D,2023,div_progrev,sverka_5a.csv,D/P6,-0.500113
+D,2024,div_progrev,sverka_5a.csv,D/P6,0.727585
+D,2022–2024,div_progrev,sverka_5a.csv,D/P6,0.044852
+D,2022,bary_dannye,sverka_5a.csv,D/P0,0.021948
+D,2023,bary_dannye,sverka_5a.csv,D/P0,0.913037
+D,2024,bary_dannye,sverka_5a.csv,D/P0,-0.000519
+D,2022–2024,bary_dannye,sverka_5a.csv,D/P0,0.130152
+D,2022,bary_dannye,sverka_5a.csv,D/E5,0.102361
+D,2023,bary_dannye,sverka_5a.csv,D/E5,0.267115
+D,2024,bary_dannye,sverka_5a.csv,D/E5,0.223648
+D,2022–2024,bary_dannye,sverka_5a.csv,D/E5,0.200678
+D,2022,bary_dannye,sverka_predzashchita_CD.csv,D/5б,0.284640
+D,2023,bary_dannye,sverka_predzashchita_CD.csv,D/5б,-0.562619
+D,2024,bary_dannye,sverka_predzashchita_CD.csv,D/5б,-0.149423
+D,2022–2024,bary_dannye,sverka_predzashchita_CD.csv,D/5б,0.145141
+D,2022,ispolnenie,sverka_5a.csv,D/P2,0.000000
+D,2023,ispolnenie,sverka_5a.csv,D/P2,0.000000
+D,2024,ispolnenie,sverka_5a.csv,D/P2,0.000000
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P2,0.000000
+D,2022,ispolnenie,sverka_5a.csv,D/P3,-0.189099
+D,2023,ispolnenie,sverka_5a.csv,D/P3,-0.219886
+D,2024,ispolnenie,sverka_5a.csv,D/P3,0.080619
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P3,0.010238
+D,2022,ispolnenie,sverka_5a.csv,D/P4,-0.351551
+D,2023,ispolnenie,sverka_5a.csv,D/P4,-0.663076
+D,2024,ispolnenie,sverka_5a.csv,D/P4,-1.776982
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P4,-0.957214
+D,2022,ispolnenie,sverka_5a.csv,D/P5,0.000000
+D,2023,ispolnenie,sverka_5a.csv,D/P5,0.000000
+D,2024,ispolnenie,sverka_5a.csv,D/P5,0.000000
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P5,0.000000
+D,2022,ispolnenie,sverka_5a.csv,D/P7,0.694721
+D,2023,ispolnenie,sverka_5a.csv,D/P7,0.061770
+D,2024,ispolnenie,sverka_5a.csv,D/P7,-0.165251
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P7,0.189975
+D,2022,ispolnenie,sverka_5a.csv,D/P8,0.325778
+D,2023,ispolnenie,sverka_5a.csv,D/P8,-0.604393
+D,2024,ispolnenie,sverka_5a.csv,D/P8,-0.065175
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P8,-0.047983
+D,2022,ispolnenie,sverka_5a.csv,D/P9,0.000000
+D,2023,ispolnenie,sverka_5a.csv,D/P9,0.000000
+D,2024,ispolnenie,sverka_5a.csv,D/P9,0.000000
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P9,0.000000
+D,2022,ispolnenie,sverka_5a.csv,D/P10,0.148166
+D,2023,ispolnenie,sverka_5a.csv,D/P10,0.060764
+D,2024,ispolnenie,sverka_5a.csv,D/P10,-0.379261
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P10,0.029696
+D,2022,ispolnenie,sverka_5a.csv,D/P11,-1.015447
+D,2023,ispolnenie,sverka_5a.csv,D/P11,-0.556455
+D,2024,ispolnenie,sverka_5a.csv,D/P11,0.847210
+D,2022–2024,ispolnenie,sverka_5a.csv,D/P11,-0.306706
+D,2022,ispolnenie,sverka_predzashchita_CD.csv,D/1,-0.000523
+D,2023,ispolnenie,sverka_predzashchita_CD.csv,D/1,0.000000
+D,2024,ispolnenie,sverka_predzashchita_CD.csv,D/1,-0.004909
+D,2022–2024,ispolnenie,sverka_predzashchita_CD.csv,D/1,-0.001926
+D,2022,ispolnenie,sverka_predzashchita_CD.csv,D/2,0.012632
+D,2023,ispolnenie,sverka_predzashchita_CD.csv,D/2,0.015991
+D,2024,ispolnenie,sverka_predzashchita_CD.csv,D/2,0.018472
+D,2022–2024,ispolnenie,sverka_predzashchita_CD.csv,D/2,0.012479
+D,2022,ispolnenie,sverka_predzashchita_CD.csv,D/3,-0.043628
+D,2023,ispolnenie,sverka_predzashchita_CD.csv,D/3,-0.112329
+D,2024,ispolnenie,sverka_predzashchita_CD.csv,D/3,-0.063582
+D,2022–2024,ispolnenie,sverka_predzashchita_CD.csv,D/3,-0.058790
+D,2022,ispolnenie,sverka_predzashchita_CD.csv,D/4,0.000000
+D,2023,ispolnenie,sverka_predzashchita_CD.csv,D/4,0.000000
+D,2024,ispolnenie,sverka_predzashchita_CD.csv,D/4,0.000000
+D,2022–2024,ispolnenie,sverka_predzashchita_CD.csv,D/4,0.000000
+D,2022,chestnoe,a_cd_test1.csv,D (полные/по году),-0.896683
+D,2023,chestnoe,a_cd_test1.csv,D (полные/по году),-0.979169
+D,2024,chestnoe,a_cd_test1.csv,D (полные/по году),-1.053409
+D,2022–2024,chestnoe,a_cd_test1.csv,D (полные/по году),-0.826280
