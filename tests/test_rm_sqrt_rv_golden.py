@@ -1,6 +1,7 @@
 """E1в: старые пути ATR/pivot/vwap не меняются ни на байт. Golden снят ДО правки (sweep_post без sqrt_rv).
 
 S1–S6 × {база, узел RM}, 3 тикера, позиции до 2019-01-01 (2018 в окне) + PnL pnl(): sha256 байтов.
+Пересъём 29.10 (Д6): после #370 (дивиденды в PnL) старый golden устарел — он в tests/staryj_golden_2026-10-29_div/ (sha256, причина).
 Запуск: FASTBT_MAIN=$PWD pytest tests/test_rm_sqrt_rv_golden.py   (пересъём golden: python3 -m tests.test_rm_sqrt_rv_golden --snyat)
 """
 import hashlib

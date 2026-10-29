@@ -64,8 +64,6 @@ def test_align_f_den_bez_sigma_nan_bez_podstanovki():     # тикер без б
     assert np.isnan(v[list(_rv().index).index(pd.Timestamp("2022-03-24"))]) and np.isfinite(v).sum() == len(v) - 1
 
 
-@pytest.mark.xfail(strict=True, reason="ДЕФЕКТ Д4-1: RV сокращённой сессии 24.03 (часть баров) входит в окно как полный день и занижает "
-                   "σ̂. Правка: день с числом баров < доли (напр. 0,5) от медианы полного — NaN в окне rv (отдельный лист)")
 def test_sokrashchennaya_sessiya_ne_zanizhaet_sigma():
     full = [f"{h:02d}:{m:02d}" for h in range(10, 18) for m in (0, 10, 20, 30, 40, 50)]
     rng = np.random.default_rng(1)
@@ -76,8 +74,10 @@ def test_sokrashchennaya_sessiya_ne_zanizhaet_sigma():
     short = bars10("2022-03-24", full[:4], [100, 100.2, 100.1, 100.3])        # 4 бара из 48
     rv = sigma_real.rv_1850(pd.concat(bars + [short]))
     base = sigma_real.rv_1850(pd.concat(bars))
-    ref = math.sqrt(base.loc[:"2022-03-23"].mean())                          # σ̂ по полным дням до сокращённой сессии
-    assert sigma_real.sigma_rv(rv, 5).loc["2022-03-24"] >= 0.97 * ref
+    assert pd.Timestamp("2022-03-24") not in rv.index                        # Д5-1: сокращённый день — как дыра, без подстановки (Д4)
+    s = sigma_real.sigma_rv(rv, 5)
+    assert s.loc["2022-03-25"] == pytest.approx(math.sqrt(base.iloc[-5:].mean()))     # окно по 5 оставшимся полным дням
+    assert s.loc["2022-03-25"] >= 0.97 * math.sqrt(base.loc[:"2022-03-23"].mean())
 
 
 # --- (2) сборщик дневки: нет бара 18:40 до 31.03, сокращённая сессия ---

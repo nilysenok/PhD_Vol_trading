@@ -70,6 +70,7 @@ def test_no_forecast_files_opened_at_runtime(monkeypatch):
     """Ж-047 п. 1: fabrika("S2") + одна оценка не открывают vpred_aligned.parquet и прочие прогнозные файлы."""
     from fastbt import data, etap1
     data.vpred_df.cache_clear()
+    data.load_ticker.cache_clear()
     _guard(monkeypatch)
     ev, chk = etap1.fabrika("S2")
     assert np.isfinite(ev({"k_s": 2.0, "tau": 5}, "train")["sharpe"]) and chk({}) is True
@@ -79,6 +80,7 @@ def test_guard_catches_vpred_load(monkeypatch):
     """Мутация: прежний путь SkEvaluator (load_ticker с align_sigma) открывает vpred — охрана обязана упасть."""
     from fastbt import data, etap1
     data.vpred_df.cache_clear()
+    data.load_ticker.cache_clear()              # Р-6: lru_cache тикеров от прежних тестов процесса прятал открытие vpred → «DID NOT RAISE»
     _guard(monkeypatch)
     monkeypatch.setattr(etap1, "load_ticker_nf", data.load_ticker)
     with pytest.raises(AssertionError, match="прогнозный"):

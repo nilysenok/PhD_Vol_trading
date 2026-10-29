@@ -25,6 +25,7 @@ class TInput:
     tick: float
     a: int                          # окно строк [a; b)
     b: int
+    dates: object = None            # даты строк 0..b (Д5-2: заявка не переживает остановку торгов); None — правило не проверяется
 
 
 class TEvaluator:
@@ -39,7 +40,8 @@ class TEvaluator:
         days = [_one_bar(float(c)) for c in x.close[:n]] if dnevnoy else list(x.days[:n])
         p = Params(k=None, b=stop_b, tau=tau, tick=x.tick, stop_touch=True, reentry=False,
                    check="zakrytie" if dnevnoy else "bary", comm=self.comm)
-        return run_e1(t, days, sig, x.sigma[:n], p, close=x.close[:n], w=w, win=(x.a, x.b)), acc
+        return run_e1(t, days, sig, x.sigma[:n], p, close=x.close[:n], w=w, win=(x.a, x.b),
+                      dates=None if x.dates is None else x.dates[:n]), acc
 
     def rows(self, events_by_t: dict, tau: int, porog: float, stop_b=None, dnevnoy: bool = False, lag: int = 1):
         """(df портфеля, ленты E1Rows, принятые события по тикерам). Нет событий — нулевая лента."""
