@@ -44,7 +44,8 @@ class IstochnikiV6:
     cbr: pd.DataFrame | None = None
     div: pd.DataFrame | None = None
     div_verified: bool = False
-    rel_progrev: bool = False      # дни сетки до первого дня td_rel (нет 10-минуток) — NaN, а не отказ (istochniki_v6 ставит True)
+    sha: str = ""                  # Д5: хэш всех рядов источников; входит в ключ точки (istochniki_v6.sha_ryadov)
+    rel_progrev: bool = True     # дни сетки до первого дня td_rel (нет 10-минуток) — NaN, а не отказ (istochniki_v6 ставит True)
 
 
 def razdelit(sid: str, pt: dict) -> tuple[dict, dict]:
@@ -181,7 +182,7 @@ class EvaluatorV6(EvaluatorV5):
         for k in FILTR6:
             if k in self.v6:
                 self._filtr6(r.filtr, k, self.v6[k], t)
-        self._fkey = fkey(r.filtr, self.v6)
+        self._fkey = fkey(r.filtr, self.v6) + ((("ist", self.ist.sha),) if self.v6 and self.ist.sha else ())
         nov = {k: v for k, v in r.nov.items() if v != NOVYE[k]}
         return EvaluatorV2.evaluate_v2(self, {**r.pt4, **r.sp, **nov}, period)
 

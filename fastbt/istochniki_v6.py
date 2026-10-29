@@ -12,6 +12,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -61,6 +62,15 @@ class Fajly:
             if p.exists() and len(b := v18.read_bars(p, self.end)):
                 out[s] = b
         return out, table
+
+    def ryady(self, tikery):
+        """Все входные ряды источников [(имя, DataFrame | Series | None)] для хэша: бары, индексы, факторы, Brent, close, календарь."""
+        names = {n for rows in rels.sektor_pit(ROOT / rels.SEKTORY_CSV).values() for _, n in rows if n}
+        out = [(f"akcii:{t}", self.akcii(t)) for t in tikery] + [(f"close:{t}", self.zakrytie(t)) for t in tikery]
+        out += [(f"indeks:{n}", self.indeks(n)) for n in sorted(names | {"imoex", "rvi", "usdrub"})]
+        bars, table = self.brent()
+        out += [(f"brent:{k}", b) for k, b in sorted(bars.items())] + [("brent_tablica", table)]
+        return out + list(zip(("cbr", "div"), self.kalendar()))
 
     def kalendar(self) -> tuple:
         return sobytiya_e1.load_cbr(ROOT / sobytiya_e1.CBR_CSV), sobytiya_e1.load_div(ROOT / sobytiya_e1.DIV_CSV)
@@ -151,8 +161,22 @@ def konec(period: str) -> pd.Timestamp:
     загрузчики ≥ 2022 (wf после снятия замка) не подключены — NotImplementedError, молчаливой обрезки нет."""
     period_v2.proverit_chtenie(period, otmetka=period_v2.OTMETKA)
     if period_v2.PERIODY[period].konec >= zona.end():
-        raise NotImplementedError(f"период {period!r}: чтение до {period_v2.PERIODY[period].konec.date()} загрузчиками v6 не подключено")
+        raise NotImplementedError(f"период {period!r}: файлы баров лежат по тем же путям, но загрузчики (zona.end(), e1_sektor.END, "
+                                  f"daily_1850) режут чтение на {zona.end().date()}; расширять границы — отдельное решение, не здесь")
     return zona.end()
+
+
+def sha_ryadov(f: Fajly, tikery) -> str:
+    """Д5: sha256 всех рядов источников (значения, индексы, имена колонок; нет ряда — отметка «net»). Подмена значения меняет хэш."""
+    h = hashlib.sha256()
+    for name, x in f.ryady(list(tikery)):
+        h.update(name.encode())
+        if x is None:
+            h.update(b"net")
+        else:
+            h.update(pd.util.hash_pandas_object(x, index=True).to_numpy().tobytes())
+            h.update(str(list(x.columns) if hasattr(x, "columns") else [x.name]).encode())
+    return h.hexdigest()
 
 
 def zagruzit(period: str, tikery, main: Path | None = None, fajly: Fajly | None = None) -> IstochnikiV6:
@@ -160,4 +184,5 @@ def zagruzit(period: str, tikery, main: Path | None = None, fajly: Fajly | None 
     f = fajly or Fajly(konec(period), main)
     sbor = _Sbor(f, tikery)
     cbr, div = f.kalendar()
-    return IstochnikiV6(dannye=sbor.dannye, rel=sbor.rel, vn=sbor.vn, cbr=cbr, div=div, div_verified=False, rel_progrev=True)
+    return IstochnikiV6(dannye=sbor.dannye, rel=sbor.rel, vn=sbor.vn, cbr=cbr, div=div, div_verified=False, rel_progrev=True,
+                        sha=sha_ryadov(f, tikery))

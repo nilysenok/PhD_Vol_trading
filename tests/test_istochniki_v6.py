@@ -39,6 +39,9 @@ class Fake(iv.Fajly):
     def zakrytie(self, t):
         return v18.close_1850(self.a[t], t)
 
+    def brent(self):
+        return {}, pd.DataFrame({"secid": [], "lsttrade": [], "roll": []})
+
     def kalendar(self):
         return pd.DataFrame({"date": [], "known_from": []}), pd.DataFrame()
 
@@ -163,11 +166,52 @@ def test_progon_sobol_podayot_istochniki_tolko_ocenshchiku_v6(monkeypatch):
     assert kw["ist"] == ("ist", "train4", ("A", "B")) and kw["fdr"] == "t0d"
 
 
+def _sha(a=None, i=None):
+    f = Fake(a or {"AAA": _bars(1)}, i or {"imoex": _bars(3)})
+    return iv.sha_ryadov(f, ["AAA"])
+
+
+def test_sha_menyaetsya_pri_podmene_lyubogo_ryada():
+    base = _sha()
+    assert base == _sha() and len(base) == 64
+    x = _bars(1)
+    x.loc[100, "close"] *= 1.0001
+    assert _sha({"AAA": x}) != base                                    # бары тикера
+    y = _bars(3)
+    y.loc[7, "high"] += 1e-6
+    assert _sha(i={"imoex": y}) != base                                # IMOEX
+    assert _sha(i={"imoex": _bars(3), "rvi": _bars(5)}) != base        # появился ряд фактора
+
+
+def test_mutaciya_sha_postoyannyj_lovitsya(monkeypatch):
+    monkeypatch.setattr(iv, "sha_ryadov", lambda f, t: "0" * 64)
+    x = _bars(1)
+    x.loc[100, "close"] *= 1.0001
+    assert iv.sha_ryadov(None, None) == iv.sha_ryadov(None, None)
+    with pytest.raises(AssertionError):                                # мутация «ряд подменён, sha тот же» — проверка выше упала бы
+        assert _sha({"AAA": x}) != _sha()
+
+
+def test_sha_v_klyuche_tochki(monkeypatch):
+    from fastbt.eval_v6 import EvaluatorV6, IstochnikiV6
+    from fastbt.etap1_eval_v2 import EvaluatorV2
+    keys = []
+    monkeypatch.setattr(EvaluatorV2, "evaluate_v2", lambda self, pt, period: keys.append(self._fkey))
+    monkeypatch.setattr(EvaluatorV6, "__init__", lambda self, sid, ist: self.__dict__.update(sid=sid, ist=ist, inp=SimpleNamespace(sigma={})))
+    monkeypatch.setattr("fastbt.eval_v6.razdelit", lambda sid, pt: ({}, {"rezhim": "imoex_ma200"}))
+    monkeypatch.setattr("fastbt.eval_v6.razbor", lambda *a: SimpleNamespace(filtr={}, nov={}, pt4={}, sp={}, ext={}))
+    monkeypatch.setattr("fastbt.eval_v6.osi6.primenit", lambda *a: None)
+    monkeypatch.setattr("fastbt.eval_v6.tip", lambda sid: "kontr")
+    for sha in ("aa", "bb"):
+        EvaluatorV6.evaluate_v2(EvaluatorV6("S1", IstochnikiV6(sha=sha)), {}, "train4")
+    assert keys[0] != keys[1] and ("ist", "aa") in keys[0]
+
+
 def test_konec_perioda_i_zamok(tmp_path, monkeypatch):
     assert iv.konec("train4") == pd.Timestamp("2022-01-01") == iv.konec("v2")      # сетка td оценщика идёт до конца dev-ряда
     monkeypatch.setattr(period_v2, "OTMETKA", tmp_path / "net.json")
     with pytest.raises(period_v2.ZamokVladeltsa):
         iv.konec("wf")
     (tmp_path / "net.json").write_text("{}")
-    with pytest.raises(NotImplementedError, match="не подключено"):
+    with pytest.raises(NotImplementedError, match="режут чтение"):
         iv.konec("wf")                               # замок снят, но чтение ≥ 2022 молча не обрезается
