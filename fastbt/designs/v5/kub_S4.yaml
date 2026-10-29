@@ -52,4 +52,4 @@ faza3: {consec: [1, 2], min_hold: [0, 5], cooldown: [0, 5, 10], min_sily: [0.0, 
 msp: {uroven_razmera: [0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5],
       rho: [0.002, 0.003, 0.005, 0.0075, 0.01], L: [1, 1.5, 2, 3, 4], sigma_cel: [0.08, 0.1, 0.15, 0.2], okno: [21, 63]}
 yakorya_progon: {sigma: rv22, proverka: bars5m, storona: obe, rezhim: net, ed_lim: sigma, zhizn: den, lestnica: net, gap: vhod,
-                 t_vyhod: close, k_x: net, filtr: net, tejk_signal: net, q_sily: 0.0}
+                 t_vyhod: open2, k_x: net, filtr: net, tejk_signal: net, q_sily: 0.0}

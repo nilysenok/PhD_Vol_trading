@@ -35,7 +35,11 @@ def test_kolonki_v1_imeyut_2016_2019_i_itog():
 def test_fajl_v1_shapka_sovpadaet_s_kolonkami():
     with open(ROOT / "docs/otbor/reestr_otbora_A_v1.csv", encoding="utf-8") as f:
         rows = [l for l in f if not l.startswith("#")]
-    assert next(csv.reader(rows[:1])) == R.kolonki("train4") and len(rows) == 1
+    # 29.10 (Р-6): реестр только дополняется (otbor_statistika п. 4) — после e8d00284/f149d752 в нём строки-указатели
+    # на файлы проходов (status=ukazatel); тест требовал len == 1 (пустой реестр) и закреплял состояние до них.
+    kol = R.kolonki("train4")
+    assert next(csv.reader(rows[:1])) == kol
+    assert all(r[kol.index("status")] == "ukazatel" for r in csv.reader(rows[1:]))
 
 
 def test_zapis_chislo_strok_ravno_chislu_ocenennyh(tmp_path):

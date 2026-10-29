@@ -36,9 +36,12 @@ def cena_vhoda(days: list, d: int, tochka: dict) -> float:
 
 
 def cena_vyhoda(days: list, x: int, tochka: dict, prichina: str) -> float:
-    """Цена выхода по сигналу / τ с решением на close x: open бара 10:00 дня x+1."""
+    """Цена выхода с решением на close x: по сигналу — open бара 10:00 дня x+1; по τ (x — день истечения срока) —
+    close дня x (Ж-137 п. 6: срок известен заранее, K-wf5b)."""
     if prichina not in PRICHINY:
         raise ValueError(f"причина выхода {prichina!r}: допустимо {PRICHINY}")
+    if prichina in ("tau", "vremya"):
+        return float(days[x].c[-1])
     return _o10(days, x + 1)
 
 
@@ -57,7 +60,7 @@ def run_dlinnaya(p, inp, obj: dict, par: dict, comm_pct: float, end, spravka: bo
     n = int(p.dates.searchsorted(end, side="right"))
     d, rf = p.dates[:n], sem_e._rf_cal(p.dates[:n], inp.rate)
     sig = sem_e._sig_e(p, inp, obj, par.get("q", 0.0))[:n]
-    r = run(p.ticker, p.days[:n], sig, inp.sigma[obj["sigma"]][p.ticker][:n], pr, rf_cal=rf)
+    r = run(p.ticker, p.days[:n], sig, inp.sigma[obj["sigma"]][p.ticker][:n], pr, rf_cal=rf, dates=d)
     return r, n, d, rf
 
 

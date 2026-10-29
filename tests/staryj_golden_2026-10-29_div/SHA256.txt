@@ -1,0 +1,9 @@
+# Старый golden «E1в: старые пути RM» (tests/test_rm_sqrt_rv_golden.json), снят 27.10 19:20 (коммит baf95378) ДО дивидендов в PnL.
+# Причина архива (Д6, pravki.md п. 11): PR #370 (Ж-057 п. 1, Ж-059, Ж-060; слит 28.10 09:47) ввёл дивиденды в PnL, сигналы и стопы —
+# позиции и PnL S1–S6 на 2018 изменились сознательно; тест красный с 28.10 (бисект: d7bb98ea зелёный, 9bec9184 = #370 красный).
+# #678 (прямая корректировка) golden НЕ менял: sha256 снимка S1–S3 до и после #678 и на голове совпадают.
+# Папка без префикса arhiv_: хук замков запрещает создание файлов в arhiv_*/ (zamki.json, zamorozheno).
+# Новый golden — tests/test_rm_sqrt_rv_golden.json, снят 29.10 на коде e6e9221f (его sha256 ниже).
+ee163431e9db03041de1c2edddd07a47fa584e6780eca94bb0541a99815f6017  test_rm_sqrt_rv_golden_do_div370.json
+# новый (tests/test_rm_sqrt_rv_golden.json):
+72e60fc98f5815f46f55b717b7d3d23ab704e1656a017f1a32ae369a41ec7f6a

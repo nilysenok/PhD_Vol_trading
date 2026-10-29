@@ -8,7 +8,7 @@ v: 4
 format: progon-kub
 setka: v6
 data: 2026-10-30
-baza: {setka: v5, kub_sha: b67130cffc7d17b85477ec56657fe2ed38b3fa9c5ef7cc8fbc97f6ee0d4d69a5}
+baza: {setka: v5, kub_sha: ea66df6d2380e92ea19357517423584672f292e2067b5de2c37de1f9931b2e2d}
 sid: S3
 tip: trend
 periody: [train4, v2]
@@ -52,7 +52,7 @@ kontekst:
 
 ispolnenie:
   sigma_ist:      {setka: [rv22, rv5, ewma094, rv66], vykl: rv22, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/designs/progon/kub_S1.yaml:19", smysl: "ставить уровни по быстрой или медленной волатильности"}
-  t_vyhod:        {setka: [close, 1500, 1700, open2], vykl: close, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:43", smysl: "выходить до вечернего аукциона или на открытии"}
+  t_vyhod:        {setka: [open2, close, 1500, 1700], vykl: open2, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:43", smysl: "выходить до вечернего аукциона или на открытии"}
   vhod_tip:       {setka: [stop_zayavka, podtverzhdenie], vykl: stop_zayavka, p_vykl: 0.5, zhdet: [V6-2, V6-12], otkuda: "fastbt/exec_e_types.py:46", smysl: "пробой брать стоп-заявкой или после подтверждения закрытием"}
   time_decay:     {setka: [net, da], vykl: net, p_vykl: 0.5, zhdet: [V6-9, V6-12], otkuda: "P-движок v4 engine.py:113", smysl: "если возврат не пришёл за половину срока — забираем половину цели"}
   pauza_porog:    {setka: [net, -0.5, 0, 0.5], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-12], otkuda: "fastbt/e1_pauza.py:28", smysl: "стратегия, потерявшая Шарп за квартал, не открывает новых сделок"}

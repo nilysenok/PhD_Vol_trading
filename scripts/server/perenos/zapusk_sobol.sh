@@ -6,7 +6,7 @@
 #   ./zapusk_sobol.sh status <период>   — строки состояния и жив ли процесс
 # Отказ без отметки proverka/OK от ЭТОГО кода, данных, эталона и режима numpy (./proverka_yakor.sh), при изменённом коде, при живом
 # прогоне. Режим numpy — переменная PERENOS_REZHIM=1|2 (выбор владельца после ./proverka_yakor.sh --rezhim2); NUMBA_* — как на Маке.
-# Процессов — ядра − 4 (Ж-131 п. 4); PERENOS_PROCS — явно. Если fastbt.progon_server умеет куб v5 (в --help есть --k3; ветка
+# Процессов — 120, не больше ядра − 4 (Ж-137 п. 2; память проверяет pamyat.sh); PERENOS_PROCS — явно. Если fastbt.progon_server умеет куб v5 (в --help есть --k3; ветка
 # progon-server-v5): проходы PERENOS_PROHODY (умолчание «s1 s2 k3») подряд, каждый — `--kub v5 --period <период> --seed 1|2 | --k3
 # [--n1 PERENOS_N1] --out ledger/<период>_<проход> --prodolzhit`; PERENOS_STRATEGII=S1,S2 — подмножество. Иначе — замена
 # fastbt.progon_sobol через scripts/server/sobol_zapusk.py (только train4, куб progon, ≤ 10 процессов; локально PERENOS_TOCHEK=50).
@@ -24,13 +24,28 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
     # CLI progon_server под куб v5 (Л10, #608): --kub v5 --period train4|v2 --seed 1|2 | --k3 [--n1]; проходы подряд, свой каталог ledger
     # на проход: ledger/<период>_<s1|s2|k3>/<Sk>/. PERENOS_PROHODY="s1 s2 k3" (умолчание), PERENOS_N1 — как --n1, PERENOS_STRATEGII.
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
-    for pr in ${PERENOS_PROHODY:-s1 s2 k3}; do
-      # N1 по умолчанию 200 000 на стратегию (Ж-137 п. 1, отменяет 262 144 из volna_17 п. 1); k3 — полная решётка, без --n1
-      case "$pr" in s1) a="--seed 1 --n1 ${PERENOS_N1:-200000}" ;; s2) a="--seed 2 --n1 ${PERENOS_N1:-200000}" ;; k3) a="--k3" ;;
-        *) fail "проход $pr: s1 | s2 | k3" ;; esac
-      say "progon_server: v5 $per $pr ($a), ledger/${per}_$pr/<Sk>/, процессов $(processov "$per")"
-      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub v5 --period "$per" $a \
-        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/${per}_$pr" --procs "$(processov "$per")" --prodolzhit $sl)
+    # spravka (Ж-137 п. 6, решение дирижёра 29.10 19:10): те же точки, что s1, но выход по close дня (--rol spravka --t-vyhod close);
+    # ledger 2.2 с rol = spravka в ledger/<период>_spravka_close/<Sk>/, в N не входит. Идёт ПОСЛЕ полного прохода той же сетки.
+    # PERENOS_KUB — куб (умолчание v5; v6 — см. ниже и раздел «v6» docs/otchety/2026-10-29_server_perenos.md).
+    # v6 (Ж-137 п. 2; С-v6): PERENOS_KUB=v6 — сначала Моррис (ledger/<период>_morris/<Sk>/zamorozka.yaml), потом проходы с --zamorozka
+    # (кроме k3: контроль на решётке v5, новые оси «выкл.»); N1 — из куба (200 000), PERENOS_N1 — явно; ledger 2.2 (setka v6, rol).
+    # PERENOS_MORRIS_R — траекторий Морриса (умолчание ~5 000 точек на Sk; 1 — малая проверка). Моррис упал — полный проход не начинается.
+    kub=${PERENOS_KUB:-v5}; zm=""; n1v="--n1 ${PERENOS_N1:-200000}"      # Ж-137 п. 1: 200 000 на стратегию (262 144 отменены)
+    if [ "$kub" = v6 ]; then
+      mo="$P/ledger/${per}_morris"; zm="--zamorozka $mo"; n1v=${PERENOS_N1:+--n1 $PERENOS_N1}
+      say "progon_morris_v6: $per, ledger/${per}_morris/<Sk>/zamorozka.yaml, процессов $(processov "$per")"
+      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_morris_v6 --kub v6 --period "$per" --out "$mo" --procs "$(processov "$per")" --prodolzhit \
+        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} ${PERENOS_MORRIS_R:+--r "$PERENOS_MORRIS_R"}) || fail "Моррис v6 упал — заморозки нет, полный проход не начинаю"
+    fi
+    for pr in ${PERENOS_PROHODY:-s1 s2 k3 spravka}; do
+      # N1 по умолчанию 200 000 на стратегию (Ж-137 п. 1); k3 — полная решётка, без --n1
+      od="${per}_$pr"
+      case "$pr" in s1) a="--seed 1 $n1v $zm" ;; s2) a="--seed 2 $n1v $zm" ;; k3) a="--k3" ;;
+        spravka) a="--seed 1 $n1v $zm --rol spravka --t-vyhod close"; od="${per}_spravka_close" ;;
+        *) fail "проход $pr: s1 | s2 | k3 | spravka" ;; esac
+      say "progon_server: $kub $per $pr ($a), ledger/$od/<Sk>/, процессов $(processov "$per")"
+      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub "$kub" --period "$per" $a \
+        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/$od" --procs "$(processov "$per")" --prodolzhit $sl)
     done
   else
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"

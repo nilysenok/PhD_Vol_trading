@@ -42,10 +42,13 @@ def test_vhod_open_1000_d_plus_1_i_vyhod_open_x_plus_1():
     assert tr.entry_px != pytest.approx(days[1].c[-1]) and tr.exit_px != pytest.approx(days[4].c[-1])
 
 
-def test_tau_vyhod_open_x_plus_1():
-    days, tr = _trade(dict(q=0.0, tau=1))
-    assert tr.reason == "vremya" and tr.exit_day == tr.entry_day + 2
-    assert tr.exit_px == pytest.approx(ses.cena_vyhoda(days, tr.entry_day + 1, {}, "tau"))
+def test_tau_vyhod_close_dnya_istecheniya():
+    # К-wf5b (Ж-137 п. 6): срок τ известен заранее — выход по close дня истечения, а не open x+1
+    p, inp, end = _inp()
+    r, *_ = ses.run_dlinnaya(p, inp, OBJ, dict(q=0.0, tau=1), 0.0, end)
+    days, tr = p.days, r.trades[0]            # сигнал держится: после выхода по сроку идёт новый вход
+    assert tr.reason == "vremya" and tr.exit_day == tr.entry_day + 1
+    assert tr.exit_px == pytest.approx(ses.cena_vyhoda(days, tr.entry_day + 1, {}, "tau")) == pytest.approx(days[tr.exit_day].c[-1])
 
 
 def test_mutatsiya_close_vmesto_open_lovitsya(monkeypatch):

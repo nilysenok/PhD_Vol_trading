@@ -62,6 +62,20 @@ def rodnoy_ok(sid: str, sp: dict) -> bool:
     return {"S2": sp.get("ma_tip") == "sma", "S6": True}.get(sid, False)
 
 
+def rang_starta(sig, rg):
+    """Ранг дня старта ТЕКУЩЕГО сигнала на каждом дне, пока сигнал активен (тот же знак подряд); конец сигнала и смена знака
+    обнуляют перенос. Ранг дня старта считался по данным ≤ дня старта; позже не берётся (Р-4, умолчание дирижёра 29.10)."""
+    sig, rg = np.asarray(sig, float), np.asarray(rg, float)
+    out, cur, prev = np.full(len(sig), np.nan), np.nan, 0.0
+    for d in range(len(sig)):
+        if sig[d] == 0:
+            cur = np.nan
+        elif sig[d] != prev:
+            cur = rg[d]
+        out[d], prev = cur, sig[d]
+    return out
+
+
 def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, **kw):
     """etap1_run.run_e1; при rang (тейк/безубыток от силы) — копия его сборки строк с rang в exec_e.run (run_e1 rang не
     принимает, etap1_run.py вне владения Л9; равенство копии — tests/test_eval_v5.py::test_run_rows_rang_kopiya_run_e1)."""
@@ -70,7 +84,7 @@ def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, **kw):
     n = len(days)
     a, b = (0, n) if win is None else win
     w = np.ones(n) if w is None else np.asarray(w, float)
-    xk = {k: v for k, v in kw.items() if k in ("ed", "tejk_M", "urovni") and v is not None}
+    xk = {k: v for k, v in kw.items() if k in ("ed", "tejk_M", "urovni", "dates") and v is not None}
     res = exec_e.run(t, days, sig, sg, p, close=kw.get("close"), div=kw.get("div"), nalog=kw.get("nalog"), rang=rang, **xk)
     ix = [i for i, d in enumerate(days) if not d.pusto]
     wr, sides, cnt, sh = np.zeros(n), np.zeros(b - a), np.zeros(b - a), np.zeros(n)
@@ -203,11 +217,13 @@ class EvaluatorV5(EvaluatorV2):
             p = replace(self._params(r.pt4, t, 5.0, False, r.nov, {}), **r.ext)
             tm = None if r.nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, r.sp, t, s0, b, True)
             uv = {} if r.nov["vhod_tip"] == "podtverzhdenie" else {"urovni": self._urovni(t, s0, b, al)}
-            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=self._ed(t, "sigma", sg, dates, s0, b),
+            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], dates=dates, ed=self._ed(t, "sigma", sg, dates, s0, b),
                       tejk_M=tm, **self.fdr_kw(), **uv)
             rang = rg if (p.a_rang is not None or p.b0_c is not None) else None
+            # тренд: d_sig сделки — любой вечер постановки пары, не день старта → вес по рангу дня старта текущего сигнала
+            rw = rang_starta(info[t][4], rg) if rg is not None and r.nov["vhod_tip"] == "stop_zayavka" else rg
             self._days5[ti] = days
-            out.append((ti, run_rows(t, days, sig, sg, p, w=self._ves(sg, rg), rang=rang, **kw), a, b))
+            out.append((ti, run_rows(t, days, sig, sg, p, w=self._ves(sg, rw), rang=rang, **kw), a, b))
         return out
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):

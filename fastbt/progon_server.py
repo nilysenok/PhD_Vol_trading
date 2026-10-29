@@ -4,6 +4,7 @@ prezhniy (macOS): fork без предзагрузки. Стратегия — �
 каждые CHEKPOINT точек; сбой стратегии отменяет только её задачи. --prodolzhit: отказ при чужом kod/vhody/кубе/seed/периоде/k3.
 Куб v5 (Л10): точки, выброс canon_v5, якоря, k3 — код драйвера (ps.tochki, ps.rezhim, ps.manifest), не копия. Запуск:
 python3 -m fastbt.progon_server --kub v5 --period train4|v2 --seed 1|2 [--k3] [--n1 ..] --out <каталог> [--strategii S1,..]
+Куб v6 (С-v6, Ж-137): то же с --kub v6 --zamorozka <каталог Морриса> (кроме --k3), ledger 2.2 (setka = v6, rol), см. fastbt/progon_v6.py.
 python3 -m fastbt.progon_server --kub <kub_Sk.yaml>.. --period train4 [--seed <sobol.seed>] --out <каталог> (designs/progon)."""
 import argparse
 import concurrent.futures as cf
@@ -20,11 +21,11 @@ from pathlib import Path
 
 import yaml
 
-from fastbt import ledger_v2 as lm
+from fastbt import canon_v6, ledger_v2 as lm
 from fastbt import progon_sobol as ps
 
 CHEKPOINT, CHP, ZAMOK = 5000, "checkpoint.json", ".zamok"
-POLYA = ("kod", "vhody", "kub_sha", "sobol_seed", "period", "setka", "k3", "sobol_klyuch")     # отпечаток: сверяется с чекпоинтом и manifest.json
+POLYA = ("kod", "vhody", "kub_sha", "sobol_seed", "period", "setka", "k3", "sobol_klyuch", "rol", "t_vyhod", "zamorozka_sha")     # отпечаток: сверяется с чекпоинтом и manifest.json
 REZHIM = "obshchie" if sys.platform.startswith("linux") else "prezhniy"
 
 
@@ -40,6 +41,7 @@ def zagruzit_kub(path, period: str, seed=None, rz=None) -> dict:
     if path.name != f"kub_{c['sid']}.yaml":
         raise SystemExit(f"{path}: файл куба обязан называться kub_{c['sid']}.yaml")
     if rz is not None:
+        c = canon_v6.load_kub(c["sid"], path.parent) if rz.setka == "v6" else c      # v6: + основа v5 (ключ "v5")
         ps.proverit_v5(c, rz)
         return c
     if period != ps.PERIOD or c.get("period") != period:
@@ -115,7 +117,8 @@ def podgotovka(kubs: dict, out: Path, prodolzhit: bool, kod_slit: bool, itog: di
             start[s] = nachalo(out / s, otp[s], prodolzhit)
             # manifest.json — до fork: Pisatel пишет его write_text без tmp, два ребёнка на первых кусках одной стратегии
             # читали полупустой файл (JSONDecodeError; test_manifest_iz_roditelya_do_fork)
-            (lm.Pisatel21(out, s, 0, mf, daty=sr.daty, poz=hasattr(sr.evr, "poz")) if v == lm.V21 else lm.Pisatel(out, s, 0, mf))
+            pis = {lm.V22: lm.Pisatel22, lm.V21: lm.Pisatel21}.get(v)
+            (pis(out, s, 0, mf, daty=sr.daty, poz=hasattr(sr.evr, "poz")) if pis else lm.Pisatel(out, s, 0, mf))
             pre[s] = sr
         except Exception as e:                                 # noqa: BLE001 — сбой стратегии не роняет остальные
             itog[s]["sboy"] = f"{type(e).__name__}: {e}"[:300]
@@ -159,24 +162,26 @@ def progon(kubs: dict, out, procs: int, n=None, prodolzhit=False, kod_slit=False
     rz — режим драйвера (R0 — designs/progon; v5 — куб Ж-127: период, seed, k3); ledger None — 2.0 для v2, иначе 2.1;
     "2.0" | "2.1" — явно (2.1 на период v2 — 20 кварталов 2015Q1…2019Q4, лист Б8)."""
     out, sids = Path(out), list(kubs)
-    v = ledger or (lm.V if rz.period == "v2" else lm.V21)
-    if v not in (lm.V, lm.V21):
-        raise SystemExit(f"ledger {v!r}: известны {lm.V}, {lm.V21}")
+    v = ledger or (lm.V22 if rz.rol else lm.V if rz.period == "v2" else lm.V21)
+    if v not in (lm.V, lm.V21, lm.V22) or bool(rz.rol) != (v == lm.V22):
+        raise SystemExit(f"ledger {v!r}: известны {lm.V}, {lm.V21}; {lm.V22} — только с --rol (и --rol — только с ним)")
     ps.proverit_ledger(rz, v)
+    if rz.setka == "v6" and (not rz.rol or v != lm.V22 or (not rz.k3 and not rz.zam)):
+        raise SystemExit("куб v6: ledger 2.2 с rol (sobol | kontrol | spravka) и заморозкой Морриса (кроме k3) — отказ")
     if procs < 1 or rezhim not in ("obshchie", "prezhniy") or len({Path(p).parent for p, _ in kubs.values()}) > 1:
         raise SystemExit("procs ≥ 1; rezhim obshchie | prezhniy; кубы — из одного каталога")
     itog = {s: dict(n=0, oshibok=0, sboy=None, posledniy_i=None, deti=set()) for s in sids}
-    staryj, zamki = (ps.fabrika, ps.KUB, ps.KUB5), []
-    ps.KUB = ps.KUB5 = Path(next(iter(kubs.values()))[0]).parent / "kub_{sid}.yaml"
+    staryj, zamki = (ps.fabrika, ps.KUB, ps.KUB5, ps.KUB6), []
+    ps.KUB = ps.KUB5 = ps.KUB6 = Path(next(iter(kubs.values()))[0]).parent / "kub_{sid}.yaml"
     try:
         pre, otp, start = podgotovka(kubs, out, prodolzhit, kod_slit, itog, zamki, rz, v)
         sb = {s: kubs[s][1]["sobol"] for s in start}                     # всего точек — как progon_sobol: prohod2 → p1
         nn = {s: (n[s] if isinstance(n, dict) else n) or int(sb[s].get("prohod2", sb[s].get("prohod1", sb[s].get("N1")))) for s in start}
         p1 = {s: int(sb[s].get("prohod1", nn[s])) for s in start}
-        if rz.setka == "v5":                                   # v5: один проход [0, N1), источник строки — как у драйвера
+        if rz.setka in ("v5", "v6"):                           # v5, v6: один проход [0, N1), источник строки — как у драйвера
             p1 = nn = n if isinstance(n, dict) else ps.n1_po_sid({s: kubs[s][1] for s in start}, str(n) if n else None, rz)
         ist = None if rz.setka == "progon" else "k3" if rz.k3 else f"sobol1_seed{2 if rz.seed == 'seed2' else 1}"
-        ps.proverit_disk(sum(max(nn[s] - start[s], 0) for s in start), out, ps.BAIT_V21 if v == lm.V21 else ps.BAIT_NA_TOCHKU)
+        ps.proverit_disk(sum(max(nn[s] - start[s], 0) for s in start), out, ps.BAIT_V21 if v in lm.SUMMY_V else ps.BAIT_NA_TOCHKU)
         ctx = dict(kubs={s: kubs[s][1] for s in start}, root=out, ist="sobol1", kod_slit=kod_slit, fast=fast, v=v, rz=rz,
                    zakryt={s: ps.zakrytye(out, s) for s in start})
         pre = pre if rezhim == "obshchie" else {}             # prezhniy: дети строят свои оценщики (путь progon_sobol)
@@ -186,33 +191,39 @@ def progon(kubs: dict, out, procs: int, n=None, prodolzhit=False, kod_slit=False
         schet(zadachi(start, nn, p1, rezhim, ist), ctx, procs, itog, pre, {s: (out / s, otp[s]) for s in start}, nn)
     finally:
         gc.unfreeze()
-        ps.fabrika, ps.KUB, ps.KUB5 = staryj
+        ps.fabrika, ps.KUB, ps.KUB5, ps.KUB6 = staryj
         [f.close() for f in zamki]
     return itog
 
 
 def kuby_iz_argv(a, ap) -> tuple:
     """({sid: (путь, куб)}, rz, n): `--kub v5` — режим и точки драйвера (ps.rezhim, ps.n1_po_sid), кубы designs/v5; иначе пути yaml."""
-    if a.kub != ["v5"]:
-        if a.k3 or a.n1:
-            ap.error("--k3/--n1 — только для --kub v5")
+    if (a.rol is None) != (a.t_vyhod is None):
+        ap.error("--rol spravka и --t-vyhod close — только вместе")
+    if a.kub not in (["v5"], ["v6"]):
+        if a.k3 or a.n1 or a.rol or a.zamorozka:
+            ap.error("--k3/--n1/--rol/--zamorozka — только для --kub v5 | v6")
         return {c["sid"]: (p, c) for p, c in ((Path(p), zagruzit_kub(p, a.period, a.seed)) for p in a.kub)}, ps.R0, None
-    sids = a.strategii.split(",")
-    if a.seed not in (None, 1, 2):
-        ap.error("--seed для v5: 1 | 2")
-    rz, _ = ps.rezhim(argparse.Namespace(kub="v5", period=a.period, seed=a.seed or 1, k3=a.k3, n1=a.n1, root=None), sids, ap)
+    sids, v = a.strategii.split(","), a.kub[0]
+    if a.seed not in (None, 1, 2) or (a.zamorozka and v != "v6"):
+        ap.error("--seed: 1 | 2; --zamorozka — только для --kub v6")
+    rz, _ = ps.rezhim(argparse.Namespace(kub=v, period=a.period, seed=a.seed or 1, k3=a.k3, n1=a.n1, root=None, zamorozka=a.zamorozka), sids, ap)
     kubs = {s: (ps.kub_put(s, rz), zagruzit_kub(ps.kub_put(s, rz), a.period, rz=rz)) for s in sids}
+    rz = rz._replace(rol=a.rol or rz.rol, t_vyhod=a.t_vyhod)         # v6: rol прохода (sobol | kontrol) или spravka
     return kubs, rz, ps.n1_po_sid({s: c for s, (_, c) in kubs.items()}, a.n1, rz)
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Соболь на сервере: общие входы через fork, чекпоинт, каталог на стратегию")
-    ap.add_argument("--kub", nargs="+", required=True, help="v5 (кубы designs/v5) или kub_<sid>.yaml (один каталог)")
+    ap.add_argument("--kub", nargs="+", required=True, help="v5 (кубы designs/v5), v6 (designs/v6, ledger 2.2) или kub_<sid>.yaml (один каталог)")
+    ap.add_argument("--zamorozka", type=Path, help="v6: каталог Морриса (<Sk>/zamorozka.yaml); всем проходам, кроме k3")
     ap.add_argument("--period", required=True, choices=["train4", "v2", "wf"])
     ap.add_argument("--seed", type=int, help="v5: 1 | 2 (sobol.seed | seed2); progon: sobol.seed вместо seed куба")
     ap.add_argument("--k3", action="store_true", help="v5: проход к3 — полная решётка раздела k3")
     ap.add_argument("--n1", help="v5: N1 вместо куба — число для всех или S1=65536,S2=65536")
     ap.add_argument("--strategii", default=",".join(ps.SIDS), help="v5: список стратегий")
+    ap.add_argument("--rol", choices=["spravka"], help="справочный проход (Ж-137 п. 6): тот же куб, ledger 2.2 с rol = spravka, вне N")
+    ap.add_argument("--t-vyhod", choices=["close"], help="с --rol spravka: выход по close дня (подменяет t_vyhod точек)")
     ap.add_argument("--ledger", choices=[lm.V, lm.V21], help="формат ledger; по умолчанию 2.0 для v2, иначе 2.1; 2.1 на v2 — отказ")
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--procs", type=int, default=procs_po_umolchaniyu(), help="по умолчанию ядра − 4")
@@ -221,7 +232,7 @@ def main(argv=None) -> int:
     ap.add_argument("--fast", action="store_true", help="быстрый слой (Ж-083) для покрытых точек")
     a = ap.parse_args(argv)
     kubs, rz, n = kuby_iz_argv(a, ap)
-    if len(kubs) != len(a.kub) and a.kub != ["v5"]:
+    if len(kubs) != len(a.kub) and a.kub not in (["v5"], ["v6"]):
         raise SystemExit("одна стратегия указана дважды")
     itog = progon(kubs, a.out, a.procs, n, a.prodolzhit, a.kod_slit, a.fast, rz=rz, ledger=a.ledger)
     for s, v in itog.items():

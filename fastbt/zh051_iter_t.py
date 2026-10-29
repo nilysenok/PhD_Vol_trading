@@ -183,7 +183,7 @@ def build_ctx() -> Ctx:
         dates = inp.meta[t]["dates"][:b + 1]
         days = inp.bars[t][:b] + [_one_bar(float(inp.close_n6[t][b]))]
         a = int(np.searchsorted(dates, np.datetime64("2018-01-01")))
-        xs[t] = TInput(days, inp.close_n6[t][:b + 1], inp.sigma[EE.YAKOR["sigma"]][t][:b + 1], inp.tick[t], a, b)
+        xs[t] = TInput(days, inp.close_n6[t][:b + 1], inp.sigma[EE.YAKOR["sigma"]][t][:b + 1], inp.tick[t], a, b, dates)
         years[t] = pd.DatetimeIndex(dates).year.to_numpy()
     return Ctx(TEvaluator(xs, ev._engine("train")[0]), years)
 
