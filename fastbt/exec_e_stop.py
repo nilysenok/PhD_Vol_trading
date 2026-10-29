@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 
 from fastbt.exec_e2 import Run2
-from fastbt.exec_e_rules import stop_hit, stop_vhod
+from fastbt.exec_e_rules import stop_vhod
 
 
 def ke_levels(up, dn, k_e, atr):
@@ -44,9 +44,7 @@ class RunStop(Run2):
         s.n_fills += 1
         s._enter(i, j, b, px, b, s.sigma[o["d_sig"]], o["d_sig"], sd)
         S, _ = Run2._levels(s, j)                   # в баре входа — только защитный стоп σ; стоп-заявка выхода активна со следующего бара
-        if S is not None and stop_hit(sd, d.o[b], d.h[b], d.l[b], S, s.p.stop_touch)[0]:
-            s._exit(i, j, b, S, s.sr)
-        else:
+        if not s._stop_vhoda(i, j, d, b, px, S):     # стоп активен с цены входа (БЛОКЕР #596)
             s._scan(i, j, d, b + 1)
 
     def _levels(s, j):

@@ -8,7 +8,7 @@ import numpy as np
 from fastbt.exec_e_parab import pb_after, pb_level, pb_start
 from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level, limit_mask, limit_px, part_allowed,
                                  part_fee, part_hit, part_level, ratchet, rodnoy_level, stop_hit, stop_level,
-                                 take_hit, take_level, tejk_level)
+                                 take_hit, take_level, tejk_level, v_bare)
 from fastbt.exec_e_types import Trade
 from fastbt.exec_e_v6 import V6, chast_pair, v5_check, v6_check, v6_on
 from fastbt.exec_e_zayavki import prodlit, reenter
@@ -44,6 +44,7 @@ class Run(V6):
         s.zak = p.check == "zakrytie"
         s.sr = "stop"
         s.last_x, s.done_re = None, -1              # V6-a: последняя закрытая сделка; день последнего повторного входа
+        s.vne = []                                  # исполнения вне [low; high] бара (инвариант _v_bare): обязан быть пуст
 
     def dir(s, i):
         """Сторона по сигналу дня i: Params.side · знак sig (side = −1 разворачивает сигнал 0/1 в шорт)."""
@@ -53,7 +54,28 @@ class Run(V6):
         return float(s.cn6[i]) if s.cn6 is not None else s.days[i].c[-1]
 
     # --- вход / выход ---
+    def _v_bare(s, i, b, px):
+        """Инвариант: цена исполнения — в [low; high] бара b дня i; нарушение — в s.vne (день, бар, цена). Close дня (Н6) —
+        цена рынка по определению; zakrytie и bar_plus берут цену другого бара того же дня — проверка по диапазону дня.
+        ↺ — не raise: мутационные тесты гэпа (test_exec_e_parabolic, test_fast_etap1_equiv) досчитывают мутанта; ValueError —
+        в tf_ispolnenie_v5.sessiya · откат: raise здесь (29.10)."""
+        d = s.days[i]
+        den = s.zak or getattr(s.p, "bar_plus", 0)
+        if px != s.close_of(i) and not (v_bare(min(d.l), max(d.h), px) if den else v_bare(d.l[b], d.h[b], px)):
+            s.vne.append((i, b, px))
+
+    def _stop_vhoda(s, i, j, d, b, px, S):
+        """Стоп в баре входа активен с момента исполнения по px: «уже пробитый» (лонг S ≥ px, шорт S ≤ px) — выход по px,
+        как гэп по open (БЛОКЕР #596; прежде — по S, цены могло не быть в баре). Иначе — по S. True — позиция закрыта."""
+        if S is None:
+            return False
+        hit, xp = stop_hit(s.tr.side, px, d.h[b], d.l[b], S, s.p.stop_touch)
+        if hit:
+            s._exit(i, j, b, xp, s.sr)
+        return hit
+
     def _enter(s, i, j, b, px, i0, sg, d_sig, sd=1):
+        s._v_bare(i, min(b, len(s.days[i].c) - 1), px)
         s.tr = Trade(s.t, d_sig, i, b, px, side=sd, fee_in=s.p.comm)
         s.trades.append(s.tr)
         s.tr.row0 = s._row(i, j, i0 >= len(s.days[i].c))
@@ -74,6 +96,7 @@ class Run(V6):
         return i if at_close or j == 0 else s.ix[j - 1]
 
     def _exit(s, i, j, b, px, reason):
+        s._v_bare(i, b, px)
         tr = s.last_x = s.tr
         tr.exit_day, tr.exit_bar, tr.exit_px, tr.reason, tr.fee_out = i, b, px, reason, s.p.comm * (s.w - s.v6_exit(i, b, px))
         s.gross[i] += tr.side * s.w * math.log((px + s.dv) / s.ref)       # dv: дивиденд позиции, пришедшей через отсечку (раз)
@@ -86,6 +109,7 @@ class Run(V6):
 
     def _partial(s, i, j, b, px):
         """Ж-092: ½ позиции лимитом на +1R — отдельная сделка (reason "part", parent — индекс родителя). Остаток живёт дальше."""
+        s._v_bare(i, b, px)
         tr, FRAC = s.tr, s.cf[0]
         fee = part_fee(s.p.comm, FRAC)
         s.trades.append(Trade(s.t, tr.d_sig, tr.entry_day, tr.entry_bar, tr.entry_px, exit_day=i, exit_bar=b, exit_px=px,
@@ -274,9 +298,7 @@ class Run(V6):
             s.n_fills += 1
             s._enter(i, j, b, px, b, s.sigma[o["d_sig"]] if not o["retry"] else o["sgo"], o["d_sig"], sd)
             S, _ = s._levels(j)
-            if not s.zak and S is not None and stop_hit(sd, d.o[b], d.h[b], d.l[b], S, s.p.stop_touch)[0]:
-                s._exit(i, j, b, S, s.sr)
-            else:
+            if s.zak or not s._stop_vhoda(i, j, d, b, px, S):
                 s._scan(i, j, d, b + 1)
             return
         if prodlit(s, o, i, j):                     # V6-a: T > 1 — заявка живёт, пока сигнал активен

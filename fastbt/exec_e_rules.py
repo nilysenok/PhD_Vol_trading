@@ -134,6 +134,11 @@ def rodnoy_level(sd, L, tick):
     return L if tick is None else (ceil_tick(L, tick) if sd > 0 else floor_tick(L, tick))
 
 
+def v_bare(lo, hi, px) -> bool:
+    """Инвариант исполнения (БЛОКЕР #596): цена в [lo; hi] своего бара (допуск 1e-9 отн.)."""
+    return lo - abs(lo) * 1e-9 <= px <= hi + abs(hi) * 1e-9
+
+
 def stop_hit(sd, o, h, l, S, touch):
     """(сработал, цена): цена — S или open при гэпе через S. touch: l ≤ S, иначе l < S."""
     if sd > 0:

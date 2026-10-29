@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from fastbt.exec_e_rules import limit_mask, limit_px, stop_hit
+from fastbt.exec_e_rules import limit_mask, limit_px
 
 INTRA = ("stop", "trail", "bu", "take", "lim", "kanal")     # внутридневные выходы: после них возможен повторный вход
 
@@ -46,9 +46,8 @@ def reenter(s, i, j, d) -> None:
         return
     b = int(hit[0])
     s.n_fills += 1
-    s._enter(i, j, b, limit_px(sd, d.o[b], o["L"]), b, sg, ip, sd)
+    px = limit_px(sd, d.o[b], o["L"])
+    s._enter(i, j, b, px, b, sg, ip, sd)
     S, _ = s._levels(j)
-    if S is not None and stop_hit(sd, d.o[b], d.h[b], d.l[b], S, s.p.stop_touch)[0]:
-        s._exit(i, j, b, S, s.sr)
-    else:
+    if not s._stop_vhoda(i, j, d, b, px, S):        # стоп активен с цены входа (БЛОКЕР #596)
         s._scan(i, j, d, b + 1)
