@@ -42,14 +42,17 @@ def vyhod_plan(t_vyhod: str, prichina: str) -> tuple[int, int | None]:
     """(сдвиг дня, hhmm | None) для выхода по `prichina` (signal | vremya).
 
     close → (0, None): поведение не меняется. 1500/1700: по τ — день x (известен заранее), по сигналу — x+1 (Д2).
-    open2 → (1, 600): open бара 10:00 дня x+1 (Ж-086 п. 4; `bar_at`).
+    open2: по сигналу → (1, 600): open бара 10:00 дня x+1 (Ж-086 п. 4; `bar_at`); по τ → (0, None): close дня истечения
+    срока (Ж-137 п. 6: срок известен заранее, решения на закрытии дня достаточно; Д2 не нарушена). Если в день y и
+    сигнал, и срок — выигрывает срок: close y раньше open y+1. 1500/1700: по τ — open бара hhmm дня истечения (срок
+    известен заранее), по сигналу — x+1.
     """
     if prichina not in PRICHINY:
         raise ValueError(f"причина выхода {prichina!r}: допустимо {PRICHINY}")
     if t_vyhod == "close":
         return 0, None
     if t_vyhod == "open2":
-        return 1, HHMM["open2"]
+        return (0, None) if prichina == "vremya" else (1, HHMM["open2"])
     if t_vyhod not in HHMM:
         raise ValueError(f"t_vyhod {t_vyhod!r}: допустимо close, 1500, 1700, open2")
     return (0 if prichina == "vremya" else 1), HHMM[t_vyhod]
