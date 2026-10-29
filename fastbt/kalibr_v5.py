@@ -24,7 +24,8 @@ from fastbt.kalibr_v5_golos import golos_v2
 from fastbt.sweep_pts import MIN_NB, TOR_MIN
 
 PERIODY = {"train4": ("2016-01-01", (2017, 2018, 2019)),     # §3: окно 2017 на train4 — один 2016
-           "v2": ("2015-01-01", (2017, 2018, 2019))}         # Ж-113 п. 1, 3: train 2015–2019, первый год 2017
+           "v2": ("2015-01-01", (2017, 2018, 2019)),         # Ж-113 п. 1, 3: train 2015–2019, первый год 2017
+           "wf": ("2015-01-01", tuple(range(2017, 2027)))}   # Ж-136: 10 окон; 2026 — янв.–фев., окно 2015–2025 (44 кв.)
 TOP_F1, TOP_F2, MDD_MIN, EXP_MIN = 50, 20, -0.30, 5.0        # approach_a.py:67, 77, 84
 SLUZH = ("period", "komissiya", "fdr")
 
