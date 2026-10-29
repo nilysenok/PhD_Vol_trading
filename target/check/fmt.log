@@ -1,4 +1,4 @@
-`cargo metadata` exited with an error: error: could not find `Cargo.toml` in `/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/.claude/worktrees/agent-afc70c32109446465` or any parent directory
+`cargo metadata` exited with an error: error: could not find `Cargo.toml` in `/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/.claude/worktrees/agent-a97a3a7b91d30cdd1` or any parent directory
 
 This utility formats all bin and lib files of the current crate using rustfmt.
 
