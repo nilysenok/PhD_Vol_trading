@@ -1,7 +1,9 @@
 """Ledger v2.0 (docs/otchety/2026-10-28_progon_etap1.md §1); данных не читает. Шард: .part -> rename -> rows -> SHA.
 Читатель отказывает, а не пропускает (§1.6); метрики 2020+ не входят.
 v2.1 (Л7, docs/otchety/2026-10-29_setka_v5.md §3): вместо рядов port[T], tik[17,T] — суммы сегментов F_S…F_X
-(fastbt.stats) по кварталам 2016Q1…2019Q4: port [16,NF], tik [17,16,NF] float64, ≈ 20 КБ/точку; окно — stats.window."""
+(fastbt.stats) по кварталам 2016Q1…2019Q4: port [16,NF], tik [17,16,NF] float64, ≈ 20 КБ/точку; окно — stats.window.
+v2.2 (V6-15, docs/otchety/2026-10-29_setka_v6_inventarizaciya.md §4, Ж-132 п. 4): тело как 2.1 + в строке setka, rol, klyuch_n.
+klyuch_sha (с хэшем кода и данных, Д5, Ж-131 п. 4) не меняется; klyuch_n — тождество точки для счёта N, kod/vhody остаются в каждой строке."""
 import hashlib
 import json
 import os
@@ -13,7 +15,9 @@ import numpy as np
 from fastbt import period_v2, stats
 from fastbt.metriki_e import sr_dnevnoy
 
-FORMAT, V, V21 = "etap1-ledger", "2.0", "2.1"
+FORMAT, V, V21, V22 = "etap1-ledger", "2.0", "2.1", "2.2"
+SUMMY_V = (V21, V22)                                # версии с суммами сегментов
+ROLI, KONTROL = ("sobol", "morris", "faza2", "faza3", "kontrol"), "kontrol"
 NSEG = 16
 NET, NTIK, GODY = "net", 17, (2016, 2017, 2018, 2019)
 GODY_V2 = (2015,) + GODY                            # период В2 (Ж-113): окно с 2015-01-01, 20 кварталов
@@ -64,6 +68,25 @@ def klyuch(sid: str, pt: dict, period: str, komissiya: float, fdr) -> dict:
 def klyuch_sha(kl: dict, kod: str, vhody: str) -> str:
     kan = json.dumps(kl, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(f"{kan}|{kod}|{vhody}|{V}".encode("utf-8")).hexdigest()
+
+
+def klyuch_n(sid: str, kl: dict) -> str:
+    """Тождество точки для N: strategiya + канонический klyuch (точка, период, комиссия, fdr), без kod, vhody и версии формата."""
+    kan = json.dumps({"strategiya": sid, "klyuch": kl}, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(kan.encode("utf-8")).hexdigest()
+
+
+def proverit_stroku_22(r: dict, setka=None) -> None:
+    """Строка 2.2: setka, rol ∈ ROLI, kod и vhody непусты (хэш кода и данных в каждой строке), klyuch_n сходится с klyuch."""
+    for pole in ("kod", "vhody", "setka"):
+        if not isinstance(r.get(pole), str) or not r[pole]:
+            raise ValueError(f"ledger 2.2: в строке нет {pole}")
+    if r.get("rol") not in ROLI:
+        raise ValueError(f"ledger 2.2: rol = {r.get('rol')!r}, ожидалось одно из {ROLI}")
+    if setka is not None and r["setka"] != setka:
+        raise ValueError("ledger 2.2: setka строки ≠ manifest")
+    if r.get("klyuch_n") != klyuch_n(r.get("strategiya"), r.get("klyuch")):
+        raise ValueError("ledger 2.2: klyuch_n не сходится с klyuch")
 
 
 def kvartaly(daty: np.ndarray, x: np.ndarray) -> dict:
@@ -169,15 +192,17 @@ class Pisatel:
     def __init__(self, root: Path, sid: str, potok: int, manifest: dict, shard: int = 256):
         self.d, self.shard, self.potok, self.T = Path(root) / sid, shard, f"p{potok:02d}", int(manifest["T"])
         self.pd, self.v = self.d / self.potok, manifest.get("v") or self.VERSIYA
-        if self.v not in (V, V21):
-            raise ValueError(f"ledger v = {self.v}: известны {V}, {V21}")
+        if self.v not in (V, V21, V22):
+            raise ValueError(f"ledger v = {self.v}: известны {V}, {V21}, {V22}")
+        if self.v == V22 and not manifest.get("setka"):
+            raise ValueError("ledger 2.2: в manifest нужна setka")
         m = {**manifest, "v": self.v, "format": FORMAT, "strategiya": sid}
         mp = self.d / "manifest.json"
         self.d.mkdir(parents=True, exist_ok=True)
         ex = json.loads(mp.read_text(encoding="utf-8")) if mp.exists() else m
-        if any(ex.get(k) != m.get(k) for k in ("kod", "vhody", "v")) or ex.get("poz_konec", False) != m.get("poz_konec", False):
+        if any(ex.get(k) != m.get(k) for k in ("kod", "vhody", "v", "setka")) or ex.get("poz_konec", False) != m.get("poz_konec", False):
             raise ValueError("manifest: другой kod/vhody/poz_konec — отказ")
-        self.poz_konec, self.period = bool(ex.get("poz_konec")), ex.get("period")
+        self.poz_konec, self.period, self.setka = bool(ex.get("poz_konec")), ex.get("period"), ex.get("setka")
         if not mp.exists():
             _zapis_atomarno(mp, json.dumps(ex, ensure_ascii=False, sort_keys=True, indent=1))
         [(self.pd / s).mkdir(parents=True, exist_ok=True) for s in ("port", "tik")]
@@ -209,7 +234,9 @@ class Pisatel:
             poz = (None,) * 4
         if ex_port.dtype != np.float64 or ex_port.shape != (self.T,) or ex_tik.shape != (NTIK, self.T):
             raise TypeError("port: float64 [T]; tik: [17, T]")
-        if self.v == V21:
+        if self.v == V22:
+            proverit_stroku_22(row, self.setka)
+        if self.v in SUMMY_V:
             if self.daty is None or self.daty.shape != (self.T,):
                 raise ValueError("ledger 2.1: нужны daty [T] у писателя")
             if self.poz_konec and poz is None:
@@ -226,7 +253,7 @@ class Pisatel:
             return
         nom, hs = self.next, {}
         tk = np.stack([b[2] for b in self.buf])
-        arr = {"port": np.stack([b[1] for b in self.buf]), "tik": tk if self.v == V21 else tk.astype(np.float32)}
+        arr = {"port": np.stack([b[1] for b in self.buf]), "tik": tk if self.v in SUMMY_V else tk.astype(np.float32)}
         for sub, a in arr.items():
             p = self.pd / sub / f"{nom:05d}.npy"
             with open(f"{p}.part", "wb") as f:
@@ -259,6 +286,11 @@ class Pisatel21(Pisatel):
         super().add(row, ex_port, ex_tik)
 
 
+class Pisatel22(Pisatel21):
+    """ledger 2.2: как 2.1; manifest["setka"] обязательна, каждая строка несёт setka, rol, klyuch_n, kod, vhody (проверка в add)."""
+    VERSIYA = V22
+
+
 class Chitatel:
     def __init__(self, root: Path, sid: str, sverka_kod: bool = False):
         self.d = Path(root) / sid
@@ -266,8 +298,8 @@ class Chitatel:
             raise ValueError(f"{sid}: нет manifest.json")
         self.manifest = json.loads((self.d / "manifest.json").read_text(encoding="utf-8"))
         self.v, self.gody = self.manifest.get("v"), gody_perioda(self.manifest.get("period"))
-        if self.v not in (V, V21):
-            raise ValueError(f"manifest.v = {self.v}, ожидалось {V} или {V21}")
+        if self.v not in (V, V21, V22):
+            raise ValueError(f"manifest.v = {self.v}, ожидалось {V}, {V21} или {V22}")
         self._mm, self._r, seen = {}, [], set()
         for pd in sorted(p for p in self.d.glob("p*") if p.is_dir()):
             for r, loc in self._potok(pd):
@@ -292,6 +324,8 @@ class Chitatel:
             if len(chunk) < n or any(r.get("v") != self.v for r in chunk):
                 raise ValueError(f"{pd.name}: строки шарда {nom} неполны или другой версии")
             for i, r in enumerate(chunk):
+                if self.v == V22:
+                    proverit_stroku_22(r, self.manifest.get("setka"))
                 if any(int(str(k)[:4]) not in self.gody for p in ("by_year", "by_quarter") for k in (r.get(p) or {})):
                     raise ValueError(f"by_year/by_quarter: год вне {self.gody[0]}–{self.gody[-1]}")
                 out.append((r, (pd.name, nom, i)))
@@ -322,9 +356,13 @@ class Chitatel:
 
     def summy(self, rows=None, sub="port") -> np.ndarray:
         """v2.1: port → [n, 16, NF]; tik → [n, 17, 16, NF]."""
-        if self.v != V21:
-            raise ValueError("summy: только ledger 2.1")
+        if self.v not in SUMMY_V:
+            raise ValueError("summy: только ledger 2.1 и 2.2")
         return np.stack([np.asarray(self._arr(sub, x), float) for x in self._loc(rows)])
+
+    def klyuch_n_stroki(self, r: dict) -> str:
+        """klyuch_n строки: у 2.2 записан (и сверен при чтении), у 2.0/2.1 (v5) считается из klyuch."""
+        return r["klyuch_n"] if self.v == V22 else klyuch_n(r["strategiya"], r["klyuch"])
 
     def okno(self, t: int, rows=None, sub="port", comm: float = 0.0) -> tuple:
         """(sharpe, maxdd, exposure_pct, trades_per_year) окна [2016-01-01; 31.12(t−1)] — stats.window на суммах сегментов.
@@ -333,3 +371,33 @@ class Chitatel:
             raise ValueError("okno: comm > 0, а |позиция| на конце кварталов в ledger не записана (poz_konec = false)")
         nb = np.asarray(self.manifest["nbars"], float)
         return stats.window(self.summy(rows, sub), nb, segment_do_goda(t, self.gody), comm)
+
+
+class Obedinenie:
+    """Читатель объединения ledger v5 (2.1) ∪ v6 (2.2) одной стратегии (Ж-132 п. 4): N_k = |уникальных klyuch_n|, роль kontrol не в счёте.
+    Дубль klyuch_n — первая строка по порядку читателей; общая матрица сумм — по тем же ключам. Ledger 2.0 не объединяется (нет сумм)."""
+
+    def __init__(self, *chitateli: "Chitatel"):
+        if not chitateli:
+            raise ValueError("Obedinenie: нет читателей")
+        if any(c.v not in SUMMY_V for c in chitateli):
+            raise ValueError("Obedinenie: только ledger 2.1 и 2.2")
+        if len({c.manifest.get("strategiya") for c in chitateli}) > 1 or len({tuple(c.manifest["nbars"]) for c in chitateli}) > 1:
+            raise ValueError("Obedinenie: разные strategiya или nbars (период)")
+        seen, self._poz = set(), []
+        for c in chitateli:
+            for r in c.rows():
+                n = c.klyuch_n_stroki(r)
+                if r.get("rol") != KONTROL and n not in seen:
+                    seen.add(n)
+                    self._poz.append((n, c, r))
+
+    def klyuchi(self) -> list:
+        return [n for n, _, _ in self._poz]
+
+    def n_k(self) -> int:
+        return len(self._poz)
+
+    def summy(self, sub="port") -> np.ndarray:
+        """Общая матрица сумм по klyuchi(): port → [N_k, 16·, NF]; tik → [N_k, 17, 16·, NF]."""
+        return np.stack([np.asarray(c.summy([r], sub)[0], float) for _, c, r in self._poz])
