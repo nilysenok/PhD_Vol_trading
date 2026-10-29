@@ -23,13 +23,18 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
     # CLI progon_server под куб v5 (Л10, #608): --kub v5 --period train4|v2 --seed 1|2 | --k3 [--n1]; проходы подряд, свой каталог ledger
     # на проход: ledger/<период>_<s1|s2|k3>/<Sk>/. PERENOS_PROHODY="s1 s2 k3" (умолчание), PERENOS_N1 — как --n1, PERENOS_STRATEGII.
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
-    for pr in ${PERENOS_PROHODY:-s1 s2 k3}; do
+    # spravka (Ж-137 п. 6, решение дирижёра 29.10 19:10): те же точки, что s1, но выход по close дня (--rol spravka --t-vyhod close);
+    # ledger 2.2 с rol = spravka в ledger/<период>_spravka_close/<Sk>/, в N не входит. Идёт ПОСЛЕ полного прохода той же сетки.
+    # PERENOS_KUB — куб (умолчание v5; v6 — когда progon_server его принимает: раздел «v6» инструкции ведёт лист М-драйвер).
+    for pr in ${PERENOS_PROHODY:-s1 s2 k3 spravka}; do
       # N1 по умолчанию 262 144 на стратегию (решение дирижёра, volna_17 п. 1: 200 000 → степень двойки); k3 — полная решётка, без --n1
+      od="${per}_$pr"
       case "$pr" in s1) a="--seed 1 --n1 ${PERENOS_N1:-262144}" ;; s2) a="--seed 2 --n1 ${PERENOS_N1:-262144}" ;; k3) a="--k3" ;;
-        *) fail "проход $pr: s1 | s2 | k3" ;; esac
-      say "progon_server: v5 $per $pr ($a), ledger/${per}_$pr/<Sk>/, процессов $(processov "$per")"
-      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub v5 --period "$per" $a \
-        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/${per}_$pr" --procs "$(processov "$per")" --prodolzhit $sl)
+        spravka) a="--seed 1 --n1 ${PERENOS_N1:-262144} --rol spravka --t-vyhod close"; od="${per}_spravka_close" ;;
+        *) fail "проход $pr: s1 | s2 | k3 | spravka" ;; esac
+      say "progon_server: ${PERENOS_KUB:-v5} $per $pr ($a), ledger/$od/<Sk>/, процессов $(processov "$per")"
+      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub "${PERENOS_KUB:-v5}" --period "$per" $a \
+        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/$od" --procs "$(processov "$per")" --prodolzhit $sl)
     done
   else
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"

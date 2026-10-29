@@ -43,7 +43,8 @@ Sreda = namedtuple("Sreda", "evr kod vhody daty tikery")
 KUB5, LEDGER5 = ROOT / "fastbt/designs/v5/kub_{sid}.yaml", ZAMER / "_ledger_v5"
 OCENSHCHIK_V5 = ("fastbt.eval_v5", "EvaluatorV5")        # лист Л9; контракт выхода = EvaluatorV2 (+ poz, fdr)
 OKNO = {n: (f"{p.y0}-01-01", str(p.progrev.date())) for n, p in period_v2.PERIODY.items()}   # (okno_s, progrev_s); train4, v2, wf
-Rezhim = namedtuple("Rezhim", "setka period seed k3 fdr")      # setka: progon | v5; seed: ключ sobol куба (seed | seed2)
+Rezhim = namedtuple("Rezhim", "setka period seed k3 fdr rol t_vyhod", defaults=(None, None))   # setka: progon | v5; seed: ключ sobol куба
+# rol = "spravka" (Ж-137 п. 6): тот же куб, t_vyhod точек подменён на rz.t_vyhod, ledger 2.2 с rol = spravka; вне N (Obedinenie)
 R0 = Rezhim("progon", PERIOD, "seed", False, None)            # прежний путь designs/progon
 fabrika = None      # sid -> Sreda; None — реальная (fabrika_real); тесты подставляют синтетику
 _W: dict = {}
@@ -77,7 +78,7 @@ def proverit_ledger(rz: Rezhim, v: str) -> None:
     """ledger 2.1 режет кварталы по годам периода (ledger_v2.gody_perioda: train4 2016–2019, v2 2015–2019);
     окно периода шире годов ledger — отказ до старта, а не в процессе."""
     gody = lm.gody_perioda(rz.period)
-    if v == lm.V21 and not set(period_v2.gody(rz.period)) <= set(gody):
+    if v in lm.SUMMY_V and not set(period_v2.gody(rz.period)) <= set(gody):
         raise SystemExit(f"ledger 2.1 считает кварталы {gody[0]}–{gody[-1]}, период {rz.period} шире — "
                          "--ledger 2.0 или расширение ledger_v2 — отказ")
 
@@ -117,6 +118,8 @@ def obem_k3(kub: dict) -> int:
 
 def tochki(kub: dict, n0: int, n1: int, rz: Rezhim = R0) -> list:
     """[(i, pt)], i ∈ [n0, n1): индекс значения оси = floor(u·len(ось)), затем canon_v2."""
+    if rz.rol == "spravka":
+        return [(i, {**pt, "t_vyhod": rz.t_vyhod}) for i, pt in tochki(kub, n0, n1, rz._replace(rol=None))]
     if rz.setka != "progon":
         return tochki_v5(kub, n0, n1, rz)
     proverit_kub(kub)
@@ -185,7 +188,8 @@ def manifest(sid: str, sr: Sreda, c: dict, kod_slit: bool, rz: Rezhim = R0) -> d
          "daty_sha": hashlib.sha256(sr.daty.tobytes()).hexdigest(), "tikery": sr.tikery, "T": int(sr.daty.size),
          "kub_sha": hashlib.sha256(kub_put(sid, rz).read_bytes()).hexdigest(),
          "sobol_seed": None if rz.k3 else c["sobol"][rz.seed], "sozdan": time.strftime("%Y-%m-%d")}
-    return m if rz.setka == "progon" else {**m, "setka": c["setka"], "k3": rz.k3, "sobol_klyuch": rz.seed}
+    m = m if rz.setka == "progon" else {**m, "setka": c["setka"], "k3": rz.k3, "sobol_klyuch": rz.seed}
+    return {**m, "rol": rz.rol, "t_vyhod": rz.t_vyhod} if rz.rol else m
 
 
 def sha_tochki(sid: str, sr: Sreda, pt: dict, rz: Rezhim = R0) -> str:
@@ -237,14 +241,17 @@ def schitat_kusok(zad: tuple) -> tuple:
     v = _W.get("v", lm.V)
     mf = manifest(sid, sr, c, _W["kod_slit"], rz)
     poz_ok = hasattr(sr.evr, "poz")                                    # Л7b: настоящий оценщик отдаёт |pos| (EvaluatorV2.poz)
-    w = lm.Pisatel21(_W["root"], sid, _W["nn"], mf, daty=sr.daty, poz=poz_ok) if v == lm.V21 else lm.Pisatel(_W["root"], sid, _W["nn"], mf)
+    pis = {lm.V22: lm.Pisatel22, lm.V21: lm.Pisatel21}.get(v)
+    w = pis(_W["root"], sid, _W["nn"], mf, daty=sr.daty, poz=poz_ok) if pis else lm.Pisatel(_W["root"], sid, _W["nn"], mf)
     zak, t, oshibok = _W["zakryt"][sid] | w.done(), [], 0
     for i, pt in tochki(c, n0, n1, rz):
         if sha_tochki(sid, sr, pt, rz) in zak:
             continue
         r, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, _W["ist"], _W["kod_slit"], _W["fast"], v, rz)
+        if v == lm.V22:
+            r.update(setka=mf["setka"], rol=rz.rol, klyuch_n=lm.klyuch_n(sid, r["klyuch"]))
         importlib.import_module("fastbt.zaem_v2").pisat(w, r, ex_p, ex_t, getattr(sr.evr, "zaem", None),
-                                                           sr.evr.poz if poz_ok and v == lm.V21 and r["status"] == "ok" else None)   # Ж-089: ряд платы за заём; Л7b: |pos|
+                                                           sr.evr.poz if poz_ok and v in lm.SUMMY_V and r["status"] == "ok" else None)   # Ж-089: ряд платы за заём; Л7b: |pos|
         importlib.import_module("fastbt.tejk_signal").pisat_diag(w.pd, r, getattr(sr.evr, "diag", None) if r["status"] == "ok" else None)   # Ж-087
         zak = zak | {r["klyuch_sha"]}
         t.append(r["t_sek"])

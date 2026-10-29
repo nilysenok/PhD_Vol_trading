@@ -17,7 +17,8 @@ from fastbt.metriki_e import sr_dnevnoy
 
 FORMAT, V, V21, V22 = "etap1-ledger", "2.0", "2.1", "2.2"
 SUMMY_V = (V21, V22)                                # версии с суммами сегментов
-ROLI, KONTROL = ("sobol", "morris", "faza2", "faza3", "kontrol"), "kontrol"
+ROLI, KONTROL, SPRAVKA = ("sobol", "morris", "faza2", "faza3", "kontrol", "spravka"), "kontrol", "spravka"
+VNE_N = (KONTROL, SPRAVKA)                          # роли вне N: контроль и справочная строка (выход по close, Ж-137 п. 6)
 NSEG = 16
 NET, NTIK, GODY = "net", 17, (2016, 2017, 2018, 2019)
 GODY_V2 = (2015,) + GODY                            # период В2 (Ж-113): окно с 2015-01-01, 20 кварталов
@@ -388,7 +389,7 @@ class Obedinenie:
         for c in chitateli:
             for r in c.rows():
                 n = c.klyuch_n_stroki(r)
-                if r.get("rol") == KONTROL:
+                if r.get("rol") in VNE_N:
                     continue
                 if n in seen:
                     self._sverit_dubl(n, seen[n], (c, r))
