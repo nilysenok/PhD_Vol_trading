@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -96,8 +97,9 @@ def load_bars5m(ticker: str, start: str = START, end: str = END, window: str = "
     df = aggregate(_read(ticker, start, end, src), window)
     if use:
         cache.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(p.with_suffix(".tmp"), index=False)
-        os.replace(p.with_suffix(".tmp"), p)
+        tmp = p.with_name(f".{p.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")       # Р-7: уникальный tmp (гонка двух процессов)
+        df.to_parquet(tmp, index=False)
+        os.replace(tmp, p)
     return df
 
 
