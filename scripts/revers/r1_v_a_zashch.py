@@ -31,6 +31,11 @@ def vnutridnevnaya(o, c) -> np.ndarray:
     return I
 
 
+def vnutridnevnaya_td(td) -> np.ndarray:
+    """vnutridnevnaya по настоящему fastbt.signals.interface.TickerData (поля open, close — не o, c)."""
+    return vnutridnevnaya(td.open, td.close)
+
+
 def chasti_dnya(lr_row, I_row, pos, date_idx, cnt):
     """(I, N) по датам: pos × часть lr, среднее по числу пар на дату (cnt) — арифметика Engine.port; N = lr − I."""
     nd = len(cnt)
@@ -63,7 +68,7 @@ def stroki(eng, comm: float, plata: float, baza_fn, god: float = 3.0) -> tuple:
     for ti, t in enumerate(eng.tickers):
         td = load_ticker(t, False)
         assert np.array_equal(td.dates, eng.cache[t]["dates"]), f"{t}: даты load_ticker ≠ кэш s9"
-        Ik[ti, :len(td.dates)] = vnutridnevnaya(td.o, td.c)
+        Ik[ti, :len(td.dates)] = vnutridnevnaya_td(td)
     I_row, sid_row = Ik[eng.r["tick"], eng.r["bar"]], np.array([eng.pairs[p][1] for p in eng.r["pair"]])
     rows, x0, ecc = [], None, 0.0
     for imya, sids in [(s, (s,)) for s in AS.SIDS] + [("A_zashch (S1–S6)", AS.SIDS)] + O.KATEGORII[1:5]:

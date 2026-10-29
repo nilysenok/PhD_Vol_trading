@@ -19,7 +19,7 @@ import pandas as pd
 from fastbt.s9 import sharpe  # SR годовой = mean/sd(ddof=1)·√252
 
 __all__ = ["sharpe", "sr_dnevnoy", "asimmetriya", "ekscess", "msr", "sortino_e", "kapital",
-           "nedelnye_summy", "metriki_ned", "stroka_ned", "mdd", "kalmar", "omega", "fko_dolya", "psr", "sr_zvezda", "dsr", "dsr_iz_setki"]
+           "nedelnye_summy", "metriki_ned", "stroka_ned", "acf", "vr_ned", "lyung_boks", "serii_ubytkov", "avtokorr_stroka","mdd", "kalmar", "omega", "fko_dolya", "psr", "sr_zvezda", "dsr", "dsr_iz_setki"]
 
 GAMMA = 0.5772
 _N = NormalDist()
@@ -103,6 +103,54 @@ def stroka_ned(x, daty, hvost: str | None = None, plata: float = 0.0, baza=0.0) 
         keep[np.argsort(x)[:10] if hvost == "hud" else np.argsort(x)[-10:]] = False
     xs = x[keep]
     return dict(**metriki_ned(xs, np.asarray(daty)[keep]), msr_dn_opredelen=bool(np.isfinite(msr(xs))))
+
+
+def acf(r, nlag: int = 5) -> np.ndarray:
+    """Выборочная ACF лагов 1..nlag: r_k = Σ_{t≥k}(x_t−m)(x_{t−k}−m) / Σ(x_t−m)² (одна формула; та же, что в Льюнге–Боксе и statsmodels.acf)."""
+    d = _x(r) - np.mean(_x(r))
+    den = float(np.sum(d * d))
+    return np.array([float(np.sum(d[k:] * d[:-k])) / den if den > 1e-24 else np.nan for k in range(1, nlag + 1)])
+
+
+def vr_ned(r, daty, tolko_polnye: bool = False) -> tuple[float, int]:
+    """VR(5) = Var(недельные суммы W-FRI, ddof=1) / (5 · Var(дневной, ddof=1)); VR > 1 — положительная автокорреляция (недельный Шарп ниже дневного).
+    По умолчанию недели те же, что в Sharpe нед. (nedelnye_summy: неполные края и праздничные недели входят как есть);
+    tolko_polnye=True — только недели ровно из 5 торговых дней. Возвращает (VR, число недель)."""
+    s = pd.Series(_x(r), index=pd.DatetimeIndex(np.asarray(daty).astype("datetime64[D]"))).sort_index()
+    g = s.groupby(s.index.to_period("W-FRI"))
+    w = g.sum().to_numpy()[(g.count() == 5).to_numpy()] if tolko_polnye else g.sum().to_numpy()
+    if len(w) < 2 or np.var(_x(r), ddof=1) < 1e-24:
+        return float("nan"), len(w)
+    return float(np.var(w, ddof=1) / (5 * np.var(_x(r), ddof=1))), len(w)
+
+
+def lyung_boks(r, m: int = 5) -> tuple[float, float]:
+    """Q(m) = T(T+2)·Σ r_k²/(T−k), p = P(χ²_m > Q)."""
+    from scipy.stats import chi2
+    T, a = len(r), acf(r, m)
+    q = float(T * (T + 2) * np.sum(a**2 / (T - np.arange(1, m + 1))))
+    return q, float(chi2.sf(q, m))
+
+
+def serii_ubytkov(r) -> dict:
+    """Убыток = r < 0. p_ub — доля убыточных дней; p_ub_ub = P(убыток d+1 | убыток d) по соседним торговым дням;
+    dlina — средняя длина серии убыточных дней подряд; dlina_nezav = 1/(1−p_ub) — ожидаемая при независимости (геометрическое)."""
+    L = _x(r) < 0
+    p, n = float(L.mean()), int(L[:-1].sum())
+    runs = int(L[0]) + int((L[1:] & ~L[:-1]).sum())
+    return dict(p_ub=p, p_ub_ub=float((L[:-1] & L[1:]).sum() / n) if n else float("nan"),
+                dlina=float(L.sum() / runs) if runs else float("nan"), dlina_nezav=1 / (1 - p) if p < 1 else float("nan"))
+
+
+def avtokorr_stroka(x, daty) -> dict:
+    """Строка «автокорреляция дневных доходностей» (Ж-126): Sharpe дн./нед. (как в таблицах), ACF 1–5, ΣACF(1..4), VR(5), Q(5), серии."""
+    x, a = _x(x), acf(x, 5)
+    sd, sn = float(sr_dnevnoy(x) * sqrt(252)), metriki_ned(x, daty)["sharpe_ned"]
+    q, p = lyung_boks(x, 5)
+    vr, nw = vr_ned(x, daty)
+    vrp, nwp = vr_ned(x, daty, tolko_polnye=True)
+    return dict(sharpe_dn=sd, sharpe_ned=sn, raznost=sn - sd, **{f"acf{k}": float(a[k - 1]) for k in range(1, 6)}, summa_acf14=float(a[:4].sum()),
+                vr5=vr, n_nedel=nw, vr5_polnye=vrp, n_polnyh_nedel=nwp, q5=q, p_q5=p, dni=len(x), **serii_ubytkov(x))
 
 
 def kapital(r) -> np.ndarray:

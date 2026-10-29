@@ -1,0 +1,82 @@
+"""Пересчёт листов б, в, е, ж на A_zashch (Ж-124 п. 1) + в A_strogaya с god по периоду (#563) + автокорреляция (Ж-126).
+Из основной копии (дирижёр). Архив прежних таблиц — копией в _do_a_zashch/ (б, е) и _do_pravki/ (в), sha256 в MANIFEST.
+Запуск: python3 r1_zashch_zapusk.py [--bez-arhiva]"""
+import hashlib
+import os
+import shutil
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+M = Path("/Users/nilysenok/Desktop/Старое/PhD_Vol_trading")
+Z2 = M / "data/regen/test1_2022_2024"
+T = M / "docs/tables/revers_r1"
+LOG = Path(__file__).parent / "r1_zashch_logs"
+LOG.mkdir(exist_ok=True)
+DIV = str(M / "docs/issledovaniya/2026-10-29_dividendy_2022_2024.csv")
+IM = ["--imoex", str(Z2 / "imoex/IMOEX.parquet"), "--imoex-d", str(M / "data/iss_check/index_d/IMOEX.parquet")]
+
+ENV = dict(os.environ,
+           FASTBT_BARS1M=str(M / "data/regen/D25/bars1m"),
+           FASTBT_Z2_DAILY=str(Z2 / "daily/ohlcv_daily_1850.parquet"),
+           FASTBT_Z2_IMOEX=str(Z2 / "imoex/IMOEX.parquet"),
+           FASTBT_Z2_R2FINAL=str(Z2 / "regen/R2/final"),
+           FASTBT_DEV_SIGMA=str(M / "data/regen/ch4_dev"),
+           FASTBT_Z2_RVI=str(Z2 / "s9/rvi_1850.parquet"))
+
+
+def sha(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def arhiv():
+    zapisi = []
+    for papka, maski in (("_do_a_zashch", ["b_razlozhenie.csv", "e_*_test1.csv"]), ("_do_pravki", ["v_overnajt.csv"])):
+        cel = T / papka
+        cel.mkdir(exist_ok=True)
+        for m in maski:
+            for f in sorted(T.glob(m)):
+                dst = cel / f.name
+                if dst.exists() and sha(dst) == sha(f):
+                    zapisi.append(f"{papka}/{f.name}\t{sha(f)}\tуже в архиве")
+                    continue
+                if dst.exists():
+                    raise SystemExit(f"в архиве уже другой {dst} — стоп")
+                shutil.copy2(f, dst)
+                zapisi.append(f"{papka}/{f.name}\t{sha(f)}\tкопия перед пересчётом на A_zashch / god (29.10)")
+    with open(T / "_do_a_zashch" / "MANIFEST.tsv", "a", encoding="utf-8") as fh:
+        fh.write("\n".join(zapisi) + "\n")
+    print("\n".join(zapisi), flush=True)
+
+
+def odin(z):
+    imya, kom, d = z
+    t0 = time.time()
+    with open(LOG / f"{imya}.log", "w", encoding="utf-8") as f:
+        r = subprocess.run([sys.executable, *kom], cwd=M, env=dict(ENV, FASTBT_Z2_DIV=d), stdout=f, stderr=subprocess.STDOUT)
+    print(f"{imya}: exit={r.returncode} {round(time.time() - t0)}s log={LOG / (imya + '.log')}", flush=True)
+    return imya, r.returncode
+
+
+if "--bez-arhiva" not in sys.argv:
+    arhiv()
+# лист б первым и одним: собирает кэш s9 и кэш 5-минуток (гонка .tmp)
+imya, rc = odin(("b", ["scripts/revers/r1_b.py", "--period", "test1", "--yakor", "A_zashch", "--sobrat-kesh", "--procs", "6"], DIV))
+if rc != 0:
+    raise SystemExit("лист б упал — стоп")
+zadachi = [
+    ("b_net", ["scripts/revers/r1_b.py", "--period", "test1", "--yakor", "A_zashch", "--procs", "4",
+               "--out", str(T / "_net" / "b_razlozhenie_net.csv")], "NET"),
+    ("e", ["scripts/revers/r1_e.py", "--period", "test1", *IM, "--yakor", "A_zashch"], DIV),
+    ("v_strogaya", ["scripts/revers/r1_v.py", "--period", "test1", *IM], DIV),
+    ("v_zashch", ["scripts/revers/r1_v.py", "--obekt", "A_zashch", "--period", "test1", *IM,
+                  "--out", str(T / "v_overnajt_a_zashch.csv")], DIV),
+    ("zh_zashch", ["scripts/revers/r1_zh.py", "--period", "test1", "--sigma-dir", str(Z2 / "ch4_sigma"),
+                   "--obekt", "A_zashch", "--out", str(T / "zh_sigma_zatvor_a_zashch_test1.csv")], DIV),
+    ("avtokorr", ["scripts/revers/r1_a_avtokorr.py"], DIV),
+]
+with ThreadPoolExecutor(max_workers=3) as ex:
+    kody = dict(ex.map(odin, zadachi))
+print("ITOG", "OK" if all(v == 0 for v in kody.values()) else f"FAIL {[k for k, v in kody.items() if v]}", flush=True)
