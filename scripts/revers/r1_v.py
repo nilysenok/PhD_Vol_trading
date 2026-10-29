@@ -4,7 +4,7 @@
 docs/tables/overnajt/razlozhenie.csv (по умолчанию пишет в docs/tables/revers_r1/v_train4_proverka.csv и сверяет).
 test1 = 2022-01-01…2024-12-31, прогрев 2021; ничего ≥ 2025 (read_bars режет по END = 2025-01-01). Нужна поддержка периода
 «test1» в etap1/a_strogaya (лист R-P) и 10-минутки зоны Z2; до этого test1 останавливается с понятной ошибкой.
-Справочно, без выбора."""
+Справочно, без выбора. --obekt A_zashch (Ж-124 п. 1): то же для A (s9), только test1 — scripts/revers/r1_v_a_zashch.py; по умолчанию A_strogaya."""
 from __future__ import annotations
 
 import argparse
@@ -96,12 +96,18 @@ def sverka(df: pd.DataFrame, atol: float = 1e-9) -> bool:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--obekt", choices=("A_strogaya", "A_zashch"), default="A_strogaya", help="по умолчанию — прежний расчёт на A_strogaya")
     ap.add_argument("--period", choices=sorted(PERIODS), required=True)
     ap.add_argument("--imoex", help="csv ISS (train4) или parquet 10-минуток Z2 (begin, open, close)")
     ap.add_argument("--imoex-d", help="parquet дневных IMOEX (date, open, close): с 2022 вместо 10-минуток (без дыр)")
     ap.add_argument("--out")
     a = ap.parse_args()
-    last = nastroit(a.period, a.imoex, a.imoex_d)
+    if a.obekt == "A_zashch":
+        if a.period != "test1":
+            raise SystemExit("A_zashch: только --period test1 (кэш s9 с σ̂ Z2)")
+        import r1_v_a_zashch as AZ
+        return AZ.main(Path(a.out) if a.out else None)
+    last =nastroit(a.period, a.imoex, a.imoex_d)
     R = {AS.SIDS[0]: O.schitat_sk(AS.SIDS[0])}       # первый — один: общий кэш 5-мин баров (гонка tmp → parquet)
     with sozdat_pul(a.period, a.imoex, imoex_d=a.imoex_d) as p:
         R.update(zip(AS.SIDS[1:], p.map(O.schitat_sk, AS.SIDS[1:])))
