@@ -11,18 +11,18 @@ import numpy as np
 from numba import njit
 
 EPS = 1e-6                                                       # = exec_e_rules.EPS
-F_B0, F_B0C, F_SP, F_SQ, F_STEP, F_AA0, F_AA1 = range(14, 21)    # pf: добавка к pf ядра v5 (14 значений)
-P_B0, P_B0C, P_SP, P_STEP, P_ARANG = range(26, 31)               # pi: оси включены (после P_CHAST)
-NF_V6, NI_V6 = 7, 5
-OSI = frozenset(("b0", "b0_c", "sp", "step_s", "a_rang"))
+F_B0, F_B0C, F_SP, F_SQ, F_STEP, F_AA0, F_AA1, F_PIR = range(14, 22)    # pf: добавка к pf ядра v5 (14 значений)
+P_B0, P_B0C, P_SP, P_STEP, P_ARANG, P_PIR = range(26, 32)               # pi: оси включены (после P_CHAST)
+OSI = frozenset(("b0", "b0_c", "sp", "step_s", "a_rang", "pir"))
+PIR_MAX, RISK_MAX = 2, 2.0                                            # = exec_e_v6: ≤ 2 добавок, риск ставки ≤ 2ρ
 
 
 def params_v6(p) -> tuple:
-    """(pf[7], pi[5]) осей листа 3; sp = (p, q)."""
+    """(pf[8], pi[6]) осей листов 3a–3c; sp = (p, q)."""
     sp = p.sp if p.sp is not None else (0.0, 0.0)
     ar = p.a_rang if p.a_rang is not None else (0.0, 0.0)
-    pf = [p.b0 or 0.0, p.b0_c or 0.0, sp[0], sp[1], p.step_s or 0.0, ar[0], ar[1]]
-    pi = [p.b0 is not None, p.b0_c is not None, p.sp is not None, p.step_s is not None, p.a_rang is not None]
+    pf = [p.b0 or 0.0, p.b0_c or 0.0, sp[0], sp[1], p.step_s or 0.0, ar[0], ar[1], p.pir]
+    pi = [p.b0 is not None, p.b0_c is not None, p.sp is not None, p.step_s is not None, p.a_rang is not None, p.pir > 0]
     return np.array(pf, float), np.array(pi, np.int64)
 
 
@@ -62,6 +62,20 @@ def extra_level(sd, px, sg, ext, b, pq_on, vlev, pf, pi):
     if np.isnan(vlev):
         return best
     return max(best, vlev) if sd > 0 else min(best, vlev)
+
+
+@njit(cache=True)
+def pir_size(sd, p_add, S, epx, w_base, x1, a1, n_add, r0, a):
+    """exec_e_v6.pir_size: a, урезанный так, чтобы риск ног до стопа S не превысил 2·r0. Ноги: база (epx, w_base) и,
+    если n_add = 1, добавка (x1, a1); сумма — слева направо от 0 (как sum)."""
+    risk = 0.0 + w_base * max(0.0, sd * (epx - S))
+    if n_add >= 1:
+        risk += a1 * max(0.0, sd * (x1 - S))
+    room = RISK_MAX * r0 - risk
+    if room <= 0:
+        return 0.0
+    dr = sd * (p_add - S)
+    return a if dr <= 0 else min(a, room / dr)
 
 
 @njit(cache=True)
