@@ -36,6 +36,17 @@ if "FASTBT_DATA_ROOT" not in os.environ:
     _ensure(OHLCV, MAIN)            # нет файла — собрать из candles_10m (≤ 2021)
 
 
+def _read_cut(p: Path) -> pd.DataFrame:
+    """σ̂ (файлы гл. 3/4 с историей до 2026): зона dev — как было; вне dev строки с date ≥ zona.end() отсекаются
+    фильтром parquet на чтении, до любого расчёта. Дневной ряд Z2 не режется, а отклоняется (daily_df, zona.check)."""
+    if zona.name() == "dev":
+        return pd.read_parquet(p)
+    d = pd.read_parquet(p, filters=[("date", "<", zona.end())])
+    if len(d):
+        zona.check(pd.to_datetime(d["date"]).max(), str(p))
+    return d
+
+
 @lru_cache(maxsize=1)
 def daily_df() -> pd.DataFrame:
     d = pd.read_parquet(zona.path("daily", OHLCV))      # зона Z2: FASTBT_Z2_DAILY; умолчание — как было
@@ -49,7 +60,7 @@ def vpred_df() -> pd.DataFrame:
     if zona.name() != "dev" and os.environ.get("FASTBT_Z2_R2FINAL"):      # Z2: ch4_dev ≤ 2021 + R2 final_d0_s2emb_h*__t1 (fastbt/sigma_z2.py)
         from fastbt import sigma_z2
         return sigma_z2.sklei(sigma_z2.chast_dev(), Path(os.environ["FASTBT_Z2_R2FINAL"]))
-    v = pd.read_parquet(zona.path("vpred", VPRED))
+    v = _read_cut(zona.path("vpred", VPRED))
     v["date"] = pd.to_datetime(v["date"])
     return v
 

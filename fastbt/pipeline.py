@@ -77,8 +77,20 @@ def run_unit(ticker, sid, cfg, td=None):
     return df, meta
 
 
+def z2_config(cfg):
+    """Зона test1 (Z2, реверс р.1): тестовые годы A и B/C/D — только < zona.END_Z2 (2022–2024)."""
+    import dataclasses
+    from fastbt import zona
+    lim = zona.END_Z2.year
+    return dataclasses.replace(cfg, years_a=tuple(y for y in cfg.years_a if y < lim),
+                               years_bcd=tuple(y for y in cfg.years_bcd if y < lim))
+
+
 def run_ticker(args):
-    ticker, sids, cfg = args
+    ticker, sids, cfg, *z = args          # z: зона чтения; воркер spawn не наследует глобаль модуля zona
+    if z:
+        from fastbt import zona
+        zona.set_zone(z[0])
     t0 = time.time()
     dfs, metas = [], {}
     for sid in sids:
@@ -88,8 +100,11 @@ def run_ticker(args):
     return ticker, pd.concat(dfs, ignore_index=True), metas, time.time() - t0
 
 
-def run_all(cfg, tickers=TICKERS, sids=tuple(grids.STRATEGY_NAMES), workers=1, log=print):
-    jobs = [(t, list(sids), cfg) for t in tickers]
+def run_all(cfg, tickers=TICKERS, sids=tuple(grids.STRATEGY_NAMES), workers=1, log=print, zone=None):
+    """zone=None — как было (зона процесса, dev); zone="test1" — Z2: зона ставится в каждом воркере, годы < 2025."""
+    if zone is not None and zone != "dev":
+        cfg = z2_config(cfg)
+    jobs = [(t, list(sids), cfg) + ((zone,) if zone is not None else ()) for t in tickers]
     out, metas = [], {}
     if workers <= 1:
         it = map(run_ticker, jobs)
@@ -114,11 +129,16 @@ def main(argv=None):
     p.add_argument("--tickers", default=",".join(TICKERS))
     p.add_argument("--sids", default="S1,S2,S3,S4,S5,S6")
     p.add_argument("--workers", type=int, default=1)
+    p.add_argument("--zona", choices=("dev", "test1"), default=None,
+                   help="test1 — зона Z2: пути FASTBT_Z2_*, σ̂ режется < 2025 на чтении, годы 2022–2024")
     p.add_argument("--out", default=str(MAIN / "data" / "fastbt" / "positions.parquet"))
     a = p.parse_args(argv)
     cfg = from_args(a)
     t0 = time.time()
-    df, metas = run_all(cfg, a.tickers.split(","), a.sids.split(","), a.workers)
+    if a.zona:
+        from fastbt import zona
+        zona.set_zone(a.zona)
+    df, metas = run_all(cfg, a.tickers.split(","), a.sids.split(","), a.workers, zone=a.zona)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(a.out, index=False)
     Path(a.out).with_suffix(".meta.json").write_text(
