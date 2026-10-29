@@ -7,7 +7,10 @@
 масштаб, чтобы константный индекс давал ряд тикера побайтно; отношения не меняет, но зависит от начала окна.
 Дневные OHLC — `daily_1850.aggregate` ([09:50; 18:50)), значение дня d зависит только от баров < 18:50 d.
 Уровни, лимиты, стопы и σ̂ считаются по настоящему `td` тикера, не по `td_rel` (решает оценщик, V6-12).
-Файлов не читает: бары подаёт вызывающий (чтение < 2022 — `daily_1850.read_bars`). Сектор PIT — V6-1b.
+Файлов не читает: бары подаёт вызывающий (чтение < 2022 — `daily_1850.read_bars`).
+V6-1b: `td_rel_rezhim` — режимы syroy / sektor / rynok; сектор PIT (`e1_rel_sektor.sektor_pit`: на день d — последняя
+ребалансировка ≤ d, Д3). Нет сектора (до первой ребалансировки, «нет», индекса нет в данных) — IMOEX с флагом, молча — нет.
+Смена бенчмарка склеивается без скачка: ночной переход берётся по новому бенчмарку. `proverka_d1` — проверка сдвига (Д1).
 """
 from __future__ import annotations
 
@@ -15,6 +18,10 @@ import numpy as np
 import pandas as pd
 
 from fastbt import daily_1850 as d18
+
+REZHIMY = ("syroy", "sektor", "rynok")
+F_DO_PERVOJ, F_NET_SEKTORA, F_NET_INDEKSA = "do_pervoj_rebalansirovki", "net_sektora", "net_indeksa"
+RYNOK_KEY = "__rynok__"
 
 BAR_COLS = ["timestamp", "open", "high", "low", "close", "volume"]
 
@@ -54,3 +61,75 @@ def td_rel(tick: pd.DataFrame, indeks: pd.DataFrame, ticker: str) -> pd.DataFram
         kinds = {"ticker": object, "date": "datetime64[ns]"}
         return pd.DataFrame({c: pd.Series(dtype=kinds.get(c, float)) for c in d18.COLS})
     return d18.aggregate(b, ticker)
+
+
+def indeks_dnya(rows, day, have) -> tuple:
+    """(имя индекса | None, флаг) на день: последняя ребалансировка ≤ day; rows — [(дата, имя | None)] по возрастанию."""
+    cur = [n for d0, n in rows if d0 <= pd.Timestamp(day)]
+    if not cur:
+        return None, F_DO_PERVOJ
+    if cur[-1] is None:
+        return None, F_NET_SEKTORA
+    if cur[-1] not in have:
+        return None, F_NET_INDEKSA
+    return cur[-1], ""
+
+
+def _chain(parts: dict, keys: pd.Series) -> pd.DataFrame:
+    """Бары дня — из бенчмарка дня; при смене бенчмарка уровень сшивается по ночному переходу нового бенчмарка."""
+    out, factor, last, prev = [], 1.0, None, None
+    for d, key in keys.items():
+        rb = parts[key]
+        day = rb[rb["_d"] == d]
+        if day.empty:
+            continue
+        if prev is not None and key != prev:
+            before = rb[rb["_d"] < d]
+            factor = 1.0 if before.empty else last / before["close"].iloc[-1]
+        x =day.drop(columns="_d").copy()
+        if factor != 1.0:
+            x[["open", "high", "low", "close"]] *= factor
+        out.append(x)
+        last, prev = x["close"].iloc[-1], key
+    return pd.concat(out, ignore_index=True) if out else pd.DataFrame(columns=BAR_COLS)
+
+
+def td_rel_sektor(tick, imoex, indeksy: dict, rows, ticker: str):
+    """(дневной td_rel по сектору PIT с откатом на IMOEX, флаги по дням: date, benchmark, flag)."""
+    days = pd.Series(sorted(pd.to_datetime(tick["timestamp"]).dt.normalize().unique()))
+    pairs = [indeks_dnya(rows, d, indeksy) for d in days]
+    keys = pd.Series([n or RYNOK_KEY for n, _ in pairs], index=days)
+    parts = {}
+    for k in set(keys):
+        rb = sinhronnye_bary(tick, imoex if k == RYNOK_KEY else indeksy[k])
+        parts[k] = rb.assign(_d=rb["timestamp"].dt.normalize())
+    flags = pd.DataFrame({"date": days, "benchmark": [n or "IMOEX" for n, _ in pairs], "flag": [f for _, f in pairs]})
+    b = _chain(parts, keys)
+    return (d18.aggregate(b, ticker) if len(b) else td_rel(tick.iloc[0:0], imoex.iloc[0:0], ticker)), flags
+
+
+def td_rel_rezhim(rezhim: str, tick, ticker: str, imoex=None, indeksy=None, rows=None):
+    """Ось rel_signal: syroy = обычный td (v5 побайтно), rynok = IMOEX, sektor = PIT с откатом. Возврат (td, флаги | None)."""
+    if rezhim not in REZHIMY:
+        raise ValueError(f"rel_signal: {rezhim!r} вне {REZHIMY}")
+    if rezhim == "syroy":
+        return d18.aggregate(_check(tick, "тикер"), ticker), None
+    if imoex is None:
+        raise ValueError(f"rel_signal={rezhim}: нет баров IMOEX (молчаливое syroy запрещено)")
+    if rezhim == "rynok":
+        return td_rel(tick, imoex, ticker), None
+    return td_rel_sektor(tick, imoex, indeksy or {}, rows or [], ticker)
+
+
+def proverka_d1(td: pd.DataFrame, ref: pd.Series, lags=(-2, -1, 0, 1)) -> dict:
+    """Д1: corr(r_rel_d, ref_{d+lag}); r_rel — лог-доходность close td_rel, ref — (r_тикера − r_бенчмарка) по дням.
+    Максимум обязан быть на lag 0, иначе ValueError. Возврат {lag: corr}."""
+    x = pd.Series(np.log(td["close"].to_numpy(float)), index=pd.to_datetime(td["date"])).diff()
+    ref = ref.copy()
+    ref.index = pd.to_datetime(ref.index)
+    res = {L: float(x.corr(ref.shift(-L))) for L in lags}
+    if np.isnan(list(res.values())).any():
+        raise ValueError(f"Д1: корреляция не определена (мало наблюдений): {res}")
+    if max(res, key=res.get) != 0:
+        raise ValueError(f"Д1: максимум корреляции не на lag 0: {res}")
+    return res
