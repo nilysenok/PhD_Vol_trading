@@ -42,6 +42,24 @@ def mediana_goda(sg: np.ndarray, dates) -> np.ndarray:
 class EvaluatorV2(Evaluator):
     _ctx = dict(nov=NOVYE, vozm={}, default=True)
     _kray, STROGAYA = False, False                    # STROGAYA: якорь с новыми осями остаётся якорем (fastbt/a_strogaya.py)
+    poz = None                                        # Л7b: (|pos| портфеля [T], |pos| тикеров [17, T], сделок портфеля [T], сделок тикеров [17, T]) последнего evaluate_v2
+
+    def _poz(self, period):
+        """Позиции рядом с _series (те же keep/col/inv, `expo` = |pos|, у якоря вес × доля баров в рынке); пусто → 0, не nan."""
+        df, inv, eng, _, rs = self._last
+        keep = np.isin(df.index.year, years_of(period))
+        col = np.cumsum(keep) - 1
+        cat = lambda f: np.concatenate([f(r) for r in rs])                       # noqa: E731
+        port = lambda v: (np.bincount(inv, v, len(eng.dates)) / eng.cnt)[keep]   # noqa: E731
+        ex, cn = cat(lambda r: r.expo), cat(lambda r: r.cnt) / 2.0
+        tp, tn, lo = np.zeros((len(rs), int(keep.sum()))), np.zeros((len(rs), int(keep.sum()))), 0
+        for ti, r in enumerate(rs):
+            sl = slice(lo, lo + len(r.g))
+            lo = sl.stop
+            ok = keep[inv[sl]]
+            tp[ti, col[inv[sl]][ok]], tn[ti, col[inv[sl]][ok]] = ex[sl][ok], cn[sl][ok]
+        sd = np.bincount(inv, cn, len(eng.dates))[keep]                          # сделки портфеля — сумма по тикерам (как sdelok_kv)
+        return port(ex), tp, sd, tn
 
     def _rows(self, pt, period, anchor):
         c = self._ctx
@@ -194,7 +212,7 @@ class EvaluatorV2(Evaluator):
             cat(lambda r: r.cnt), pd.DatetimeIndex(eng.dates[inv])
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
-        t0, self.diag, self.zaem = time.perf_counter(), None, None
+        t0, self.diag, self.zaem, self.poz = time.perf_counter(), None, None, None
         nov, vz = {k: pt.get(k, v) for k, v in NOVYE.items()}, dict(vozm or {})
         self._ctx, self._kray, comm0 = dict(nov=nov, vozm=vz, default=nov == NOVYE and not vz), False, self.comm
         self.comm = float(vz.get("komissiya", comm0))
@@ -214,7 +232,8 @@ class EvaluatorV2(Evaluator):
                     "by_quarter": {f"{y}Q{q}": nan for y in yrs for q in range(1, 5)}, "sharpe": nan, "msr": nan,
                     "flagi": {"vyrozhdena": True}}, None, None
         x, tik, dts, zaem, cnt, rdates = self._series(period, comm)
-        self.zaem = zaem_v2.ryad(self, period)                                  # Ж-089: база платы за заём, рядом с ledger
+        self.poz = self._poz(period)                                            # Л7b: |pos| и сделки для F_X/F_E/F_R ledger 2.1
+        self.zaem = zaem_v2.ryad(self, period)                              # Ж-089: база платы за заём, рядом с ledger
         kv = kvartaly if period == "train4" else (lambda d, v: kvartaly_gody(d, v, yrs))   # не-train4 (test1): кварталы своих годов, ledger не пишется
         bq = kv(dts.to_numpy(), x)
         med, dolya = tselevaya(bq)

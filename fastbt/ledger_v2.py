@@ -103,14 +103,14 @@ def segment_do_goda(t: int) -> int:
     return (t - 1 - GODY[0]) * 4 + 3
 
 
-def summy(daty: np.ndarray, x: np.ndarray, poz=None) -> np.ndarray:
+def summy(daty: np.ndarray, x: np.ndarray, poz=None, sdelki=None) -> np.ndarray:
     """Суммы сегментов F_S…F_X по кварталам из ряда x[..., T] (избыточная доходность после комиссий) → [..., 16, NF].
     F_S, F_Q — суммы x и x²; F_MX, F_MN, F_D — моноид просадки по накопленной сумме квартала (как stats._bar); F_L — x последнего дня.
     poz[..., T] — |позиция| (необязательно): F_X = она на последнем дне квартала (выход на конце окна, мутация № 6), F_E = дней в позиции.
-    Без poz F_X = F_E = 0, F_R = 0 всегда: ряд позиций не знает входов."""
+    sdelki[..., T] — число сделок в день (необязательно): F_R = сумма за квартал. Без poz F_X = F_E = 0, без sdelki F_R = 0."""
     x = np.asarray(x, float)
     seg = segment_kvartala(daty)
-    if seg.shape != x.shape[-1:] or (poz is not None and np.shape(poz) != x.shape):
+    if seg.shape != x.shape[-1:] or any(a is not None and np.shape(a) != x.shape for a in (poz, sdelki)):
         raise ValueError("daty, x, poz разной длины")
     out = np.zeros(x.shape[:-1] + (NSEG, stats.NF))
     for k in range(NSEG):
@@ -126,6 +126,8 @@ def summy(daty: np.ndarray, x: np.ndarray, poz=None) -> np.ndarray:
         if poz is not None:
             ps = np.abs(np.asarray(poz, float)[..., m])
             out[..., k, stats.F_X], out[..., k, stats.F_E] = ps[..., -1], (ps > 0).sum(-1)
+        if sdelki is not None:
+            out[..., k, stats.F_R] = np.asarray(sdelki, float)[..., m].sum(-1)
     return out
 
 
@@ -158,8 +160,9 @@ class Pisatel:
         mp = self.d / "manifest.json"
         self.d.mkdir(parents=True, exist_ok=True)
         ex = json.loads(mp.read_text(encoding="utf-8")) if mp.exists() else m
-        if any(ex.get(k) != m.get(k) for k in ("kod", "vhody", "v")):
-            raise ValueError("manifest: другой kod/vhody — отказ")
+        if any(ex.get(k) != m.get(k) for k in ("kod", "vhody", "v")) or ex.get("poz_konec", False) != m.get("poz_konec", False):
+            raise ValueError("manifest: другой kod/vhody/poz_konec — отказ")
+        self.poz_konec = bool(ex.get("poz_konec"))
         if not mp.exists():
             mp.write_text(json.dumps(ex, ensure_ascii=False, sort_keys=True, indent=1), encoding="utf-8")
         [(self.pd / s).mkdir(parents=True, exist_ok=True) for s in ("port", "tik")]
@@ -182,15 +185,22 @@ class Pisatel:
     def done(self) -> set:
         return set(self._done)
 
+    _poz = None         # позиции строки — задаёт Pisatel21.add (сигнатура v2.0 add не меняется, IG-контракт)
+
     def add(self, row: dict, ex_port, ex_tik) -> None:
+        poz, self._poz = self._poz, None
         if row.get("status") != "ok":
             ex_port, ex_tik = np.full(self.T, np.nan), np.full((NTIK, self.T), np.nan)
+            poz = (None,) * 4
         if ex_port.dtype != np.float64 or ex_port.shape != (self.T,) or ex_tik.shape != (NTIK, self.T):
             raise TypeError("port: float64 [T]; tik: [17, T]")
         if self.v == V21:
             if self.daty is None or self.daty.shape != (self.T,):
                 raise ValueError("ledger 2.1: нужны daty [T] у писателя")
-            ex_port, ex_tik = summy(self.daty, ex_port), summy(self.daty, np.asarray(ex_tik, float))   # nan у не-ok остаётся nan
+            if self.poz_konec and poz is None:
+                raise ValueError("ledger 2.1 с poz_konec: нужны |позиции| и сделки (poz)")
+            pp, pt, sp, st = poz or (None,) * 4
+            ex_port, ex_tik = summy(self.daty, ex_port, pp, sp), summy(self.daty, np.asarray(ex_tik, float), pt, st)   # nan у не-ok остаётся nan
         self.buf.append((dict(row), ex_port, ex_tik))
         if len(self.buf) >= self.shard:
             self.close()
@@ -221,11 +231,16 @@ class Pisatel21(Pisatel):
     """ledger 2.1: add() принимает те же ряды, пишет суммы сегментов по кварталам; daty [T] — даты рядов."""
     VERSIYA = V21
 
-    def __init__(self, root: Path, sid: str, potok: int, manifest: dict, shard: int = 256, daty=None):
+    def __init__(self, root: Path, sid: str, potok: int, manifest: dict, shard: int = 256, daty=None, poz: bool = False):
         if daty is not None:
             self.daty = np.asarray(daty, "datetime64[D]")
-            manifest = {**manifest, "nbars": nbars_kvartalov(self.daty).tolist(), "poz_konec": False}
+            manifest = {**manifest, "nbars": nbars_kvartalov(self.daty).tolist(), "poz_konec": bool(poz)}
         super().__init__(root, sid, potok, manifest, shard)
+
+    def add(self, row: dict, ex_port, ex_tik, poz=None) -> None:
+        """poz — (|pos| порт [T], |pos| тик [17, T], сделок порт [T], сделок тик [17, T]); обязательна при poz_konec для status ok."""
+        self._poz = poz
+        super().add(row, ex_port, ex_tik)
 
 
 class Chitatel:
