@@ -30,7 +30,7 @@ def main(argv=None) -> int:
     nf = ekviv.net_fajla(rez)
     if nf:
         print(f"FAIL etalony: в {len(nf)} записях оценщик не нашёл файл (данных не хватает), первая {nf[0]}: "
-              f"{rez[nf[0]][0][:300]}")
+              f"{rez[nf[0]][0][-300:]}")        # хвост записи: там status/oshibka с именем файла
         return 1
     meta.update(ekviv.sreda_meta(), seed=a.seed, tochek=len(tochki), sozdan=time.strftime("%F %T %Z"))
     ekviv.sohranit(a.out, rez, meta)
