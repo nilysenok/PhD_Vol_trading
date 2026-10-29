@@ -39,15 +39,7 @@ import numpy as np
 import pandas as pd
 
 from fastbt import period_v2, zona
-from fastbt.cache import MAIN, code_hash
-
-
-def numba_cache_dir() -> Path:
-    """Д5: каталог numba-кэша зависит от хэша кода fastbt/*.py — правка любого исходника строит кэш заново."""
-    return MAIN / "data" / "fastbt" / "numba_cache" / code_hash()[:16]
-
-
-os.environ.setdefault("NUMBA_CACHE_DIR", str(numba_cache_dir()))     # до первого импорта numba; явный env побеждает
+from fastbt.cache import MAIN, code_hash, numba_cache_dir  # noqa: F401  (NUMBA_CACHE_DIR задан в fastbt/__init__)
 
 ROOT =Path(__file__).resolve().parent.parent
 REGEN = MAIN / "data" / "regen"
