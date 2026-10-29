@@ -159,13 +159,15 @@ def schitat_kusok(zad: tuple) -> tuple:
         (d / f"daty.npy.{_W['nn']}.tmp.npy").replace(d / "daty.npy")
     v = _W.get("v", lm.V)
     mf = manifest(sid, sr, c, _W["kod_slit"])
-    w = lm.Pisatel21(_W["root"], sid, _W["nn"], mf, daty=sr.daty) if v == lm.V21 else lm.Pisatel(_W["root"], sid, _W["nn"], mf)
+    poz_ok = hasattr(sr.evr, "poz")                                    # Л7b: настоящий оценщик отдаёт |pos| (EvaluatorV2.poz)
+    w = lm.Pisatel21(_W["root"], sid, _W["nn"], mf, daty=sr.daty, poz=poz_ok) if v == lm.V21 else lm.Pisatel(_W["root"], sid, _W["nn"], mf)
     zak, t, oshibok = _W["zakryt"][sid] | w.done(), [], 0
     for i, pt in tochki(c, n0, n1):
         if sha_tochki(sid, sr, pt) in zak:
             continue
         r, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, _W["ist"], _W["kod_slit"], _W["fast"], v)
-        importlib.import_module("fastbt.zaem_v2").pisat(w, r, ex_p, ex_t, getattr(sr.evr, "zaem", None))   # Ж-089: ряд платы за заём
+        importlib.import_module("fastbt.zaem_v2").pisat(w, r, ex_p, ex_t, getattr(sr.evr, "zaem", None),
+                                                           sr.evr.poz if poz_ok and v == lm.V21 and r["status"] == "ok" else None)   # Ж-089: ряд платы за заём; Л7b: |pos|
         importlib.import_module("fastbt.tejk_signal").pisat_diag(w.pd, r, getattr(sr.evr, "diag", None) if r["status"] == "ok" else None)   # Ж-087
         zak = zak | {r["klyuch_sha"]}
         t.append(r["t_sek"])
@@ -224,8 +226,10 @@ def sverka(n: int, root: Path, fast: bool) -> int:
         r2, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, r["istochnik"], r["kod_slit"], fast, chs[sid].v)
         sig = lambda x: json.dumps({k: v for k, v in x.items() if k not in SVERKA_PROPUSK}, sort_keys=True)  # noqa: E731
         if chs[sid].v == lm.V21:        # суммы сегментов, float64, побайтно
-            ok = sig(r) == sig(r2) and chs[sid].summy([r])[0].tobytes() == lm.summy(sr.daty, ex_p).tobytes() \
-                and chs[sid].summy([r], "tik")[0].tobytes() == lm.summy(sr.daty, np.asarray(ex_t, float)).tobytes()
+            pz = sr.evr.poz if chs[sid].manifest.get("poz_konec") else None
+            pp, pt_, sp, st = pz or (None,) * 4
+            ok = sig(r) == sig(r2) and chs[sid].summy([r])[0].tobytes() == lm.summy(sr.daty, ex_p, pp, sp).tobytes() \
+                and chs[sid].summy([r], "tik")[0].tobytes() == lm.summy(sr.daty, np.asarray(ex_t, float), pt_, st).tobytes()
         else:
             ok = sig(r) == sig(r2) and np.asarray(chs[sid].matrica([r])[:, 0], float).tobytes() == np.asarray(ex_p, float).tobytes() \
                 and chs[sid].tik([r])[0].tobytes() == np.asarray(ex_t).astype(np.float32).tobytes()
