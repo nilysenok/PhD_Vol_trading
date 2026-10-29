@@ -45,6 +45,9 @@ def trend_run(sig, exl, exs, nxt, close, high, low, atr, atr0, sigma, rh, rl,
                 if d == 1:
                     if tt < 2:
                         tsl = rh[u] - tmult * ca
+                    elif tt == 3:           # ATR-trailing (Ж-127): максимум с входа, не окно N баров
+                        ext = max(ext, high[u])
+                        tsl = ext - tmult * ca
                     else:
                         if high[u] > ext:
                             ext = high[u]
@@ -55,6 +58,9 @@ def trend_run(sig, exl, exs, nxt, close, high, low, atr, atr0, sigma, rh, rl,
                 else:
                     if tt < 2:
                         tsl = rl[u] + tmult * ca
+                    elif tt == 3:
+                        ext = min(ext, low[u])
+                        tsl = ext + tmult * ca
                     else:
                         if low[u] < ext:
                             ext = low[u]

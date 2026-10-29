@@ -78,7 +78,7 @@ class Unit:
                     rl.append(c)
             self.rh, self.rl = np.stack(rh), np.stack(rl)
             P = np.zeros((len(self.rm), 12))
-            tt = {"fixed_atr": 0, "chandelier": 1, "parabolic_step": 2}
+            tt = {"fixed_atr": 0, "chandelier": 1, "parabolic_step": 2, "atr_trail": 3}
             for i, r in enumerate(self.rm):
                 be = r["breakeven_thresh"]
                 P[i, [T_KIND, T_ISL, T_TM, T_BTH, T_TT, T_PS, T_PM, T_CD, T_RH]] = [
