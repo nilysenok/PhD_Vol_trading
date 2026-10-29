@@ -78,3 +78,41 @@ def test_sverka_2019_s_iss_csv():
     j = pd.concat([a.rename("a"), c.rename("c")], axis=1)
     assert j.a.notna().sum() >= 225 and j.c.notna().sum() == 252
     assert ((j.a / j.c - 1).abs().dropna() < 1e-9).all()                                       # допуск: побайтно
+
+
+def _index_d(tmp_path):
+    d = pd.DataFrame({"date": pd.to_datetime(["2022-01-03", "2024-12-30", "2025-01-09", "2026-03-02"]).date, "close": [10.0, 20.0, 777.0, 888.0]})
+    p = tmp_path / "IMOEX_d.parquet"
+    d.to_parquet(p)
+    return p
+
+
+def _proverka_d(fn, p):
+    r = fn(p, pd.Timestamp("2022-01-01"), pd.Timestamp("2025-01-01"))
+    assert r.index.max() < pd.Timestamp("2025-01-01") and list(r.values) == [10.0, 20.0]
+
+
+def test_index_d_ne_chitaet_2025(tmp_path):
+    p = _index_d(tmp_path)
+    _proverka_d(r1e.dnevnye_index_d, p)
+    with pytest.raises(PermissionError):
+        r1e.dnevnye_index_d(p, pd.Timestamp("2022-01-01"), pd.Timestamp("2025-06-01"))
+
+
+def test_mutaciya_chtenie_bez_filtra_lovitsya(tmp_path):
+    import pyarrow.parquet as pq
+
+    def mut(p, s, e):
+        d = pq.read_table(p).to_pandas()
+        return pd.Series(d["close"].to_numpy(), index=pd.to_datetime(d["date"]))
+    with pytest.raises(AssertionError):
+        _proverka_d(mut, _index_d(tmp_path))
+
+
+def test_stik_10min_do_2022_index_d_posle(tmp_path):
+    bars = pd.concat([_den("2021-12-30", "18:50", 100.0), _den("2021-12-31", "12:10", 5.0)])
+    p10 = tmp_path / "m10.parquet"
+    bars.to_parquet(p10)
+    r = r1e.zagruzit_imoex(p10, pd.Timestamp("2021-01-01"), E, _index_d(tmp_path))
+    assert list(r.index) == [pd.Timestamp("2021-12-30"), pd.Timestamp("2022-01-03"), pd.Timestamp("2024-12-30")]
+    assert r.iloc[-1] == 20.0 and r.index.is_monotonic_increasing

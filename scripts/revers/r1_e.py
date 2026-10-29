@@ -51,8 +51,27 @@ def dnevka_iz_10min(bars: pd.DataFrame, s: pd.Timestamp, e: pd.Timestamp) -> pd.
     return pd.Series(last["close"].to_numpy(float), index=pd.DatetimeIndex(last.t.dt.normalize(), name="TRADEDATE"))
 
 
-def zagruzit_imoex(path: Path, s: pd.Timestamp, e: pd.Timestamp) -> pd.Series:
-    """Дневные закрытия IMOEX [s, e): ISS-CSV (TRADEDATE, CLOSE) или parquet 10-минуток зоны Z2 (begin, close)."""
+STYK = pd.Timestamp("2022-01-01")  # до стыка — дневка из 10-минуток, с него — дневные закрытия index_d
+
+
+def dnevnye_index_d(path: Path, s: pd.Timestamp, e: pd.Timestamp) -> pd.Series:
+    """Дневные close IMOEX [s, e) из index_d (date, close); фильтр date < min(e, HARD) — на чтении, ≥ 2025 не материализуется."""
+    import pyarrow.parquet as pq
+    zona.check(e - pd.Timedelta(days=1), "IMOEX index_d")
+    cut = min(e, zona.HARD).date()
+    d = pq.read_table(path, columns=["date", "close"], filters=[("date", "<", cut)]).to_pandas()
+    d["date"] = pd.to_datetime(d["date"])
+    if len(d) and d["date"].max() >= zona.HARD:
+        raise PermissionError(f"IMOEX index_d: даты ≥ {zona.HARD.date()}")
+    d = d[(d.date >= s) & (d.date < e)].drop_duplicates("date", keep="last")
+    return pd.Series(d["close"].to_numpy(float), index=pd.DatetimeIndex(d["date"], name="TRADEDATE")).sort_index()
+
+
+def zagruzit_imoex(path: Path, s: pd.Timestamp, e: pd.Timestamp, path_d: Path | None = None) -> pd.Series:
+    """Дневные закрытия IMOEX [s, e): ISS-CSV (TRADEDATE, CLOSE) или parquet 10-минуток зоны Z2 (begin, close).
+    С path_d: [s, STYK) — из 10-минуток (прогрев), [STYK, e) — из index_d (без дыр)."""
+    if path_d is not None:
+        return pd.concat([zagruzit_imoex(path, s, STYK), dnevnye_index_d(path_d, STYK, e)])
     if Path(path).suffix == ".parquet":
         import pyarrow.parquet as pq
         cut = min(e, zona.HARD)
@@ -142,12 +161,13 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--period", choices=sorted(PERIODY), required=True)
     ap.add_argument("--imoex", type=Path, default=None, help="ISS-CSV IMOEX; для train4 — data/iss_mix_2015_2019/IMOEX.csv")
+    ap.add_argument("--imoex-d", type=Path, default=None, help="parquet дневных IMOEX (date, close): с 2022 вместо 10-минуток (без дыр)")
     a = ap.parse_args()
     s, e, _, _ = PERIODY[a.period]
     path = a.imoex or (Path(os.environ.get("FASTBT_MAIN", ROOT)) / "data/iss_mix_2015_2019/IMOEX.csv" if a.period == "train4" else None)
     if path is None:
         sys.exit("test1: укажите --imoex (замок Z2 должен быть снят)")
-    tab = tablicy(a.period, zagruzit_imoex(path, s, e), ryady(a.period))
+    tab = tablicy(a.period, zagruzit_imoex(path, s, e, a.imoex_d), ryady(a.period))
     zapis(a.period, tab)
     print(tab["fazy_doli"].pivot(index="faza", columns="god", values="dolya").to_string())
     print(tab["po_fazam"].round(3).to_string())
