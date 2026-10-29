@@ -1,0 +1,67 @@
+# Куб отбора v6, S1 MeanRev (Ж-132 п. 2–3; docs/otchety/2026-10-29_setka_v6_inventarizaciya.md §1, §3; формат — README этого каталога).
+# Коммитится до счёта (otbor_statistika.md п. 1). v6 = куб v5 (baza) + v6_dobavleno + новые оси; «выкл.» (vykl) — первое значение, точка v6
+# со всеми новыми осями «выкл.» есть точка v5 (fastbt/canon_v6.py). Объём: `python3 fastbt/canon_v6.py`. Остальные разделы v5 здесь не повторяются.
+# Решения (класс B дирижёра, Ж-132, 29.10 13:20; владелец может отменить до 30.10 13:20):
+#  (1) p_vykl — вероятность «выкл.» при выборке Соболя: 0,9 у запрещающих фильтров (filtr: true; иначе точка включает 8–9 фильтров и сделок нет),
+#      0,5 у прочих корневых осей; у дочерних (roditel) поля нет, они равномерны и при выключенных родителях схлопываются в «выкл.».
+#      Это смещение выборки; N считается по фактическим уникальным точкам (§3.5).
+#  (2) zhdet — листы кода V6-…, без которых ось (значение) не принимается оценщиком; пока лист не назван в canon_v6.GOTOVY, в Соболь не входит.
+#  (3) seed Соболя v6 — 20261102/20261103 (v5: 20261030/31), Моррис — 20261101 (§3.3); N = 200 000 точек на период (Ж-132 п. 2).
+# ↺ — расширение сетки v5 → v6, 2026-10-30 (предложено), причина Ж-132; N обновляется · откат: выбросить новые разделы и v6_dobavleno (29.10).
+v: 4
+format: progon-kub
+setka: v6
+data: 2026-10-30
+baza: {setka: v5, kub_sha: bb483aeaa3514ed794fc7eb8a73761c210328cff559a00cadb0a422bc873922c}
+sid: S1
+tip: kontr
+periody: [train4, v2]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261102, seed2: 20261103, scramble: true, N: 200000, morris_seed: 20261101}
+snyato: {yakorya_progon: {sigma: sigma_ist, storona: asim, rezhim: rezhim, ed_lim: ed_lim, zhizn: zhizn, lestnica: lestnica, gap: gap,
+                          t_vyhod: t_vyhod, filtr: sob_tip}, zakrepleno: {tf: tf}}      # якоря v5, ставшие осями v6
+
+vyhod:
+  tejk: {v6_dobavleno: [pol_puti], zhdet: [V6-12]}      # И13: забрать половину пути до средней (fastbt/tejk_signal.py:23)
+
+kontekst:
+  rel_signal:     {setka: [syroy, sektor, rynok], vykl: syroy, p_vykl: 0.5, zhdet: [V6-1a, V6-1b, V6-12], otkuda: "новая, Ж-132 п. 3", smysl: "сигнал по движению тикера сверх сектора/рынка — без беты"}
+  dlit:           {setka: [1, 2, 3], vykl: 1, p_vykl: 0.5, zhdet: [V6-2, V6-12], otkuda: "новая, Ж-132 п. 3", smysl: "вход, только если условие держится k дней подряд — подтверждение вместо свечей"}
+  asim:           {setka: [0, -2, -1, 1, 2, long], vykl: 0, p_vykl: 0.5, zhdet: [V6-3, V6-12], otkuda: "новая, Ж-132 п. 3", smysl: "на растущем рынке с дивидендами шорт требует более сильного сигнала, чем лонг"}
+  norm:           {setka: [okno, s252], vykl: okno, p_vykl: 0.5, zhdet: [V6-5, V6-12], otkuda: "fastbt/signals/v5_s12.py", smysl: "порог в единицах годовой σ тикера: одинаков в спокойный и бурный год"}
+  hurst_th:       {setka: [0, 0.4, 0.45, 0.5], vykl: 0, p_vykl: 0.9, filtr: true, zhdet: [V6-4, V6-12], otkuda: "Р daily_full_opt_v5.py:387-397", smysl: "контртренд — только когда ряд антиперсистентен (H ниже порога)"}
+  naklon:         {setka: [0, 0.05, 0.1, 0.2], vykl: 0, p_vykl: 0.9, filtr: true, zhdet: [V6-4, V6-12], otkuda: "fastbt/filtry_v5.py:88-109", smysl: "возврат к средней — в боковике, когда MA плоская (slope_max)"}
+  vol_regime_max: {setka: [net, 0.8, 0.9, 1.0, 1.1, 1.2], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-4, V6-12], otkuda: "fastbt/signals/s12.py:24-25", smysl: "контртренд — не в разгоне волатильности (ATR14 / SMA50(ATR14) ниже порога)"}
+  tihiy_othod:    {setka: [net, da], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-4, V6-12], otkuda: "fastbt/signals/s12.py:27-29", smysl: "тихий отход: входить на затухающем объёме"}
+  sektor_trend:   {setka: [net, protiv, po_trendu], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-6, V6-12], otkuda: "fastbt/e1_sektor.py:94", smysl: "лонг — когда сектор выше своей MA, шорт — когда ниже (или наоборот)"}
+  shirina:        {setka: [net, protiv, po_trendu], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-6, V6-12], otkuda: "fastbt/e1_sektor.py:94", smysl: "вход по большинству тикеров рынка (ширина)"}
+  ma_n:           {setka: [200, 100, 50], vykl: 200, roditel: [sektor_trend, shirina], zhdet: [V6-6, V6-12], otkuda: "fastbt/e1_sektor.py:94", smysl: "горизонт тренда сектора и ширины"}
+  porog_shiriny:  {setka: [0.5, 0.4, 0.6], vykl: 0.5, roditel: [shirina], zhdet: [V6-6, V6-12], otkuda: "fastbt/e1_sektor.py:94", smysl: "какая доля тикеров считается «большинством»"}
+  relf_napr:      {setka: [net, po_sile, protiv], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-6, V6-12], otkuda: "fastbt/e1_rel_sektor.py:25", smysl: "вход по относительной силе тикера (моментум) или против неё (возврат)"}
+  relf_k:         {setka: [1, 0.5, 1.5], vykl: 1, roditel: [relf_napr], zhdet: [V6-6, V6-12], otkuda: "kontrakt_fdr_iter16_20.md:255-268", smysl: "порог относительной силы в σ̂"}
+  relf_okno:      {setka: [5, 1, 20], vykl: 5, roditel: [relf_napr], zhdet: [V6-6, V6-12], otkuda: "kontrakt_fdr_iter16_20.md:255-268", smysl: "горизонт относительной силы, дней"}
+  relf_bench:     {setka: [sektor, rynok], vykl: sektor, roditel: [relf_napr], zhdet: [V6-1a, V6-6, V6-12], otkuda: "fastbt/filtr_e1_rynok.py:39-50", smysl: "относительно чего мерить силу: сектора или рынка"}
+  sob_tip:        {setka: [net, cbr, div, cbr_div], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-7, V6-12], otkuda: "fastbt/sobytiya_e1.py:30", smysl: "не входить перед заседанием ЦБ или отсечкой"}
+  sob_do:         {setka: [1, 2, 3, 5], vykl: 1, roditel: [sob_tip], zhdet: [V6-7, V6-12], otkuda: "zh051_it7.yaml:31", smysl: "за сколько торговых дней до события запрет"}
+  sob_posle:      {setka: [0, 1, 2], vykl: 0, roditel: [sob_tip], zhdet: [V6-7, V6-12], otkuda: "zh051_it7.yaml:33", smysl: "сколько дней после события запрет"}
+  post_shok:      {setka: [net, "3:1", "2:0.5"], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-6, V6-12], otkuda: "fastbt/filtr_e1.py:40-47", smysl: "вход после идиосинкратического шока при спокойном рынке"}
+  rv_perevorot:   {setka: [net, da], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-6, V6-12], otkuda: "fastbt/filtr_e1.py:65-76", smysl: "вход на спаде волатильности после её всплеска"}
+  obyom_anom:     {setka: [net, da], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-6, V6-12], otkuda: "fastbt/filtr_e1.py:78-88", smysl: "аномальный объём без движения — признак накопления"}
+  rezhim:         {setka: [net, imoex_ma200, rang_sigma_rynka_08], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-6, V6-12], otkuda: "fastbt/rezhim_e1.py:49", smysl: "торговать, только когда рынок выше MA200 или не в верхних 20 % своей волатильности"}
+  vn_uslovie:     {setka: [net, spokojno_1, spokojno_2, po_bete, protiv_bety], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-8, V6-12], otkuda: "kontrakt_fdr_iter16_20.md:292-312", smysl: "вход, когда нефть, рубль или RVI спокойны либо двигают тикер в сторону сделки"}
+  vn_faktor:      {setka: [brent, usdrub, rvi], vykl: brent, roditel: [vn_uslovie], zhdet: [V6-8, V6-12], otkuda: "fastbt/vneshnie_1850.py", smysl: "какой внешний фактор"}
+  tf:             {setka: [den, 10m, 30m, 1h, 2h], vykl: den, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/tf_os_v5.py:27", smysl: "решение на часовом горизонте ловит внутридневной возврат"}
+
+ispolnenie:
+  sigma_ist:      {setka: [rv22, rv5, ewma094, rv66], vykl: rv22, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/designs/progon/kub_S1.yaml:19", smysl: "ставить уровни по быстрой или медленной волатильности"}
+  ed_lim:         {setka: [sigma, atr14, diap, pct], vykl: sigma, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/etap1_eval_v2.py:84-90", smysl: "отступ лимитки в ATR или дневном диапазоне вместо σ (при k_e > 0)"}
+  zhizn:          {setka: [den, 12, 36, 60], vykl: den, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:41", smysl: "лимитка стоит только утром — ловим перехлёст на открытии"}
+  lestnica:       {setka: [net, 0.5, 1.0], vykl: net, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/etap1_eval_v2.py:146-150", smysl: "вход лесенкой: половина на уровне, половина глубже (при k_e > 0)"}
+  gap:            {setka: [vhod, propusk], vykl: vhod, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:42", smysl: "гэп через уровень — это новость, не входить"}
+  t_vyhod:        {setka: [close, 1500, 1700, open2], vykl: close, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:43", smysl: "выходить до вечернего аукциона или на открытии"}
+  vyhod_lim:      {setka: [net, da], vykl: net, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:39", smysl: "выход лимиткой на d+1 экономит спред (при k_e > 0)"}
+  f_neisp:        {setka: [propusk, zakrytie_d1], vykl: propusk, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:22", smysl: "догонять неисполненный сигнал по закрытию d+1"}
+  time_decay:     {setka: [net, da], vykl: net, p_vykl: 0.5, zhdet: [V6-9, V6-12], otkuda: "P-движок v4 engine.py:113", smysl: "если возврат не пришёл за половину срока — забираем половину цели"}
+  pauza_porog:    {setka: [net, -0.5, 0, 0.5], vykl: net, p_vykl: 0.9, filtr: true, zhdet: [V6-12], otkuda: "fastbt/e1_pauza.py:28", smysl: "стратегия, потерявшая Шарп за квартал, не открывает новых сделок"}
+  pauza_okno:     {setka: [63, 42, 126], vykl: 63, roditel: [pauza_porog], zhdet: [V6-12], otkuda: "fastbt/e1_pauza.py:33", smysl: "окно скользящего Шарпа тени"}

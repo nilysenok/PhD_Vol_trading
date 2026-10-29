@@ -5,8 +5,6 @@ import itertools
 from pathlib import Path
 
 import numpy as np
-import pytest
-
 from fastbt import kalibr_v5 as K, ledger_v2 as lm, period_v2 as PV, svod_server_v5 as SV
 
 _p = Path(__file__).resolve().parents[1] / "scripts/server/svodka_ledger.py"
@@ -74,8 +72,6 @@ def test_svod_server_v5_na_kataloge_wf_bez_otkaza(tmp_path, monkeypatch):
     assert {"kalibr_top10.csv", "kontroli_k1_k2_k3.csv"} <= names
 
 
-@pytest.mark.xfail(strict=True, raises=ValueError, reason="находка P-2: K.pul_iz_ledger и kontroli_v5 строят Pul без period "
-                   "(manifest.period = wf не передаётся) -> охрана #645 отказывает; снять xfail после правки fastbt/kalibr_v5.py")
 def test_svod_server_v5_wf_pul_iz_ledger_ne_peredayot_period(tmp_path, monkeypatch):
     _otmetka(tmp_path, monkeypatch)
     _tri_prohoda(tmp_path)
