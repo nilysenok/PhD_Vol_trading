@@ -20,6 +20,9 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import json_daty as jd  # noqa: E402
+
 GRANICA = pd.Timestamp("2021-12-31")
 IMYA_DAT = {"begin", "end", "time", "datetime", "timestamp", "ts", "dt", "day", "period", "index", "__index_level_0__"}
 GOD_V_IMENI = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
@@ -94,7 +97,7 @@ def daty_npz(p: str) -> pd.Timestamp | None | str:
     return _max_cols(out) if out else "NODATES"
 
 
-CHITATELI = {".parquet": daty_parquet, ".csv": daty_csv, ".npz": daty_npz}
+CHITATELI = {".parquet": daty_parquet, ".csv": daty_csv, ".npz": daty_npz, ".json": jd.max_data}
 
 
 def sha256(p: str) -> str:
