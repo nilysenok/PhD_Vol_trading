@@ -44,7 +44,12 @@ plohie=$(grep -v '^#' "$TMP/iskl.txt" | grep -Fx -f - "$TMP/belyj.txt" || true)
 [ -z "$plohie" ] || fail "в белый список попали пути из tar_iskluchit_2022plus.txt: $(echo "$plohie" | head -3 | tr '\n' ' ')"
 spisok=()
 while IFS= read -r f; do spisok+=("$f"); done < "$TMP/belyj.txt"
-git -C "$REPO" archive --format=tar --prefix=kod/ "$FULL" -- "${spisok[@]}" | gzip -n -9 > "$TAR"
+. "$REPO/scripts/server/otmetka_paketa.sh"
+OTMETKA_WF=${PERENOS_OTMETKA:-$REPO/docs/resheniya/wf_zamok_snyat.json}      # есть в репозитории — едет в пакет (ставит владелец)
+git -C "$REPO" archive --format=tar --prefix=kod/ "$FULL" -- "${spisok[@]}" > "$TMP/kod.tar"
+otmetka_v_tar "$TMP/kod.tar" "$OTMETKA_WF"
+gzip -n -9 < "$TMP/kod.tar" > "$TAR"
+[ -s "$OTMETKA_WF" ] && { cp "$OTMETKA_WF" "$OUT/wf_zamok_snyat.json"; say "   отметка снятого замка wf: в tar (kod/docs/resheniya/) и в корне пакета"; } || true
 ! tar -tzf "$TAR" | grep -E '^kod/data/|test_locked|test1_2022_2024|\.(csv|parquet|npz|pkl)$' >/dev/null \
   || fail "в tar попали data/, test_locked или таблицы"
 ! tar -tzf "$TAR" | grep -E '__pycache__|\.py[co]$|\.nb[ic]$' >/dev/null \
@@ -102,8 +107,7 @@ grep '^etalony' "$TMP/etalony.log"
 find "$OUT/data" -name '.*.lock' -size 0 -delete          # flock daily_1850 при счёте эталонов, не данные
 
 say "5/6 SHA256SUMS и список rsync"
-(cd "$OUT" && find . -path ./data -prune -o -type f ! -name SHA256SUMS -print | sort | while IFS= read -r f; do
-  printf '%s  %s\n' "$(sha_file "$f")" "$f"; done) > "$TMP/SHA256SUMS"
+summy_paketa "$OUT" > "$TMP/SHA256SUMS"
 mv "$TMP/SHA256SUMS" "$OUT/SHA256SUMS"
 { (cd "$OUT" && find . -path ./data -prune -o -type f -print | sed 's|^\./||' | sort); sed 's|^|data/|' "$TMP/spisok_dannyh.txt"; } > "$TMP/spisok"
 mv "$TMP/spisok" "$OUT/spisok_perenosa.txt"

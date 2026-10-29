@@ -45,6 +45,7 @@ if [ ! -d "$KOD_DIR" ]; then
   chmod -R a-w "$KOD_DIR"
 fi
 kod_cel
+otmetka_paketa
 say "   файлов кода $(wc -l < "$KOD_SUMS" | tr -d ' '), каталог только для чтения"
 
 say "5/5 данные: data/ по manifest_dannyh.tsv"
