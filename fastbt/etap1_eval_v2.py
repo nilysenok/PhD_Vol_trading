@@ -16,7 +16,7 @@ from fastbt import fdr as fdr_mod, rangi_v6, rezhim_e1, tejk_signal, zaem_v2
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_eval import NET, PERIODS, REZHIM, Evaluator, is_anchor, params_of, years_of
 from fastbt.etap1_run import run_e1, sum_rows
-from fastbt.ledger_v2 import kvartaly, tselevaya
+from fastbt.ledger_v2 import kvartaly, kvartaly_gody, tselevaya
 
 NOVYE = dict(ed_lim="sigma", zhizn="den", lestnica="net", gap="vhod", t_vyhod="close", k_x="net", storona="obe", filtr="net",
              tejk_signal="net", vhod_tip="podtverzhdenie",
@@ -215,12 +215,13 @@ class EvaluatorV2(Evaluator):
                     "flagi": {"vyrozhdena": True}}, None, None
         x, tik, dts, zaem, cnt, rdates = self._series(period, comm)
         self.zaem = zaem_v2.ryad(self, period)                                  # Ж-089: база платы за заём, рядом с ledger
-        bq = kvartaly(dts.to_numpy(), x)
+        kv = kvartaly if period == "train4" else (lambda d, v: kvartaly_gody(d, v, yrs))   # не-train4 (test1): кварталы своих годов, ledger не пишется
+        bq = kv(dts.to_numpy(), x)
         med, dolya = tselevaya(bq)
         qr = (rdates.year * 10 + rdates.quarter).to_numpy()
         row = {**head, "status": "ok", "prichina": None, "kod": v1["kod"], "vhody": v1["vhody"],   # годы — int, как v1.0 (json сделает строки)
                "by_quarter": bq, "mediana_kv": med, "vyrozhdena": v1["vyrozhdena"], "comm_pct": v1["comm_pct"],
-               "dolya_pol_kv": dolya, "by_quarter_zaem": {str(s): kvartaly(dts.to_numpy(), z) for s, z in zaem.items()},
+               "dolya_pol_kv": dolya, "by_quarter_zaem": {str(s): kv(dts.to_numpy(), z) for s, z in zaem.items()},
                "sdelok_kv": {k: float(cnt[(qr == int(k[:4]) * 10 + int(k[5]))].sum()) / 2 for k in bq},
                "flagi": {"vyrozhdena": v1["vyrozhdena"], "kray": [], "short_shag1_kray": self._kray}, "t_sek": time.perf_counter() - t0,
                **{k: v1[k] for k in ("sharpe", "msr", "sortino", "kalmar", "mdd", "T", "skew", "kurt", "prichiny", "by_year",
