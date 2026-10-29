@@ -72,7 +72,8 @@ def schet(sid: str, period: str, n_pl: int | None = None, n_k2: int = N_K2) -> N
 
 def _schet(ps, pk, sid: str, period: str, n_pl: int | None, n_k2: int) -> None:
     cfg, n_pl = PERIODS[period], n_pl if n_pl is not None else PERIODS[period]["n_placebo"]
-    top, info = vybor(LEDGER, sid)                       # точки выбраны на train4 (ledger прохода 1); на test1 не перебираются
+    with modul_period(ps, "train4"):                     # vybor читает кубы прохода 1 (train4); вложенный контекст вернёт period
+        top, info = vybor(LEDGER, sid)                   # точки выбраны на train4 (ledger прохода 1); на test1 не перебираются
     print(sid, period, info, flush=True)
     ev = ps.fabrika_real(sid).evr
     lags = pk.k2_lags(20)[:: max(20 // n_k2, 1)][:n_k2]

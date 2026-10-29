@@ -35,6 +35,44 @@ def test_fabrika_poluchaet_test1_a_posle_vozvrat(monkeypatch):
     assert (ps.PERIOD, ps.KUB) == old                          # finally вернул прежнее, даже при падении
 
 
+def _tsepochka(monkeypatch, seen: dict) -> None:
+    class Ev:
+        def evaluate_v2(self, pt, period, vz):
+            seen["ev_period"] = (period, ps.PERIOD)
+            raise Stop
+
+    def vybor(ledger, sid):
+        seen["vybor"] = ps.PERIOD
+        return pd.DataFrame([dict(pt=None, sobol_i=1, ustojchiva=True, msr_vsego=0.0)]), {}
+
+    def fabrika(sid):
+        seen["fabrika"] = ps.PERIOD
+        return type("F", (), {"evr": Ev()})()
+    monkeypatch.setattr(r1_d, "vybor", vybor)
+    monkeypatch.setattr(ps, "fabrika_real", fabrika)
+
+
+def test_vybor_pod_train4_a_schet_pod_test1(monkeypatch):
+    seen, old = {}, ps.PERIOD
+    _tsepochka(monkeypatch, seen)
+    with pytest.raises(Stop):
+        r1_d.schet("S1", "test1")
+    assert seen["vybor"] == "train4"
+    assert seen["fabrika"] == "test1"
+    assert seen["ev_period"] == ("test1", "test1")
+    assert ps.PERIOD == old
+
+
+def test_mutaciya_ves_schet_pod_test1_lovitsya(monkeypatch):
+    seen = {}
+    _tsepochka(monkeypatch, seen)
+    monkeypatch.setattr(r1_d, "modul_period", lambda ps_, period: contextlib.nullcontext())
+    monkeypatch.setattr(ps, "PERIOD", "test1")                 # как сейчас: всё под test1
+    with pytest.raises(Stop):
+        r1_d.schet("S1", "test1")
+    assert seen["vybor"] != "train4"                           # основной тест на этом упал бы
+
+
 def test_mutaciya_period_ne_vystavlen_lovitsya(monkeypatch):
     seen = {}
     _podmena(monkeypatch, seen)
