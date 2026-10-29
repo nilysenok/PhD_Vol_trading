@@ -127,14 +127,14 @@ def otn_faza(sektor: str, daty, dannye: dict | None = None) -> pd.Series:
     return lab.reindex(_daty(daty)).rename("otn")
 
 
-def doli_po_godam(f: pd.DataFrame, gody=(2016, 2017, 2018, 2019)) -> pd.DataFrame:
+def doli_po_godam(f: pd.DataFrame, gody=(2016, 2017, 2018, 2019), status: str = "разработка 2016–2019, до аудита") -> pd.DataFrame:
     rows = []
     for g in gody:
         x = f.faza[f.index.year == g]
         for k in FAZY + ["nan"]:
             n = int(x.isna().sum()) if k == "nan" else int((x == k).sum())
             rows.append({"god": g, "faza": k, "dni": n, "dolya": round(n / len(x), 4), "dni_goda": len(x),
-                         "status": "разработка 2016–2019, до аудита"})
+                         "status": status})
     return pd.DataFrame(rows)
 
 
