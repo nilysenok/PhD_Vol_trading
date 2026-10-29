@@ -51,6 +51,16 @@ otmetka_wf() {   # период wf читает данные ≥ 2022: толь�
   [ -s "$P/wf_zamok_snyat.json" ] || fail "wf: нет отметки $P/wf_zamok_snyat.json (её ставит владелец, не агент) — счёт не запускаю"
 }
 
+otmetka_paketa() {   # отметка wf в коде (kod/<sha>/docs/resheniya/): печатает SHA файла и SHA предрегистрации v2 из неё; нет отметки — ничего (wf откажет)
+  local k="$KOD_DIR/docs/resheniya/wf_zamok_snyat.json" pre
+  [ -f "$k" ] || { say "   отметки wf в пакете нет (период wf на сервере откажет)"; return 0; }
+  pre=$(sed -n 's/.*"sha256": *"\([0-9a-f]\{64\}\)".*/\1/p' "$k" | head -n 1)
+  [ -n "$pre" ] || fail "отметка wf без sha256 предрегистрации v2 (64 hex) — пакет не годен"
+  [ -z "${PERENOS_PREREG_SHA:-}" ] || [ "$pre" = "$PERENOS_PREREG_SHA" ] || fail "SHA предрегистрации в отметке $pre ≠ ожидаемому PERENOS_PREREG_SHA"
+  [ ! -f "$P/wf_zamok_snyat.json" ] || [ "$(sha_file "$P/wf_zamok_snyat.json")" = "$(sha_file "$k")" ] || fail "wf_zamok_snyat.json в корне пакета ≠ отметке в коде"
+  say "   отметка wf: sha256 файла $(sha_file "$k"), предрегистрация v2 $pre"
+}
+
 chuzhie_processy() {   # $1 — свой период; сумма процессов других ЖИВЫХ цепочек (logs/sobol_<период>.pid + .procs)
   local s=0 f
   for f in "$P"/logs/sobol_*.pid; do
