@@ -31,8 +31,13 @@ def _ledger(period: str, years: tuple, k: int = 6) -> V.Ledger:
 # --- умолчание = старый путь побайтно -----------------------------------------------------------------------------
 def test_umolchaniya_ne_izmenilis():
     assert E.PERIODS["train"] == (2018, 2019) and D.START == pd.Timestamp("2017-01-01") and V.NBLK == 8
+    # Периоды v2 (#630, Ж-113) и wf (Ж-136) считает только оценщик (E.PERIODS); поиск этапа 1 (V.PERIOD_YEARS) их не знает.
+    # Инвариант: годы поиска = годы оценщика для каждого периода поиска; периодов только в оценщике — ровно эти два.
+    assert set(E.PERIODS) - set(V.PERIOD_YEARS) == {"v2", "wf"} and set(V.PERIOD_YEARS) <= set(E.PERIODS)
     for per, (a, b) in E.PERIODS.items():
-        assert V.PERIOD_YEARS[per] == tuple(range(a, b + 1)) == E.years_of(per)
+        assert E.years_of(per) == tuple(range(a, b + 1))
+        if per in V.PERIOD_YEARS:
+            assert V.PERIOD_YEARS[per] == E.years_of(per)
     assert E.PERIODS["train4"] == (2016, 2019) and 2015 not in V.PERIOD_YEARS["train4"]    # 2015 — только прогрев
 
 

@@ -43,25 +43,34 @@ def sha(p: Path) -> str:
 # --- умолчание = старый путь побайтно (хэши получены старым кодом origin/kanon-v22-pereschet, run_id="t") ----------------
 GOLDEN = dict(morris="1e11f6a054980fe5ce9f265076a3679223ba208110655ccec1e031bb2d4b015c",
               faktor="f26fc41005f8191fa35005627ce16aa244353fe8bf8df72f30172192e1b0ca03",
-              itog="94d2c41c0469e94fd3fd98299bac42b9f1364126f54d54ebe206ae433ebbd48a")
+              itog="94d2c41c0469e94fd3fd98299bac42b9f1364126f54d54ebe206ae433ebbd48a")    # itog — до Ж-090, не проверяется (см. GOLDEN_BEZ_PBO)
 
 
 # Ж-080 (PR #424): в итог добавлена справочная колонка pbo_argmax; G1 — от центра плато (pbo), не от argmax.
 # Полный хэш итога после добавления колонки (записан рядом с проверкой прежних колонок, не вместо неё):
-ITOG_S_NOVYM = "a9077807ba25e96f364569331a409a8a93785f949da7b1ad430ad8334ac3c9ec"
 NOVYE_KOLONKI = ("pbo_argmax",)
+# Ж-090: итог после смены правила PBO. Хэш старого итога (a9077807…, до Ж-090) снят старым кодом 25ffeb8b; тот же итог без
+# колонок PBO_ZAVISIT у старого и нового кода совпал побайтно: c73b7404… (меняются только колонки, зависящие от PBO).
+PBO_ZAVISIT = ("pbo_argmax", "pbo", "G1_pbo", "ok", "verdikt")
+GOLDEN_BEZ_PBO = "c73b7404dac3ac30a3052e9e8d82af1bfef620d5ead4c8ac2932e1bc53e2cead"
+ITOG_S_NOVYM = "503c4fd0b76be83083e0a0cd7bcc244335ca515225337734ee30d87937c7a98b"
 
 
-def _bez_novykh_kolonok(p: Path) -> bytes:
-    """Итог без новых колонок: поле pbo_argmax вырезается из шапки и каждой строки, остальной текст побайтно."""
+def _bez_novykh_kolonok(p: Path, names=NOVYE_KOLONKI) -> bytes:
+    """Итог без колонок names: поля вырезаются из шапки и каждой строки (csv: в поле params есть запятые в кавычках),
+    остальное — детерминированная запись; строки «#» — как есть."""
+    import csv
+    import io
     out, idx = [], None
     for ln in p.read_text("utf-8").split("\n"):
         if ln.startswith("#") or not ln:
             out.append(ln)
             continue
-        f = ln.split(",")
-        idx = f.index("pbo_argmax") if idx is None else idx        # нет колонки — ValueError, тест падает
-        out.append(",".join(f[:idx] + f[idx + 1:]))
+        f = next(csv.reader([ln]))
+        idx = [f.index(n) for n in names] if idx is None else idx        # нет колонки — ValueError, тест падает
+        buf = io.StringIO()
+        csv.writer(buf, lineterminator="").writerow([v for i, v in enumerate(f) if i not in idx])
+        out.append(buf.getvalue())
     return "\n".join(out).encode("utf-8")
 
 
@@ -75,10 +84,16 @@ def test_umolchanie_train_pobaytno_staryy_put(tmp_path):
     P.run_strategy("S9", World().evaluate, lambda p: True, out=tmp_path, run_id="t", setka=SETKA)
     itog = tmp_path / "S9_itog.csv"
     assert {n: sha(tmp_path / f"S9_{n}.csv") for n in GOLDEN if n != "itog"} == {n: GOLDEN[n] for n in GOLDEN if n != "itog"}
-    assert hashlib.sha256(_bez_novykh_kolonok(itog)).hexdigest() == GOLDEN["itog"]          # (а) прежние колонки побайтно
+    # (а) прежние колонки побайтно, кроме тех, что зависят от PBO: Ж-090 (#515/51867f11) сменил правило PBO (целевая — mSR
+    #     за половину, годы > 0); на синтетике World центр плато даёт nan -> pbo пуст, G1 False, verdikt «не дошла: ворота».
+    assert hashlib.sha256(_bez_novykh_kolonok(itog, PBO_ZAVISIT)).hexdigest() == GOLDEN_BEZ_PBO
+    import csv
+    rows0 = list(csv.reader(ln for ln in itog.read_text("utf-8").splitlines() if not ln.startswith("#")))
+    row0 = dict(zip(rows0[0], rows0[1]))
+    assert (row0["pbo"], row0["G1_pbo"], row0["ok"], row0["verdikt"]) == ("", "False", "False", "не дошла: ворота")
     head, row = _itog_s_shapkoy(itog)
     assert set(NOVYE_KOLONKI) <= set(head) and sha(itog) == ITOG_S_NOVYM                   # (б) новые колонки + полный хэш
-    assert row["G1_pbo"] == str(float(row["pbo"]) < V.PBO_MAX)                              # (в) G1 — от центра плато
+    assert row["G1_pbo"] == str(row["pbo"] != "" and float(row["pbo"]) < V.PBO_MAX)                             # (в) G1 — от центра плато
     assert AR.paths("train") == (AR.IT1, AR.OUT, AR.LED) and AR.LED.name == "_ledger"
 
 
