@@ -1,0 +1,13 @@
+гейт dev (< 2022, ≤ 1e-12): {'full_checked': 1109, 'sparse_in_dev': 153, 'sparse_differ': 153, 'dev_days_without_full_day': 154} ; последняя дата: 2024-12-30
+Z2 2022–2024: дней 749, разреженных (< 10 баров) 24
+Д1:
+             cel  sdvig      corr
+  dRVI~ret_IMOEX     -2 -0.048646
+lnRVI~lnRV_rynka     -2  0.637605
+  dRVI~ret_IMOEX     -1  0.048268
+lnRVI~lnRV_rynka     -1  0.639357
+  dRVI~ret_IMOEX      0 -0.568474
+lnRVI~lnRV_rynka      0  0.637072
+  dRVI~ret_IMOEX      1  0.091770
+lnRVI~lnRV_rynka      1  0.605844
+FASTBT_Z2_RVI=/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/test1_2022_2024/s9/rvi_1850.parquet sha256 6fa26a58a14292c073fa1c2ca195fafa431659b270e8b2fafc140b259b8c8866

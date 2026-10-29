@@ -1,0 +1,79 @@
+"""Прогон листов реверса р.1 на test1 из основной копии (дирижёр). Каждый лист — отдельный процесс, ≤ 4 параллельно.
+Запуск: python3 r1_zapusk.py <div: путь к таблице дивидендов | NET> <листы через запятую> [--net-spravka]
+--net-spravka: для листов a, b дополнительно справочный прогон FASTBT_Z2_DIV=NET в отдельный выход (*_net), Ж-121."""
+import os
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+M = Path("/Users/nilysenok/Desktop/Старое/PhD_Vol_trading")
+Z2 = M / "data/regen/test1_2022_2024"
+LOG = Path(__file__).parent / "r1_logs"
+LOG.mkdir(exist_ok=True)
+T = M / "docs/tables/revers_r1"
+
+div, listy = sys.argv[1], sys.argv[2].split(",")
+net = "--net-spravka" in sys.argv
+
+ENV = dict(os.environ,
+           FASTBT_BARS1M=str(M / "data/regen/D25/bars1m"),
+           FASTBT_Z2_DAILY=str(Z2 / "daily/ohlcv_daily_1850.parquet"),
+           FASTBT_Z2_IMOEX=str(Z2 / "imoex/IMOEX.parquet"),
+           FASTBT_Z2_R2FINAL=str(Z2 / "regen/R2/final"),
+           FASTBT_DEV_SIGMA=str(M / "data/regen/ch4_dev"),
+           FASTBT_Z2_RVI=str(Z2 / "s9/rvi_1850.parquet"))
+
+KOM = {
+    "a": ["scripts/revers/r1_a.py", "--period", "test1"],
+    "b": ["scripts/revers/r1_b.py", "--period", "test1"],
+    "v": ["scripts/revers/r1_v.py", "--period", "test1", "--imoex", str(Z2 / "imoex/IMOEX.parquet"),
+          "--imoex-d", str(M / "data/iss_check/index_d/IMOEX.parquet")],
+    "a_cd": ["scripts/revers/r1_a_cd.py", "--period", "test1"],
+    **{f"d_S{i}": ["scripts/revers/r1_d.py", "schet", f"S{i}", "--period", "test1"] for i in range(1, 7)},
+    "e": ["scripts/revers/r1_e.py", "--period", "test1", "--imoex", str(Z2 / "imoex/IMOEX.parquet"),
+          "--imoex-d", str(M / "data/iss_check/index_d/IMOEX.parquet")],
+    "zh": ["scripts/revers/r1_zh.py", "--period", "test1", "--sigma-dir", str(Z2 / "ch4_sigma")],
+}
+KOM["a_gody"] = ["scripts/revers/r1_a_gody.py", "--period", "test1"]
+NET_OUT = {"a": ["--out", str(T / "_net")], "b": ["--out", str(T / "_net" / "b_razlozhenie_net.csv")],
+           "a_gody": ["--out", str(T / "_net" / "a_po_godam_test1.csv")],
+           "a_cd": ["--out", str(T / "_net" / "a_cd_test1.csv")]}
+if "--tolko-net" in sys.argv:
+    KOM = {k: v + NET_OUT[k] for k, v in KOM.items() if k in NET_OUT}
+if "--po-ocheredi" in sys.argv:
+    import concurrent.futures as _cf
+    _cf_ThreadPool = ThreadPoolExecutor
+    ThreadPoolExecutor = lambda max_workers: _cf_ThreadPool(max_workers=1)  # noqa: E731
+
+zadachi = []
+for l in listy:
+    if l == "d":
+        zadachi += [(k, KOM[k], div) for k in KOM if k.startswith("d_S")]
+        continue
+    zadachi.append((l, KOM[l], div))
+    if net and l in NET_OUT:
+        zadachi.append((l + "_net", KOM[l] + NET_OUT[l], "NET"))
+
+
+def odin(z):
+    imya, kom, d = z
+    env = dict(ENV, FASTBT_Z2_DIV=d)
+    t0 = time.time()
+    with open(LOG / f"{imya}.log", "w", encoding="utf-8") as f:
+        r = subprocess.run([sys.executable, *kom], cwd=M, env=env, stdout=f, stderr=subprocess.STDOUT)
+    return imya, r.returncode, round(time.time() - t0)
+
+
+kody = {}
+with ThreadPoolExecutor(max_workers=4) as ex:
+    for imya, rc, sek in ex.map(odin, zadachi):
+        kody[imya] = rc
+        print(f"{imya}: exit={rc} {sek}s log={LOG / (imya + '.log')}", flush=True)
+if "d" in listy:
+    if all(kody.get(f"d_S{i}") == 0 for i in range(1, 7)):
+        imya, rc, sek = odin(("d_svod", ["scripts/revers/r1_d.py", "svod", "--period", "test1"], div))
+        print(f"{imya}: exit={rc} {sek}s log={LOG / (imya + '.log')}", flush=True)
+    else:
+        print("d_svod: пропущен — не все schet S1–S6 с exit=0", flush=True)

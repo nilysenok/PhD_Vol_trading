@@ -1,0 +1,9 @@
+гейт 2021: строк < 2022 равны dev побайтно: 32426
+Д1 сдвиг (corr по s=-2..+1), максимум при s = 0 
+ shift     corr
+    -2 0.523444
+    -1 0.614967
+     0 0.878692
+     1 0.674522
+стык IMOEX: {'last_2021': ('2021-12-30 18:50:00', 3787.26), 'first_2022': ('2022-01-03 09:50:00', 3825.05), 'dni_2022_24': 745, 'max_otkl_c1850_k_dnevnomu': 0.06713894233572404, 'med_otkl': 0.0007994868410045042}
+FASTBT_Z2_DAILY=/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/test1_2022_2024/daily/ohlcv_daily_1850.parquet FASTBT_Z2_IMOEX=/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/test1_2022_2024/imoex/IMOEX.parquet   # FASTBT_Z2_DIV: ABANDON (нет источника 2022–2024)
