@@ -13,26 +13,31 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from fastbt import canon_v5, etap1  # noqa: E402
+from fastbt import canon_v5  # noqa: E402
+from fastbt import progon_sobol as ps  # noqa: E402
 from fastbt.eval_v5 import EvaluatorV5, vne_bara  # noqa: E402
 
 PERIOD = "train4"
 
 
 def zamer(sid: str, n: int) -> dict:
-    inp = etap1.build_inputs(sid, period=PERIOD)
-    evr = EvaluatorV5(sid, inp, etap1.base_point(sid))
-    pts, _ = canon_v5.tochki_v5(canon_v5.load_kub(sid), 0, n)
+    """Через драйвер (#608): ps.fabrika_real → ps.ocenshchik → EvaluatorV5(…, fdr куба); точки ps.tochki (якоря ∪ канон)."""
+    rz = ps.Rezhim("v5", PERIOD, "seed", False, canon_v5.load_kub(sid)["fdr"])
+    sr = ps.fabrika_real(sid, rz)
+    assert isinstance(sr.evr, EvaluatorV5) and sr.evr.fdr == rz.fdr
+    pts = ps.tochki(ps.load_kub(sid, rz), 0, n, rz)
     ts, osh, vsego, vne, pr, ns = [], [], 0, 0, [], []
     for i, pt in pts:
         t0 = time.perf_counter()
         try:
-            row, x, tik = evr.evaluate_v2(pt, PERIOD)
+            row, x, tik = ps.schitat_tochku(sr, sid, i, pt, "zamer_l9", False, False, rz=rz)
             if row["status"] == "ne_schitana":
                 ns.append((i, row["prichina"]))
                 continue
-            if row["status"] != "ok" or x is None or not np.isfinite(x).all() or tik.shape[0] != len(inp.sk.tickers):
+            if row["status"] != "ok" or x is None or not np.isfinite(x).all() or tik.shape[0] != len(sr.tikery) \
+                    or sr.evr.poz is None or sr.evr.poz[1].shape != tik.shape:
                 raise ValueError(f"status {row['status']}: {row.get('prichina')}")
+            evr = sr.evr
             v = vne_bara(evr)
             vsego, vne, pr = vsego + v["vsego"], vne + v["vne"], pr + v["primery"]
         except Exception as e:                   # noqa: BLE001 — замер считает ошибки, не прерывается

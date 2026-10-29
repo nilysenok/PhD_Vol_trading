@@ -1,8 +1,9 @@
 """Л9: оценщик точки куба v5 (Ж-127/Ж-129 п. 8): точка → семья v5 → фильтры v5 → слой v4 → автомат v2 → ряды.
 
 `EvaluatorV5(EvaluatorV2)`, контракт выхода — как у EvaluatorV2.evaluate_v2 (строка ledger v2.0, excess портфеля float64 [T],
-excess тикеров float64 [n_tik, T]), поэтому драйвер progon_sobol берёт его через `fabrika_v5` без переделки; |pos| по
-(тикер, день) — `abs_pos(period)` после вызова. Цепочка на тикер:
+excess тикеров float64 [n_tik, T]); |pos| и сделки по (тикер, день) — `poz`, как у EvaluatorV2 (#600). Драйвер
+progon_sobol.ocenshchik (#608) создаёт его как EvaluatorV5(sid, inp, base, komissiya, fdr=<куб>); fdr вне None | fdr.REZHIMY —
+ValueError в EvaluatorV2.__init__. Цепочка на тикер:
   get_family(sid, setka="v5")(td, ind, [sp]) → v5_filtr.primenit (маска дня d: вход на close d, исполнение ≥ d+1) →
   sweep_post.build_view/positions (родные RM выключены, RM_OFF) → exec_e_v4sloj.filtr_signala (фаза 3, min_hold_rezhim
   znak_vhoda) → события/режим (net) → exec_e.run(Params: k, T, reentry_den, ed_s/ed_t, a_rang, b0/b0_c, sp, step_s, atr_m, parab,
@@ -208,17 +209,6 @@ class EvaluatorV5(EvaluatorV2):
         nov = {k: v for k, v in r.nov.items() if v != NOVYE[k]}
         return super().evaluate_v2({**r.pt4, **r.sp, **nov}, period)
 
-    def abs_pos(self, period: str) -> np.ndarray:
-        """|pos| float64 [n_tik, T] по дням периода последнего вызова (занятость капитала тикером с весом сделки)."""
-        df, inv, _, _, rs = self._last
-        keep = np.isin(df.index.year, range(PERIODS[period][0], PERIODS[period][1] + 1))
-        col, out, lo = np.cumsum(keep) - 1, np.full((len(rs), int(keep.sum())), np.nan), 0
-        for ti, rr in enumerate(rs):
-            sl = slice(lo, lo + len(rr.expo))
-            lo, ok = sl.stop, keep[inv[sl]]
-            out[ti, col[inv[sl]][ok]] = np.abs(rr.expo)[ok]
-        return out
-
 
 def vne_bara(evr: EvaluatorV5, rel: float = 1e-9) -> dict:
     """Инвариант исполнения (#604): цена входа/выхода сделки внутри [low; high] своего бара. {"vsego", "vne", "primery"}."""
@@ -235,14 +225,3 @@ def vne_bara(evr: EvaluatorV5, rel: float = 1e-9) -> dict:
                     vne += 1
                     pr.append((evr.sk.tickers[ti], kind, tr.reason, int(d), int(j), float(px), lo, hi))
     return {"vsego": n, "vne": vne, "primery": pr[:5]}
-
-
-def fabrika_v5(sid: str):
-    """Sreda драйвера progon_sobol (fabrika = fabrika_v5): оценщик v5, период train4, ФДР t0d (куб v5: fdr: t0d)."""
-    from fastbt import cache, etap1, progon_sobol
-    from fastbt.etap1_eval import years_of
-    inp = etap1.build_inputs(sid, period=progon_sobol.PERIOD)
-    evr = EvaluatorV5(sid, inp, etap1.base_point(sid), progon_sobol.KOMISSIYA)
-    dt = evr._engine(progon_sobol.PERIOD)[0].dates
-    daty = dt[np.isin(dt.year, years_of(progon_sobol.PERIOD))].to_numpy().astype("datetime64[D]")
-    return progon_sobol.Sreda(evr, cache.code_hash(), inp.digest(), daty, list(inp.sk.tickers))

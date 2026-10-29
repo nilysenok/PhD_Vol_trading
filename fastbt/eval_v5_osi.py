@@ -8,6 +8,7 @@ EvaluatorV2._params), filtr (v5_filtr.primenit), sloj (exec_e_v4sloj.filtr_signa
 """
 from __future__ import annotations
 
+import functools
 import math
 from dataclasses import dataclass, field
 
@@ -125,9 +126,19 @@ def _vyhod(r: Razbor, sid: str, q: dict) -> None:
     r.rang = r.rang or r.m_sily != "1"
 
 
+@functools.lru_cache(maxsize=None)
+def _yakorya_progon(sid: str) -> dict:
+    return dict(load_kub(sid).get("yakorya_progon", {}))
+
+
 def razbor(sid: str, pt5: dict, signal=None) -> Razbor:
     """Точка v5 (после canon_v5) → Razbor. signal — имена сигнальных осей (None — семья v5). Неизвестная ось — ValueError."""
     signal, trend = tuple(SIGNAL[sid] if signal is None else signal), sid in TREND
+    ya = _yakorya_progon(sid)                             # драйвер (#608) кладёт якоря zh047 в точку: допустимы только на якоре
+    chuzhie = {k: v for k, v in pt5.items() if k in ya and pt5[k] != ya[k]}
+    if chuzhie:
+        raise ValueError(f"{sid}: оси zh047 {chuzhie} не на якоре — оценщик v5 их не считает")
+    pt5 = {k: v for k, v in pt5.items() if k not in ya}
     znaem = set(signal) | set(FILTR) | set(VHOD) | set(VYHOD) | set(SLOJ)
     if set(pt5) - znaem:
         raise ValueError(f"{sid}: оси {sorted(set(pt5) - znaem)} оценщик v5 не знает")
