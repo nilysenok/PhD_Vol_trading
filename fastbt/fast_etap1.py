@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import hashlib
 import json
 import operator
@@ -26,7 +27,6 @@ import numpy as np
 
 from fastbt import exec_e, fast_exec as fx, fdr as fdr_mod
 from fastbt.exec_e_types import Params, Result, Trade
-from fastbt.exec_e_v6 import v6_on
 
 _SLOW_RUN = exec_e.run                      # эталон; запасной путь для входов, которые ядро не берёт (NaN в sig)
 TAIL = 512                                 # запас баров под последний день вызова (у оценщика — одна свеча close)
@@ -74,11 +74,11 @@ def flat(days) -> tuple:
 
 def _params(p: Params, nal: float) -> tuple:
     f = lambda v: 0.0 if v is None else float(v)                                    # noqa: E731
-    pf = np.array([f(p.k), f(p.a), f(p.b), p.comm, f(p.tick), f(p.R), f(p.h), f(p.k_tr), nal])
-    pi = np.array([p.k is not None, fx.F_CODES.get(p.f, 3), p.a is not None, p.b is not None, p.tau is not None,
+    pf = np.array([f(p.k), f(p.a), f(p.b), p.comm, f(p.tick), f(p.R), f(p.h), f(p.k_tr), nal, f(p.chand)])
+    pi = np.array([p.k is not None, fx.F_CODES[p.f], p.a is not None, p.b is not None, p.tau is not None,
                    p.tau or 0, p.s == "ezhedn", p.exit_signal, p.side, p.tick is not None, p.stop_touch,
                    p.R is not None, p.h is not None, p.k_tr is not None, p.be, p.check == "zakrytie", p.reentry,
-                   p.vyhod_lim], np.int64)
+                   p.vyhod_lim, fx.ED_CODES[p.ed_s], fx.ED_CODES[p.ed_t], p.chand is not None], np.int64)
     return pf, pi
 
 
@@ -92,17 +92,36 @@ def _trades(ticker, ti, tf, comm) -> list:
     return out
 
 
-def _slow_only(p: Params, ed) -> bool:
-    """Оси прогона Л-2 (Run2: ed, zhizn, gap_propusk, t_vyhod, bar_plus, stop_tik) ядро не повторяет — эталон."""
-    f = getattr(exec_e, "_new_axes", None)
-    return ed is not None or p.tejk != "net" or p.vhod_tip != "podtverzhdenie" or p.atr_m is not None or p.chast_1r or p.chand is not None or p.ed_s != "sigma" or p.ed_t != "sigma" or v6_on(p) or p.T != 1 or p.reentry_den or (f is not None and f(p, ed))     # tejk (Ж-084) — только эталон
+# Поля Params, которые ядро fast_exec повторяет (значения — ниже); любое другое поле не в умолчании — медленный путь (#488:
+# быстрый слой не считает режим, которого не знает). Новое поле Params без записи сюда уходит в эталон само.
+FAST_POLYA = frozenset(("k", "f", "a", "b", "tau", "s", "comm", "exit_signal", "side", "tick", "stop_touch", "R", "h",
+                        "k_tr", "be", "check", "reentry", "vyhod_lim", "ed_s", "ed_t", "chand"))
+_UMOLCH: dict = {}
+
+
+def _umolch(cls) -> tuple:
+    """(имя, умолчание) полей класса параметров вне FAST_POLYA; кэш по классу (подкласс с новым полем — свой список)."""
+    hit = _UMOLCH.get(cls)
+    if hit is None:
+        hit = _UMOLCH[cls] = tuple((x.name, x.default) for x in dataclasses.fields(cls) if x.name not in FAST_POLYA)
+    return hit
+
+
+def _slow_only(p: Params, ed, *extra) -> bool:
+    """Ядро повторяет только поля FAST_POLYA с известными значениями; остальное (Run2, V6, tejk, stop_zayavka, atr_m,
+    chast_1r, новые оси) и любой дополнительный вход run (ed, tejk_M, urovni, rang) — эталон."""
+    if ed is not None or any(x is not None for x in extra) or not isinstance(p, Params):
+        return True
+    if p.f not in fx.F_CODES or p.s not in ("fiks", "ezhedn") or p.ed_s not in fx.ED_CODES or p.ed_t not in fx.ED_CODES:
+        return True
+    return any(getattr(p, n) != d for n, d in _umolch(type(p)))
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None, urovni=None, rang=None) -> Result:
-    """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси Run2, tejk, stop_zayavka — медленным путём."""
+    """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси вне FAST_POLYA — медленным путём."""
     from fastbt import dividendy
-    sig, sigma = np.asarray(sig), np.asarray(sigma, float)
-    if _slow_only(p, ed) or not len(days) or not np.isfinite(sig.astype(float)).all():
+    sig, sigma = np.asarray(sig), np.ascontiguousarray(sigma, float)
+    if _slow_only(p, ed, tejk_M, urovni, rang) or not len(days) or not np.isfinite(sig.astype(float)).all():
         kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni), ("rang", rang)) if v is not None}
         return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
