@@ -107,11 +107,11 @@ def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, **kw):
 class EvaluatorV5(EvaluatorV2):
     STROGAYA = True
 
-    def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=OSNOVNOY, semya: str = "v5"):
+    def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=OSNOVNOY, semya: str = "v5", rol: str | None = None):
         super().__init__(sid, inp, base_p, commission, fdr)
         if semya not in ("v5", "v4"):
             raise ValueError(f"semya: v5 | v4, получено {semya!r}")
-        self.semya, self.r5, self._fkey, self._days5 = semya, None, (), {}
+        self.semya, self.r5, self._fkey, self._days5, self.rol = semya, None, (), {}, rol
         importlib.import_module(f"fastbt.signals.{MODUL[sid]}")          # регистрация семей v5
         names = set(self.sk.sig_names) | set(SIGNAL[sid])
         self._names5 = tuple(sorted(names))
@@ -235,7 +235,7 @@ class EvaluatorV5(EvaluatorV2):
         """Точка v5 (после canon_v5) → (строка ledger v2.0, excess портфеля, excess тикеров) — контракт EvaluatorV2."""
         if vozm:
             raise ValueError("vozm у оценщика v5 не поддержан")
-        self.r5 = r = razbor(self.sid, pt, SIGNAL[self.sid] if self.semya == "v5" else self.sk.sig_names)
+        self.r5 = r = razbor(self.sid, pt, SIGNAL[self.sid] if self.semya == "v5" else self.sk.sig_names, self.rol)
         if self.semya == "v4" and (r.rang or r.filtr or self.sid in TREND and r.ext.get("k_e")):
             raise ValueError("semya v4 — только для сверки якоря: без ранга, фильтров v5 и k_e")
         self._fkey = tuple(sorted(r.filtr.items()))
