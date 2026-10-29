@@ -33,6 +33,7 @@ import os
 import pickle
 import sys
 import time
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -541,6 +542,16 @@ def cache_key() -> str:
     return h.hexdigest()[:10]
 
 
+def _atomic_write(p: Path, data: bytes | str) -> None:
+    """Р-7: уникальный tmp рядом + os.replace; читатель видит либо старый файл, либо целый новый."""
+    tmp = p.with_name(f"{p.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    try:
+        (tmp.write_bytes if isinstance(data, bytes) else tmp.write_text)(data)
+        os.replace(tmp, p)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 def build_cache(workers: int = 2) -> Path:
     from fastbt.data import TICKERS
     if PERIOD == "train":
@@ -569,8 +580,8 @@ def build_cache(workers: int = 2) -> Path:
         pool.close()
         pool.join()
     p = OUT / f"cache_{cache_key()}.pkl"
-    p.write_bytes(pickle.dumps(res, protocol=4))
-    (OUT / _latest_name()).write_text(p.name)
+    _atomic_write(p, pickle.dumps(res, protocol=4))
+    _atomic_write(OUT / _latest_name(), p.name)
     print(f"кэш → {p} ({time.time() - t0:.0f} с)")
     return p
 

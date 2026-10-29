@@ -241,6 +241,10 @@ def _as_dev(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(columns=[c for c in ("rol",) if c in df])
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="эталон предзащиты final3 зафиксирован до #678 (обратная дивидендная корректировка); воспроизведение — на коммите 5ac7815f; решение класса A у владельца",
+)
 @pytest.mark.skipif(os.environ.get("S9_REPRO") == "0", reason="S9_REPRO=0")
 def test_test_path_on_dev_years(tmp_path):
     """Код ветки test (источники *_test, кэш с A без фильтра, замороженный выбор, ЛВ-бутстрап,
@@ -375,6 +379,10 @@ def test_final_test_pseudotest(tmp_path):
     assert (tmp_path / "data" / "fastbt" / "final_dev_main.parquet").exists()
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="эталон предзащиты final3 зафиксирован до #678 (обратная дивидендная корректировка); воспроизведение — на коммите 5ac7815f; решение класса A у владельца",
+)
 @pytest.mark.skipif(os.environ.get("S9_REPRO") == "0", reason="S9_REPRO=0")
 def test_dev_reproduces_final3_tables(tmp_path):
     """Разработка воспроизводит 10 из 10 эталонных таблиц `docs/tables/strat_dev/s9_*_final3.csv`.
