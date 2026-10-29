@@ -43,7 +43,7 @@ EVIDENCE: OK zabrat: 13 файлов в ../zabrano (ledger/, tables/, logs/)
 ## G9 — запуск через progon_server с кубом v5 (CLI --kub v5 --period --seed --k3)
 CHECK: ./zapusk_sobol.sh train4 на коде с progon-server-v5, PERENOS_PROHODY=s1, малое N
 EXPECT: чекпоинт и строка состояния по Sk
-EVIDENCE: pending — зависит от слияния progon-server-v5 (ABANDON на этом шаге, см. ниже)
+EVIDENCE: (16:30, после слияния #613) train4 s1 S1: «посчитано 35, ошибок 0, чекпоинт 63»; v2 s1 S1/S2 то же; train4 k3 S3: «посчитано 560, ошибок 0, чекпоинт 559»; status: «train4_s1/S1: N=64 чекпоинт i=63»
 
 ## G10 — инструкция docs/otchety/2026-10-29_server_perenos.md: шаги 1–6 с ожидаемым выводом
 CHECK: grep -c '^## Шаг' docs/otchety/2026-10-29_server_perenos.md
@@ -75,7 +75,7 @@ EVIDENCE: получено именно так (мини-каталог scratchp
 ## G15 — tar без __pycache__ и numba-кэша
 CHECK: проверка в sobrat_perenos.sh (шаг 1) и razvernut.sh (шаг 4)
 EXPECT: FAIL при наличии __pycache__/*.pyc/*.nbi/*.nbc
-EVIDENCE: pending — код написан, `bash -n` ок; сборка не перезапускалась (диск)
+EVIDENCE: (16:30) сборка на c960bbf1 прошла (в сборщике проверка tar без __pycache__/*.pyc/*.nbi/*.nbc), razvernut.sh проверил распакованный код; OK perenos. Мутацию «кэш в tar» не прогонял
 
 ## G16 — инструкция: что делать при FAIL дискретного / только непрерывного; --rezhim2
 CHECK: grep -c 'FAIL дискретное\|FAIL непрерывное\|--rezhim2' docs/otchety/2026-10-29_server_perenos.md
@@ -85,7 +85,7 @@ EVIDENCE: 3
 ## G17 — сквозной прогон (сборка → razvernut → proverka_yakor --rezhim2 → zapusk) на новом эталоне с hex/позициями
 CHECK: повторить локальную проверку при df ≥ 6 ГБ, один каталог
 EXPECT: OK по обоим режимам, max |Δ| = 0 на arm64
-EVIDENCE: pending — не выполнено: диск 2,5 ГБ
+EVIDENCE: (16:30) сборка c960bbf1 → razvernut OK → proverka_yakor OK (режим 1; режим 2 — на предыдущей сборке ac7fa4fe, оба OK, max |Δ| = 0) → две цепочки train4 и v2 одновременно (по 4 процесса из 12 − 4 = 8) → zabrat OK → svodka
 
 ## ABANDON
 ABANDON: G9 зависит от progon-server-v5 (другой кодер); не выполнимо до слияния.
@@ -93,4 +93,28 @@ ABANDON: G11 хук v23 запрещает рекурсивное удалени
 ABANDON: G7 повтор на финальном коммите — диск < 5,3 ГБ (IG-6), перезапуск невозможен.
 
 ## Реестр
-закрыто 11 из 17 (G1–G6, G8, G12–G14, G16); ABANDON: 3 (G9, G11, G7-повтор); pending: 2 (G15, G17 — нужен диск ≥ 6 ГБ) → «передача», не «готово»
+(запись 15:40) закрыто 11 из 17; ABANDON: 3; pending: 2.
+
+## Закрытие 16:30 (после слияния #609–#616; ABANDON выше не стираются, снимаются записями ниже)
+- G9 закрыт (EVIDENCE выше). G15, G17 закрыты (EVIDENCE выше). G7 повторён на финальной сборке: train4 s1 S1 35 из 64, status «N=64 чекпоинт i=63».
+- G11: каталог проверки оставлен для удаления дирижёром: `/private/tmp/claude-501/-Users-nilysenok-Desktop--------PhD-Vol-trading/bd772d77-32ea-43cd-b4a4-016ac48df19f/scratchpad/prov` (3,8 ГБ, одним каталогом) и старые `…/scratchpad/p1` … `p7`, `…/scratchpad/mini`, `…/scratchpad/perenos_mak_*`. `rm -r` хуком запрещён.
+
+## G18 — две цепочки делят ядра, сумма ≤ ядра − 4; мутация «без раздела» ловится
+CHECK: python3 -m pytest tests/test_perenos_sh.py -q
+EXPECT: 4 passed; при `PERENOS_CEPOCHEK:-1` вместо `:-2` — падает test_dve_cepochki_delyat_yadra_popolam
+EVIDENCE: 4 passed; с мутацией 2 failed (раздел и zabrat), мутации откачены
+## G19 — N1 по умолчанию 262 144 на стратегию, строка в инструкции
+CHECK: grep -c '262 144' docs/otchety/2026-10-29_server_perenos.md; grep -c '262144' scripts/server/perenos/zapusk_sobol.sh
+EXPECT: ≥ 1; ≥ 1
+EVIDENCE: 1; 3 (проверено при записи)
+## G20 — zabrat.sh: tables/, logs/, manifest, checkpoint, шарды 2.1; шарды 2.0 не берёт; ↺ в инструкции
+CHECK: pytest (test_zabrat_beryot_ledger_21_i_ne_beryot_20) + реальный запуск
+EXPECT: OK zabrat: ... 2.1 — 1 стратегий с шардами, 2.0 — 1 без шардов
+EVIDENCE: получено именно так; мутация «берёт всё» (if true) ловится тестом
+## G21 — svodka_ledger.py по возвращённому каталогу
+CHECK: python3 scripts/server/svodka_ledger.py <zabrano>/ledger/<цепочка>
+EXPECT: train4_s1, train4_k3 — sverka ok; v2_* — ОТКАЗ (ledger 2.0 не читается сводкой)
+EVIDENCE: train4_s1 и train4_k3 ok; v2_s1: «ОТКАЗ: by_year/by_quarter: год вне 2016–2019» — доложено, файл не править (#609, чужой)
+
+## Реестр (итог 16:30)
+закрыто 17 из 21 по действующим гейтам: G1–G9, G12–G20 закрыты; G10 — инструкция есть (шагов 6); G11 — не выполнено (хук, путь выше); G21 — выполнен частично: сводка по v2 не читает ledger 2.0 (пробел чужого файла, доложен); ABANDON 15:40 сняты записями выше. Статус: передача (G11 и G21 v2 — за дирижёром).
