@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+import pandas as pd
 from numba import njit
 
 from fastbt import fast_exec_parab as pb
@@ -537,20 +538,20 @@ def _unit(kind, atr, cl, pusto):
 
 
 @njit(cache=True)
-def kernel(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi):
+def kernel(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, stale):
     """Прежний вход ядра (fast_etap1.run): pf[10], pi[21] — новые оси выключены; возврат (gross, cost, pos, free, ti[8], tf, st)."""
     pf2, pi2 = np.zeros(24), np.zeros(34, np.int64)
     pf2[:len(pf)], pi2[:len(pi)], pi2[P_T] = pf, pi, 1
     g, c, p, f, ti, tf, _, st = kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf2, pi2, np.empty((4, 0)), np.empty(0),
-                                          np.empty(0, np.int64))
+                                          np.empty(0, np.int64), stale)
     return g, c, p, f, np.ascontiguousarray(ti[:, :8]), tf, st
 
 
 @njit(cache=True)
-def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut):  # xtask: длинная — день Run.step целиком, порядок важен
+def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut, stale):  # xtask: длинная — день Run.step целиком, порядок важен
     """Run.step по всем торговым дням + постобработка exec_e.run. UR0[4, дни] — up, dn, xl, xs (stop_zayavka; иначе (4, 0));
     rang[дни] — ранг силы на день сигнала (оси b0_c, a_rang; иначе пустой). cut[дни] — бар 10:00 дня (exec_e_vremya.bar_at; −1 — времени
-    нет; нужен при pi[P_TV], иначе пустой). Внутри UR = UR0 + строки порога безубытка и a тейка.
+    нет; нужен при pi[P_TV], иначе пустой). stale[j] — разрыв > razryv дней перед шагом j (Д5-2; пустой — нет). Внутри UR = UR0 + строки порога безубытка и a тейка.
     Возврат: (gross, cost, pos, free, ti[9], tf[2: вход, выход], tx[2: доля, комиссия выхода], st)."""
     n = len(nbar)
     UR = np.full((6, n), np.nan)
@@ -575,13 +576,15 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut)
         if st[TR]:
             st[I0] = 0
             fs[SH] += div[i]
+        if len(stale) and stale[j]:                         # Д5-2: заявка через остановку торгов снята; позиция держится (Run.step)
+            st[OK] = 0
         if st[OK] and st[ODUE] == j:
             _try_order(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su, tu, atr, UR, ix, pf, pi)
         elif st[TR] and st[PEND]:
             _scan_otlozh(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi, cut)
         elif st[TR]:
             _scan(fs, st, ti, tf, tx, acc, i, j, 0, nb, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi)
-        if pi[P_RED]:                                       # V6-a: повторный вход в тот же день после внутридневного выхода
+        if pi[P_RED] and not (len(stale) and stale[j]):     # V6-a: повторный вход в тот же день после внутридневного выхода
             if pi[P_SZ]:                                    # на стоп-заявке повторный вход — та же OCO-пара (RunStop._reenter)
                 _reenter_sz(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, sigma, su, tu, atr, UR, ix, pf, pi)
             else:
@@ -647,7 +650,7 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut)
 
 
 # --- обёртка v5: drop-in exec_e.run для осей S3/S4; fast_etap1.run их не знает (включение в pokryto — отдельный коммит) ---
-NOVYE = frozenset(("vhod_tip", "atr_m", "chast_1r", "chast", "T", "reentry_den", "k_e", "t_vyhod"))     # + v6.OSI (b0, b0_c, sp, step_s, a_rang, pir) при YADRO_OSI3_GOTOV
+NOVYE = frozenset(("razryv", "vhod_tip", "atr_m", "chast_1r", "chast", "T", "reentry_den", "k_e", "t_vyhod"))     # + v6.OSI (b0, b0_c, sp, step_s, a_rang, pir) при YADRO_OSI3_GOTOV
 T_VYHOD = ("close", "open2")                            # из t_vyhod ядро знает только эти (1500 / 1700 — эталон)
 
 
@@ -670,6 +673,15 @@ def params_v5(p, nal: float) -> tuple:
     f6, i6 = v6.params_v6(p)
     fp, ip = pb.params_parab(p)
     return np.r_[pf, f6, fp], np.r_[pi, i6, [p.t_vyhod == "open2"], ip].astype(np.int64)
+
+
+def stale_mask(dates, pusto, razryv) -> np.ndarray:
+    """stale[j] по торговым шагам j (как `exec_e.stale_steps`): разрыв с предыдущим торговым днём > razryv календарных дней. Нет правила — пустой."""
+    ix = np.flatnonzero(~pusto)
+    if razryv is None or dates is None or len(ix) < 2:
+        return np.empty(0, np.bool_)
+    d = pd.DatetimeIndex(dates)[ix]
+    return np.r_[False, np.asarray((d[1:] - d[:-1]).days > razryv)].astype(np.bool_)
 
 
 def cut_open2(days, p) -> np.ndarray:
@@ -707,7 +719,7 @@ def _v_bare(ticker, days, close, p, trades) -> None:
                 raise ValueError(f"исполнение вне [low; high] бара: {ticker} день {den} бар {b} цена {px} [{lo}; {hi}]")
 
 
-def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog=None, urovni=None, rang=None):
+def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog=None, urovni=None, rang=None, dates=None):
     """Drop-in `exec_e.run` для точек с осями stop_zayavka+urovni, atr_m, T, reentry_den, chast_1r / chast (и осями ядра).
     Режим вне ядра — NotImplementedError (его считает эталон); те же проверки входов и тот же Result, что у эталона."""
     from fastbt import dividendy, exec_e, fast_etap1
@@ -732,6 +744,8 @@ def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog
         raise ValueError(f"день {i}: " + ("пустой или нечисловой набор баров (нужен pusto=True)" if bad_d[i] else "close Н6 нечисловой"))
     if div is not None and len(div) != len(days):
         raise ValueError("days, div разной длины")
+    if p.razryv is not None and dates is not None and len(dates) != len(days):
+        raise ValueError("dates и days разной длины")
     from fastbt.exec_e_v6 import v5_check, v6_check
     v6_check(p, rang, len(days))                        # те же отказы, что в Run.__init__ (ранг нужен b0_c / a_rang)
     v5_check(p, rang, len(days))
@@ -744,7 +758,7 @@ def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog
     pf, pi = params_v5(p, float(dividendy.DIV_NALOG if nalog is None else nalog))
     UR = np.array([urovni[k] for k in ("up", "dn", "xl", "xs")], float) if urovni is not None else np.empty((4, 0))
     gross, cost, pos, free, ti, tf, tx, st = kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, ds, pf, pi, UR, np.asarray(rang, float) if rang is not None else np.empty(0),
-                                                       cut_open2(days, p))
+                                                       cut_open2(days, p), stale_mask(dates, pusto, p.razryv))
     trades = _trades_v5(ticker, ti, tf, tx, p.comm)
     _v_bare(ticker, days, close, p, trades)
     rf = np.zeros(len(days)) if rf_cal is None else np.asarray(rf_cal, float)
