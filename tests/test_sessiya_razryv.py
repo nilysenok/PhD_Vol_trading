@@ -66,9 +66,20 @@ def test_novaya_zayavka_posle_razryva_stavitsya():
     assert r.n_orders == 2 and r.n_fills == 0 and r.trades == []    # день 2: low 100 > 98 — не исполнена, но поставлена заново
 
 
-def test_razryv_bez_dates_otkaz():
-    with pytest.raises(ValueError):
-        run("T", _days(), [1, 0, 0, 0], np.full(4, 0.02), Params(k=1.0, razryv=5))
+def test_razryv_po_umolchaniyu_vklyuchen_a_bez_dates_prezhnee():
+    assert Params().razryv == 5
+    r = run("T", _days(), [1, 0, 0, 0], np.full(4, 0.02), Params(k=1.0, comm=0.0), dates=_dates(26))     # razryv не задан — умолчание 5
+    assert r.trades == []
+    assert len(run("T", _days(), [1, 0, 0, 0], np.full(4, 0.02), Params(k=1.0, comm=0.0)).trades) == 1   # dates нет — прежнее
+
+
+def test_bystryj_sloj_otdayot_etalonu_pri_razryve():
+    from fastbt import fast_etap1
+    p = Params(k=1.0, comm=0.0)
+    kw = dict(rf_cal=None)
+    a = fast_etap1.run("T", _days(), [1, 0, 0, 0], np.full(4, 0.02), p, dates=_dates(26), **kw)
+    b = fast_etap1.run("T", _days(), [1, 0, 0, 0], np.full(4, 0.02), p, dates=_dates(3), **kw)
+    assert a.trades == [] and len(b.trades) == 1                 # мутация «быстрый слой игнорирует dates» дала бы 1 сделку в обоих
 
 
 def test_pozitsiya_derzhitsya_cherez_razryv_i_zakryvaetsya_po_open():

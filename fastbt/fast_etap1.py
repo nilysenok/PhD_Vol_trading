@@ -128,6 +128,10 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
     """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси вне FAST_POLYA — медленным путём."""
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.ascontiguousarray(sigma, float)
+    if p.razryv is not None and dates is not None and len(dates) == len(days) and exec_e.stale_steps(
+            dates, [i for i, d in enumerate(days) if not d.pusto], p.razryv):       # Д5-2: разрыв > razryv дней — правило знает только эталон
+        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni), ("rang", rang), ("dates", dates)) if v is not None}
+        return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
     if _slow_only(p, ed, tejk_M, urovni, rang) and _yadro_v5(p, ed, tejk_M, rang):    # Ф-сл2b: оси S3/S4 — ядро fast_exec.run_v5
         return fx.run_v5(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, urovni=urovni)
     if _slow_only(p, ed, tejk_M, urovni, rang) or not len(days) or not np.isfinite(sig.astype(float)).all():

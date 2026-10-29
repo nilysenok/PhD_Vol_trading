@@ -181,7 +181,7 @@ class EvaluatorV2(Evaluator):
             ed = self._ed(t, "mediana" if vz.get("sigma_lim_mediana") else nov["ed_lim"], sg, dates, s0, b)
             p = self._params(pt, t, h, anchor, nov, vz)
             tm = None if nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, sp, t, s0, b, nov["tejk_signal"] == tejk_signal.RODNOY)
-            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], ed=ed, tejk_M=tm, **self.fdr_kw(), **({} if uv is None else {"urovni": uv}))
+            kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], dates=dates, ed=ed, tejk_M=tm, **self.fdr_kw(), **({} if uv is None else {"urovni": uv}))
             out.append((ti, self._ladder(t, days, sig, sg, p, w, nov["lestnica"], kw), a, b))
         return out
 

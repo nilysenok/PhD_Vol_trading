@@ -141,7 +141,7 @@ def _new_axes(p: Params, ed) -> bool:
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None,
         urovni=None, rang=None, dates=None) -> Result:
-    """dates[i] — календарная дата строки i (нужна при Params.razryv: заявка, поставленная вечером перед разрывом > razryv дней, снимается).
+    """dates[i] — календарная дата строки i (при Params.razryv: заявка, поставленная вечером перед разрывом > razryv дней, снимается; None — не проверяется).
     rang[d] — ранг силы сигнала дня d, [0; 1] (V6-b: Params.b0_c, fastbt/exec_e_v6.py); иначе не нужен.
     urovni — уровни стоп-заявок по дням (vhod_tip = stop_zayavka, fastbt/stop_zayavki.py), обязателен при нём, иначе не принимается.
     tejk_M[d] — уровень M сигнала на день d (Params.tejk ≠ net, Ж-084). rf_cal[t] — ставка/365·календарные дни [t, следующий торговый день) (msp.cal_days, Н2).
@@ -181,9 +181,9 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
     else:
         r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr, rang=rang, **un) if _new_axes(p, ed) \
             else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr, rang=rang, **un)
-    if p.razryv is not None:
-        if dates is None or len(dates) != len(days):
-            raise ValueError("Params.razryv требует dates длины days")
+    if p.razryv is not None and dates is not None:
+        if len(dates) != len(days):
+            raise ValueError("dates и days разной длины")
         r.stale = stale_steps(dates, r.ix, p.razryv)
     for j, i in enumerate(r.ix):
         r.step(j, i)

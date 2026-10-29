@@ -60,7 +60,7 @@ def run_dlinnaya(p, inp, obj: dict, par: dict, comm_pct: float, end, spravka: bo
     n = int(p.dates.searchsorted(end, side="right"))
     d, rf = p.dates[:n], sem_e._rf_cal(p.dates[:n], inp.rate)
     sig = sem_e._sig_e(p, inp, obj, par.get("q", 0.0))[:n]
-    r = run(p.ticker, p.days[:n], sig, inp.sigma[obj["sigma"]][p.ticker][:n], pr, rf_cal=rf)
+    r = run(p.ticker, p.days[:n], sig, inp.sigma[obj["sigma"]][p.ticker][:n], pr, rf_cal=rf, dates=d)
     return r, n, d, rf
 
 

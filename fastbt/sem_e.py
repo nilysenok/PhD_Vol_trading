@@ -111,7 +111,7 @@ def pair_e(p: Pair, inp: Inputs, obj: dict, par: dict, comm: float, end, t0=None
     n = int(p.dates.searchsorted(end, side="right"))
     d, rf = p.dates[:n], _rf_cal(p.dates[:n], inp.rate)
     r = run(p.ticker, p.days[:n], _sig_e(p, inp, obj, par.get("q", 0.0))[:n],
-            inp.sigma[obj["sigma"]][p.ticker][:n], pr, rf_cal=rf)
+            inp.sigma[obj["sigma"]][p.ticker][:n], pr, rf_cal=rf, dates=d)
     sh = -1.0 * (p.pos[:n] < 0) * _u_mask(p, inp, obj.get("u", "all"))[:n]   # короткая позиция A: −1 (подвыборка u — та же)
     sides = np.abs(np.diff(sh, prepend=0.0))
     sides[-1] += abs(sh[-1])                                   # Н5: выход на конце окна
