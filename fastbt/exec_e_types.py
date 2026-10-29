@@ -62,6 +62,7 @@ class Params:
     # --- Л6 (Ж-127), медленный путь; выключено по умолчанию — путь прежний побайтно ---
     k_e: float = 0.0              # stop_zayavka: уровень входа сдвинут на k_e·ATR(14, close d) от цены (лонг вверх, шорт вниз; < 0 — ближе)
     a_rang: tuple | None = None   # тейк от силы: a = a0 + a1·ранг(d_сигнала), (a0 > 0, a1 ≥ 0); нужен rang в run, несовместим с a и R
+    parab: tuple | None = None    # П3b: параболический трейлинг тренда (ps, pm) — fastbt/exec_e_parab.py; нужен b, check="bary"; медленный путь
     chast: tuple | None = None    # частичный выход (доля, r): закрыть долю лимитом на +r·R; (0,5; 1) ≡ chast_1r; нужен b, check="bary"
 
 
