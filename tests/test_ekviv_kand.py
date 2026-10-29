@@ -19,6 +19,22 @@ from fastbt import sweep_val_kand as kd
 
 DATA_OK = (s9.OUT / "cache_latest_v2.txt").exists() and (Path(s9.MAIN) / "data" / "regen" / "features_pit_v3.parquet").exists()
 real = pytest.mark.skipif(not DATA_OK, reason="нет данных проекта (кэш s9 v2, features_pit_v3)")
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _s9_globali_vosstanovleny():
+    """Р-6 (29.10, как mutations.md № 43): S9Baza → sweep_val_baza.s9_engine() делает s9.use_v2() — глобально и навсегда;
+    после этого файла test_progon_urovni и test_rassl_s56_equiv искали cache_latest_v2_train4.txt и падали (в одиночку — зелёные)."""
+    keys = ("V2", "TABLES", "SUFFIX", "COMM", "SCOPE", "YEARS", "VAL_START")
+    old = {k: getattr(s9, k) for k in keys}
+    src = dict(s9.SOURCES)
+    yield
+    for k, v in old.items():
+        setattr(s9, k, v)
+    s9.SOURCES.clear()
+    s9.SOURCES.update(src)
+
+
 PTS20 = [x for x in ek.load_points()["tochki"] if x["sid"] != "A"]
 KAND = ek.load_points(kn.YAML)["tochki"]
 KA = pd.read_csv("docs/tables/sweep_e1v2/kand_a.csv", comment="#")

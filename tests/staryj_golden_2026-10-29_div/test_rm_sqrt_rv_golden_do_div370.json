@@ -1,0 +1,74 @@
+{
+ "S1": {
+  "base": {
+   "pos": "1789ac7589c6a2b17f8c89c45daa8beb875ccc0c17fa6edca1bd0d743ef57c94",
+   "pnl": "6900a2f44ff646b4d69e3040cb0d527496c044332a55bfd0da24ca3b822f5236",
+   "n": 254
+  },
+  "uzel": {
+   "pos": "0584067aa490ddbcff27098be85387fa81a89161d238530820629e1da7b1b93c",
+   "pnl": "110be40378462219924c0239a35e887eebf1fe1daf8385a940b6c2ea87bc9e17",
+   "n": 254
+  }
+ },
+ "S2": {
+  "base": {
+   "pos": "c87273dcdd065e0de34be62fc48ae03cc687a28188cce8770fd7b5b193e72121",
+   "pnl": "d6c271a4249d7bf04751d124fb49ed7062d174d54d6f8d1b8c8f33db72b1dc66",
+   "n": 254
+  },
+  "uzel": {
+   "pos": "48f99e276c395e5ad6a06af9e962057800f1e78db51d9fcd9a7d1b2882767697",
+   "pnl": "6de60b9c6c74fd5ab3db6f5cc2d3ac6838fc14200cedb98aba7c96b20cdee2c8",
+   "n": 254
+  }
+ },
+ "S3": {
+  "base": {
+   "pos": "36200e164ab29a1ca6a255f827bb833b9b5f8e869312f7c0885e74f0823d3aa1",
+   "pnl": "02bf72c22ddfe71967b0209bb7ec2bc1246135110c850efedeca2aad236041d1",
+   "n": 254
+  },
+  "uzel": {
+   "pos": "fa908b390fc312a81d087efc49d0d28201032697afa4a771aa6c11a77de3db5f",
+   "pnl": "acc520191383c3ba8ec3220c26e21062755c4f842663650c268afc53e7c10c88",
+   "n": 254
+  }
+ },
+ "S4": {
+  "base": {
+   "pos": "cc263da9e29bdaf96aea2ffcce10d9b1b69f8d93b2b8899f56317d873c4188d9",
+   "pnl": "c87bd9bd7a0f65492f016ed5e1169244ffe6c0e3e411dd9f25c67f6d399a8860",
+   "n": 254
+  },
+  "uzel": {
+   "pos": "e368f64d0ec2645b9e37f15dbd982b63e75504c0642356d8fbea8cc2fc425412",
+   "pnl": "de1cced21ef4542017ffae9607457b32b9b0becd08585c23b4b9ffb6829b78fd",
+   "n": 254
+  }
+ },
+ "S5": {
+  "base": {
+   "pos": "df7753df369aa00d0430944e6eb7ea96abf4b901612d54b5d311781a3adec52f",
+   "pnl": "1f2e05605248900d08df533ef03dfe7f5b77d41831b98b34f0d6a457eb3ee400",
+   "n": 254
+  },
+  "uzel": {
+   "pos": "c817505f0f3a35317685911a096d0ea39276f782bebcfe4b411aca0f495a6267",
+   "pnl": "a1fde74ecb58b9f18f3a60f4b4108ccf65cd6de477f05598f1c21eec9480636b",
+   "n": 254
+  }
+ },
+ "S6": {
+  "base": {
+   "pos": "8714d0287e43a9d7ddbb2958f770b2f9fb1734395c2cb255cb54afd172c22b49",
+   "pnl": "cfc9d446914ca838853a8d118afebd2f4f72365e0209fe172f30d92796296e26",
+   "n": 254
+  },
+  "uzel": {
+   "pos": "bad53f18a6988666324a7c37b8f07dcccd06039877609796145a12f2c989e2ea",
+   "pnl": "f2c86ad71f3ef93abd999968659518e4c205b725c70b206b28e379814e364cfc",
+   "n": 254
+  }
+ }
+}
