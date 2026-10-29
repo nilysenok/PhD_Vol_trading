@@ -4,6 +4,8 @@ API: primenit(df, tip, params, sig=None) -> bool[n] (True = вход на бар
   df   — DataFrame с колонками high, low, close, volume и датами (DatetimeIndex или колонка "date");
   tip  — "kontr" | "trend" (zh126_obshchee.yaml: tip_strategii); params — adx_th, atr_lo, vol_th, rsi_th, mom_n, dow,
          squeeze_pct (отсутствует/0 = выкл.).
+         V6-4: hurst_th и slope_max (только kontr), slope_min (только trend, нужен sig), vol_regime_max, tihiy_othod
+         (0 = выкл. = побайтно v5).
   sig  — сигнал int8[n]; нужен, если включён rsi_th или mom_n (направление): маска запрещает бар, где источник
          обнулил бы sig[d] (daily_upper_bound.py:302-342). Без sig и при включённом rsi/mom — ValueError.
 Причинность: маска[d] зависит от данных <= d. ATR-процентиль — расширяющееся окно ДО d-1 (порог из значений
@@ -18,7 +20,7 @@ from bisect import insort
 import numpy as np
 import pandas as pd
 
-from fastbt.filtry_v5 import maska_rsi, maska_szhatie, rsi_wilder, shirina_bb
+from fastbt.filtry_v5 import maska_rsi, maska_szhatie, naklon_ma, rsi_wilder, shirina_bb
 from fastbt.indicators import calc_adx, calc_atr, calc_sma
 
 MIN_ATR = 51
@@ -43,6 +45,26 @@ def maska_atr_expand(atr, pct):
         if not np.isnan(atr[d]):
             insort(srt, float(atr[d]))
     return out
+
+
+def hurst_rs(close, w=100):
+    """Хёрст по R/S (daily_full_opt_v5.py:114-125@6a7a4636): H[i] по доходностям, кончающимся close[i]; NaN до w."""
+    close = np.asarray(close, dtype=float)
+    h = np.full(len(close), np.nan)
+    if len(close) <= w:
+        return h
+    r = np.lib.stride_tricks.sliding_window_view(np.diff(np.log(np.maximum(close, 1e-12))), w)
+    y = np.cumsum(r - r.mean(axis=1, keepdims=True), axis=1)
+    R = y.max(axis=1) - y.min(axis=1)
+    S = r.std(axis=1, ddof=1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        h[w:] = np.where((S > 1e-12) & (R > 1e-12), np.log(R / S) / np.log(w), np.nan)
+    return h
+
+
+def naklon_pct(close, n=50, k=10):
+    """Наклон SMA50 за 10 баров, % за бар (источник calc_slope, :130-136): (MA[d]-MA[d-k])/MA[d-k]/k*100."""
+    return naklon_ma(close, n, k, "sma") / k * 100.0
 
 
 def _dni_nedeli(df):
@@ -77,6 +99,7 @@ def primenit(df, tip, params, sig=None):
     sp = params.get("squeeze_pct", 0)
     if sp > 0:
         mask &= maska_szhatie(shirina_bb(close), 252, sp / 100.0, 50)
+    mask &= _rezhim(close, high, low, vol, trend, params)
     dw = params.get("dow", 0)
     if dw > 0:
         d = _dni_nedeli(df)
@@ -86,6 +109,40 @@ def primenit(df, tip, params, sig=None):
         if sig is None:
             raise ValueError("rsi_th/mom_n зависят от направления: нужен sig")
         mask &= _napravlenie(sig, close, trend, rt, mn)
+    smin = params.get("slope_min", 0)
+    if smin > 0 and trend:      # тренд: long при наклоне >= порога, short при <= -порога (источник :379-381)
+        if sig is None:
+            raise ValueError("slope_min зависит от направления: нужен sig")
+        sl, sig = naklon_pct(close), np.asarray(sig)
+        with np.errstate(invalid="ignore"):
+            mask &= ~(((sig == 1) & ~(sl >= smin)) | ((sig == -1) & ~(sl <= -smin)))
+    return mask
+
+
+def _rezhim(close, high, low, vol, trend, params):
+    """V6-4: hurst_th (контр), vol_regime_max, tihiy_othod, slope_max (контр). 0 = выкл. Данные <= d."""
+    mask = np.ones(len(close), bool)
+    ht = params.get("hurst_th", 0)
+    if ht > 0 and not trend:                    # контртренд: H < порога (источник :359-362)
+        h = hurst_rs(close)
+        with np.errstate(invalid="ignore"):
+            mask &= ~np.isnan(h) & (h < ht)
+    vm = params.get("vol_regime_max", 0)
+    if vm > 0:                                  # ATR14 / SMA50(ATR14) < c; NaN — запрет (s12.py:24-25)
+        a = calc_atr(high, low, close, 14)
+        sm = calc_sma(a, 50)
+        vr = a / np.where(np.isnan(sm) | (sm < 1e-12), 1e-12, sm)
+        with np.errstate(invalid="ignore"):
+            mask &= ~np.isnan(vr) & (vr < vm)
+    if params.get("tihiy_othod", 0):            # объём d < SMA5 объёма; SMA5 нет или <= 0 — разрешено (s12.py:27-29)
+        v5 = calc_sma(vol, 5)
+        with np.errstate(invalid="ignore"):
+            mask &= ~(~np.isnan(v5) & (v5 > 0) & (vol >= v5))
+    smax = params.get("slope_max", 0)
+    if smax > 0 and not trend:                  # контртренд: |наклон| < порога (источник :374-375)
+        sl = naklon_pct(close)
+        with np.errstate(invalid="ignore"):
+            mask &= ~np.isnan(sl) & (np.abs(sl) < smax)
     return mask
 
 
