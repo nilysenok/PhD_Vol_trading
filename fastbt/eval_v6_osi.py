@@ -38,12 +38,15 @@ def primenit(r, v6: dict, sigmy) -> None:
         r.nov["zhizn"] = v6["zhizn"]
 
 
-def rel_td_ind(df: pd.DataFrame, td) -> tuple:
-    """Дневной td_rel → (TickerData, ind) на сетке td.dates; нет дня — ValueError (без ffill, Д4)."""
+def rel_td_ind(df: pd.DataFrame, td, progrev: bool = False) -> tuple:
+    """Дневной td_rel → (TickerData, ind) на сетке td.dates; нет дня — ValueError (без ffill, Д4).
+    progrev=True: дни сетки ДО первого дня td_rel (10-минуток ещё нет: 2014-06…08) остаются NaN, не заполняются; дыра внутри — отказ."""
     cols = ["open", "high", "low", "close", "volume"]
     d = df.set_index(pd.to_datetime(df["date"]))[cols].reindex(pd.DatetimeIndex(td.dates))
-    if d.isna().any().any():
-        raise ValueError(f"{td.ticker}: в td_rel нет {int(d.isna().any(axis=1).sum())} дней сетки td")
+    bad = d.isna().any(axis=1).to_numpy()
+    lead = (np.cumsum(~bad) == 0) if progrev else np.zeros(len(bad), bool)
+    if bad[~lead].any():
+        raise ValueError(f"{td.ticker}: в td_rel нет {int(bad[~lead].sum())} дней сетки td")
     o, h, l, c, v = (d[k].to_numpy(float) for k in cols)
     lr = np.zeros(len(c))
     lr[:-1] = np.log(c[1:] / np.maximum(c[:-1], 1e-12))
