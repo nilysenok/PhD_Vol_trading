@@ -50,6 +50,11 @@ cp "$MANIFEST" "$OUT/manifest_dannyh.tsv"
 python3 "$K/scripts/server/manifest_proverka.py" --manifest "$OUT/manifest_dannyh.tsv" --koren "$OUT/data" \
   --istochnik "$DANNYE" --strogo --spisok "$TMP/spisok_dannyh.txt" || fail "манифест отвергнут — перенос не собран"
 
+# fastbt читает data/calendar/ от корня КОДА (etap1_data: ROOT/data/calendar/cbr.csv), не от FASTBT_MAIN: эти файлы манифеста
+# кладутся в распакованный код — здесь и в razvernut.sh (тем же правилом, до суммы и chmod), сверены манифестом
+NAKLADKA=data/calendar/
+grep "^$NAKLADKA" "$TMP/spisok_dannyh.txt" | while IFS= read -r p; do mkdir -p "$K/$(dirname "$p")"; cp "$OUT/data/$p" "$K/$p"; done
+
 say "3/6 скрипты, requirements, кубы"
 cp "$K"/scripts/server/perenos/*.sh "$K/scripts/server/manifest_proverka.py" "$K/scripts/server/versii.py" "$OUT/"
 cp "$K/env/requirements_server.txt" "$OUT/"
@@ -61,8 +66,8 @@ for d in progon v5 v6; do
 done
 slit=0
 git -C "$REPO" merge-base --is-ancestor "$FULL" origin/kanon-v22-pereschet 2>/dev/null && slit=1
-printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%s\nsobran=%s\n' \
-  "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$(date '+%F %T %Z')" > "$OUT/KOD"
+printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%s\nnakladka=%s\nsobran=%s\n' \
+  "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$NAKLADKA" "$(date '+%F %T %Z')" > "$OUT/KOD"
 
 say "4/6 эталоны Мака: якорь A_fix × 6 Sk на train4 + ${PERENOS_ETALONY_TOCHEK:-200} точек (код tar, данные $OUT/data)"
 mkdir -p "$TMP/cache"
