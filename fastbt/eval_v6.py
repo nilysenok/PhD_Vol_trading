@@ -53,8 +53,8 @@ def fkey(filtr: dict, v6: dict) -> tuple:
 
 
 class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
-    def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=None, ist: IstochnikiV6 | None = None):
-        super().__init__(sid, inp, base_p, commission, **({} if fdr is None else {"fdr": fdr}))
+    def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=None, ist: IstochnikiV6 | None = None, rol: str | None = None):
+        super().__init__(sid, inp, base_p, commission, rol=rol, **({} if fdr is None else {"fdr": fdr}))
         self.ist, self.v6, self._rel, self._dan, self._ten, self.piv = ist or IstochnikiV6(), {}, {}, {}, None, {}
 
     def _need(self, name: str, ось: str):
@@ -168,7 +168,7 @@ class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
             raise ValueError("vozm у оценщика v6 не поддержан")
         pt5, self.v6 = razdelit(self.sid, pt)
         pt5, self.piv = piv6.razobrat(trend6.vernut(self.sid in TREND, pt5, self.v6))
-        self.r5 = r = razbor(self.sid, pt5, SIGNAL[self.sid])
+        self.r5 = r = razbor(self.sid, pt5, SIGNAL[self.sid], self.rol)
         if "vhod_tip" in self.v6 and self.sid in ("S3", "S4"):
             r.nov["vhod_tip"] = self.v6["vhod_tip"]
         osi6.primenit(r, self.v6, self.inp.sigma)
