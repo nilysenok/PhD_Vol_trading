@@ -26,8 +26,9 @@ def _sigs(seed, k=10):
     return np.random.default_rng(seed).choice([-1.0, 0.0, 1.0], size=(k, N), p=[0.25, 0.4, 0.35])
 
 
-def _poz_v2(sig, **flt):
-    return run_v4("T", _days(N), sig, np.full(N, 0.01), Params(), **flt).pos
+def _poz_v2(sig, rezhim="v4", **flt):
+    """Режим min_hold явный (Ж-129 п. 7): сверка со слоем v4 — "v4"; умолчание кода теперь "znak_vhoda"."""
+    return run_v4("T", _days(N), sig, np.full(N, 0.01), Params(), min_hold_rezhim=rezhim, **flt).pos
 
 
 def _v4_pos(sig, **flt):
@@ -51,6 +52,15 @@ def test_golos_v2_ravno_vote_v4_pobajtno(flt, seed):
     ref = _vote_ref([_v4_pos(s, **flt) for s in sigs])
     assert (np.abs(ref) > 0).any()
     assert _golos(sigs, **flt).tobytes() == ref.tobytes()
+
+
+def test_mutatsiya_rezhim_v4_ne_peredan_lovitsya():
+    """Мутация: режим v4 не передан (умолчание znak_vhoda) -> при min_hold голос расходится с vote v4."""
+    sigs = _sigs(0)
+    ref = _vote_ref([_v4_pos(s, min_hold=3) for s in sigs])
+    rows = {f"m{i}": _poz_v2(s, rezhim="znak_vhoda", min_hold=3) for i, s in enumerate(sigs)}
+    g = G.golos_v2(lambda kl, k: rows[kl], [dict(kl=kl) for kl in rows], 0, N, S_T, E_T)
+    assert g.tobytes() != ref.tobytes()
 
 
 def test_golos_dolya_vote_frac():

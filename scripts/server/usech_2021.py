@@ -30,17 +30,7 @@ import manifest_perenos as mp  # noqa: E402
 
 CUT = dt.date(2021, 12, 31)
 PARQUET_BATCH = 65536
-KAL = ("date", "known_from")
-# (шаблон от корня, вид, колонки дат, очищаемые колонки, читатель)
-PRAVILA = [
-    ("moex_discovery/data/raw/candles_10m/*.parquet", "pq", ("timestamp",), (), "fastbt/sigma_real.py rv22, bars_agg (ТФ tf_os_v5), daily_1850"),
-    ("moex_discovery/data/final_v6/candles_10m/external/*.parquet", "pq", ("begin",), (), "rezhim_e1.imoex_daily, e1_sektor, vneshnie_1850 (IMOEX, секторные 10м)"),
-    ("data/corporate_actions.csv", "csv", ("date",), (), "fastbt/data.py corp_actions"),
-    ("data/calendar/torgovye_dni_moex.csv", "csv", ("date",), (), "торговый календарь MOEX"),
-    ("fastbt/rates/key_rate_cbr_vladelec.csv", "csv", ("data_vstupleniya",), (), "ставка ЦБ владельца (дата вступления; объявление раньше входа)"),
-    *[(f"data/calendar/{n}.csv", "csv", KAL, ("retrieved_at",), f"календарь {n} (PIT: date и known_from)")
-      for n in ("cbr", "expirations", "fomc", "imoex_rebal", "imoex_rebal_official", "cpi_us")],
-]
+from usech_pravila import KAL, PRAVILA  # noqa: E402,F401  (правила — отдельный файл: ≤ 200 строк)
 
 
 class Stat:
@@ -85,9 +75,12 @@ def usech_csv(src: Path, dst: Path, daty: tuple[str, ...], ochistit: tuple[str, 
                     r[i] = ""
                 w.writerow(r)
                 st.stroki += 1
-                st.uchest(max(ds).isoformat())
+                if ds:                                   # без колонок дат (справочник): строки копируются как есть
+                    st.uchest(max(ds).isoformat())
             else:
                 st.otbrosheno += 1
+            if not ds:
+                continue
             if prev is not None and ds[0] < prev:
                 otsort = False
             prev = ds[0]
@@ -136,16 +129,22 @@ def usech_pq(src: Path, dst: Path, kol: str, paket: int = PARQUET_BATCH, ostanov
     return st
 
 
-def usech(koren: Path, vyhod: Path) -> list[dict]:
+def usech(koren: Path, vyhod: Path, tolko: str = "") -> list[dict]:
     zap = []
     for shablon, vid, kol, och, chit in PRAVILA:
+        if tolko and tolko not in shablon:
+            continue
         for src in sorted(koren.glob(shablon)):
             rel = src.relative_to(koren).as_posix()
             if mp.zapreshen(str(src)) or rel.startswith("data/server_2021/"):
                 continue
+            # дата в начале имени справочной таблицы — день её создания (2026), не данные; manifest_perenos не читает файлы с
+            # годом 202x в имени, поэтому копия лежит без префикса даты, а в манифесте istochnik = исходное имя (его читает fastbt)
             dst = vyhod / rel
+            if rel.startswith("docs/issledovaniya/"):
+                dst = dst.with_name(dst.name.split("_", 1)[1])
             st = usech_pq(src, dst, kol[0]) if vid == "pq" else usech_csv(src, dst, kol, och)
-            zap.append(dict(rel=rel, dst=dst, st=st, chit=chit, sha_src=mp.sha256(str(src))))
+            zap.append(dict(rel=rel, dst=dst, st=st, chit=chit, sha_src=mp.sha256(str(src)), bez=not kol))
             print(f"{rel}: строк {st.stroki}, отброшено {st.otbrosheno}, max {st.max_data}, остановка {st.ostanov}")
     return zap
 
@@ -154,7 +153,7 @@ def obnovit_manifest(koren: Path, zap: list[dict], vyhod: Path, tsv: Path) -> st
     """Копии заново проверяет manifest_perenos (независимо от усечения) и дописывает в манифест."""
     vkoren = vyhod.parent.parent                 # <vkoren>/data/server_2021: put в манифесте = data/server_2021/<rel>
     dst_rel = {z["dst"].relative_to(vkoren).as_posix(): z for z in zap if z["dst"].exists()}
-    r = mp.sobrat(str(vkoren), [(p, z["chit"], "") for p, z in dst_rel.items()])
+    r = mp.sobrat(str(vkoren), [(p, z["chit"], "справочник без дат (as-of в source_url ≤ 2021-12-30)" if z["bez"] else "") for p, z in dst_rel.items()])
     nov = [(p, sha, b, m, z["chit"], z["rel"], z["sha_src"]) for p, sha, b, m, _ in r["prinyato"] for z in [dst_rel[p]]]
     nv = tsv.with_name(tsv.stem + "_otvergnuto.tsv")
     star = [ln.rstrip("\n").split("\t") for ln in tsv.read_text(encoding="utf-8").splitlines()[1:]]
@@ -180,10 +179,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--koren", type=Path, required=True)
     ap.add_argument("--vyhod", type=Path, default=None)
+    ap.add_argument("--tolko", default="", help="только правила, чей шаблон содержит подстроку (дополнение манифеста)")
     ap.add_argument("--tsv", type=Path, default=Path("docs/server/manifest_dannyh_2021.tsv"))
     a = ap.parse_args(argv)
     vyhod = a.vyhod or a.koren / "data" / "server_2021"
-    zap = usech(a.koren, vyhod)
+    zap = usech(a.koren, vyhod, a.tolko)
     print(obnovit_manifest(a.koren, zap, vyhod, a.tsv))
     return 0
 

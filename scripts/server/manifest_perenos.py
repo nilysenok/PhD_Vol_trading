@@ -38,7 +38,7 @@ def zapreshen(p: str) -> str | None:
 
 def kolonka_dat(imya: str) -> bool:
     n = str(imya).lower()
-    if n == "retrieved_at":       # дата скачивания файла, не дата данных
+    if n == "retrieved_at" or n.endswith("_status"):       # дата скачивания файла / текстовый статус даты, не дата данных
         return False
     return "date" in n or "дата" in n or n.startswith("data_") or n == "known_from" or n in IMYA_DAT
 
