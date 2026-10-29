@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import fastbt.canon_v5 as cv5
 import fastbt.ledger_v2 as lm
 import fastbt.progon_server as srv
 import fastbt.progon_sobol as ps
@@ -57,6 +58,8 @@ def kanon(root, sid):
     ok = [r for r in rows if r["status"] == "ok"]
     mf = {k: v for k, v in json.loads((Path(root) / sid / "manifest.json").read_text(encoding="utf-8")).items() if k != "sozdan"}
     sig = [json.dumps({k: v for k, v in r.items() if k not in ("t_sek", "excess")}, sort_keys=True) for r in rows]
+    if ch.v != lm.V21:          # ledger 2.0 (период v2): ряды портфеля и тиков, а не суммы сегментов
+        return sig, ch.matrica(ok).tobytes(), ch.tik(ok).tobytes(), mf
     return sig, ch.summy(ok).tobytes(), ch.summy(ok, "tik").tobytes(), mf
 
 
@@ -198,3 +201,88 @@ def test_v2_otkaz_i_procs_po_umolchaniyu(monkeypatch, tmp_path):
         srv.main(["--kub", str(KUBY / "kub_S1.yaml"), "--period", "v2", "--out", str(tmp_path), "--procs", "2"])
     monkeypatch.setattr(os, "cpu_count", lambda: 128)
     assert srv.procs_po_umolchaniyu() == 124
+
+
+# ---- Л10 v5: куб v5, период v2 (ledger 2.0), seed 2, k3, --n1 (Ж-131 п. 1, 3–4; Ж-130) ----
+class Fake5(Fake):
+    fdr = "t0d"            # fdr куба v5; оценщик обязан считать его же
+
+
+def rz5(period="train4", seed="seed", k3=False):
+    return ps.Rezhim("v5", period, seed, k3, "t0d")
+
+
+def kuby5(sids, rz):
+    return {s: (ps.kub_put(s, rz), srv.zagruzit_kub(ps.kub_put(s, rz), rz.period, rz=rz)) for s in sids}
+
+
+def sravnit_s_drajverom(monkeypatch, tmp_path, rz, n, ist, rezhim="obshchie", sids=("S1", "S3")):
+    """Драйвер (1 процесс) и обёртка на одних точках: канон каталога равен побайтно; чекпоинт — конец прохода."""
+    monkeypatch.setattr(ps, "fabrika", lambda sid: sreda(sid, Fake5()))
+    v = lm.V if rz.period == "v2" else lm.V21
+    ps.schet(list(sids), 0, n, ist, tmp_path / "a", 1, False, False, v, rz)
+    it = srv.progon(kuby5(sids, rz), tmp_path / "b", 2, n=n, rezhim=rezhim, rz=rz)
+    for s in sids:
+        assert kanon(tmp_path / "a", s) == kanon(tmp_path / "b", s) and kanon(tmp_path / "b", s)[0]
+        assert it[s]["sboy"] is None and chp(tmp_path / "b", s)["posledniy_i"] == n[s] - 1
+    return it
+
+
+@pytest.mark.parametrize("rezhim", ["obshchie", "prezhniy"])
+def test_v5_train4_seed1_ravno_drajveru(fake, monkeypatch, tmp_path, rezhim):           # G1
+    it = sravnit_s_drajverom(monkeypatch, tmp_path, rz5(), {"S1": 256, "S3": 200}, "sobol1_seed1", rezhim)
+    assert {x["istochnik"] for x in syrye(tmp_path / "b", "S1")} == {"sobol1_seed1"} and 0 < it["S1"]["n"] <= 256
+
+
+def test_v5_period_v2_i_seed2_raznye_katalogi_period_i_seed_v_manifest(fake, monkeypatch, tmp_path):   # G2
+    n = {"S1": 120, "S3": 120}
+    sravnit_s_drajverom(monkeypatch, tmp_path / "v2", rz5("v2"), n, "sobol1_seed1")
+    sravnit_s_drajverom(monkeypatch, tmp_path / "s2", rz5(seed="seed2"), n, "sobol1_seed2")
+    mf = lambda d: json.loads((d / "b" / "S1" / "manifest.json").read_text())  # noqa: E731
+    m2, ms2 = mf(tmp_path / "v2"), mf(tmp_path / "s2")
+    assert (m2["period"], m2["okno_s"], m2["progrev_s"], m2["sobol_klyuch"]) == ("v2", "2015-01-01", "2014-08-26", "seed")
+    assert (ms2["period"], ms2["sobol_klyuch"], ms2["sobol_seed"]) == ("train4", "seed2", 20261031) and m2["sobol_seed"] == 20261030
+    assert chp(tmp_path / "v2" / "b", "S1")["period"] == "v2" and chp(tmp_path / "s2" / "b", "S1")["sobol_seed"] == 20261031
+    assert {x["klyuch"]["period"] for x in syrye(tmp_path / "v2" / "b", "S1")} == {"v2"}
+    k = lambda d: {x["klyuch_sha"] for x in syrye(d / "b", "S1")}  # noqa: E731
+    assert k(tmp_path / "v2") and not k(tmp_path / "v2") & k(tmp_path / "s2")          # период и seed — разные ключи ledger
+
+
+def test_v5_k3_ravno_drajveru(fake, monkeypatch, tmp_path):                              # G3
+    it = sravnit_s_drajverom(monkeypatch, tmp_path, rz5(k3=True), {"S1": 150, "S3": 150}, "k3")
+    assert {x["istochnik"] for x in syrye(tmp_path / "b", "S1")} == {"k3"} and it["S1"]["n"] > 0
+    assert json.loads((tmp_path / "b" / "S1" / "manifest.json").read_text())["k3"] is True
+
+
+def test_mutaciya_period_ne_v_otpechatke_chekpointa_lovitsya(fake, monkeypatch, tmp_path):   # G4
+    monkeypatch.setattr(ps, "fabrika", lambda sid: sreda(sid, Fake5()))
+    srv.progon(kuby5(["S1"], rz5()), tmp_path, 2, n={"S1": 100}, rz=rz5())
+    with pytest.raises(SystemExit, match="period"):                                  # train4-каталог как v2 — отказ
+        srv.progon(kuby5(["S1"], rz5("v2")), tmp_path, 2, n={"S1": 200}, prodolzhit=True, rz=rz5("v2"))
+    monkeypatch.setattr(srv, "POLYA", tuple(k for k in srv.POLYA if k != "period"))   # мутация
+    it = srv.progon(kuby5(["S1"], rz5("v2")), tmp_path, 2, n={"S1": 200}, prodolzhit=True, rz=rz5("v2"))
+    assert it["S1"]["n"] >= 0                       # мутант отпечаток пропустил: SystemExit «period» не поднят, счёт пошёл
+
+
+def test_mutaciya_vybros_canon_v5_propushchen_lovitsya(fake, monkeypatch, tmp_path):     # G5
+    monkeypatch.setattr(ps, "fabrika", lambda sid: sreda(sid, Fake5()))
+    ozhid = {i for i, _ in ps.tochki(ps.load_kub("S1", rz5()), 0, 256, rz5())}
+    assert 0 < len(ozhid) < 256                                                       # в первых 256 точках S1 есть выброшенные
+    srv.progon(kuby5(["S1"], rz5()), tmp_path / "ok", 2, n={"S1": 256}, rz=rz5())
+    assert {x["sobol_i"] for x in syrye(tmp_path / "ok", "S1")} == ozhid              # обёртка = драйвер: индексы выброшенных пропущены
+    orig = cv5.canon_v5
+    monkeypatch.setattr(cv5, "canon_v5", lambda sid, pt: orig(sid, pt) or pt)        # мутация: несовместимая точка не выбрасывается
+    srv.progon(kuby5(["S1"], rz5()), tmp_path / "mut", 2, n={"S1": 256}, rz=rz5())
+    assert {x["sobol_i"] for x in syrye(tmp_path / "mut", "S1")} != ozhid
+
+
+def test_main_v5_komanda_servera(fake, monkeypatch, tmp_path):                           # G7: CLI = команды из тела PR
+    monkeypatch.setattr(ps, "fabrika", lambda sid: sreda(sid, Fake5()))
+    base = ["--kub", "v5", "--strategii", "S1", "--procs", "2"]
+    assert srv.main([*base, "--period", "v2", "--seed", "2", "--n1", "S1=60", "--out", str(tmp_path / "0")]) == 0
+    assert srv.main([*base, "--period", "train4", "--k3", "--out", str(tmp_path / "1")]) == 0
+    m0, m1 = (json.loads((tmp_path / i / "S1" / "manifest.json").read_text()) for i in "01")
+    assert (m0["period"], m0["sobol_klyuch"], m1["k3"]) == ("v2", "seed2", True)
+    for bad in (["--k3", "--seed", "2"], ["--seed", "3"]):
+        with pytest.raises(SystemExit):
+            srv.main([*base, "--period", "train4", *bad, "--out", str(tmp_path / "x")])
