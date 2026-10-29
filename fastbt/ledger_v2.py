@@ -4,6 +4,8 @@ v2.1 (Л7, docs/otchety/2026-10-29_setka_v5.md §3): вместо рядов por
 (fastbt.stats) по кварталам 2016Q1…2019Q4: port [16,NF], tik [17,16,NF] float64, ≈ 20 КБ/точку; окно — stats.window."""
 import hashlib
 import json
+import os
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +16,13 @@ from fastbt.metriki_e import sr_dnevnoy
 FORMAT, V, V21 = "etap1-ledger", "2.0", "2.1"
 NSEG = 16
 NET, NTIK, GODY = "net", 17, (2016, 2017, 2018, 2019)
+GODY_V2 = (2015,) + GODY                            # период В2 (Ж-113): окно с 2015-01-01, 20 кварталов
 SUMS, ROWS = "SHA256SUMS.txt", "rows.jsonl"
+
+
+def gody_perioda(period=None) -> tuple:
+    """Годы ledger по periodu из manifest: v2 — 2015–2019, иначе (train4, поля нет) — 2016–2019 как прежде."""
+    return GODY_V2 if period == "v2" else GODY
 
 
 def tok(v) -> str:
@@ -83,37 +91,37 @@ def tselevaya(by_quarter: dict) -> tuple:
     return (float("nan") if np.isnan(v).any() else float(np.median(v))), float((v > 0).sum() / len(v))
 
 
-def segment_kvartala(daty: np.ndarray) -> np.ndarray:
-    """Номер квартала 0…15 (2016Q1 = 0) для каждой даты; дата вне 2016–2019 — отказ."""
+def segment_kvartala(daty: np.ndarray, gody: tuple = GODY) -> np.ndarray:
+    """Номер квартала 0…4·len(gody)−1 (первый квартал первого года = 0) для каждой даты; дата вне годов — отказ."""
     d = np.asarray(daty, "datetime64[D]")
     god = d.astype("datetime64[Y]").astype(int) + 1970
-    if not np.isin(god, GODY).all():
-        raise ValueError("дата вне 2016–2019: метрики 2020+ в ledger не входят")
-    return (god - GODY[0]) * 4 + (d.astype("datetime64[M]").astype(int) % 12) // 3
+    if not np.isin(god, gody).all():
+        raise ValueError(f"дата вне {gody[0]}–{gody[-1]}: метрики 2020+ в ledger не входят")
+    return (god - gody[0]) * 4 + (d.astype("datetime64[M]").astype(int) % 12) // 3
 
 
-def nbars_kvartalov(daty: np.ndarray) -> np.ndarray:
-    return np.bincount(segment_kvartala(daty), minlength=NSEG).astype(float)
+def nbars_kvartalov(daty: np.ndarray, gody: tuple = GODY) -> np.ndarray:
+    return np.bincount(segment_kvartala(daty, gody), minlength=4 * len(gody)).astype(float)
 
 
-def segment_do_goda(t: int) -> int:
-    """Индекс j последнего сегмента окна [2016-01-01; 31.12(t−1)] для stats.window: Q4 года t−1."""
-    if t - 1 not in GODY:
-        raise ValueError(f"окно до конца {t - 1} года вне 2016–2019")
-    return (t - 1 - GODY[0]) * 4 + 3
+def segment_do_goda(t: int, gody: tuple = GODY) -> int:
+    """Индекс j последнего сегмента окна [1 января первого года; 31.12(t−1)] для stats.window: Q4 года t−1."""
+    if t - 1 not in gody:
+        raise ValueError(f"окно до конца {t - 1} года вне {gody[0]}–{gody[-1]}")
+    return (t - 1 - gody[0]) * 4 + 3
 
 
-def summy(daty: np.ndarray, x: np.ndarray, poz=None, sdelki=None) -> np.ndarray:
+def summy(daty: np.ndarray, x: np.ndarray, poz=None, sdelki=None, gody: tuple = GODY) -> np.ndarray:
     """Суммы сегментов F_S…F_X по кварталам из ряда x[..., T] (избыточная доходность после комиссий) → [..., 16, NF].
     F_S, F_Q — суммы x и x²; F_MX, F_MN, F_D — моноид просадки по накопленной сумме квартала (как stats._bar); F_L — x последнего дня.
     poz[..., T] — |позиция| (необязательно): F_X = она на последнем дне квартала (выход на конце окна, мутация № 6), F_E = дней в позиции.
     sdelki[..., T] — число сделок в день (необязательно): F_R = сумма за квартал. Без poz F_X = F_E = 0, без sdelki F_R = 0."""
     x = np.asarray(x, float)
-    seg = segment_kvartala(daty)
+    seg, nseg = segment_kvartala(daty, gody), 4 * len(gody)
     if seg.shape != x.shape[-1:] or any(a is not None and np.shape(a) != x.shape for a in (poz, sdelki)):
         raise ValueError("daty, x, poz разной длины")
-    out = np.zeros(x.shape[:-1] + (NSEG, stats.NF))
-    for k in range(NSEG):
+    out = np.zeros(x.shape[:-1] + (nseg, stats.NF))
+    for k in range(nseg):
         m = seg == k
         if not m.any():
             continue
@@ -147,6 +155,13 @@ def _shards(d: Path, pd: Path) -> list:
     return out
 
 
+def _zapis_atomarno(mp: Path, text: str) -> None:
+    """Уникальный tmp рядом + os.replace: читатель видит либо нет файла, либо целый (гонка первых кусков)."""
+    tmp = mp.with_name(f"{mp.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, mp)
+
+
 class Pisatel:
     """Один на процесс: p{NN}/ свой. Строки видны только после закрытия шарда."""
     VERSIYA, daty = V, None      # у Pisatel21 — 2.1 и даты рядов; версия из manifest (резюм по каталогу) приоритетнее
@@ -162,9 +177,9 @@ class Pisatel:
         ex = json.loads(mp.read_text(encoding="utf-8")) if mp.exists() else m
         if any(ex.get(k) != m.get(k) for k in ("kod", "vhody", "v")) or ex.get("poz_konec", False) != m.get("poz_konec", False):
             raise ValueError("manifest: другой kod/vhody/poz_konec — отказ")
-        self.poz_konec = bool(ex.get("poz_konec"))
+        self.poz_konec, self.period = bool(ex.get("poz_konec")), ex.get("period")
         if not mp.exists():
-            mp.write_text(json.dumps(ex, ensure_ascii=False, sort_keys=True, indent=1), encoding="utf-8")
+            _zapis_atomarno(mp, json.dumps(ex, ensure_ascii=False, sort_keys=True, indent=1))
         [(self.pd / s).mkdir(parents=True, exist_ok=True) for s in ("port", "tik")]
         self.buf = []
         self._vosstanovit()
@@ -200,7 +215,8 @@ class Pisatel:
             if self.poz_konec and poz is None:
                 raise ValueError("ledger 2.1 с poz_konec: нужны |позиции| и сделки (poz)")
             pp, pt, sp, st = poz or (None,) * 4
-            ex_port, ex_tik = summy(self.daty, ex_port, pp, sp), summy(self.daty, np.asarray(ex_tik, float), pt, st)   # nan у не-ok остаётся nan
+            g = gody_perioda(self.period)
+            ex_port, ex_tik = summy(self.daty, ex_port, pp, sp, g), summy(self.daty, np.asarray(ex_tik, float), pt, st, g)   # nan у не-ok остаётся nan
         self.buf.append((dict(row), ex_port, ex_tik))
         if len(self.buf) >= self.shard:
             self.close()
@@ -234,7 +250,7 @@ class Pisatel21(Pisatel):
     def __init__(self, root: Path, sid: str, potok: int, manifest: dict, shard: int = 256, daty=None, poz: bool = False):
         if daty is not None:
             self.daty = np.asarray(daty, "datetime64[D]")
-            manifest = {**manifest, "nbars": nbars_kvartalov(self.daty).tolist(), "poz_konec": bool(poz)}
+            manifest = {**manifest, "nbars": nbars_kvartalov(self.daty, gody_perioda(manifest.get("period"))).tolist(), "poz_konec": bool(poz)}
         super().__init__(root, sid, potok, manifest, shard)
 
     def add(self, row: dict, ex_port, ex_tik, poz=None) -> None:
@@ -249,7 +265,7 @@ class Chitatel:
         if not (self.d / "manifest.json").exists():
             raise ValueError(f"{sid}: нет manifest.json")
         self.manifest = json.loads((self.d / "manifest.json").read_text(encoding="utf-8"))
-        self.v = self.manifest.get("v")
+        self.v, self.gody = self.manifest.get("v"), gody_perioda(self.manifest.get("period"))
         if self.v not in (V, V21):
             raise ValueError(f"manifest.v = {self.v}, ожидалось {V} или {V21}")
         self._mm, self._r, seen = {}, [], set()
@@ -276,8 +292,8 @@ class Chitatel:
             if len(chunk) < n or any(r.get("v") != self.v for r in chunk):
                 raise ValueError(f"{pd.name}: строки шарда {nom} неполны или другой версии")
             for i, r in enumerate(chunk):
-                if any(int(str(k)[:4]) not in GODY for p in ("by_year", "by_quarter") for k in (r.get(p) or {})):
-                    raise ValueError("by_year/by_quarter: год вне 2016–2019")
+                if any(int(str(k)[:4]) not in self.gody for p in ("by_year", "by_quarter") for k in (r.get(p) or {})):
+                    raise ValueError(f"by_year/by_quarter: год вне {self.gody[0]}–{self.gody[-1]}")
                 out.append((r, (pd.name, nom, i)))
             pos += n
         return out
@@ -316,4 +332,4 @@ class Chitatel:
         if comm and not self.manifest.get("poz_konec"):
             raise ValueError("okno: comm > 0, а |позиция| на конце кварталов в ledger не записана (poz_konec = false)")
         nb = np.asarray(self.manifest["nbars"], float)
-        return stats.window(self.summy(rows, sub), nb, segment_do_goda(t), comm)
+        return stats.window(self.summy(rows, sub), nb, segment_do_goda(t, self.gody), comm)
