@@ -102,11 +102,11 @@ def _zp(pisatel) -> ZaemPisatel:
     return pisatel._zaem
 
 
-def pisat(pisatel, row: dict, ex_port, ex_tik, zaem) -> None:
-    """Вместо Pisatel.add: пишет ряд платы и ту же строку в ledger."""
+def pisat(pisatel, row: dict, ex_port, ex_tik, zaem, poz=None) -> None:
+    """Вместо Pisatel.add: пишет ряд платы и ту же строку в ledger (poz — Л7b, только ledger 2.1)."""
     if isinstance(pisatel, Pisatel):                                                 # подставной писатель (тесты) — без шардов
         _zp(pisatel).add(row, zaem)
-    pisatel.add(row, ex_port, ex_tik)
+    pisatel.add(row, ex_port, ex_tik) if poz is None else pisatel.add(row, ex_port, ex_tik, poz)
 
 
 def zakryt(pisatel) -> None:
