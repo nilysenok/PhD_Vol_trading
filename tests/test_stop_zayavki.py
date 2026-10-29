@@ -128,7 +128,12 @@ def test_mutatsiya_gap_po_urovnyu_lovitsya(monkeypatch):
         r = exec_e_rules.stop_vhod(o, h, l, up, dn)
         return None if r is None else (r[0], r[1], up if r[0] > 0 else dn)
     _mut(monkeypatch, "stop_vhod", bad)
-    assert go([FLAT, D((115, 116, 114, 115)), FLAT], U(3, up=[110, NAN, NAN])).trades[0].entry_px == 110.0   # ≠ 115 (тест выше)
+    try:
+        r = go([FLAT, D((115, 116, 114, 115)), FLAT], U(3, up=[110, NAN, NAN]))
+    except ValueError as e:                                                     # #617: исполнение вне бара — поймана кодом
+        assert "вне [low; high]" in str(e), str(e)
+        return
+    assert r.trades[0].entry_px == 110.0                                        # ≠ 115 (тест выше)
 
 
 def test_mutatsiya_prokhod_na_tik_lovitsya(monkeypatch):
