@@ -152,4 +152,6 @@ def razbor(sid: str, pt5: dict, signal=None) -> Razbor:
     _vyhod(r, sid, pt5)
     if r.razmer not in ("ravnyj", "risk_sigma") or r.m_sily not in ("1", "lin", "kvadr"):
         raise ValueError(f"razmer_tip {r.razmer!r}, m_sily {r.m_sily!r}")
+    if trend and r.m_sily != "1" and r.rang_tip == "tikernyj":
+        raise ValueError(f"{sid}: тренд × m_sily {r.m_sily!r} × rang_tip tikernyj несовместимо — ранга по тикеру нет, вес 0 (Р-4)")
     return r
