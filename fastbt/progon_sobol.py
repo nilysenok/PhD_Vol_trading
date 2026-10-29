@@ -162,7 +162,7 @@ def ocenshchik(sid: str, inp, rz: Rezhim):
     mod, cls = OCENSHCHIK_V5
     if importlib.util.find_spec(mod) is None:
         raise SystemExit(f"{mod} (лист Л9) не слит — куб v5 считать нечем — отказ")
-    kw = {}
+    kw = {"rol": rz.rol} if rz.rol == "spravka" else {}
     if mod == "fastbt.eval_v6":              # оценщик v6 ряды не читает: боевые источники подаёт istochniki_v6 (Ист-v6)
         from fastbt import istochniki_v6
         kw["ist"] = istochniki_v6.zagruzit(rz.period, list(inp.sk.tickers))
