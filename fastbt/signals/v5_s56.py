@@ -34,8 +34,9 @@ TIP_FILTROV = "kontr"      # IS_TREND["S5"] = IS_TREND["S6"] = False (zh126_S5/S
 
 
 def _group_ids(dates, period):
+    """Группа периода; den — календарный день (на дневках = номер бара, на внутридневных ТФ — день, П5)."""
     if PERIODS[period] is None:
-        return np.arange(len(dates), dtype=np.int64)
+        return pd.DatetimeIndex(dates).normalize().asi8
     return _gid(dates, PERIODS[period])
 
 
@@ -131,7 +132,8 @@ def generate5(td, ind, grid):
     return SignalSet(sig, ex, ex.copy(), st, list(grid), False, extra)
 
 
-def generate6(td, ind, grid):
+def generate6(td, ind, grid, vwap_fn=_vwap):
+    """vwap_fn(close, high, low, volume, w) -> (vwap, dev); на внутридневных ТФ — VWAP сессии (fastbt.tf_os_v5)."""
     n, K = td.n, len(grid)
     sig = np.zeros((K, n), np.int8); ex = np.zeros((K, n), bool); st = np.zeros((K, n))
     extra = {"vwap": np.zeros((K, n)), "dev": np.zeros((K, n))}
@@ -142,7 +144,7 @@ def generate6(td, ind, grid):
     for i, p in enumerate(grid):
         w, m, fs = p["vwap_window"], p["dev_mult"], p["filter_set"]
         if w not in vc:
-            vc[w] = _vwap(td.close, td.high, td.low, td.volume, w)
+            vc[w] = vwap_fn(td.close, td.high, td.low, td.volume, w)
         if fs not in flt:
             flt[fs] = _fs_mask(ind, fs, n)
         vwap, dev = vc[w]
