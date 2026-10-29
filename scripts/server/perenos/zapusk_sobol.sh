@@ -3,23 +3,29 @@
 # ledger в ledger/<период>/<Sk>/ (одна стратегия — один каталог), чекпоинт каждые 5 000 точек, строка состояния по стратегиям.
 #   ./zapusk_sobol.sh status <период>   — строки состояния и жив ли процесс
 # Отказ без отметки proverka/OK от ЭТОГО кода, данных и эталона (./proverka_yakor.sh), при изменённом коде, при живом прогоне.
-# Процессов — ядра − 4 (Ж-131 п. 4); PERENOS_PROCS — явно. fastbt.progon_server есть в коде — он: все kub_S*.yaml каталога
-# kuby/<PERENOS_KUBY: v5 | v6 | progon, по умолчанию v5> одним запуском, --out ledger/<период>, --prodolzhit (возобновление с
-# чекпоинта), PERENOS_STRATEGII=S1,S2 — подмножество, PERENOS_SEED — seed вместо куба. Нет progon_server в коде — замена
-# fastbt.progon_sobol через scripts/server/sobol_zapusk.py (только train4, ≤ 10 процессов; локально PERENOS_TOCHEK=50).
-# Период v2 принимает только progon_server, и только если драйвер его считает (иначе его собственный отказ — вывод в лог).
+# Процессов — ядра − 4 (Ж-131 п. 4); PERENOS_PROCS — явно. Если fastbt.progon_server умеет куб v5 (в --help есть --k3; ветка
+# progon-server-v5): проходы PERENOS_PROHODY (умолчание «s1 s2 k3») подряд, каждый — `--kub v5 --period <период> --seed 1|2 | --k3
+# [--n1 PERENOS_N1] --out ledger/<период>_<проход> --prodolzhit`; PERENOS_STRATEGII=S1,S2 — подмножество. Иначе — замена
+# fastbt.progon_sobol через scripts/server/sobol_zapusk.py (только train4, куб progon, ≤ 10 процессов; локально PERENOS_TOCHEK=50).
+# Период v2 считает только progon_server с кубом v5 (сам откажет, если драйвер не умеет — вывод в лог).
 . "$(dirname "$0")/obshchee.sh"
 okruzhenie
+novyj_cli() {   # fastbt.progon_server с кубом v5 (ветка progon-server-v5): в --help есть --k3; иначе — прежний CLI/замена
+  [ -f "$KOD_DIR/fastbt/progon_server.py" ] && (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --help 2>&1 | grep -q -- '--k3')
+}
 
 if [ "${1:-}" = __ryad ]; then              # внутренний режим: сама цепочка под nohup
   per=$2; shift 2
-  if [ -f "$KOD_DIR/fastbt/progon_server.py" ]; then
-    kd=${PERENOS_KUBY:-v5}; [ -d "$P/kuby/$kd" ] || kd=progon       # кубы: kuby/<v5|v6|progon>/kub_S*.yaml, все Sk одним запуском
-    sp=${PERENOS_STRATEGII:-S1,S2,S3,S4,S5,S6}; ks=(); for s in ${sp//,/ }; do ks+=("$P/kuby/$kd/kub_$s.yaml"); done
+  if novyj_cli; then
+    # CLI progon_server под куб v5 (Л10, #608): --kub v5 --period train4|v2 --seed 1|2 | --k3 [--n1]; проходы подряд, свой каталог ledger
+    # на проход: ledger/<период>_<s1|s2|k3>/<Sk>/. PERENOS_PROHODY="s1 s2 k3" (умолчание), PERENOS_N1 — как --n1, PERENOS_STRATEGII.
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
-    say "progon_server: кубы kuby/$kd (${#ks[@]}), ledger/$per/<Sk>/, процессов $(processov)"
-    (cd "$KOD_DIR" &&"$PY" -m fastbt.progon_server --kub "${ks[@]}" --period "$per" ${PERENOS_SEED:+--seed "$PERENOS_SEED"} \
-      --out "$P/ledger/$per" --procs "$(processov)" --prodolzhit $sl)
+    for pr in ${PERENOS_PROHODY:-s1 s2 k3}; do
+      case "$pr" in s1) a="--seed 1" ;; s2) a="--seed 2" ;; k3) a="--k3" ;; *) fail "проход $pr: s1 | s2 | k3" ;; esac
+      say "progon_server: v5 $per $pr, ledger/${per}_$pr/<Sk>/, процессов $(processov)"
+      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub v5 --period "$per" $a ${PERENOS_N1:+--n1 "$PERENOS_N1"} \
+        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/${per}_$pr" --procs "$(processov)" --prodolzhit $sl)
+    done
   else
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
     (cd "$KOD_DIR" &&"$PY" "$KOD_DIR/scripts/server/sobol_zapusk.py" --root "$P/ledger/$per" --procs "$(processov)" $sl \
@@ -35,15 +41,15 @@ case "$per" in train4|v2) ;; *) fail "период: train4 или v2 (./zapusk_s
 [ -x "$PY" ] || fail "нет .venv — сначала ./razvernut.sh"
 pidf="$P/logs/sobol_$per.pid"
 zhiv() { [ -f "$pidf" ] && kill -0 "$(cat "$pidf")" 2>/dev/null; }
-server=0; [ -f "$KOD_DIR/fastbt/progon_server.py" ] && server=1
+server=0; novyj_cli && server=1
 
 if [ "$rezhim" = status ]; then
   zhiv && say "прогон $per идёт: pid $(cat "$pidf")" || say "прогон $per не идёт"
   ls -t "$P"/logs/sobol_"$per"_*.log 2>/dev/null | head -1 | while read -r l; do say "лог $l"; tail -n 3 "$l"; done
   if [ $server = 1 ]; then      # строка состояния по стратегии — из checkpoint.json (каждые 5 000 точек)
-    for c in "$P"/ledger/"$per"/S*/checkpoint.json; do
+    for c in "$P"/ledger/"$per"_*/S*/checkpoint.json "$P"/ledger/"$per"/S*/checkpoint.json; do
       [ -f "$c" ] || continue
-      echo "  $(basename "$(dirname "$c")"): $(sed -E 's/.*"N": ([0-9]+).*"posledniy_i": ([0-9]+).*/N=\1 чекпоинт i=\2/;t;s/.*"posledniy_i": ([0-9]+).*"N": ([0-9]+).*/N=\2 чекпоинт i=\1/' "$c") ($(sed -E 's/.*"vremya": "([^"]*)".*/\1/' "$c"))"
+      echo "  $(basename "$(dirname "$(dirname "$c")")")/$(basename "$(dirname "$c")"): $(sed -E 's/.*"N": ([0-9]+).*"posledniy_i": ([0-9]+).*/N=\1 чекпоинт i=\2/;t;s/.*"posledniy_i": ([0-9]+).*"N": ([0-9]+).*/N=\2 чекпоинт i=\1/' "$c") ($(sed -E 's/.*"vremya": "([^"]*)".*/\1/' "$c"))"
     done
   fi
   if [ $server = 0 ] && [ -d "$P/ledger/$per" ]; then
