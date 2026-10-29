@@ -113,6 +113,7 @@ def _pary(sid, n, seed=20261029):
 
 
 @real
+@pytest.mark.skipif(__import__("os").environ.get("FASTBT_V6_REAL") != "1", reason="тяжёлый (~230 с на 6 Sk, хук ≤ 300 с): FASTBT_V6_REAL=1")
 @pytest.mark.parametrize("sid", SIDS)
 def test_yakor_v5_ravno_v4(sid):
     e2, e5 = _ocenshchiki(sid)

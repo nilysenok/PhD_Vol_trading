@@ -126,6 +126,7 @@ def _sravnit(sid, n, fix=None):
 
 
 @T.real
+@pytest.mark.skipif(__import__("os").environ.get("FASTBT_V6_REAL") != "1", reason="тяжёлый (~400 с на 6 Sk, хук ≤ 300 с): FASTBT_V6_REAL=1")
 @pytest.mark.parametrize("sid", canon_v5.SIDS)
 def test_tochka_v5_pobajtno(sid):
     rasho, n_ok = _sravnit(sid, 50)

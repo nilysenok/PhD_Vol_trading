@@ -135,13 +135,15 @@ def test_period_s4_svorachivaetsya_pri_norm_s252():                          # V
     assert C6.canon_v6("S4", {**baza, **vykl(kub), "period": 80}, kub)["period"] == 80   # при norm = okno period действует
 
 
-def test_piv_buf_tolko_pri_pivotnom_stope_ili_tejke():                      # S5, И11
+def test_piv_buf_tolko_pri_pivotnom_stope():                      # S5, И11; замечание Н4 #677: piv:R у тейка буфер не задаёт
     kub = KUBY["S5"]
     baza = {n: g[0] for n, g in C5.osi(kub["v5"])}
     q = {**baza, **vykl(kub), "piv_buf": 0.1}
     assert "piv_buf" not in C6.canon_v6("S5", q, kub)
-    assert C6.canon_v6("S5", {**q, "stop_nach": "piv:next"}, kub)["piv_buf"] == 0.1
-    assert C6.canon_v6("S5", {**q, "tejk": "piv:R"}, kub)["piv_buf"] == 0.1
+    for t in ("piv:R", "piv:half"):
+        assert "piv_buf" not in C6.canon_v6("S5", {**q, "tejk": t}, kub)
+    for s in ("piv:next", "piv:half"):
+        assert C6.canon_v6("S5", {**q, "stop_nach": s}, kub)["piv_buf"] == 0.1
 
 
 def test_zamorozka_zamorazhivaet_detej():

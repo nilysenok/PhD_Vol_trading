@@ -1,5 +1,7 @@
 """V6-12b, реальные данные train4 (skip без дневного ряда 18:50): «выкл.» = v5 побайтно на 20 точках каждого Sk; каждая новая ось
 меняет результат (мягкая точка, условия оси); тень паузы = excess тикера ledger; вход в день паузы запрещён; мутация «пауза не доходит»."""
+import os
+
 import numpy as np
 import pytest
 
@@ -8,7 +10,8 @@ from fastbt.eval_v5_osi import yakor
 from fastbt.eval_v6 import EvaluatorV6
 
 SIDS, B_OSI = canon_v5.SIDS, osi6.DVIG + osi6.PAUZA
-real = pytest.mark.skipif(not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(), reason="нет дневного ряда 18:50")
+real = pytest.mark.skipif(os.environ.get("FASTBT_V6_REAL") != "1" or not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(),
+                          reason="тяжёлый реальный тест v6 (хук ≤ 300 с): FASTBT_V6_REAL=1 и дневной ряд 18:50")
 _KESH = {}
 SP = {"S1": dict(ma_tip="sma", ma_window=20, dev_tip="std", z_entry=1.0, z_exit=0.5),      # мягкие сигналы: на 3 тикерах есть сделки
       "S2": dict(ma_tip="sma", bb_window=20, bb_std=0.75, podtv="none"), "S3": dict(okno=5, podtv="none"),

@@ -198,12 +198,17 @@ class EvaluatorV5(EvaluatorV2):
             w = np.nan_to_num(m / M_MAX[r.m_sily], nan=0.0)
         return w / (1.0 + 2.0 * r.ext.get("pir", 0.0))
 
+    def _tm(self, t, s0, b):
+        """tejk_M для exec_e.run: rodnoy — [2, b+1]; нет tejk_signal — None. Хук EvaluatorV6 (pol_puti, PivUrovni)."""
+        r = self.r5
+        return None if r.nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, r.sp, t, s0, b, True)
+
     def _rows(self, pt, period, anchor):
         if self.r5 is None:
             return super()._rows(pt, period, anchor)
         r, inp, out = self.r5, self.inp, []
-        if r.nov["vhod_tip"] == "stop_zayavka" and ("a_rang" in r.ext or "b0_c" in r.ext):
-            raise NeSchitana("тренд: exec_e.run не передаёт rang в RunStop (exec_e.py:172) — тейк от силы не считается")
+        if r.nov["vhod_tip"] == "stop_zayavka" and "a_rang" in r.ext:         # b0_c: RunStop получает rang с V6-11a (#666)
+            raise NeSchitana("тренд: тейк от силы (a_rang) на RunStop не считается")
         if r.nov["tejk_signal"] != NET and not rodnoy_ok(self.sid, r.sp):
             raise NeSchitana(f"{self.sid}: родной уровень tejk_signal.rodnoy_uroven — формула v4, с осями {r.sp} не совпадает")
         info = self._start(period)
@@ -215,7 +220,7 @@ class EvaluatorV5(EvaluatorV2):
                 rg, sig = rk[t][0], gate_trades(sig, rk[t][1])      # кандидат без ранга (< 20 наблюдений) не входит
             days = inp.bars[t][:b] + [_one_bar(float(inp.close_n6[t][b]))]
             p = replace(self._params(r.pt4, t, 5.0, False, r.nov, {}), **r.ext)
-            tm = None if r.nov["tejk_signal"] == NET else tejk_signal.m_tikera(self, r.sp, t, s0, b, True)
+            tm = self._tm(t, s0, b)
             uv = {} if r.nov["vhod_tip"] == "podtverzhdenie" else {"urovni": self._urovni(t, s0, b, al)}
             kw = dict(close=inp.close_n6[t][:b + 1], win=(a, b), div=inp.div[t][:b + 1], dates=dates, ed=self._ed(t, "sigma", sg, dates, s0, b),
                       tejk_M=tm, **self.fdr_kw(), **uv)
