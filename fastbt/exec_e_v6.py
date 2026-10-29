@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import dataclasses
 import math
 
 from fastbt.exec_e_rules import EPS, be_reached, part_allowed, ratchet, take_hit
@@ -36,6 +37,38 @@ def v6_check(p, rang, n_days: int) -> None:
         raise ValueError("step_s должен быть > 0")
     if not 0 <= p.pir <= 1:
         raise ValueError("pir: доля размера добавки в [0; 1]")
+
+
+def v5_new(p) -> bool:
+    """Оси Л6 включены — медленный путь (exec_e._new_axes → fast_etap1._slow_only)."""
+    return p.k_e != 0 or p.a_rang is not None or p.chast is not None
+
+
+def v5_check(p, rang, n_days: int) -> None:
+    if p.a_rang is not None:
+        if p.a is not None or p.R is not None or len(p.a_rang) != 2 or not p.a_rang[0] > 0 or not p.a_rang[1] >= 0:
+            raise ValueError("a_rang = (a0 > 0, a1 ≥ 0), без a и R: добавка за силу не против позиции")
+        if rang is None or len(rang) != n_days:
+            raise ValueError("a_rang требует rang длины days (ранг силы на день сигнала, [0; 1])")
+    if p.chast is not None:
+        f, r = p.chast if len(p.chast) == 2 else (0, 0)
+        if p.chast_1r or not 0 < f < 1 or not r > 0 or p.b is None or p.check != "bary":
+            raise ValueError("chast = (доля в (0; 1), r > 0): без chast_1r, нужен b, check='bary'")
+    if p.k_e != 0 and (p.vhod_tip != "stop_zayavka" or not math.isfinite(p.k_e)):
+        raise ValueError("k_e ≠ 0 — только при vhod_tip = stop_zayavka")
+
+
+def take_params(p, rang_d):
+    """Параметры тейка сделки: a = a0 + a1·ранг дня сигнала. Ранг нечисловой → False (тейка нет). a_rang нет — p как есть."""
+    if p.a_rang is None:
+        return p
+    r = float(rang_d)
+    return dataclasses.replace(p, a=p.a_rang[0] + p.a_rang[1] * r) if math.isfinite(r) else False
+
+
+def chast_pair(p):
+    """(доля, r) частичного выхода или None: chast_1r ≡ (½, 1)."""
+    return (0.5, 1.0) if p.chast_1r else p.chast
 
 
 def be_mult(p, rang_d) -> float | None:
@@ -80,6 +113,7 @@ class V6:
     def v6_enter(s, d_sig):
         s.be_m = be_mult(s.p, s.rang[d_sig] if s.rang is not None else float("nan"))
         s.pq_on, s.vlev, s.adds, s.n_add = False, None, [], 0
+        s.p_take = take_params(s.p, s.rang[d_sig] if s.rang is not None else float("nan"))   # ранг дня сигнала d_sig, не дня входа
 
     def v6_extra(s, sg):
         """Кандидаты стопа: «в плюс» и ступенчатый; не ослабляется (ratchet); сдвиг на D делает _stop_shift."""
