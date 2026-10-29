@@ -133,7 +133,11 @@ def test_mutation_caught(name, sid, inputs, monkeypatch):
     assert not eq.compare(clean, fast_run(inputs, sid, pts, inp), pts, sid), "быстрый слой расходится и без мутации"
     with monkeypatch.context() as mp:
         MUTS[name](mp)
-        mutant = slow_run(inputs, sid, pts, inp)
+        try:
+            mutant = slow_run(inputs, sid, pts, inp)
+        except ValueError as e:                     # #617: исполнение вне бара — мутация поймана кодом
+            assert name == "gap" and "вне [low; high]" in str(e), f"{name}: {e}"
+            return
     assert eq.compare(clean, mutant, pts, sid), f"мутация {name} не меняет медленный путь на точках {sid}: тест слеп"
     caught = eq.compare(mutant, fast_run(inputs, sid, pts, inp), pts, sid)
     assert caught, f"мутация {name}: сверка не заметила расхождения"
