@@ -90,7 +90,9 @@ def test_mutatsiya_tau_po_open_x_plus_1_lovitsya(monkeypatch):
     assert tr(rn(lenta(), (1, 1, 1, 1, 1), t_vyhod="open2", tau=2)) == (3, 110.0, "vremya")
 
 
-def test_bystryj_sloy_ne_znaet_open2():
+def test_bystryj_sloy_znaet_open2_a_1500_net():
+    """Ф-open2: ядро знает close и open2 (побайтно с эталоном — tests/test_fast_open2.py); 1500 / 1700 — по-прежнему эталон."""
     from fastbt import fast_exec as fx
-    assert "t_vyhod" in fx.ne_znaet(Params(t_vyhod="open2", check="bary"))
+    assert "t_vyhod" not in fx.ne_znaet(Params(t_vyhod="open2", check="bary"))
     assert "t_vyhod" not in fx.ne_znaet(Params(t_vyhod="close", check="bary"))
+    assert all("t_vyhod" in fx.ne_znaet(Params(t_vyhod=tv, check="bary")) for tv in ("1500", "1700"))
