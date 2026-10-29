@@ -93,6 +93,8 @@ def canon_v5(sid: str, pt: dict):
     rang_nuzhen = str(q.get("m_sily", "1")) != "1" or edinica(q.get("tejk")) == "sila" or bz == "rang"
     if "rang_tip" in q and not rang_nuzhen:
         q["rang_tip"] = "tikernyj"
+    if sid in TREND and str(q.get("m_sily", "1")) != "1" and q.get("rang_tip") == "tikernyj":
+        return None          # Р-4: у тренда ранга по тикеру нет (нужно ≥ 20 стартов тикера за 252 дня) → вес 0 (Ж-137 п. 7б)
     if sid in TREND and q.get("rsi_th", 0) > 0:
         q["rsi_th"] = RSI_TREND
     return q
