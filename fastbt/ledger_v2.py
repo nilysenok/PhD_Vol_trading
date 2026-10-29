@@ -384,13 +384,31 @@ class Obedinenie:
             raise ValueError("Obedinenie: только ledger 2.1 и 2.2")
         if len({c.manifest.get("strategiya") for c in chitateli}) > 1 or len({tuple(c.manifest["nbars"]) for c in chitateli}) > 1:
             raise ValueError("Obedinenie: разные strategiya или nbars (период)")
-        seen, self._poz = set(), []
+        seen, self._poz = {}, []
         for c in chitateli:
             for r in c.rows():
                 n = c.klyuch_n_stroki(r)
-                if r.get("rol") != KONTROL and n not in seen:
-                    seen.add(n)
+                if r.get("rol") == KONTROL:
+                    continue
+                if n in seen:
+                    self._sverit_dubl(n, seen[n], (c, r))
+                else:
+                    seen[n] = (c, r)
                     self._poz.append((n, c, r))
+
+    @staticmethod
+    def _sverit_dubl(n: str, a: tuple, b: tuple, dopusk: float = 1e-12) -> None:
+        """Дубль klyuch_n: суммы сегментов (port и tik) совпали ≤ dopusk — один раз; иначе код изменил точку v5 — отказ."""
+        d = 0.0
+        for sub in ("port", "tik"):
+            x, y = (np.asarray(c.summy([r], sub)[0], float) for c, r in (a, b))
+            if not np.array_equal(np.isnan(x), np.isnan(y)):
+                d = float("inf")
+            elif not np.isnan(x).all():
+                d = max(d, float(np.nanmax(np.abs(x - y))))
+        if d > dopusk:
+            raise ValueError(f"Obedinenie: дубль klyuch_n {n} (Sk {a[1].get('strategiya')}) — суммы разошлись: "
+                             f"kod {a[1]['kod']} ≠ {b[1]['kod']}, max|Δ| = {d:.3e} > {dopusk}")
 
     def klyuchi(self) -> list:
         return [n for n, _, _ in self._poz]

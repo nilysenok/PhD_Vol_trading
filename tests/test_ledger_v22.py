@@ -99,10 +99,33 @@ def test_obedinenie_otkazy(tmp_path):
         L.Obedinenie(v5, s2)
 
 
+def test_dubl_sovpal_odin_raz_ne_sovpal_otkaz(tmp_path, monkeypatch):
+    v5, v6 = para(tmp_path)                                    # точка 1 в обоих с разным kod, ряды одинаковы
+    assert L.Obedinenie(v5, v6).n_k() == 3
+    orig = ryad
+    monkeypatch.setitem(globals(), "ryad", lambda k: (orig(k)[0] + (1e-6 if k == 1 else 0.0), orig(k)[1]))
+    v6b = zapis(tmp_path / "v6b", L.V22, "K6", [(1, "sobol")], "v6")      # код изменил точку 1
+    with pytest.raises(ValueError, match=r"S1.*K5 ≠ K6.*max\|Δ\| = \d") as e:
+        L.Obedinenie(v5, v6b)
+    assert L.klyuch_n("S1", KL[1]) in str(e.value)
+
+
+def test_mutaciya_dubl_svoditsya_molcha(tmp_path, monkeypatch):
+    v5, _ = para(tmp_path)
+    orig = ryad
+    monkeypatch.setitem(globals(), "ryad", lambda k: (orig(k)[0] + (1e-6 if k == 1 else 0.0), orig(k)[1]))
+    v6b = zapis(tmp_path / "v6b", L.V22, "K6", [(1, "sobol")], "v6")
+    monkeypatch.setattr(L.Obedinenie, "_sverit_dubl", staticmethod(lambda *a, **k: None))
+    assert L.Obedinenie(v5, v6b).n_k() == 2                    # мутация молча свела расхождение — тест выше упал бы
+
+
 def test_mutaciya_klyuch_n_ne_rastyot_pri_obedinenii(tmp_path, monkeypatch):
     monkeypatch.setattr(L, "klyuch_n", lambda sid, kl: "const")   # все точки «одна» — N не растёт при объединении
     v5, v6 = para(tmp_path)
-    assert L.Obedinenie(v5, v6).n_k() == 1 != 3                # тест n_k == 3 выше упал бы
+    with pytest.raises(ValueError, match="разошлись"):          # разные точки под одним ключом ловит сверка дублей
+        L.Obedinenie(v5, v6)
+    monkeypatch.setattr(L.Obedinenie, "_sverit_dubl", staticmethod(lambda *a, **k: None))
+    assert L.Obedinenie(v5, v6).n_k() == 1 != 3               # тест n_k == 3 выше упал бы
 
 
 def test_mutaciya_stroka_bez_hasha_koda_prinyata(tmp_path, monkeypatch):
