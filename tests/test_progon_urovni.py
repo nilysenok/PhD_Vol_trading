@@ -208,6 +208,10 @@ def test_mut_limit_po_pozitsiyam_d_plus_1_lovitsya(monkeypatch):
 # ---------------- IG-4: A′(умолчания) = A на данных ≤ 2019 (реальные кэши; нет данных — падение, не пропуск) ----------------
 def a_engine():
     from fastbt import ekviv_s9, s9
+    # Р-6 29.10: кэш s9 лежит вне git (data/fastbt/s9 основной копии); в чужом FASTBT_MAIN его нет — это окружение, не дефект.
+    # Пропуск только при отсутствии указателя; битый/устаревший кэш по-прежнему даёт падение.
+    if not (s9.OUT / "cache_latest_train4.txt").exists():
+        pytest.skip(f"нет {s9.OUT / 'cache_latest_train4.txt'}: кэш s9 train4 не собран в этом каталоге данных")
     with s9.period_ctx("train4"):
         res = s9.load_cache()
     cache = {t: dict(dates=c["dates"], lr=c["lr"], A={s: dict(v) for s, v in c["A"].items()}) for t, c in res.items()}

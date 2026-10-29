@@ -76,7 +76,7 @@ def test_run_s_rang_delegiruet_yadru_i_ravno_etalonu(monkeypatch):
 
 
 def test_pozdnie_osi_medlennogo_puti_ostayutsya_v_etalone(monkeypatch):
-    """time_decay (#668), piv_sl/piv_tp/vwap_m (#677), оси v5 на стоп-заявке тренда (#666/#667/#671) — ne_znaet; ядро их не считает молча."""
+    """time_decay (#668), piv_sl/piv_tp/vwap_m (#677) — ne_znaet; ядро их не считает молча. Оси v5 на стоп-заявке (#666/#667/#671) — с Ф-vhod_open в ядре."""
     base = tochka3(0)
     for kw in (dict(time_decay=True), dict(piv_sl="next"), dict(piv_tp="P"), dict(piv_sl="vwap", vwap_m=2.0)):
         p = dataclasses.replace(base, **kw)
@@ -85,7 +85,7 @@ def test_pozdnie_osi_medlennogo_puti_ostayutsya_v_etalone(monkeypatch):
             days, sig, sigma, close, div, _ = lenta(41_000)
             fx.run_v5("T", days, sig, sigma, p, close=close, div=div, rang=None)
     for kw in (dict(b0=1.0), dict(step_s=0.5), dict(pir=0.5), dict(sp=(1.0, 0.25)), dict(ed_s="atr"), dict(chand=2.0)):
-        assert fx.ne_znaet(dataclasses.replace(base, vhod_tip="stop_zayavka", b=None, **kw)), kw
+        assert fx.ne_znaet(dataclasses.replace(base, vhod_tip="stop_zayavka", b=None, **kw)) == [], kw   # Ф-vhod_open: ядро берёт
     assert fe.pokryto({"stop_nach": "sigma:2.0", "t_vyhod": "open"}) is False       # t_vyhod ≠ close — эталон
     monkeypatch.setattr(fx, "YADRO_OSI3_GOTOV", False)
     assert fx.ne_znaet(dataclasses.replace(base, b0=1.0)) == ["b0"]                   # без флага оси #653 снова неизвестны ядру

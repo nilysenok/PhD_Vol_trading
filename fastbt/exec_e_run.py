@@ -16,6 +16,8 @@ from fastbt.exec_e_zayavki import prodlit, reenter
 
 
 class Run(V6):
+    stale = frozenset()                             # Д5-2: шаги j после разрыва > Params.razryv дней (заполняет exec_e.run); пусто — прежнее поведение
+
     def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None, atr=None, rang=None, us=None, ut=None):
         n = len(days)
         s.us, s.ut = us, ut                         # Л5: ряды единицы стопа/безубытка и тейка по дню сигнала; None — σ̂ (путь прежний)
@@ -244,11 +246,13 @@ class Run(V6):
         if s.tr is not None:
             s.i0 = 0
             s.sh += s.div[i]
+        if j in s.stale:                            # Д5-2: заявка (вход) через остановку торгов снята; позиция держится, повторный вход — вечером j−1 устарел
+            s.order = None
         if s.order is not None and s.order["due"] == j:
             s._try_order(i, j, d)
         elif s.tr is not None:
             s._scan(i, j, d, 0)
-        if s.p.reentry_den:                         # V6-a: повторный вход в тот же день после внутридневного выхода
+        if s.p.reentry_den and j not in s.stale:    # V6-a: повторный вход в тот же день после внутридневного выхода
             reenter(s, i, j, d)
         close = s.close_of(i)
         if s.xo is not None:                        # заявка выхода не исполнилась за d+1: выход по close с прежней причиной
