@@ -12,7 +12,7 @@ from fastbt import canon_v5, eval_v5, rangi_v6
 from fastbt.eval_v5_osi import yakor
 from fastbt.indicators import calc_adx, calc_atr
 from fastbt.signals.v5_filtr import maska_atr_expand, primenit
-from tests import test_eval_v5 as T
+import test_eval_v5 as T
 
 
 def maska_etalon(td, tip_, filtr, sig):
@@ -98,11 +98,18 @@ def _b(a):
 def _sravnit(sid, n, fix=None):
     from fastbt import eval_v5 as E
     _, e5 = T._ocenshchiki(sid, n_tik=99, semya="v5")        # все тикеры train4: ранг требует ≥ MIN_NABL наблюдений в окне
-    pts, bystr, medl, rasho = [{**q, **(fix or {})} for q in _tochki(sid, n)], [], [], 0
-    if fix is None:                                           # каждая 3-я точка — с рангом (общий / средний / тикерный)
-        tips = ("obshchiy", "srednee", "tikernyj")
-        pts = [{**q, "razmer_tip": "risk_sigma", "m_sily": "lin", "rang_tip": tips[i // 3 % 3]} if i % 3 == 0 else q
-               for i, q in enumerate(pts)]
+    pts, bystr, medl, rasho = [], [], [], 0
+    tips = ("obshchiy", "srednee", "tikernyj")
+    for i, q in enumerate(_tochki(sid, 4 * n)):               # пул с запасом: выброшенные каноном заменяются следующими
+        if len(pts) == n:
+            break
+        if fix is not None:
+            q = {**q, **fix}
+        elif i % 3 == 0:                                      # каждая 3-я точка — с рангом (общий / средний / тикерный)
+            q = {**q, "razmer_tip": "risk_sigma", "m_sily": "lin", "rang_tip": tips[i // 3 % 3]}
+        if canon_v5.canon_v5(sid, q) is not None:             # сочетание тренд × m_sily≠1 × tikernyj выбрасывается каноном (#683)
+            pts.append(q)
+    assert len(pts) == n
     for q in pts:
         r, x, t = e5.evaluate_v2(q, "train4")
         bystr.append(({k: v for k, v in r.items() if k != "t_sek"}, x, t))
