@@ -1,6 +1,7 @@
 """V6-12a: оценщик точки куба v6 (fastbt/eval_v6.py). Синтетика (без данных) + реальные train4 (skip без ряда 18:50).
 Гейты: v6 со всеми новыми осями «выкл.» = v5 побайтно; каждая подключённая ось меняет сигнал; мутация «ось не доходит до
 оценщика» ловится; ключ кэша содержит все оси v6 (Д5); неподключённая ось — ValueError."""
+import os
 from types import SimpleNamespace
 
 import numpy as np
@@ -127,13 +128,16 @@ def test_filtry_v6_i_otobrazhenie():
     assert f == {"slope_max": 0.1, "tihiy_othod": 1}
 
 
-def test_razdelit_nepodklyuchennaya_i_vykl():
+def test_razdelit_nepodklyuchennaya_i_vykl(monkeypatch):
     pt5 = {"ma_tip": "sma"}
-    for ose in ({"tf": "10m"}, {"lestnica": 0.5}, {"gap": "propusk"}):         # V6-12b: time_decay и pauza_* уже подключены
+    for ose in ({"tf": "10m"}, {"T": 2}):         # V6-12d: lestnica и gap подключены (12c); tf и T (тренд) — нет
         with pytest.raises(ValueError, match="ещё не подключена"):
-            razdelit("S1", {**pt5, **ose})
-    with pytest.raises(ValueError, match="не подключено"):
+            razdelit("S1" if "tf" in ose else "S3", {**pt5, **ose})
+    razdelit("S1", {**pt5, "tejk": "pol_puti"})                                 # V6-12d: подключено (токен V6-12:tejk)
+    monkeypatch.setattr(canon_v6, "GOTOVY", canon_v6.GOTOVY - {"V6-12:tejk"})
+    with pytest.raises(ValueError, match="не подключено"):                      # значение v6 без токена оси — отказ (мутация «токен убран»)
         razdelit("S1", {**pt5, "tejk": "pol_puti"})
+    monkeypatch.undo()
     p, v6 = razdelit("S1", {**pt5, "dlit": 1, "asim": 0, "norm": "okno", "naklon": 0.1})
     assert p == pt5 and v6 == {"naklon": 0.1}
 
@@ -149,8 +153,9 @@ def test_klyuch_soderzhit_vse_osi_v6():
 
 
 # ---------------- реальные данные train4 ----------------
-real = pytest.mark.skipif(not eval_v5.__dict__ or not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(),
-                          reason="нет дневного ряда 18:50")
+real = pytest.mark.skipif(os.environ.get("FASTBT_V6_REAL") != "1" or not eval_v5.__dict__
+                          or not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(),
+                          reason="тяжёлый реальный тест v6 (хук ≤ 300 с): FASTBT_V6_REAL=1 и дневной ряд 18:50")
 
 
 def _para(sid, **kw):

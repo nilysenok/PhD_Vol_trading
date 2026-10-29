@@ -138,7 +138,7 @@ def otchet(pary: list, years) -> dict:
     for trades, dates in pary:
         yr = np.asarray(dates, "datetime64[D]").astype("datetime64[Y]").astype(int) + 1970
         for tr in trades:
-            if tr.reason and int(yr[tr.exit_day]) in by:
+            if tr.reason and tr.exit_day is not None and int(yr[tr.exit_day]) in by:     # нога pir открытой позиции: reason есть, выхода нет
                 by[int(yr[tr.exit_day])].append((dohodnost(tr),tr.reason == "take"))
     cols = {y: _god(v) for y, v in by.items()}
     names = ("dolya_tejk_y", "dolya_pribyl_y", "vyigrysh_sredn_y", "proigrysh_sredn_y", "top5_pnl_y")

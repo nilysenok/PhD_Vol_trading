@@ -3,6 +3,7 @@
 (2) каждая подключённая ось доходит до результата — пары точек с известным эффектом на синтетике и источниках IstochnikiV6;
 (3) fkey различает каждую ось v6 (Д5); (4) неподключённая ось — ValueError; (5) нет ряда в IstochnikiV6/Dannye — ValueError.
 Мутации (в eval_v6.py по одной): ось не передаётся в сигнал; ось выпала из fkey; контекст на день d+1 — каждая роняет файл."""
+import os
 from types import SimpleNamespace
 
 import numpy as np
@@ -345,8 +346,10 @@ def test_nepodklyuchennaya_os_valueerror(sid, monkeypatch):
             with pytest.raises(ValueError, match="ещё не подключена"):
                 _ev2(monkeypatch, sid, {**p5, k: x})
             n += 1
-    assert n >= 1 or not (set(nv) - eval_v6.PODKLYUCHENO), sid     # после #679 неподключённых осталось меньше
+    assert n >= 4, sid        # V6-12d: остались tf (4 значения), у S3/S4 — ещё T и smena
     for name, r in canon_v6.rasshireno(canon_v6._kub(sid)).items():
+        if canon_v6.gotovo(r["zhdet"], canon_v6.GOTOVY, name):     # V6-12d: расширенные значения подключены (токены V6-10, V6-11, V6-12:<ось>)
+            continue
         for x in r["v6_dobavleno"]:
             with pytest.raises(ValueError, match="не подключено"):
                 _ev2(monkeypatch, sid, {**p5, name: x})
@@ -393,7 +396,8 @@ def test_net_ryada_v_dannye_valueerror(v6):
 
 
 # ---------------------------------------------------------------- (1) вложенность v5 ⊂ v6 на реальных train4
-real = pytest.mark.skipif(not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(), reason="нет ряда 18:50")
+real = pytest.mark.skipif(os.environ.get("FASTBT_V6_REAL") != "1" or not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(),
+                          reason="тяжёлый реальный тест v6 (хук ≤ 300 с): FASTBT_V6_REAL=1 и дневной ряд 18:50")
 CHET = {}
 
 

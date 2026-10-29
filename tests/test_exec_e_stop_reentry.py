@@ -85,10 +85,9 @@ def test_limitnyj_place_na_runstop_zapreshchen():
         exec_e_stop.RunStop._place(None)
 
 
-def test_reentry_na_stop_zayavke_idet_etalonom(monkeypatch):
+def test_reentry_na_stop_zayavke_idet_yadrom():
+    """Ф-vhod_open: reentry_den на стоп-заявке считает ядро (_reenter_sz); побайтно равно эталону."""
     p = P(b=1.0, reentry_den=True)
-    assert fast_exec.ne_znaet(p) == ["reentry_den"] and not fast_etap1._yadro_v5(p, None, None, None)
+    assert fast_exec.ne_znaet(p) == [] and fast_etap1._yadro_v5(p, None, None, None)
     a, b = _go(BARS, p)[0], _go(BARS, p, f=fast_etap1.run)[0]
     assert len(a.trades) == 2 and a.trades == b.trades and a.cost.tobytes() == b.cost.tobytes()
-    monkeypatch.setattr(exec_e_stop, "stop_novye", lambda p: [])
-    assert fast_exec.ne_znaet(p) == []                                         # подложенная ошибка: ядро берёт ось → тест выше упал бы
