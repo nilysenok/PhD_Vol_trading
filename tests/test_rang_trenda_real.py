@@ -1,6 +1,8 @@
 """Р-4 / Ф-ранг: реальные данные train4 (2016–2019), 50 точек Соболя S3 и S4 с рангом (m_sily = kvadr, rang_tip = obshchiy).
 (а) быстрый слой = эталон побайтно; (б) доля точек с ненулевым excess до/после правки (до = rang_starta → тождество).
 python3 -m pytest tests/test_rang_trenda_real.py -q -s"""
+import os
+
 import numpy as np
 import pytest
 
@@ -30,6 +32,7 @@ def _tochki(sid):
 
 
 @real
+@pytest.mark.skipif(not os.environ.get("FASTBT_RANG_REAL"), reason="~3 мин на данных train4: задать FASTBT_RANG_REAL=1")
 @pytest.mark.parametrize("sid", ["S3", "S4"])
 def test_bystryj_sloj_raven_etalonu_i_dolya_nenulevykh(sid, monkeypatch):
     ok, nz, nz_do, ravno = 0, 0, 0, 0

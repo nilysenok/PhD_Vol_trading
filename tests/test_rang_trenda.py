@@ -57,3 +57,39 @@ def _mut_cherez_konec(sig, rg):
 def test_mutatsii_lovyatsya(mut):
     assert not np.array_equal(mut(SIG, RG), rang_starta(SIG, RG), equal_nan=True)
     assert mut is not eval_v5.rang_starta
+
+
+# --- Р-4 (Ж-137 п. 7б): тренд × m_sily ≠ 1 × rang_tip = tikernyj несовместимо ---
+def _pt(**izm):
+    return {"stop_nach": "sigma:2.0", "m_sily": "kvadr", "rang_tip": "tikernyj", **izm}
+
+
+@pytest.mark.parametrize("sid", ["S3", "S4"])
+def test_kanon_vybrasyvaet_trend_tikernyj_s_rangom(sid):
+    from fastbt import canon_v5, canon_v6
+    assert canon_v5.canon_v5(sid, _pt()) is None and canon_v6.canon_v6(sid, _pt()) is None
+    assert canon_v5.canon_v5(sid, _pt(rang_tip="obshchiy")) is not None             # другие типы ранга живы
+    assert canon_v5.canon_v5(sid, _pt(m_sily="1"))["rang_tip"] == "tikernyj"        # без ранга — свёртка, не выброс
+    assert canon_v5.canon_v5("S1", _pt()) is not None                               # контртренд не затронут
+
+
+def test_N_do_vybrosa_vybros_uchten():
+    from fastbt import canon_v5
+    pts, sch = canon_v5.tochki_v5(canon_v5.load_kub("S3"), 0, 512)
+    assert sch["vybrosheno"] > 0 and len(pts) + sch["vybrosheno"] == 512
+    assert not any(p["m_sily"] != "1" and p["rang_tip"] == "tikernyj" for _, p in pts)
+
+
+def test_ocenshchik_otkazyvaet_trend_tikernyj():
+    from fastbt import canon_v5
+    from fastbt.eval_v5_osi import razbor
+    pts, _ = canon_v5.tochki_v5(canon_v5.load_kub("S3"), 0, 64)
+    with pytest.raises(ValueError, match="несовместимо"):
+        razbor("S3", {**pts[0][1], "m_sily": "kvadr", "rang_tip": "tikernyj"}, eval_v5.SIGNAL["S3"])
+    razbor("S3", {**pts[0][1], "m_sily": "kvadr", "rang_tip": "obshchiy"}, eval_v5.SIGNAL["S3"])
+
+
+def test_mutaciya_sochetanie_ne_vybrasyvaetsya_lovitsya(monkeypatch):
+    from fastbt import canon_v5
+    monkeypatch.setattr(canon_v5, "TREND", set())            # правило выключено
+    assert canon_v5.canon_v5("S3", _pt()) is not None        # тест выше (is None) на такой мутации падает

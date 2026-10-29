@@ -73,6 +73,11 @@ def _sreda():
     return _S
 
 
+def _tn():
+    """Первая точка Соболя S3 с trail = net (точка № 199 после Р-4 выброшена каноном: она была тренд × ранг × tikernyj)."""
+    return min(i for i, p in _sreda()["P"].items() if p["trail"] == "net" and not str(p["tejk"]).startswith("sila"))
+
+
 def _posch(i, **izm):
     """Точка Соболя № i S3 с изменёнными осями → (excess портфеля, сделки)."""
     from fastbt import progon_sobol as ps
@@ -85,7 +90,8 @@ def _posch(i, **izm):
 @real
 def test_m_sily_1_stop_nach_menyaet_ryad_i_chislo_stopov():
     """Точка № 199 (trail = net), размер без ранга: ряды при σ 1/2/4 различны, выходов "stop" строго меньше при росте σ."""
-    res = [_posch(199, m_sily="1", stop_nach=f"sigma:{b}") for b in ("1.0", "2.0", "4.0")]
+    i = _tn()
+    res = [_posch(i, m_sily="1", stop_nach=f"sigma:{b}") for b in ("1.0", "2.0", "4.0")]
     assert not np.array_equal(res[0][0], res[1][0]) and not np.array_equal(res[1][0], res[2][0])
     n = [sum(t.reason == "stop" for t in tr) for _, tr in res]
     assert n[0] > n[1] > n[2] > 0
@@ -94,13 +100,17 @@ def test_m_sily_1_stop_nach_menyaet_ryad_i_chislo_stopov():
 @real
 def test_trend_rang_obshchiy_ne_obnulyaet_excess():
     """Ф-ранг: вес — по рангу дня старта текущего сигнала (eval_v5.rang_starta); до правки excess ≡ 0 при сделках."""
-    x, trades = _posch(199, m_sily="kvadr", rang_tip="obshchiy")
+    x, trades = _posch(_tn(), m_sily="kvadr", rang_tip="obshchiy")
     assert len(trades) > 0 and np.any(x != 0)
 
 
-@real
-@pytest.mark.xfail(strict=True, reason="Ф-ранг: tikernyj на точке 199 ранга нет вовсе (< 20 стартов тикера за 252 дня) — вес 0; "
-                                       "а вход тренда ранговым запретом не гейтится (уровни, не sig). Нужно решение дирижёра")
-def test_trend_rang_tikernyj_ne_obnulyaet_excess():
-    x, trades = _posch(199, m_sily="kvadr", rang_tip="tikernyj")
-    assert len(trades) > 0 and np.any(x != 0)
+def test_trend_rang_tikernyj_kanon_vybrasyvaet_ocenshchik_otkazyvaet():
+    """Новое правило (Ж-137 п. 7б, вместо фиксатора дефекта Р-4): тренд × m_sily ≠ 1 × tikernyj — ранга нет (< 20 стартов
+    за 252 дня), вес 0. Канон выбрасывает точку, оценщик отказывает ValueError, а не нулевым excess."""
+    from fastbt import canon_v5, eval_v5
+    from fastbt.eval_v5_osi import razbor
+    pt = {"stop_nach": "sigma:2.0", "m_sily": "kvadr", "rang_tip": "tikernyj"}
+    assert canon_v5.canon_v5("S3", pt) is None
+    pts, _ = canon_v5.tochki_v5(canon_v5.load_kub("S3"), 0, 8)
+    with pytest.raises(ValueError, match="несовместимо"):
+        razbor("S3", {**pts[0][1], **pt}, eval_v5.SIGNAL["S3"])
