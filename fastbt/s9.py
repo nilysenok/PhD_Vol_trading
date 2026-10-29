@@ -221,6 +221,23 @@ def _cut() -> pd.Timestamp:
     return zona.END_Z2 - pd.Timedelta(days=1) if PERIOD == "test1" else CUT
 
 
+def rvi_path() -> Path:
+    """RVI зоны Z2 (test1): FASTBT_Z2_RVI, умолчание — data/regen/test1_2022_2024/s9/rvi_1850.parquet основной копии."""
+    return Path(os.environ.get("FASTBT_Z2_RVI") or MAIN / "data" / "regen" / "test1_2022_2024" / "s9" / "rvi_1850.parquet")
+
+
+def rvi_frame() -> pd.DataFrame:
+    """date, close_RVI. dev/train4 — rvi_1850.parquet как был; test1 — dev ≤ CUT (2021) + Z2 за 2022–2024 (zona.check)."""
+    d = pd.read_parquet(RVI)
+    d["date"] = pd.to_datetime(d["date"])
+    if PERIOD != "test1":
+        return d
+    z = pd.read_parquet(rvi_path())
+    z["date"] = pd.to_datetime(z["date"])
+    zona.check(z["date"].max(), "RVI Z2")
+    return pd.concat([d[d["date"] <= CUT], z[z["date"] > CUT]], ignore_index=True)[["date", "close_RVI"]]
+
+
 def use_sigma_h1(name: str, suffix: str | None = None) -> None:
     global SUFFIX
     SOURCES["hyb_h1"] = (SIGMA_H1[name], "sigma_pred_h1", "h1")
@@ -502,6 +519,9 @@ def cache_key() -> str:
     if PERIOD == "test1" and os.environ.get("FASTBT_Z2_R2FINAL"):    # Д5: σ̂ dev (ch4_dev) и Z2 (R2) в ключе
         from fastbt import sigma_z2
         h.update(sigma_z2.digest().encode())
+    if PERIOD == "test1":                  # Д5: RVI Z2 (D6lag1) в ключе; нет файла — отдельная метка
+        p = rvi_path()
+        h.update(hashlib.sha1(p.read_bytes()).digest() if p.exists() else b"no-z2-rvi")
     if PERIOD == "v2":                     # прогрев и правило качества — в ключе (train4 не меняется)
         h.update(f"start|{period_v2.START.date()}|hold_invalid".encode())
         h.update(Path(period_v2.__file__).read_bytes())
@@ -630,9 +650,8 @@ class Engine:
         return self.sig["__rvw__"]
 
     def rvi(self, lag: int = 0) -> np.ndarray:
-        d = pd.read_parquet(RVI)
-        d["date"] = pd.to_datetime(d["date"])
-        d = d[d["date"] <= CUT].rename(columns={"close_RVI": "sigma"})
+        d = rvi_frame()
+        d = d[d["date"] <= _cut()].rename(columns={"close_RVI": "sigma"})
         R = np.full((len(self.tickers), self.nmax), np.nan)
         for ti, t in enumerate(self.tickers):
             a = align(self.cache[t]["dates"], d)
