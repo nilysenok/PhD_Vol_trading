@@ -82,6 +82,8 @@ def sverit(p: Path, put: str, h: str, b: int, gde: str) -> None:
 
 def _zamok(p: Path, koren: Path, vid: set) -> bool:
     """Пустой `.<файл>.lock` рядом с файлом манифеста — flock daily_1850.ensure при счёте, не данные."""
+    if p.name.endswith(".sha256"):       # <файл>.sha256 рядом с файлом манифеста — хэш-отметка daily_1850.ensure, не данные
+        return str(p.relative_to(koren).with_name(p.name[:-7])) in vid
     imya = p.name[1:-5] if p.name.startswith(".") and p.name.endswith(".lock") else ""
     return bool(imya) and p.stat().st_size == 0 and str(p.relative_to(koren).with_name(imya)) in vid
 
