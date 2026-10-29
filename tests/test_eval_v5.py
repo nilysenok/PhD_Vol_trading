@@ -118,7 +118,8 @@ def test_yakor_v5_ravno_v4(sid):
     e2, e5 = _ocenshchiki(sid)
     n_ok, n_sdelok, worst = 0, 0, 0.0
     for p5, p4 in _pary(sid, 50):
-        r4, x4, t4 = e2.evaluate_v2(p4, "train4")
+        # К-wf5 (Ж-137 п. 6): якорь v5 теперь t_vyhod=open2 (сознательная смена, было close); v4-сторона получает тот же t_vyhod
+        r4, x4, t4 = e2.evaluate_v2({**p4, "t_vyhod": canon_v5.load_kub(sid)["yakorya_progon"]["t_vyhod"]}, "train4")
         r5, x5, t5 = e5.evaluate_v2(p5, "train4")
         assert r4["status"] == r5["status"] == "ok", (r4.get("prichina"), r5.get("prichina"))
         worst = max(worst, float(np.max(np.abs(x4 - x5))), float(np.nanmax(np.abs(t4 - t5))))
