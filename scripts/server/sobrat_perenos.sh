@@ -47,6 +47,8 @@ while IFS= read -r f; do spisok+=("$f"); done < "$TMP/belyj.txt"
 git -C "$REPO" archive --format=tar --prefix=kod/ "$FULL" -- "${spisok[@]}" | gzip -n -9 > "$TAR"
 ! tar -tzf "$TAR" | grep -E '^kod/data/|test_locked|test1_2022_2024|\.(csv|parquet|npz|pkl)$' >/dev/null \
   || fail "в tar попали data/, test_locked или таблицы"
+! tar -tzf "$TAR" | grep -E '__pycache__|\.py[co]$|\.nb[ic]$' >/dev/null \
+  || fail "в tar попали __pycache__ или numba-кэш (привязан к машине)"
 TAR_SHA=$(sha_file "$TAR")
 tar -xzf "$TAR" -C "$TMP"
 K="$TMP/kod"
@@ -69,6 +71,9 @@ NAKLADKA='^(data/calendar|fastbt/rates|docs/issledovaniya)/'
 say "3/6 скрипты, requirements, кубы"
 cp "$K"/scripts/server/perenos/*.sh "$K/scripts/server/manifest_proverka.py" "$K/scripts/server/versii.py" "$OUT/"
 cp "$K/env/requirements_server.txt" "$OUT/"
+# все пины = версиям этого Мака (иначе эталон не сравним); numba и llvmlite обязаны быть в пинах
+python3 "$K/scripts/server/versii.py" "$OUT/requirements_server.txt" || fail "пины requirements_server.txt ≠ версиям пакетов на Маке"
+grep -q '^numba==' "$OUT/requirements_server.txt" && grep -q '^llvmlite==' "$OUT/requirements_server.txt" || fail "в пинах нет numba/llvmlite"
 chmod +x "$OUT"/*.sh
 for d in progon v5 v6; do
   ls "$K/fastbt/designs/$d/"*.yaml >/dev/null 2>&1 || continue
@@ -77,12 +82,15 @@ for d in progon v5 v6; do
 done
 slit=0
 git -C "$REPO" merge-base --is-ancestor "$FULL" origin/kanon-v22-pereschet 2>/dev/null && slit=1
-printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%s\nnakladka=%s\nsobran=%s\n' \
-  "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$NAKLADKA" "$(date '+%F %T %Z')" > "$OUT/VERSIYA"
+# потоки и слой numba: одни и те же при эталоне на Маке и во всех скриптах сервера (obshchee.sh читает их из VERSIYA)
+NT=${PERENOS_NUMBA_THREADS:-1}; NL=${PERENOS_NUMBA_LAYER:-workqueue}
+printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%s\nnakladka=%s\nnumba_threads=%s\nnumba_layer=%s\nsobran=%s\n' \
+  "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$NAKLADKA" "$NT" "$NL" "$(date '+%F %T %Z')" > "$OUT/VERSIYA"
+say "   numba: NUMBA_NUM_THREADS=$NT NUMBA_THREADING_LAYER=$NL (на эталоне и на сервере)"
 
 say "4/6 эталоны Мака: якорь A_fix × 6 Sk на train4 + ${PERENOS_ETALONY_TOCHEK:-200} точек (код tar, данные $OUT/data)"
 mkdir -p "$TMP/cache"
-(cd "$K" && env PYTHONPATH="$K" FASTBT_MAIN="$OUT/data" FASTBT_BARS1M="$OUT/data/data/regen/D25/bars1m" \
+(cd "$K" && env NUMBA_NUM_THREADS="$NT" NUMBA_THREADING_LAYER="$NL" PYTHONPATH="$K" FASTBT_MAIN="$OUT/data" FASTBT_BARS1M="$OUT/data/data/regen/D25/bars1m" \
   FASTBT_NO_CACHE=1 FASTBT_CACHE="$TMP/cache/fastbt" FASTBT_E1_CACHE="$TMP/cache/etap1" FASTBT_FS_CACHE="$TMP/cache/fs" \
   FASTBT_BARS5M_CACHE="$TMP/cache/bars5m" NUMBA_CACHE_DIR="$TMP/cache/numba" PYTHONPYCACHEPREFIX="$TMP/cache/pyc" \
   python3 "$K/scripts/server/etalony_mak.py" --out "$OUT/etalony_$SHORT.npz" \

@@ -14,6 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ekviv  # noqa: E402
+import ekviv_io  # noqa: E402
 
 
 def main(argv=None) -> int:
@@ -30,13 +31,13 @@ def main(argv=None) -> int:
     nf = ekviv.net_fajla(rez)
     if nf:
         print(f"FAIL etalony: в {len(nf)} записях оценщик не нашёл файл (данных не хватает), первая {nf[0]}: "
-              f"{rez[nf[0]][0][-300:]}")        # хвост записи: там status/oshibka с именем файла
+              f"{rez[nf[0]]['sig'][-300:]}")        # хвост записи: там status/oshibka с именем файла
         return 1
     meta.update(ekviv.sreda_meta(), seed=a.seed, tochek=len(tochki), sozdan=time.strftime("%F %T %Z"))
-    ekviv.sohranit(a.out, rez, meta)
+    ekviv_io.sohranit(a.out, rez, meta)
     h = hashlib.sha256(Path(a.out).read_bytes()).hexdigest()
     Path(a.out + ".sha256").write_text(f"{h}  {Path(a.out).name}\n")
-    oshibok = sum('"status": "oshibka"' in s for s, _, _ in rez.values())
+    oshibok = sum('"status": "oshibka"' in r["sig"] for r in rez.values())
     print(f"etalony: {a.out} sha256 {h}; записей {len(rez)}, со status = oshibka {oshibok}; "
           f"{time.time() - t0:.0f} с; {json.dumps({k: meta[k] for k in ('python', 'machine', 'numba', 'numpy')})}")
     return 0

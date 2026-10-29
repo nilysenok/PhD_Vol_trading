@@ -1,19 +1,24 @@
-"""Эквивалентность Мак ↔ сервер (Ж-131 п. 3, Ж-133 п. 4): что считается и как сравнивается.
+"""Эквивалентность Мак ↔ сервер (Ж-131 п. 3, Ж-133 п. 4): что считается. Хранение — ekviv_io.py, сравнение — ekviv_sravn.py.
 
-Набор: якорь A_fix каждой Sk на train4 (EvaluatorV2 в базовой точке этапа 1: `evr.evaluate_v2(evr.full({}), 'train4')`) и
-N точек Соболя (seed 20261029, равномерно по Sk и индексу куба) медленным путём `progon_sobol.schitat_tochku` (fast = False).
-Сравнение: якорь — max |Δ| ≤ 1e-12 по ряду портфеля и ряду тиков, маски NaN совпадают; точка — побайтно (ряд портфеля, ряд
-тиков, строка ledger без t_sek/kod/kod_slit/klyuch_sha/excess/sloy — как IG-8 `progon_sobol.sverka`). Плюс: хэш кода fastbt и
-хэш входов (`inp.digest()`) каждой Sk совпадают. Допуск не расширяется (Ж-131, толкование 3). Метрики не печатаются."""
+Набор: якорь A_fix каждой Sk на train4 (`evr.evaluate_v2(evr.full({}), 'train4')`) и N точек Соболя (seed 20261029, фиксированные
+индексы) медленным путём `progon_sobol.schitat_tochku` (fast = False). По каждой записи (dict):
+  sig  — строка ledger без t_sek/kod/kod_slit/klyuch_sha/excess/sloy (json, для разбора);
+  disk — она же с вещественными, заменёнными на null: дискретная часть (ключи, статусы, целые, строки);
+  hex  — {путь: float.hex()} всех вещественных полей строки (Шарп, доходности, по годам и т. д.);
+  p, t — ряд портфеля и ряд тиков (float64);
+  pz   — |позиция| портфеля по дням (float64, непрерывная); sd — сделки портфеля по дням (int64);
+  vi   — индексы входа/выхода по тикерам [(тикер, день, +1 вход / −1 выход)], выведены из |позиции| тикера (int64 [k, 3]).
+Метрик не печатает."""
 import concurrent.futures as cf
 import json
 import multiprocessing as mp
+import os
 import platform
 import random
 
 import numpy as np
 
-SEED, N_TOCHEK, TOL_YAKOR = 20261029, 200, 1e-12
+SEED, N_TOCHEK = 20261029, 200
 
 
 def _ps():
@@ -22,7 +27,7 @@ def _ps():
 
 
 def vybor(n: int = N_TOCHEK, seed: int = SEED) -> list:
-    """[(sid, i)] — n разных точек; индекс i < последнего индекса куба (prohod2 / prohod1 / N1)."""
+    """[(sid, i)] — n разных точек; индекс i < последнего индекса куба (prohod2 / prohod1 / N1). Индексы фиксированы seed."""
     ps, rnd, out = _ps(), random.Random(seed), set()
     top = {}
     for sid in ps.SIDS:
@@ -34,17 +39,54 @@ def vybor(n: int = N_TOCHEK, seed: int = SEED) -> list:
     return sorted(out)
 
 
-def _sig(r: dict) -> str:
-    propusk = _ps().SVERKA_PROPUSK
-    return json.dumps({k: v for k, v in r.items() if k not in propusk}, sort_keys=True, default=repr)
+def _bez_vesh(x):
+    if isinstance(x, float):
+        return None
+    if isinstance(x, dict):
+        return {k: _bez_vesh(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [_bez_vesh(v) for v in x]
+    return x
+
+
+def _hexy(x, put="", out=None) -> dict:
+    out = {} if out is None else out
+    if isinstance(x, float):
+        out[put] = x.hex() if np.isfinite(x) else repr(x)
+    elif isinstance(x, dict):
+        [_hexy(v, f"{put}/{k}", out) for k, v in x.items()]
+    elif isinstance(x, (list, tuple)):
+        [_hexy(v, f"{put}/{i}", out) for i, v in enumerate(x)]
+    return out
 
 
 def _ryad(x) -> np.ndarray:
     return np.empty(0) if x is None else np.ascontiguousarray(np.asarray(x, dtype=np.float64))
 
 
+def _poz(evr) -> tuple:
+    """(|pos| портфеля, сделки портфеля, [тикер, день, ±1]) последнего evaluate_v2; нет позиций → пустые массивы."""
+    z = getattr(evr, "poz", None)
+    if z is None:
+        return np.empty(0), np.empty(0, np.int64), np.empty((0, 3), np.int64)
+    pz, tp, sd, _ = z
+    a = (np.asarray(tp, float) > 0).astype(np.int8)
+    d = np.diff(np.concatenate([np.zeros((a.shape[0], 1), np.int8), a], axis=1), axis=1)
+    ti, di = np.nonzero(d)
+    vi = np.stack([ti, di, d[ti, di]], axis=1).astype(np.int64) if ti.size else np.empty((0, 3), np.int64)
+    return _ryad(pz), np.rint(np.asarray(sd, float)).astype(np.int64), vi
+
+
+def _zapis(r: dict, p, t, evr) -> dict:
+    propusk = _ps().SVERKA_PROPUSK
+    r = {k: v for k, v in r.items() if k not in propusk}
+    pz, sd, vi = _poz(evr) if p is not None else _poz(None)
+    return dict(sig=json.dumps(r, sort_keys=True, default=repr), disk=json.dumps(_bez_vesh(r), sort_keys=True, default=repr),
+                hex=_hexy(r), p=_ryad(p), t=_ryad(t), pz=pz, sd=sd, vi=vi)
+
+
 def _zadacha(z: tuple) -> tuple:
-    """(sid, [i], yakor) -> ({imya: (sig, p, t)}, kod, vhody) в одном процессе (один оценщик на Sk)."""
+    """(sid, [i], yakor) -> (sid, {imya: запись}, kod, vhody, {kub_sha, daty_sha}) в одном процессе (один оценщик на Sk)."""
     sid, idx, yakor = z
     ps = _ps()
     from fastbt import ledger_v2 as lm
@@ -53,105 +95,49 @@ def _zadacha(z: tuple) -> tuple:
         r, p, t = sr.evr.evaluate_v2(sr.evr.full({}), ps.PERIOD)
         if p is None:
             raise RuntimeError(f"якорь A_fix {sid}: оценщик не дал ряда ({r})")
-        out[f"yakor__{sid}"] = (_sig(r), _ryad(p), _ryad(t))
+        out[f"yakor__{sid}"] = _zapis(r, p, t, sr.evr)
     for i in idx:
         _, pt = ps.tochki(c, i, i + 1)[0]
         r, p, t = ps.schitat_tochku(sr, sid, i, pt, "ekviv", False, False, lm.V21)
-        out[f"tochka__{sid}__{i}"] = (_sig(r), _ryad(p), _ryad(t))
-    return sid, out, sr.kod, sr.vhody
+        out[f"tochka__{sid}__{i}"] = _zapis(r, p, t, sr.evr)
+    mf = ps.manifest(sid, sr, c, False)
+    return sid, out, sr.kod, sr.vhody, dict(kub_sha=mf["kub_sha"], daty_sha=mf["daty_sha"])
 
 
 def poschitat(tochki: list, procs: int) -> tuple:
-    """-> (rez {imya: (sig, p, t)}, meta {kod, vhody{sid}}). Задача — одна Sk (якорь + её точки)."""
+    """-> (rez {imya: запись}, meta {kod, vhody{sid}, kub{sid}, daty{sid}}). Задача — одна Sk (якорь + её точки)."""
     ps = _ps()
     zad = [(sid, [i for s, i in tochki if s == sid], True) for sid in ps.SIDS]
-    rez, kod, vhody = {}, set(), {}
+    rez, kod, vhody, kub, daty = {}, set(), {}, {}, {}
     if procs <= 1:
         it = map(_zadacha, zad)
     else:
         ex = cf.ProcessPoolExecutor(min(procs, len(zad)), mp_context=mp.get_context("fork"))
         it = ex.map(_zadacha, zad)
-    for sid, out, k, v in it:
+    for sid, out, k, v, sh in it:
         rez.update(out)
         kod.add(k)
-        vhody[sid] = v
+        vhody[sid], kub[sid], daty[sid] = v, sh["kub_sha"], sh["daty_sha"]
     if procs > 1:
         ex.shutdown()
     if len(kod) != 1:
         raise RuntimeError(f"разный хэш кода в процессах: {sorted(kod)}")
-    return rez, dict(kod=kod.pop(), vhody=vhody)
+    return rez, dict(kod=kod.pop(), vhody=vhody, kub=kub, daty=daty)
 
 
 def net_fajla(rez: dict) -> list:
     """Записи, где оценщик поймал отсутствие файла (status = oshibka, FileNotFoundError): данных не хватает — не эквивалентность."""
-    return sorted(m for m, (s, _, _) in rez.items() if "FileNotFoundError" in s or "No such file" in s)
+    return sorted(m for m, r in rez.items() if "FileNotFoundError" in r["sig"] or "No such file" in r["sig"])
 
 
 def sreda_meta() -> dict:
     import numba
     import pandas
+    try:
+        cpu = sorted(k for k, v in np._core._multiarray_umath.__cpu_features__.items() if v)
+    except AttributeError:
+        cpu = []
     return dict(python=platform.python_version(), machine=platform.machine(), system=platform.system(),
-                numpy=np.__version__, numba=numba.__version__, pandas=pandas.__version__)
-
-
-def sohranit(path: str, rez: dict, meta: dict) -> None:
-    arr = {"__meta__": np.frombuffer(json.dumps(meta, sort_keys=True).encode(), dtype=np.uint8)}
-    for imya, (sig, p, t) in rez.items():
-        arr[f"{imya}__sig"] = np.frombuffer(sig.encode(), dtype=np.uint8)
-        arr[f"{imya}__p"], arr[f"{imya}__t"] = p, t
-    with open(path, "wb") as f:
-        np.savez(f, **arr)
-
-
-def zagruzit(path: str) -> tuple:
-    with np.load(path, allow_pickle=False) as z:
-        meta = json.loads(z["__meta__"].tobytes().decode())
-        imena = sorted({k.rsplit("__", 1)[0] for k in z.files if k != "__meta__"})
-        rez = {m: (z[f"{m}__sig"].tobytes().decode(), z[f"{m}__p"], z[f"{m}__t"]) for m in imena}
-    return rez, meta
-
-
-def tochki_iz(rez: dict) -> list:
-    return sorted((m.split("__")[1], int(m.split("__")[2])) for m in rez if m.startswith("tochka__"))
-
-
-def _yakor_delta(a: np.ndarray, b: np.ndarray) -> float:
-    if a.shape != b.shape or not np.array_equal(np.isnan(a), np.isnan(b)):
-        return float("inf")
-    ok = ~np.isnan(a)
-    return float(np.abs(a[ok] - b[ok]).max()) if ok.any() else 0.0
-
-
-def _pervyj_indeks(a: np.ndarray, b: np.ndarray) -> str:
-    if a.shape != b.shape or a.dtype != b.dtype or a.dtype != np.float64:
-        return f"форма/тип {a.shape} {a.dtype} против {b.shape} {b.dtype}"
-    k = int(np.flatnonzero(a.view(np.uint64) != b.view(np.uint64))[0])
-    return f"элемент {k}: Мак {a[k]!r}, здесь {b[k]!r}"
-
-
-def sravnit(eta: dict, meta_eta: dict, moi: dict, meta_moi: dict) -> tuple:
-    """-> (ok, [расхождения по порядку], max |Δ| якоря). Первое расхождение — первым в списке."""
-    bad, dmax = [], 0.0
-    if meta_eta.get("kod") != meta_moi.get("kod"):
-        bad.append(f"хэш кода fastbt: Мак {meta_eta.get('kod')}, здесь {meta_moi.get('kod')}")
-    for sid in sorted(set(meta_eta.get("vhody", {})) | set(meta_moi.get("vhody", {}))):
-        if meta_eta["vhody"].get(sid) != meta_moi["vhody"].get(sid):
-            bad.append(f"хэш входов {sid}: Мак {meta_eta['vhody'].get(sid)}, здесь {meta_moi['vhody'].get(sid)}")
-    if set(eta) != set(moi):
-        bad.append(f"разный набор: нет здесь {sorted(set(eta) - set(moi))[:5]}, лишние {sorted(set(moi) - set(eta))[:5]}")
-    for m in sorted(set(eta) & set(moi), key=lambda x: (not x.startswith("yakor"), x)):
-        (s1, p1, t1), (s2, p2, t2) = eta[m], moi[m]
-        if m.startswith("yakor__"):
-            d = max(_yakor_delta(p1, p2), _yakor_delta(t1, t2))
-            dmax = max(dmax, d)
-            if not d <= TOL_YAKOR:
-                bad.append(f"{m}: max |Δ| = {d:.3e} > {TOL_YAKOR:g}")
-            continue
-        for nazv, a, b in (("ряд портфеля", p1, p2), ("ряд тиков", t1, t2)):
-            if a.dtype != b.dtype or a.shape != b.shape or a.tobytes() != b.tobytes():
-                bad.append(f"{m}: {nazv} не побайтно — {_pervyj_indeks(a, b)}")
-        if s1 != s2:
-            k = next((k for k in sorted(set(json.loads(s1)) | set(json.loads(s2)))
-                      if json.loads(s1).get(k) != json.loads(s2).get(k)), "?")
-            bad.append(f"{m}: строка ledger, поле {k}: Мак {json.loads(s1).get(k)!r}, здесь {json.loads(s2).get(k)!r}")
-    return not bad, bad, dmax
+                numpy=np.__version__, numba=numba.__version__, pandas=pandas.__version__,
+                numba_threads=os.environ.get("NUMBA_NUM_THREADS"), numba_layer=os.environ.get("NUMBA_THREADING_LAYER"),
+                npy_disable=os.environ.get("NPY_DISABLE_CPU_FEATURES"), cpu=cpu)

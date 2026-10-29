@@ -2,7 +2,8 @@
 # Запуск Соболя на сервере (Ж-133 п. 5): ./zapusk_sobol.sh train4 | ./zapusk_sobol.sh v2 — в фоне (nohup), лог в logs/,
 # ledger в ledger/<период>/<Sk>/ (одна стратегия — один каталог), чекпоинт каждые 5 000 точек, строка состояния по стратегиям.
 #   ./zapusk_sobol.sh status <период>   — строки состояния и жив ли процесс
-# Отказ без отметки proverka/OK от ЭТОГО кода, данных и эталона (./proverka_yakor.sh), при изменённом коде, при живом прогоне.
+# Отказ без отметки proverka/OK от ЭТОГО кода, данных, эталона и режима numpy (./proverka_yakor.sh), при изменённом коде, при живом
+# прогоне. Режим numpy — переменная PERENOS_REZHIM=1|2 (выбор владельца после ./proverka_yakor.sh --rezhim2); NUMBA_* — как на Маке.
 # Процессов — ядра − 4 (Ж-131 п. 4); PERENOS_PROCS — явно. Если fastbt.progon_server умеет куб v5 (в --help есть --k3; ветка
 # progon-server-v5): проходы PERENOS_PROHODY (умолчание «s1 s2 k3») подряд, каждый — `--kub v5 --period <период> --seed 1|2 | --k3
 # [--n1 PERENOS_N1] --out ledger/<период>_<проход> --prodolzhit`; PERENOS_STRATEGII=S1,S2 — подмножество. Иначе — замена
@@ -60,9 +61,10 @@ if [ "$rezhim" = status ]; then
 fi
 
 say "1/3 отметка proverka, код"
-[ -f "$P/proverka/OK" ] || fail "нет отметки proverka/OK — сначала ./proverka_yakor.sh (строка OK); счёт не запускаю"
-ozh="kod=$KOD_SHA dannye=$(sha_file "$MANIFEST") etalony=$(sha_file "$ETALONY")"
-[ "$(tr '\n' ' ' < "$P/proverka/OK" | sed 's/ $//')" = "$ozh" ] || fail "отметка proverka/OK от другого кода/данных/эталона — повторите ./proverka_yakor.sh"
+rz=${PERENOS_REZHIM:-1}; otm="$P/proverka/OK"; [ "$rz" = 2 ] && otm="$P/proverka/OK_r2"     # режим numpy фиксирует владелец
+[ -f "$otm" ] || fail "нет отметки ${otm#$P/} (режим numpy $rz) — сначала ./proverka_yakor.sh (строка OK в этом режиме); счёт не запускаю"
+ozh="kod=$KOD_SHA dannye=$(sha_file "$MANIFEST") etalony=$(sha_file "$ETALONY") rezhim=$rz"
+[ "$(tr '\n' ' ' < "$otm" | sed 's/ $//')" = "$ozh" ] || fail "отметка ${otm#$P/} от другого кода/данных/эталона/режима — повторите ./proverka_yakor.sh"
 kod_cel
 [ $server = 1 ] || [ "$per" = train4 ] || fail "v2: в коде нет fastbt.progon_server (PR не слит), замена progon_sobol считает только train4"
 zhiv && fail "прогон $per уже идёт: pid $(cat "$pidf") (./zapusk_sobol.sh status $per)"

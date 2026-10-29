@@ -5,6 +5,7 @@
 # PERENOS_PYTHON — путь к python3.9, если его нет в PATH. PERENOS_SYSTEM_SITE=1 — только локальная проверка на Маке
 # (venv видит пакеты Мака; вместе с PIP_NO_INDEX=1 pip не ходит в сеть).
 . "$(dirname "$0")/obshchee.sh"
+okruzhenie                      # печатает NUMBA_NUM_THREADS / NUMBA_THREADING_LAYER (те же, что при эталоне на Маке)
 
 say "1/5 сверка SHA256SUMS каталога $P"
 [ -f SHA256SUMS ] || fail "нет SHA256SUMS"
@@ -33,6 +34,7 @@ if [ ! -d "$KOD_DIR" ]; then
   mkdir -p "$tmp"
   tar -xzf "$KOD_TAR" -C "$tmp" --strip-components=1
   [ -z "$(find "$tmp" \( -path '*/data/*' -o -name '*test_locked*' -o -name '*test1_2022_2024*' \) -print -quit)" ] || fail "в tar кода есть data/ или test_locked"
+  [ -z "$(find "$tmp" \( -name __pycache__ -o -name '*.pyc' -o -name '*.nbi' -o -name '*.nbc' \) -print -quit)" ] || fail "в tar кода есть __pycache__/numba-кэш — кэш привязан к машине, пересоберите perenos/"
   nakl=$(kv nakladka)                   # файлы манифеста, которые fastbt читает от корня кода (VERSIYA: nakladka)
   if [ -n "$nakl" ]; then
     awk -F'\t' 'NR > 1 && NF { print (NF == 7 ? $6 : $1) }' "$MANIFEST" | { grep -E "$nakl" || true; } \

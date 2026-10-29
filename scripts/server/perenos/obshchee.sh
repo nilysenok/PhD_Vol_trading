@@ -42,12 +42,29 @@ processov() {   # ядра − 4 (Ж-131 п. 4), не меньше 1; PERENOS_PR
   echo "$n"
 }
 
+rezhim_npy() {   # PERENOS_REZHIM=1 (по умолчанию: numpy как есть) | 2 (без AVX512-группы и SVML — выбор владельца после ./proverka_yakor.sh --rezhim2)
+  unset NPY_DISABLE_CPU_FEATURES NPY_DISABLE_SVML || true
+  case "${PERENOS_REZHIM:-1}" in
+    1) ;;
+    2) export NPY_DISABLE_CPU_FEATURES=${PERENOS_REZHIM2_FEATURES:-"AVX512F AVX512CD AVX512_KNL AVX512_KNM AVX512_SKX AVX512_CLX AVX512_CNL AVX512_ICL AVX512_SPR"}
+       export NPY_DISABLE_SVML=1 ;;
+    *) fail "PERENOS_REZHIM: 1 или 2" ;;
+  esac
+}
+
 okruzhenie() {   # данные — только perenos/data, кэши — perenos/cache; переменные, ведущие наружу, сняты
   unset FASTBT_DATA_ROOT FASTBT_VPRED FASTBT_Z2_VPRED FASTBT_Z2_R2FINAL FASTBT_NO_CACHE PYTHONHOME || true
   export PYTHONPATH="$KOD_DIR" FASTBT_MAIN="$P/data" FASTBT_BARS1M="$P/data/data/regen/D25/bars1m"
   export FASTBT_CACHE="$P/cache/fastbt" FASTBT_E1_CACHE="$P/cache/etap1" FASTBT_FS_CACHE="$P/cache/fs"
   export FASTBT_BARS5M_CACHE="$P/cache/bars5m" NUMBA_CACHE_DIR="$P/cache/numba/$KOD_SHA" PYTHONPYCACHEPREFIX="$P/cache/pyc"
   [ "${PERENOS_SYSTEM_SITE:-0}" = 1 ] || export PYTHONNOUSERSITE=1
+  # потоки и слой numba — те же, что при сборке эталона на Маке (VERSIYA: numba_threads, numba_layer); печатаются
+  NUMBA_NUM_THREADS=$(kv numba_threads); NUMBA_THREADING_LAYER=$(kv numba_layer)
+  [ -n "$NUMBA_NUM_THREADS" ] && [ -n "$NUMBA_THREADING_LAYER" ] || fail "в VERSIYA нет numba_threads/numba_layer — пересоберите perenos/"
+  export NUMBA_NUM_THREADS NUMBA_THREADING_LAYER
+  rezhim_npy
+  echo "   numba: NUMBA_NUM_THREADS=$NUMBA_NUM_THREADS NUMBA_THREADING_LAYER=$NUMBA_THREADING_LAYER; режим numpy ${PERENOS_REZHIM:-1}" \
+       "$([ "${PERENOS_REZHIM:-1}" = 2 ] && echo "(NPY_DISABLE_CPU_FEATURES=$NPY_DISABLE_CPU_FEATURES NPY_DISABLE_SVML=1)")"
   mkdir -p "$P/cache" "$P/logs" "$P/ledger" "$P/tables" "$P/proverka"
 }
 
