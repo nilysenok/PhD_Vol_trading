@@ -218,14 +218,14 @@ def test_e_vhod_po_open_1000_d_plus_1():                         # М-CE3: E0/E2
         assert px != pytest.approx(days[0].c[-1])
 
 
-def test_e_vyhod_tau_po_open_x_plus_1():                         # М-CE4
+def test_e_vyhod_tau_po_close_dnya_x():                          # М-CE4; К-wf5b, Ж-137 п. 6: τ — close дня истечения
     from fastbt import sem_e_strogiy
     from fastbt.exec_e import Day
     t = np.arange(590, 590 + 5 * 12, 5)
     mk = lambda p: Day(p + 0.0 * t - 0.5, p + 0.01 * np.arange(12), p + 0.0 * t - 0.5, p + 0.01 * np.arange(12), False, t=t)
     days = [mk(100.0), mk(101.0), mk(102.0)]
     px = sem_e_strogiy.cena_vyhoda(days, 1, dict(family="E2", tau=1), "tau")
-    assert px == pytest.approx(days[2].o[2]) and px != pytest.approx(days[1].c[-1])
+    assert px == pytest.approx(days[1].c[-1]) and px != pytest.approx(days[2].o[2])
 
 
 def test_k2_strogiy_lag0_raven_iskhodnoy():                      # М-CE5: к2 строгим ядром; лаг 0 = исходная точка (mutations № 9)
