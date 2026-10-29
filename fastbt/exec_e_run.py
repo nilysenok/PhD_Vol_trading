@@ -20,6 +20,8 @@ class Run(V6):
         s.us, s.ut = us, ut                         # Л5: ряды единицы стопа/безубытка и тейка по дню сигнала; None — σ̂ (путь прежний)
         v6_check(p, rang, n)
         v5_check(p, rang, n)                        # Л6: k_e, a_rang, chast
+        if p.time_decay and (p.tau is None or p.tejk != "net"):
+            raise ValueError("time_decay: нужен tau и tejk = net (тейк a·σ или R — половина дистанции после tau//2 дней)")
         s.cf, s.p_take = chast_pair(p), p           # частичный выход (доля, r); параметры тейка сделки
         s.rang, s.be_m, s.pq_on, s.vlev, s.adds, s.n_add, s.v6 = rang, None, False, None, [], 0, v6_on(p)   # V6-b (exec_e_v6)
         s.atr, s.w, s.smax, s.part, s.R, s.ent = atr, 1.0, None, False, float("nan"), (-1, -1)   # Ж-092: ATR, остаток, ratchet, ½, R, бар входа
@@ -160,8 +162,13 @@ class Run(V6):
             T = s._rodnoy(j)
         else:
             st = s._sg(j, True)
+            st = st * s._td(j) if st is not None else st
             T = s.tT if s.p.tejk != "net" else (take_level(tr.side, tr.entry_px, st, s.p_take) if st is not None and s.p_take is not False else None)
         return S, None if s.xo is not None else T    # висит заявка выхода: тейк снят (ОСО)
+
+    def _td(s, j):
+        """V6-9: множитель дистанции тейка — ½ при time_decay, когда в позиции больше tau//2 торговых дней (j − ej > tau//2), иначе 1."""
+        return 0.5 if s.p.time_decay and j - s.ej > s.p.tau // 2 else 1.0
 
     def _rodnoy(s, j):
         """Ж-091: заявка дня ix[j] стоит на L[ix[j−1]] (данные ≤ 18:50 прошлого торгового дня), обновляется каждый вечер;
