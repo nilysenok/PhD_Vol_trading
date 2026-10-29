@@ -33,8 +33,8 @@ def text(s):
     return re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]+>', ' ', s))).replace('\xa0', ' ').strip()
 
 
-def row(d, ev, url, typ, known, vn=''):
-    return [d, ev, url, TODAY, typ, known, vn]
+def row(d, ev, url, typ, known, vn='', today=None):
+    return [d, ev, url, today or TODAY, typ, known, vn]
 
 
 def plan_known(d):  # дата публикации плана не видна -> 1 января года события
@@ -120,11 +120,34 @@ def third(y, m, wd):
     return d + dt.timedelta((wd - d.weekday()) % 7 + 14)
 
 
+# Известные переносы экспираций вместо «третьего четверга»: дата по правилу -> строка факта.
+# Поля: фактическая дата, событие, источник, retrieved_at, known_from.
+EXPIRY_EXCEPTIONS = {
+    '2022-03-17': ('2022-03-29', 'MOEX futures expiry MIX-3.22 (MXH2; перенос с 17.03, LSTDELDATE)',
+                   'https://iss.moex.com/iss/securities/MXH2.json; https://www.moex.com/n45596',
+                   '2026-10-29', '2022-01-01'),
+}
+
+
+def expirations(today, exceptions=None):
+    exceptions = EXPIRY_EXCEPTIONS if exceptions is None else exceptions
+    rows = []
+    for y in range(Y0, Y1 + 1):
+        for m in (3, 6, 9, 12):
+            d = third(y, m, 3).isoformat()
+            if d in exceptions:
+                fd, ev, url, got, kf = exceptions[d]
+                rows.append([fd, ev, url, got, 'факт', kf, ''])
+            else:
+                rows.append(row(d, 'MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)',
+                                'https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026)',
+                                'план', '%d-01-01' % y, '', today))
+    return rows
+
+
 def moex():
     url = 'https://www.moex.com/ru/factsheet/rebalance'
-    exp = [row(third(y, m, 3).isoformat(), 'MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)',
-               'https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026)', 'план',
-               '%d-01-01' % y, '') for y in range(Y0, Y1 + 1) for m in (3, 6, 9, 12)]
+    exp = expirations(TODAY)
     reb = [row(third(y, m, 4).isoformat(), 'IMOEX rebalance effective (rule: third Friday)', url, 'план',
                '%d-01-01' % y, '') for y in range(Y0, Y1 + 1) for m in (3, 6, 9, 12)]
     t = text(get('rebal.html', url))
@@ -139,8 +162,8 @@ def moex():
     return exp, reb, off
 
 
-def write(name, rows):
-    with open(os.path.join(OUT, name + '.csv'), 'w', newline='', encoding='utf-8') as f:
+def write(name, rows, out=None):
+    with open(os.path.join(out or OUT, name + '.csv'), 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(HDR)
         w.writerows(sorted(rows))
