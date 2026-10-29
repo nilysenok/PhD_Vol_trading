@@ -17,6 +17,7 @@ from pathlib import Path
 
 SHAPKA = ["put", "sha256", "bajty", "max_data", "chitatel"]
 GRANICA = "2021-12-31"
+BEZ_DAT = "без дат"      # справочник без колонки дат: manifest_perenos принимает только с обоснованием (3-е поле списка)
 ZAPRET = ("test_locked", "test1_2022_2024")
 
 
@@ -58,7 +59,7 @@ def prochitat(manifest: Path) -> list:
         put = f[5] if len(f) == 7 else otkuda
         _put_ok(otkuda, n)
         _put_ok(put, n)
-        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", md) or md > GRANICA:
+        if md != BEZ_DAT and (not re.fullmatch(r"\d{4}-\d{2}-\d{2}", md) or md > GRANICA):
             raise Otkaz(f"строка {n}: {put}: max_data {md!r} > {GRANICA} или не дата; перенос отменён целиком")
         if not re.fullmatch(r"[0-9a-f]{64}", h) or not b.isdigit():
             raise Otkaz(f"строка {n}: {put}: sha256/байты не в формате")
@@ -122,7 +123,7 @@ def main(argv=None) -> int:
         return 1
     if a.spisok:
         a.spisok.write_text("".join(f"{x[0]}\n" for x in m), encoding="utf-8")
-    print(f"OK manifest: {len(m)} файлов, {sum(x[2] for x in m) / 1e9:.3f} ГБ, max_data {max(x[3] for x in m)}, "
+    print(f"OK manifest: {len(m)} файлов, {sum(x[2] for x in m) / 1e9:.3f} ГБ, max_data {max(x[3] for x in m if x[3] != BEZ_DAT)}, "
           f"sha256 и размеры совпадают ({a.koren})")
     return 0
 

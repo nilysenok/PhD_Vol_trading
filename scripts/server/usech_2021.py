@@ -50,6 +50,8 @@ PRAVILA = [
      ("accessed",), "fastbt/msp.py RATE_RESEARCH"),
     ("docs/issledovaniya/2026-10-28_sobytiya_2016_2021.csv", "csv", ("data_obyavleniya", "data_sobytiya"),
      ("accessed",), "fastbt события E (PIT: объявление и событие)"),
+    # справочник без колонки дат (тикер → сектор; даты только в accessed и as-of в source_url, ≤ 2021-12-30): «без дат»
+    ("docs/issledovaniya/2026-10-27_sektory.csv", "csv", (), ("accessed",), "fastbt/e1_sektor.py, fazy.py (сектор тикера)"),
     ("docs/issledovaniya/2026-10-28_sostav_imoex.csv", "csv", ("date_eff", "known_from"), (), "fastbt/vselennaya.py SOSTAV"),
     ("docs/issledovaniya/2026-10-28_sostav_sektorov.csv", "csv", ("дата_ребалансировки",), (), "состав секторных индексов"),
 ]
@@ -97,9 +99,12 @@ def usech_csv(src: Path, dst: Path, daty: tuple[str, ...], ochistit: tuple[str, 
                     r[i] = ""
                 w.writerow(r)
                 st.stroki += 1
-                st.uchest(max(ds).isoformat())
+                if ds:                                   # без колонок дат (справочник): строки копируются как есть
+                    st.uchest(max(ds).isoformat())
             else:
                 st.otbrosheno += 1
+            if not ds:
+                continue
             if prev is not None and ds[0] < prev:
                 otsort = False
             prev = ds[0]
@@ -163,7 +168,7 @@ def usech(koren: Path, vyhod: Path, tolko: str = "") -> list[dict]:
             if rel.startswith("docs/issledovaniya/"):
                 dst = dst.with_name(dst.name.split("_", 1)[1])
             st = usech_pq(src, dst, kol[0]) if vid == "pq" else usech_csv(src, dst, kol, och)
-            zap.append(dict(rel=rel, dst=dst, st=st, chit=chit, sha_src=mp.sha256(str(src))))
+            zap.append(dict(rel=rel, dst=dst, st=st, chit=chit, sha_src=mp.sha256(str(src)), bez=not kol))
             print(f"{rel}: строк {st.stroki}, отброшено {st.otbrosheno}, max {st.max_data}, остановка {st.ostanov}")
     return zap
 
@@ -172,7 +177,7 @@ def obnovit_manifest(koren: Path, zap: list[dict], vyhod: Path, tsv: Path) -> st
     """Копии заново проверяет manifest_perenos (независимо от усечения) и дописывает в манифест."""
     vkoren = vyhod.parent.parent                 # <vkoren>/data/server_2021: put в манифесте = data/server_2021/<rel>
     dst_rel = {z["dst"].relative_to(vkoren).as_posix(): z for z in zap if z["dst"].exists()}
-    r = mp.sobrat(str(vkoren), [(p, z["chit"], "") for p, z in dst_rel.items()])
+    r = mp.sobrat(str(vkoren), [(p, z["chit"], "справочник без дат (as-of в source_url ≤ 2021-12-30)" if z["bez"] else "") for p, z in dst_rel.items()])
     nov = [(p, sha, b, m, z["chit"], z["rel"], z["sha_src"]) for p, sha, b, m, _ in r["prinyato"] for z in [dst_rel[p]]]
     nv = tsv.with_name(tsv.stem + "_otvergnuto.tsv")
     star = [ln.rstrip("\n").split("\t") for ln in tsv.read_text(encoding="utf-8").splitlines()[1:]]
