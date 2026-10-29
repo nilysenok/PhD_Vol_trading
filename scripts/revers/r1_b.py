@@ -23,6 +23,7 @@ for _p in (ROOT, ROOT / "scripts" / "analysis", ROOT / "scripts" / "revers"):
     sys.path.insert(0, str(_p))
 import razlozhenie_a as RA  # noqa: E402  (подмена run_e1 для записи сделок — только внутри RA.zapis_sdelok())
 import r1_a_zashch as Z  # noqa: E402
+import shapka_lib as SL  # noqa: E402
 from fastbt import a_strogaya as AS, etap1, metriki_e as me, s9, zona  # noqa: E402
 from fastbt.etap1_eval_v2 import EvaluatorV2  # noqa: E402
 
@@ -128,6 +129,13 @@ def sverka_a_cd(df: pd.DataFrame, a_cd: Path, tol: float = 1e-12) -> float:
     return d
 
 
+def zapisat(out: Path, df: pd.DataFrame, period: str, yakor: str) -> None:
+    """Шапка: статус, коммит кода, входы с путями и sha256 (proverka.md п. 4)."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    sh = SHAPKA + f", период {period}; якорь {yakor}\n" + SL.blok(period) + zona.shapka_dividendy()
+    out.write_text(sh + df.to_csv(index=False), encoding="utf-8")
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--period", choices=("train4", "test1"), required=True)
@@ -150,8 +158,7 @@ def main(argv=None) -> None:
         net = OUT / "_net" / "a_cd_test1.csv" if zona.div_net() else OUT / "a_cd_test1.csv"
         print(f"сверка A_zashch с {net.name}: макс |Δ| = {sverka_a_cd(df, net):.2e}")
     out = a.out or OUT / "b_razlozhenie.csv"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(SHAPKA + f", период {a.period}; якорь {a.yakor}\n" + zona.shapka_dividendy() + df.to_csv(index=False), encoding="utf-8")
+    zapisat(out, df, a.period, a.yakor)
     print(df.to_string())
 
 

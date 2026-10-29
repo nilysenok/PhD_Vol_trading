@@ -22,10 +22,26 @@ A_CD = ROOT / "docs" / "tables" / "revers_r1" / "a_cd_test1.csv"
 
 
 def _kesh(period: str) -> dict:
-    ptr = s9.OUT / f"cache_latest_{period}.txt"
-    if not ptr.exists():
-        pytest.skip(f"нет {ptr}: кэш s9 {period} не собран")
-    return pickle.loads((s9.OUT / ptr.read_text().strip()).read_bytes())
+    """Кэш s9 по ключу (код + входы + env + период), как scripts/revers/r1_a_zashch.py::kesh_s9. Не по указателю cache_latest_*:
+    он смотрит на кэш, который собирали последним (после прогона NET — без дивидендов; Sharpe −0,8205 вместо −0,9146)."""
+    with s9.period_ctx(period):
+        p = s9.OUT / f"cache_{s9.cache_key()}.pkl"
+    if not p.exists():
+        pytest.skip(f"нет {p.name}: кэш s9 {period} с текущим ключом не собран")
+    return pickle.loads(p.read_bytes())
+
+
+def test_kesh_beretsya_po_klyuchu_a_ne_po_ukazatelyu(tmp_path, monkeypatch):
+    """Мутация: указатель cache_latest_test1.txt смотрит на кэш с другими дивидендами — тест берёт кэш по ключу."""
+    monkeypatch.setattr(s9, "OUT", tmp_path)
+    monkeypatch.setattr(s9, "cache_key", lambda: "klyuch")
+    for name, div in (("cache_klyuch.pkl", "tablica"), ("cache_chuzhoj.pkl", "NET")):
+        (tmp_path / name).write_bytes(pickle.dumps({"div": div}))
+    (tmp_path / "cache_latest_test1.txt").write_text("cache_chuzhoj.pkl")            # указатель — на чужой кэш
+    assert _kesh("test1") == {"div": "tablica"}
+    (tmp_path / "cache_klyuch.pkl").unlink()
+    with pytest.raises(pytest.skip.Exception):                                         # нет кэша с ключом — пропуск, не чужой кэш
+        _kesh("test1")
 
 
 def _test1():

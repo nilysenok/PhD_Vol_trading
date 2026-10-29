@@ -12,7 +12,6 @@ import argparse
 import hashlib
 import os
 import pickle
-import subprocess
 import sys
 import types
 from pathlib import Path
@@ -23,8 +22,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "analysis"))
-from fastbt import a_strogaya as AS, dividendy, metriki_e as me, s9, sigma_z2, zona  # noqa: E402
+from fastbt import a_strogaya as AS, metriki_e as me, s9, zona  # noqa: E402
 import dve_metriki_a as D  # noqa: E402
+import shapka_lib as SL  # noqa: E402
 
 SHAPKA = "# реверс раунд 1, 2022–2024, справочно, без выбора"
 PERIODY = ("train4", "test1", "train")
@@ -146,13 +146,7 @@ def sha(p: Path) -> str:
 
 
 def shapka(per: str) -> str:
-    kom = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    s = f"{SHAPKA}; период {per}\n# коммит: {kom}\n"
-    if per == "test1":
-        vh = [sigma_z2.dev_path(h) for h in sigma_z2.HORIZONS] + [sigma_z2.z2_path(h) for h in sigma_z2.HORIZONS]
-        vh += [] if zona.div_net() else list(dividendy._tables())
-        s += "".join(f"# вход: {p.name} sha256={sha(p)}\n" for p in vh)
-    return s + zona.shapka_dividendy()
+    return f"{SHAPKA}; период {per}\n" + SL.blok(per) + zona.shapka_dividendy()      # входы — с путями (dev и Z2 — разные файлы)
 
 
 def kontrol_train(res: dict) -> float:
