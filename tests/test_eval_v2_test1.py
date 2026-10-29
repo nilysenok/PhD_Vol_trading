@@ -54,7 +54,7 @@ def test_train4_2020_po_prezhnemu_valueerror(monkeypatch):
 def test_mutatsiya_zashchita_snyata_lovitsya(monkeypatch):
     """Мутация: GODY расширен (защита train4 снята) — проверка выше обязана упасть."""
     with monkeypatch.context() as m:
-        m.setattr(v2, "GODY", tuple(range(2016, 2025)))
+        m.setattr(v2, "kvartaly", lambda d, v: ledger_v2.kvartaly_gody(d, v, tuple(range(2016, 2025))))
         with pytest.raises(pytest.fail.Exception):
             m2 = pytest.MonkeyPatch()
             try:

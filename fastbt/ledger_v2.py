@@ -54,9 +54,14 @@ def klyuch_sha(kl: dict, kod: str, vhody: str) -> str:
     return hashlib.sha256(f"{kan}|{kod}|{vhody}|{V}".encode("utf-8")).hexdigest()
 
 
-def kvartaly(daty: np.ndarray, x: np.ndarray, gody: tuple = GODY) -> dict:
+def kvartaly(daty: np.ndarray, x: np.ndarray) -> dict:
     """Шарп годовой шкалы (ddof = 1) по календарным кварталам 2016Q1…2019Q4; квартал без дней — nan.
-    gody ≠ GODY — только справочные периоды вне ledger train4 (test1); по умолчанию защита 2016–2019 прежняя."""
+    Защита 2016–2019 для ledger train4."""
+    return kvartaly_gody(daty, x, GODY)
+
+
+def kvartaly_gody(daty: np.ndarray, x: np.ndarray, gody: tuple) -> dict:
+    """То же по кварталам заданных годов; gody ≠ GODY — только справочные периоды вне ledger train4 (test1)."""
     d, x = np.asarray(daty, "datetime64[D]"), np.asarray(x, float)
     if d.shape != x.shape:
         raise ValueError("daty и x разной длины")
