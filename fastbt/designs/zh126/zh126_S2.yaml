@@ -1,0 +1,37 @@
+# Ж-126 / Ж-127 п. 1: полные определения сигнальных осей S2 (полосы Боллинджера вокруг MA).
+# Перенесены только оси и диапазоны; точки, выбранные значения и итоги прогона — не переносятся (Ж-127).
+# Строки — нумерация файла источника на коммите 6a7a4636.
+strategiya: S2
+istochnik: {kommit: 6a7a4636, fajl: moex_volatility/scripts/daily_upper_bound.py, stroki: "44-91, 240-248, 349-353, 361-364, 408, 461-489"}
+suzheno_na_teste: false  # оси — списки в коде (349-353); narrowed_grid*.json не читается; списки не уже daily_full_opt_v5.py 59-60
+signal:
+  ma_tip:
+    znacheniya: [sma, ema, wma, dema, hull, kama]
+    istochnik_stroki: "84-91, 349, 362"
+    primechanie: "в источнике 6 типов; ветка else в get_ma (91) — откат на sma, не седьмой тип"
+  okno_ma:
+    znacheniya: [3, 5, 7, 10, 12, 15, 18, 20, 25, 30, 35, 40, 50, 60, 80, 100, 120, 150, 200]
+    istochnik_stroki: "350, 363, 462-468"
+  shirina_polos_std:
+    znacheniya: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0]
+    istochnik_stroki: "353, 364"
+zavisimye_osi: []
+# Расширение сверх источника (класс A, умолчание дирижёра 29.10 — добавить расширением): седьмое значение ma_tip.
+rasshireniya:
+  ma_tip:
+    tema: {rasshirenie: "Ж-125 п. 1, нет в коде"}
+# obem_signal_s_rasshireniem = (6 + 1) * 19 * 13
+obem_signal_s_rasshireniem: 1729
+fiksirovano_v_istochnike:
+  kama_fast_slow: {znachenie: [2, 30], istochnik_stroki: "72"}
+  okno_std: {znachenie: "= okno_ma, ddof=1, вокруг SMA при любом ma_tip", istochnik_stroki: "467 (calc_std в strategies_walkforward.py 222-224)"}
+  pravilo_vhoda: {znachenie: "close <= MA - bs*std -> +1; close >= MA + bs*std -> -1", istochnik_stroki: "242-246"}
+  progrev: {znachenie: "WARMUP = 200 баров (strategies_walkforward.py 48)", istochnik_stroki: "247"}
+obshchee: zh126_obshchee.yaml
+filtry_tipa:
+  tip: kontrtrend
+  istochnik_stroki: "302-342, 381-392, 408"
+  filtry: [adx_th, atr_lo, vol_th, rsi_th, mom_n, dow]
+  primechanie: "IS_TREND[S2] = False (408): ADX < порога, RSI < rt / > 100-rt, импульс против; список adx_th — ветка не-тренда (386)"
+# obem_signal = |ma_tip| * |okno_ma| * |shirina_polos_std| = 6 * 19 * 13
+obem_signal: 1482
