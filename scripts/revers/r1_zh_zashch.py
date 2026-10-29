@@ -18,7 +18,8 @@ sys.path[:0] = [str(ROOT), str(ROOT / "scripts" / "analysis"), str(Path(__file__
 import cd_s3_sigma as S  # noqa: E402
 import dve_metriki_a as D  # noqa: E402
 import r1_a_cd as C  # noqa: E402
-from fastbt import a_strogaya as AS, metriki_e as me, s9  # noqa: E402
+import shapka_lib as SL  # noqa: E402
+from fastbt import a_strogaya as AS, metriki_e as me, s9, zona  # noqa: E402
 
 VSE = "2022-2024"
 GODY = (2022, 2023, 2024)
@@ -140,6 +141,17 @@ def zamer(eng, ser: dict, comm: float) -> None:
     print(f"оценка полного счёта без загрузки кэша: p50 {zat * len(eng.tickers) * 3 + 20 * p50:.0f} / p90 {zat * len(eng.tickers) * 3 * 1.3 + 20 * p90:.0f} с")
 
 
+def zapisat(out: Path, df: pd.DataFrame, k2: pd.DataFrame, period: str, sigma_dir: Path, n_k2: int) -> None:
+    """Обе таблицы со статусом, коммитом и входами; σ̂ зоны Z2 (--sigma-dir) — с путём: одноимённый файл в ch4_dev — другой (dev)."""
+    out.mkdir(parents=True, exist_ok=True)
+    vh = SL.blok(period, [sigma_dir / (FILES[k] + ".parquet") for k in FILES])
+    sh = f"{C.SHAPKA}; период {period}\n" + vh + zona.shapka_dividendy()
+    sh2 = "# объект: A_zashch (s9), затвор σ̂ p67 поверх позиций A; плата за шорт 0; к2 %d повторов\n" % n_k2
+    (out / "zh_sigma_zatvor_a_zashch_test1.csv").write_text(sh + sh2 + df.to_csv(index=False), encoding="utf-8")
+    (out / "zh_sigma_zatvor_a_zashch_k2_test1.csv").write_text(
+        sh + "# к2: контроль «сдвиг затвора», %d повторов\n" % n_k2 + k2.to_csv(index=False), encoding="utf-8")
+
+
 def main_zashch(period: str, sigma_dir: Path | None, n_k2: int, out: Path, zam: bool = False) -> int:
     if period != "test1" or sigma_dir is None:
         raise SystemExit("A_zashch: только --period test1 и нужен --sigma-dir (σ̂ зоны Z2)")
@@ -153,10 +165,6 @@ def main_zashch(period: str, sigma_dir: Path | None, n_k2: int, out: Path, zam: 
     if zam:
         return zamer(eng, ser, AS.COMM) or 0
     df, k2 = schitat(eng, ser, AS.COMM, n_k2)
-    out.mkdir(parents=True, exist_ok=True)
-    sh = C.shapka(period) + "# объект: A_zashch (s9), затвор σ̂ p67 поверх позиций A; плата за шорт 0; к2 %d повторов\n" % n_k2
-    sh += "".join(f"# вход: {FILES[k]}.parquet sha256={C.sha(sigma_dir / (FILES[k] + '.parquet'))}\n" for k in FILES)
-    (out / "zh_sigma_zatvor_a_zashch_test1.csv").write_text(sh + df.to_csv(index=False), encoding="utf-8")
-    tablica_k2(k2).to_csv(out / "zh_sigma_zatvor_a_zashch_k2_test1.csv", index=False)
+    zapisat(out, df, tablica_k2(k2), period, sigma_dir, n_k2)
     print(df.round(3).to_string())
     return 0

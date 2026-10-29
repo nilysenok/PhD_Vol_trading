@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "revers"))
 import imoex_test1 as IT  # noqa: E402
 import overnajt as O  # noqa: E402
 import overnajt_lib as L  # noqa: E402
+import shapka_lib as SL  # noqa: E402
 from fastbt import a_strogaya as AS, kross_seksiya as ks, msp, zona  # noqa: E402
 from fastbt.data import TICKERS  # noqa: E402
 
@@ -99,6 +100,15 @@ def chislo_let(dates) -> float:
     return float(len(np.unique(np.asarray(dates).astype("datetime64[D]").astype("datetime64[Y]"))))
 
 
+def zapisat(out: Path, df: pd.DataFrame, period: str) -> None:
+    """test1: шапка со статусом, коммитом кода и входами (пути + sha256); train4 — без шапки (сверка с образцом #487 читает файл как есть)."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w", encoding="utf-8") as f:
+        if period == "test1":
+            f.write(HEADER + "\n" + SL.blok(period) + zona.shapka_dividendy())
+        df.to_csv(f, index=False)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--obekt", choices=("A_strogaya", "A_zashch"), default="A_strogaya", help="по умолчанию — прежний расчёт на A_strogaya")
@@ -120,11 +130,7 @@ def main() -> None:
     assert god == len(PERIODS[a.period][0]), f"лет в датах {god} ≠ периоду {a.period}"
     df = pd.DataFrame(O.stroki_a(R, god) + O.stroki_kross(kross(last), god))
     out = Path(a.out) if a.out else ROOT / "docs" / "tables" / "revers_r1" / ("v_overnajt.csv" if a.period == "test1" else "v_train4_proverka.csv")
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with open(out, "w", encoding="utf-8") as f:
-        if a.period == "test1":
-            f.write(HEADER + "\n" + zona.shapka_dividendy())
-        df.to_csv(f, index=False)
+    zapisat(out, df, a.period)
     print(df.round(3).to_string())
     if a.period == "train4":
         print("сверка с образцом #487:", "СОВПАЛО" if sverka(df) else "РАСХОДИТСЯ")

@@ -24,6 +24,7 @@ from fastbt import fazy, metriki_e as me, zona  # noqa: E402,F401
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import imoex_test1 as IT  # noqa: E402
 import r1_a_zashch as Z  # noqa: E402
+import shapka_lib as SL  # noqa: E402
 from imoex_test1 import dnevka_iz_10min, dnevnye_index_d  # noqa: E402,F401
 
 SHAPKA = "# реверс раунд 1, 2022–2024, справочно, без выбора"
@@ -135,7 +136,7 @@ def zapis(period: str, tab: dict, out: Path | None = None) -> None:
     out.mkdir(parents=True, exist_ok=True)
     for k, df in tab.items():
         with open(out / f"e_{k}_{period}.csv", "w", encoding="utf-8") as fh:
-            fh.write(f"{SHAPKA} — {PERIODY[period][3]}\n" + zona.shapka_dividendy())
+            fh.write(f"{SHAPKA} — {PERIODY[period][3]}\n" + SL.blok(period) + zona.shapka_dividendy())
             df.to_csv(fh, index=False)
 
 

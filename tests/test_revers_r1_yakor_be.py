@@ -21,10 +21,11 @@ spec.loader.exec_module(r1e)
 
 T = ROOT / "docs" / "tables" / "revers_r1"
 A_CD = T / "a_cd_test1.csv"
+T_FIX = T / "_do_a_zashch"      # опубликованная версия A_fix (29.10, перед пересчётом на A_zashch; sha256 — в MANIFEST.tsv): b_razlozhenie.csv и e_po_fazam_test1.csv в T уже A_zashch
 
 
 def _opubl_b() -> pd.DataFrame:
-    return pd.read_csv(T / "b_razlozhenie.csv", comment="#")
+    return pd.read_csv(T_FIX / "b_razlozhenie.csv", comment="#")
 
 
 def _z2():
@@ -112,7 +113,7 @@ def test_e_a_fix_vosproizvodit_opublikovannye_ryady():
     faza = r1e.fazy_dnej(r1e.zagruzit_imoex(imoex, *r1e.PERIODY["test1"][:2], path_d), d)
     faza.index = d
     got = pd.DataFrame(r1e.po_fazam("A", x, b, faza, 0.05))
-    o = pd.read_csv(T / "e_po_fazam_test1.csv", comment="#")
+    o = pd.read_csv(T_FIX / "e_po_fazam_test1.csv", comment="#")
     o = o[(o.ryad == "A") & (o.plata_zaem == 0.05)].reset_index(drop=True)
     assert len(got) == len(o) > 5
     for c in ("dni", "sredn_den", "sharpe", "msr", "dohodnost"):
