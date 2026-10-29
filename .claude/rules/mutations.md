@@ -61,6 +61,23 @@
 | 53 | Режим v4 (`min_hold`) не передан в сравнении голоса v2 с vote v4 | режим сравнения | #628 | `tests/test_kalibr_v5_golos_v2.py::test_mutatsiya_rezhim_v4_ne_peredan_lovitsya` |
 | 54 | Ось не доходит до оценщика точки куба v5; единицы тейка/стопа pct↔atr перепутаны; k_e ×2 у контртренда / знак «минус» у тренда; снят запрет оси zh047 вне якоря (мутации в1–в3, г проверяющего #611 — пойманы тестами тестировщика) | ось, единица, знак в оценщике v5 | #611 | `tests/test_eval_v5.py::test_mutaciya_os_ignoriruetsya_v_ocenshchike_lovitsya`; `tests/test_eval_v5_edinicy.py::test_tejk_edinica`; `tests/test_eval_v5_edinicy.py::test_stop_edinica`; `tests/test_eval_v5_edinicy.py::test_k_e_trend_znak_sohranyaetsya`; `tests/test_eval_v5_edinicy.py::test_zh047_ne_na_yakore_valueerror` |
 | 55 | Вход в день сигнала (лаг 0 вместо d+1, Д2) в голой идее ТФ | лаг исполнения | #626 | `tests/test_golaya_tf_v5.py::test_mutaciya_vhod_v_den_signala` |
+| 56 | Ось «sp в том же баре» (параметр `plus_level`) | ось ядра быстрого слоя, порядок в баре | #653 (слит 29.10) | `tests/test_fast_v5_osi3.py::test_mutatsiya_etalona_lovitsya` |
+| 57 | Храповик `vlev` возвращается назад | ось ядра быстрого слоя, храповик | #653 (слит 29.10) | ❓ (ближайший: `tests/test_fast_v5_osi3.py::test_mutatsiya_yadra_lovitsya`, не мутация храповика) |
+| 58 | Ранг берётся по дню входа вместо дня сигнала (параметр `rang_dnya_vhoda`) | ось ядра быстрого слоя, ранг дня | #653 (слит 29.10) | `tests/test_fast_v5_osi3.py::test_mutatsiya_etalona_lovitsya` |
+| 59 | Порог пирамидинга 2ρ вместо 3ρ | пирамидинг, порог добавки | #660/#670 (слит 29.10) | ❓ (ближайший: `tests/test_pir_izvestnyj_otvet.py::test_a_urezanie_08_i_otsutstvie_vtoroj_dobavki`) |
+| 60 | Риск по стопу входа вместо текущего стопа | пирамидинг, риск | #660/#670 (слит 29.10) | ❓ (ближайший: `tests/test_pir_izvestnyj_otvet.py::test_d_risk_po_tekushchemu_stopu`) |
+| 61 | Комиссия ноги пирамидинга не взята | пирамидинг, комиссия | #660/#670 (слит 29.10) | ❓ (ближайший: `tests/test_pir_izvestnyj_otvet.py::test_bez_pir_net_nog`) |
+| 62 | Порог time_decay подменён на `>=` | time_decay, порог | #668 (слит 29.10) | ❓ (ближайший: `tests/test_exec_e_time_decay.py::test_mutatsiya_polovina_ne_vklyuchaetsya_lovitsya`) |
+| 63 | Условие `tejk≠net` снято в time_decay | time_decay, условие тейка | #668 (слит 29.10) | `tests/test_exec_e_time_decay_t.py::test_mutatsiya_uslovie_tejk_snyato_lovitsya` |
+| 64 | Нижняя граница пивота от цены входа вместо close дня сигнала | пивот, граница | #677 (слит 29.10) | ❓ (ближайший: `tests/test_exec_e_piv_t.py::test_n1_nizhnyaya_granitsa_ot_close_dnya_signala`) |
+| 65 | VWAP со строки d+1 вместо строки d сигнала | пивот/VWAP, строка | #677 (слит 29.10) | ❓ (ближайший: `tests/test_exec_e_piv_t.py::test_n2_vwap_dev_strokoj_d_sig`) |
+| 66 | Корректировка дивидендов обратная (префикс не совпадает с прямой) | дивиденды, корректировка | #678 (слит 29.10) | `tests/test_dividendy_pryamaya.py::test_mutatsiya_korrektirovka_obratnaya_lovitsya` |
+| 67 | Якорь t_vyhod игнорируется в razbor | выход, якорь | #680/#682 (слит 29.10) | ❓ (ближайший: `tests/test_kub_v5_open2.py::test_v6_t_vyhod_vykl_open2_sovpadaet_s_yakorem_v5`) |
+| 68 | τ выхода по open дня x+1 | выход, τ | #680/#682 (слит 29.10) | `tests/test_vyhod_tau_open2.py::test_mutatsiya_tau_po_open_x_plus_1_lovitsya` |
+| 69 | `fast_exec_v6.py` не в хэше numba-кэша | ключ кэша, код | #656 (слит 29.10) | `tests/test_klyuchi_kesha_v6.py::test_mutation_v6_not_in_hash_caught` |
+| 70 | Импорт `from tests.` ломает сбор тестов | сбор тестов, импорты | #674/#684 (слит 29.10) | `tests/test_sbor_importy.py::test_mutatsiya_import_cherez_paket_lovitsya` |
+| 71 | Ранг тренда на d_sig | ранг тренда, день сигнала | #683 (в работе) | `tests/test_rang_trenda_podkl.py` после слияния #683 (файла в базе пока нет) |
+| 72 | Дубль `klyuch_n` сводится молча | ledger, дубли ключей | #665 (слит 29.10) | `tests/test_ledger_v22.py::test_mutaciya_dubl_svoditsya_molcha` |
 
 Слиты #288, #289; их мутации внесены в строки 17–19. Остальные мутации постановки E §8 (исполнение по барам дня d вместо d+1; E0 при q = 0 ≠ A побайтно; сила сигнала по d+1; комиссия при стопе внутри дня; ставка на капитал, освободившийся внутри дня) обязательны для PR семьи E с первого дня и вносятся в таблицу строками, когда появятся тесты.
 
