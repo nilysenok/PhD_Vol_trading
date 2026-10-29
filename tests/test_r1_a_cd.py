@@ -101,34 +101,44 @@ def test_D_bez_RVI_neprimenimo_a_ne_tihoe_A():
     assert df[df.portfel.str.startswith("D:")].primechanie.str.startswith("неприменимо").all()
 
 
-def test_period_v_vorokere(period_restore):
+def test_period_v_processe(period_restore):
     s9.set_period("train")
-    with pytest.raises(RuntimeError, match="не передан в initializer"):
-        R.schitat("test1")                               # мутация «период не передан в воркер» (initializer не вызван)
-    R.ustanovit_period("test1")                           # то, что делает Pool(initializer=…)
+    with pytest.raises(RuntimeError, match="ustanovit_period не вызван"):
+        R.schitat("test1")                               # мутация «период не поставлен»
+    R.ustanovit_period("test1")
     assert s9.PERIOD == "test1" and s9.YEARS == (2022, 2023, 2024) and zona.name() == "test1"
 
 
-def test_main_peredaet_period_v_initializer(monkeypatch, tmp_path, period_restore):
+def test_main_bez_vneshnego_pula_period_v_schitat(monkeypatch, tmp_path, period_restore):
+    """main считает в основном процессе (демонический воркер не может открыть пул build_cache); период стоит к вызову schitat."""
     seen = {}
+    assert not hasattr(R, "Pool")
 
-    class P:
-        def __init__(self, n, initializer, initargs):
-            seen["init"], seen["args"] = initializer, initargs
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
-
-        def apply(self, fn, args):
-            return {"A": dict(prichina="синтетика"), "C": dict(prichina="синтетика"), "D": dict(prichina="синтетика")}
-    monkeypatch.setattr(R, "Pool", P)
+    def fake(per):
+        seen["per"], seen["s9"], seen["zona"] = per, s9.PERIOD, zona.name()
+        return {k: dict(prichina="синтетика") for k in "ACD"}
+    s9.set_period("train")
+    monkeypatch.setattr(R, "schitat", fake)
     monkeypatch.setattr(R, "shapka", lambda per: f"# синтетика {per}\n")
     R.main(["--period", "test1", "--out", str(tmp_path)])
-    assert seen["init"] is R.ustanovit_period and seen["args"] == ("test1",)
+    assert seen == dict(per="test1", s9="test1", zona="test1")
     assert (tmp_path / "a_cd_test1.csv").read_text(encoding="utf-8").startswith("# синтетика test1")
+
+
+def test_vorker_build_cache_stavit_period_i_zonu(monkeypatch, period_restore):
+    """spawn не наследует глобали: s9._job сам ставит период/зону из аргумента задачи. Мутация (нет set_period в _job) — PERIOD остаётся train."""
+    from fastbt import dev
+
+    class Stop(Exception):
+        pass
+
+    def stop(*a, **k):
+        raise Stop
+    monkeypatch.setattr(dev, "load_design", stop)
+    s9._restore_period("train", (2018, 2019, 2020, 2021), 2017)           # «свежий процесс»
+    with pytest.raises(Stop):
+        s9._job(("SBER", {}, ("dev",), "test1"))
+    assert s9.PERIOD == "test1" and zona.name() == "test1" and s9.YEARS == (2022, 2023, 2024)
 
 
 def test_otkaz_pri_date_2025():
