@@ -237,7 +237,8 @@ def _try_order(fs, st, ti, tf, acc, i, j, B, off, nbar, cl, dirs, sigma, su, tu,
             _enter(fs, st, ti, tf, acc, i, j, b, px, b, sg, st[ODS], sd, nb, pf, pi, ix, su, tu)
             S, _ = _levels(fs, st, j, su, tu, ix, pf, pi, B, off, nbar, atr)
             if not pi[P_ZAK] and not np.isnan(S) and _stop_hit(sd, B[1, k0 + b], B[2, k0 + b], S, pi):
-                _exit(fs, st, ti, tf, acc, i, j, b, S, st[SR], pf, pi, ix)
+                # = Run._stop_vhoda (БЛОКЕР #596): стоп активен с цены входа px — «уже пробитый» выходит по px
+                _exit(fs, st, ti, tf, acc, i, j, b, min(px, S) if sd > 0 else max(px, S), st[SR], pf, pi, ix)
             else:
                 _scan(fs, st, ti, tf, acc, i, j, b + 1, B, off, nbar, cl, su, tu, atr, ix, pf, pi)
             return

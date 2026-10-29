@@ -149,6 +149,7 @@ class V6:
             s._add(i, j, b, px, a)
 
     def _add(s, i, j, b, px, a):
+        s._v_bare(i, b, px)                         # инвариант: цена добавки в [low; high] бара (БЛОКЕР #596)
         tr = s.tr
         s.gross[i] += tr.side * s.w * math.log((px + s.dv) / s.ref)      # прежняя позиция до цены добавки; D — ей одной
         s.dv = 0.0
