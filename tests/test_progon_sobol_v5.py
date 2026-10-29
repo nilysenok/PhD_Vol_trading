@@ -128,8 +128,7 @@ def test_v2_otdelnyj_klyuch_i_mutaciya_v2_v_klyuch_train4(fake5, monkeypatch, tm
 
 
 def test_v2_ledger21_otkaz_do_starta():
-    with pytest.raises(SystemExit, match="2016"):
-        ps.proverit_ledger(rz5("v2"), lm.V21)
+    ps.proverit_ledger(rz5("v2"), lm.V21)              # Б7: ledger 2.1 считает 2015–2019 — v2 принят; отказ остаётся для окна шире годов
     ps.proverit_ledger(rz5("v2"), lm.V)
     ps.proverit_ledger(rz5(), lm.V21)
 

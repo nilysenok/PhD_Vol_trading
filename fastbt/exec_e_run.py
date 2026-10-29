@@ -55,14 +55,14 @@ class Run(V6):
 
     # --- вход / выход ---
     def _v_bare(s, i, b, px):
-        """Инвариант: цена исполнения — в [low; high] бара b дня i; нарушение — в s.vne (день, бар, цена). Close дня (Н6) —
-        цена рынка по определению; zakrytie и bar_plus берут цену другого бара того же дня — проверка по диапазону дня.
-        ↺ — не raise: мутационные тесты гэпа (test_exec_e_parabolic, test_fast_etap1_equiv) досчитывают мутанта; ValueError —
-        в tf_ispolnenie_v5.sessiya · откат: raise здесь (29.10)."""
+        """Инвариант: цена исполнения — в [low; high] бара b дня i; нарушение — ValueError (тикер, день, бар, цена, [low; high]).
+        Close дня (Н6) — цена рынка по определению; zakrytie и bar_plus берут цену другого бара того же дня — по диапазону дня."""
         d = s.days[i]
         den = s.zak or getattr(s.p, "bar_plus", 0)
-        if px != s.close_of(i) and not (v_bare(min(d.l), max(d.h), px) if den else v_bare(d.l[b], d.h[b], px)):
+        lo, hi = (min(d.l), max(d.h)) if den else (d.l[b], d.h[b])
+        if px != s.close_of(i) and not v_bare(lo, hi, px):
             s.vne.append((i, b, px))
+            raise ValueError(f"исполнение вне [low; high] бара: {s.t} день {i} бар {b} цена {px} [{lo}; {hi}]")
 
     def _stop_vhoda(s, i, j, d, b, px, S):
         """Стоп в баре входа активен с момента исполнения по px: «уже пробитый» (лонг S ≥ px, шорт S ≤ px) — выход по px,

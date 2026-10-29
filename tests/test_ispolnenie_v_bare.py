@@ -113,8 +113,12 @@ def _staryj_stop_vhoda(s, i, j, d, b, px, S):
 
 def test_mutaciya_stop_vhoda_po_urovnyu_lovitsya_svojstvom(monkeypatch):
     monkeypatch.setattr(Run, "_stop_vhoda", _staryj_stop_vhoda)
-    plohie, vse = _dnevnoy("chand_tight", n=300)
-    assert plohie, "мутация «стоп в баре входа по S» не поймана тестом-свойством"
+    try:
+        plohie, vse = _dnevnoy("chand_tight", n=300)
+    except ValueError as e:                                   # поймана кодом (#617): исполнение вне бара
+        assert "вне [low; high]" in str(e), str(e)
+        return
+    assert plohie, "мутация «стоп в баре входа по S» не поймана ни свойством, ни ValueError"
 
 
 def test_mutaciya_stop_vhoda_po_urovnyu_lovitsya_v_kode(monkeypatch):
