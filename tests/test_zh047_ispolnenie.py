@@ -100,10 +100,11 @@ def test_mut_stop_strict(monkeypatch):                             # `<` вме�
 
 def test_mut_stop_gap_at_level(monkeypatch):                       # мутация № 4: гэп по уровню, а не по открытию
     patch_rule(monkeypatch, "stop_hit", lambda f: lambda sd, o, h, l, S, touch: (f(sd, o, h, l, S, touch)[0], S))
-    with pytest.raises(AssertionError):
-        sc_stop()
-    with pytest.raises(AssertionError):
-        sc_short()
+    for sc in (sc_stop, sc_short):
+        with pytest.raises((AssertionError, ValueError)) as ei:    # #617: исполнение вне бара — ValueError
+            sc()
+        if ei.type is ValueError:
+            assert "вне [low; high]" in str(ei.value), str(ei.value)
 
 
 def test_mut_stop_take_order(monkeypatch):                         # мутация № 3
