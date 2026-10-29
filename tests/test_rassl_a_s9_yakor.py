@@ -54,6 +54,16 @@ def test_vhody_pos_s9_i_ceny(capsys, monkeypatch):
     assert "inp.close_n6 − daily: max|Δ|=0" in out and "посл. 5-мин. close − daily: max|Δ|=0.5, дней с Δ 1" in out
 
 
+def test_parametry_donchian_na_realnom_tickerdata():
+    import rassl_a_parametry as P
+    from fastbt.signals.interface import TickerData
+    n = 8
+    a = np.arange(n, dtype=float)
+    td = TickerData("X", pd.bdate_range("2022-01-03", periods=n).values, a, a + 1, a - 1, a, a, np.zeros(n), {})
+    s = P.donchian(td, 5, 3)
+    assert "max high[2:5]=5.0000" in s and "min low[2:5]=1.0000" in s and "close=5.0000" in s
+
+
 def test_komponenty_razdelyaet_stavku(capsys):
     idx = pd.bdate_range("2022-01-03", periods=3)
     mk = lambda ex: pd.DataFrame(dict(r=[0.0] * 3, gross=[0.0] * 3, exposure=[1.0] * 3, excess=ex), index=idx)  # noqa: E731
