@@ -20,9 +20,9 @@ sha_spisok() {   # $1 — каталог; суммы всех файлов, пу
   (cd "$1" && find . -type f -print | sort | while IFS= read -r f; do printf '%s  %s\n' "$(sha_file "$f")" "$f"; done)
 }
 
-kv() {   # значение из KOD; вызывается в $(…) — сообщение об ошибке в stderr, чтобы его было видно
-  [ -f "$P/KOD" ] || { echo "FAIL: нет файла KOD — каталог perenos/ не собран или скопирован не целиком" >&2; exit 1; }
-  sed -n "s/^$1=//p" "$P/KOD"
+kv() {   # значение из VERSIYA (не «KOD»: на macOS имена без учёта регистра, рядом каталог kod/); stderr — чтобы было видно
+  [ -f "$P/VERSIYA" ] || { echo "FAIL: нет файла VERSIYA — каталог perenos/ не собран или скопирован не целиком" >&2; exit 1; }
+  sed -n "s/^$1=//p" "$P/VERSIYA"
 }
 
 KOD_SHA=$(kv tar_sha256)
@@ -53,7 +53,7 @@ okruzhenie() {   # данные — только perenos/data, кэши — pere
 
 kod_cel() {   # tar тот же, распакованный код не правился (Ж-131 п. 6)
   [ -f "$KOD_TAR" ] || fail "нет $KOD_TAR"
-  [ "$(sha_file "$KOD_TAR")" = "$KOD_SHA" ] || fail "sha256 $KOD_TAR ≠ KOD (tar_sha256) — код подменён или скопирован не целиком"
+  [ "$(sha_file "$KOD_TAR")" = "$KOD_SHA" ] || fail "sha256 $KOD_TAR ≠ VERSIYA (tar_sha256) — код подменён или скопирован не целиком"
   [ -d "$KOD_DIR" ] && [ -f "$KOD_SUMS" ] || fail "код не распакован — сначала ./razvernut.sh"
   sha_check "$KOD_DIR" "$KOD_SUMS" >/dev/null 2>&1 || fail "код в kod/$KOD_SHA изменён после распаковки — правка кода на сервере запрещена (Ж-131 п. 6); заново: ./razvernut.sh после удаления kod/"
   [ -z "$(find "$KOD_DIR" -perm -u+w -type f -print -quit)" ] || fail "в kod/$KOD_SHA есть файлы с правом записи — каталог кода только для чтения"

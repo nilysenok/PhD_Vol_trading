@@ -3,7 +3,7 @@
 #   scripts/server/sobrat_perenos.sh <коммит>
 # -> perenos/: kod_<коммит12>.tar.gz (git archive коммита: fastbt/, scripts/server/, env/requirements_server.txt, справочные
 #    csv ≤ 2021 из docs/issledovaniya/, которые читает fastbt; без data/),
-#    KOD (коммит, sha256 tar), requirements_server.txt, manifest_dannyh.tsv, data/ (файлы манифеста, sha256 сверены),
+#    VERSIYA (коммит, sha256 tar), requirements_server.txt, manifest_dannyh.tsv, data/ (файлы манифеста, sha256 сверены),
 #    kuby/ (yaml кубов из коммита), etalony_<коммит12>.npz (якорь A_fix + 200 точек, считается здесь из кода tar и data/),
 #    razvernut.sh, proverka_yakor.sh, zapusk_sobol.sh, zabrat.sh, obshchee.sh, manifest_proverka.py, versii.py,
 #    spisok_perenosa.txt (для rsync --files-from), SHA256SUMS (всё, кроме data/ — её сверяет манифест).
@@ -78,7 +78,7 @@ done
 slit=0
 git -C "$REPO" merge-base --is-ancestor "$FULL" origin/kanon-v22-pereschet 2>/dev/null && slit=1
 printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%s\nnakladka=%s\nsobran=%s\n' \
-  "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$NAKLADKA" "$(date '+%F %T %Z')" > "$OUT/KOD"
+  "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$NAKLADKA" "$(date '+%F %T %Z')" > "$OUT/VERSIYA"
 
 say "4/6 эталоны Мака: якорь A_fix × 6 Sk на train4 + ${PERENOS_ETALONY_TOCHEK:-200} точек (код tar, данные $OUT/data)"
 mkdir -p "$TMP/cache"

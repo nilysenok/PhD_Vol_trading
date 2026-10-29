@@ -27,13 +27,13 @@ fi
 grep -q '^OK versii' logs_versii.txt || fail "версии пакетов ≠ пинам Мака"
 
 say "4/5 код: kod_$KOD_SHORT.tar.gz -> kod/$KOD_SHA (только чтение)"
-[ "$(sha_file "$KOD_TAR")" = "$KOD_SHA" ] || fail "sha256 tar ≠ KOD"
+[ "$(sha_file "$KOD_TAR")" = "$KOD_SHA" ] || fail "sha256 tar ≠ VERSIYA"
 if [ ! -d "$KOD_DIR" ]; then
   tmp="$P/kod/.raspakovka_$$"
   mkdir -p "$tmp"
   tar -xzf "$KOD_TAR" -C "$tmp" --strip-components=1
   [ -z "$(find "$tmp" \( -path '*/data/*' -o -name '*test_locked*' -o -name '*test1_2022_2024*' \) -print -quit)" ] || fail "в tar кода есть data/ или test_locked"
-  nakl=$(kv nakladka)                   # файлы манифеста, которые fastbt читает от корня кода (KOD: nakladka)
+  nakl=$(kv nakladka)                   # файлы манифеста, которые fastbt читает от корня кода (VERSIYA: nakladka)
   if [ -n "$nakl" ]; then
     awk -F'\t' 'NR > 1 && NF { print (NF == 7 ? $6 : $1) }' "$MANIFEST" | { grep -E "$nakl" || true; } \
       | while IFS= read -r p; do mkdir -p "$tmp/$(dirname "$p")"; cp "data/$p" "$tmp/$p"; done
