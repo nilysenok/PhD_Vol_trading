@@ -1,16 +1,18 @@
 # реверс раунд 1, 2022–2024, справочно, без выбора; период test1
-# коммит: 9779eba67551666f1d8af75f3461bc9d9c48dc9a
-# вход: sigma_hyb_h1_dev.parquet sha256=1a7dc719a47cd2cf397a5607ec90acfb9ef91c8f2fb6846a02a6d76de7df856e
-# вход: sigma_hyb_h5_dev.parquet sha256=7e93596df54b70f04e435a4c37f420b4dfb6c7ed795077da44cc124d2ff9d938
-# вход: final_d0_s2emb_h1__t1.parquet sha256=3cea157e9de471499c07224df9fc2c23fea7f8e5acd2f0983ac4f950bdeb6571
-# вход: final_d0_s2emb_h5__t1.parquet sha256=e926e14c05ec1d3fbdbf1997e9b0c0c729268706951714185614407bb6d804da
-# вход: 2026-10-27_dividendy_2017_2021.csv sha256=02290a342410c98fef10c767703b7bc8fc570b5e52a657e27aa04465d89a06ba
-# вход: 2026-10-28_dividendy_2015_2016.csv sha256=87a7374d4bc9ac31da2a97853f5871166942bed7ff4677f83bf0a9bc3b95dbb0
-# вход: 2026-10-29_dividendy_2022_2024.csv sha256=c655d0d72152e117ed92527f903bca2aed2d801dfd83515490dae5ab10578478
+# коммит: 3ae97dae9bdf4f083fedc22b9c68f04026149af7
+# вход: data/regen/ch4_dev/sigma_hyb_h1_dev.parquet sha256=1a7dc719a47cd2cf397a5607ec90acfb9ef91c8f2fb6846a02a6d76de7df856e
+# вход: data/regen/ch4_dev/sigma_hyb_h5_dev.parquet sha256=7e93596df54b70f04e435a4c37f420b4dfb6c7ed795077da44cc124d2ff9d938
+# вход: data/regen/test1_2022_2024/regen/R2/final/final_d0_s2emb_h1__t1.parquet sha256=3cea157e9de471499c07224df9fc2c23fea7f8e5acd2f0983ac4f950bdeb6571
+# вход: data/regen/test1_2022_2024/regen/R2/final/final_d0_s2emb_h5__t1.parquet sha256=e926e14c05ec1d3fbdbf1997e9b0c0c729268706951714185614407bb6d804da
+# вход: data/regen/test1_2022_2024/daily/ohlcv_daily_1850.parquet sha256=46f0a652362015e8302f7dd034255588fa405a1ef6720180b70889fbb8378688
+# вход: data/regen/test1_2022_2024/imoex/IMOEX.parquet sha256=5ff7cd45b879d1fb7771bba6ac28661ed089696b5606e7d63e8a6564a42ba20f
+# вход: docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv sha256=02290a342410c98fef10c767703b7bc8fc570b5e52a657e27aa04465d89a06ba
+# вход: docs/issledovaniya/2026-10-28_dividendy_2015_2016.csv sha256=87a7374d4bc9ac31da2a97853f5871166942bed7ff4677f83bf0a9bc3b95dbb0
+# вход: docs/issledovaniya/2026-10-29_dividendy_2022_2024.csv sha256=c655d0d72152e117ed92527f903bca2aed2d801dfd83515490dae5ab10578478
+# вход: data/regen/test1_2022_2024/ch4_sigma/sigma_hyb_h1_dev.parquet sha256=4e5afc5c6fe44adc15f600710b2cce3b8286cc8ba8d63301acae899420008edc
+# вход: data/regen/test1_2022_2024/ch4_sigma/sigma_harj_b_h1_dev.parquet sha256=4adc6a77ca7f1ded5dc89c2c12e46761b7effd81c35fa0f7ebfce1f1bf016c76
+# вход: data/regen/test1_2022_2024/ch4_sigma/sigma_naive_dev.parquet sha256=685dc0a1f7078ef4374bd4b1c73958e173f992048c18007a593abaf7e64c9e8d
 # объект: A_zashch (s9), затвор σ̂ p67 поверх позиций A; плата за шорт 0; к2 20 повторов
-# вход: sigma_hyb_h1_dev.parquet sha256=4e5afc5c6fe44adc15f600710b2cce3b8286cc8ba8d63301acae899420008edc
-# вход: sigma_harj_b_h1_dev.parquet sha256=4adc6a77ca7f1ded5dc89c2c12e46761b7effd81c35fa0f7ebfce1f1bf016c76
-# вход: sigma_naive_dev.parquet sha256=685dc0a1f7078ef4374bd4b1c73958e173f992048c18007a593abaf7e64c9e8d
 stroka,tip,god,msr,sharpe,skew,kurt,dni_v_dele,d_msr_vs_baza,d_sharpe_vs_baza,n_k2,p_k2_msr,p_k2_sharpe,n_k2_konechnyh_msr,n_k2_konechnyh_sharpe,dolya_konechnyh_msr,dolya_konechnyh_msr_ned,sharpe_ned,sortino_ned,msr_ned,skew_ned,kurt_ned,n_nedel,msr_dn_opredelen
 A_zashch (s9) без затвора (база),baza,2022,-0.7346863321665115,-1.0316521211005965,-1.3966123434323727,33.06102729005599,234.0,,,,,,,,,,-1.2184112085540708,-1.2799013353275424,-0.6239851172569577,-1.0397520138888647,6.7803050554663695,49.0,True
 A_zashch (s9) без затвора (база),baza,2023,-0.3799126731216399,-0.642936482139735,-0.0854737399995344,0.8605659399232177,254.0,,,,,,,,,,-0.5822489092444145,-0.9707692503700354,-0.35355768310302244,0.2646709193007016,0.11613032817536872,52.0,True
