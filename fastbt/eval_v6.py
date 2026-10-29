@@ -44,6 +44,7 @@ class IstochnikiV6:
     cbr: pd.DataFrame | None = None
     div: pd.DataFrame | None = None
     div_verified: bool = False
+    rel_progrev: bool = False      # дни сетки до первого дня td_rel (нет 10-минуток) — NaN, а не отказ (istochniki_v6 ставит True)
 
 
 def razdelit(sid: str, pt: dict) -> tuple[dict, dict]:
@@ -80,7 +81,7 @@ class EvaluatorV6(EvaluatorV5):
         if rs == "syroy":
             return td, ind
         if (t, rs) not in self._rel:
-            self._rel[t, rs] = rel_td_ind(self._need("rel", "rel_signal")(t, rs), td)
+            self._rel[t, rs] = rel_td_ind(self._need("rel", "rel_signal")(t, rs), td, self.ist.rel_progrev)
         return self._rel[t, rs]
 
     def _blok(self, t, td) -> np.ndarray:
