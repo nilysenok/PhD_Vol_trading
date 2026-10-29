@@ -72,6 +72,52 @@ def traektorii(L, r: int, seed: int = SEED, mnozh: int = MNOZH) -> tuple[np.ndar
     return indeks(J[keep], L).astype(np.int16), poryadok[keep]
 
 
+def traektorii_kanon(L, r: int, klyuch, seed: int = SEED, mnozh: int = MNOZH, popytok: int = 500) -> tuple[np.ndarray, np.ndarray]:
+    """Траектории только по каноническим точкам: klyuch(индексы tuple) → ключ канона или None (точка недопустима).
+
+    Правило (детерминировано seed): отбор Кампалонго — как в `traektorii`, затем починка каждой траектории по порядку осей.
+    Старт None → заменяется случайной допустимой точкой (до `popytok` попыток, иначе ValueError).
+    Шаг оси a из текущей точки x: кандидаты — предложенный индекс (из исходной траектории), затем остальные индексы оси в порядке
+    перестановки seed. Берётся первый кандидат с каноном не None и ключом ≠ ключа x (активный шаг); нет такого — предложенный,
+    если канонический (шаг неактивен: ключ тот же); иначе ось в этой траектории пропускается (точка повторяется, шаг не активен,
+    эффект NaN). Шаг на альтернативный уровень может быть не на 2/3, в единицах Шарпа это не важно (на Δ не делим)."""
+    I, por = traektorii(L, r, seed, mnozh)
+    Ln, rng, kl = np.asarray(L), np.random.default_rng([seed, 1]), {}
+
+    def key(x):
+        t = tuple(int(i) for i in x)
+        if t not in kl:
+            kl[t] = klyuch(t)
+        return kl[t]
+
+    for m in range(r):
+        x = I[m, 0].astype(np.int64)
+        for _ in range(popytok if key(x) is None else 0):
+            x = rng.integers(0, Ln)
+            if key(x) is not None:
+                break
+        if key(x) is None:
+            raise ValueError(f"траектория {m}: нет допустимой стартовой точки за {popytok} попыток")
+        I[m, 0], pred = x, I[m].copy()
+        for t in range(1, I.shape[1]):
+            a, kx, zapas = por[m, t - 1], key(x), None
+            ost = [v for v in rng.permutation(Ln[a]) if v not in (x[a], pred[t, a])]
+            for v in ([int(pred[t, a])] if pred[t, a] != x[a] else []) + ost:
+                y = x.copy()
+                y[a] = v
+                ky = key(y)
+                if ky is None:
+                    continue
+                if ky != kx:
+                    x = y
+                    break
+                zapas = y if zapas is None else zapas
+            else:
+                x = x if zapas is None else zapas
+            I[m, t] = x
+    return I, por
+
+
 def effekty(Y: np.ndarray, keys: np.ndarray, poryadok: np.ndarray) -> np.ndarray:
     """Элементарные эффекты (r, k): ΔY шага, меняющего ось; NaN, где шаг не активен (ключ тот же) или нет Y у одной из точек."""
     Y = np.asarray(Y, dtype=np.float64)
