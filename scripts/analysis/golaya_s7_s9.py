@@ -23,6 +23,13 @@ SEKTORY = ROOT / "docs" / "issledovaniya" / "2026-10-27_sektory.csv"
 POVTOROV, SEED = 20, 20261028
 
 
+def chitat_imoex() -> pd.DataFrame:
+    """Дневной IMOEX (индекс TRADEDATE, колонки OPEN, CLOSE): csv ISS по пути IMOEX или готовый DataFrame (test1, Z2)."""
+    if isinstance(IMOEX, pd.DataFrame):
+        return IMOEX[["OPEN", "CLOSE"]].copy()
+    return pd.read_csv(IMOEX, usecols=["TRADEDATE", "OPEN", "CLOSE"], parse_dates=["TRADEDATE"]).set_index("TRADEDATE")
+
+
 def zagruzit() -> dict:
     """close/open 10:00/дивиденд по тикерам из 10-минуток до 2019-12-31; сигналы — на ряду с поправкой на дивиденд."""
     src = Path(d18.default_main()) / "moex_discovery" / "data" / "raw" / "candles_10m"
@@ -38,7 +45,7 @@ def zagruzit() -> dict:
         op[t] = b10.groupby(b10["timestamp"].dt.normalize())["open"].first()
     c = pd.DataFrame(cl)[TICKERS]
     c = c[c.notna().sum(axis=1) >= 8]
-    im = pd.read_csv(IMOEX, usecols=["TRADEDATE", "OPEN", "CLOSE"], parse_dates=["TRADEDATE"]).set_index("TRADEDATE")
+    im = chitat_imoex()
     im = im[im.index < END].reindex(c.index)
     return dict(c=c, o=pd.DataFrame(op)[TICKERS].reindex(c.index), d=pd.DataFrame(dv)[TICKERS].reindex(c.index).fillna(0.0), im=im)
 
