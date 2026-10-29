@@ -14,11 +14,12 @@ from math import e, sqrt
 from statistics import NormalDist
 
 import numpy as np
+import pandas as pd
 
 from fastbt.s9 import sharpe  # SR годовой = mean/sd(ddof=1)·√252
 
 __all__ = ["sharpe", "sr_dnevnoy", "asimmetriya", "ekscess", "msr", "sortino_e", "kapital",
-           "mdd", "kalmar", "omega", "fko_dolya", "psr", "sr_zvezda", "dsr", "dsr_iz_setki"]
+           "nedelnye_summy", "metriki_ned", "stroka_ned", "mdd", "kalmar", "omega", "fko_dolya", "psr", "sr_zvezda", "dsr", "dsr_iz_setki"]
 
 GAMMA = 0.5772
 _N = NormalDist()
@@ -52,24 +53,56 @@ def ekscess(r) -> float:
     return float(np.mean(d**4) / m2**2 - 3.0) if m2 > 1e-24 else 0.0
 
 
-def msr(r) -> float:
-    """mSR Фавра–Галеано: mean·252 / mVaR₉₅, mVaR₉₅ = −(mean + z_cf·sd)·√252. nan при mVaR ≤ 0."""
+def msr(r, g: int = 252) -> float:
+    """mSR Фавра–Галеано: mean·g / mVaR₉₅, mVaR₉₅ = −(mean + z_cf·sd)·√g. nan при mVaR ≤ 0.
+    g — число периодов в году: 252 (дневной ряд, по умолчанию) или 52 (недельный, Ж-124 п. 3)."""
     x = _x(r)
     m, sd, s, k, z = x.mean(), np.std(x, ddof=1), asimmetriya(x), ekscess(x), Z95
     zcf = z + (z**2 - 1) * s / 6 + (z**3 - 3 * z) * k / 24 - (2 * z**3 - 5 * z) * s**2 / 36
-    mvar = -(m + zcf * sd) * sqrt(252)
-    return float(m * 252 / mvar) if mvar > 1e-12 else float("nan")
+    mvar = -(m + zcf * sd) * sqrt(g)
+    return float(m * g / mvar) if mvar > 1e-12 else float("nan")
 
 
-def sortino_e(r) -> float:
-    """Сортино по §6: mean·252 / (sd отрицательных r, ddof=1 · √252).
+def sortino_e(r, g: int = 252) -> float:
+    """Сортино по §6: mean·g / (sd отрицательных r, ddof=1 · √g); g = 252 (дневной) или 52 (недельный).
     Отличие от msp.metrics: там sd берётся по отрицательным ПОЛНЫМ доходностям, а не по избыточным r."""
     x = _x(r)
     neg = x[x < 0]
     if len(neg) < 2:
         return float("nan")
-    d = np.std(neg, ddof=1) * sqrt(252)
-    return float(np.mean(x) * 252 / d) if d > 1e-12 else float("nan")
+    d = np.std(neg, ddof=1) * sqrt(g)
+    return float(np.mean(x) * g / d) if d > 1e-12 else float("nan")
+
+
+NED = 52        # недель в году: годовая шкала недельных метрик (Ж-124 п. 3)
+KOLONKI_NED = ("sharpe_ned", "sortino_ned", "msr_ned", "skew_ned", "kurt_ned", "n_nedel", "msr_dn_opredelen")
+
+
+def nedelnye_summy(r, daty) -> np.ndarray:
+    """Недельная избыточная доходность = сумма дневных за торговые дни недели W-FRI (неполные края входят, пустых недель нет)."""
+    idx = pd.DatetimeIndex(np.asarray(daty).astype("datetime64[D]"))
+    s = pd.Series(_x(r), index=idx).sort_index()
+    return s.groupby(s.index.to_period("W-FRI")).sum().to_numpy()
+
+
+def metriki_ned(r, daty) -> dict:
+    """Sharpe, Sortino, mSR (√52, правило области как у дневного: вне области nan), skew, kurt и число недель по недельным суммам."""
+    w = nedelnye_summy(r, daty)
+    if len(w) < 3:
+        return dict(sharpe_ned=np.nan, sortino_ned=np.nan, msr_ned=np.nan, skew_ned=np.nan, kurt_ned=np.nan, n_nedel=len(w))
+    return dict(sharpe_ned=float(sr_dnevnoy(w) * sqrt(NED)), sortino_ned=sortino_e(w, NED), msr_ned=msr(w, NED),
+                skew_ned=asimmetriya(w), kurt_ned=ekscess(w), n_nedel=len(w))
+
+
+def stroka_ned(x, daty, hvost: str | None = None, plata: float = 0.0, baza=0.0) -> dict:
+    """Недельные колонки строки таблицы; отбор дней — как в scripts/analysis/dve_metriki_a.stroka (плата за заём, hvost 'hud'/'luch').
+    msr_dn_opredelen — определён ли дневной mSR на тех же днях (True/False)."""
+    x = _x(x) - plata * _x(baza)
+    keep = np.ones(len(x), bool)
+    if hvost:
+        keep[np.argsort(x)[:10] if hvost == "hud" else np.argsort(x)[-10:]] = False
+    xs = x[keep]
+    return dict(**metriki_ned(xs, np.asarray(daty)[keep]), msr_dn_opredelen=bool(np.isfinite(msr(xs))))
 
 
 def kapital(r) -> np.ndarray:

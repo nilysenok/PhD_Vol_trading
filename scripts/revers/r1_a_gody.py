@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "analysis"))
 sys.path.insert(0, str(ROOT / "scripts" / "revers"))
-from fastbt import a_strogaya as AS, zona  # noqa: E402
+from fastbt import a_strogaya as AS, metriki_e as me, zona  # noqa: E402
 import dve_metriki_a as D  # noqa: E402
 import r1_a  # noqa: E402
 
@@ -53,11 +53,13 @@ def stroki_portfelya(imya: str, a: dict, per: str) -> list:
         xp = a["x"] - plata * a["baza"]
         kontrol_summy(xp, a["dates"], per)
         rows.append(dict(portfel=imya, stroka="(а) полные", plata_zaem=plata,
-                         **D.stroka(a["x"], a["delo"], None, plata, a["baza"])))
+                         **D.stroka(a["x"], a["delo"], None, plata, a["baza"]),
+                         **me.stroka_ned(a["x"], a["dates"], None, plata, a["baza"])))      # + недельные (Ж-124 п. 3)
         for y in GODY[per]:
             m = god == y
             rows.append(dict(portfel=imya, stroka=f"по году {y}", plata_zaem=plata,
-                             **D.stroka(a["x"][m], a["delo"][m], None, plata, a["baza"][m])))
+                             **D.stroka(a["x"][m], a["delo"][m], None, plata, a["baza"][m]),
+                             **me.stroka_ned(a["x"][m], np.asarray(a["dates"])[m], None, plata, a["baza"][m])))
     return rows
 
 
