@@ -1,0 +1,85 @@
+# Куб отбора v5, S1 MeanRev (Ж-127 п. 2; docs/otchety/2026-10-29_setka_v5.md §1, §2.3; README этого каталога). Коммитится до счёта
+# (otbor_statistika.md п. 1). Порядок осей (signal, filtr, vhod, vyhod) = размерности Соболя; порядок значений = соседство для плато.
+# Значения — zh126 (fastbt/designs/zh126/zh126_S1.yaml, zh126_obshchee.yaml) + §1; где zh126 шире §1 — zh126 (README «Сверка»).
+# Канон и свёртки — fastbt/canon_v5.py; объём номинальный и после свёрток — `python3 -I fastbt/canon_v5.py`.
+# Решения (класс B дирижёра, 29.10; Ъ владельца — Ж-129):
+#  (1) fdr: t0d — основной режим новых сеток (fastbt/fdr.py:9 OSNOVNOY, Ж-111 п. 12); README пишет «t0», это то же правило.
+#  (2) оси zh047 закреплены (yakorya_progon) и в N не входят — Ъ Ж-129 (4).
+#  (3) уровень размера 1–50 % — слой портфеля, не куб; в кубе — тип размера (по σ) и сила сигнала — Ъ Ж-129 (5).
+#  (4) N1 = 32 768 на стратегию (§2.3); seed и seed2 объявлены здесь; второй seed — проход устойчивости (Ж-130).
+#  (5) Ъ Ж-129 (6): fixed_atr = chandelier — одна ось: значения chand:k свёрнуты в atr:k; безубыток — от ATR входа.
+# ↺ — hurst_th, slope_max не в кубе: fastbt/signals/v5_filtr.py их не считает (оценщик молча игнорировал бы ось) · откат: добавить
+#   после реализации в v5_filtr расширением сетки с датой, N обновить (29.10).
+# ↺ — безубыток в σ снят: Ж-129 (6) «безубыток — от ATR входа»; ed_s у стопа и безубытка общий (exec_e_types.py), поэтому
+#   bezubytok atr:k допустим только при stop_nach atr:k, rang:c — при стопе σ или ATR (иначе точка выбрасывается в canon_v5)
+#   · откат: вернуть sigma:0,5…2 в bezubytok (29.10).
+v: 3
+format: progon-kub
+setka: v5
+sid: S1
+tip: kontr
+period: train4                 # первый проход; второй — v2 (В2, Ж-113: 2015–2019, прогрев с 06.2014) — тот же куб, свой период ledger
+periody: [train4, v2]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261030, seed2: 20261031, scramble: true, N1: 32768}
+istochniki: {zh126: fastbt/designs/zh126/zh126_S1.yaml, v4: c22a4b36, r: 6a7a4636, setka: docs/otchety/2026-10-29_setka_v5.md}
+zakrepleno: {tf: den, proverka: bars5m}      # ось tf (#593) — отдельный проход позже; заявки внутри дня — по 5-мин барам
+
+signal:
+  ma_tip:    {setka: [sma, ema, wma, hma, dema, tema, kama]}               # zh126 6 + tema (расширение Ж-125 п. 1); hull = hma
+  ma_window: {setka: [3, 5, 7, 10, 12, 15, 18, 20, 25, 30, 35, 40, 50, 60, 80, 100, 120, 150, 200]}
+  dev_tip:   {setka: [std, atr]}
+  z_entry:   {setka: [0.3, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0]}   # zh126: 2 × 13 = 26 ≥ §1 23
+  z_exit:    {setka: [net, 0.3, 0.5, 0.7]}                                 # v4 strategies_walkforward.py:79; net — выход только по РМ
+
+filtr:
+  adx_th:      {setka: [0, 15, 20, 25, 30, 35, 40], yakor: 0}
+  atr_lo:      {setka: [0, 5, 10, 15, 20, 25], yakor: 0}
+  vol_th:      {setka: [0, 0.5, 0.7, 1.0, 1.2, 1.5], yakor: 0}
+  rsi_th:      {setka: [0, 20, 25, 30, 35, 40], yakor: 0}
+  mom_n:       {setka: [0, 1, 2, 3, 5, 7, 10], yakor: 0}
+  dow:         {setka: [0, 1, 2, 3], yakor: 0}
+  squeeze_pct: {setka: [0, 25, 40, 50, 60], yakor: 0}
+
+vhod:
+  k_e:     {setka: [0, 0.25, 0.5, 0.75, 1.0, 1.5], yakor: 0}               # лимит L = P·(1 − k_e·σ̂), Ж-111 п. 1
+  T:       {setka: [1, 2, 3, 5], yakor: 1}
+  reentry: {setka: [net, da], yakor: net}
+
+vyhod:
+  stop_nach:    {setka: [pct:0.003, pct:0.005, pct:0.01, pct:0.015, pct:0.02, pct:0.03, pct:0.05, pct:0.07, pct:0.1,
+                         atr:0.5, atr:0.75, atr:1.0, atr:1.5, atr:2.0, atr:2.5, atr:3.0, atr:4.0, atr:5.0, atr:6.0, atr:8.0,
+                         sigma:1.0, sigma:1.5, sigma:2.0, sigma:2.5, sigma:3.0, sigma:4.0], yakor: sigma:2.0}
+  tejk:         {setka: [net, rr:0.5, rr:1.0, rr:1.5, rr:2.0, rr:2.5, rr:3.0, rr:4.0,
+                         pct:0.003, pct:0.005, pct:0.01, pct:0.02, pct:0.03, pct:0.05, pct:0.07, pct:0.1, pct:0.15,
+                         atr:0.5, atr:1.0, atr:1.5, atr:2.0, atr:3.0, atr:4.0, atr:5.0, atr:8.0, atr:10.0, rodnoy,
+                         sigh:0.5, sigh:1.0, sigh:1.5, sigh:2.0, sigh:3.0, sila:0.5:1, sila:1:1, sila:0.5:2, sila:1:2], yakor: net}
+  trail:        {setka: [net, atr:0.5, atr:1.0, atr:1.5, atr:2.0, atr:2.5, atr:3.0, atr:4.0, atr:5.0,
+                         sigma:1.0, sigma:1.5, sigma:2.0, sigma:3.0, step:0.5, step:1.0], yakor: net}
+  bezubytok:    {setka: [net, atr:0.5, atr:1.0, atr:1.5, atr:2.0, rang:1, rang:2, rang:3], yakor: net}
+  stop_v_plyus: {setka: [net, "1.5:0.5", "2:1", "3:1.5"], yakor: net}
+  tau:          {setka: [3, 5, 7, 10, 15, 20, 30, 50, 100, 200, net], yakor: net}
+  chast:        {setka: [net, "1/3:1", "1/3:1.5", "1/3:2", "1/2:1", "1/2:1.5", "1/2:2"], yakor: net}
+  pir:          {setka: [0, 0.5, 1], yakor: 0}
+  smena:        {setka: [da, net], yakor: da}
+  razmer_tip:   {setka: [ravnyj, risk_sigma], yakor: ravnyj}               # уровень (1–50 %, ρ) — слой портфеля, Ж-129 (5)
+  m_sily:       {setka: ["1", lin, kvadr], yakor: "1"}
+  rang_tip:     {setka: [tikernyj, obshchiy, srednee], yakor: tikernyj}
+
+# к3 (Ж-130): проход «только оси v4» — оси вне списка стоят на yakor, у осей списка — подмножество значений v4.
+k3:
+  ma_tip: [sma]
+  dev_tip: [std]
+  z_entry: [1.0, 1.5, 2.0, 2.5, 3.0]
+  z_exit: [0.3, 0.5, 0.7]
+  ma_window: [10, 12, 15, 18, 20, 25, 30]
+  stop_nach: [atr:1.0, atr:1.5, atr:2.0, atr:2.5, atr:3.0]
+  tejk: [net, atr:1.0, atr:2.0, atr:3.0, atr:4.0]
+  tau: [5, 10, 20, net]
+
+faza3: {consec: [1, 2], min_hold: [0, 5], cooldown: [0, 5, 10], min_sily: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
+msp: {uroven_razmera: [0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5],
+      rho: [0.002, 0.003, 0.005, 0.0075, 0.01], L: [1, 1.5, 2, 3, 4], sigma_cel: [0.08, 0.1, 0.15, 0.2], okno: [21, 63]}
+yakorya_progon: {sigma: rv22, proverka: bars5m, storona: obe, rezhim: net, ed_lim: sigma, zhizn: den, lestnica: net, gap: vhod,
+                 t_vyhod: close, k_x: net, filtr: net, tejk_signal: net, q_sily: 0.0}
