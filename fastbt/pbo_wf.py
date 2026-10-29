@@ -67,6 +67,22 @@ def vybor_argmax(sh_is: np.ndarray, blocks_is: tuple):
     return [int(np.argmax(sh_is))]
 
 
+def pravilo_procedury(sosedi: list, *, top_f1: int = 50, top_f2: int = 20, ens_k: int = 10, min_nb: int = 3):
+    """Правило выбора процедуры калибровки (Ж-080; `kalibr_v5.faza1…god`), без голосования; параметры — не константы кода.
+    sosedi[j] — индексы посчитанных соседей ±1 точки j (по осям с эффектом; строит вызывающий).
+    1. Ворота: Шарп in-sample > 0 (MDD и экспозиция из сумм Шарпа не видны — ↺ в описании PR); никто не прошёл — top ens_k по Шарпу.
+    2. top_f1 по Шарпу. 3. Плато = среднее Шарпа точки и её соседей (`sweep_plato.plateau_value`); соседей < min_nb — край,
+    не берётся; top_f2 по плато. 4. Фаза 3 — тождество: ens_k лучших по Шарпу; ансамбль — равный вес."""
+    def vybor(sh_is: np.ndarray, blocks_is: tuple):
+        order = lambda ids, key: sorted(ids, key=lambda i: (-key(i), i))        # noqa: E731  ничья — меньший индекс
+        ok = [i for i in range(len(sh_is)) if sh_is[i] > 0] or order(range(len(sh_is)), lambda i: sh_is[i])[:ens_k]
+        t1 = order(ok, lambda i: sh_is[i])[:top_f1]
+        plato = {i: float(np.mean([sh_is[i]] + [sh_is[j] for j in sosedi[i]])) for i in t1 if len(sosedi[i]) >= min_nb}
+        t2 = order(plato, lambda i: plato[i])[:top_f2]
+        return order(t2, lambda i: sh_is[i])[:ens_k] or None
+    return vybor
+
+
 def cscv_wf(Sb: np.ndarray, Qb: np.ndarray, nbb: np.ndarray, vybor: Callable) -> dict:
     """PBO по 252 разбиениям. Меньше 2 точек — pbo = nan. vybor вернул None — разбиение пропущено (n_propusk)."""
     P = Sb.shape[0]
