@@ -121,7 +121,23 @@ def register(fam: Family) -> Family:
     return fam
 
 
-def get_family(sid: str) -> Family:
+_REGISTRY_V5: Dict[str, object] = {}   # сетка v5 (Ж-127): семьи регистрируются отдельно от v4
+_SETKI = {"v4": _REGISTRY, "v5": _REGISTRY_V5}
+
+
+def register_family(sid: str, fn, setka: str = "v4"):
+    """Зарегистрировать семью сетки `setka` ("v4" — как `register`, но без Family-обёртки; "v5" — отдельный реестр)."""
+    if setka not in _SETKI:
+        raise KeyError(f"setka: {setka!r}")
+    _SETKI[setka][sid] = fn
+    return fn
+
+
+def get_family(sid: str, setka: str = "v4"):
+    if setka != "v4":
+        if setka not in _SETKI:
+            raise KeyError(f"setka: {setka!r}")
+        return _SETKI[setka][sid]   # v5 импортируется владельцем модуля заранее; KeyError — если не зарегистрирована
     if sid not in _REGISTRY:
         import importlib
         importlib.import_module(f"fastbt.signals.{sid.lower()}")
