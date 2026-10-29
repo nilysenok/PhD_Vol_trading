@@ -38,14 +38,12 @@ def test_kontrol_bez_chandelier_vyhod_v_predelah_bara():
     assert len(x.trades) == 1 and not _vne_bara(x.trades, H, L)
 
 
-@pytest.mark.xfail(strict=True, reason="БЛОКЕР #596: стоп Chandelier в баре входа исполняется по S выше high бара")
 def test_chandelier_v_bare_vhoda_ne_vyhodit_vyshe_high():
     """Лимит 99,75 исполнен в баре 4 (low 99,5); Chandelier = 110 − 3·1 = 107 > high 100,5. Цена выхода обязана быть в баре."""
     x = X.sessiya("SYN", O, H, L, C, SOST, SIGMA, X.PARAMS, ATR)
     assert not _vne_bara(x.trades, H, L), [(t.entry_px, t.exit_px, t.reason) for t in x.trades]
 
 
-@pytest.mark.xfail(strict=True, reason="БЛОКЕР #596: стоп выше входа в баре входа даёт лонгу прибыль из ничего")
 def test_stop_v_bare_vhoda_ne_daet_pribyli():
     """Стоп (любого вида), сработавший в баре входа, не может закрыть лонг дороже цены входа: брутто ≤ 0."""
     x = X.sessiya("SYN", O, H, L, C, SOST, SIGMA, X.PARAMS, ATR)
@@ -67,7 +65,6 @@ def _rw_sessii(seed: int, n_ses: int = 300, n_bar: int = 9, sub: int = 6):
         yield o, h, lo, c, st
 
 
-@pytest.mark.xfail(strict=True, reason="БЛОКЕР #596: на случайном блуждании есть выходы вне [low; high] бара")
 def test_sluchaynoe_bluzhdanie_vyhody_v_predelah_bara():
     """Случайное блуждание (знания нет): ни одна сделка не выходит по цене, которой не было в баре выхода."""
     plohie, vse = 0, 0

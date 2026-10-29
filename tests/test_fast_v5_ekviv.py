@@ -60,11 +60,31 @@ def sintetika(seed: int) -> tuple:
     return days, sig, sigma, (close if rng.random() < 0.7 else None), (div if rng.random() < 0.5 else None)
 
 
+VNE: list = []      # исполнения эталона вне [low; high] своего бара (БЛОКЕР #596), копятся в sverit
+
+
+def _vne_bara(days, close, p, trades) -> list:
+    """Инвариант: цена входа и выхода эталона — в [low; high] своего бара; close дня (Н6) — цена рынка; zakrytie — диапазон дня."""
+    out = []
+    for t in trades:
+        for den, bar, px in ((t.entry_day, t.entry_bar, t.entry_px), (t.exit_day, t.exit_bar, t.exit_px)):
+            if den is None:
+                continue
+            d, b = days[den], min(bar, len(days[den].c) - 1)
+            if px == (close[den] if close is not None else d.c[-1]):
+                continue
+            lo, hi = (d.l.min(), d.h.max()) if p.check == "zakrytie" else (d.l[b], d.h[b])
+            if not (lo - 1e-9 * lo <= px <= hi + 1e-9 * hi):
+                out.append((den, bar, px, lo, hi))
+    return out
+
+
 def sverit(days, sig, sigma, p, close, div, run_ref=None) -> bool:
-    """True — эталон и быстрый слой равны побайтно (или оба отказали тем же текстом)."""
+    """True — эталон и быстрый слой равны побайтно (или оба отказали тем же текстом). Нарушения инварианта эталона — в VNE."""
     ref = run_ref or exec_e.run
     try:
         a = ref("T", days, sig, sigma, p, close=close, div=div)
+        VNE.extend(_vne_bara(days, close, p, a.trades))
     except ValueError as e:
         with pytest.raises(ValueError) as ei:
             fast_etap1.run("T", days, sig, sigma, p, close=close, div=div)
@@ -79,6 +99,7 @@ def sverit(days, sig, sigma, p, close, div, run_ref=None) -> bool:
 
 def test_sintetika_bystryj_ravno_etalonu_po_osyam():
     plokho, deistvuet = [], {"atr_s": 0, "pct_s": 0, "atr_t": 0, "pct_t": 0, "chand": 0}
+    VNE.clear()
     for i in range(N_PT):
         p = tochka(i, tick=0.01)
         assert not fast_etap1._slow_only(p, None), p           # ось перенесена: точка идёт быстрым путём
@@ -88,6 +109,7 @@ def test_sintetika_bystryj_ravno_etalonu_po_osyam():
                 plokho.append((i, t))
             _deistvie(deistvuet, days, sig, sigma, p, close, div)
     assert not plokho, plokho[:10]
+    assert not VNE, (len(VNE), VNE[:5])                                 # БЛОКЕР #596: исполнения эталона в [low; high] бара
     assert all(v >= 30 for v in deistvuet.values()), deistvuet      # ось реально меняет ленту (не «ничего не делает»)
 
 
@@ -147,7 +169,8 @@ def _real_tochka(i: int) -> list:
         n = len(days)
         sig = np.repeat(rng.choice([-1, 0, 1], n // 5 + 1), 5)[:n].astype(float)
         div = np.where(rng.random(n) < 0.004, rng.uniform(0.5, 3.0, n), 0.0)
-        out.append((i, t, not fast_etap1._slow_only(p, None), sverit(days, sig, sigma, p, None, div)))
+        n0 = len(VNE)
+        out.append((i, t, not fast_etap1._slow_only(p, None), sverit(days, sig, sigma, p, None, div), len(VNE) - n0))
     return out
 
 
@@ -159,8 +182,10 @@ def test_realnye_bary_train4_bystryj_ravno_etalonu(realnye):
         rows = [r for part in pool.map(_real_tochka, range(N_REAL), chunksize=10) for r in part]
     assert len(rows) == N_REAL * len(TIKERY)
     assert all(r[2] for r in rows), "точка осей Л5 ушла на медленный путь"
-    plokho = [(i, t) for i, t, _, ok in rows if not ok]
+    plokho = [(i, t) for i, t, _, ok, _ in rows if not ok]
     assert not plokho, plokho[:10]
+    vne = [(i, t, n) for i, t, _, _, n in rows if n]                   # БЛОКЕР #596: исполнения эталона вне [low; high] бара
+    assert not vne, (len(vne), vne[:5])
     assert sum(osi_real(i)[2] for i in range(N_REAL)) >= 200 and sum(osi_real(i)[1] != "sigma" for i in range(N_REAL)) >= 200
 
 
