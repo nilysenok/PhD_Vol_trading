@@ -73,10 +73,12 @@ def proverit_v5(c: dict, rz: Rezhim) -> None:
 
 
 def proverit_ledger(rz: Rezhim, v: str) -> None:
-    """ledger 2.1 режет кварталы только 2016–2019 (ledger_v2.GODY): v2 (2015–2019) в 2.1 — отказ до старта, а не в процессе."""
-    if v == lm.V21 and not set(range(int(OKNO[rz.period][0][:4]), 2020)) <= set(lm.GODY):
-        raise SystemExit(f"ledger 2.1 считает кварталы {lm.GODY[0]}–{lm.GODY[-1]}, период {rz.period} шире — "
-                         "--ledger 2.0 или расширение ledger_v2 (вне Л10) — отказ")
+    """ledger 2.1 режет кварталы по годам периода (ledger_v2.gody_perioda: train4 2016–2019, v2 2015–2019);
+    окно периода шире годов ledger — отказ до старта, а не в процессе."""
+    gody = lm.gody_perioda(rz.period)
+    if v == lm.V21 and not set(range(int(OKNO[rz.period][0][:4]), 2020)) <= set(gody):
+        raise SystemExit(f"ledger 2.1 считает кварталы {gody[0]}–{gody[-1]}, период {rz.period} шире — "
+                         "--ledger 2.0 или расширение ledger_v2 — отказ")
 
 
 def proverit_kub(c: dict) -> None:

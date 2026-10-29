@@ -53,9 +53,9 @@ def zapisat(root, sid="S1", v21=False, seed=1, klyuch="seed", k3=False, surf=okn
     w = lm.Pisatel21(root, sid, 0, man, daty=DATY, poz=True) if v21 else lm.Pisatel(root, sid, 0, man)
     oni, nul = np.ones(DATY.size), np.zeros(DATY.size)
     poz = (oni, np.tile(oni, (lm.NTIK, 1)), nul, np.tile(nul, (lm.NTIK, 1)))      # |позиция| = 1: экспозиция 100 %
-    for pt, x in zip(tochki(), ryady(surf, surf_t, seed)):
+    for i, (pt, x) in enumerate(zip(tochki(), ryady(surf, surf_t, seed))):
         kl = lm.klyuch(sid, pt, "train4", 0.0004, None)
-        row = {"status": "ok", "v": lm.V21 if v21 else lm.V, "klyuch": kl, "klyuch_sha": lm.klyuch_sha(kl, "k", "v"),
+        row = {"status": "ok", "sobol_i": i, "v": lm.V21 if v21 else lm.V, "klyuch": kl, "klyuch_sha": lm.klyuch_sha(kl, "k", "v"),
                "kod": "k", "vhody": "v", "by_year": {}, "by_quarter": {}}
         w.add(row, x, np.tile(x, (lm.NTIK, 1)), *([poz] if v21 else []))
     w.close()
@@ -145,7 +145,7 @@ def test_g4_ledger_21_chitaetsya_i_20_tozhe(tmp_path):
     out = SV.svod(tmp_path, tmp_path / "out", OSI_S, NSH)                # оба ledger — одним вызовом
     _, okn = chitat(tmp_path / "out" / "okna_ledger21.csv")
     _, kal = chitat(tmp_path / "out" / "kalibr_top10.csv")
-    assert len(okn) == 30 and {r["prohod"] for r in okn} == {"S1|train4|v5|seed"} and len(kal) == 3 * 17 * 10 and len(out) == 4
+    assert len(okn) == 30 and {r["prohod"] for r in okn} == {"S1|train4|v5|seed"} and len(kal) == 3 * 17 * 10 and len(out) == 5
 
 
 def test_g5_shapka_status_kod_hash(vozvrat, tmp_path):
@@ -171,4 +171,4 @@ def test_seed2_rashozhdenie_po_godam(vozvrat, tmp_path):
 
 def test_pustoj_vozvrat_dayot_pustye_tablicy(tmp_path):
     paths = SV.svod(tmp_path / "net", tmp_path / "out", OSI_S, NSH)
-    assert len(paths) == 4 and all(len(chitat(p)[1]) == 0 for p in paths)
+    assert len(paths) == 5 and all(len(chitat(p)[1]) == 0 for p in paths)
