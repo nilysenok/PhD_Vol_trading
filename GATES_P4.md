@@ -13,7 +13,7 @@ EVIDENCE: `tests/test_fast_v5_ekviv.py -q -k "not realnye"` → `6 passed, 1 des
 G2. Реальные 5-мин бары train4 (2016–2019; AFLT, SBER, LKOH): то же, 300 точек × 3 тикера (на ось ed_s 300, ed_t 200, chand 200).
 CHECK: `ENV python3 -m pytest tests/test_fast_v5_ekviv.py -q -k realnye`
 EXPECT: passed
-EVIDENCE: `201.43s call tests/test_fast_v5_ekviv.py::test_realnye_bary_train4_bystryj_ravno_etalonu`; прогон с test_fast_etap1_equiv.py → `19 passed in 296.30s`
+EVIDENCE: `201.43s call tests/test_fast_v5_ekviv.py::test_realnye_bary_train4_bystryj_ravno_etalonu`; прогон с test_fast_etap1_equiv.py → `19 passed in 296.30s`. После перевода на 4 процесса fork (лимит хука Stop 300 с), без ENV (бары — из основной копии на чтение): `pytest tests/test_fast_v5_ekviv.py tests/test_fast_etap1_equiv.py tests/test_fast_etap1_smoke.py` → `464 passed in 147.65s`, реальные бары `55.56s`
 
 G3. #488: режим, неизвестный быстрому слою (поле Params вне FAST_POLYA, новое поле подкласса, неизвестное значение f/s/ed, лишний вход run), уходит на медленный путь; мутация «прежний список исключений» ловится.
 CHECK: `python3 -m pytest tests/test_fast_v5_ekviv.py -q -k "neizvestn or mutaciya"`

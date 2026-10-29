@@ -107,9 +107,12 @@ def _deistvie(cnt, days, sig, sigma, p, close, div):
 
 
 # --- реальные бары train4 (≤ 2019) ---
+OSN_BARS1M = Path("/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/D25/bars1m")   # основная копия, только чтение
+
+
 def _realnye(t: str) -> tuple:
     from fastbt import bars5m
-    src = Path(os.environ.get("FASTBT_BARS1M", bars5m.SRC))
+    src = Path(os.environ.get("FASTBT_BARS1M", bars5m.SRC if bars5m.SRC.exists() else OSN_BARS1M))
     if not (src / f"{t}_2016.csv").exists():
         pytest.fail(f"нет 1-минуток D25 {src} — задать FASTBT_BARS1M (без skip, Ж-081)")
     b = bars5m.load_bars5m(t, "2016-01-01", "2019-12-31", "s_predotkrytiem", src=src)
@@ -132,21 +135,33 @@ def osi_real(i: int) -> tuple:
     return ("atr", "pct")[i % 2], ("pct", "atr", "sigma")[i // 2 % 3], i % 3 != 2
 
 
+_REAL: dict = {}
+
+
+def _real_tochka(i: int) -> list:
+    """Точка i на всех тикерах: [(i, тикер, быстрый путь?, равно эталону?)]."""
+    rng = np.random.default_rng(7 + i)
+    p = tochka(i, tick=0.01, osi=osi_real(i))
+    out = []
+    for t, (days, sigma) in _REAL.items():
+        n = len(days)
+        sig = np.repeat(rng.choice([-1, 0, 1], n // 5 + 1), 5)[:n].astype(float)
+        div = np.where(rng.random(n) < 0.004, rng.uniform(0.5, 3.0, n), 0.0)
+        out.append((i, t, not fast_etap1._slow_only(p, None), sverit(days, sig, sigma, p, None, div)))
+    return out
+
+
 def test_realnye_bary_train4_bystryj_ravno_etalonu(realnye):
-    plokho, n_ch = [], 0
-    for i in range(N_REAL):
-        rng = np.random.default_rng(7 + i)
-        p = tochka(i, tick=0.01, osi=osi_real(i))
-        assert not fast_etap1._slow_only(p, None), p
-        for t, (days, sigma) in realnye.items():
-            n = len(days)
-            sig = np.repeat(rng.choice([-1, 0, 1], n // 5 + 1), 5)[:n].astype(float)
-            div = np.where(rng.random(n) < 0.004, rng.uniform(0.5, 3.0, n), 0.0)
-            if not sverit(days, sig, sigma, p, None, div):
-                plokho.append((i, t))
-            n_ch += p.chand is not None
+    """Эталон на 4 годах — 0,2 с на вызов: точки считаются в 4 процессах fork (бары общие, копия при записи)."""
+    import multiprocessing as mp
+    _REAL.update(realnye)
+    with mp.get_context("fork").Pool(4) as pool:
+        rows = [r for part in pool.map(_real_tochka, range(N_REAL), chunksize=10) for r in part]
+    assert len(rows) == N_REAL * len(TIKERY)
+    assert all(r[2] for r in rows), "точка осей Л5 ушла на медленный путь"
+    plokho = [(i, t) for i, t, _, ok in rows if not ok]
     assert not plokho, plokho[:10]
-    assert n_ch >= 200 * len(TIKERY)
+    assert sum(osi_real(i)[2] for i in range(N_REAL)) >= 200 and sum(osi_real(i)[1] != "sigma" for i in range(N_REAL)) >= 200
 
 
 # --- #488: неизвестный режим — только эталоном ---
