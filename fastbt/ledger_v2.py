@@ -54,16 +54,17 @@ def klyuch_sha(kl: dict, kod: str, vhody: str) -> str:
     return hashlib.sha256(f"{kan}|{kod}|{vhody}|{V}".encode("utf-8")).hexdigest()
 
 
-def kvartaly(daty: np.ndarray, x: np.ndarray) -> dict:
-    """Шарп годовой шкалы (ddof = 1) по календарным кварталам 2016Q1…2019Q4; квартал без дней — nan."""
+def kvartaly(daty: np.ndarray, x: np.ndarray, gody: tuple = GODY) -> dict:
+    """Шарп годовой шкалы (ddof = 1) по календарным кварталам 2016Q1…2019Q4; квартал без дней — nan.
+    gody ≠ GODY — только справочные периоды вне ledger train4 (test1); по умолчанию защита 2016–2019 прежняя."""
     d, x = np.asarray(daty, "datetime64[D]"), np.asarray(x, float)
     if d.shape != x.shape:
         raise ValueError("daty и x разной длины")
     god = d.astype("datetime64[Y]").astype(int) + 1970
-    if not np.isin(god, GODY).all():
-        raise ValueError("дата вне 2016–2019: метрики 2020+ в ledger не входят")
+    if not np.isin(god, gody).all():
+        raise ValueError("дата вне 2016–2019: метрики 2020+ в ledger не входят" if gody == GODY else f"дата вне годов {gody}")
     kv = (d.astype("datetime64[M]").astype(int) % 12) // 3 + 1
-    sel = {f"{g}Q{q}": (god == g) & (kv == q) for g in GODY for q in range(1, 5)}
+    sel = {f"{g}Q{q}": (god == g) & (kv == q) for g in gody for q in range(1, 5)}
     return {k: float(sr_dnevnoy(x[s]) * np.sqrt(252)) if s.any() else float("nan") for k, s in sel.items()}
 
 
