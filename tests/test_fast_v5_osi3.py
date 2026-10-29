@@ -106,8 +106,8 @@ def test_otkazy_te_zhe():
         assert sverit(days, sig, sigma, p, close, div, rang), p
 
 
-def test_pir_ne_v_yadre():
-    assert fx.ne_znaet(dataclasses.replace(tochka(0), pir=0.5)) == ["pir"]
+def test_pir_teper_v_yadre():
+    assert fx.ne_znaet(dataclasses.replace(tochka(0), pir=0.5)) == []      # 3c: пирамидинг в ядре (tests/test_fast_v5_pir.py)
 
 
 @pytest.fixture(scope="module")
