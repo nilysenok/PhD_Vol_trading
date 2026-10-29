@@ -102,6 +102,26 @@ def _check_params(p: Params) -> None:
         raise ValueError("T > 1 и reentry_den — заявки по уровню (k задан), без vhod_open и stop_zayavka (Ж-111)")
     if p.reentry_den and p.check != "bary":
         raise ValueError("reentry_den требует check='bary'")
+    if p.ed_s not in ("sigma", "atr", "pct") or p.ed_t not in ("sigma", "atr", "pct"):
+        raise ValueError("ed_s, ed_t: sigma | atr | pct")
+    if p.chand is not None and (not p.chand > 0 or p.b is None or p.check != "bary"):
+        raise ValueError("chand > 0 требует b (начальный стоп) и check='bary'")
+    if p.vhod_tip == "stop_zayavka" and (p.ed_s != "sigma" or p.ed_t != "sigma" or p.chand is not None):
+        raise ValueError("ed_s, ed_t, chand не поддержаны при stop_zayavka")
+
+
+def unit_series(days, close, kind: str, sigma, atr) -> np.ndarray | None:
+    """Ряд единицы уровней u[i], известный на close дня i (Л5): sigma — None (путь прежний); pct — 1;
+    atr — ATR(14) по дням ≤ i / close дня i (последнего торгового). Уровень сделки с сигналом дня d берёт u[d]."""
+    if kind == "sigma":
+        return None
+    if kind == "pct":
+        return np.ones(len(days))
+    cl, last = np.empty(len(days)), float("nan")
+    for i, d in enumerate(days):
+        last = (float(close[i]) if close is not None else float(d.c[-1])) if not d.pusto else last
+        cl[i] = last
+    return np.asarray(atr, float) / cl
 
 
 def _new_axes(p: Params, ed) -> bool:
@@ -137,7 +157,9 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
     if p.tejk != "net" and (tejk_M is None or np.shape(tejk_M)[-1] != len(days)
                             or np.ndim(tejk_M) != (2 if p.tejk == "rodnoy_uroven" else 1)):
         raise ValueError("tejk ≠ net требует tejk_M длины days (rodnoy_uroven — [2, days]: лонг, шорт)")
-    atr = atr_series(days, close) if p.atr_m is not None else None      # Ж-092: ATR(14) на close каждого дня
+    need_atr = p.atr_m is not None or p.chand is not None or "atr" in (p.ed_s, p.ed_t)
+    atr = atr_series(days, close) if need_atr else None      # Ж-092: ATR(14) на close каждого дня
+    un = dict(us=unit_series(days, close, p.ed_s, sigma, atr), ut=unit_series(days, close, p.ed_t, sigma, atr))
     if (p.vhod_tip == "stop_zayavka") != (urovni is not None):
         raise ValueError("urovni нужны ровно при vhod_tip = stop_zayavka")
     if urovni is not None and any(len(urovni[k]) != len(days) for k in ("up", "dn", "xl", "xs")):
@@ -146,8 +168,8 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         from fastbt.exec_e_stop import RunStop
         r = RunStop(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, urovni=urovni)
     else:
-        r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr, rang=rang) if _new_axes(p, ed) \
-            else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr, rang=rang)
+        r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr, rang=rang, **un) if _new_axes(p, ed) \
+            else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr, rang=rang, **un)
     for j, i in enumerate(r.ix):
         r.step(j, i)
     n = len(days)

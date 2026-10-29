@@ -16,8 +16,9 @@ FRAC = 0.5                                          # доля позиции, �
 
 
 class Run(V6):
-    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None, atr=None, rang=None):
+    def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None, atr=None, rang=None, us=None, ut=None):
         n = len(days)
+        s.us, s.ut = us, ut                         # Л5: ряды единицы стопа/безубытка и тейка по дню сигнала; None — σ̂ (путь прежний)
         v6_check(p, rang, n)
         s.rang, s.be_m, s.pq_on, s.vlev, s.adds, s.n_add, s.v6 = rang, None, False, None, [], 0, v6_on(p)   # V6-b (exec_e_v6)
         s.atr, s.w, s.smax, s.part, s.R, s.ent = atr, 1.0, None, False, float("nan"), (-1, -1)   # Ж-092: ATR, остаток, ratchet, ½, R, бар входа
@@ -56,11 +57,12 @@ class Run(V6):
         s.trades.append(s.tr)
         s.tr.row0 = s._row(i, j, i0 >= len(s.days[i].c))
         s.cost[s.tr.row0] += s.p.comm
-        s.ref, s.i0, s.sg, s.ej = px, i0, sg, j
+        s.ref, s.i0, s.sg, s.ej = px, i0, sg if s.us is None else s.us[d_sig], j
+        s.sgt = sg if s.ut is None else s.ut[d_sig]
         s.ext, s.be_on, s.sh = px, False, 0.0
         s.w, s.smax, s.part, s.ent = 1.0, None, False, (i, b)
         s.v6_enter(d_sig)
-        s.R = px * s.p.b * sg if s.p.b is not None else float("nan")
+        s.R = px * s.p.b * s.sg if s.p.b is not None else float("nan")
         if s.p.tejk in ("k_srednemu", "pol_puti"):  # M зафиксирован на d_sig (≤ close d_sig), от P_вх — один раз
             s.tT = tejk_level(sd, px, float(s.tejk_M[d_sig]), s.p.tejk, s.p.tick)
             s.n_bez += s.tT is None
@@ -92,12 +94,20 @@ class Run(V6):
         s.i0, s.w, s.part, tr.frac = b + 1, s.w - FRAC, True, 1.0 - FRAC
 
     # --- уровни ---
-    def _sg(s, j):
-        sg = s.sg
+    def _sg(s, j, take=False):
+        sg, arr = (s.sgt, s.ut) if take else (s.sg, s.us)
         if s.p.s == "ezhedn" and j > s.ej:
-            v = s.sigma[s.ix[j - 1]]
+            v = (s.sigma if arr is None else arr)[s.ix[j - 1]]
             sg = v if np.isfinite(v) else sg
         return sg if (np.isfinite(sg) and sg > 0) else None
+
+    def _chand(s, j):
+        """Л5 Chandelier (vyhody_v5_medl, tt<2): экстремум 11 торговых дней ДО дня j ∓ k·ATR(14) на конец дня j−1; нет окна или ATR — кандидата нет."""
+        a, w, sd = atr_for_day(s.atr, s.ix, j), s.ix[max(0, j - 11):j], s.tr.side
+        if not w or not math.isfinite(a):
+            return []
+        ex = max(max(s.days[i].h) for i in w) if sd > 0 else min(min(s.days[i].l) for i in w)
+        return [(ex - sd * s.p.chand * a, "trail")]
 
     def _stop_shift(s, S):
         """Стоп позиции, пережившей отсечку, — на D ниже (и лонг, и шорт); без отсечек S не меняется."""
@@ -108,8 +118,10 @@ class Run(V6):
         if sg is None:
             return None, None
         tr = s.tr
-        kx = dict(extra=s.v6_extra(sg)) if s.v6 else {}     # V6-b: «стоп в плюс», ступенчатый; выкл — вызов прежний
-        if s.p.atr_m is None:
+        ex = s.v6_extra(sg) if s.v6 else []         # V6-b: «стоп в плюс», ступенчатый; выкл — вызов прежний
+        ex = ex + s._chand(j) if s.p.chand is not None else ex
+        kx = dict(extra=ex) if ex else {}
+        if s.p.atr_m is None and s.p.chand is None:
             S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on, **kx)    # sr: stop | trail | bu
         else:                                       # Ж-092: ATR по дням до текущего; стоп трейла не ослабляется (ATR может падать)
             S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on, atr_for_day(s.atr, s.ix, j), **kx)
@@ -118,7 +130,8 @@ class Run(V6):
         if s.p.tejk == "rodnoy_uroven":
             T = s._rodnoy(j)
         else:
-            T = s.tT if s.p.tejk != "net" else take_level(tr.side, tr.entry_px, sg, s.p)
+            st = s._sg(j, True)
+            T = s.tT if s.p.tejk != "net" else (take_level(tr.side, tr.entry_px, st, s.p) if st is not None else None)
         return S, None if s.xo is not None else T    # висит заявка выхода: тейк снят (ОСО)
 
     def _rodnoy(s, j):
