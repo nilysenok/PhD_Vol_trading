@@ -53,8 +53,7 @@ def test_mut_okno_po_kalendaryu_lovitsya():
 
 
 def test_ewma_cherez_razryv_bez_dyr():
-    s = sigma_real.sigma_ewma(pd.Series(np.full(19, 1e-4), index=_rv().index))      # EWMA_MIN = 22 > 19: ряд пуст
-    assert s.isna().all()
+    assert sigma_real.sigma_ewma(pd.Series(np.full(19, 1e-4), index=_rv().index)).isna().all()      # EWMA_MIN = 22 > 19
     s = sigma_real.sigma_ewma(pd.Series(np.full(30, 1e-4), index=pd.bdate_range("2022-02-14", periods=30)))
     assert np.allclose(s.dropna(), 1e-2) and s.notna().sum() == 9
 
@@ -174,12 +173,9 @@ def test_dividend_v_pusto_perehodit_na_sleduyushchiy_torgovyj_den():
 def test_dividend_gap_divs_den_gepa_pervyj_bar_posle_last_cum():
     dates = np.array(["2022-02-24", "2022-02-25", "2022-03-24", "2022-03-25"], dtype="datetime64[ns]")
     ev = pd.DataFrame({"last_cum_date": pd.to_datetime(["2022-02-25"]), "dps_rub": [5.0]})
-    mp = pytest.MonkeyPatch()
-    mp.setattr(dividendy, "events", lambda t: ev)
-    try:
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(dividendy, "events", lambda t: ev)
         assert list(dividendy.gap_divs("X", dates)) == [0, 0, 5.0, 0]          # ex-день — 24.03, первый бар после last_cum
-    finally:
-        mp.undo()
 
 
 def test_last_cum_reestr_v_razryve_t_plus_2_po_torgovym_dnyam():
