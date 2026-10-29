@@ -169,6 +169,22 @@ def test_mutaciya_podtv_rsi_vmesto_none_lovitsya():
     assert not np.array_equal(base, src_conf(base, "rsi20", rsi, td.volume, ind["vol_sma20"]))
 
 
+def test_reestr_v5_otdelen_ot_v4():
+    from fastbt.signals.interface import get_family
+    assert get_family("S1", setka="v5") is v5.generate_s1
+    assert get_family("S2", setka="v5") is v5.generate_s2
+    assert get_family("S1") is v4.S1 and get_family("S2") is v4.S2     # v4 не тронут
+
+
+def test_filtry_v5_cherez_primenit_s_sig():
+    td, ind = mk()
+    base = dict(ma_tip="sma", ma_window=20, dev_tip="std", z_entry=0.5, z_exit=0.5)
+    a = v5.generate_s1(td, ind, [base, dict(base, filtr={"rsi_th": 30, "adx_th": 25, "dow": 3})])
+    assert (a.sig[1] != a.sig[0]).any()
+    assert (a.sig[1][a.sig[1] != 0] == a.sig[0][a.sig[1] != 0]).all()   # только гасит
+    assert np.array_equal(a.exit_l[0], a.exit_l[1])                      # выходы фильтр не трогает
+
+
 def test_netochnyj_tip_ma_otklonyaetsya():
     td, ind = mk()
     with pytest.raises(ValueError):

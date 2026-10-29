@@ -23,7 +23,7 @@ from fastbt.signals.s12 import _s1, _s2
 
 PODTV = ("none", "rsi30", "rsi20", "volume", "close_confirm")
 DEV_TIPY = ("std", "atr")
-FILTR_TIP = "kontrtrend"   # S1, S2 — контртренд (IS_TREND = False)
+FILTR_TIP = "kontr"   # S1, S2 — контртренд (IS_TREND = False)
 
 
 def _ma(close, tip, n):
@@ -47,18 +47,17 @@ def podtverzhdenie(sig, tip, rsi, volume, vol_sma20):
     return out
 
 
-def _filtr_maski(td, p, T):
-    """(long, short) bool[T] из v5_filtr.primenit; без ключа "filtr" — всё разрешено."""
-    ok = np.ones(T, bool)
+def _filtr(td, p, sig):
+    """Гасит вход там, где v5_filtr.primenit(df, "kontr", params, sig) = False; без ключа "filtr" — не трогает."""
     if not p.get("filtr"):
-        return ok, ok
+        return sig
     import pandas as pd
     from fastbt.signals.v5_filtr import primenit
     df = pd.DataFrame({"open": td.open, "high": td.high, "low": td.low, "close": td.close,
                        "volume": td.volume}, index=pd.to_datetime(td.dates))
-    m = primenit(df, FILTR_TIP, p["filtr"])
-    fl, fs = m if isinstance(m, tuple) else (m, m)
-    return np.asarray(fl, bool), np.asarray(fs, bool)
+    out = sig.copy()
+    out[~primenit(df, FILTR_TIP, p["filtr"], sig=sig)] = 0
+    return out
 
 
 def _dev(td, ind, p, w, cache):
@@ -84,12 +83,13 @@ def _generate(kind):
         ex = np.zeros((K, T), np.bool_)
         st = np.zeros((K, T))
         cache = {}
+        ok = np.ones(T, bool)   # зашитые фильтры v4 в v5 нет; фильтры v5 — после ядра, _filtr
+        fl = fs = ok
         rsi = rsi_wilder(td.close) if kind == 2 else None
         for i, p in enumerate(grid):
             w = p[wkey]
             ma = _ma_kesh(td, p.get("ma_tip", "sma"), w, cache)
             dev = _dev(td, ind, p, w, cache)
-            fl, fs = _filtr_maski(td, p, T)
             if kind == 1:
                 zx = p["z_exit"]
                 zx = -1.0 if zx == "net" else float(zx)   # |z| < −1 никогда: выхода по сигналу нет
@@ -97,6 +97,7 @@ def _generate(kind):
             else:
                 _s2(td.close, ma, dev, fl, fs, p["bb_std"], sig[i], ex[i], st[i])
                 sig[i] = podtverzhdenie(sig[i], p.get("podtv", "none"), rsi, td.volume, ind["vol_sma20"])
+            sig[i] = _filtr(td, p, sig[i])
         return SignalSet(sig, ex, ex, st, list(grid), split=False)
     return generate
 
@@ -104,10 +105,7 @@ def _generate(kind):
 generate_s1 = _generate(1)
 generate_s2 = _generate(2)
 
-# Реестр с ключом setka — лист Л1 (interface.register_family). Пока его нет в базе, регистрация пропускается.
-_reg = getattr(_iface, "register_family", None)
-if _reg is not None:
-    _reg("S1", generate_s1, setka="v5")
-    _reg("S2", generate_s2, setka="v5")
+_iface.register_family("S1", generate_s1, setka="v5")
+_iface.register_family("S2", generate_s2, setka="v5")
 
 __all__ = ["TIPY", "PODTV", "DEV_TIPY", "generate_s1", "generate_s2", "podtverzhdenie"]
