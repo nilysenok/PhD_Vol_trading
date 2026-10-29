@@ -42,14 +42,16 @@ def test_vhody_pos_s9_i_ceny(capsys, monkeypatch):
     eng = types.SimpleNamespace(cache={"X": {"dates": dates, "A": {"S3": {2022: np.array([0, 1, 1, 0, -1, 0.0])}}}},
                                 _slice=lambda t, Y: (0, 6))
     assert V.pos_s9(eng, "X", "S3").tolist() == [0, 1, 1, 0, -1, 0]
-    bar = lambda c: types.SimpleNamespace(pusto=False, c=np.array([c]))        # noqa: E731
-    inp = types.SimpleNamespace(meta={"X": {"dates": dates}}, close={"X": np.arange(6.0) + 10},
-                                bars={"X": [bar(10), bar(11), bar(12.5), bar(13), bar(14), bar(15)]})
+    from fastbt.etap1 import E1Inputs                       # реальные классы: несуществующий атрибут ловится тестом
+    from fastbt.exec_e_types import Day
+    bar = lambda c: Day(np.array([c]), np.array([c]), np.array([c]), np.array([c]), False)        # noqa: E731
+    inp = E1Inputs(None, {}, {"X": [bar(10), bar(11), bar(12.5), bar(13), bar(14), bar(15)]}, {"X": np.arange(6.0) + 10},
+                   {}, {}, {}, pd.Series(dtype=float), meta={"X": {"dates": dates}})
     monkeypatch.setattr(V.data, "daily_df", lambda: pd.DataFrame({"ticker": "X", "date": pd.DatetimeIndex(dates),
                                                                   "close": np.arange(6.0) + 10}))
     V.ceny(inp, "X")
     out = capsys.readouterr().out
-    assert "inp.close − daily: max|Δ|=0" in out and "посл. 5-мин. close − daily: max|Δ|=0.5, дней с Δ 1" in out
+    assert "inp.close_n6 − daily: max|Δ|=0" in out and "посл. 5-мин. close − daily: max|Δ|=0.5, дней с Δ 1" in out
 
 
 def test_komponenty_razdelyaet_stavku(capsys):

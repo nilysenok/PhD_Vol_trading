@@ -35,10 +35,10 @@ def ceny(inp, t: str, n: int = 5) -> None:
     d = d[d["ticker"] == t].set_index("date")["close"]
     m = inp.meta[t]
     idx = pd.DatetimeIndex(m["dates"])
-    rc = pd.Series(inp.close[t], index=idx)
+    rc = pd.Series(inp.close_n6[t], index=idx)
     bc = pd.Series([np.nan if (b.pusto or len(b.c) == 0) else b.c[-1] for b in inp.bars[t]], index=idx[:len(inp.bars[t])])
     print(f"[{t}] дней в окне yakor {len(idx)} ({idx[0].date()}…{idx[-1].date()}); бары без данных (pusto): {int(bc.isna().sum())}")
-    for nm, s in (("inp.close − daily", rc - d.reindex(idx)), ("посл. 5-мин. close − daily", bc - d.reindex(bc.index))):
+    for nm, s in (("inp.close_n6 − daily", rc - d.reindex(idx)), ("посл. 5-мин. close − daily", bc - d.reindex(bc.index))):
         s = s.dropna()
         bad = s.abs() > 1e-9
         print(f"   {nm}: max|Δ|={float(s.abs().max()):.6g}, дней с Δ {int(bad.sum())} из {len(s)}; первые: "
