@@ -100,7 +100,7 @@ def k2(pul, v: Vyhod, n_shift: int = 199, min_lag: int = fk.MIN_LAG, lagi=None) 
 def podpul(pul, mask: np.ndarray, osi: dict | None = None):
     poz = None if pul.poz is None else pul.poz[mask]
     return K.Pul(pul.sid, pul.daty, pul.osi if osi is None else osi, [p for p, m in zip(pul.tochki, mask) if m],
-                 pul.ex[mask], poz, pul.komissiya)
+                 pul.ex[mask], poz, pul.komissiya, period=pul.period)
 
 
 def k3(pul, imena, yakor: dict):
@@ -159,10 +159,11 @@ def prichinnost(proc, pul, gody=GODY, seed: int = 0) -> None:
 
 
 def podpul_ex(pul, ex: np.ndarray):
-    return K.Pul(pul.sid, pul.daty, pul.osi, pul.tochki, ex, pul.poz, pul.komissiya, pul.dosschitat)
+    return K.Pul(pul.sid, pul.daty, pul.osi, pul.tochki, ex, pul.poz, pul.komissiya, pul.dosschitat, period=pul.period)
 
 
-def sintez_pul(seed: int, daty, osi=None, amp: float = 1.5, m: int = 7, ntick: int = 2, rseed: int = 1):
+def sintez_pul(seed: int, daty, osi=None, amp: float = 1.5, m: int = 7, ntick: int = 2, rseed: int = 1,
+               period: str = "train4"):
     """Синтетический пул: точки — Соболь(seed) на сетке osi; Шарп — гауссов холм amp в середине сетки (amp = 0 — H0).
     Шум точки сетки не зависит от seed; соседей вне выборки досчитывает `dosschitat` (как боевой)."""
     osi = osi or {"a": list(range(5)), "b": list(range(5)), "c": list(range(4))}
@@ -177,4 +178,4 @@ def sintez_pul(seed: int, daty, osi=None, amp: float = 1.5, m: int = 7, ntick: i
     cells = np.unique((u * sz).astype(int), axis=0)
     pts = lambda cs: [{a: osi[a][j] for a, j in zip(ax, c)} for c in cs]            # noqa: E731
     dos = lambda pt: (rows([[osi[a].index(pt[a]) for a in ax]])[0], None)           # noqa: E731
-    return K.Pul("S1", daty, osi, pts(cells), rows(cells), None, 0.0, dos)
+    return K.Pul("S1", daty, osi, pts(cells), rows(cells), None, 0.0, dos, period=period)

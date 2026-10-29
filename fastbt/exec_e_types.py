@@ -64,6 +64,7 @@ class Params:
     a_rang: tuple | None = None   # тейк от силы: a = a0 + a1·ранг(d_сигнала), (a0 > 0, a1 ≥ 0); нужен rang в run, несовместим с a и R
     parab: tuple | None = None    # П3b: параболический трейлинг тренда (ps, pm) — fastbt/exec_e_parab.py; нужен b, check="bary"; медленный путь
     chast: tuple | None = None    # частичный выход (доля, r): закрыть долю лимитом на +r·R; (0,5; 1) ≡ chast_1r; нужен b, check="bary"
+    time_decay: bool = False      # V6-9 (v4 engine.py:113): после tau//2 дней в позиции тейк «net» — половина дистанции; нужен tau; быстрый слой не знает (ne_znaet)
 
 
 @dataclass
