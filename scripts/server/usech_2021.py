@@ -26,6 +26,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import json_daty as jd  # noqa: E402
 import manifest_perenos as mp  # noqa: E402
 
 CUT = dt.date(2021, 12, 31)
@@ -129,6 +130,12 @@ def usech_pq(src: Path, dst: Path, kol: str, paket: int = PARQUET_BATCH, ostanov
     return st
 
 
+def usech_json(src: Path, dst: Path) -> Stat:
+    st = Stat()
+    st.stroki, st.otbrosheno, st.max_data = jd.usech(src, dst)
+    return st
+
+
 def usech(koren: Path, vyhod: Path, tolko: str = "") -> list[dict]:
     zap = []
     for shablon, vid, kol, och, chit in PRAVILA:
@@ -143,7 +150,7 @@ def usech(koren: Path, vyhod: Path, tolko: str = "") -> list[dict]:
             dst = vyhod / rel
             if rel.startswith("docs/issledovaniya/"):
                 dst = dst.with_name(dst.name.split("_", 1)[1])
-            st = usech_pq(src, dst, kol[0]) if vid == "pq" else usech_csv(src, dst, kol, och)
+            st = usech_pq(src, dst, kol[0]) if vid == "pq" else usech_json(src, dst) if vid == "json" else usech_csv(src, dst, kol, och)
             zap.append(dict(rel=rel, dst=dst, st=st, chit=chit, sha_src=mp.sha256(str(src)), bez=not kol))
             print(f"{rel}: строк {st.stroki}, отброшено {st.otbrosheno}, max {st.max_data}, остановка {st.ostanov}")
     return zap
@@ -158,6 +165,7 @@ def obnovit_manifest(koren: Path, zap: list[dict], vyhod: Path, tsv: Path) -> st
     nv = tsv.with_name(tsv.stem + "_otvergnuto.tsv")
     star = [ln.rstrip("\n").split("\t") for ln in tsv.read_text(encoding="utf-8").splitlines()[1:]]
     star = [(s + [s[0], s[1]])[:7] if len(s) == 5 else s for s in star]
+    nov = [x for x in nov if x[5] not in {s[0] for s in star}]       # оригинал ≤ 2021 принят целиком — копия не нужна (дубль пути)
     puti = {x[0] for x in nov}
     star = [s for s in star if s[0] not in puti]
     srcs = {z["rel"] for z in zap}

@@ -4,6 +4,11 @@ KAL = ("date", "known_from")
 PRAVILA = [
     ("moex_discovery/data/raw/candles_10m/*.parquet", "pq", ("timestamp",), (), "fastbt/sigma_real.py rv22, bars_agg (ТФ tf_os_v5), daily_1850"),
     ("moex_discovery/data/final_v6/candles_10m/external/*.parquet", "pq", ("begin",), (), "rezhim_e1.imoex_daily, e1_sektor, vneshnie_1850 (IMOEX, секторные 10м)"),
+    # оценщик v6 (fastbt/istochniki_v6.py, vneshnie_1850.py; трассировка открытий 1 точки Морриса S1, train4 и v2, 29.10)
+    ("data/iss_ext/bars_10m/BR*.parquet", "pq", ("begin",), (), "vneshnie_1850.contract bars: Brent BR* (istochniki_v6.Fajly.brent, faktor 'brent')"),
+    ("data/iss_ext/br_contracts.json", "json", ("lsttrade",), (), "vneshnie_1850.contract_table (календарь контрактов Brent; записи с датой > 2021 отброшены)"),
+    ("moex_discovery/data/external/moex_iss/currency_10m/USD000UTSTOM.parquet", "pq", ("begin",), (), "vneshnie_1850 PATHS['usdrub'] (фактор USDRUB, indeks('usdrub'))"),
+    ("moex_volatility/results/final/strategies/data/vpred_aligned.parquet", "pq", ("date",), (), "fastbt/data.py VPRED (load_ticker -> istochniki_v6.Fajly.zakrytie)"),
     ("data/corporate_actions.csv", "csv", ("date",), (), "fastbt/data.py corp_actions"),
     ("data/calendar/torgovye_dni_moex.csv", "csv", ("date",), (), "торговый календарь MOEX"),
     ("fastbt/rates/key_rate_cbr_vladelec.csv", "csv", ("data_vstupleniya",), (), "ставка ЦБ владельца (дата вступления; объявление раньше входа)"),
