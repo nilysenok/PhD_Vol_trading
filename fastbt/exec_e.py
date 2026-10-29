@@ -100,16 +100,16 @@ def _check_params(p: Params) -> None:
         raise ValueError("vhod_open — вход рынком (k = None), check='bary', без vyhod_lim")
     if not isinstance(p.T, int) or p.T < 1:
         raise ValueError("T — целое ≥ 1")
-    if (p.T > 1 or p.reentry_den) and (p.k is None or p.vhod_open or p.vhod_tip != "podtverzhdenie"):
-        raise ValueError("T > 1 и reentry_den — заявки по уровню (k задан), без vhod_open и stop_zayavka (Ж-111)")
+    if p.T > 1 and (p.k is None or p.vhod_open or p.vhod_tip != "podtverzhdenie"):
+        raise ValueError("T > 1 — заявки по уровню (k задан), без vhod_open и stop_zayavka (Ж-111; стоп-заявка пересчитывается каждый вечер)")
+    if p.reentry_den and p.vhod_tip == "podtverzhdenie" and (p.k is None or p.vhod_open):
+        raise ValueError("reentry_den — заявки по уровню (k задан) без vhod_open, либо stop_zayavka (Ж-111, V6-11c)")
     if p.reentry_den and p.check != "bary":
         raise ValueError("reentry_den требует check='bary'")
     if p.ed_s not in ("sigma", "atr", "pct") or p.ed_t not in ("sigma", "atr", "pct"):
         raise ValueError("ed_s, ed_t: sigma | atr | pct")
     if p.chand is not None and (not p.chand > 0 or p.b is None or p.check != "bary"):
         raise ValueError("chand > 0 требует b (начальный стоп) и check='bary'")
-    if p.vhod_tip == "stop_zayavka" and (p.ed_s != "sigma" or p.ed_t != "sigma" or p.chand is not None):
-        raise ValueError("ed_s, ed_t, chand не поддержаны при stop_zayavka")
     parab_check(p)
 
 
@@ -169,7 +169,7 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         raise ValueError("days, urovni разной длины")
     if urovni is not None:
         from fastbt.exec_e_stop import RunStop
-        r = RunStop(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, urovni=urovni, atr=atr)
+        r = RunStop(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, urovni=urovni, atr=atr, rang=rang, **un)
     else:
         r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr, rang=rang, **un) if _new_axes(p, ed) \
             else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr, rang=rang, **un)
