@@ -104,6 +104,8 @@ def sessiya(ticker: str, o, h, l, c, sost, sigma, p: Params = PARAMS, atr=None) 
         r._exit(r.ix[-1], len(r.ix) - 1, 0, float(c[-1]), "vremya")
         tr.reason = "sessiya"
     proverka_d2(r.trades)
+    if r.vne:                                       # инвариант: цена каждого исполнения — в [low; high] своего бара (БЛОКЕР #596)
+        raise ValueError(f"исполнение вне [low; high] бара: {r.vne[:3]}")
     return Sessiya(float(r.gross.sum()), float(r.cost.sum()), r.trades, r.n_orders, r.n_fills)
 
 
