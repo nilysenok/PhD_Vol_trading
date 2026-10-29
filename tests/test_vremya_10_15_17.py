@@ -118,8 +118,14 @@ def test_mut_open2_po_pervomu_baru(monkeypatch):
 
 def test_mut_1500_po_close_1455(monkeypatch):
     monkeypatch.setattr(exec_e2.Run2, "_exit_t", prev_bar("c"))
-    with pytest.raises(AssertionError):
+    try:
         test_1500_open_baru_1500_ne_close_1455()
+    except AssertionError:
+        return
+    except ValueError as e:     # инвариант #617: исполнение вне [low; high] — тоже поймана
+        assert "вне [low; high]" in str(e), f"иная ValueError: {e}"
+        return
+    pytest.fail("мутант не пойман: проверка прошла")
 
 
 def test_mut_1700_po_open_1655(monkeypatch):
