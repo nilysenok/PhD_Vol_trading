@@ -40,6 +40,7 @@ PRAVILA = [
     ("fastbt/rates/key_rate_cbr_vladelec.csv", "csv", ("data_vstupleniya",), (), "ставка ЦБ владельца (дата вступления; объявление раньше входа)"),
     *[(f"data/calendar/{n}.csv", "csv", KAL, ("retrieved_at",), f"календарь {n} (PIT: date и known_from)")
       for n in ("cbr", "expirations", "fomc", "imoex_rebal", "imoex_rebal_official", "cpi_us")],
+    ("moex_discovery/data/external/macro/raw/key_rate_cbr.parquet", "pq", ("date",), (), "fastbt/msp.py rate_cbr (parquet ЦБ; до 2022 берётся ряд владельца)"),
     # справочные таблицы исследователя: fastbt читает их от корня КОДА (накладка sobrat_perenos.sh / razvernut.sh);
     # accessed — дата скачивания (2026), не дата данных: очищается; строки без даты реестра (нет выплат) отбрасываются
     ("docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv", "csv", ("record_date", "announce_date", "last_cum_date"),
