@@ -533,7 +533,8 @@ NOVYE = frozenset(("vhod_tip", "atr_m", "chast_1r", "chast", "T", "reentry_den",
 def ne_znaet(p) -> list:
     """Поля Params не в умолчании, которых нет ни в FAST_POLYA, ни в осях v5 ядра (пусто — ядро режим знает)."""
     from fastbt import fast_etap1
-    return [n for n, d in fast_etap1._umolch(type(p)) if n not in NOVYE and getattr(p, n) != d]
+    from fastbt.exec_e_stop import stop_novye
+    return [n for n, d in fast_etap1._umolch(type(p)) if n not in NOVYE and getattr(p, n) != d] + stop_novye(p)   # V6-11: оси v5 на стоп-заявке — эталон
 
 
 def params_v5(p, nal: float) -> tuple:

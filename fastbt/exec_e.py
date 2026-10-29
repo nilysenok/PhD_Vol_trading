@@ -108,8 +108,6 @@ def _check_params(p: Params) -> None:
         raise ValueError("ed_s, ed_t: sigma | atr | pct")
     if p.chand is not None and (not p.chand > 0 or p.b is None or p.check != "bary"):
         raise ValueError("chand > 0 требует b (начальный стоп) и check='bary'")
-    if p.vhod_tip == "stop_zayavka" and (p.ed_s != "sigma" or p.ed_t != "sigma" or p.chand is not None):
-        raise ValueError("ed_s, ed_t, chand не поддержаны при stop_zayavka")
     parab_check(p)
 
 
@@ -169,7 +167,7 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         raise ValueError("days, urovni разной длины")
     if urovni is not None:
         from fastbt.exec_e_stop import RunStop
-        r = RunStop(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, urovni=urovni, atr=atr)
+        r = RunStop(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, urovni=urovni, atr=atr, rang=rang, **un)
     else:
         r = Run2(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr, rang=rang, **un) if _new_axes(p, ed) \
             else Run(ticker, days, sig, sigma, p, close, div, nal, tejk_M=tejk_M, atr=atr, rang=rang, **un)
