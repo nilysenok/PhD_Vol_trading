@@ -8,7 +8,7 @@ import pytest
 import fastbt.ledger_v2 as lm
 import fastbt.progon_server as srv
 import fastbt.progon_sobol as ps
-from tests.test_progon_server import SV, Fake, chp, fake, kuby5, rz5, sreda, syrye  # noqa: F401 — fake: фикстура
+from test_progon_server import SV, Fake, chp, fake, kuby5, rz5, sreda, syrye  # noqa: F401 — fake: фикстура
 
 SH = Path(__file__).resolve().parents[1] / "scripts/server/perenos/zapusk_sobol.sh"
 N = {"S1": 120}
