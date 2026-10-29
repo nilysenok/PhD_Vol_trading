@@ -23,8 +23,8 @@ def v6_on(p) -> bool:
 def v6_check(p, rang, n_days: int) -> None:
     if not v6_on(p):
         return
-    if p.b is None or p.check != "bary" or p.vhod_tip != "podtverzhdenie":
-        raise ValueError("b0 / sp / step_s / pir требуют b, check='bary' и vhod_tip='podtverzhdenie'")
+    if p.b is None or p.check != "bary":
+        raise ValueError("b0 / sp / step_s / pir требуют b и check='bary'")      # V6-11b: и при vhod_tip = stop_zayavka
     if sum(x is not None for x in (p.b0, p.b0_c)) + bool(p.be) > 1:
         raise ValueError("be, b0 и b0_c взаимоисключающие")
     if (p.b0 is not None and not p.b0 > 0) or (p.b0_c is not None and not p.b0_c > 0):
