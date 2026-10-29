@@ -2,12 +2,16 @@
 Куб — fastbt/designs/progon/kub_S{k}.yaml; точка i — i-я точка Соболя (scramble, seed), потом canon_v2 (N — один раз).
 Проход 1 — индексы 0…4999, проход 2 — 5000…29999 той же последовательности (fast_forward). 10 процессов, куски по 100 точек,
 у процесса свой p{NN}/. Резюм: klyuch_sha, уже закрытые в ledger, не считаются. Путь: медленный (EvaluatorV2, эталон)
-или быстрый (--fast: fast_etap1.patched() для покрытых точек). Метрик не печатает."""
+или быстрый (--fast: fast_etap1.patched() для покрытых точек). Метрик не печатает.
+Л10 (Ж-127, Ж-129 п. 8, Ж-130): --kub v5 — fastbt/designs/v5/kub_S{k}.yaml, свёртки canon_v5, якоря yakorya_progon в точке;
+период train4 | v2 (свой ключ ledger и свой каталог), seed | seed2 куба, проход k3 (полная решётка раздела k3), fdr из куба
+(оценщик обязан считать его же — иначе отказ). Путь designs/progon (по умолчанию) — побайтно прежний (Rezhim R0)."""
 import argparse
 import concurrent.futures as cf
 import csv
 import hashlib
 import importlib.util
+import itertools
 import json
 import multiprocessing as mp
 import random
@@ -23,7 +27,7 @@ import numpy as np
 import yaml
 from scipy.stats import qmc
 
-from fastbt import ledger_v2 as lm
+from fastbt import canon_v5 as cv5, fdr as fdr_mod, ledger_v2 as lm, period_v2
 
 ROOT = Path(__file__).resolve().parent.parent
 KUB = ROOT / "fastbt/designs/progon/kub_{sid}.yaml"
@@ -36,12 +40,43 @@ BAZA = dict(okno_s="2016-01-01", okno_po="2019-12-31", progrev_s="2015-01-01", z
             status="ok", prichina=None)
 SVERKA_PROPUSK = {"t_sek", "kod", "kod_slit", "klyuch_sha", "excess", "sloy"}
 Sreda = namedtuple("Sreda", "evr kod vhody daty tikery")
+KUB5, LEDGER5 = ROOT / "fastbt/designs/v5/kub_{sid}.yaml", ZAMER / "_ledger_v5"
+OCENSHCHIK_V5 = ("fastbt.eval_v5", "EvaluatorV5")        # лист Л9; контракт выхода = EvaluatorV2 (+ poz, fdr)
+OKNO = {"train4": ("2016-01-01", "2015-01-01"), "v2": ("2015-01-01", str(period_v2.START.date()))}   # (okno_s, progrev_s)
+Rezhim = namedtuple("Rezhim", "setka period seed k3 fdr")      # setka: progon | v5; seed: ключ sobol куба (seed | seed2)
+R0 = Rezhim("progon", PERIOD, "seed", False, None)            # прежний путь designs/progon
 fabrika = None      # sid -> Sreda; None — реальная (fabrika_real); тесты подставляют синтетику
 _W: dict = {}
 
 
-def load_kub(sid: str) -> dict:
-    return yaml.safe_load(KUB.with_name(f"kub_{sid}.yaml").read_text(encoding="utf-8"))
+def kub_put(sid: str, rz: Rezhim = R0) -> Path:
+    return (KUB if rz.setka == "progon" else KUB5).with_name(f"kub_{sid}.yaml")
+
+
+def load_kub(sid: str, rz: Rezhim = R0) -> dict:
+    return yaml.safe_load(kub_put(sid, rz).read_text(encoding="utf-8"))
+
+
+def baza(rz: Rezhim) -> dict:
+    return {**BAZA, "okno_s": OKNO[rz.period][0], "progrev_s": OKNO[rz.period][1]}
+
+
+def proverit_v5(c: dict, rz: Rezhim) -> None:
+    """Куб v5 (canon_v5.proverit) + период объявлен в кубе, комиссия 0,04 %, fdr куба = fdr прохода и известен fdr.py."""
+    cv5.proverit(c)
+    if rz.period not in OKNO or rz.period not in c.get("periody", [c.get("period")]):
+        raise ValueError(f"{c['sid']}: период {rz.period!r} не объявлен в кубе (periody) — отказ")
+    if c.get("komissiya") != KOMISSIYA:
+        raise ValueError("куб: komissiya = 0.0004")
+    if c.get("fdr") != rz.fdr or (rz.fdr is not None and rz.fdr not in fdr_mod.REZHIMY):
+        raise ValueError(f"{c['sid']}: fdr куба {c.get('fdr')!r}, прохода {rz.fdr!r}; известны None и {fdr_mod.REZHIMY} — отказ")
+
+
+def proverit_ledger(rz: Rezhim, v: str) -> None:
+    """ledger 2.1 режет кварталы только 2016–2019 (ledger_v2.GODY): v2 (2015–2019) в 2.1 — отказ до старта, а не в процессе."""
+    if v == lm.V21 and not set(range(int(OKNO[rz.period][0][:4]), 2020)) <= set(lm.GODY):
+        raise SystemExit(f"ledger 2.1 считает кварталы {lm.GODY[0]}–{lm.GODY[-1]}, период {rz.period} шире — "
+                         "--ledger 2.0 или расширение ledger_v2 (вне Л10) — отказ")
 
 
 def proverit_kub(c: dict) -> None:
@@ -57,8 +92,30 @@ def proverit_kub(c: dict) -> None:
         raise ValueError(f"{c['sid']}: оси signal {sorted(c['signal'])} ≠ оси семьи {sorted(get_family(c['sid']).grid)}")
 
 
-def tochki(kub: dict, n0: int, n1: int) -> list:
+def tochki_v5(kub: dict, n0: int, n1: int, rz: Rezhim) -> list:
+    """v5: [(i, якоря ∪ canon_v5)]; несовместимая точка выброшена (индекс i пропущен). k3 — i-я точка полной решётки
+    раздела k3 (объём ≤ 12 800 — Соболь давал бы повторы), иначе i-я точка Соболя с kub.sobol[rz.seed]."""
+    proverit_v5(kub, rz)
+    if rz.k3:
+        k = cv5.k3_kub(kub)
+        cv5.proverit(k)
+        imena, setki = zip(*cv5.osi(k))
+        kombi = enumerate(itertools.islice(itertools.product(*setki), n0, n1), n0)
+        out = [(i, c) for i, c in ((i, cv5.canon_v5(kub["sid"], dict(zip(imena, x)))) for i, x in kombi) if c is not None]
+    else:
+        out = cv5.tochki_v5(kub, n0, n1, rz.seed)[0]
+    ya = kub.get("yakorya_progon", {})
+    return [(i, {**ya, **c}) for i, c in out]
+
+
+def obem_k3(kub: dict) -> int:
+    return cv5.obem(cv5.k3_kub(kub))
+
+
+def tochki(kub: dict, n0: int, n1: int, rz: Rezhim = R0) -> list:
     """[(i, pt)], i ∈ [n0, n1): индекс значения оси = floor(u·len(ось)), затем canon_v2."""
+    if rz.setka != "progon":
+        return tochki_v5(kub, n0, n1, rz)
     proverit_kub(kub)
     sekcii = ("signal", "obshchie", "novye") if kub.get("v", 2) == 2 else ("signal", "filtr", "vhod", "vyhod")
     osi = [(n, v["setka"] if isinstance(v, dict) else v) for sec in sekcii for n, v in kub.get(sec, {}).items()]
@@ -83,38 +140,53 @@ def proverit_disk(n_tochek: int, root: Path = LEDGER, bait: int = BAIT_NA_TOCHKU
         raise SystemExit(f"IG-6: свободно {free / GB:.1f} ГБ, нужно ≥ {need / GB:.1f} ГБ — отказ")
 
 
-def fabrika_real(sid: str) -> Sreda:
+def ocenshchik(sid: str, inp, rz: Rezhim):
+    from fastbt import etap1
+    from fastbt.etap1_eval_v2 import EvaluatorV2
+    if rz.setka == "progon":
+        return EvaluatorV2(sid, inp, etap1.base_point(sid), KOMISSIYA)
+    mod, cls = OCENSHCHIK_V5
+    if importlib.util.find_spec(mod) is None:
+        raise SystemExit(f"{mod} (лист Л9) не слит — куб v5 считать нечем — отказ")
+    return getattr(importlib.import_module(mod), cls)(sid, inp, etap1.base_point(sid), KOMISSIYA, fdr=rz.fdr)
+
+
+def fabrika_real(sid: str, rz: Rezhim = R0) -> Sreda:
     from fastbt import cache, etap1
     from fastbt.etap1_eval import years_of
-    from fastbt.etap1_eval_v2 import EvaluatorV2
-    inp = etap1.build_inputs(sid, period=PERIOD)
-    evr = EvaluatorV2(sid, inp, etap1.base_point(sid), KOMISSIYA)
-    dt = evr._engine(PERIOD)[0].dates
-    daty = dt[np.isin(dt.year, years_of(PERIOD))].to_numpy().astype("datetime64[D]")
+    inp = etap1.build_inputs(sid, period=rz.period)
+    evr = ocenshchik(sid, inp, rz)
+    dt = evr._engine(rz.period)[0].dates
+    daty = dt[np.isin(dt.year, years_of(rz.period))].to_numpy().astype("datetime64[D]")
     return Sreda(evr, cache.code_hash(), inp.digest(), daty, list(inp.sk.tickers))
 
 
-def sreda(sid: str) -> Sreda:
-    """Один оценщик на стратегию за раз; даты ≥ 2020 в рядах — отказ."""
-    if _W.get("sid") != sid:
+def sreda(sid: str, rz: Rezhim = R0) -> Sreda:
+    """Один оценщик на стратегию за раз; даты ≥ 2020 в рядах — отказ; v5: fdr оценщика ≠ fdr куба — отказ."""
+    if _W.get("sid") != (sid, rz):
         _W.pop("sreda", None)
-        sr = (fabrika or fabrika_real)(sid)
+        sr = fabrika(sid) if fabrika else fabrika_real(sid, rz)
         if sr.daty.size == 0 or sr.daty.max() >= np.datetime64("2020-01-01"):
             raise ValueError(f"{sid}: в рядах есть даты ≥ 2020 — отказ (Ж-082)")
-        _W["sid"], _W["sreda"] = sid, sr
+        if rz.setka != "progon" and getattr(sr.evr, "fdr", "нет атрибута fdr") != rz.fdr:
+            raise ValueError(f"{sid}: оценщик {type(sr.evr).__name__} не считает fdr = {rz.fdr!r} куба "
+                             f"(у него {getattr(sr.evr, 'fdr', 'нет атрибута fdr')!r}) — отказ, не молчаливый null")
+        _W["sid"], _W["sreda"] = (sid, rz), sr
     return _W["sreda"]
 
 
-def manifest(sid: str, sr: Sreda, c: dict, kod_slit: bool) -> dict:
-    return {"period": PERIOD, "okno_s": BAZA["okno_s"], "okno_po": BAZA["okno_po"], "progrev_s": BAZA["progrev_s"],
-            "komissiya": KOMISSIYA, "fdr": None, "kod": sr.kod, "vhody": sr.vhody, "kod_slit": kod_slit,
-            "daty_sha": hashlib.sha256(sr.daty.tobytes()).hexdigest(), "tikery": sr.tikery, "T": int(sr.daty.size),
-            "kub_sha": hashlib.sha256(KUB.with_name(f"kub_{sid}.yaml").read_bytes()).hexdigest(),
-            "sobol_seed": c["sobol"]["seed"], "sozdan": time.strftime("%Y-%m-%d")}
+def manifest(sid: str, sr: Sreda, c: dict, kod_slit: bool, rz: Rezhim = R0) -> dict:
+    b = baza(rz)
+    m = {"period": rz.period, "okno_s": b["okno_s"], "okno_po": b["okno_po"], "progrev_s": b["progrev_s"],
+         "komissiya": KOMISSIYA, "fdr": rz.fdr, "kod": sr.kod, "vhody": sr.vhody, "kod_slit": kod_slit,
+         "daty_sha": hashlib.sha256(sr.daty.tobytes()).hexdigest(), "tikery": sr.tikery, "T": int(sr.daty.size),
+         "kub_sha": hashlib.sha256(kub_put(sid, rz).read_bytes()).hexdigest(),
+         "sobol_seed": None if rz.k3 else c["sobol"][rz.seed], "sozdan": time.strftime("%Y-%m-%d")}
+    return m if rz.setka == "progon" else {**m, "setka": c["setka"], "k3": rz.k3, "sobol_klyuch": rz.seed}
 
 
-def sha_tochki(sid: str, sr: Sreda, pt: dict) -> str:
-    return lm.klyuch_sha(lm.klyuch(sid, pt, PERIOD, KOMISSIYA, None), sr.kod, sr.vhody)
+def sha_tochki(sid: str, sr: Sreda, pt: dict, rz: Rezhim = R0) -> str:
+    return lm.klyuch_sha(lm.klyuch(sid, pt, rz.period, KOMISSIYA, rz.fdr), sr.kod, sr.vhody)
 
 
 def fast_ok(pt: dict) -> bool:
@@ -122,22 +194,23 @@ def fast_ok(pt: dict) -> bool:
         importlib.import_module("fastbt.fast_etap1").pokryto(pt)
 
 
-def schitat_tochku(sr: Sreda, sid: str, i: int, pt: dict, ist: str, kod_slit: bool, fast: bool, v: str = lm.V) -> tuple:
+def schitat_tochku(sr: Sreda, sid: str, i: int, pt: dict, ist: str, kod_slit: bool, fast: bool, v: str = lm.V,
+                   rz: Rezhim = R0) -> tuple:
     """(строка §1.2, port float64, tik): ошибка оценщика — строка `oshibka`, а не обрыв прогона."""
     t0, sloy, r, ex_p, ex_t = time.perf_counter(), "slow", {}, None, None
     try:
         if fast and fast_ok(pt):
             with importlib.import_module("fastbt.fast_etap1").patched():
-                r, ex_p, ex_t = sr.evr.evaluate_v2(pt, PERIOD)
+                r, ex_p, ex_t = sr.evr.evaluate_v2(pt, rz.period)
             sloy = "fast"
         else:
-            r, ex_p, ex_t = sr.evr.evaluate_v2(pt, PERIOD)
+            r, ex_p, ex_t = sr.evr.evaluate_v2(pt, rz.period)
     except Exception as e:                      # noqa: BLE001 — контракт §1.2: status = oshibka, причина в строке
         r = {"status": "oshibka", "prichina": f"{type(e).__name__}: {e}"[:200]}
-    kl = lm.klyuch(sid, pt, PERIOD, KOMISSIYA, None)
-    r = {**BAZA, **r, "v": v, "format": lm.FORMAT, "strategiya": sid, "klyuch": kl, "kod": sr.kod,
+    kl = lm.klyuch(sid, pt, rz.period, KOMISSIYA, rz.fdr)
+    r = {**baza(rz), **r, "v": v, "format": lm.FORMAT, "strategiya": sid, "klyuch": kl, "kod": sr.kod,
          "klyuch_sha": lm.klyuch_sha(kl, sr.kod, sr.vhody), "vhody": sr.vhody, "kod_slit": kod_slit,
-         "period": PERIOD, "komissiya": KOMISSIYA, "fdr": None, "istochnik": ist, "sobol_i": i, "kontrol": None,
+         "period": rz.period, "komissiya": KOMISSIYA, "fdr": rz.fdr, "istochnik": ist, "sobol_i": i, "kontrol": None,
          "vozm": None, "sloy": sloy, "t_sek": time.perf_counter() - t0}
     return r, ex_p, ex_t
 
@@ -151,21 +224,22 @@ def _init(ctx: dict, schetchik) -> None:
 
 def schitat_kusok(zad: tuple) -> tuple:
     sid, n0, n1 = zad
-    c, sr = _W["kubs"][sid], sreda(sid)
+    rz = _W.get("rz", R0)
+    c, sr = _W["kubs"][sid], sreda(sid, rz)
     d = Path(_W["root"]) / sid
     d.mkdir(parents=True, exist_ok=True)
     if not (d / "daty.npy").exists():
         np.save(d / f"daty.npy.{_W['nn']}.tmp.npy", sr.daty)
         (d / f"daty.npy.{_W['nn']}.tmp.npy").replace(d / "daty.npy")
     v = _W.get("v", lm.V)
-    mf = manifest(sid, sr, c, _W["kod_slit"])
+    mf = manifest(sid, sr, c, _W["kod_slit"], rz)
     poz_ok = hasattr(sr.evr, "poz")                                    # Л7b: настоящий оценщик отдаёт |pos| (EvaluatorV2.poz)
     w = lm.Pisatel21(_W["root"], sid, _W["nn"], mf, daty=sr.daty, poz=poz_ok) if v == lm.V21 else lm.Pisatel(_W["root"], sid, _W["nn"], mf)
     zak, t, oshibok = _W["zakryt"][sid] | w.done(), [], 0
-    for i, pt in tochki(c, n0, n1):
-        if sha_tochki(sid, sr, pt) in zak:
+    for i, pt in tochki(c, n0, n1, rz):
+        if sha_tochki(sid, sr, pt, rz) in zak:
             continue
-        r, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, _W["ist"], _W["kod_slit"], _W["fast"], v)
+        r, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, _W["ist"], _W["kod_slit"], _W["fast"], v, rz)
         importlib.import_module("fastbt.zaem_v2").pisat(w, r, ex_p, ex_t, getattr(sr.evr, "zaem", None),
                                                            sr.evr.poz if poz_ok and v == lm.V21 and r["status"] == "ok" else None)   # Ж-089: ряд платы за заём; Л7b: |pos|
         importlib.import_module("fastbt.tejk_signal").pisat_diag(w.pd, r, getattr(sr.evr, "diag", None) if r["status"] == "ok" else None)   # Ж-087
@@ -187,14 +261,16 @@ def zakrytye(root: Path, sid: str) -> set:
     return set().union(*[lm.Pisatel(root, sid, int(p.name[1:]), m).done() for p in (Path(root) / sid).glob("p[0-9]*")])
 
 
-def schet(sids, n0: int, n1: int, ist: str, root: Path, processov: int, kod_slit: bool, fast: bool, v: str = lm.V) -> dict:
-    """Все sids × [n0, n1) куски по 100 в очередь на `processov` процессов. {sid: {n, oshibok, t, rss}}."""
+def schet(sids, n0: int, n1, ist: str, root: Path, processov: int, kod_slit: bool, fast: bool, v: str = lm.V,
+          rz: Rezhim = R0) -> dict:
+    """Все sids × [n0, n1) куски по 100 в очередь на `processov` процессов; n1 — число или {sid: n1}. {sid: {n, oshibok, t, rss}}."""
     if not 1 <= processov <= MAX_PROC:
         raise ValueError(f"процессов 1…{MAX_PROC}")
-    kubs = {s: load_kub(s) for s in sids}
-    ctx = dict(kubs=kubs, root=Path(root), ist=ist, kod_slit=kod_slit, fast=fast, v=v,
+    kubs = {s: load_kub(s, rz) for s in sids}
+    ctx = dict(kubs=kubs, root=Path(root), ist=ist, kod_slit=kod_slit, fast=fast, v=v, rz=rz,
                zakryt={s: zakrytye(root, s) for s in sids})
-    zad = [(s, a, min(a + KUSOK, n1)) for s in sids for a in range(n0, n1, KUSOK)]
+    n1s = n1 if isinstance(n1, dict) else dict.fromkeys(sids, n1)
+    zad = [(s, a, min(a + KUSOK, n1s[s])) for s in sids for a in range(n0, n1s[s], KUSOK)]
     fk, itog = mp.get_context("fork"), {s: dict(n=0, oshibok=0, t=[], rss=0.0) for s in sids}
     with cf.ProcessPoolExecutor(processov, mp_context=fk, initializer=_init, initargs=(ctx, fk.Value("i", 0))) as ex:
         for sid, n, ob, t, rss in ex.map(schitat_kusok, zad):
@@ -215,15 +291,15 @@ def zapisat_zamer(itog: dict, processov: int) -> Path:
     return p
 
 
-def sverka(n: int, root: Path, fast: bool) -> int:
+def sverka(n: int, root: Path, fast: bool, rz: Rezhim = R0) -> int:
     """IG-8: n случайных строк (seed 20261028) пересчитываются; порт, tik и поля §1.2 (кроме t_sek, kod, kod_slit) — побайтно."""
     chs = {s: lm.Chitatel(root, s, sverka_kod=True) for s in SIDS if (Path(root) / s / "manifest.json").exists()}
     pool = [(s, r) for s, ch in chs.items() for r in ch.rows() if r.get("sobol_i") is not None]
     vybor, bad = random.Random(20261028).sample(pool, min(n, len(pool))), []
     for sid, r in vybor:
-        sr, c = sreda(sid), load_kub(sid)
-        i, pt = tochki(c, r["sobol_i"], r["sobol_i"] + 1)[0]
-        r2, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, r["istochnik"], r["kod_slit"], fast, chs[sid].v)
+        sr, c = sreda(sid, rz), load_kub(sid, rz)
+        i, pt = tochki(c, r["sobol_i"], r["sobol_i"] + 1, rz)[0]
+        r2, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, r["istochnik"], r["kod_slit"], fast, chs[sid].v, rz)
         sig = lambda x: json.dumps({k: v for k, v in x.items() if k not in SVERKA_PROPUSK}, sort_keys=True)  # noqa: E731
         if chs[sid].v == lm.V21:        # суммы сегментов, float64, побайтно
             pz = sr.evr.poz if chs[sid].manifest.get("poz_konec") else None
@@ -239,6 +315,31 @@ def sverka(n: int, root: Path, fast: bool) -> int:
     return 1 if bad or len(vybor) < n else 0
 
 
+def rezhim(a, sids: list, ap) -> tuple:
+    """(Rezhim, корень ledger): progon — прежний; v5 — fdr из куба (у всех стратегий один), свой каталог на период × seed | k3."""
+    if a.kub == "progon":
+        if a.period != PERIOD or a.seed != 1 or a.k3 or a.n1:
+            ap.error("--period/--seed/--k3/--n1 — только для --kub v5")
+        return R0, a.root or LEDGER
+    fdrs = {load_kub(s, R0._replace(setka="v5")).get("fdr") for s in sids}
+    if len(fdrs) != 1:
+        ap.error(f"fdr в кубах разный: {fdrs}")
+    if a.k3 and (a.seed != 1 or a.n1):
+        ap.error("k3 — полная решётка: без --seed 2 и --n1")
+    rz = Rezhim("v5", a.period, "seed2" if a.seed == 2 else "seed", a.k3, fdrs.pop())
+    return rz, (a.root or LEDGER5) / f"{a.period}_{'k3' if a.k3 else f's{a.seed}'}"
+
+
+def n1_po_sid(kubs: dict, arg, rz: Rezhim) -> dict:
+    """{sid: N1}: k3 — объём решётки; иначе --n1 (число или S1=…,S2=…), где не задан — sobol.N1 куба."""
+    if rz.k3:
+        return {s: obem_k3(c) for s, c in kubs.items()}
+    over = {} if not arg else {"*": int(arg)} if arg.isdigit() else {k: int(v) for k, v in (x.split("=") for x in arg.split(","))}
+    if set(over) - set(kubs) - {"*"}:
+        raise ValueError(f"--n1: стратегии {sorted(set(over) - set(kubs) - {'*'})} не в прогоне")
+    return {s: over.get(s, over.get("*", c["sobol"]["N1"])) for s, c in kubs.items()}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Соболь-драйвер прогона этапа 1 (счёт — только по команде дирижёра)")
     ap.add_argument("--prohod", type=int, choices=[0, 1, 2], help="0 — пробный (IG-5), 1 — точки 0…4999, 2 — 5000…29999")
@@ -249,22 +350,37 @@ def main(argv=None) -> int:
     ap.add_argument("--fast", action="store_true", help="быстрый слой (Ж-083) для покрытых точек; по умолчанию медленный путь")
     ap.add_argument("--ledger", choices=[lm.V, lm.V21], default=lm.V21, help="формат ledger: 2.1 — суммы сегментов (по умолчанию), 2.0 — ряды")
     ap.add_argument("--strategii", default=",".join(SIDS))
-    ap.add_argument("--root", type=Path, default=LEDGER)
+    ap.add_argument("--root", type=Path, help=f"по умолчанию {LEDGER} (progon) или {LEDGER5}/<период>_<s1|s2|k3> (v5)")
+    ap.add_argument("--kub", choices=["progon", "v5"], default="progon", help="progon — прежний путь; v5 — куб Ж-127")
+    ap.add_argument("--period", choices=sorted(OKNO), default=PERIOD, help="v5: train4 (В1) или v2 (Ж-113)")
+    ap.add_argument("--seed", type=int, choices=[1, 2], default=1, help="v5: 1 — sobol.seed, 2 — sobol.seed2 (Ж-130)")
+    ap.add_argument("--k3", action="store_true", help="v5: проход к3 — полная решётка раздела k3 (оси v4)")
+    ap.add_argument("--n1", help="v5: N1 вместо куба — число для всех или S1=65536,S2=65536")
     a = ap.parse_args(argv)
     sids = a.strategii.split(",")
+    rz, root = rezhim(a, sids, ap)
     if a.sverka:
-        return sverka(a.sverka, a.root, a.fast)
+        return sverka(a.sverka, root, a.fast, rz)
     if a.prohod is None:
         ap.error("нужен --prohod или --sverka")
-    kubs = [load_kub(s) for s in sids]
-    [proverit_kub(c) for c in kubs]
-    sb = kubs[0]["sobol"]
-    p1 = sb.get("prohod1", sb.get("N1"))        # куб v: 3 объявляет N1
-    p2 = sb.get("prohod2", p1)
-    n0, n1 = {0: (0, a.tochek), 1: (0, p1), 2: (p1, p2)}[a.prohod]
-    root = a.root / "_probe" if a.prohod == 0 else a.root
-    proverit_disk(len(sids) * (n1 - n0), root, BAIT_V21 if a.ledger == lm.V21 else BAIT_NA_TOCHKU)
-    itog = schet(sids, n0, n1, "sobol2" if a.prohod == 2 else "sobol1", root, a.processov, a.kod_slit, a.fast, a.ledger)
+    kubs = {s: load_kub(s, rz) for s in sids}
+    if rz.setka == "progon":
+        [proverit_kub(c) for c in kubs.values()]
+        sb = kubs[sids[0]]["sobol"]
+        p1 = sb.get("prohod1", sb.get("N1"))        # куб v: 3 объявляет N1
+        p2 = sb.get("prohod2", p1)
+        n0, n1 = {0: (0, a.tochek), 1: (0, p1), 2: (p1, p2)}[a.prohod]
+    else:
+        if a.prohod == 2:
+            ap.error("куб v5: один проход [0, N1) — --prohod 1")
+        [proverit_v5(c, rz) for c in kubs.values()]
+        proverit_ledger(rz, a.ledger)
+        n0, n1 = 0, (dict.fromkeys(sids, a.tochek) if a.prohod == 0 else n1_po_sid(kubs, a.n1, rz))
+    root = root / "_probe" if a.prohod == 0 else root
+    n1s = n1 if isinstance(n1, dict) else dict.fromkeys(sids, n1)
+    proverit_disk(sum(v - n0 for v in n1s.values()), root, BAIT_V21 if a.ledger == lm.V21 else BAIT_NA_TOCHKU)
+    ist = ("k3" if rz.k3 else f"sobol1_seed{a.seed}") if rz.setka == "v5" else "sobol2" if a.prohod == 2 else "sobol1"
+    itog = schet(sids, n0, n1, ist, root, a.processov, a.kod_slit, a.fast, a.ledger, rz)
     for s, v in itog.items():
         print(f"{s}: посчитано {v['n']}, ошибок {v['oshibok']}, RSS до {v['rss']:.0f} МБ")
     if a.prohod == 0:
