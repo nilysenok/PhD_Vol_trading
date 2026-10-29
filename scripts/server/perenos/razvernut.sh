@@ -33,9 +33,10 @@ if [ ! -d "$KOD_DIR" ]; then
   mkdir -p "$tmp"
   tar -xzf "$KOD_TAR" -C "$tmp" --strip-components=1
   [ -z "$(find "$tmp" \( -path '*/data/*' -o -name '*test_locked*' -o -name '*test1_2022_2024*' \) -print -quit)" ] || fail "в tar кода есть data/ или test_locked"
-  nakl=$(kv nakladka)                   # файлы манифеста, которые fastbt читает от корня кода (data/calendar/)
+  nakl=$(kv nakladka)                   # файлы манифеста, которые fastbt читает от корня кода (KOD: nakladka)
   if [ -n "$nakl" ]; then
-    cut -f1 "$MANIFEST" | grep "^$nakl" | while IFS= read -r p; do mkdir -p "$tmp/$(dirname "$p")"; cp "data/$p" "$tmp/$p"; done
+    awk -F'\t' 'NR > 1 && NF { print (NF == 7 ? $6 : $1) }' "$MANIFEST" | { grep -E "$nakl" || true; } \
+      | while IFS= read -r p; do mkdir -p "$tmp/$(dirname "$p")"; cp "data/$p" "$tmp/$p"; done
   fi
   sha_spisok "$tmp" > "$KOD_SUMS"
   mv "$tmp" "$KOD_DIR"

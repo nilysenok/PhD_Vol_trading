@@ -30,13 +30,22 @@ say "коммит $FULL; каталог $OUT; рабочий каталог Ма
 
 say "1/6 tar кода (git archive $SHORT)"
 TAR="$OUT/kod_$SHORT.tar.gz"
-# справочные таблицы ≤ 2021, которые fastbt читает от корня кода (dividendy, msp, fazy, e1_sektor, e1_rel_sektor)
-SPRAV="docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv docs/issledovaniya/2026-10-28_dividendy_2015_2016.csv
-docs/issledovaniya/2026-10-27_sektory.csv docs/issledovaniya/2026-10-28_sostav_sektorov.csv
-docs/issledovaniya/2026-10-28_kluchevaya_stavka_2013_2017.csv"
-# shellcheck disable=SC2086
-git -C "$REPO" archive --format=tar --prefix=kod/ "$FULL" -- fastbt scripts/server env/requirements_server.txt $SPRAV | gzip -n -9 > "$TAR"
-! tar -tzf "$TAR" | grep -E '^kod/data/|test_locked|test1_2022_2024' >/dev/null || fail "в tar попали data/ или test_locked"
+# БЕЛЫЙ список (в git есть файлы с данными 2022+): fastbt/**.py|yaml без tests/ и designs/; из designs/ — v5/, zh126/,
+# progon/kub_S*.yaml (кубы замены progon_sobol) и sweep/ekviv_20.yaml (базовая точка A_fix); scripts/server/*.py|sh; requirements.
+# Таблицы (csv/parquet) в tar не идут: справочные ≤ 2021 едут усечёнными копиями манифеста (накладка ниже).
+git -C "$REPO" ls-tree -r --name-only "$FULL" -- fastbt scripts/server env/requirements_server.txt | grep -E \
+  '^(fastbt/.*\.(py|yaml)|scripts/server/[^/]*\.(py|sh)|scripts/server/perenos/[^/]*\.sh|env/requirements_server\.txt)$' \
+  | grep -v -E '^fastbt/(tests|designs)/' > "$TMP/belyj.txt" || true
+git -C "$REPO" ls-tree -r --name-only "$FULL" -- fastbt/designs | grep -E \
+  '^fastbt/designs/((v5|zh126)/.*\.(py|yaml)|progon/kub_S[1-6]\.yaml|sweep/ekviv_20\.yaml)$' >> "$TMP/belyj.txt" || true
+git -C "$REPO" show "$FULL:scripts/server/tar_iskluchit_2022plus.txt" > "$TMP/iskl.txt" || fail "нет scripts/server/tar_iskluchit_2022plus.txt в коммите"
+plohie=$(grep -v '^#' "$TMP/iskl.txt" | grep -Fx -f - "$TMP/belyj.txt" || true)
+[ -z "$plohie" ] || fail "в белый список попали пути из tar_iskluchit_2022plus.txt: $(echo "$plohie" | head -3 | tr '\n' ' ')"
+spisok=()
+while IFS= read -r f; do spisok+=("$f"); done < "$TMP/belyj.txt"
+git -C "$REPO" archive --format=tar --prefix=kod/ "$FULL" -- "${spisok[@]}" | gzip -n -9 > "$TAR"
+! tar -tzf "$TAR" | grep -E '^kod/data/|test_locked|test1_2022_2024|\.(csv|parquet|npz|pkl)$' >/dev/null \
+  || fail "в tar попали data/, test_locked или таблицы"
 TAR_SHA=$(sha_file "$TAR")
 tar -xzf "$TAR" -C "$TMP"
 K="$TMP/kod"
@@ -50,10 +59,11 @@ cp "$MANIFEST" "$OUT/manifest_dannyh.tsv"
 python3 "$K/scripts/server/manifest_proverka.py" --manifest "$OUT/manifest_dannyh.tsv" --koren "$OUT/data" \
   --istochnik "$DANNYE" --strogo --spisok "$TMP/spisok_dannyh.txt" || fail "манифест отвергнут — перенос не собран"
 
-# fastbt читает data/calendar/ от корня КОДА (etap1_data: ROOT/data/calendar/cbr.csv), не от FASTBT_MAIN: эти файлы манифеста
-# кладутся в распакованный код — здесь и в razvernut.sh (тем же правилом, до суммы и chmod), сверены манифестом
-NAKLADKA=data/calendar/
-grep "^$NAKLADKA" "$TMP/spisok_dannyh.txt" | while IFS= read -r p; do mkdir -p "$K/$(dirname "$p")"; cp "$OUT/data/$p" "$K/$p"; done
+# fastbt читает часть таблиц от корня КОДА, не от FASTBT_MAIN (etap1_data: ROOT/data/calendar/cbr.csv; ставка
+# fastbt/rates/; dividendy, msp, fazy: docs/issledovaniya/): эти файлы манифеста (усечённые копии) кладутся в распакованный
+# код — здесь и в razvernut.sh тем же правилом, до суммы и chmod; сверены манифестом
+NAKLADKA='^(data/calendar|fastbt/rates|docs/issledovaniya)/'
+{ grep -E "$NAKLADKA" "$TMP/spisok_dannyh.txt" || true; } | while IFS= read -r p; do mkdir -p "$K/$(dirname "$p")"; cp "$OUT/data/$p" "$K/$p"; done
 
 say "3/6 скрипты, requirements, кубы"
 cp "$K"/scripts/server/perenos/*.sh "$K/scripts/server/manifest_proverka.py" "$K/scripts/server/versii.py" "$OUT/"
