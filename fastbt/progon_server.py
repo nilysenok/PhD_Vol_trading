@@ -154,14 +154,19 @@ def schet(zad: list, ctx: dict, procs: int, itog: dict, pre: dict, d_otp: dict, 
                 st["posledniy_i"] = posl
 
 
-def progon(kubs: dict, out, procs: int, n=None, prodolzhit=False, kod_slit=False, fast=False, rezhim=REZHIM, rz=ps.R0) -> dict:
+def progon(kubs: dict, out, procs: int, n=None, prodolzhit=False, kod_slit=False, fast=False, rezhim=REZHIM, rz=ps.R0, ledger=None) -> dict:
     """kubs {sid: (путь, куб)} → {sid: n, oshibok, sboy, posledniy_i, deti}; n — точек (число или {sid: n}), по умолчанию из куба;
-    rz — режим драйвера (R0 — designs/progon; v5 — куб Ж-127: период, seed, k3); ledger 2.0 для v2, иначе 2.1."""
+    rz — режим драйвера (R0 — designs/progon; v5 — куб Ж-127: период, seed, k3); ledger None — 2.0 для v2, иначе 2.1;
+    "2.0" | "2.1" — явно (proverit_ledger драйвера: 2.1 на период v2 — отказ до старта)."""
     out, sids = Path(out), list(kubs)
+    v = ledger or (lm.V if rz.period == "v2" else lm.V21)
+    if v not in (lm.V, lm.V21):
+        raise SystemExit(f"ledger {v!r}: известны {lm.V}, {lm.V21}")
+    ps.proverit_ledger(rz, v)
     if procs < 1 or rezhim not in ("obshchie", "prezhniy") or len({Path(p).parent for p, _ in kubs.values()}) > 1:
         raise SystemExit("procs ≥ 1; rezhim obshchie | prezhniy; кубы — из одного каталога")
     itog = {s: dict(n=0, oshibok=0, sboy=None, posledniy_i=None, deti=set()) for s in sids}
-    staryj, zamki, v = (ps.fabrika, ps.KUB, ps.KUB5), [], lm.V if rz.period == "v2" else lm.V21
+    staryj, zamki = (ps.fabrika, ps.KUB, ps.KUB5), []
     ps.KUB = ps.KUB5 = Path(next(iter(kubs.values()))[0]).parent / "kub_{sid}.yaml"
     try:
         pre, otp, start = podgotovka(kubs, out, prodolzhit, kod_slit, itog, zamki, rz, v)
@@ -208,6 +213,7 @@ def main(argv=None) -> int:
     ap.add_argument("--k3", action="store_true", help="v5: проход к3 — полная решётка раздела k3")
     ap.add_argument("--n1", help="v5: N1 вместо куба — число для всех или S1=65536,S2=65536")
     ap.add_argument("--strategii", default=",".join(ps.SIDS), help="v5: список стратегий")
+    ap.add_argument("--ledger", choices=[lm.V, lm.V21], help="формат ledger; по умолчанию 2.0 для v2, иначе 2.1; 2.1 на v2 — отказ")
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--procs", type=int, default=procs_po_umolchaniyu(), help="по умолчанию ядра − 4")
     ap.add_argument("--prodolzhit", action="store_true", help="с чекпоинта; отказ при чужом kod/vhody/кубе/seed")
@@ -217,7 +223,7 @@ def main(argv=None) -> int:
     kubs, rz, n = kuby_iz_argv(a, ap)
     if len(kubs) != len(a.kub) and a.kub != ["v5"]:
         raise SystemExit("одна стратегия указана дважды")
-    itog = progon(kubs, a.out, a.procs, n, a.prodolzhit, a.kod_slit, a.fast, rz=rz)
+    itog = progon(kubs, a.out, a.procs, n, a.prodolzhit, a.kod_slit, a.fast, rz=rz, ledger=a.ledger)
     for s, v in itog.items():
         print(f"{s}: посчитано {v['n']}, ошибок {v['oshibok']}, чекпоинт {v['posledniy_i']}, сбой {v['sboy']}")
     return 2 if any(v["sboy"] or v["oshibok"] for v in itog.values()) else 0
