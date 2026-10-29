@@ -34,6 +34,16 @@ def p_k2_znachenie(fakt: float, msr_k2) -> float:
     return (1 + int((v >= fakt).sum())) / (len(v) + 1)
 
 
+def dopolnit_n(df: pd.DataFrame, msr_k2) -> pd.DataFrame:
+    """Колонки n_k2_konechnyh (повторы k2 с конечным mSR — то n в знаменателе p_k2) и n_k2 (всего) в строках, где считается p_k2 (гибрид)."""
+    v = np.asarray(msr_k2, float)
+    df = df.copy()
+    df["n_k2"], df["n_k2_konechnyh"] = np.nan, np.nan
+    m = (df["tip"] == NAMES["hyb"][1]).to_numpy()
+    df.loc[m, "n_k2"], df.loc[m, "n_k2_konechnyh"] = len(v), int(np.isfinite(v).sum())
+    return df
+
+
 def nastroit(period: str, sigma_dir: Path | None):
     """Подставляет период в модуль-образец (его функции читают GODY/LAST/CH4 как глобальные)."""
     from fastbt import a_strogaya as AS
@@ -82,11 +92,11 @@ def main(argv=None) -> int:
     for g in (*p["gody"], VSE):
         ids = p["gody"] if g == VSE else (g,)
         r = dict(stroka="контроль: к2 (сдвиг маски σ̂, среднее %d)" % n_k2, tip="kontrol", god=g,
-                 msr=float(np.mean([S.stroki_msr(x, g) for x in k2])),
+                 msr=float(np.nanmean([S.stroki_msr(x, g) for x in k2])),
                  sdelok=float(np.mean([x["cnt"][np.isin(x["god"], ids)].sum() / 2 for x in k2])))
         r["d_vs_baza"] = r["msr"] - S.stroki_msr(baza, g)
         rows.append(r)
-    df = pd.DataFrame(rows)
+    df = dopolnit_n(pd.DataFrame(rows), msr_k2)
     if a.period == "test1":
         df["god"] = df["god"].replace(VSE, "2022-2024")
     zapisat(df, out / f"zh_sigma_zatvor_{a.period}.csv", a.period)
