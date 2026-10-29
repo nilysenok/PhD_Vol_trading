@@ -123,7 +123,7 @@ def main(argv=None) -> int:
         return 1
     if a.spisok:
         a.spisok.write_text("".join(f"{x[0]}\n" for x in m), encoding="utf-8")
-    print(f"OK manifest: {len(m)} файлов, {sum(x[2] for x in m) / 1e9:.3f} ГБ, max_data {max(x[3] for x in m if x[3] != BEZ_DAT)}, "
+    print(f"OK manifest: {len(m)} файлов, {sum(x[2] for x in m) / 1e9:.3f} ГБ, max_data {max((x[3] for x in m if x[3] != BEZ_DAT), default=BEZ_DAT)}, "
           f"sha256 и размеры совпадают ({a.koren})")
     return 0
 

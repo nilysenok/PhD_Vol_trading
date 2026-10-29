@@ -49,6 +49,22 @@ def test_podmenennyj_fajl_otvergnut(tmp_path):
     assert _run(m, src, tmp_path) == 1
 
 
+def test_bez_dat_prinimaetsya_tolko_bukvalno(tmp_path):
+    m, src = _mf(tmp_path, md="без дат")
+    assert _run(m, src, tmp_path) == 0
+    m, src = _mf(tmp_path / "x", md="2022 без дат")
+    assert _run(m, src, tmp_path / "x") == 1
+
+
+def test_sha256_otmetka_ryadom_ne_lishnyaya_a_chuzhaya_lishnyaya(tmp_path):
+    m, src = _mf(tmp_path)
+    assert _run(m, src, tmp_path) == 0
+    (tmp_path / "out/data/a.csv.sha256").write_text("x")       # отметка daily_1850.ensure рядом с файлом манифеста
+    assert _run(m, src, tmp_path) == 0
+    (tmp_path / "out/data/b.csv.sha256").write_text("x")       # отметка файла, которого в манифесте нет
+    assert _run(m, src, tmp_path) == 1
+
+
 def test_lishnij_fajl_v_koren(tmp_path):
     m, src = _mf(tmp_path)
     assert _run(m, src, tmp_path) == 0
