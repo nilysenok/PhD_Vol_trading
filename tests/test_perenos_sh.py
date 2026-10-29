@@ -16,10 +16,11 @@ def _bash(tmp: Path, code: str, **env) -> subprocess.CompletedProcess:
     return subprocess.run(["bash", "-c", f". ./obshchee.sh; {code}"], cwd=tmp, env=e, capture_output=True, text=True)
 
 
-def test_dve_cepochki_delyat_yadra_popolam(tmp_path):
-    r = _bash(tmp_path, "processov", PERENOS_YADRA="132")
-    assert r.stdout.strip() == "64"                 # (132 − 4) / 2: мутация «без раздела» дала бы 128
-    assert _bash(tmp_path, "processov", PERENOS_YADRA="132", PERENOS_CEPOCHEK="1").stdout.strip() == "128"
+def test_po_umolchaniyu_120_processov_cepochki_delyat_po_zaprosu(tmp_path):      # Ж-137 п. 2 (было (132 − 4) / 2 = 64)
+    assert _bash(tmp_path, "processov", PERENOS_YADRA="132").stdout.strip() == "120"
+    assert _bash(tmp_path, "processov", PERENOS_YADRA="100").stdout.strip() == "96"      # потолок ядра − 4
+    assert _bash(tmp_path, "processov", PERENOS_YADRA="132", PERENOS_CEPOCHEK="2").stdout.strip() == "64"
+    assert _bash(tmp_path, "processov", PERENOS_YADRA="132", PERENOS_PROCS_DEF="50").stdout.strip() == "50"
 
 
 def _zhivaya(tmp: Path, per: str, n: int):

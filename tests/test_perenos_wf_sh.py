@@ -17,8 +17,8 @@ def _bash(tmp: Path, code: str, **env) -> subprocess.CompletedProcess:
 
 def test_wf_po_umolchaniyu_80_processov_a_ne_polovina_yader(tmp_path):
     assert _bash(tmp_path, "processov wf", PERENOS_YADRA="132").stdout.strip() == "80"
-    assert _bash(tmp_path, "processov train4", PERENOS_YADRA="132").stdout.strip() == "64"      # прочие периоды — как раньше
-    assert _bash(tmp_path, "processov", PERENOS_YADRA="132").stdout.strip() == "64"
+    assert _bash(tmp_path, "processov train4", PERENOS_YADRA="132").stdout.strip() == "120"     # прочие периоды — 120 (Ж-137)
+    assert _bash(tmp_path, "processov", PERENOS_YADRA="132").stdout.strip() == "120"
 
 
 def test_wf_peremennaya_i_potolok_yadra_minus_4(tmp_path):
