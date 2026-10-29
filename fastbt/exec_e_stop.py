@@ -14,6 +14,12 @@ from fastbt.exec_e2 import Run2
 from fastbt.exec_e_rules import stop_hit, stop_vhod
 
 
+def ke_levels(up, dn, k_e, atr):
+    """Л6: сдвиг стоп-заявок входа на k_e·ATR — buy-stop вверх, sell-stop вниз (k_e < 0 — оба ближе к цене). nan ATR — обе nan."""
+    a = k_e * atr
+    return up + a, dn - a
+
+
 class RunStop(Run2):
     def __init__(s, *a, urovni, **kw):
         super().__init__(*a, **kw)
@@ -23,6 +29,8 @@ class RunStop(Run2):
         if s.tr is not None or s.order is not None or j + 1 >= len(s.ix) or not np.isfinite(s.sigma[i]):
             return
         up, dn = s.u["up"][i], s.u["dn"][i]
+        if s.p.k_e != 0:
+            up, dn = ke_levels(up, dn, s.p.k_e, s.atr[i])    # ATR на close d; нет ATR — заявки нет
         if np.isfinite(up) or np.isfinite(dn):
             s.n_orders += 1
             s.order = dict(due=j + 1, d_sig=i, up=up if np.isfinite(up) else np.inf, dn=dn if np.isfinite(dn) else -np.inf)

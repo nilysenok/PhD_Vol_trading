@@ -1,45 +1,50 @@
-"""Расследование 29.10: почему падает fastbt/tests/test_s56_equiv.py.
+"""Регрессия (расследование 29.10, починка): эталон S5/S6 и td — на ОДНОМ ряду.
 
-Причина: legacy-контекст S5/S6 (fastbt/signals/s56.py::_legacy_ctx) берёт pivot/VWAP из СЫРОГО
-daily_df(), а td.close/high/low/open — с обратной поправкой на дивиденды (dividendy.adjust_ohlc, Ж-059 п. 2).
-Тикеры без дивидендов (MTLR) совпадают, с дивидендами (SBER) — нет. Тест фиксирует причину, правок кода нет.
+Причина красного fastbt/tests/test_s56_equiv.py была в том, что `_legacy_ctx` строил pivot/VWAP из сырого
+daily_df(), а td — со скорректированным на дивиденды рядом (Ж-059 п. 2, #370, mutations.md № 33).
+Теперь эталон берёт OHLC из td. Мутация: эталон построен по сырому ряду -> тест обязан падать.
 """
+import dataclasses
+
+import numpy as np
 import pytest
 
 from fastbt import data
-from fastbt.indicators import compute_base
+from fastbt.legacy import load_legacy
 from fastbt.signals import s56
-from fastbt.signals.interface import check_family, get_family
 
 
-@pytest.fixture
-def bez_popravki(monkeypatch):
-    monkeypatch.setattr(data.dividendy, "adjust_ohlc", lambda t, d, c, *bars: tuple(b.copy() for b in bars))
-    data.load_ticker.cache_clear()
+@pytest.fixture(autouse=True)
+def _cache():
     s56._CACHE.clear()
     yield
-    data.load_ticker.cache_clear()
     s56._CACHE.clear()
 
 
-def _bad(sid, tk):
-    td = data.load_ticker(tk)
-    ind = compute_base(td.close, td.high, td.low, td.open, td.volume)
-    return check_family(get_family(sid), td, ind)["bad"]
-
-
-def test_td_close_otlichaetsya_ot_syrogo_u_sber_ne_u_mtlr():
+def _raw(td):
     d = data.daily_df()
-    for tk, differs in (("SBER", True), ("MTLR", False)):
-        raw = d[d["ticker"] == tk].sort_values("date")["close"].values
-        assert (not (data.load_ticker(tk).close == raw).all()) is differs
+    x = d[d["ticker"] == td.ticker].sort_values("date")
+    return dataclasses.replace(td, **{k: x[k].values.astype(np.float64) for k in ("open", "high", "low", "close")})
 
 
-def test_s5_rashoditsya_s_legacy_iz_za_popravki_dividendov():
-    s56._CACHE.clear()
-    assert _bad("S5", "SBER") != []        # воспроизведение симптома
+def _pivot_gap(td_ref, td_sig):
+    """max |P эталона (на ряду td_ref) − P ядра на ряду td_sig|."""
+    pc = s56._legacy_ctx(load_legacy(), td_ref)[1]
+    P = pc[("weekly", "classic")][0]
+    mine = s56._pivots(s56._gid(td_sig.dates, "weekly"), td_sig.high, td_sig.low, td_sig.close, False)[0]
+    return np.nanmax(np.abs(P - mine))
 
 
-def test_bez_popravki_dividendov_s5_s6_sovpadayut(bez_popravki):
-    assert _bad("S5", "SBER") == []
-    assert _bad("S6", "SBER") == []
+def test_ryad_sber_otlichaetsya_ot_syrogo():
+    td = data.load_ticker("SBER")
+    assert not (td.close == _raw(td).close).all()      # поправка на дивиденды действует
+
+
+def test_etalon_na_odnom_ryadu_s_td():
+    td = data.load_ticker("SBER")
+    assert _pivot_gap(td, td) == 0.0
+
+
+def test_mutatsiya_etalon_na_syrom_ryadu_lovitsya():
+    td = data.load_ticker("SBER")
+    assert _pivot_gap(_raw(td), td) > 0.0               # эталон по сырому ряду расходится с ядром
