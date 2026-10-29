@@ -36,11 +36,29 @@ PY="$P/.venv/bin/python3"
 
 yadra() { echo "${PERENOS_YADRA:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}"; }
 
-processov() {   # на цепочку: (ядра − 4) / PERENOS_CEPOCHEK (умолчание 2: train4 и v2 идут вместе, Ж-131 п. 4), не меньше 1;
-  # PERENOS_PROCS — явное число (локальная проверка); одна цепочка на весь сервер — PERENOS_CEPOCHEK=1
-  local n=${PERENOS_PROCS:-$(( ($(yadra) - 4) / ${PERENOS_CEPOCHEK:-2} ))}
+processov() {   # $1 — период (необязателен). На цепочку: (ядра − 4) / PERENOS_CEPOCHEK (умолчание 2: train4 и v2 идут вместе, Ж-131 п. 4),
+  # не меньше 1; wf — одна цепочка на сервер: PERENOS_PROCS_WF (умолчание 80: RSS 1,6–2,3 ГБ, потолок 2,8 на процесс, К-wf8; 124 не влезают
+  # в 256 ГБ без общих массивов), но не больше ядра − 4. PERENOS_PROCS — явное число (локальная проверка), главнее всех.
+  local n=${PERENOS_PROCS:-$(( ($(yadra) - 4) / ${PERENOS_CEPOCHEK:-2} ))} lim
+  if [ "${1:-}" = wf ] && [ -z "${PERENOS_PROCS:-}" ]; then
+    n=${PERENOS_PROCS_WF:-80}; lim=$(( $(yadra) - 4 )); [ "$n" -le "$lim" ] 2>/dev/null || n=$lim
+  fi
   [ "$n" -ge 1 ] 2>/dev/null || n=1
   echo "$n"
+}
+
+otmetka_wf() {   # период wf читает данные ≥ 2022: только при отметке снятого замка (копия docs/resheniya/wf_zamok_snyat.json; ставит владелец)
+  [ -s "$P/wf_zamok_snyat.json" ] || fail "wf: нет отметки $P/wf_zamok_snyat.json (её ставит владелец, не агент) — счёт не запускаю"
+}
+
+otmetka_paketa() {   # отметка wf в коде (kod/<sha>/docs/resheniya/): печатает SHA файла и SHA предрегистрации v2 из неё; нет отметки — ничего (wf откажет)
+  local k="$KOD_DIR/docs/resheniya/wf_zamok_snyat.json" pre
+  [ -f "$k" ] || { say "   отметки wf в пакете нет (период wf на сервере откажет)"; return 0; }
+  pre=$(sed -n 's/.*"sha256": *"\([0-9a-f]\{64\}\)".*/\1/p' "$k" | head -n 1)
+  [ -n "$pre" ] || fail "отметка wf без sha256 предрегистрации v2 (64 hex) — пакет не годен"
+  [ -z "${PERENOS_PREREG_SHA:-}" ] || [ "$pre" = "$PERENOS_PREREG_SHA" ] || fail "SHA предрегистрации в отметке $pre ≠ ожидаемому PERENOS_PREREG_SHA"
+  [ ! -f "$P/wf_zamok_snyat.json" ] || [ "$(sha_file "$P/wf_zamok_snyat.json")" = "$(sha_file "$k")" ] || fail "wf_zamok_snyat.json в корне пакета ≠ отметке в коде"
+  say "   отметка wf: sha256 файла $(sha_file "$k"), предрегистрация v2 $pre"
 }
 
 chuzhie_processy() {   # $1 — свой период; сумма процессов других ЖИВЫХ цепочек (logs/sobol_<период>.pid + .procs)
