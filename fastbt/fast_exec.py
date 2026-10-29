@@ -32,7 +32,8 @@ F_K, F_A, F_B, F_COMM, F_TICK, F_R, F_H, F_KTR, F_NAL, F_CH, F_KE, F_ATRM, F_CF,
 # P_SZ — stop_zayavka, P_ATRM — atr_m задан, P_T — срок заявки, P_RED — reentry_den, P_CHAST — частичный выход)
 REASONS = (None, "stop", "trail", "bu", "take", "vremya", "signal", "lim", "kanal", "part", "pir")
 R_STOP, R_TRAIL, R_BU, R_TAKE, R_VREMYA, R_SIGNAL, R_LIM, R_KANAL, R_PART, R_PIR = range(1, 11)
-YADRO_S34_GOTOV = True      # оси stop_zayavka+urovni, atr_m, T, reentry_den, chast_1r/chast в ядре; включение в pokryto — отдельным коммитом
+YADRO_S34_GOTOV = True      # оси stop_zayavka+urovni, atr_m, T, reentry_den, chast_1r/chast в ядре (включены в pokryto, #658)
+YADRO_OSI3_GOTOV = True     # Ф-сл3d: оси #653 (b0, b0_c, sp, step_s, a_rang + вход rang) и #660 (pir) в ядре; снят — эти точки идут эталоном
 F_CODES = {"propusk": 0, "zakrytie_d1": 1, "povtor": 2}
 ED_CODES = {"sigma": 0, "atr": 1, "pct": 2}            # Л5: единица уровней (exec_e.unit_series)
 ATR_N, CH_OKNO = 14, 11                                 # = exec_e_rules.atr_series n; окно экстремума Run._chand
@@ -569,14 +570,14 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang):  # 
 
 
 # --- обёртка v5: drop-in exec_e.run для осей S3/S4; fast_etap1.run их не знает (включение в pokryto — отдельный коммит) ---
-NOVYE = frozenset(("vhod_tip", "atr_m", "chast_1r", "chast", "T", "reentry_den", "k_e")) | v6.OSI     # + b0, b0_c, sp, step_s, a_rang (pir — нет)
+NOVYE = frozenset(("vhod_tip", "atr_m", "chast_1r", "chast", "T", "reentry_den", "k_e"))     # + v6.OSI (b0, b0_c, sp, step_s, a_rang, pir) при YADRO_OSI3_GOTOV
 
 
 def ne_znaet(p) -> list:
     """Поля Params не в умолчании, которых нет ни в FAST_POLYA, ни в осях v5 ядра (пусто — ядро режим знает)."""
     from fastbt import fast_etap1
     from fastbt.exec_e_stop import stop_novye
-    return [n for n, d in fast_etap1._umolch(type(p)) if n not in NOVYE and getattr(p, n) != d] + stop_novye(p)   # V6-11: оси v5 на стоп-заявке — эталон
+    return [n for n, d in fast_etap1._umolch(type(p)) if n not in NOVYE and not (YADRO_OSI3_GOTOV and n in v6.OSI) and getattr(p, n) != d] + stop_novye(p)   # V6-11: оси v5 на стоп-заявке — эталон
 
 
 def params_v5(p, nal: float) -> tuple:
