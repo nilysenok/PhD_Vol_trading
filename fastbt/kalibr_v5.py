@@ -16,7 +16,7 @@ from typing import Callable, Optional
 
 import numpy as np
 
-from fastbt import grids, ledger_v2 as lm, sweep_plato as SP
+from fastbt import grids, ledger_v2 as lm, period_v2 as PV, sweep_plato as SP
 from fastbt.approach_a import _desc
 from fastbt.data import year_bounds
 from fastbt.execlayer import vote
@@ -47,11 +47,11 @@ class Pul:
     komissiya: float = 0.0
     dosschitat: Optional[Callable] = None     # pt -> (ex[тикеры, T], poz | None): новая проба; None — соседей вне ledger нет
     novye: dict = field(default_factory=dict)
+    period: str = "train4"                    # охрана дат: wf — до конца периода и только при снятом замке (`period_v2`)
 
     def __post_init__(self):
         self.daty = np.asarray(self.daty, "datetime64[D]")
-        if self.daty.size and self.daty.max() >= np.datetime64("2020-01-01"):
-            raise ValueError("даты ≥ 2020 в пуле калибровки train/В2 — отказ (validation — П8)")
+        self._ohrana()
         if self.ex.shape[0] != len(self.tochki) or self.ex.shape[2] != self.daty.size:
             raise ValueError("ex: [точки, тикеры, дни]")
         self.idx, self.kol = {}, {}
@@ -59,6 +59,15 @@ class Pul:
             self.idx.setdefault(klyuch(self.sid, pt), i)
         for a in self.osi:
             self.kol[a] = np.array([lm.tok(pt[a]) if a in pt else "" for pt in self.tochki])
+
+    def _ohrana(self):
+        if not self.daty.size or self.daty.max() < np.datetime64("2020-01-01"):
+            return
+        if self.period != "wf":
+            raise ValueError("даты ≥ 2020 в пуле калибровки train/В2 — отказ (validation — П8)")
+        PV.proverit_chtenie("wf", otmetka=PV.OTMETKA)   # без отметки владельца — ZamokVladeltsa
+        if self.daty.max() > np.datetime64(PV.PERIODY["wf"].konec.date()):
+            raise ValueError("даты пула wf позже конца периода — отказ")
 
     def n_proby(self) -> int:
         """N для DSR фаз 1–2: различные ключи ledger + досчитанные соседи."""

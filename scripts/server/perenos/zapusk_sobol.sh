@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Запуск Соболя на сервере (Ж-133 п. 5): ./zapusk_sobol.sh train4 | ./zapusk_sobol.sh v2 — в фоне (nohup), лог в logs/,
+# Запуск Соболя на сервере (Ж-133 п. 5): ./zapusk_sobol.sh train4 | v2 | wf — в фоне (nohup), лог в logs/,
+# wf (Ж-136 п. 5: один проход по всему периоду 2014-06…2026-02, s1 s2 k3): только при отметке wf_zamok_snyat.json рядом со скриптом
+# (ставит владелец), процессов PERENOS_PROCS_WF (умолчание 80), одна цепочка на сервер;
 # ledger в ledger/<период>/<Sk>/ (одна стратегия — один каталог), чекпоинт каждые 5 000 точек, строка состояния по стратегиям.
 #   ./zapusk_sobol.sh status <период>   — строки состояния и жив ли процесс
 # Отказ без отметки proverka/OK от ЭТОГО кода, данных, эталона и режима numpy (./proverka_yakor.sh), при изменённом коде, при живом
@@ -25,9 +27,9 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
       # N1 по умолчанию 262 144 на стратегию (решение дирижёра, volna_17 п. 1: 200 000 → степень двойки); k3 — полная решётка, без --n1
       case "$pr" in s1) a="--seed 1 --n1 ${PERENOS_N1:-262144}" ;; s2) a="--seed 2 --n1 ${PERENOS_N1:-262144}" ;; k3) a="--k3" ;;
         *) fail "проход $pr: s1 | s2 | k3" ;; esac
-      say "progon_server: v5 $per $pr ($a), ledger/${per}_$pr/<Sk>/, процессов $(processov)"
+      say "progon_server: v5 $per $pr ($a), ledger/${per}_$pr/<Sk>/, процессов $(processov "$per")"
       (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub v5 --period "$per" $a \
-        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/${per}_$pr" --procs "$(processov)" --prodolzhit $sl)
+        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/${per}_$pr" --procs "$(processov "$per")" --prodolzhit $sl)
     done
   else
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
@@ -40,7 +42,7 @@ fi
 
 rezhim=${1:-}
 [ "$rezhim" = status ] && per=${2:-} || per=$rezhim
-case "$per" in train4|v2) ;; *) fail "период: train4 или v2 (./zapusk_sobol.sh train4 | v2 | status <период>)" ;; esac
+case "$per" in train4|v2|wf) ;; *) fail "период: train4, v2 или wf (./zapusk_sobol.sh train4 | v2 | wf | status <период>)" ;; esac
 [ -x "$PY" ] || fail "нет .venv — сначала ./razvernut.sh"
 pidf="$P/logs/sobol_$per.pid"
 zhiv() { [ -f "$pidf" ] && kill -0 "$(cat "$pidf")" 2>/dev/null; }
@@ -71,7 +73,11 @@ kod_cel
 [ $server = 1 ] || [ "$per" = train4 ] || fail "v2: в коде нет fastbt.progon_server (PR не слит), замена progon_sobol считает только train4"
 zhiv && fail "прогон $per уже идёт: pid $(cat "$pidf") (./zapusk_sobol.sh status $per)"
 
-n=$(processov)
+if [ "$per" = wf ]; then     # Ж-136: единый walk-forward, один проход по всему периоду; только после снятия замка владельцем
+  [ $server = 1 ] || fail "wf: в коде нет fastbt.progon_server с кубом v5 — замена progon_sobol считает только train4"
+  otmetka_wf
+fi
+n=$(processov "$per")
 proverit_summu "$per" "$n"          # train4 и v2 одновременно: сумма процессов ≤ ядра − 4 (по умолчанию каждая берёт половину)
 log="$P/logs/sobol_${per}_$(date +%Y%m%d_%H%M%S).log"
 say "2/3 запуск $per: $([ $server = 1 ] && echo fastbt.progon_server || echo 'fastbt.progon_sobol (замена)'), процессов $n, ledger/$per/, лог $log"
