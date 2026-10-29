@@ -15,7 +15,7 @@ from __future__ import annotations
 import numpy as np
 
 from fastbt.filtry_v5 import rsi_wilder
-from fastbt.indicators import calc_std
+from fastbt.indicators import calc_atr, calc_std
 from fastbt.ma_tipy import TIPY, ma as _ma_tipy
 from fastbt.signals import interface as _iface
 from fastbt.signals.interface import SignalSet
@@ -23,6 +23,7 @@ from fastbt.signals.s12 import _s1, _s2
 
 PODTV = ("none", "rsi30", "rsi20", "volume", "close_confirm")
 DEV_TIPY = ("std", "atr")
+NORM = ("okno", "s252")   # К4 (v6): масштаб z — σ окна (v5) или за 252 дня
 FILTR_TIP = "kontr"   # S1, S2 — контртренд (IS_TREND = False)
 
 
@@ -61,10 +62,22 @@ def _filtr(td, p, sig):
 
 
 def _dev(td, ind, p, w, cache):
+    """Масштаб z. norm "okno" (умолчание, v5 побайтно): std окна w / ATR14. "s252": те же формулы по 252 дням."""
+    norm = p.get("norm", "okno")
+    if norm not in NORM:
+        raise ValueError(f"неизвестная norm: {norm!r}")
+    s252 = norm == "s252"
     if p.get("dev_tip", "std") == "atr":
-        return ind["atr14"]
+        if not s252:
+            return ind["atr14"]
+        if "atr252" not in cache:
+            cache["atr252"] = calc_atr(td.high, td.low, td.close, 252)
+        return cache["atr252"]
+    w = 252 if s252 else w
     if ("std", w) not in cache:
         cache[("std", w)] = calc_std(td.close, w)
+        if s252:
+            cache[("std", w)][:w - 1] = np.nan   # calc_std кладёт 1e-12 в прогреве: при 252 > WARMUP это ложные входы
     return cache[("std", w)]
 
 

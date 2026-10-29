@@ -33,7 +33,8 @@ okruzhenie_proverka() {
   [ -x "$PY" ] || fail "нет .venv — сначала ./razvernut.sh"
   say "1/2 код, данные, версии"
   kod_cel
-  "$PY" manifest_proverka.py --manifest "$MANIFEST" --koren data --strogo >/dev/null || fail "данные не совпадают с манифестом — ./razvernut.sh"
+  "$PY" manifest_proverka.py --manifest "$MANIFEST" --koren data --strogo \
+    ${PERENOS_DO:+--do "$PERENOS_DO" --otmetka "${PERENOS_OTMETKA:-wf_zamok_snyat.json}"} >/dev/null || fail "данные не совпадают с манифестом — ./razvernut.sh"
   "$PY" versii.py requirements_server.txt >/dev/null || fail "версии пакетов ≠ пинам — ./razvernut.sh"
 }
 
