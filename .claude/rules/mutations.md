@@ -64,7 +64,7 @@
 | 56 | Ось «sp в том же баре» (параметр `plus_level`) | ось ядра быстрого слоя, порядок в баре | #653 (слит 29.10) | `tests/test_fast_v5_osi3.py::test_mutatsiya_etalona_lovitsya` |
 | 57 | Храповик `vlev` возвращается назад | ось ядра быстрого слоя, храповик | #653 (слит 29.10) | ❓ (ближайший: `tests/test_fast_v5_osi3.py::test_mutatsiya_yadra_lovitsya`, не мутация храповика) |
 | 58 | Ранг берётся по дню входа вместо дня сигнала (параметр `rang_dnya_vhoda`) | ось ядра быстрого слоя, ранг дня | #653 (слит 29.10) | `tests/test_fast_v5_osi3.py::test_mutatsiya_etalona_lovitsya` |
-| 59 | Порог пирамидинга 2ρ вместо 3ρ | пирамидинг, порог добавки | #660/#670 (слит 29.10) | ❓ (ближайший: `tests/test_pir_izvestnyj_otvet.py::test_a_urezanie_08_i_otsutstvie_vtoroj_dobavki`) |
+| 59 | Порог пирамидинга 3ρ вместо 2ρ (Σ риска добавок ≤ 2ρ, Ж-111 п. 10) | пирамидинг, порог добавки | #660/#670 (слит 29.10) | ❓ (ближайший: `tests/test_pir_izvestnyj_otvet.py::test_a_urezanie_08_i_otsutstvie_vtoroj_dobavki`) |
 | 60 | Риск по стопу входа вместо текущего стопа | пирамидинг, риск | #660/#670 (слит 29.10) | ❓ (ближайший: `tests/test_pir_izvestnyj_otvet.py::test_d_risk_po_tekushchemu_stopu`) |
 | 61 | Комиссия ноги пирамидинга не взята | пирамидинг, комиссия | #660/#670 (слит 29.10) | ❓ (ближайший: `tests/test_pir_izvestnyj_otvet.py::test_bez_pir_net_nog`) |
 | 62 | Порог time_decay подменён на `>=` | time_decay, порог | #668 (слит 29.10) | ❓ (ближайший: `tests/test_exec_e_time_decay.py::test_mutatsiya_polovina_ne_vklyuchaetsya_lovitsya`) |
