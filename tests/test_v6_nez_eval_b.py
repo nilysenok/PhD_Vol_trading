@@ -181,7 +181,7 @@ def test_gotovy_otkryvaet_rovno_podklyuchennye_osi(sid):
     otkr = {n for n, _, _ in canon_v6.osi(kub, canon_v6.GOTOVY)} & nov
     podkl = nov & set(eval_v6.PODKLYUCHENO) - {"vhod_tip"}        # vhod_tip подключён (12a), но токена V6-12:vhod_tip нет — в куб не открыт (наблюдение)
     assert otkr == podkl, (sid, sorted(otkr ^ podkl))
-    assert not {"tf", "lestnica", "gap", "t_vyhod", "vyhod_lim", "f_neisp"} & otkr
+    assert not {"tf"} & otkr                                      # +V6-10, V6-11 (#700): lestnica, gap, t_vyhod, vyhod_lim, f_neisp, пивот/VWAP, оси тренда подключены; tf — нет
     assert {n for n in OSI12B if n in nov} <= otkr
 
 
