@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Сборка каталога переноса на Маке (Ж-131 п. 5, Ж-133 п. 1), одна команда:
 #   scripts/server/sobrat_perenos.sh <коммит>
-# -> perenos/: kod_<коммит12>.tar.gz (git archive коммита: fastbt/, scripts/server/, env/requirements_server.txt; без data/),
+# -> perenos/: kod_<коммит12>.tar.gz (git archive коммита: fastbt/, scripts/server/, env/requirements_server.txt, справочные
+#    csv ≤ 2021 из docs/issledovaniya/, которые читает fastbt; без data/),
 #    KOD (коммит, sha256 tar), requirements_server.txt, manifest_dannyh.tsv, data/ (файлы манифеста, sha256 сверены),
 #    kuby/ (yaml кубов из коммита), etalony_<коммит12>.npz (якорь A_fix + 200 точек, считается здесь из кода tar и data/),
 #    razvernut.sh, proverka_yakor.sh, zapusk_sobol.sh, zabrat.sh, obshchee.sh, manifest_proverka.py, versii.py,
@@ -29,7 +30,12 @@ say "коммит $FULL; каталог $OUT; рабочий каталог Ма
 
 say "1/6 tar кода (git archive $SHORT)"
 TAR="$OUT/kod_$SHORT.tar.gz"
-git -C "$REPO" archive --format=tar --prefix=kod/ "$FULL" -- fastbt scripts/server env/requirements_server.txt | gzip -n -9 > "$TAR"
+# справочные таблицы ≤ 2021, которые fastbt читает от корня кода (dividendy, msp, fazy, e1_sektor, e1_rel_sektor)
+SPRAV="docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv docs/issledovaniya/2026-10-28_dividendy_2015_2016.csv
+docs/issledovaniya/2026-10-27_sektory.csv docs/issledovaniya/2026-10-28_sostav_sektorov.csv
+docs/issledovaniya/2026-10-28_kluchevaya_stavka_2013_2017.csv"
+# shellcheck disable=SC2086
+git -C "$REPO" archive --format=tar --prefix=kod/ "$FULL" -- fastbt scripts/server env/requirements_server.txt $SPRAV | gzip -n -9 > "$TAR"
 ! tar -tzf "$TAR" | grep -E '^kod/data/|test_locked|test1_2022_2024' >/dev/null || fail "в tar попали data/ или test_locked"
 TAR_SHA=$(sha_file "$TAR")
 tar -xzf "$TAR" -C "$TMP"
