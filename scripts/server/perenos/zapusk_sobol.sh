@@ -25,15 +25,25 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
     # spravka (Ж-137 п. 6, решение дирижёра 29.10 19:10): те же точки, что s1, но выход по close дня (--rol spravka --t-vyhod close);
     # ledger 2.2 с rol = spravka в ledger/<период>_spravka_close/<Sk>/, в N не входит. Идёт ПОСЛЕ полного прохода той же сетки.
-    # PERENOS_KUB — куб (умолчание v5; v6 — когда progon_server его принимает: раздел «v6» инструкции ведёт лист М-драйвер).
+    # PERENOS_KUB — куб (умолчание v5; v6 — см. ниже и раздел «v6» docs/otchety/2026-10-29_server_perenos.md).
+    # v6 (Ж-137 п. 2; С-v6): PERENOS_KUB=v6 — сначала Моррис (ledger/<период>_morris/<Sk>/zamorozka.yaml), потом проходы с --zamorozka
+    # (кроме k3: контроль на решётке v5, новые оси «выкл.»); N1 — из куба (200 000), PERENOS_N1 — явно; ledger 2.2 (setka v6, rol).
+    # PERENOS_MORRIS_R — траекторий Морриса (умолчание ~5 000 точек на Sk; 1 — малая проверка). Моррис упал — полный проход не начинается.
+    kub=${PERENOS_KUB:-v5}; zm=""; n1v="--n1 ${PERENOS_N1:-262144}"
+    if [ "$kub" = v6 ]; then
+      mo="$P/ledger/${per}_morris"; zm="--zamorozka $mo"; n1v=${PERENOS_N1:+--n1 $PERENOS_N1}
+      say "progon_morris_v6: $per, ledger/${per}_morris/<Sk>/zamorozka.yaml, процессов $(processov "$per")"
+      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_morris_v6 --kub v6 --period "$per" --out "$mo" --procs "$(processov "$per")" --prodolzhit \
+        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} ${PERENOS_MORRIS_R:+--r "$PERENOS_MORRIS_R"}) || fail "Моррис v6 упал — заморозки нет, полный проход не начинаю"
+    fi
     for pr in ${PERENOS_PROHODY:-s1 s2 k3 spravka}; do
       # N1 по умолчанию 262 144 на стратегию (решение дирижёра, volna_17 п. 1: 200 000 → степень двойки); k3 — полная решётка, без --n1
       od="${per}_$pr"
-      case "$pr" in s1) a="--seed 1 --n1 ${PERENOS_N1:-262144}" ;; s2) a="--seed 2 --n1 ${PERENOS_N1:-262144}" ;; k3) a="--k3" ;;
-        spravka) a="--seed 1 --n1 ${PERENOS_N1:-262144} --rol spravka --t-vyhod close"; od="${per}_spravka_close" ;;
+      case "$pr" in s1) a="--seed 1 $n1v $zm" ;; s2) a="--seed 2 $n1v $zm" ;; k3) a="--k3" ;;
+        spravka) a="--seed 1 $n1v $zm --rol spravka --t-vyhod close"; od="${per}_spravka_close" ;;
         *) fail "проход $pr: s1 | s2 | k3 | spravka" ;; esac
-      say "progon_server: ${PERENOS_KUB:-v5} $per $pr ($a), ledger/$od/<Sk>/, процессов $(processov "$per")"
-      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub "${PERENOS_KUB:-v5}" --period "$per" $a \
+      say "progon_server: $kub $per $pr ($a), ledger/$od/<Sk>/, процессов $(processov "$per")"
+      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub "$kub" --period "$per" $a \
         ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/$od" --procs "$(processov "$per")" --prodolzhit $sl)
     done
   else
