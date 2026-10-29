@@ -34,12 +34,31 @@ ETALONY="$P/etalony_$KOD_SHORT.npz"
 MANIFEST="$P/manifest_dannyh.tsv"
 PY="$P/.venv/bin/python3"
 
-yadra() { nproc 2>/dev/null || sysctl -n hw.ncpu; }
+yadra() { echo "${PERENOS_YADRA:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}"; }
 
-processov() {   # ядра − 4 (Ж-131 п. 4), не меньше 1; PERENOS_PROCS — явное число (локальная проверка)
-  local n=${PERENOS_PROCS:-$(( $(yadra) - 4 ))}
+processov() {   # на цепочку: (ядра − 4) / PERENOS_CEPOCHEK (умолчание 2: train4 и v2 идут вместе, Ж-131 п. 4), не меньше 1;
+  # PERENOS_PROCS — явное число (локальная проверка); одна цепочка на весь сервер — PERENOS_CEPOCHEK=1
+  local n=${PERENOS_PROCS:-$(( ($(yadra) - 4) / ${PERENOS_CEPOCHEK:-2} ))}
   [ "$n" -ge 1 ] 2>/dev/null || n=1
   echo "$n"
+}
+
+chuzhie_processy() {   # $1 — свой период; сумма процессов других ЖИВЫХ цепочек (logs/sobol_<период>.pid + .procs)
+  local s=0 f
+  for f in "$P"/logs/sobol_*.pid; do
+    [ -f "$f" ] || continue
+    case "$f" in */sobol_"$1".pid) continue ;; esac
+    kill -0 "$(cat "$f")" 2>/dev/null || continue
+    s=$(( s + $(cat "${f%.pid}.procs" 2>/dev/null || echo 0) ))
+  done
+  echo "$s"
+}
+
+proverit_summu() {   # $1 — период, $2 — процессов этой цепочки: сумма по живым цепочкам ≤ ядра − 4, иначе FAIL
+  local lim=$(( $(yadra) - 4 )) dr
+  [ "$lim" -ge 1 ] || lim=1
+  dr=$(chuzhie_processy "$1")
+  [ $(( dr + $2 )) -le "$lim" ] || fail "процессов уже занято другой цепочкой: $dr + $2 > ядра − 4 = $lim — запуск отменён (PERENOS_PROCS меньше или дождитесь другой цепочки)"
 }
 
 rezhim_npy() {   # PERENOS_REZHIM=1 (по умолчанию: numpy как есть) | 2 (без AVX512-группы и SVML — выбор владельца после ./proverka_yakor.sh --rezhim2)

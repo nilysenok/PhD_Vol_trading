@@ -22,9 +22,11 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
     # на проход: ledger/<период>_<s1|s2|k3>/<Sk>/. PERENOS_PROHODY="s1 s2 k3" (умолчание), PERENOS_N1 — как --n1, PERENOS_STRATEGII.
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
     for pr in ${PERENOS_PROHODY:-s1 s2 k3}; do
-      case "$pr" in s1) a="--seed 1" ;; s2) a="--seed 2" ;; k3) a="--k3" ;; *) fail "проход $pr: s1 | s2 | k3" ;; esac
-      say "progon_server: v5 $per $pr, ledger/${per}_$pr/<Sk>/, процессов $(processov)"
-      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub v5 --period "$per" $a ${PERENOS_N1:+--n1 "$PERENOS_N1"} \
+      # N1 по умолчанию 262 144 на стратегию (решение дирижёра, volna_17 п. 1: 200 000 → степень двойки); k3 — полная решётка, без --n1
+      case "$pr" in s1) a="--seed 1 --n1 ${PERENOS_N1:-262144}" ;; s2) a="--seed 2 --n1 ${PERENOS_N1:-262144}" ;; k3) a="--k3" ;;
+        *) fail "проход $pr: s1 | s2 | k3" ;; esac
+      say "progon_server: v5 $per $pr ($a), ledger/${per}_$pr/<Sk>/, процессов $(processov)"
+      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub v5 --period "$per" $a \
         ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/${per}_$pr" --procs "$(processov)" --prodolzhit $sl)
     done
   else
@@ -70,11 +72,13 @@ kod_cel
 zhiv && fail "прогон $per уже идёт: pid $(cat "$pidf") (./zapusk_sobol.sh status $per)"
 
 n=$(processov)
+proverit_summu "$per" "$n"          # train4 и v2 одновременно: сумма процессов ≤ ядра − 4 (по умолчанию каждая берёт половину)
 log="$P/logs/sobol_${per}_$(date +%Y%m%d_%H%M%S).log"
 say "2/3 запуск $per: $([ $server = 1 ] && echo fastbt.progon_server || echo 'fastbt.progon_sobol (замена)'), процессов $n, ledger/$per/, лог $log"
 mkdir -p "$P/ledger/$per"
 nohup bash "$P/zapusk_sobol.sh" __ryad "$per" > "$log" 2>&1 < /dev/null &
 echo $! > "$pidf"
+echo "$n" > "$P/logs/sobol_$per.procs"
 sleep 3
 zhiv || { tail -n 20 "$log"; fail "прогон $per упал на старте — лог выше"; }
 say "3/3 идёт: pid $(cat "$pidf"); состояние — ./zapusk_sobol.sh status $per; остановить — kill $(cat "$pidf")"
