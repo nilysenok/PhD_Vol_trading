@@ -75,7 +75,7 @@ def test_mutatsiya_atr_pctl_po_vsemu_ryadu_lovitsya():
     def po_vsemu_ryadu(x):                                   # как в daily_upper_bound.py:313-314
         va = x[~np.isnan(x)]
         return ~np.isnan(x) & (x > np.percentile(va, 40))
-    atr = np.abs(RNG.normal(1, .3, 400))
+    atr = np.linspace(.5, 2, 400)                            # растущий ряд: порог по всему ряду заведомо ≠ порогу по [0..d]; без случайности (флейк)
     assert not prichinnost(po_vsemu_ryadu, atr)
     assert prichinnost(lambda x: F.maska_atr_pctl(x, 100, 40), atr)
 

@@ -5,7 +5,7 @@
 from fastbt import exec_e_piv
 from fastbt.exec_e import Params
 from fastbt.exec_e_piv import enter_levels
-from tests.test_exec_e_piv import FLAT, NAN, bar, ex, go, lv
+from test_exec_e_piv import FLAT, NAN, bar, ex, go, lv
 
 
 def lim(lo, hi=100.0, c=99.2):
