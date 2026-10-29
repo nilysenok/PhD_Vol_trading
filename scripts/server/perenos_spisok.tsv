@@ -1,0 +1,22 @@
+# шаблон (от корня основной копии)	читатель	[без_дат: обоснование]
+# Ж-131 п. 1: Соболь v5 train4/В2, калибратор v5, контроли, фазы, голые идеи; позже validation 2020-2021 (<= 2021, входит)
+data/fastbt/daily/ohlcv_daily_1850.parquet	fastbt/data.py daily_df (дневной ряд 18:50) -> все сигналы S1-S6, progon_sobol, kalibr_v5, tf_os_v5, fazy.py
+moex_discovery/data/raw/candles_10m/*.parquet	fastbt/daily_1850.py build/ensure + fastbt/bars_agg.py (агрегация ТФ для tf_os_v5)
+data/regen/candles_10m_2014_2015/*.parquet	10-минутки 2014-2015 (прогрев В2 с 06.2014; кандидат на daily_1850)
+data/regen/candles_10m_2014_2015/*.csv	то же, формат csv
+data/regen/D25/bars1m/*.csv	fastbt/bars5m.py (5-минутки семьи E из 1-минуток; прогрев 2014)
+data/corporate_actions.csv	fastbt/data.py corp_actions (load_ticker corp=True)
+data/events.csv	fastbt/sobytiya_pit.py (календарь событий PIT)
+data/calendar/cbr.csv	fastbt/etap1_data.py, sobytiya_e1.py (ставка ЦБ, события)
+data/calendar/torgovye_dni_moex.csv	торговый календарь MOEX (маска дней)
+data/calendar/expirations.csv	экспирации (календарные признаки)
+data/calendar/fomc.csv	календарные признаки (события)
+data/calendar/imoex_rebal.csv	ребалансировки IMOEX (события)
+data/calendar/imoex_rebal_official.csv	ребалансировки IMOEX (события)
+data/calendar/dividends_actual.csv	календарь дивидендов (сверка fastbt/dividendy.py)
+data/calendar/dividends_expected.csv	календарь дивидендов (ожидаемые)
+data/calendar/cpi_ru.csv	календарь макро-событий
+data/calendar/cpi_us.csv	календарь макро-событий
+data/iss_mix_2015_2019/IMOEX.csv	fastbt/fazy.py (фазы рынка, IMOEX)
+data/iss_mix_2015_2019/IMOEX_2014.csv	fastbt/fazy.py (прогрев IMOEX 2014)
+data/regen/ch4_dev/*.parquet	fastbt/data.py vpred_df/align_sigma (σ-ряды гл. 4, выровнены на d0; E-семья, validation)
