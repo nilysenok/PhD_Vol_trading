@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-from fastbt import stats
+from fastbt import period_v2, stats
 from fastbt.metriki_e import sr_dnevnoy
 
 FORMAT, V, V21 = "etap1-ledger", "2.0", "2.1"
@@ -21,8 +21,8 @@ SUMS, ROWS = "SHA256SUMS.txt", "rows.jsonl"
 
 
 def gody_perioda(period=None) -> tuple:
-    """Годы ledger по periodu из manifest: v2 — 2015–2019, иначе (train4, поля нет) — 2016–2019 как прежде."""
-    return GODY_V2 if period == "v2" else GODY
+    """Годы ledger по periodu из manifest (таблица — period_v2.PERIODY): v2 — 2015–2019, wf — 2015–2026, иначе (train4, поля нет) — 2016–2019."""
+    return period_v2.gody(period) if period in period_v2.PERIODY else GODY
 
 
 def tok(v) -> str:
