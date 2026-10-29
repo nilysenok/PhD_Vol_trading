@@ -9,10 +9,8 @@ from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level,
                                  part_fee, part_hit, part_level, ratchet, rodnoy_level, stop_hit, stop_level,
                                  take_hit, take_level, tejk_level)
 from fastbt.exec_e_types import Trade
-from fastbt.exec_e_v6 import V6, v6_check, v6_on
+from fastbt.exec_e_v6 import V6, chast_pair, v5_check, v6_check, v6_on
 from fastbt.exec_e_zayavki import prodlit, reenter
-
-FRAC = 0.5                                          # доля позиции, закрываемая на +1R (Ж-092)
 
 
 class Run(V6):
@@ -20,6 +18,8 @@ class Run(V6):
         n = len(days)
         s.us, s.ut = us, ut                         # Л5: ряды единицы стопа/безубытка и тейка по дню сигнала; None — σ̂ (путь прежний)
         v6_check(p, rang, n)
+        v5_check(p, rang, n)                        # Л6: k_e, a_rang, chast
+        s.cf, s.p_take = chast_pair(p), p           # частичный выход (доля, r); параметры тейка сделки
         s.rang, s.be_m, s.pq_on, s.vlev, s.adds, s.n_add, s.v6 = rang, None, False, None, [], 0, v6_on(p)   # V6-b (exec_e_v6)
         s.atr, s.w, s.smax, s.part, s.R, s.ent = atr, 1.0, None, False, float("nan"), (-1, -1)   # Ж-092: ATR, остаток, ratchet, ½, R, бар входа
         s.tejk_M, s.tT, s.n_bez = tejk_M, None, 0     # Ж-084: M по дням сигнала; тейк сделки фиксируется на входе; входов без тейка
@@ -84,7 +84,8 @@ class Run(V6):
 
     def _partial(s, i, j, b, px):
         """Ж-092: ½ позиции лимитом на +1R — отдельная сделка (reason "part", parent — индекс родителя). Остаток живёт дальше."""
-        tr, fee = s.tr, part_fee(s.p.comm, FRAC)
+        tr, FRAC = s.tr, s.cf[0]
+        fee = part_fee(s.p.comm, FRAC)
         s.trades.append(Trade(s.t, tr.d_sig, tr.entry_day, tr.entry_bar, tr.entry_px, exit_day=i, exit_bar=b, exit_px=px,
                               reason="part", side=tr.side, fee_in=0.0, fee_out=fee, frac=FRAC,
                               parent=s.trades.index(tr), row0=tr.row0))
@@ -131,7 +132,7 @@ class Run(V6):
             T = s._rodnoy(j)
         else:
             st = s._sg(j, True)
-            T = s.tT if s.p.tejk != "net" else (take_level(tr.side, tr.entry_px, st, s.p) if st is not None else None)
+            T = s.tT if s.p.tejk != "net" else (take_level(tr.side, tr.entry_px, st, s.p_take) if st is not None and s.p_take is not False else None)
         return S, None if s.xo is not None else T    # висит заявка выхода: тейк снят (ОСО)
 
     def _rodnoy(s, j):
@@ -164,8 +165,8 @@ class Run(V6):
                 hit, px = stop_hit(sd, o, h, l, S, s.p.stop_touch)
                 if hit:
                     return s._exit(i, j, b, px, s.sr)
-            if s.p.chast_1r and not s.part and part_allowed(i, b, s.ent):     # после стопа, до тейка; не в баре входа
-                P = part_level(sd, s.tr.entry_px, s.R, s.p.tick)
+            if s.cf is not None and not s.part and part_allowed(i, b, s.ent):     # после стопа, до тейка; не в баре входа
+                P = part_level(sd, s.tr.entry_px, s.R * s.cf[1], s.p.tick)
                 hit, px = part_hit(sd, o, h, l, P, s.p.tick)
                 if hit:
                     s._partial(i, j, b, px)
