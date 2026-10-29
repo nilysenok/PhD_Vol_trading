@@ -217,15 +217,14 @@ def test_rel_signal_p05_i_deti_tolko_pri_roditele(sid, sobol20k):
 # --- GOTOVY и zhdet ----------------------------------------------------------------------------------------------------
 @pytest.mark.parametrize("sid", SIDS)
 def test_pustoj_gotovy_ne_variruet_zhdushchie_osi(sid):
-    assert C6.GOTOVY == frozenset()
-    k6, k5 = raw("v6", sid), raw("v5", sid)
+    k6, k5 = raw("v6", sid), raw("v5", sid)           # V6-12b: GOTOVY не пуст, «пустой» подаётся явно
     kub = C6.load_kub(sid)
-    ox = {n: g for n, g, _ in C6.osi(kub)}
+    ox = {n: g for n, g, _ in C6.osi(kub, frozenset())}
     assert set(ox) == {n for sec in SEKC for n in k5.get(sec, {})}
     for sec in SEKC:
         for n, s in k5.get(sec, {}).items():
             assert ox[n] == list(s["setka"]), n
-    pts, _ = C6.tochki_v6(kub, 0, 1500)
+    pts, _ = C6.tochki_v6(kub, 0, 1500, gotovy=frozenset())
     assert not any(set(c) & set(novye_raw(k6)) for _, c in pts)
 
 
