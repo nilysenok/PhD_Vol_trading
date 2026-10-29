@@ -129,12 +129,8 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
     """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси вне FAST_POLYA — медленным путём."""
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.ascontiguousarray(sigma, float)
-    if p.razryv is not None and dates is not None and len(dates) == len(days) and exec_e.stale_steps(
-            dates, [i for i, d in enumerate(days) if not d.pusto], p.razryv):       # Д5-2: разрыв > razryv дней — правило знает только эталон
-        kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni), ("rang", rang), ("dates", dates)) if v is not None}
-        return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
     if _slow_only(p, ed, tejk_M, urovni, rang) and _yadro_v5(p, ed, tejk_M, rang):    # Ф-сл2b: оси S3/S4 — ядро fast_exec.run_v5
-        return fx.run_v5(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, urovni=urovni, rang=rang)
+        return fx.run_v5(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, urovni=urovni, rang=rang, dates=dates)
     if _slow_only(p, ed, tejk_M, urovni, rang) or not len(days) or not np.isfinite(sig.astype(float)).all():
         kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni), ("rang", rang), ("dates", dates)) if v is not None}
         return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
@@ -161,7 +157,9 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
                 ds[ix[k]] += float(div[i])
     dirs = (p.side * np.sign(sig.astype(float))).astype(np.int64)
     pf, pi = _params(p, float(dividendy.DIV_NALOG if nalog is None else nalog))
-    gross, cost, pos, free, ti, tf, st = fx.kernel(B, off, nbar, pusto, cl, dirs, sigma, ds, pf, pi)
+    if p.razryv is not None and dates is not None and len(dates) != len(days):
+        raise ValueError("dates и days разной длины")
+    gross, cost, pos, free, ti, tf, st = fx.kernel(B, off, nbar, pusto, cl, dirs, sigma, ds, pf, pi, fx.stale_mask(dates, pusto, p.razryv))
     rf = np.zeros(len(days)) if rf_cal is None else np.asarray(rf_cal, float)
     return Result(_trades(ticker, ti, tf, p.comm), gross, cost, pos, free, free * rf, int(st[fx.NO]), int(st[fx.NF]),
                   int(st[fx.XN]), int(st[fx.XF]))
