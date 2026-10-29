@@ -98,10 +98,11 @@ def test_mutaciya_bezubytok_ne_vklyuchaetsya_lovitsya(monkeypatch):
     assert _go(bars, p).trades[0].reason != "bu"
 
 
-def test_novye_osi_na_stop_zayavke_idut_etalonom(monkeypatch):
+def test_novye_osi_na_stop_zayavke_idut_yadrom():
+    """Ф-vhod_open: b0 / sp / step_s / pir на стоп-заявке считает ядро; побайтно равно эталону."""
     for kw in (dict(b0=1.0), dict(sp=(1.0, 0.5)), dict(step_s=1.0), dict(pir=0.5)):
         p = P(b=2.0, **kw)
-        assert fast_exec.ne_znaet(p) and not fast_etap1._yadro_v5(p, None, None, None), kw
+        assert fast_exec.ne_znaet(p) == [] and fast_etap1._yadro_v5(p, None, None, None), kw
         days = [_flat() for _ in range(N0)] + [_day(*zip(*b)) for b in [LONG, [UP, (103, 103, 99, 100)]]]
         u = {k: np.full(len(days), NAN) for k in ("up", "dn", "xl", "xs")}
         u["up"][N0 - 1], u["dn"][N0 - 1] = 102.0, 98.0
@@ -109,6 +110,3 @@ def test_novye_osi_na_stop_zayavke_idut_etalonom(monkeypatch):
         a = exec_e.run("T", days, np.zeros(len(days)), sg, p, urovni=u)
         b = fast_etap1.run("T", days, np.zeros(len(days)), sg, p, urovni=u)
         assert a.trades and a.trades == b.trades and a.gross.tobytes() == b.gross.tobytes(), kw
-    p = P(b=2.0, b0=1.0)
-    monkeypatch.setattr(exec_e_stop, "stop_novye", lambda p: [])
-    assert fast_exec.ne_znaet(p) == []                                  # подложенная ошибка: ядро берёт ось → тест выше упал бы
