@@ -55,6 +55,9 @@ class Params:
     sp: tuple | None = None       # «стоп в плюс» (p, q): после +p·σ стоп на +q·σ от цены входа (q < p)
     step_s: float | None = None   # ступенчатый трейлинг: каждые +s·σ стоп подтягивается на +s·σ
     pir: float = 0.0              # пирамидинг: размер добавки (доля базовой ноги) на +1σ, +2σ; ≤ 2 добавок, риск ≤ 2ρ
+    ed_s: str = "sigma"           # Л5 (Ж-127): единица стопа и безубытка: sigma | atr (ATR(14) до дня входа / close) | pct (1: b = доля цены)
+    ed_t: str = "sigma"           # Л5: единица тейка a (a = 0,03 при pct — 3 %); те же значения
+    chand: float | None = None    # Л5: Chandelier k — экстремум 11 торговых дней до дня ∓ k·ATR(14); сверх начального стопа b, храповик
     tejk: str = "net"         # Ж-084: net | k_srednemu | pol_puti — тейк от уровня сигнала M (fastbt/tejk_signal.py); нужен tejk_M в run
 
 
