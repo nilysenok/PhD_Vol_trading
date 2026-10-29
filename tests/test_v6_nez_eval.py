@@ -280,6 +280,8 @@ def _ev2(monkeypatch, sid, pt):
     monkeypatch.setattr(eval_v6.EvaluatorV2, "evaluate_v2", lambda self, p, period: cap.append(p) or ("stub", p))
     e = object.__new__(EvaluatorV6)
     e.sid, e.ist = sid, IstochnikiV6()
+    names = canon_v6.novye(canon_v6._kub(sid)).get("sigma_ist", {}).get("setka", [])
+    e.inp = SimpleNamespace(sigma={str(x): {} for x in names})        # evaluate_v2 после #679 сверяет sigma_ist с inp.sigma
     e.evaluate_v2(pt, "train4")
     return e, cap[0]
 
@@ -343,7 +345,7 @@ def test_nepodklyuchennaya_os_valueerror(sid, monkeypatch):
             with pytest.raises(ValueError, match="ещё не подключена"):
                 _ev2(monkeypatch, sid, {**p5, k: x})
             n += 1
-    assert n >= 20, sid
+    assert n >= 1 or not (set(nv) - eval_v6.PODKLYUCHENO), sid     # после #679 неподключённых осталось меньше
     for name, r in canon_v6.rasshireno(canon_v6._kub(sid)).items():
         for x in r["v6_dobavleno"]:
             with pytest.raises(ValueError, match="не подключено"):
