@@ -52,6 +52,15 @@
 | 44 | Порог терцилей f1/f2 (`g_f`) считается по окну с днём d (М-Ф10) | текущий день в пороге | #523 (проверка #505) | `tests/test_proverka_msp_f3f4.py::test_g_f_porog_terciliya_bez_dnya_d` |
 | 45 | Шаг 8 книги срабатывает при нетто > 60 %, а не > 30 % (М-Ф13) | порог нетто | #523 (проверка #506) | `tests/test_proverka_msp_f3f4.py::test_netto_srabatyvaet_mezhdu_30_i_60_procentov` |
 | 46 | Самоотключение Sk после одного квартала (`podryad=1` по умолчанию в `vesa_sk`, М-Ф33) | самоотключение | #523 (проверка #506) | `tests/test_proverka_msp_f3f4.py::test_vesa_sk_otklyuchenie_tolko_posle_dvuh_kvartalov_po_umolchaniyu` |
+| 47 | Стоп в баре входа исполнен по уровню S вне [low; high] бара | исполнение в баре, стоп входа | #610 | `tests/test_ispolnenie_v_bare.py::test_mutaciya_stop_vhoda_po_urovnyu_lovitsya_svojstvom` |
+| 48 | Исполнение вне [low; high] копится счётчиком в дневном автомате без исключения | исполнение вне бара | #617 | `tests/test_vne_oshibka.py::test_g5_mutaciya_schetchik_bez_isklyucheniya_lovitsya` |
+| 49 | `manifest.json` пишется не атомарно (`write_text` вместо `_zapis_atomarno`, гонка процессов) | гонка записи манифеста | #614 | `tests/test_ledger_manifest_gonka.py::test_chitatel_v_pauze_zapisi_determinirovanno` |
+| 50 | Год 2015 отрезан от ledger периода v2 | граница периода | #619 | `tests/test_ledger_period_v2.py::test_mutaciya_god_2015_otrezan_lovitsya` |
+| 51 | Фаза МСП считается с днём d (`fazy._LAG=0`) | текущий день в фазе | #621 | `tests/test_msp_v5.py::test_mutatsiya_faza_s_dnyom_d_lovitsya` |
+| 52 | `NUMBA_NUM_THREADS` не восстанавливается после вызова (`finally: pass`; класс № 43) | изоляция подмен, переменная окружения | #627 | `tests/test_numba_threads_izolyaciya.py::test_s9_job_vozvrashchaet_peremennuyu` |
+| 53 | Режим v4 (`min_hold`) не передан в сравнении голоса v2 с vote v4 | режим сравнения | #628 | `tests/test_kalibr_v5_golos_v2.py::test_mutatsiya_rezhim_v4_ne_peredan_lovitsya` |
+| 54 | Ось не доходит до оценщика точки куба v5; единицы тейка/стопа pct↔atr перепутаны; k_e ×2 у контртренда / знак «минус» у тренда; снят запрет оси zh047 вне якоря (мутации в1–в3, г проверяющего #611 — пойманы тестами тестировщика) | ось, единица, знак в оценщике v5 | #611 | `tests/test_eval_v5.py::test_mutaciya_os_ignoriruetsya_v_ocenshchike_lovitsya`; `tests/test_eval_v5_edinicy.py::test_tejk_edinica`; `tests/test_eval_v5_edinicy.py::test_stop_edinica`; `tests/test_eval_v5_edinicy.py::test_k_e_trend_znak_sohranyaetsya`; `tests/test_eval_v5_edinicy.py::test_zh047_ne_na_yakore_valueerror` |
+| 55 | Вход в день сигнала (лаг 0 вместо d+1, Д2) в голой идее ТФ | лаг исполнения | #626 | `tests/test_golaya_tf_v5.py::test_mutaciya_vhod_v_den_signala` |
 
 Слиты #288, #289; их мутации внесены в строки 17–19. Остальные мутации постановки E §8 (исполнение по барам дня d вместо d+1; E0 при q = 0 ≠ A побайтно; сила сигнала по d+1; комиссия при стопе внутри дня; ставка на капитал, освободившийся внутри дня) обязательны для PR семьи E с первого дня и вносятся в таблицу строками, когда появятся тесты.
 
