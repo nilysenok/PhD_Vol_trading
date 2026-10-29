@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from fastbt import eval_v5
-from tests.test_stop_nach_trail_net import real
+from test_stop_nach_trail_net import real
 
 _S: dict = {}
 IZM = dict(m_sily="kvadr", rang_tip="obshchiy")
