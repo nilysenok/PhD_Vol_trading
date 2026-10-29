@@ -5,7 +5,7 @@ import pytest
 
 from fastbt import kalibr_v5 as K, kontroli_v5 as kv, svod_server_v5 as SV
 from fastbt.kontroli_v5 import sintez_pul
-from tests.test_svod_server_v5 import DATY, OSI_S, chitat, zapisat
+from test_svod_server_v5 import DATY, OSI_S, chitat, zapisat
 
 N = 40
 

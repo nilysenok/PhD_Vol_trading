@@ -31,7 +31,7 @@ date,event,source_url,retrieved_at,type,known_from,vneplan
 2021-06-17,"MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)",https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),2026-10-25,план,2021-01-01,
 2021-09-16,"MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)",https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),2026-10-25,план,2021-01-01,
 2021-12-16,"MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)",https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),2026-10-25,план,2021-01-01,
-2022-03-17,"MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)",https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),2026-10-25,план,2022-01-01,
+2022-03-29,"MOEX futures expiry MIX-3.22 (MXH2; перенос с 17.03, LSTDELDATE)",https://iss.moex.com/iss/securities/MXH2.json; https://www.moex.com/n45596,2026-10-29,факт,2022-01-01,
 2022-06-16,"MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)",https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),2026-10-25,план,2022-01-01,
 2022-09-15,"MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)",https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),2026-10-25,план,2022-01-01,
 2022-12-15,"MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)",https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026),2026-10-25,план,2022-01-01,
