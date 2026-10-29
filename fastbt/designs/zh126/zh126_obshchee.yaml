@@ -1,0 +1,135 @@
+# zh126_obshchee.yaml — общие для S1–S6 оси риск-менеджмента (РМ) и фильтров (Ж-127 п. 1).
+# Статус: разработка; только оси и диапазоны, без точек, параметров и результатов источника.
+# Источник (основной): git show 6a7a4636:moex_volatility/scripts/daily_upper_bound.py  (далее DUB)
+# Дополнительные (там, где в DUB оси нет или она уже):
+#   HUB = 6a7a4636:moex_volatility/scripts/hourly_upper_bound.py
+#   V5  = 6a7a4636:moex_volatility/scripts/daily_full_opt_v5.py
+#   OW  = 6a7a4636:moex_volatility/scripts/daily_optimal_w.py
+# DUB, HUB, V5, OW считали на 2022–2026 (in-sample на тесте); отсюда взяты только списки осей.
+# Формат оси: {znacheniya: [...]} или {ot, do, shag}; зависимая ось — в zavisimye_osi
+# (os, roditel, znacheniya_po_roditelyu); число точек группы = сумма по значениям родителя.
+
+istochnik: "6a7a4636:moex_volatility/scripts/daily_upper_bound.py"
+
+tip_strategii:            # DUB:408 IS_TREND (False -> kontr, True -> trend)
+  S1: kontr
+  S2: kontr
+  S3: trend
+  S4: trend
+  S5: kontr
+  S6: kontr
+
+sochetanie:
+  v_istochnike: "выборка, не декартово произведение"
+  istochnik_stroki: "DUB:9-10, 410-412, 472, 474-515, 522-530"
+  opisanie: >-
+    Этап 1: 5000 случайных сигнал×фильтр при одном РМ по умолчанию (DUB:472, 476, 507);
+    отобраны 10 лучших (DUB:517-518). Этап 2: 3000 случайных РМ на каждый из 10 (DUB:524-526).
+    Тип стопа и тейка выбирается с весами 0,15/0,50/0,35 и 0,25/0,25/0,15/0,35 (DUB:395-403).
+  v_kube: "декартово произведение: сигнал × РМ × фильтры типа (без весов и без отбора лучших)"
+
+rm:
+  osi:
+    stop_tip:
+      znacheniya: [pct, atr, chand]
+      istochnik_stroki: "DUB:395-398"
+      opredelenie: "pct — доля цены входа; atr — k×ATR14; chand — Chandelier от 11-дневного max/min (DUB:439-440, 110-116, 144-146)"
+    teyk_tip:
+      znacheniya: [trail, rr, pct, atr]
+      istochnik_stroki: "DUB:399-403"
+      opredelenie: "trail — трейлинг k×ATR (тейк отключён, DUB:150-153); rr — тейк = стоп×rr (DUB:154-158); pct — доля цены; atr — k×ATR14"
+    max_hold:
+      znacheniya: [0, 3, 5, 7, 10, 15, 20, 30, 50]
+      istochnik_stroki: "DUB:405, 135"
+      opredelenie: "временной стоп, дней; 0 — выключен"
+    bezubytok_atr:
+      znacheniya: [0.0, 0.5, 1.0, 1.5, 2.0]
+      istochnik_stroki: "DUB:406, 124-126"
+      opredelenie: "перенос стопа в цену входа после хода > k×ATR; 0 — выключен"
+    razmer:
+      znacheniya: [0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15, 0.20, 0.25, 0.30, 0.50]
+      istochnik_stroki: "OW:22 W_GRID; в DUB оси нет — DUB:548-552 (w=1.0, перебор пропущен)"
+      opredelenie: "доля капитала на бумагу; в OW применяется к готовым позициям (OW:70-75), без нового прогона"
+      vne_daily_upper_bound: true
+  zavisimye_osi:
+    - os: stop_znach
+      roditel: stop_tip
+      istochnik_stroki: "DUB:396-398; HUB:370 (0.003)"
+      znacheniya_po_roditelyu:
+        pct: [0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.10]   # DUB:396 (8) + HUB:370 0.003
+        atr: [0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 8.0]          # DUB:397 (10)
+        chand: [1.5, 2.0, 2.5, 3.0, 4.0, 5.0]                             # DUB:398 (6)
+      iz_chasovogo: {pct: [0.003], istochnik_stroki: "HUB:370"}
+      chislo: "9 + 10 + 6 = 25"
+    - os: teyk_znach
+      roditel: teyk_tip
+      istochnik_stroki: "DUB:400-403; HUB:376 (0.003)"
+      znacheniya_po_roditelyu:
+        trail: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0]                   # DUB:400 (8)
+        rr: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0]                           # DUB:401 (7)
+        pct: [0.003, 0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15]     # DUB:402 (8) + HUB:376 0.003
+        atr: [0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 8.0, 10.0]               # DUB:403 (9)
+      iz_chasovogo: {pct: [0.003], istochnik_stroki: "HUB:376"}
+      chislo: "32 из DUB (8 + 7 + 8 + 9) + 1 из HUB = 33"
+  vne_kuba:
+    stop_po_umolchaniyu: {znachenie: "3×ATR", istochnik_stroki: "DUB:147", prichina: "достижим только при всех стопах = 0; random_rm так не выбирает; совпадает с atr 3.0"}
+    teyk_po_umolchaniyu: {znachenie: "3×ATR", istochnik_stroki: "DUB:162", prichina: "так же; совпадает с atr 3.0"}
+    limit_portfelya: {znacheniya: [0.15, 0.25, 0.50, 0.75, 1.0], istochnik_stroki: "OW:23 CAP_GRID", prichina: "портфельный слой над 17 бумагами, не ось одной стратегии"}
+
+filtry:
+  adx_th:
+    znacheniya_po_tipu: {kontr: [0, 15, 20, 25, 30, 35, 40], trend: [0, 15, 20, 25, 30]}
+    istochnik_stroki: "DUB:383-386, 305-309"
+    opredelenie: "ADX14: kontr — вход при ADX < порога, trend — при ADX > порога; 0 — выключен"
+  atr_lo:
+    znacheniya: [0, 5, 10, 15, 20, 25]
+    istochnik_stroki: "DUB:387, 310-314"
+    opredelenie: "причинное: окно до d включительно (в источнике — по всему ряду, заглядывание, не переносится); вход при ATR14 > процентиля; 0 — выключен"
+  vol_th:
+    znacheniya: [0, 0.5, 0.7, 1.0, 1.2, 1.5]
+    istochnik_stroki: "DUB:388, 315-319"
+    opredelenie: "объём / SMA20 объёма > порога; 0 — выключен"
+  rsi_th:
+    znacheniya: [0, 20, 25, 30, 35, 40]
+    istochnik_stroki: "DUB:389, 320-328"
+    opredelenie: "RSI14: kontr — лонг при RSI < порога, шорт при RSI > 100−порога; trend — любой порог > 0 значит RSI > 50 / < 50 (DUB:326-328)"
+  mom_n:
+    znacheniya: [0, 1, 2, 3, 5, 7, 10]
+    istochnik_stroki: "DUB:390, 329-334"
+    opredelenie: "знак close[d] − close[d−n]: trend — по направлению, kontr — против; 0 — выключен"
+  dow:
+    znacheniya: [0, 1, 2, 3]
+    istochnik_stroki: "DUB:391, 335-340"
+    opredelenie: "1 — без понедельника, 2 — без пятницы, 3 — без обоих; 0 — выключен"
+  hurst_th:
+    znacheniya: [0, 0.4, 0.45, 0.5]
+    istochnik_stroki: "V5:394, 359-362, 114-125, 546"
+    opredelenie: "Херст R/S по 100 дням до d; вход при H < порога; 0 — выключен"
+    vne_daily_upper_bound: true
+    shirokij_iz: "V5 — единственный источник оси"
+  squeeze_pct:
+    znacheniya: [0, 25, 40, 50, 60]
+    istochnik_stroki: "V5:395, 364-370, 127-130, 547"
+    opredelenie: "причинное: окно до d включительно (в источнике — по всему ряду, заглядывание, не переносится); ширина полос 2·std20/SMA20 < процентиля; 0 — выключен"
+    vne_daily_upper_bound: true
+    shirokij_iz: "V5 — единственный источник оси"
+  slope_max:
+    znacheniya: [0, 0.05, 0.1, 0.2]
+    istochnik_stroki: "V5:396, 372-375, 132-138, 548-549"
+    opredelenie: "наклон SMA50 за 10 дней, % в день; вход при |наклон| < порога; 0 — выключен"
+    vne_daily_upper_bound: true
+    shirokij_iz: "V5 — единственный источник оси"
+  slope_min:
+    znacheniya: [0, 0.02, 0.05, 0.1]
+    istochnik_stroki: "V5:405, 377-381, 132-138, 548-549"
+    opredelenie: "наклон SMA50 за 10 дней по направлению входа ≥ порога; 0 — выключен"
+    vne_daily_upper_bound: true
+    shirokij_iz: "V5 — единственный источник оси"
+
+filtry_po_tipu:           # DUB:302 (общие, направление по is_trend); V5:357-381 (по типу)
+  kontr: [adx_th, atr_lo, vol_th, rsi_th, mom_n, dow, hurst_th, squeeze_pct, slope_max]
+  trend: [adx_th, atr_lo, vol_th, rsi_th, mom_n, dow, slope_min]
+  istochnik_stroki: "DUB:302-342, 381-392; V5:357-381, 386-405"
+  primechanie: >-
+    В V5 списки vol_th, rsi_th (trend), mom_n уже, чем в DUB (V5:390, 392, 401-403);
+    здесь взяты широкие списки DUB.
