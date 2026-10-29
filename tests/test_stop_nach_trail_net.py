@@ -92,8 +92,15 @@ def test_m_sily_1_stop_nach_menyaet_ryad_i_chislo_stopov():
 
 
 @real
-@pytest.mark.xfail(strict=True, reason="Р-4: тренд + m_sily ≠ 1 + rang_tip = tikernyj: вес по рангу на d_sig = nan → 0, excess ≡ 0 при сделках")
+def test_trend_rang_obshchiy_ne_obnulyaet_excess():
+    """Ф-ранг: вес — по рангу дня старта текущего сигнала (eval_v5.rang_starta); до правки excess ≡ 0 при сделках."""
+    x, trades = _posch(199, m_sily="kvadr", rang_tip="obshchiy")
+    assert len(trades) > 0 and np.any(x != 0)
+
+
+@real
+@pytest.mark.xfail(strict=True, reason="Ф-ранг: tikernyj на точке 199 ранга нет вовсе (< 20 стартов тикера за 252 дня) — вес 0; "
+                                       "а вход тренда ранговым запретом не гейтится (уровни, не sig). Нужно решение дирижёра")
 def test_trend_rang_tikernyj_ne_obnulyaet_excess():
-    """Сделки есть, а excess ≡ 0: ранг определён только на днях старта сигнала, а вход тренда — стоп-заявка любого вечера."""
     x, trades = _posch(199, m_sily="kvadr", rang_tip="tikernyj")
     assert len(trades) > 0 and np.any(x != 0)
