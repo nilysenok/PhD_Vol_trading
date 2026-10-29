@@ -305,6 +305,6 @@ def test_ledger_flag_period_v2_umolchanie_2_0_i_otkaz_2_1_do_starta(fake, monkey
     assert srv.main([*base, "--out", str(tmp_path / "a")]) == 0 and lm.Chitatel(tmp_path / "a", "S1").v == lm.V
     assert srv.main([*base, "--ledger", "2.0", "--out", str(tmp_path / "b")]) == 0
     assert kanon(tmp_path / "a", "S1") == kanon(tmp_path / "b", "S1")
-    with pytest.raises(SystemExit, match="ledger 2.1"):
-        srv.main([*base, "--ledger", "2.1", "--out", str(tmp_path / "x")])
-    assert not (tmp_path / "x").exists()                                          # отказ до замка и каталога
+    assert srv.main([*base, "--ledger", "2.1", "--out", str(tmp_path / "x")]) == 0       # Б8: отказ снят
+    ch = lm.Chitatel(tmp_path / "x", "S1")
+    assert ch.v == lm.V21 and ch.gody == lm.GODY_V2 and len(ch.manifest["nbars"]) == 20
