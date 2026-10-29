@@ -448,13 +448,34 @@ def period_cfg(cfg):
     return dataclasses.replace(cfg, years_a=tuple(range(YEARS[0], YEARS[-1] + 1)), val_start=VAL_START)
 
 
+VAR_THREADS = "NUMBA_NUM_THREADS"
+
+
+@contextlib.contextmanager
+def _threads1():
+    """NUMBA_NUM_THREADS=1 только на время блока; прежнее значение возвращается (mutations.md № 43)."""
+    old = os.environ.get(VAR_THREADS)
+    os.environ[VAR_THREADS] = "1"
+    try:
+        yield
+    finally:
+        if old is None:
+            os.environ.pop(VAR_THREADS, None)
+        else:
+            os.environ[VAR_THREADS] = old
+
+
 def _job(args):
+    with _threads1():
+        return _job_body(args)
+
+
+def _job_body(args):
     ticker, srcs = args[:2]
     if len(args) > 2:                      # тест: в процессе spawn глобальные настройки заново
         set_scope(*args[2])
     if len(args) > 3 and args[3] != "train":   # spawn: период заново
         set_period(args[3])
-    os.environ["NUMBA_NUM_THREADS"] = "1"
     from fastbt import dev, masks, turnover
     from fastbt import design as dsg
     from fastbt.approach_a import ApproachA
@@ -546,8 +567,8 @@ def build_cache(workers: int = 2) -> Path:
         it = map(_job, jobs)
     else:
         import multiprocessing as mp
-        os.environ["NUMBA_NUM_THREADS"] = "1"
-        pool = mp.get_context("spawn").Pool(workers)
+        with _threads1():                  # работники наследуют 1 поток; родитель — прежнее значение
+            pool = mp.get_context("spawn").Pool(workers)
         it = pool.imap_unordered(_job, jobs)
     for tk, out in it:
         res[tk] = out
