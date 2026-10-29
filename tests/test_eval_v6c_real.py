@@ -19,6 +19,8 @@ SP = {"S1": dict(ma_tip="sma", ma_window=20, dev_tip="std", z_entry=1.0, z_exit=
       "S4": dict(period=5, mnozh=0.5), "S5": dict(pivot_type="classic", pivot_period="den", uroven=1, atr_filtr=0, filter_set="net"),
       "S6": dict(vwap_window=10, dev_mult=0.5, dir_bias="OFF", filter_set="net")}
 TREND = {"trail": "atr:1.0"}
+# условия оси: vyhod_lim несовместим с t_vyhod ≠ close (якорь куба — open2), поэтому база с close; у тренда выход по времени (tau) — иначе t_vyhod нечему менять
+DOP = {("vyhod_lim", False): {"t_vyhod": "close"}, ("t_vyhod", True): {"tau": 10}}
 
 
 def _para(sid):
@@ -61,16 +63,17 @@ def test_kazhdaya_os_ispolneniya_menyaet_rezultat(sid, ax):
     if ax not in canon_v6.novye(canon_v6._kub(sid)):
         pytest.skip("оси нет в кубе этого Sk")
     _, e6 = _para(sid)
-    p = _p(sid)
-    _, x0, _ = e6.evaluate_v2(p, "train4")
-    assert x0 is not None and np.abs(x0).sum() > 0, f"{sid}: точка без сделок"
     prich = set()
-    for v in canon_v6.novye(canon_v6._kub(sid))[ax]["setka"][1:]:
-        r, x, _ = e6.evaluate_v2({**p, ax: v}, "train4")
-        if x is None:
-            prich.add(r["prichina"])
-        elif not np.array_equal(x, x0):
-            return
+    for ke in ((None,) if sid in ("S3", "S4") else (1.0, 0.5, 2.0)):         # глубина лимита: гэп через уровень бывает не при каждой
+        p = {**_p(sid), **({} if ke is None else {"k_e": ke}), **DOP.get((ax, sid in ("S3", "S4")), {})}
+        _, x0, _ = e6.evaluate_v2(p, "train4")
+        assert x0 is not None and np.abs(x0).sum() > 0, f"{sid}: точка без сделок"
+        for v in canon_v6.novye(canon_v6._kub(sid))[ax]["setka"][1:]:
+            r, x, _ = e6.evaluate_v2({**p, ax: v}, "train4")
+            if x is None:
+                prich.add(r["prichina"])
+            elif not np.array_equal(x, x0):
+                return
     pytest.fail(f"{sid}.{ax}: не меняет результат; ne_schitana: {prich}")
 
 
@@ -81,9 +84,10 @@ def test_lestnica_mutatsiya_ves_ne_delitsya_lovitsya(monkeypatch):
     p = _p("S1")
     _, x0, _ = e6.evaluate_v2(p, "train4")
     _, x, _ = e6.evaluate_v2({**p, "lestnica": 0.5}, "train4")
+    assert not np.array_equal(x, x0)
     monkeypatch.setattr(isp.IspolnMixin, "_ves", lambda self, sg, rg: super(isp.IspolnMixin, self)._ves(sg, rg))   # мутация: вес ноги не /2
-    _, xm, _ = e6.evaluate_v2({**p, "lestnica": 0.5}, "train4")
-    assert not np.array_equal(x, x0) and not np.array_equal(x, xm)
+    with pytest.raises(ValueError, match="t0d"):                    # занятость обеих ног = 2 → ФДР t0d отказывает (fdr.zanyatost)
+        e6.evaluate_v2({**p, "lestnica": 0.5}, "train4")
 
 
 @real
@@ -93,5 +97,8 @@ def test_mutatsiya_os_ne_dohodit_do_ocenshchika_lovitsya(monkeypatch):
     p = _p("S1")
     _, x0, _ = e6.evaluate_v2(p, "train4")
     monkeypatch.setattr(isp, "primenit", lambda r, v6: None)
-    _, xm, _ = e6.evaluate_v2({**p, "gap": "propusk", "t_vyhod": "open2", "vyhod_lim": "da", "f_neisp": "zakrytie_d1"}, "train4")
+    _, xm, _ = e6.evaluate_v2({**p, "gap": "propusk", "t_vyhod": "1500", "f_neisp": "zakrytie_d1"}, "train4")
     assert np.array_equal(xm, x0)                                  # без primenit оси не действуют → тесты «меняет результат» падают
+    monkeypatch.undo()
+    _, x, _ = e6.evaluate_v2({**p, "gap": "propusk", "t_vyhod": "1500", "f_neisp": "zakrytie_d1"}, "train4")
+    assert not np.array_equal(x, x0)
