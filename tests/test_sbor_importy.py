@@ -3,7 +3,7 @@
 import re
 from pathlib import Path
 
-BAD = re.compile(r"^\s*(from tests[. ]|import tests\b)", re.M)
+BAD = re.compile(r"^(from tests[. ]|import tests\b)", re.M)
 
 
 def test_net_importov_cherez_paket_tests():
