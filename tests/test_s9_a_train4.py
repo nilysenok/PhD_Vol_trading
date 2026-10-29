@@ -88,7 +88,7 @@ def test_b_c_d_na_train4_po_prezhnemu_otkazyvayut():
 def test_anchor_s9_diff_train4_konechen_i_nul(sid):
     """Ж-080: anchor_s9_diff(period="train4") на реальных данных — конечен (не inf) и ≤ 1e-12 по годам 2016–2019."""
     from fastbt import etap1
-    from tests.test_yakor_v1 import make_evr
+    from test_yakor_v1 import make_evr
     d = etap1.anchor_s9_diff(sid, make_evr(sid), 0.0004, "train4")
     assert set(d) == {2016, 2017, 2018, 2019} and max(d.values()) <= 1e-12, d
 
