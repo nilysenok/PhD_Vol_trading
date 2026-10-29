@@ -125,8 +125,8 @@ def test_s6_dir_bias_on_rezhet_napravlenie(td, ind):
 def stub_filtr(monkeypatch):
     calls = []
     m = types.ModuleType("fastbt.signals.v5_filtr")
-    m.primenit = lambda df, tip, params: (calls.append((len(df), tip, dict(params)))
-                                          or np.zeros(len(df), bool))
+    m.primenit = lambda df, tip, params, sig=None: (calls.append((len(df), tip, dict(params), sig is not None))
+                                                    or np.zeros(len(df), bool))
     monkeypatch.setitem(sys.modules, "fastbt.signals.v5_filtr", m)
     return calls
 
@@ -135,10 +135,20 @@ def test_filtr_cherez_primenit(td, ind, stub_filtr):
     base = dict(pivot_type="classic", pivot_period="den", uroven=1, atr_filtr=0, filter_set="net")
     ss = v5.generate5(td, ind, [dict(base), dict(base, filtr={"adx": 25})])
     assert (ss.sig[0] != 0).any() and not ss.sig[1].any()
-    assert stub_filtr == [(td.n, "kontrtrend", {"adx": 25})]
+    assert stub_filtr == [(td.n, "kontr", {"adx": 25}, True)]
     s6 = v5.generate6(td, ind, [dict(vwap_window=5, dev_mult=0.5, dir_bias="OFF", filter_set="net",
                                      filtr={"mom": 1})])
     assert not s6.sig.any()
+
+
+def test_nastoyashchiy_primenit_rsi_mom_i_registraciya(td, ind):
+    from fastbt.signals.interface import get_family
+    g = [dict(pivot_type="classic", pivot_period="den", uroven=1, atr_filtr=0, filter_set="net"),
+         dict(pivot_type="classic", pivot_period="den", uroven=1, atr_filtr=0, filter_set="net",
+              filtr={"adx_th": 25, "rsi_th": 30, "mom_n": 3})]
+    s = v5.generate5(td, ind, g).sig
+    assert ((s[1] != 0) <= (s[0] != 0)).all() and (s[1] != 0).sum() < (s[0] != 0).sum()
+    assert get_family("S5", setka="v5") is v5.generate5 and get_family("S6", setka="v5") is v5.generate6
 
 
 # ───────────── мутации ─────────────
