@@ -19,18 +19,26 @@ CACHE = Path(os.environ.get("FASTBT_CACHE", MAIN / "data" / "fastbt" / "cache"))
 _CODE = None
 
 
+def hashed_files() -> list[Path]:
+    """Исходники пакета fastbt (кроме тестов), входящие в хэш кода, — в т.ч. все модули с njit(cache=True)."""
+    base = Path(__file__).resolve().parent
+    return [p for p in sorted(base.rglob("*.py")) if "tests" not in p.parts]
+
+
 def code_hash() -> str:
     """Хэш всех исходников пакета fastbt (кроме тестов): правка кода сбрасывает кэш."""
     global _CODE
     if _CODE is None:
         h = hashlib.sha1()
-        base = Path(__file__).resolve().parent
-        for p in sorted(base.rglob("*.py")):
-            if "tests" in p.parts:
-                continue
+        for p in hashed_files():
             h.update(p.read_bytes())
         _CODE = h.hexdigest()
     return _CODE
+
+
+def numba_cache_dir() -> Path:
+    """Д5: каталог numba-кэша зависит от хэша кода fastbt/*.py — правка любого модуля (в т.ч. fast_exec_v6) строит кэш заново."""
+    return MAIN / "data" / "fastbt" / "numba_cache" / code_hash()[:16]
 
 
 def key(name: str, *parts) -> str:
