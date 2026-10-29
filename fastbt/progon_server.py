@@ -157,13 +157,11 @@ def schet(zad: list, ctx: dict, procs: int, itog: dict, pre: dict, d_otp: dict, 
 def progon(kubs: dict, out, procs: int, n=None, prodolzhit=False, kod_slit=False, fast=False, rezhim=REZHIM, rz=ps.R0, ledger=None) -> dict:
     """kubs {sid: (путь, куб)} → {sid: n, oshibok, sboy, posledniy_i, deti}; n — точек (число или {sid: n}), по умолчанию из куба;
     rz — режим драйвера (R0 — designs/progon; v5 — куб Ж-127: период, seed, k3); ledger None — 2.0 для v2, иначе 2.1;
-    "2.0" | "2.1" — явно (2.1 на период v2 — отказ до старта, до листа Б8)."""
+    "2.0" | "2.1" — явно (2.1 на период v2 — 20 кварталов 2015Q1…2019Q4, лист Б8)."""
     out, sids = Path(out), list(kubs)
     v = ledger or (lm.V if rz.period == "v2" else lm.V21)
     if v not in (lm.V, lm.V21):
         raise SystemExit(f"ledger {v!r}: известны {lm.V}, {lm.V21}")
-    if v == lm.V21 and rz.period == "v2":              # снимет лист Б8
-        raise SystemExit("ledger 2.1 на период v2: до листа Б8: оценщик не отдаёт 2015 — отказ")
     ps.proverit_ledger(rz, v)
     if procs < 1 or rezhim not in ("obshchie", "prezhniy") or len({Path(p).parent for p, _ in kubs.values()}) > 1:
         raise SystemExit("procs ≥ 1; rezhim obshchie | prezhniy; кубы — из одного каталога")
@@ -210,7 +208,7 @@ def kuby_iz_argv(a, ap) -> tuple:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Соболь на сервере: общие входы через fork, чекпоинт, каталог на стратегию")
     ap.add_argument("--kub", nargs="+", required=True, help="v5 (кубы designs/v5) или kub_<sid>.yaml (один каталог)")
-    ap.add_argument("--period", required=True, choices=["train4", "v2"])
+    ap.add_argument("--period", required=True, choices=["train4", "v2", "wf"])
     ap.add_argument("--seed", type=int, help="v5: 1 | 2 (sobol.seed | seed2); progon: sobol.seed вместо seed куба")
     ap.add_argument("--k3", action="store_true", help="v5: проход к3 — полная решётка раздела k3")
     ap.add_argument("--n1", help="v5: N1 вместо куба — число для всех или S1=65536,S2=65536")

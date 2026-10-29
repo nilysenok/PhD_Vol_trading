@@ -28,7 +28,15 @@ from fastbt.data import year_bounds
 from fastbt.metriki_e import sr_dnevnoy
 
 Vyhod = namedtuple("Vyhod", "dni w")             # w[i, тикер, точка] — вес в день daty[dni[i]]
-GODY, NACHALO = (2017, 2018, 2019), "2016-01-01"
+
+
+def parametry(period: str = "train4") -> tuple:
+    """(годы walk-forward, начало окна отбора) периода из `kalibr_v5.PERIODY`: kalibr(pul, *parametry("wf"))."""
+    nachalo, gody = K.PERIODY[period]
+    return gody, nachalo
+
+
+GODY, NACHALO = parametry()
 
 
 def sharpe(x) -> float:
