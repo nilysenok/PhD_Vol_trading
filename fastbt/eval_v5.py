@@ -25,7 +25,9 @@ from fastbt.etap1_eval import PERIODS, RM_OFF
 from fastbt.etap1_eval_v2 import NOVYE, EvaluatorV2, NeSchitana
 from fastbt.eval_v5_osi import RHO_RISK, razbor
 from fastbt.exec_e_v4sloj import filtr_signala
+from fastbt.fast_filtry_v5 import calc_adx_nb, maska_atr_expand_nb, rang_nb
 from fastbt.fdr import OSNOVNOY
+from fastbt.indicators import calc_atr
 from fastbt.signals.interface import get_family
 from fastbt.signals.v5_filtr import primenit
 from fastbt.sweep_post import EXEC, MASKS, build_view, positions
@@ -39,7 +41,17 @@ UROVNI = {"S3": {"okno": "dc_window"}, "S4": {"period": "atr_period", "mnozh": "
 def maska(td, tip_: str, filtr: dict, sig) -> np.ndarray:
     """bool[n]: вход на close d разрешён фильтрами v5 (данные ≤ d)."""
     df = pd.DataFrame({"high": td.high, "low": td.low, "close": td.close, "volume": td.volume}, index=pd.to_datetime(td.dates))
-    return primenit(df, tip_, filtr, sig=np.asarray(sig))
+    f = dict(filtr)
+    at, al = f.pop("adx_th", 0), f.pop("atr_lo", 0)
+    m = primenit(df, tip_, f, sig=np.asarray(sig))                  # прочие фильтры; ADX и ATR-процентиль — numba (#629)
+    hlc = [np.asarray(x, float) for x in (td.high, td.low, td.close)]
+    if at > 0:
+        adx = calc_adx_nb(*hlc, 14)
+        with np.errstate(invalid="ignore"):
+            m &= ~np.isnan(adx) & ((adx > at) if tip_ == "trend" else (adx < at))
+    if al > 0:
+        m &= maska_atr_expand_nb(calc_atr(*hlc, 14), al)
+    return m
 
 
 def rodnoy_ok(sid: str, sp: dict) -> bool:
@@ -158,7 +170,7 @@ class EvaluatorV5(EvaluatorV2):
             ix[t] = np.searchsorted(cal, dates)
             sila = np.abs(np.asarray(self._view(t, self.r5.sp, 0.0)[0].strength[0], float))[s0:s0 + b + 1]
             M[k, ix[t]] = np.where(start, sila, np.nan)
-        R = rangi_v6.rang(M, self.r5.rang_tip)
+        R = rang_nb(M, self.r5.rang_tip)
         return {t: (R[k, ix[t]], ~(np.isfinite(M[k, ix[t]]) & ~np.isfinite(R[k, ix[t]]))) for k, t in enumerate(tk)}
 
     def _ves(self, sg, rg):
