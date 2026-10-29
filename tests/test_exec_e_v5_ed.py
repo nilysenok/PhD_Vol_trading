@@ -101,11 +101,29 @@ def test_sigma_idet_prezhnim_putyom_i_bystryj_sloj_ravnyj_etalonu():
         _same(ref, fast_etap1.run("T", days, sig, sigma, p, close=close, div=div))
 
 
-def test_slow_only_dlya_novykh_osej():
-    assert fast_etap1._slow_only(Params(b=1.0, ed_s="atr"), None)
-    assert fast_etap1._slow_only(Params(b=1.0, ed_t="pct"), None)
-    assert fast_etap1._slow_only(Params(b=1.0, chand=2.0), None)
+def test_bystryj_sloj_umeet_perenesennye_osi():
+    """П4 (план v5): ed_s / ed_t / chand перенесены в быстрый слой (сверка — tests/test_fast_v5_ekviv.py)."""
+    assert not fast_etap1._slow_only(Params(b=1.0, ed_s="atr"), None)
+    assert not fast_etap1._slow_only(Params(b=1.0, ed_t="pct"), None)
+    assert not fast_etap1._slow_only(Params(b=1.0, chand=2.0), None)
     assert not fast_etap1._slow_only(Params(b=1.0), None)
+
+
+NE_PERENESENY = [dict(k_e=0.5), dict(a_rang=(1.0, 1.0)), dict(chast=(0.5, 1.0)), dict(parab=(0.02, 0.2)),
+                 dict(zhizn=3), dict(reentry_den=True)]
+
+
+@pytest.mark.parametrize("kw", NE_PERENESENY)
+def test_slow_only_dlya_neperenesennykh_osej(kw):
+    """Защита #488: ось, которой быстрый слой не умеет, не должна молча игнорироваться — только эталон."""
+    assert fast_etap1._slow_only(Params(b=1.0, **kw), None)
+    assert fast_etap1._slow_only(Params(b=1.0, ed_s="atr", chand=2.0, **kw), None)
+
+
+def test_mutatsiya_slow_only_vsegda_false_lovitsya(monkeypatch):
+    monkeypatch.setattr(fast_etap1, "_slow_only", lambda p, ed, *extra: False)
+    with pytest.raises(AssertionError):
+        test_slow_only_dlya_neperenesennykh_osej(NE_PERENESENY[0])
 
 
 def test_proverka_parametrov():
