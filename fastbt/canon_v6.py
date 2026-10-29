@@ -28,7 +28,8 @@ SIDS, NET, NOVYE = c5.SIDS, c5.NET, ("kontekst", "ispolnenie")
 # открыл бы и неподключённые). Список осей V6-12 = eval_v6.PODKLYUCHENO ∩ новые оси куба (сверяет tests/test_eval_v6b.py).
 V12 = ("rel_signal", "dlit", "asim", "norm", "hurst_th", "naklon", "vol_regime_max", "tihiy_othod", "sektor_trend", "shirina", "ma_n",
        "porog_shiriny", "relf_napr", "relf_k", "relf_okno", "relf_bench", "post_shok", "szhatie", "rv_perevorot", "obyom_anom", "rezhim",
-       "sob_tip", "sob_do", "sob_posle", "vn_uslovie", "vn_faktor", "time_decay", "sigma_ist", "ed_lim", "zhizn", "pauza_porog", "pauza_okno")
+       "sob_tip", "sob_do", "sob_posle", "vn_uslovie", "vn_faktor", "time_decay", "sigma_ist", "ed_lim", "zhizn", "pauza_porog", "pauza_okno",
+       "lestnica", "gap", "t_vyhod", "vyhod_lim", "f_neisp")
 GOTOVY: frozenset = frozenset(("V6-1a", "V6-1b", "V6-2", "V6-3", "V6-4", "V6-5", "V6-6", "V6-7", "V6-8", "V6-9")) | {f"V6-12:{o}" for o in V12}
 P_FILTR = 0.9                              # вероятность «выкл.» у запрещающих фильтров (Ж-132, решение 13:20; §3.5)
 KE_NUZHEN = ("ed_lim", "lestnica", "vyhod_lim")   # действуют, только если вход лимиткой (k_e > 0), §1.2 И2/И4/И7
@@ -132,8 +133,10 @@ def canon_v6(sid: str, pt: dict, kub: dict | None = None):
             q[n] = off(n)
     if "dlit" in nov and q.get("vhod_tip", "stop_zayavka") != "podtverzhdenie" and c5.tip(sid) == "trend":
         q["dlit"] = off("dlit")
-    if "piv_buf" in nov and "piv" not in (c5.edinica(q.get("stop_nach")), c5.edinica(q.get("tejk"))):
+    if "piv_buf" in nov and c5.edinica(q.get("stop_nach")) != "piv":       # буфер — только у стопа piv:next | piv:half (Н4 #677)
         q["piv_buf"] = off("piv_buf")
+    if q.get("time_decay", NET) == "da" and (q.get("tau", NET) == NET or q.get("tejk", NET) != NET):
+        return None                                                       # time_decay без tau или при тейке ≠ net ничего не делает (#679)
     if sid == "S4" and q.get("norm") == "s252" and "period" in q:        # V6-5 (#648): при s252 period не влияет
         q["period"] = (kub or _kub(sid))["v5"]["signal"]["period"]["setka"][0]
     c = c5.canon_v5(sid, {k: v for k, v in q.items() if k not in nov})

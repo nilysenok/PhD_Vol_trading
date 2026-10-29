@@ -3,8 +3,8 @@
 `EvaluatorV6(EvaluatorV5)`: точка = точка v5 + новые оси куба v6 (canon_v6.novye). Все новые оси «выкл.» (или нет в точке) —
 путь v5 побайтно. 12a: rel_signal (td_rel), dlit, asim, norm, фильтры hurst_th/naklon/vol_regime_max/tihiy_othod (v5_filtr),
 контекст К9–К16, К20–К24 (kontekst_v6), окна событий sob_*, внешние условия vn_*, vhod_tip (тренд). 12b (eval_v6_osi): time_decay,
-sigma_ist, ed_lim, zhizn, тень паузы pauza_*. Остальные оси и расширенные значения осей v5 — ValueError «ещё не подключена»
-(tf — свой исполнитель; пивот V6-10, тренд V6-11, lestnica/gap/… — 12c). Данные не читает: ряды подаёт `IstochnikiV6`.
+sigma_ist, ed_lim, zhizn, тень паузы pauza_*. 12c (eval_v6_ispoln): lestnica, gap, t_vyhod, vyhod_lim, f_neisp. Остальные оси и расширенные значения
+осей v5 — ValueError «ещё не подключена» (tf — свой исполнитель; пивот V6-10 и тренд V6-11 — следующие листы). Данные не читает: ряды подаёт `IstochnikiV6`.
 Вход разрешён, если long_ok/short_ok стороны сигнала истинны (данные <= d; исполнение >= d+1, Д2). Ключ кэша — ВСЕ оси v6 (Д5).
 Отступления: фильтры v5 (hurst, ATR, объём) — по реальному td, не td_rel; norm=s252 + tejk=rodnoy — NeSchitana.
 """
@@ -16,7 +16,7 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
-from fastbt import canon_v6, eval_v6_osi as osi6, kontekst_v6, sobytiya_e1, vneshnie_uslovie
+from fastbt import canon_v6, eval_v6_ispoln as isp6, eval_v6_osi as osi6, kontekst_v6, sobytiya_e1, vneshnie_uslovie
 from fastbt.canon_v5 import NET, SIGNAL, tip
 from fastbt.eval_v5 import EvaluatorV5, UROVNI, maska
 from fastbt.eval_v5_osi import razbor
@@ -30,7 +30,8 @@ from fastbt.unit import Unit
 KONTEKST = ("sektor_trend", "shirina", "ma_n", "porog_shiriny", "relf_napr", "relf_k", "relf_okno", "relf_bench", "post_shok",
             "szhatie", "rv_perevorot", "obyom_anom", "rezhim")
 FILTR6, SOB, VN = ("hurst_th", "naklon", "vol_regime_max", "tihiy_othod"), ("sob_tip", "sob_do", "sob_posle"), ("vn_uslovie", "vn_faktor")
-PODKLYUCHENO = frozenset(("rel_signal", "dlit", "asim", "norm", "vhod_tip") + KONTEKST + FILTR6 + SOB + VN + osi6.DVIG + osi6.PAUZA)
+PODKLYUCHENO = frozenset(("rel_signal", "dlit", "asim", "norm", "vhod_tip") + KONTEKST + FILTR6 + SOB + VN + osi6.DVIG + osi6.PAUZA
+                         + isp6.ISPOLN)
 REZHIM_ALIAS = {"rang_sigma_rynka_08": "rank08"}
 
 
@@ -64,7 +65,7 @@ def fkey(filtr: dict, v6: dict) -> tuple:
     return tuple(sorted(filtr.items())) + ((("v6", tuple(sorted(v6.items(), key=str))),) if v6 else ())
 
 
-class EvaluatorV6(EvaluatorV5):
+class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
     def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=None, ist: IstochnikiV6 | None = None):
         super().__init__(sid, inp, base_p, commission, **({} if fdr is None else {"fdr": fdr}))
         self.ist, self.v6, self._rel, self._dan, self._ten = ist or IstochnikiV6(), {}, {}, {}, None
@@ -162,10 +163,11 @@ class EvaluatorV6(EvaluatorV5):
             raise NeSchitana("norm=s252: родной уровень tejk считается по масштабу окна, не 252 дней")
         if self.r5 is not None:
             osi6.proverit(self.r5, self.v6)
+            isp6.proverit(self.r5, self.v6)
         self._ten = None
         if "pauza_porog" in self.v6:                      # тень: та же точка без паузы (V6-12b), затем прогон с паузой
-            self._ten = osi6.ten(self, super()._rows(pt, period, anchor), period, anchor)
-        return super()._rows(pt, period, anchor)
+            self._ten = osi6.ten(self, self._legs(pt, period, anchor), period, anchor)
+        return self._legs(pt, period, anchor)
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
         """Точка v6 → (строка ledger v2.0, excess портфеля, excess тикеров); контракт EvaluatorV5."""
@@ -176,6 +178,7 @@ class EvaluatorV6(EvaluatorV5):
         if "vhod_tip" in self.v6 and self.sid in ("S3", "S4"):
             r.nov["vhod_tip"] = self.v6["vhod_tip"]
         osi6.primenit(r, self.v6, self.inp.sigma)
+        isp6.primenit(r, self.v6)
         t = tip(self.sid)
         for k in FILTR6:
             if k in self.v6:
