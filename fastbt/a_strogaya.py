@@ -20,6 +20,7 @@ from fastbt.etap1_eval_v2 import EvaluatorV2
 from fastbt.exec_e_types import Params
 
 COMM, PER, GODY, PLATA = 0.0004, "train4", (2016, 2017, 2018, 2019), 0.05
+WF_GODY = tuple(range(2017, 2027))                 # wf (К-wf3): 10 годовых окон; 2026 неполный (до 27.02)
 SIDS = ("S1", "S2", "S3", "S4", "S5", "S6")
 OUT = Path(__file__).resolve().parent.parent / "docs" / "tables" / "a_strogaya"
 
@@ -37,6 +38,14 @@ class AStrogaya(EvaluatorV2):
         """Вход по open дня b (первый день после окна) не входит в окно: сделка, стартовавшая в последний день окна, пропускается."""
         pos = super()._sig(t, sp, q, anchor, s0, b, st)
         return gate_trades(pos, np.arange(len(pos)) != len(pos) - 2)
+
+
+def gody_perioda(period: str) -> tuple:
+    """Годы метрик периода: wf — 2017…2026 (10 окон); остальные — из etap1_eval.PERIODS (train4 — 2016…2019)."""
+    if period == "wf":
+        return WF_GODY
+    from fastbt.etap1_eval import years_of
+    return years_of(period)
 
 
 def evaluatory(sid: str, ev=None, period: str | None = None) -> tuple:
@@ -78,8 +87,7 @@ def metriki_goda(x: np.ndarray) -> dict:
 
 def pasport(imya: str, variant: str, r: dict, gody: tuple | None = None) -> list:
     """Строки паспорта по годам периода (умолчание — train4) и «все» — с платой 5 % за шорт и без; доля времени в позиции и сделки в год."""
-    from fastbt.etap1_eval import years_of
-    GODY = years_of(PER) if gody is None else tuple(gody)          # noqa: N806  годы — из текущего PER (при вызове)
+    GODY = gody_perioda(PER) if gody is None else tuple(gody)          # noqa: N806  годы — из текущего PER (при вызове)
     yr, rows = r["dates"].astype("datetime64[Y]").astype(int) + 1970, []
     for plata in (0.0, PLATA):
         x = r["x"] - plata * r["baza"]
