@@ -65,6 +65,11 @@ class Params:
     parab: tuple | None = None    # П3b: параболический трейлинг тренда (ps, pm) — fastbt/exec_e_parab.py; нужен b, check="bary"; медленный путь
     chast: tuple | None = None    # частичный выход (доля, r): закрыть долю лимитом на +r·R; (0,5; 1) ≡ chast_1r; нужен b, check="bary"
     time_decay: bool = False      # V6-9 (v4 engine.py:113): после tau//2 дней в позиции тейк «net» — половина дистанции; нужен tau; быстрый слой не знает (ne_znaet)
+    # --- V6-10 (И11, И12; fastbt/exec_e_piv.py): стоп/тейк по уровням пивота S5, стоп по VWAP S6; уровни — PivUrovni в tejk_M; быстрый слой не знает (ne_znaet) ---
+    piv_sl: str | None = None     # стоп: next (|S1−S2| / |R2−R1|) | half (его половина) | vwap (за полосой VWAP ± vwap_m·dev); расстояние от цены входа
+    piv_buf: float = 0.0          # буфер стопа piv_sl next/half: расстояние ×(1 + piv_buf); 0 — без буфера
+    piv_tp: str | None = None     # тейк: P (до пивота) | R (до следующего уровня |R1−S1|) | half (его половина)
+    vwap_m: float | None = None   # множитель dev для piv_sl = vwap (v4 sl_dev 1,5…3)
 
 
 @dataclass
