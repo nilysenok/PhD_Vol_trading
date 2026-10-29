@@ -47,3 +47,6 @@ data/fastbt/
 
 # Конвейер моделей: кэши (не коммитить)
 data/models_cache/
+
+# Перенос на сервер (Ж-133): собирается scripts/server/sobrat_perenos.sh, в git не идёт
+/perenos/

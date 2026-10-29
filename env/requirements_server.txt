@@ -1,0 +1,19 @@
+# Окружение счёта на сервере (Ж-131 п. 3, Ж-133): пины = версии Мака (python3 -m pip freeze / pip show, 29.10.2026),
+# Python 3.9.6 (Мак: /usr/bin/python3, arm64). Состав — то, что импортирует fastbt/ (кроме тестов) и scripts/server/:
+# numba, llvmlite, numpy, pandas, pyarrow, scipy, yaml — и их зависимости целиком (ставится с --no-deps: ничего сверх списка).
+# statsmodels, sklearn, lightgbm, xgboost, arch, matplotlib fastbt/ не импортирует — на сервер не ставятся.
+# Колёса linux x86_64 под cp39 этих версий — проверить при развёртывании (агенту сеть нельзя): razvernut.sh ставит
+# с --only-binary=:all: и падает на первом отсутствующем колесе. Ожидание по выпускам: все есть (manylinux2014 / manylinux_2_17;
+# pyarrow 21.0.0 — manylinux_2_28, нужен glibc ≥ 2.28: Ubuntu 20.04+, Debian 11+).
+# Побайтная эквивалентность arm64 ↔ x86 версиями не гарантируется — её решает ./proverka_yakor.sh.
+numba==0.60.0
+llvmlite==0.43.0
+numpy==2.0.2
+pandas==2.3.3
+python-dateutil==2.9.0.post0
+pytz==2025.2
+tzdata==2025.3
+six==1.15.0
+pyarrow==21.0.0
+scipy==1.13.1
+PyYAML==6.0.3
