@@ -538,7 +538,7 @@ def _v_bare(ticker, days, close, p, trades) -> None:
     диапазон дня); close дня (Н6) — цена рынка. Нарушение — ValueError тем же текстом, что у эталона."""
     for t in trades:
         for den, b, px in ((t.entry_day, t.entry_bar, t.entry_px), (t.exit_day, t.exit_bar, t.exit_px)):
-            if den is None or (t.reason == "part" and den == t.entry_day and px == t.entry_px):
+            if den is None:
                 continue
             d = days[den]
             b = min(b, len(d.c) - 1)

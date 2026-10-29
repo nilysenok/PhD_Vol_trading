@@ -117,10 +117,19 @@ def _slow_only(p: Params, ed, *extra) -> bool:
     return any(getattr(p, n) != d for n, d in _umolch(type(p)))
 
 
+def _yadro_v5(p, ed, tejk_M, rang) -> bool:
+    """Ядро v5 берёт вызов, если флаг YADRO_S34_GOTOV и режим целиком в осях ядра (urovni допустимы); ed, tejk_M, rang — эталон."""
+    return (fx.YADRO_S34_GOTOV and ed is None and tejk_M is None and rang is None and isinstance(p, Params)
+            and p.f in fx.F_CODES and p.s in ("fiks", "ezhedn") and p.ed_s in fx.ED_CODES and p.ed_t in fx.ED_CODES
+            and not fx.ne_znaet(p))
+
+
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None, urovni=None, rang=None) -> Result:
     """Drop-in `exec_e.run`: те же проверки и тот же Result (сделки — объекты Trade); оси вне FAST_POLYA — медленным путём."""
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.ascontiguousarray(sigma, float)
+    if _slow_only(p, ed, tejk_M, urovni, rang) and _yadro_v5(p, ed, tejk_M, rang):    # Ф-сл2b: оси S3/S4 — ядро fast_exec.run_v5
+        return fx.run_v5(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, urovni=urovni)
     if _slow_only(p, ed, tejk_M, urovni, rang) or not len(days) or not np.isfinite(sig.astype(float)).all():
         kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni), ("rang", rang)) if v is not None}
         return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
@@ -267,6 +276,15 @@ def patched():
             setattr(mod, name, v)
 
 
+def os_s34(pt: dict) -> bool:
+    """Точка v5 с осью, которую считает только ядро S3/S4: стоп-заявки (S3 `okno`, S4 `mnozh`), T > 1, reentry, chast, trail atr."""
+    if "stop_nach" not in pt:
+        return False
+    trail = str(pt.get("trail", "net"))
+    return ("okno" in pt or "mnozh" in pt or int(pt.get("T", 1)) != 1 or pt.get("reentry", "net") != "net"
+            or pt.get("chast", "net") != "net" or trail.startswith("atr"))
+
+
 def pokryto(pt: dict) -> bool:
     """§1.8 контракта ledger v2.0: быстрый слой покрывает точки осей zh047 (v1.0); новые оси §1.1 — только в умолчании,
     `filtr` — только net | cbr (прежние `sobytiya`), заём — только 0. Остальное драйвер считает медленным путём."""
@@ -276,7 +294,8 @@ def pokryto(pt: dict) -> bool:
                   tejk_signal=NET, rho=NET, m_tip="1", rang_tip="tikernyj")   # Ж-084: tejk_signal ≠ net; V6-c: rho ≠ net — медленный путь (эталон)
     if "stop_nach" in pt and pt.get("rang_tip") in RANG_TIPY:     # точка v5: rang_tip считает оценщик (rangi_v6), в run идёт только
         umolch["rang_tip"] = pt["rang_tip"]                       # rang ≠ None — а такой вызов `run` сам отдаёт эталону (_slow_only)
-    return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and pt.get("filtr", NET) in (NET, "cbr")
+    return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and (fx.YADRO_S34_GOTOV or not os_s34(pt))
+            and pt.get("filtr", NET) in (NET, "cbr")
             and pt.get("sobytiya", NET) in (NET, "cbr") and pt.get("vyhod", NET) in (NET, "lim")
             and pt.get("zaem", 0) in (0, "0", "0.0", NET, None))
 
