@@ -165,6 +165,7 @@ def obnovit_manifest(koren: Path, zap: list[dict], vyhod: Path, tsv: Path) -> st
     nv = tsv.with_name(tsv.stem + "_otvergnuto.tsv")
     star = [ln.rstrip("\n").split("\t") for ln in tsv.read_text(encoding="utf-8").splitlines()[1:]]
     star = [(s + [s[0], s[1]])[:7] if len(s) == 5 else s for s in star]
+    nov = [x for x in nov if x[5] not in {s[0] for s in star}]       # оригинал ≤ 2021 принят целиком — копия не нужна (дубль пути)
     puti = {x[0] for x in nov}
     star = [s for s in star if s[0] not in puti]
     srcs = {z["rel"] for z in zap}

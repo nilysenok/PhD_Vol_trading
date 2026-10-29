@@ -71,6 +71,20 @@ def test_originaly_s_2022_otvergayutsya_kopii_prinimayutsya(tmp_path):
     assert json.loads((v / JS).read_text())[0]["secid"] == "BRZ1" and len(json.loads((v / JS).read_text())) == 1
 
 
+def test_original_do_2021_prinyat_kopii_net_dublya(tmp_path):
+    """Файл целиком ≤ 2021 (BRZ1) принят оригиналом: копия того же пути дала бы «дубль» в manifest_proverka (упало на сборке пакета)."""
+    k = _koren(tmp_path / "m")
+    tsv = tmp_path / "m.tsv"
+    r = MP.sobrat(str(k), _zapisi())
+    MP.zapisat(r, tsv)
+    v = k / "data" / "server_2021"
+    U.obnovit_manifest(k, U.usech(k, v), v, tsv)
+    puti = [ln.split("\t")[0] for ln in tsv.read_text().splitlines()[1:]]
+    assert f"{BR}/BRZ1.parquet" in puti and f"data/server_2021/{BR}/BRZ1.parquet" not in puti
+    assert f"data/server_2021/{BR}/BRF2.parquet" in puti and len(puti) == len(set(puti))
+    assert len({p.removeprefix("data/server_2021/") for p in puti}) == len(puti)         # ни один путь не дважды
+
+
 def test_json_zapis_s_datoj_2022_ne_popadaet(tmp_path):
     p = tmp_path / "c.json"
     p.write_text(json.dumps([{"a": "2021-12-31", "b": "2021-12"}, {"a": "2021-11-01", "b": "2022-01-14"}, {"x": "текст"}]))
