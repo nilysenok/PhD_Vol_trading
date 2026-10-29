@@ -403,8 +403,14 @@ def _vhod(fs, st, ti, tf, tx, acc, i, j, b, px, sg, d_sig, sd, B, off, nbar, cl,
 def _try_order_sz(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, sigma, su, tu, atr, UR, ix, pf, pi):
     """RunStop._try_order: OCO buy-stop up / sell-stop dn (касание, цена — худшая из open и уровня; оба в баре — ближайший к open)."""
     st[OK] = 0
-    up, dn, k0 = fs[OUP], fs[ODN], off[i]
-    for b in range(nbar[i]):
+    _oco(fs, st, ti, tf, tx, acc, i, j, 0, fs[OUP], fs[ODN], st[ODS], B, off, nbar, cl, sigma, su, tu, atr, UR, ix, pf, pi)
+
+
+@njit(cache=True)
+def _oco(fs, st, ti, tf, tx, acc, i, j, b0, up, dn, d_sig, B, off, nbar, cl, sigma, su, tu, atr, UR, ix, pf, pi):
+    """exec_e_rules.stop_vhod с бара b0: первый бар с касанием, цена — худшая из open и уровня, оба — ближайший к open. Вход d_sig."""
+    k0 = off[i]
+    for b in range(b0, nbar[i]):
         o, h, l = B[0, k0 + b], B[1, k0 + b], B[2, k0 + b]
         buy, sell = h >= up, l <= dn
         if buy or sell:
@@ -412,8 +418,30 @@ def _try_order_sz(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, sigma, su, tu
                 buy = abs(o - up) <= abs(o - dn)
             st[NF] += 1
             px, sd = (max(o, up), 1) if buy else (min(o, dn), -1)
-            _vhod(fs, st, ti, tf, tx, acc, i, j, b, px, sigma[st[ODS]], st[ODS], sd, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi)
-            return
+            _vhod(fs, st, ti, tf, tx, acc, i, j, b, px, sigma[d_sig], d_sig, sd, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi)
+            return True
+    return False
+
+
+@njit(cache=True)
+def _reenter_sz(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, sigma, su, tu, atr, UR, ix, pf, pi):
+    """RunStop._reenter (V6-11c): после внутридневного выхода дня i пара вечера j−1 стоит на барах СТРОГО после бара выхода; ≤ 1 за день."""
+    r = st[LXR]
+    if st[TR] or st[OK] or j == 0 or st[LXD] != i or r == R_VREMYA or r == R_SIGNAL or st[DNRE] == i or st[LXB] + 1 >= nbar[i]:
+        return
+    st[DNRE] = i
+    ip = ix[j - 1]
+    if not np.isfinite(sigma[ip]):
+        return
+    up, dn = UR[0, ip], UR[1, ip]
+    if pf[F_KE] != 0.0:
+        a = pf[F_KE] * atr[ip]
+        up, dn = up + a, dn - a
+    if not (np.isfinite(up) or np.isfinite(dn)):
+        return
+    up, dn = (up if np.isfinite(up) else np.inf), (dn if np.isfinite(dn) else -np.inf)
+    if _oco(fs, st, ti, tf, tx, acc, i, j, st[LXB] + 1, up, dn, ip, B, off, nbar, cl, sigma, su, tu, atr, UR, ix, pf, pi):
+        st[NO] += 1
 
 
 @njit(cache=True)
@@ -554,7 +582,10 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut)
         elif st[TR]:
             _scan(fs, st, ti, tf, tx, acc, i, j, 0, nb, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi)
         if pi[P_RED]:                                       # V6-a: повторный вход в тот же день после внутридневного выхода
-            _reenter(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su, tu, atr, UR, ix, pf, pi)
+            if pi[P_SZ]:                                    # на стоп-заявке повторный вход — та же OCO-пара (RunStop._reenter)
+                _reenter_sz(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, sigma, su, tu, atr, UR, ix, pf, pi)
+            else:
+                _reenter(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su, tu, atr, UR, ix, pf, pi)
         close = cl[i]
         if st[XO]:
             if st[TR]:
@@ -623,9 +654,9 @@ T_VYHOD = ("close", "open2")                            # из t_vyhod ядро 
 def ne_znaet(p) -> list:
     """Поля Params не в умолчании, которых нет ни в FAST_POLYA, ни в осях v5 ядра (пусто — ядро режим знает)."""
     from fastbt import fast_etap1
-    from fastbt.exec_e_stop import stop_novye
-    bad = [n for n, d in fast_etap1._umolch(type(p)) if n not in NOVYE and not (YADRO_OSI3_GOTOV and n in v6.OSI) and not (YADRO_PARAB_GOTOV and n == "parab")
-           and getattr(p, n) != d] + stop_novye(p)   # V6-11: оси v5 на стоп-заявке — эталон
+    sz = p.vhod_tip == "stop_zayavka"           # Ф-vhod_open: на стоп-заявке vhod_open ничего не меняет (RunStop._decide не смотрит на него)
+    bad = [n for n, d in fast_etap1._umolch(type(p)) if n not in NOVYE and not (YADRO_OSI3_GOTOV and n in v6.OSI)
+           and not (YADRO_PARAB_GOTOV and n == "parab") and getattr(p, n) != d and not (sz and n == "vhod_open")]
     return bad + ["t_vyhod"] * (p.t_vyhod not in T_VYHOD)
 
 

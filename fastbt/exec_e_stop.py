@@ -21,13 +21,6 @@ def ke_levels(up, dn, k_e, atr):
     return up + a, dn - a
 
 
-def stop_novye(p) -> list:
-    """V6-11: оси v5, перенесённые на стоп-заявку тренда; быстрое ядро их на ней не знает — точка идёт эталоном (fast_exec.ne_znaet)."""
-    if p.vhod_tip != "stop_zayavka":
-        return []
-    return [n for n in ("ed_s", "ed_t", "chand", "b0", "b0_c", "sp", "step_s", "pir", "reentry_den") if getattr(p, n) != getattr(type(p)(), n)]
-
-
 class RunStop(Run2):
     def __init__(s, *a, urovni, **kw):
         super().__init__(*a, **kw)
