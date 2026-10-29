@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from fastbt import ledger_v2 as lm  # noqa: E402
 
 KOLONKI = ["prohod", "strategiya", "tochek", "ok", "oshibok", "nesovm", "unikalnyh", "chekpoint_i", "sverka", "kod", "vhody",
-           "obyom_mb", "vremya_ch", "s_na_tochku_p50", "top_sharpe_okna"]
+           "obyom_mb", "vremya_ch", "s_na_tochku_p50", "yadro_pct", "top_sharpe_okna"]
 SVERKA_CHP = ("kod", "vhody", "kub_sha", "sobol_seed", "period")
 SHAPKA = ("Шарп справочно, без выбора: train4 (ledger 2.1) — окно [2016; 2019], stats.window, comm = 0; "
           "v2 (ledger 2.0) — ряд портфеля за весь период v2 [okno_s; okno_po] manifest, √252, ddof = 1")
@@ -70,6 +70,25 @@ def nesovmestnyh(vse: list, posl) -> object:
     return "—" if posl is None else posl + 1 - len({r["sobol_i"] for r in vse if r.get("sobol_i", posl + 1) <= posl})
 
 
+def dolya_yadra(vse: list) -> object:
+    """Доля строк (все статусы), посчитанных ядром быстрого слоя (sloy = fast), %; пусто — «—». Строка без sloy — не ядро."""
+    return f"{100 * sum(r.get('sloy') == 'fast' for r in vse) / len(vse):.1f}" if vse else "—"
+
+
+def yadro_stroki(paths) -> list:
+    """['<Sk>: 87.5 % (n из N) — <проход>'] по каталогам; ледже не читается — «нет данных»."""
+    out = []
+    for r, s in (x for p in paths for x in nayti(p)):
+        try:
+            vse = lm.Chitatel(r, s).rows(None)
+        except ValueError as e:
+            out.append(f"{s}: нет данных ({str(e)[:60]})")
+            continue
+        n = sum(x.get("sloy") == "fast" for x in vse)
+        out.append(f"{s}: {dolya_yadra(vse)} % ({n} из {len(vse)}) — {r.name}")
+    return out
+
+
 def stroka(root: Path, sid: str, top: int) -> dict:
     d = root / sid
     mf = json.loads((d / "manifest.json").read_text(encoding="utf-8"))
@@ -88,7 +107,7 @@ def stroka(root: Path, sid: str, top: int) -> dict:
     out.update(tochek=len(vse), ok=len(ch.rows()), oshibok=sum(r.get("status") == "oshibka" for r in vse),
                nesovm=nesovmestnyh(vse, posl), unikalnyh=len({r["klyuch_sha"] for r in vse}), kod=str(mf["kod"])[:12],
                vhody=str(mf["vhody"])[:12], sverka="ok", vremya_ch=f"{np.nansum(t) / 3600:.3f}",
-               s_na_tochku_p50=f"{np.nanmedian(t):.3f}" if t.size else "—", top_sharpe_okna=top_okna(ch, top))
+               s_na_tochku_p50=f"{np.nanmedian(t):.3f}" if t.size else "—", yadro_pct=dolya_yadra(vse), top_sharpe_okna=top_okna(ch, top))
     return out
 
 
@@ -129,7 +148,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Сводка ledger серверного Соболя (справочно, без выбора)")
     ap.add_argument("katalog", type=Path, nargs="+")
     ap.add_argument("--top", type=int, default=5)
+    ap.add_argument("--yadro", action="store_true", help="только доля точек ядра по Sk (по строке на Sk), без таблицы")
     a = ap.parse_args(argv)
+    if a.yadro:
+        print("\n".join("ядро " + x for x in yadro_stroki(a.katalog)))
+        return 0
     rows = svodka_vse(a.katalog, a.top)
     print(tablica(rows))
     return 0 if rows[-1]["sverka"] == "ok" else 1

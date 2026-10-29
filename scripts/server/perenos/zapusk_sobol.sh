@@ -18,6 +18,24 @@ novyj_cli() {   # fastbt.progon_server с кубом v5 (ветка progon-serve
   [ -f "$KOD_DIR/fastbt/progon_server.py" ] && (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --help 2>&1 | grep -q -- '--k3')
 }
 
+progrev() {   # $1 — период. Одна точка каждой Sk (v5: --n1 1, seed 1; v6: Моррис --r 1) одним процессом в cache/progrev_<период>/ (не в ledger/)
+  local pg="$P/cache/progrev_$1" t0 rc=0
+  t0=$(date +%s); rm -rf "$pg"
+  say "прогрев кэшей одним процессом: $1, ${PERENOS_KUB:-v5}, по точке на Sk, $pg"
+  if [ "${PERENOS_KUB:-v5}" = v6 ]; then
+    (cd "$KOD_DIR" && "$PY" -m fastbt.progon_morris_v6 --kub v6 --period "$1" --out "$pg" --procs 1 --r 1 \
+      ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"}) || rc=$?
+  else
+    (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub v5 --period "$1" --seed 1 --n1 1 --out "$pg" --procs 1 \
+      ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} ${fast:-}) || rc=$?
+  fi
+  [ $rc = 0 ] || fail "прогрев упал (код $rc) — пул не стартую, вывод выше"
+  say "прогрев кэшей: $(( $(date +%s) - t0 )) с"
+}
+dolya_yadra() {   # $1 — каталог прохода: доля точек, посчитанных ядром (sloy = fast), по Sk
+  (cd "$KOD_DIR" && "$PY" "$KOD_DIR/scripts/server/svodka_ledger.py" --yadro "$1") || say "ядро: сводка не получена ($1)"
+}
+
 if [ "${1:-}" = __ryad ]; then              # внутренний режим: сама цепочка под nohup
   per=$2; shift 2
   if novyj_cli; then
@@ -31,6 +49,10 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
     # (кроме k3: контроль на решётке v5, новые оси «выкл.»); N1 — из куба (200 000), PERENOS_N1 — явно; ledger 2.2 (setka v6, rol).
     # PERENOS_MORRIS_R — траекторий Морриса (умолчание ~5 000 точек на Sk; 1 — малая проверка). Моррис упал — полный проход не начинается.
     kub=${PERENOS_KUB:-v5}; zm=""; n1v="--n1 ${PERENOS_N1:-200000}"      # Ж-137 п. 1: 200 000 на стратегию (262 144 отменены)
+    # Быстрый слой (Ж-083; ядро #698/#699/#703/#706): --fast по умолчанию; PERENOS_FAST=0 — всё эталоном. Доля точек ядра (sloy = fast) —
+    # строкой «ядро» после каждого прохода и в svodka_ledger.py.
+    fast=""; [ "${PERENOS_FAST:-1}" = 0 ] || fast="--fast"
+    progrev "$per"      # до пула: один процесс, одна точка каждой Sk (bars5m, дисковый кэш, numba) — без гонок при fork 120 процессов
     if [ "$kub" = v6 ]; then
       mo="$P/ledger/${per}_morris"; zm="--zamorozka $mo"; n1v=${PERENOS_N1:+--n1 $PERENOS_N1}
       say "progon_morris_v6: $per, ledger/${per}_morris/<Sk>/zamorozka.yaml, процессов $(processov "$per")"
@@ -39,13 +61,18 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
     fi
     for pr in ${PERENOS_PROHODY:-s1 s2 k3 spravka}; do
       # N1 по умолчанию 200 000 на стратегию (Ж-137 п. 1); k3 — полная решётка, без --n1
-      od="${per}_$pr"
+      # каталог прохода: v5 — <период>_<проход>; v6 — <период>_v6_<проход> (ledger 2.2 ≠ 2.1: в один каталог v6 после v5 не писать — --prodolzhit откажет по vhody)
+      pv=""; [ "$kub" = v6 ] && pv="v6_"
+      od="${per}_$pv$pr"
       case "$pr" in s1) a="--seed 1 $n1v $zm" ;; s2) a="--seed 2 $n1v $zm" ;; k3) a="--k3" ;;
-        spravka) a="--seed 1 $n1v $zm --rol spravka --t-vyhod close"; od="${per}_spravka_close" ;;
+        spravka) a="--seed 1 $n1v $zm --rol spravka --t-vyhod close"; od="${per}_${pv}spravka_close" ;;
         *) fail "проход $pr: s1 | s2 | k3 | spravka" ;; esac
       say "progon_server: $kub $per $pr ($a), ledger/$od/<Sk>/, процессов $(processov "$per")"
+      rc=0
       (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub "$kub" --period "$per" $a \
-        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/$od" --procs "$(processov "$per")" --prodolzhit $sl)
+        ${PERENOS_STRATEGII:+--strategii "$PERENOS_STRATEGII"} --out "$P/ledger/$od" --procs "$(processov "$per")" --prodolzhit $sl $fast) || rc=$?
+      dolya_yadra "$P/ledger/$od"
+      [ $rc = 0 ] || fail "проход $pr: progon_server вернул код $rc (ошибки точек — строки status = oshibka, причины выше) — цепочка остановлена"
     done
   else
     sl=""; [ "$(kv kod_slit)" = 1 ] && sl="--kod-slit"
