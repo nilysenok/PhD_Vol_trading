@@ -123,9 +123,10 @@ def test_obem_kanon_ravno_pereboru_na_malom_kube():
             v["setka"] = v["setka"][:1] if n not in C.PRAVILA else v["setka"][:2] if n == "stop_nach" else v["setka"]
     k["vyhod"]["tejk"]["setka"] = ["net", "sila:0.5:1"]
     ox = C.osi(k)
-    kan = {tuple(sorted((a, str(b)) for a, b in C.canon_v5("S3", dict(zip([n for n, _ in ox], c))).items()))
-           for c in itertools.product(*[g for _, g in ox])}
-    assert C.obem_kanon(k) == (len(kan), 0) and len(kan) < C.obem(k)
+    cs = [C.canon_v5("S3", dict(zip([n for n, _ in ox], c))) for c in itertools.product(*[g for _, g in ox])]
+    kan = {tuple(sorted((a, str(b)) for a, b in c.items())) for c in cs if c is not None}
+    # Р-4 (Ж-137 п. 7б): тренд × m_sily ≠ 1 × tikernyj выбрасывается → выброс > 0 (раньше 0)
+    assert C.obem_kanon(k) == (len(kan), cs.count(None)) and cs.count(None) > 0 and len(kan) < C.obem(k)
 
 
 def test_obem_kanon_vybros_schitaetsya_pereborom():
@@ -153,10 +154,16 @@ def test_dymovoj_200_tochek_sobol():
 
 def test_balans_sobola_po_krupnejshej_osi():
     pts, sch = C.tochki_v5(KUBY["S3"], 0, 4096)
-    assert sch["vybrosheno"] == 0
+    assert sch["vybrosheno"] > 0 and len(pts) + sch["vybrosheno"] == 4096      # Р-4: тренд × ранг tikernyj выброшен; N — до выброса
+    from scipy.stats import qmc
+    ox, s = C.osi(KUBY["S3"]), KUBY["S3"]["sobol"]                  # баланс — по сырым точкам (до выброса), как N
+    u = qmc.Sobol(len(ox), scramble=s["scramble"], seed=s["seed"]).random(4096)
+    g = dict(ox)["tejk"]
+    j = [n for n, _ in ox].index("tejk")
     cnt = {}
-    for _, p in pts:
-        cnt[p["tejk"]] = cnt.get(p["tejk"], 0) + 1
+    for x in u[:, j]:
+        v = g[min(int(x * len(g)), len(g) - 1)]
+        cnt[v] = cnt.get(v, 0) + 1
     assert len(cnt) == 17 and max(cnt.values()) - min(cnt.values()) <= 2         # 2¹² точек: каждая 1/4096 — ровно одна
 
 
