@@ -28,6 +28,7 @@ from __future__ import annotations
 import numpy as np
 
 from fastbt.exec_e2 import Run2
+from fastbt.exec_e_parab import parab_check, parab_new
 from fastbt.exec_e_rules import atr_series
 from fastbt.exec_e_run import Run
 from fastbt.exec_e_types import Day, Params, Result, Trade  # noqa: F401
@@ -109,6 +110,7 @@ def _check_params(p: Params) -> None:
         raise ValueError("chand > 0 требует b (начальный стоп) и check='bary'")
     if p.vhod_tip == "stop_zayavka" and (p.ed_s != "sigma" or p.ed_t != "sigma" or p.chand is not None):
         raise ValueError("ed_s, ed_t, chand не поддержаны при stop_zayavka")
+    parab_check(p)
 
 
 def unit_series(days, close, kind: str, sigma, atr) -> np.ndarray | None:
@@ -127,7 +129,7 @@ def unit_series(days, close, kind: str, sigma, atr) -> np.ndarray | None:
 
 def _new_axes(p: Params, ed) -> bool:
     return ed is not None or p.zhizn is not None or p.gap_propusk or p.t_vyhod != "close" or bool(p.bar_plus or p.stop_tik) or p.vhod_open \
-        or p.T != 1 or p.reentry_den or v5_new(p)     # Л6 → медленный путь
+        or p.T != 1 or p.reentry_den or v5_new(p) or parab_new(p)     # Л6, П3b → медленный путь
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None,

@@ -5,6 +5,7 @@ import math
 
 import numpy as np
 
+from fastbt.exec_e_parab import pb_after, pb_level, pb_start
 from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level, limit_mask, limit_px, part_allowed,
                                  part_fee, part_hit, part_level, ratchet, rodnoy_level, stop_hit, stop_level,
                                  take_hit, take_level, tejk_level)
@@ -62,7 +63,8 @@ class Run(V6):
         s.ext, s.be_on, s.sh = px, False, 0.0
         s.w, s.smax, s.part, s.ent = 1.0, None, False, (i, b)
         s.v6_enter(d_sig)
-        s.R = px * s.p.b * s.sg if s.p.b is not None else float("nan")
+        s.pb, s.pb_new = (pb_start(sd, px, s.sg, s.p, s.days[i].h[b], s.days[i].l[b]), True) if s.p.parab is not None else (None, False)   # П3b
+        s.R =px * s.p.b * s.sg if s.p.b is not None else float("nan")
         if s.p.tejk in ("k_srednemu", "pol_puti"):  # M зафиксирован на d_sig (≤ close d_sig), от P_вх — один раз
             s.tT = tejk_level(sd, px, float(s.tejk_M[d_sig]), s.p.tejk, s.p.tick)
             s.n_bez += s.tT is None
@@ -127,6 +129,8 @@ class Run(V6):
         else:                                       # Ж-092: ATR по дням до текущего; стоп трейла не ослабляется (ATR может падать)
             S, s.sr = stop_level(tr.side, tr.entry_px, sg, s.p, s.ext, s.be_on, atr_for_day(s.atr, s.ix, j), **kx)
             S = s.smax = ratchet(tr.side, S, s.smax)
+        if s.pb is not None:                        # П3b: в баре входа — начальный стоп; далее по состоянию на конец прошлого бара
+            S, s.sr = (s.pb[0] if s.pb_new else pb_level(tr.side, s.pb)), "trail"
         S = s._stop_shift(S)
         if s.p.tejk == "rodnoy_uroven":
             T = s._rodnoy(j)
@@ -146,6 +150,8 @@ class Run(V6):
     def _after_bar(s, j, hi, lo):
         """Экстремум и безубыток обновляются ПОСЛЕ бара: действуют со следующего (внутри бара уровни не меняются)."""
         sd, px = s.tr.side, s.tr.entry_px
+        if s.pb is not None:
+            pb_after(sd, s.pb, s.p, hi, lo)
         s.ext = ext_next(sd, s.ext, hi, lo)
         sg = s._sg(j)
         if s.v6 and sg is not None:
@@ -157,7 +163,8 @@ class Run(V6):
         """Бары b0..: стоп раньше тейка; гэп — по open. Режим zakrytie — одна проверка по close Н6."""
         if s.zak:
             return s._scan_close(i, j, d)
-        sd, dyn = s.tr.side, s.p.k_tr is not None or s.p.be or s.p.atr_m is not None or s.v6
+        sd, dyn = s.tr.side, s.p.k_tr is not None or s.p.be or s.p.atr_m is not None or s.v6 or s.pb is not None
+        s.pb_new = False                            # П3b: бар входа пройден
         S, T = s._levels(j)
         for b in range(b0, len(d.c)):
             o, h, l = d.o[b], d.h[b], d.l[b]
