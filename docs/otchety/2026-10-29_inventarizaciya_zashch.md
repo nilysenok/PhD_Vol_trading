@@ -4,7 +4,7 @@
 
 ## 0. Итог (первой строкой)
 
-**Защищённый код найден, и это две разные линии, а не одна.** В истории до пересчёта ровно 13 коммитов (`git log --all --before=2026-10-24`: 13 строк, все в `main`). Тегов нет (`git tag`: 0). Все 559 удалённых веток созданы после 25.10. Точка ответвления `kanon-v22-pereschet` — `e5f629c9` (27.04.2026, `git merge-base origin/kanon-v22-pereschet origin/main`).
+**Защищённый код найден, и это две разные линии, а не одна.** В истории до пересчёта ровно 13 коммитов (`git log --all --before=2026-10-24`: 13 строк, все в `main`). Тегов нет (`git tag`: 0). Все 559 удалённых веток созданы после 25.10. Точка ответвления `kanon-v22-pereschet` — `e5f629c9` (27.04.2026): это родитель первого коммита канона `b4263a7a` (25.10), `git rev-parse b4263a7a^`. `git merge-base origin/kanon-v22-pereschet origin/main` даёт `045e2167`, потому что `main` позже догнал канон (#422, 28.10) и теперь его предок.
 
 - **Линия П, «печать».** Это код, который напечатал 1,68 / 2,99 / 1,56 (A) и 2,51 / 2,54 (C/D): `strategies_walkforward_v4.py` + `strategies_walkforward_v4_1.py` + `s5_rerun.py` + `s5s6_rerun.py` + `strategies_walkforward.py`, все @ `c22a4b36` (23.02.2026). В `fastbt` он перенесён полностью: ворота 25.10 дали совпадение позиций 1,000000 в 108 группах (`docs/otchety/2026-10-25_fastbt_vorota.md:5-6`). Сетка у него **узкая**: S1 — одна SMA с окнами 15/20/25, Chandelier численно совпадает с fixed_atr, типов MA нет.
 - **Линия Р, «исследование».** Это сетка, которую владелец описал в Ж-125 п. 1: типы MA, окна 3–200, порог 0,3–5 ATR, ширина 0,5–4 СКО, %/ATR/Chandelier-стопы, RR/trail-тейки, размер 1–50 %, фильтры ATR-процентиль / RSI / наклон / сжатие, 4–5 типов пивотов. Она лежит в `daily_upper_bound.py`, `grid_scan_test.py`, `grid_scan_phase2/3/4.py`, `daily_full_opt_v5.py`, `stage3_walkforward.py` и др., все добавлены в `6a7a4636` (27.04.2026). **Печать этой линией не получена**, в `fastbt` из неё нет ничего. Её сетка сужена по OOS 2022–2026, то есть с заглядыванием в тест (п. 1.3).
@@ -114,7 +114,7 @@
 
 ## Проверено (команды)
 
-- `git log --all --before=2026-10-24 --format=...` → 13 коммитов; `git tag` → 0; `git branch -r | wc -l` → 559; `git merge-base origin/kanon-v22-pereschet origin/main` → `e5f629c9`.
+- `git log --all --before=2026-10-24 --format=...` → 13 коммитов; `git tag` → 0; `git branch -r | wc -l` → 559; `git rev-parse b4263a7a^` → `e5f629c9`; `git merge-base origin/kanon-v22-pereschet e5f629c9` → `e5f629c9`.
 - `git grep -n -E 'MA_TYPES *=' e5f629c9` → 10 мест, максимум 6 типов; `git log --all -i -G'(_tema|"tema"|tema\()' -- '*.py'` → пусто; `git log --all -G'(kama|hull|dema|chandelier_atr|demark)' -- fastbt scripts tests` → пусто.
 - `git grep -i sobol e5f629c9 -- '*.py'` → пусто; `git grep 'narrowed_grid' e5f629c9 -- '*.py'` → только читатели.
 - Номера строк сверены `git show <коммит>:<путь>` + `grep -n` и `git grep -n ... c22a4b36`.
