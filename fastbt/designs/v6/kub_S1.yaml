@@ -12,7 +12,7 @@ v: 4
 format: progon-kub
 setka: v6
 data: 2026-10-30
-baza: {setka: v5, kub_sha: bb483aeaa3514ed794fc7eb8a73761c210328cff559a00cadb0a422bc873922c}
+baza: {setka: v5, kub_sha: 7d502153ac5e53daf9155a32fa85b25a79cccdae689832ae25c6b9118b82a85a}
 sid: S1
 tip: kontr
 periody: [train4, v2]
@@ -59,7 +59,7 @@ ispolnenie:
   zhizn:          {setka: [den, 12, 36, 60], vykl: den, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:41", smysl: "лимитка стоит только утром — ловим перехлёст на открытии"}
   lestnica:       {setka: [net, 0.5, 1.0], vykl: net, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/etap1_eval_v2.py:146-150", smysl: "вход лесенкой: половина на уровне, половина глубже (при k_e > 0)"}
   gap:            {setka: [vhod, propusk], vykl: vhod, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:42", smysl: "гэп через уровень — это новость, не входить"}
-  t_vyhod:        {setka: [close, 1500, 1700, open2], vykl: close, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:43", smysl: "выходить до вечернего аукциона или на открытии"}
+  t_vyhod:        {setka: [open2, close, 1500, 1700], vykl: open2, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:43", smysl: "выходить до вечернего аукциона или на открытии"}
   vyhod_lim:      {setka: [net, da], vykl: net, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:39", smysl: "выход лимиткой на d+1 экономит спред (при k_e > 0)"}
   f_neisp:        {setka: [propusk, zakrytie_d1], vykl: propusk, p_vykl: 0.5, zhdet: [V6-12], otkuda: "fastbt/exec_e_types.py:22", smysl: "догонять неисполненный сигнал по закрытию d+1"}
   time_decay:     {setka: [net, da], vykl: net, p_vykl: 0.5, zhdet: [V6-9, V6-12], otkuda: "P-движок v4 engine.py:113", smysl: "если возврат не пришёл за половину срока — забираем половину цели"}

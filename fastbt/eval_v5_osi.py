@@ -145,6 +145,7 @@ def razbor(sid: str, pt5: dict, signal=None) -> Razbor:
     if set(signal) - set(pt5) or "stop_nach" not in pt5:
         raise ValueError(f"{sid}: в точке нет сигнальных осей {sorted(set(signal) - set(pt5))} или stop_nach")
     r = Razbor({k: pt5[k] for k in signal}, dict(PT4), dict(NOVYE))
+    r.nov["t_vyhod"] = ya.get("t_vyhod", r.nov["t_vyhod"])   # Ж-137 п. 6: якорь куба (open2) доходит до исполнения, не молчит
     r.filtr = {k: pt5[k] for k in FILTR if k in pt5 and pt5[k]}
     r.sloj.update({k: pt5[k] for k in SLOJ if k in pt5})
     _vhod(r, trend, pt5.get("k_e", 0), pt5.get("T", 1), pt5.get("reentry", NET))
