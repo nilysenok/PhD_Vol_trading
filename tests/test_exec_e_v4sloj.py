@@ -17,7 +17,7 @@ def _eq(got, want):
 def proverka_pravil():
     """Ручные эталоны; падает на любой из подложенных мутаций."""
     _eq(filtr_signala([1, 0, 1, 1, 1, 0], consec=2), [0, 0, 0, 1, 1, 0])
-    _eq(filtr_signala([1, 1, -1, 0, 0, 0], min_hold=2), [1, 1, -1, 0, 0, 0])
+    _eq(filtr_signala([1, 1, -1, 0, 0, 0], min_hold=2, min_hold_rezhim="v4"), [1, 1, -1, 0, 0, 0])
     _eq(filtr_signala([1, 0, 1, 1, 0, 1, 1], cooldown=2), [1, 0, 0, 0, 0, 1, 1])
     _eq(filtr_signala([1, 1, -1, 1], strength=[.5, .2, .4, .3], min_sily=0.3), [1, 0, -1, 1])
     _eq(filtr_signala([-1, -1, 0, -1, -1], consec=2), [0, -1, 0, 0, -1])   # шорт: знак один раз, не |sig|
@@ -40,7 +40,7 @@ def test_sovpadaet_s_execlayer_na_sintetike():
         raw = rng.integers(-1, 2, n).astype(float)
         st = rng.random(n)
         c, h, cd, ms = int(rng.integers(1, 4)), int(rng.integers(0, 6)), int(rng.integers(0, 11)), float(rng.choice([0, .3, .5]))
-        _eq(filtr_signala(raw, st, c, h, cd, ms), ORIG(raw, st, c, h, cd, ms, n))
+        _eq(filtr_signala(raw, st, c, h, cd, ms, min_hold_rezhim="v4"), ORIG(raw, st, c, h, cd, ms, n))
 
 
 def _days(n, seed=3):
