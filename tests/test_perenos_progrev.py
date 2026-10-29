@@ -65,6 +65,7 @@ def test_v6_progrev_morris_r1_do_morrisa(tmp_path):
     _, calls = _ryad(_pakyet(tmp_path), PERENOS_KUB="v6")
     assert "progon_morris_v6" in calls[0] and "--r 1" in calls[0] and "--procs 1" in calls[0]
     assert "progon_morris_v6" in calls[1] and "--procs 120" in calls[1]
+    assert "ledger/train4_v6_s1" in calls[2] and "--kub v6" in calls[2]      # не в train4_s1 (там ledger v5)
 
 
 def test_dolya_yadra_schitaet_fast_i_pustye_lenty():

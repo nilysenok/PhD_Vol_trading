@@ -61,9 +61,11 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
     fi
     for pr in ${PERENOS_PROHODY:-s1 s2 k3 spravka}; do
       # N1 по умолчанию 200 000 на стратегию (Ж-137 п. 1); k3 — полная решётка, без --n1
-      od="${per}_$pr"
+      # каталог прохода: v5 — <период>_<проход>; v6 — <период>_v6_<проход> (ledger 2.2 ≠ 2.1: в один каталог v6 после v5 не писать — --prodolzhit откажет по vhody)
+      pv=""; [ "$kub" = v6 ] && pv="v6_"
+      od="${per}_$pv$pr"
       case "$pr" in s1) a="--seed 1 $n1v $zm" ;; s2) a="--seed 2 $n1v $zm" ;; k3) a="--k3" ;;
-        spravka) a="--seed 1 $n1v $zm --rol spravka --t-vyhod close"; od="${per}_spravka_close" ;;
+        spravka) a="--seed 1 $n1v $zm --rol spravka --t-vyhod close"; od="${per}_${pv}spravka_close" ;;
         *) fail "проход $pr: s1 | s2 | k3 | spravka" ;; esac
       say "progon_server: $kub $per $pr ($a), ledger/$od/<Sk>/, процессов $(processov "$per")"
       (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --kub "$kub" --period "$per" $a \
