@@ -9,6 +9,8 @@
 from __future__ import annotations
 
 import dataclasses
+import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -18,6 +20,45 @@ YEARS = (2015, 2016, 2017, 2018, 2019)
 VAL_START = 2014                                   # год прогрева (как 2015 у train4)
 START = pd.Timestamp("2014-08-26")                 # начало прогрева: покрытие 10-минуток
 NOTE_DIV_2014 = "дивиденды 2014 не подключены"
+
+
+@dataclasses.dataclass(frozen=True)
+class Period:
+    """Период как один объект: старт прогрева, первый год сумм, последний день (Б8, Ж-136 п. 1)."""
+    name: str
+    progrev: pd.Timestamp
+    y0: int
+    konec: pd.Timestamp
+
+
+PERIODY = {"train4": Period("train4", pd.Timestamp("2015-01-01"), 2016, pd.Timestamp("2019-12-31")),
+           "v2": Period("v2", START, 2015, pd.Timestamp("2019-12-31")),
+           "wf": Period("wf", pd.Timestamp("2014-06-01"), 2015, pd.Timestamp("2026-02-28"))}   # walk-forward, Ж-136
+OTMETKA = Path(__file__).resolve().parents[1] / "docs/resheniya/wf_zamok_snyat.json"            # отметку ставит владелец
+ZAKRYTO_RE = re.compile(r"(^|/)test_locked(/|$)|_(test|202[2-9])([_./]|$)")                     # как zamki.json: чтение
+
+
+class ZamokVladeltsa(PermissionError):
+    """Период или путь ≥ 2022 до снятия замка test_locked/ владельцем."""
+
+
+def gody(period: str) -> tuple:
+    p = PERIODY[period]
+    return tuple(range(p.y0, p.konec.year + 1))
+
+
+def kvartaly_spisok(period: str) -> list:
+    """Метки кварталов сумм от первого года до квартала последнего дня периода (wf: 2015Q1…2026Q1 — 45)."""
+    p = PERIODY[period]
+    return [f"{y}Q{q}" for y in gody(period) for q in range(1, 5) if (y, q) <= (p.konec.year, p.konec.quarter)]
+
+
+def proverit_chtenie(period: str, put=None, otmetka: Path = OTMETKA) -> None:
+    """Отказ с понятным сообщением: период с днями ≥ 2022 или путь ≥ 2022/test_locked/ без отметки владельца."""
+    zakryto = (period in PERIODY and PERIODY[period].konec.year >= 2022) or (put is not None and ZAKRYTO_RE.search(str(put)))
+    if zakryto and not Path(otmetka).exists():
+        raise ZamokVladeltsa(f"период {period!r}/путь {put!r}: данные ≥ 2022 закрыты (замок test_locked/, Ж-136); "
+                             f"читать можно после отметки владельца {Path(otmetka).name} — отказ")
 
 
 def trim_td(td):
