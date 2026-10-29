@@ -16,7 +16,7 @@ def load(src=None):
 
 def heads(sv, net):
     h = f"# {sv.MARKER}\n# коммит: abc123\n# вход: sigma sha256=ff\n"
-    return h + ("# дивиденды: НЕТ\n" if net else "")
+    return h + ("# дивиденды: НЕТ (2022–2024 без дивидендов, Ж-117)\n" if net else "")
 
 
 def make(tmp_path, sv, net_head=True, main_net=False):
@@ -54,6 +54,21 @@ def test_pary_i_raznost(tmp_path):
     assert "| лонг | 0.5000 |" in sec
     assert "как в версии предзащиты" in txt
     assert "_net" not in txt.split("Вне предрегистрации")[1].split("##")[0]
+
+
+def test_chislovye_nemetriki_klyuch_i_pustye(tmp_path):
+    sv = load()
+    root = make(tmp_path, sv)
+    tb = root / "docs/tables/revers_r1"
+    cols = "portfel,kod,plata_zaem,msr,sum_pnl_pct,d_x\n"
+    (tb / "b_razlozhenie.csv").write_text(
+        heads(sv, False) + cols + "yakor,div0,0.05,,-12.5,0.0\nyakor,long,0.05,-0.5,-5.0,1.5\n", encoding="utf-8")
+    (tb / "_net/b_razlozhenie_net.csv").write_text(
+        heads(sv, True) + cols + "yakor,div0,0.05,,-13.0,0.0\nyakor,long,0.05,-0.7,-6.0,0.5\n", encoding="utf-8")
+    rc, txt = run(sv, root)
+    assert rc == 0, txt
+    assert "| yakor | div0 | 0.05 | — | 0.5000 | 0.0000 |" in txt
+    assert "| yakor | long | 0.05 | 0.2000 | 1.0000 | 1.0000 |" in txt
 
 
 def test_net_est_bez_pary_fail(tmp_path):

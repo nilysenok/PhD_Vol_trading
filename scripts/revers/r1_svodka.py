@@ -78,7 +78,7 @@ def vyyti_hesh(head):
 
 
 NET_MARK = "# дивиденды: НЕТ"
-METRIKA = re.compile(r"sharpe|шарп|msr|доходн|return|ret\b", re.I)
+KLYUCH = {"plata_zaem", "god", "год"}  # числовые колонки-ключи; прочие числовые — метрики
 
 
 def chislo(s):
@@ -111,13 +111,13 @@ def pary_net(tb_dir):
         n_, hn, f = proverka_tablicy(pn)
         fails += f
         L.append(f"- `_net/{pn.name}` строк={n_} sha256={sha(pn)}")
-        if NET_MARK not in [x.strip() for x in hn]:
+        if not any(x.strip().startswith(NET_MARK) for x in hn):
             fails.append(f"_net/{pn.name}: нет «{NET_MARK}» в шапке")
         if not pm.exists():
             fails.append(f"_net/{pn.name}: нет основной пары {main}")
             continue
         hm, rm, _, cm = razbor_csv(pm)
-        if NET_MARK in [x.strip() for x in hm]:
+        if any(x.strip().startswith(NET_MARK) for x in hm):
             fails.append(f"{main}: основная таблица помечена «{NET_MARK}»")
         _, rn, _, cn = razbor_csv(pn)
         dif += razn(main, cm, rm, cn, rn, fails)
@@ -126,7 +126,10 @@ def pary_net(tb_dir):
 
 def razn(main, cm, rm, cn, rn, fails):
     com = [c for c in cm if c in cn]
-    met = [c for c in com if METRIKA.search(c)]
+    def chisl(c):
+        v = [r[cm.index(c)] for r in rm] + [r[cn.index(c)] for r in rn]
+        return all(not x.strip() or chislo(x) is not None for x in v)
+    met = [c for c in com if c.strip().lower() not in KLYUCH and chisl(c)]
     key = [c for c in com if c not in met]
     if not key or not met:
         fails.append(f"{main}: нет ключевых или метрических общих колонок")
@@ -150,10 +153,11 @@ def razn(main, cm, rm, cn, rn, fails):
         for m in met:
             x, y = chislo(a[k][cm.index(m)]), chislo(b[k][cn.index(m)])
             if x is None or y is None:
-                fails.append(f"{main}: {k} {m}: не число")
+                if x is not None or y is not None:
+                    fails.append(f"{main}: {k} {m}: значение только в одной таблице")
                 cells.append("—")
                 continue
-            kf = 1 if ("%" in m or not re.search(r"доходн|return|ret\b", m, re.I)) else 100
+            kf = 1 if re.search(r"%|pct", m, re.I) or not re.search(r"доходн|return|ret\b", m, re.I) else 100
             cells.append(f"{(x - y) * kf:.4f}")
         out.append("| " + " | ".join(list(k) + cells) + " |")
     return out + [""]
