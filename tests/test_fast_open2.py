@@ -159,8 +159,11 @@ def test_mutatsiya_cut_ne_zadan_lovitsya(monkeypatch):
     assert plokho >= 20, plokho
 
 
-def test_pokryto_open2_prinyat_1500_net():
+def test_pokryto_open2_prinyat_1500_tolko_pod_flagom(monkeypatch):
+    """1500 / 1700 в покрытии только при YADRO_ISP_GOTOV (Ф-v6-osi); снят флаг — эталон, как до листа."""
     pt = dict(ed_lim="sigma", zhizn="den", gap="vhod", k_x="net", storona="obe", tejk_signal="net", rho="net", m_tip="1",
               rang_tip="tikernyj")
     assert fe.pokryto({**pt, "t_vyhod": "close"}) and fe.pokryto({**pt, "t_vyhod": "open2"})
+    assert fe.pokryto({**pt, "t_vyhod": "1500"}) and fe.pokryto({**pt, "t_vyhod": "1700"})
+    monkeypatch.setattr(fx, "YADRO_ISP_GOTOV", False)
     assert not fe.pokryto({**pt, "t_vyhod": "1500"}) and not fe.pokryto({**pt, "t_vyhod": "1700"})

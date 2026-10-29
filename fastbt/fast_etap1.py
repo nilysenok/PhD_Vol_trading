@@ -120,7 +120,7 @@ def _slow_only(p: Params, ed, *extra) -> bool:
 def _yadro_v5(p, ed, tejk_M, rang) -> bool:
     """Ядро v5 берёт вызов, если флаг YADRO_S34_GOTOV и режим целиком в осях ядра (urovni допустимы); ed, tejk_M — эталон;
     rang — только при флаге YADRO_OSI3_GOTOV (оси b0_c, a_rang)."""
-    return (fx.YADRO_S34_GOTOV and ed is None and tejk_M is None and (rang is None or fx.YADRO_OSI3_GOTOV) and isinstance(p, Params)
+    return (fx.YADRO_S34_GOTOV and (ed is None or fx.YADRO_ISP_GOTOV) and tejk_M is None and (rang is None or fx.YADRO_OSI3_GOTOV) and isinstance(p, Params)
             and p.f in fx.F_CODES and p.s in ("fiks", "ezhedn") and p.ed_s in fx.ED_CODES and p.ed_t in fx.ED_CODES
             and not fx.ne_znaet(p))
 
@@ -130,7 +130,7 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
     from fastbt import dividendy
     sig, sigma = np.asarray(sig), np.ascontiguousarray(sigma, float)
     if _slow_only(p, ed, tejk_M, urovni, rang) and _yadro_v5(p, ed, tejk_M, rang):    # Ф-сл2b: оси S3/S4 — ядро fast_exec.run_v5
-        return fx.run_v5(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, urovni=urovni, rang=rang, dates=dates)
+        return fx.run_v5(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, urovni=urovni, rang=rang, dates=dates, ed=ed)
     if _slow_only(p, ed, tejk_M, urovni, rang) or not len(days) or not np.isfinite(sig.astype(float)).all():
         kw = {k: v for k, v in (("ed", ed), ("tejk_M", tejk_M), ("urovni", urovni), ("rang", rang), ("dates", dates)) if v is not None}
         return _SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, **kw)
@@ -310,11 +310,16 @@ def pokryto(pt: dict) -> bool:
     from fastbt.rangi_v6 import RANG_TIPY
     umolch = dict(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod", k_x=NET, storona="obe",
                   tejk_signal=NET, rho=NET, m_tip="1", rang_tip="tikernyj")   # Ж-084: tejk_signal ≠ net; V6-c: rho ≠ net — медленный путь (эталон)
+    if fx.YADRO_ISP_GOTOV:       # Ф-v6-osi: оси исполнения в ядре (gap, zhizn, вход ed; лесенка — две ноги обычных вызовов run): значения куба v6
+        for k, v in dict(ed_lim=("sigma", "atr14", "diap", "pct"), zhizn=("den", "12", "36", "60"), lestnica=(NET, "0.5", "1.0"),
+                         gap=("vhod", "propusk")).items():
+            if str(pt.get(k, umolch.pop(k))) not in v:
+                return False
     if "stop_nach" in pt and pt.get("rang_tip") in RANG_TIPY:     # точка v5: rang_tip считает оценщик (rangi_v6), в run идёт только
         umolch["rang_tip"] = pt["rang_tip"]                       # rang ≠ None — а такой вызов `run` сам отдаёт эталону (_slow_only)
     return (all(str(pt.get(k, v)) == str(v) for k, v in umolch.items()) and (fx.YADRO_S34_GOTOV or not os_s34(pt))
             and (fx.YADRO_OSI3_GOTOV or not os_osi3(pt)) and (fx.YADRO_PARAB_GOTOV or not os_parab(pt))
-            and str(pt.get("t_vyhod", "close")) in fx.T_VYHOD       # open2 — якорь кубов v5/v6 (Ж-137 п. 6); 1500 / 1700 — эталон
+            and fx.t_vyhod_znaet(str(pt.get("t_vyhod", "close")))   # open2 — якорь кубов v5/v6 (Ж-137 п. 6); 1500 / 1700 — при YADRO_ISP_GOTOV
             and pt.get("filtr", NET) in (NET, "cbr")
             and pt.get("sobytiya", NET) in (NET, "cbr") and pt.get("vyhod", NET) in (NET, "lim")
             and pt.get("zaem", 0) in (0, "0", "0.0", NET, None))

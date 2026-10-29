@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from numba import njit
 
+from fastbt import fast_exec_isp as isp
 from fastbt import fast_exec_parab as pb
 from fastbt import fast_exec_v6 as v6
 
@@ -23,7 +24,8 @@ TR, SD, I0, EJ, BE, BLK, OK, ODUE, OSD, ODS, ORT, XO, XR, SR, NO, NF, XN, XF, NT
 CUR, ENTD, ENTB, PART, OAGE, LXD, LXB, LXR, DNRE, PQ = range(19, 29)   # st: текущая сделка, бар входа, ½ взята, возраст заявки, последний выход, день повтора, «стоп в плюс» включён
 NAD, AD0, AD1 = 29, 30, 31                              # st: число добавок pir, индексы их ног в ti (−1 — нет)
 XT, PEND = 32, 33                                       # st: выходов не по close (t_vyhod open2); выход по сигналу отложен на open x+1
-NST = 35                                                # + PBN = 34 (флаг бара входа parab, fast_exec_parab)
+NST = isp.NST                                           # + PBN = 34 (флаг бара входа parab, fast_exec_parab), PENDH, PENDR = 35, 36 (fast_exec_isp)
+P_GAP, P_ZH, P_ED, P_TH, PENDH, PENDR = isp.P_GAP, isp.P_ZH, isp.P_ED, isp.P_TH, isp.PENDH, isp.PENDR
 P_PARAB, F_PS, F_PM = pb.P_PARAB, pb.F_PS, pb.F_PM
 F_PIR, P_PIR = v6.F_PIR, v6.P_PIR
 BEM, VLEV, TA = 15, 16, 17                              # fs: порог безубытка в σ, уровень v6-стопа (храповик), a тейка (ось a_rang); fast_exec_v6
@@ -356,16 +358,22 @@ def _scan(fs, st, ti, tf, tx, acc, i, j, b0, ne, B, off, nbar, cl, su, tu, atr, 
 
 
 @njit(cache=True)
-def _scan_otlozh(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi, cut):
-    """Run2._scan при отложенном выходе (t_vyhod = open2, Ж-086 п. 4): стоп и тейк — строго по барам ДО бара cut = bar_at(10:00);
-    выход по сигналу — по open бара cut, комиссия — в строку начала интервала (как внутридневной), причина signal, x_t += 1.
-    cut = −1 — времени баров нет: полный скан дня и выход по close Н6; cut = nb — после 10:00 баров нет: перенос на следующий день."""
+def _scan_otlozh(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi, cut, cut2, tau):
+    """Run2._scan при отложенном выходе (t_vyhod = open2 | 1500 | 1700, Ж-086 п. 4): стоп и тейк — строго по барам ДО бара cut = bar_at(hhmm);
+    выход — по open бара cut, комиссия — в строку начала интервала (как внутридневной), причина rs, x_t += 1.
+    cut = −1 — времени баров нет: полный скан дня и выход по close Н6 (rs); cut = nb — после hhmm баров нет: перенос на open 10:00 следующего дня.
+    cut — бар 10:00 (open2 и перенос), cut2 — бар hhmm оси 1500 / 1700. tau = 1 — выход по сроку τ дня x на баре hhmm (rs = vremya,
+    отложенного выхода нет; времени нет — обычный скан дня, срок исполнит конец дня)."""
+    nb = nbar[i]
+    if tau:
+        c, rs = cut2[i], R_VREMYA
+    else:
+        c, rs = (cut2[i] if st[PENDH] else cut[i]), st[PENDR]
     st[PEND] = 0
-    nb, c = nbar[i], cut[i]
     if c < 0:
         _scan(fs, st, ti, tf, tx, acc, i, j, 0, nb, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi)
-        if st[TR]:
-            _exit(fs, st, ti, tf, tx, acc, i, j, nb - 1, cl[i], R_SIGNAL, pf, pi, ix)
+        if st[TR] and not tau:
+            _exit(fs, st, ti, tf, tx, acc, i, j, nb - 1, cl[i], rs, pf, pi, ix)
         return
     if c > 0:
         _scan(fs, st, ti, tf, tx, acc, i, j, 0, c, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi)
@@ -374,17 +382,20 @@ def _scan_otlozh(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, su, tu, atr, U
     if c < nb:
         st[XT] += 1
         _exit(fs, st, ti, tf, tx, acc, i, j, c, B[0, off[i] + c], R_STOP, pf, pi, ix)    # R_STOP: комиссия в строку начала интервала
-        ti[st[CUR], RS], st[LXR] = R_SIGNAL, R_SIGNAL
+        ti[st[CUR], RS], st[LXR] = rs, rs
     elif j + 1 < len(ix):
-        st[PEND] = 1
+        st[PEND], st[PENDH], st[PENDR] = 1, 0, rs
     else:
-        _exit(fs, st, ti, tf, tx, acc, i, j, nb - 1, cl[i], R_SIGNAL, pf, pi, ix)
+        _exit(fs, st, ti, tf, tx, acc, i, j, nb - 1, cl[i], rs, pf, pi, ix)
 
 
 @njit(cache=True)
-def _place(fs, st, close, sd, sg, j, i, retry, age, pf, pi):
+def _place(fs, st, close, sd, sg, j, i, retry, age, UR, pf, pi):
+    u = isp.unit(UR, i, sg, pi)                         # Run2._place: единица лимита ed[i]; нечисловая — заявки нет
+    if not np.isfinite(u):
+        return
     st[NO] += 1
-    fs[OL], fs[OSGO] = _limit_level(sd, close, sg, pf, pi), sg
+    fs[OL], fs[OSGO] = _limit_level(sd, close, u, pf, pi), sg
     st[OK], st[ODUE], st[OSD], st[ODS], st[ORT], st[OAGE] = 1, j + 1, sd, i, retry, age
 
 
@@ -456,10 +467,12 @@ def _reenter(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su, t
     if sd == 0 or not np.isfinite(sg):
         return
     st[DNRE] = i
-    _place(fs, st, cl[ip], sd, sg, j - 1, ip, 0, 1, pf, pi)
+    _place(fs, st, cl[ip], sd, sg, j - 1, ip, 0, 1, UR, pf, pi)
+    if not st[OK]:
+        return
     st[OK] = 0
     k0 = off[i]
-    for b in range(st[LXB] + 1, nb):
+    for b in range(st[LXB] + 1, isp.nbars(nb, pi)):     # zhizn: и повторный вход — только на барах b < N (exec_e_zayavki.reenter)
         if _limit_hit(sd, B[1, k0 + b], B[2, k0 + b], fs[OL], pf, pi):
             o = B[0, k0 + b]
             st[NF] += 1
@@ -475,7 +488,10 @@ def _try_order(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su,
         return _try_order_sz(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, sigma, su, tu, atr, UR, ix, pf, pi)
     st[OK] = 0
     sd, L, nb, k0 = st[OSD], fs[OL], nbar[i], off[i]
-    for b in range(nb):
+    if pi[P_GAP] and isp.gap_over(sd, B[0, k0], L, pf[F_TICK], pi[P_HTICK]):     # Run2._try_order: open бара 0 за лимитом — заявка снята
+        st[BLK] = sd
+        return
+    for b in range(isp.nbars(nb, pi)):                  # zhizn: исполнение только на барах b < N
         if _limit_hit(sd, B[1, k0 + b], B[2, k0 + b], L, pf, pi):
             o = B[0, k0] if pi[P_ZAK] else B[0, k0 + b]
             px = min(o, L) if sd > 0 else max(o, L)
@@ -485,7 +501,7 @@ def _try_order(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su,
             return
     close, live = cl[i], dirs[i] == sd
     if (not st[ORT] and st[OAGE] < pi[P_T] and live and j + 1 < len(ix) and np.isfinite(sigma[i])):   # V6-a prodlit: заявка живёт, пока сигнал активен
-        _place(fs, st, close, sd, sigma[i], j, i, 0, st[OAGE] + 1, pf, pi)
+        _place(fs, st, close, sd, sigma[i], j, i, 0, st[OAGE] + 1, UR, pf, pi)
         return
     if st[ORT] or pi[P_F] == 0:
         st[BLK] = sd
@@ -495,7 +511,7 @@ def _try_order(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su,
     elif pi[P_F] == 2:
         v = sigma[i]
         if live and np.isfinite(v) and j + 1 < len(ix):
-            _place(fs, st, close, sd, v, j, i, 1, 1, pf, pi)
+            _place(fs, st, close, sd, v, j, i, 1, 1, UR, pf, pi)
         else:
             st[BLK] = sd
 
@@ -540,24 +556,28 @@ def _unit(kind, atr, cl, pusto):
 @njit(cache=True)
 def kernel(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, stale):
     """Прежний вход ядра (fast_etap1.run): pf[10], pi[21] — новые оси выключены; возврат (gross, cost, pos, free, ti[8], tf, st)."""
-    pf2, pi2 = np.zeros(24), np.zeros(34, np.int64)
+    pf2, pi2 = np.zeros(24), np.zeros(isp.NPI, np.int64)
     pf2[:len(pf)], pi2[:len(pi)], pi2[P_T] = pf, pi, 1
     g, c, p, f, ti, tf, _, st = kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf2, pi2, np.empty((4, 0)), np.empty(0),
-                                          np.empty(0, np.int64), stale)
+                                          np.empty(0, np.int64), stale, np.empty(0, np.int64), np.empty(0))
     return g, c, p, f, np.ascontiguousarray(ti[:, :8]), tf, st
 
 
 @njit(cache=True)
-def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut, stale):  # xtask: длинная — день Run.step целиком, порядок важен
+def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut, stale, cut2, ed):  # xtask: длинная — день Run.step целиком, порядок важен
     """Run.step по всем торговым дням + постобработка exec_e.run. UR0[4, дни] — up, dn, xl, xs (stop_zayavka; иначе (4, 0));
     rang[дни] — ранг силы на день сигнала (оси b0_c, a_rang; иначе пустой). cut[дни] — бар 10:00 дня (exec_e_vremya.bar_at; −1 — времени
-    нет; нужен при pi[P_TV], иначе пустой). stale[j] — разрыв > razryv дней перед шагом j (Д5-2; пустой — нет). Внутри UR = UR0 + строки порога безубытка и a тейка.
+    нет; нужен при pi[P_TV] | pi[P_TH], иначе пустой), cut2[дни] — бар hhmm оси 1500 / 1700 (pi[P_TH]; иначе пустой). ed[дни] — единица
+    лимита (pi[P_ED], ось ed_lim; иначе пустой). stale[j] — разрыв > razryv дней перед шагом j (Д5-2; пустой — нет).
+    Внутри UR = UR0 + строки порога безубытка, a тейка и ed.
     Возврат: (gross, cost, pos, free, ti[9], tf[2: вход, выход], tx[2: доля, комиссия выхода], st)."""
     n = len(nbar)
-    UR = np.full((6, n), np.nan)
+    UR = np.full((7, n), np.nan)
     if UR0.shape[1]:
         UR[:4] = UR0
     UR[4], UR[5] = v6.rows(rang, n, pf, pi, pi[P_BE])
+    if pi[P_ED]:
+        UR[6] = ed
     ix = np.flatnonzero(~pusto)
     nix = len(ix)
     need = pi[P_CH] != 0 or pi[P_US] == 1 or pi[P_UT] == 1 or pi[P_ATRM] != 0 or pf[F_KE] != 0.0
@@ -581,7 +601,9 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut,
         if st[OK] and st[ODUE] == j:
             _try_order(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, dirs, sigma, su, tu, atr, UR, ix, pf, pi)
         elif st[TR] and st[PEND]:
-            _scan_otlozh(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi, cut)
+            _scan_otlozh(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi, cut, cut2, 0)
+        elif st[TR] and pi[P_TH] and pi[P_HTAU] and j > st[EJ] and j - st[EJ] >= pi[P_TAU]:   # Run2._scan: срок τ при 1500 / 1700 — на баре hhmm дня x
+            _scan_otlozh(fs, st, ti, tf, tx, acc, i, j, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi, cut, cut2, 1)
         elif st[TR]:
             _scan(fs, st, ti, tf, tx, acc, i, j, 0, nb, B, off, nbar, cl, su, tu, atr, UR, ix, pf, pi)
         if pi[P_RED] and not (len(stale) and stale[j]):     # V6-a: повторный вход в тот же день после внутридневного выхода
@@ -602,8 +624,8 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut,
                 lv = R_SIGNAL
             if lv and st[PEND]:                             # Run2._leave: выход уже перенесён на open следующего дня
                 lv = 0
-            if lv == R_SIGNAL and pi[P_TV] and j + 1 < nix:   # open2: по сигналу — open x+1; по τ — close дня истечения (vyhod_plan)
-                st[PEND] = 1
+            if lv == R_SIGNAL and (pi[P_TV] or pi[P_TH]) and j + 1 < nix:   # open2 | 1500 | 1700: по сигналу — open x+1; по τ — close дня истечения
+                st[PEND], st[PENDH], st[PENDR] = 1, pi[P_TH] > 0, R_SIGNAL
             elif lv:
                 sg = sigma[i]
                 if pi[P_VLIM] and j + 1 < nix and np.isfinite(sg):
@@ -633,7 +655,7 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut,
             if not pi[P_HK]:
                 _enter(fs, st, ti, tf, tx, acc, i, j, nb - 1, close, nb, sg, i, sd, nb, pf, pi, ix, su, tu, UR, B, off)
             elif j + 1 < nix:
-                _place(fs, st, close, sd, sg, j, i, 0, 1, pf, pi)
+                _place(fs, st, close, sd, sg, j, i, 0, 1, UR, pf, pi)
         pos[i] = float(st[SD]) * fs[W] if st[TR] else 0.0
     if nix and st[TR]:
         acc[1, ix[-1]] += pf[F_COMM] * fs[W]
@@ -651,7 +673,12 @@ def kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, div, pf, pi, UR0, rang, cut,
 
 # --- обёртка v5: drop-in exec_e.run для осей S3/S4; fast_etap1.run их не знает (включение в pokryto — отдельный коммит) ---
 NOVYE = frozenset(("razryv", "vhod_tip", "atr_m", "chast_1r", "chast", "T", "reentry_den", "k_e", "t_vyhod"))     # + v6.OSI (b0, b0_c, sp, step_s, a_rang, pir) при YADRO_OSI3_GOTOV
-T_VYHOD = ("close", "open2")                            # из t_vyhod ядро знает только эти (1500 / 1700 — эталон)
+YADRO_ISP_GOTOV = True      # Ф-v6-osi: gap_propusk, zhizn, вход ed (ed_lim), t_vyhod 1500 / 1700 в ядре (fast_exec_isp); снят — эти точки идут эталоном
+T_VYHOD = ("close", "open2")                            # из t_vyhod ядро знает эти; 1500 / 1700 — при YADRO_ISP_GOTOV (t_vyhod_znaet)
+
+
+def t_vyhod_znaet(t: str) -> bool:
+    return t in T_VYHOD or (YADRO_ISP_GOTOV and t in isp.HHMM)
 
 
 def ne_znaet(p) -> list:
@@ -659,8 +686,9 @@ def ne_znaet(p) -> list:
     from fastbt import fast_etap1
     sz = p.vhod_tip == "stop_zayavka"           # Ф-vhod_open: на стоп-заявке vhod_open ничего не меняет (RunStop._decide не смотрит на него)
     bad = [n for n, d in fast_etap1._umolch(type(p)) if n not in NOVYE and not (YADRO_OSI3_GOTOV and n in v6.OSI)
-           and not (YADRO_PARAB_GOTOV and n == "parab") and getattr(p, n) != d and not (sz and n == "vhod_open")]
-    return bad + ["t_vyhod"] * (p.t_vyhod not in T_VYHOD)
+           and not (YADRO_PARAB_GOTOV and n == "parab") and not (YADRO_ISP_GOTOV and n in isp.OSI)
+           and getattr(p, n) != d and not (sz and n == "vhod_open")]
+    return bad + ["t_vyhod"] * (not t_vyhod_znaet(p.t_vyhod))
 
 
 def params_v5(p, nal: float) -> tuple:
@@ -672,7 +700,7 @@ def params_v5(p, nal: float) -> tuple:
     pi = np.r_[pi, [p.vhod_tip == "stop_zayavka", p.atr_m is not None, p.T, p.reentry_den, cf is not None]].astype(np.int64)
     f6, i6 = v6.params_v6(p)
     fp, ip = pb.params_parab(p)
-    return np.r_[pf, f6, fp], np.r_[pi, i6, [p.t_vyhod == "open2"], ip].astype(np.int64)
+    return np.r_[pf, f6, fp], np.r_[pi, i6, [p.t_vyhod == "open2"], ip, isp.params_isp(p)].astype(np.int64)
 
 
 def stale_mask(dates, pusto, razryv) -> np.ndarray:
@@ -685,8 +713,8 @@ def stale_mask(dates, pusto, razryv) -> np.ndarray:
 
 
 def cut_open2(days, p) -> np.ndarray:
-    """Бар 10:00 каждого дня (exec_e_vremya.bar_at; −1 — времени нет или день пуст) при t_vyhod = open2, иначе пустой массив."""
-    if p.t_vyhod != "open2":
+    """Бар 10:00 каждого дня (exec_e_vremya.bar_at; −1 — времени нет или день пуст) при t_vyhod = open2 | 1500 | 1700 (перенос), иначе пустой массив."""
+    if p.t_vyhod != "open2" and p.t_vyhod not in isp.HHMM:
         return np.empty(0, np.int64)
     from fastbt import exec_e_vremya as vr
     return np.array([-1 if d.pusto else (-1 if (b := vr.bar_at(d, vr.HHMM["open2"])) is None else b) for d in days], np.int64)
@@ -719,7 +747,7 @@ def _v_bare(ticker, days, close, p, trades) -> None:
                 raise ValueError(f"исполнение вне [low; high] бара: {ticker} день {den} бар {b} цена {px} [{lo}; {hi}]")
 
 
-def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog=None, urovni=None, rang=None, dates=None):
+def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog=None, urovni=None, rang=None, dates=None, ed=None):
     """Drop-in `exec_e.run` для точек с осями stop_zayavka+urovni, atr_m, T, reentry_den, chast_1r / chast (и осями ядра).
     Режим вне ядра — NotImplementedError (его считает эталон); те же проверки входов и тот же Result, что у эталона."""
     from fastbt import dividendy, exec_e, fast_etap1
@@ -728,7 +756,7 @@ def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog
     if (bad := ne_znaet(p)):
         raise NotImplementedError(f"ядро не знает поля Params: {bad}")
     if not len(days) or not np.isfinite(sig.astype(float)).all():
-        return fast_etap1._SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, urovni=urovni, rang=rang)
+        return fast_etap1._SLOW_RUN(ticker, days, sig, sigma, p, rf_cal=rf_cal, close=close, div=div, nalog=nalog, urovni=urovni, rang=rang, ed=ed)
     if not (len(days) == len(sig) == len(sigma)) or (close is not None and len(close) != len(days)):
         raise ValueError("days, sig, sigma, close разной длины")
     exec_e._check_params(p)
@@ -744,6 +772,8 @@ def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog
         raise ValueError(f"день {i}: " + ("пустой или нечисловой набор баров (нужен pusto=True)" if bad_d[i] else "close Н6 нечисловой"))
     if div is not None and len(div) != len(days):
         raise ValueError("days, div разной длины")
+    if ed is not None and len(ed) != len(days):
+        raise ValueError("days, ed разной длины")
     if p.razryv is not None and dates is not None and len(dates) != len(days):
         raise ValueError("dates и days разной длины")
     from fastbt.exec_e_v6 import v5_check, v6_check
@@ -756,9 +786,11 @@ def run_v5(ticker, days, sig, sigma, p, rf_cal=None, close=None, div=None, nalog
             ds[ix[k]] += float(div[i])
     dirs = (p.side * np.sign(sig.astype(float))).astype(np.int64)
     pf, pi = params_v5(p, float(dividendy.DIV_NALOG if nalog is None else nalog))
-    UR = np.array([urovni[k] for k in ("up", "dn", "xl", "xs")], float) if urovni is not None else np.empty((4, 0))
+    pi[P_ED] = ed is not None
+    UR =np.array([urovni[k] for k in ("up", "dn", "xl", "xs")], float) if urovni is not None else np.empty((4, 0))
     gross, cost, pos, free, ti, tf, tx, st = kernel_v5(B, off, nbar, pusto, cl, dirs, sigma, ds, pf, pi, UR, np.asarray(rang, float) if rang is not None else np.empty(0),
-                                                       cut_open2(days, p), stale_mask(dates, pusto, p.razryv))
+                                                       cut_open2(days, p), stale_mask(dates, pusto, p.razryv), isp.cut_hhmm(days, p),
+                                                       np.asarray(ed, float) if ed is not None else np.empty(0))
     trades = _trades_v5(ticker, ti, tf, tx, p.comm)
     _v_bare(ticker, days, close, p, trades)
     rf = np.zeros(len(days)) if rf_cal is None else np.asarray(rf_cal, float)
