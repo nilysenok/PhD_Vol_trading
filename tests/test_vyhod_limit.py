@@ -205,8 +205,19 @@ MUTS = [
 @pytest.mark.parametrize("name,mut,chk", MUTS, ids=[m[0] for m in MUTS])
 def test_mutatsiya_lovitsya(monkeypatch, name, mut, chk):
     mut(monkeypatch)
-    with pytest.raises(AssertionError):
+    pojman(chk)
+
+
+def pojman(chk):
+    """Мутант пойман: проверка упала (AssertionError) ИЛИ инвариант #617 — ValueError «вне [low; high]». Иная ошибка и тождественный мутант — красный."""
+    try:
         chk()
+    except AssertionError:
+        return
+    except ValueError as e:
+        assert "вне [low; high]" in str(e), f"иная ValueError: {e}"
+        return
+    pytest.fail("мутант не пойман: проверка прошла")
 
 
 def test_mutatsiya_sdvig_stopa_na_D_lovitsya(monkeypatch):
