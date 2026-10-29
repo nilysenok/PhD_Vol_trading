@@ -4,8 +4,8 @@
 (открытую позицию не снимают, контракт §1.1).
 - cbr: заседание ЦБ приходится на следующий торговый день d+1 и known_from ≤ d.
 - div: last_cum_date = d (последний день с правом на дивиденд) и announce_date ≤ d, по тикеру.
-Ось дивидендов НЕ включается, пока даты не сверены с эмитентом (❓5): без div_verified=True
-sobytiya() отдаёт только net и cbr. Даты ≥ 2022 → PermissionError.
+Ось дивидендов включается только при div_verified=True; флаг означает «таблица отфильтрована по Д8»: в ней лишь годные строки
+свода (`load_div_svod`, ❓5 закрыт построчно). Без свода sobytiya() отдаёт только net и cbr. Даты ≥ 2022 → PermissionError.
 Окна v6 (К18 sob_do, К19 sob_posle): по умолчанию do=1, posle=0 — побайтно v5.
 """
 from __future__ import annotations
@@ -18,6 +18,7 @@ import pandas as pd
 END = pd.Timestamp("2022-01-01")
 CBR_CSV = Path("data/calendar/cbr.csv")
 DIV_CSV = Path("docs/issledovaniya/2026-10-27_dividendy_2017_2021.csv")
+SVOD_CSV = Path(__file__).resolve().parent.parent / "docs/issledovaniya/div_sverka_svod.csv"
 
 
 def _dates(dates) -> pd.DatetimeIndex:
@@ -80,9 +81,23 @@ def load_div(path=DIV_CSV) -> pd.DataFrame:
     return pd.read_csv(path, parse_dates=["record_date", "last_cum_date", "announce_date"])
 
 
+def load_div_svod(path=SVOD_CSV) -> pd.DataFrame | None:
+    """Д8: только годные строки свода (scripts/div_svod.py), announce_date = announce_pit (более поздняя дата источников),
+    last_cum_date — по правилу dividendy.last_cum (T+2/T+1 по барам). Свода нет — None (ось дивидендов остаётся закрытой)."""
+    path = Path(path)
+    if not path.exists():
+        return None
+    s = pd.read_csv(path, dtype={"godna": int})
+    s = s[s["godna"] == 1].reset_index(drop=True)
+    from fastbt import dividendy
+    rec = pd.to_datetime(s["record_date"])
+    return pd.DataFrame({"ticker": s["ticker"], "record_date": rec, "last_cum_date": dividendy.last_cum(rec),
+                         "announce_date": pd.to_datetime(s["announce_pit"]), "dps_rub": s["dps_rub"]})
+
+
 def sobytiya(dates, tickers, cbr: pd.DataFrame, div: pd.DataFrame | None = None,
              div_verified: bool = False, do: int = 1, posle: int = 0) -> dict:
-    """{имя: {тикер: bool}}; net — ничего не запрещает. div/cbr_div — только при div_verified (❓5)."""
+    """{имя: {тикер: bool}}; net — ничего не запрещает. div/cbr_div — только при div_verified (таблица по Д8)."""
     d = _dates(dates)
     c = cbr_block(d, cbr, do, posle)
     out = {"net": {t: np.zeros(len(d), bool) for t in tickers},

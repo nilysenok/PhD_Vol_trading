@@ -4,7 +4,8 @@
   dannye(t, td) → kontekst_v6.Dannye на td.dates: σ̂ rv5/rv22/rv66 (`sigma_real`), Z рынка (`t_obshchee.Z_ryad`), режим IMOEX
     (`rezhim_e1.rezhim_arrays`), сектор К9–К12 (`e1_sektor.Ctx`), К13–К16 (`e1_rel_sektor.Ctx`, bench сектор/рынок);
   rel(t, rezhim) → дневной td_rel (`rel_ryad.td_rel_rezhim`, сектор PIT из sostav_sektorov); vn(t, f) → (z, β) (`vneshnie_uslovie`);
-  cbr — `sobytiya_e1.load_cbr`; div — таблица, но div_verified=False (❓5): ось дивидендов оценщик отказывает.
+  cbr — `sobytiya_e1.load_cbr`; div — только годные строки свода Д8 (`div_sverka_svod.csv`, announce_date = announce_pit), div_verified=True;
+  свода нет — div_verified=False (❓5): ось дивидендов оценщик отказывает. Содержимое div входит в `sha` (ключ кэша).
 Период — через `period_v2.proverit_chtenie` (wf до отметки владельца — отказ); читается строго < конец периода + 1 день;
 конец позже `zona.end()` (2022) — NotImplementedError (загрузчики ≥ 2022 не подключены), молча не обрезается.
 Д3: значение дня d — из баров < 18:50 d, а Z/σ̂ берутся на d−1 внутри модулей. Д4: дыры остаются NaN (в `Dannye` — вход
@@ -73,7 +74,14 @@ class Fajly:
         return out + list(zip(("cbr", "div"), self.kalendar()))
 
     def kalendar(self) -> tuple:
-        return sobytiya_e1.load_cbr(ROOT / sobytiya_e1.CBR_CSV), sobytiya_e1.load_div(ROOT / sobytiya_e1.DIV_CSV)
+        """(cbr, div). div — годные строки свода Д8 (`div_sverka_svod.csv`); свода нет — прежняя полная таблица (ось закрыта)."""
+        svod = sobytiya_e1.load_div_svod(sobytiya_e1.SVOD_CSV)
+        div = svod if svod is not None else sobytiya_e1.load_div(ROOT / sobytiya_e1.DIV_CSV)
+        return sobytiya_e1.load_cbr(ROOT / sobytiya_e1.CBR_CSV), div
+
+    def div_otfiltrovan(self) -> bool:
+        """True, если div из kalendar() — отфильтрованный по Д8 свод (есть файл свода)."""
+        return sobytiya_e1.SVOD_CSV.exists()
 
 
 class _Sbor:
@@ -184,5 +192,5 @@ def zagruzit(period: str, tikery, main: Path | None = None, fajly: Fajly | None 
     f = fajly or Fajly(konec(period), main)
     sbor = _Sbor(f, tikery)
     cbr, div = f.kalendar()
-    return IstochnikiV6(dannye=sbor.dannye, rel=sbor.rel, vn=sbor.vn, cbr=cbr, div=div, div_verified=False, rel_progrev=True,
+    return IstochnikiV6(dannye=sbor.dannye, rel=sbor.rel, vn=sbor.vn, cbr=cbr, div=div, div_verified=f.div_otfiltrovan(), rel_progrev=True,
                         sha=sha_ryadov(f, tikery))
