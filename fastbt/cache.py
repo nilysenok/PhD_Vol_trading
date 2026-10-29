@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -68,6 +69,6 @@ def save(k: str, arrays: dict) -> None:
     if not enabled():
         return
     CACHE.mkdir(parents=True, exist_ok=True)
-    tmp = CACHE / f"{k}.tmp.npz"
+    tmp = CACHE / f"{k}.{os.getpid()}.{uuid.uuid4().hex}.tmp.npz"       # Р-7: уникальный tmp — два писателя одного ключа не сталкиваются
     np.savez_compressed(tmp, **arrays)
     os.replace(tmp, CACHE / f"{k}.npz")
