@@ -66,10 +66,12 @@ def yakor_side(period: str) -> dict:
             lo = sl.stop
             g[ti] = np.bincount(inv[sl], r.g, nd)
             sd[ti] = np.bincount(inv[sl], r.sides, nd) * COMM
-        tk = list(ev.tickers)
+        tk = list(ev.sk.tickers)             # порядок = порядок rs (см. EvaluatorV2: enumerate(self.sk.tickers))
+        assert len(tk) == len(rs), (len(tk), len(rs))
         gross = pd.DataFrame(g.T, index=eng.dates, columns=tk)
         cm = pd.DataFrame(sd.T, index=eng.dates, columns=tk)
-        out[sid] = dict(gross=gross, comm=cm, net=gross - cm, excess=df["excess"], cnt_pairs=pd.Series(eng.cnt, index=eng.dates))
+        out[sid] = dict(gross=gross, comm=cm, net=gross - cm, port=df, cnt_pairs=pd.Series(eng.cnt, index=eng.dates),
+                        div=pd.DataFrame({t: pd.Series(inp.div[t], index=pd.DatetimeIndex(inp.meta[t]["dates"])) for t in tk}))
         print(sid, "готово: дней", nd, "тикеров", len(tk), flush=True)
     return out
 
@@ -95,6 +97,34 @@ def sravnit(a: dict, b: dict) -> None:
             print("   топ тикеров по Σ|Δ|:", {k: round(float(v), 5) for k, v in per_t.items()})
 
 
+def pervyj(d: pd.Series, eps: float = 1e-12) -> str:
+    bad = d.abs() > eps
+    return f"дней {int(bad.sum())}, первый {d.index[bad][0].date() if bad.any() else '-'}, Σ|Δ|={float(d.abs().sum()):.6g}"
+
+
+def komponenty(a: dict, b: dict) -> None:
+    """Портфель A (среднее по 6 Sk) по компонентам: gross, комиссия (gross−r), ставка/плечо (excess−r), итог excess — s9 минус yakor.
+    Ставка: s9 `_finish` и yakor `port_rows` — один код; расхождение в `excess−r` значит разные доли занятости (exposure) или rf·cal."""
+    pa, pb = a["port"], pd.concat({s: b[s]["port"] for s in AS.SIDS}).groupby(level=1).mean()
+    cb = pd.concat({s: b[s]["cnt_pairs"] for s in AS.SIDS}).groupby(level=1).mean()
+    print(f"A портфель: s9 дней {len(pa)}, yakor (среднее по Sk) дней {len(pb)}; среднее cnt s9 {a['cnt'].mean():.2f} yakor {cb.mean():.2f}")
+    di = pa.index.intersection(pb.index)
+    for nm, fa, fb in (("gross", pa["gross"], pb["gross"]), ("комиссия gross−r", pa["gross"] - pa["r"], pb["gross"] - pb["r"]),
+                       ("ставка/плечо excess−r", pa["excess"] - pa["r"], pb["excess"] - pb["r"]),
+                       ("exposure", pa["exposure"], pb["exposure"]), ("excess", pa["excess"], pb["excess"])):
+        print(f"   {nm}: {pervyj((fa.loc[di] - fb.loc[di]).fillna(0.0))}")
+    from fastbt import dividendy, zona
+    zona.set_zone("test1")
+    dd = []
+    for t in a["tickers"]:
+        ya = b[AS.SIDS[0]]["div"].get(t)
+        if ya is None:
+            continue
+        sa = pd.Series(dividendy.gap_divs(t, pd.DatetimeIndex(a["port"].index).values), index=a["port"].index)
+        dd.append((t, float((sa.loc[sa.index.intersection(ya.index)] - ya.loc[sa.index.intersection(ya.index)]).abs().sum())))
+    print("   дивиденды (gap_divs на датах s9 против yakor), Σ|Δ| по тикерам:", [x for x in dd if x[1] > 0] or "совпадают")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--period", choices=("train4", "test1"), required=True)
@@ -106,7 +136,9 @@ def main() -> None:
         pa.write_bytes(pickle.dumps(s9_side(a.period)))
     if not pb.exists():
         pb.write_bytes(pickle.dumps(yakor_side(a.period)))
-    sravnit(pickle.loads(pa.read_bytes()), pickle.loads(pb.read_bytes()))
+    sa, sb = pickle.loads(pa.read_bytes()), pickle.loads(pb.read_bytes())
+    sravnit(sa, sb)
+    komponenty(sa, sb)
 
 
 if __name__ == "__main__":
