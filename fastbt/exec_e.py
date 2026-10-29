@@ -100,8 +100,10 @@ def _check_params(p: Params) -> None:
         raise ValueError("vhod_open — вход рынком (k = None), check='bary', без vyhod_lim")
     if not isinstance(p.T, int) or p.T < 1:
         raise ValueError("T — целое ≥ 1")
-    if (p.T > 1 or p.reentry_den) and (p.k is None or p.vhod_open or p.vhod_tip != "podtverzhdenie"):
-        raise ValueError("T > 1 и reentry_den — заявки по уровню (k задан), без vhod_open и stop_zayavka (Ж-111)")
+    if p.T > 1 and (p.k is None or p.vhod_open or p.vhod_tip != "podtverzhdenie"):
+        raise ValueError("T > 1 — заявки по уровню (k задан), без vhod_open и stop_zayavka (Ж-111; стоп-заявка пересчитывается каждый вечер)")
+    if p.reentry_den and p.vhod_tip == "podtverzhdenie" and (p.k is None or p.vhod_open):
+        raise ValueError("reentry_den — заявки по уровню (k задан) без vhod_open, либо stop_zayavka (Ж-111, V6-11c)")
     if p.reentry_den and p.check != "bary":
         raise ValueError("reentry_den требует check='bary'")
     if p.ed_s not in ("sigma", "atr", "pct") or p.ed_t not in ("sigma", "atr", "pct"):
