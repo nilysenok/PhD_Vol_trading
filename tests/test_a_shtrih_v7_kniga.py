@@ -36,7 +36,7 @@ def _run(d, **kw):
 def _sek_ok(res, sektora, maks=0.20):
     for s in np.unique(sektora):
         P = res.poz_itog[sektora == s]
-        if not (np.abs(P.sum(0)) <= maks * np.abs(P).sum(0) + 1e-12).all():
+        if not (np.abs(P.sum(0)) <= maks + 1e-12).all():        # от капитала (NAV), Ж-093 б, не от валовой сектора
             return False
     return True
 
@@ -104,20 +104,29 @@ def test_g2_mutatsiya_vyklyuchatel_s_dnyom_d_lovitsya(monkeypatch):
 
 
 # ---- G3: нетто сектора
+def _d9(seed=3, N=18, T=120):
+    rng = np.random.default_rng(seed)       # позиции ×15: P тикера ~ ±0,1 NAV, сектор из двух легко > 20 %
+    return dict(X=rng.normal(0, 0.01, (3, N, T)), poz=15 * rng.choice([-1.0, 1.0], size=(3, N, T)) * rng.random((3, N, T)),
+                sektora=np.arange(N) // 2, imoex=rng.normal(0, 0.01, T), mix=rng.normal(0, 0.01, T), ks=np.zeros(T))
+
+
 def test_g3_netto_sektora_na_kazhdyj_den_9_sektorov():
-    rng = np.random.default_rng(3)
-    N, T = 18, 120
-    d = dict(X=rng.normal(0, 0.01, (3, N, T)), poz=rng.choice([-1.0, 1.0], size=(3, N, T)) * rng.random((3, N, T)),
-             sektora=np.arange(N) // 2, imoex=rng.normal(0, 0.01, T), mix=rng.normal(0, 0.01, T), ks=np.zeros(T))
+    d = _d9()
+    assert not _sek_ok(_run(d), d["sektora"])                       # без правила нарушения есть
     assert _sek_ok(_run(d, sektor_netto=True), d["sektora"])
 
 
 def test_g3_mutatsiya_porog_60_vmesto_20_lovitsya():
-    rng = np.random.default_rng(3)
-    N, T = 18, 120
-    d = dict(X=rng.normal(0, 0.01, (3, N, T)), poz=rng.choice([-1.0, 1.0], size=(3, N, T)) * rng.random((3, N, T)),
-             sektora=np.arange(N) // 2, imoex=rng.normal(0, 0.01, T), mix=rng.normal(0, 0.01, T), ks=np.zeros(T))
+    d = _d9()
     assert not _sek_ok(_run(d, sektor_netto=True, netto_sek=0.60), d["sektora"])
+
+
+def test_g3_mutatsiya_ot_valovoj_sektora_lovitsya(monkeypatch):
+    from fastbt.kniga_msp import netto
+    monkeypatch.setattr(K, "sektor_netto", lambda u, sektor, maks=0.2: netto(u, maks))   # старый дефект
+    d = _d9()
+    assert not _sek_ok(_run(d, sektor_netto=True), d["sektora"]) or \
+        not np.allclose(_odin_den([0.1, 0.0], [0, 1]).poz_itog[0, 0], 0.05)
 
 
 def _odin_den(poz_tikerov, sektora):
@@ -129,23 +138,40 @@ def _odin_den(poz_tikerov, sektora):
     return _run(d, sektor_netto=True)
 
 
-def test_g3_izvestnyj_otvet_dominiruyushchaya_storona_rezhetsya():
-    r = _odin_den([0.6, -0.2, 0.0, 0.0], [0, 0, 1, 1])      # P = [.15, -.05]: L=.15, S=.05
-    P = r.poz_itog[:2, 0]
-    assert P[1] == pytest.approx(-0.05, abs=1e-15)
-    assert P[0] == pytest.approx(0.05 * 1.2 / 0.8, rel=1e-12)   # 0.075: |L-S| = 0.2·(L+S)
+def test_g3_sektor_iz_odnogo_tikera_do_20_procentov_ne_trogaetsya():
+    P = _odin_den([0.1, 0.0], [0, 1]).poz_itog[:, 0]            # P = poz/2 = 0,05 NAV
+    assert P[0] == pytest.approx(0.05, abs=1e-15)
 
 
-def test_g3_sektor_iz_odnogo_tikera_obnulyaetsya():
-    r = _odin_den([0.8, 0.4, -0.4], [0, 1, 1])
-    assert r.poz_itog[0, 0] == 0.0                       # односторонний сектор: правило netto -> 0
-    assert abs(r.poz_itog[1:, 0].sum()) <= 0.2 * np.abs(r.poz_itog[1:, 0]).sum() + 1e-15
+def test_g3_odin_tiker_030_rezhetsya_do_020_obe_storony():
+    assert _odin_den([0.6, 0.0], [0, 1]).poz_itog[0, 0] == pytest.approx(0.2, rel=1e-12)
+    assert _odin_den([-0.6, 0.0], [0, 1]).poz_itog[0, 0] == pytest.approx(-0.2, rel=1e-12)
 
 
-def test_g3_vse_tikery_sektora_odnoj_storony_obnulyayutsya():
-    r = _odin_den([0.5, 0.5, 0.5, -0.5], [0, 0, 0, 1])
-    assert (r.poz_itog[:3, 0] == 0.0).all() and r.poz_itog[3, 0] == 0.0
-    assert np.isfinite(r.ryad).all()
+@pytest.mark.parametrize("tk", ["LSRG", "AFLT"])
+def test_g3_realnye_sektora_odin_tiker_005_prohodit_030_rezhetsya_zh149(tk):
+    """Ж-149: сектор из одного тикера — обычный лимит. Сектора — PIT-файл `2026-10-27_sektory.csv` (17 тикеров)."""
+    from pathlib import Path
+    tab = pd.read_csv(Path(__file__).resolve().parent.parent / "docs/issledovaniya/2026-10-27_sektory.csv")
+    sek = tab["indeks"].to_numpy()
+    j = list(tab["ticker"]).index(tk)
+    assert (sek == sek[j]).sum() == 1                                  # сектор действительно из одного тикера
+    N = len(tab)
+    for P, ozid in ((0.05, 0.05), (0.3, 0.2), (-0.3, -0.2)):
+        poz = np.zeros(N)
+        poz[j] = P * N                                                 # K=1, все пары есть: P тикера = poz/N
+        r = _odin_den(list(poz), list(sek))
+        assert r.poz_itog[j, 0] == pytest.approx(ozid, rel=1e-12)
+
+
+def test_g3_long_030_short_005_daet_netto_020():
+    P = _odin_den([1.2, -0.2, 0.0, 0.0], [0, 0, 1, 1]).poz_itog[:, 0]   # P = [.30, -.05]
+    assert P[1] == pytest.approx(-0.05, abs=1e-15) and P[0] == pytest.approx(0.25, rel=1e-12)
+
+
+def test_g3_vse_tikery_odnoj_storony_srezayutsya_proporcionalno():
+    r = _odin_den([1.2, 1.2, 0.0, 0.0], [0, 0, 1, 1])           # P = [.3, .3] -> по 0,1
+    assert r.poz_itog[:2, 0] == pytest.approx([0.1, 0.1], rel=1e-12) and np.isfinite(r.ryad).all()
 
 
 def test_g3_perevernutyj_znak_dayot_tot_zhe_ryad():

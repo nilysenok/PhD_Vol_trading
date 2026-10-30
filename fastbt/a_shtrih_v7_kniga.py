@@ -20,7 +20,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from fastbt.a_shtrih_v7 import vesa_dnya
-from fastbt.kniga_msp import (beta, hedzh_mix, marzha_v_den, mnozhitel_vola, netto, vyklyuchatel)
+from fastbt.kniga_msp import (beta, hedzh_mix, marzha_v_den, mnozhitel_vola, vyklyuchatel)
 
 # Комиссия фьючерса MIX 0,04 % на сторону от |Δ доли NAV|: общей константы в движке нет (0,0004 — умолчание
 # `commission` в etap1_eval*.py), одно определение — здесь; источник — Ж-093 п. 5 / план Ж-146 Л3.2 шаг 5.
@@ -68,14 +68,26 @@ def _vesa_dnej(X, vesa):
     return a, flagi
 
 
+def sektor_netto(u, sektor, maks=NETTO_SEK):
+    """Ж-093 б: |Σ u_i| в каждом секторе ≤ maks·капитал (u — доли NAV). Превышение: доминирующая сторона
+    сектора режется пропорционально до |нетто| = maks. Не `kniga_msp.netto` (то — 30 % валовой книги)."""
+    u, sektor = np.asarray(u, float), np.asarray(sektor)
+    out = u.copy()
+    for s in np.unique(sektor):
+        idx = np.flatnonzero(sektor == s)
+        net = u[idx].sum()
+        if abs(net) <= maks:
+            continue
+        dom = np.sign(net) * u[idx] > 0
+        D, O = np.abs(u[idx][dom]).sum(), np.abs(u[idx][~dom]).sum()
+        out[idx[dom]] = u[idx][dom] * (O + maks) / D
+    return out
+
+
 def _sektor_den(P, sektora, maks):
-    """Множитель тикеров [N] для одного дня: новое/старое P по `netto` внутри сектора."""
-    F = np.ones(len(P))
-    for s in np.unique(sektora):
-        idx = np.flatnonzero(sektora == s)
-        new, old = netto(P[idx], maks), P[idx]
-        F[idx] = np.where(old != 0, new / np.where(old != 0, old, 1.0), 1.0)
-    return F
+    """Множитель тикеров [N] для одного дня: новое/старое P по `sektor_netto`."""
+    new = sektor_netto(P, sektora, maks)
+    return np.where(P != 0, new / np.where(P != 0, P, 1.0), 1.0)
 
 
 def _pozicii(X, poz, a, sektora, sektor_netto, maks):
