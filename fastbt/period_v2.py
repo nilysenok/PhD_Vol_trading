@@ -23,6 +23,9 @@ START = pd.Timestamp("2014-08-26")                 # начало прогрев
 NOTE_DIV_2014 = "дивиденды 2014 не подключены"
 
 
+DO_AKTA = pd.Timestamp("2025-01-01")          # до акта владельца (Ж-155) строки ≥ 2025-01-01 не читаются; после акта — сменить здесь
+
+
 @dataclasses.dataclass(frozen=True)
 class Period:
     """Период как один объект: старт прогрева, первый год сумм, последний день (Б8, Ж-136 п. 1)."""
@@ -30,19 +33,30 @@ class Period:
     progrev: pd.Timestamp
     y0: int
     konec: pd.Timestamp
+    ocenka_do: pd.Timestamp | None = None     # последний день оценки (критерий); None — konec
+    spravka_s: pd.Timestamp | None = None     # начало справочного хвоста (после ocenka_do, в критерий не входит)
+    chtenie_do: pd.Timestamp | None = None    # граница чтения (исключительно) до акта снятия замка; None — konec + 1 день
 
 
 PERIODY = {"train4": Period("train4", pd.Timestamp("2015-01-01"), 2016, pd.Timestamp("2019-12-31")),
            "v2": Period("v2", START, 2015, pd.Timestamp("2019-12-31")),
            "wf": Period("wf", pd.Timestamp("2014-06-01"), 2015, pd.Timestamp("2026-02-28")),   # walk-forward, Ж-136
-           # вся история куба v7 (Ж-155 п. 7): прогрев 26.08.2014–31.12.2016, оценка 01.01.2017–31.12.2025 (Ж-159; янв–фев 2026 — справочно); зона данных — wf
-           "polnaya": Period("polnaya", START, 2017, pd.Timestamp("2025-12-31"))}
+           # вся история куба v7 (Ж-155 п. 7, Ж-159): прогрев 26.08.2014–31.12.2016, оценка 01.01.2017–31.12.2025 (ocenka_do),
+           # янв–фев 2026 — справочный хвост (spravka_s, в критерий не входит); konec — конец зоны данных (wf)
+           "polnaya": Period("polnaya", START, 2017, pd.Timestamp("2026-02-27"), ocenka_do=pd.Timestamp("2025-12-31"),
+                             spravka_s=pd.Timestamp("2026-01-01"), chtenie_do=DO_AKTA)}
 OTMETKA = Path(__file__).resolve().parents[1] / "docs/resheniya/wf_zamok_snyat.json"            # отметку ставит владелец
 ZAKRYTO_RE = re.compile(r"(^|/)test_locked(/|$)|_(test|202[2-9])([_./]|$)")                     # как zamki.json: чтение
 
 
 class ZamokVladeltsa(PermissionError):
     """Период или путь ≥ 2022 до снятия замка test_locked/ владельцем."""
+
+
+def chtenie_konec(period: str) -> pd.Timestamp:
+    """Граница чтения периода, исключительно: chtenie_do, если задана, иначе konec + 1 день."""
+    p = PERIODY[period]
+    return p.chtenie_do if p.chtenie_do is not None else p.konec + pd.Timedelta(days=1)
 
 
 def gody(period: str) -> tuple:

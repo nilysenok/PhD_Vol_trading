@@ -70,7 +70,8 @@ def test_polnaya_ne_chitaet_stroki_2025(main, monkeypatch):
 
 def test_mutaciya_granica_2025_snyata_lovitsya(main, monkeypatch):
     """Мутант: DO_AKTA = конец wf + 1 день. Либо читаются строки 2025, либо вторая линия (zona.HARD) отказывает — тест выше на нём падает."""
-    monkeypatch.setattr(E, "DO_AKTA", pd.Timestamp("2026-03-01"))
+    import dataclasses
+    monkeypatch.setitem(period_v2.PERIODY, "polnaya", dataclasses.replace(period_v2.PERIODY["polnaya"], chtenie_do=None))
     seen = _chitaet(monkeypatch)
     try:
         E.zagruzit(E.POLNAYA, TK, main=main)
@@ -89,8 +90,12 @@ def test_polnaya_bez_otmetki_otkaz_do_chteniya(main, monkeypatch, tmp_path):
 
 def test_period_polnaya_opredelen_kak_v_progone():
     p = period_v2.PERIODY["polnaya"]
-    assert p.progrev == pd.Timestamp("2014-08-26") and p.y0 == 2017 and p.konec == pd.Timestamp("2025-12-31")      # Ж-159
-    assert E.DO_AKTA == pd.Timestamp("2025-01-01")                              # чтение до акта: одна строка, меняется после акта
+    assert p.progrev == pd.Timestamp("2014-08-26") and p.y0 == 2017 and p.konec == pd.Timestamp("2026-02-27")   # как в #911
+    assert p.ocenka_do == pd.Timestamp("2025-12-31") and p.spravka_s == pd.Timestamp("2026-01-01")   # Ж-159: хвост справочный
+    assert p.chtenie_do == period_v2.DO_AKTA == pd.Timestamp("2025-01-01")        # граница чтения до акта — одно место
+    assert period_v2.chtenie_konec("polnaya") == pd.Timestamp("2025-01-01")
+    assert period_v2.chtenie_konec("wf") == pd.Timestamp("2026-03-01")           # прочие периоды не тронуты
+    assert period_v2.PERIODY["v2"].ocenka_do is None and period_v2.PERIODY["wf"].chtenie_do is None
 
 
 def test_vechernyaya_sessiya_ne_vhodit_v_istochniki():

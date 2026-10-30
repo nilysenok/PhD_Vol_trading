@@ -24,7 +24,6 @@ from fastbt.signals.v7_kross import Panel
 
 POLNAYA = "polnaya"
 PERIOD_FAJL = {POLNAYA: "wf"}          # замок polnaya — отметка владельца, как у wf
-DO_AKTA = pd.Timestamp("2025-01-01")   # исключительно: до акта снятия замка 2025+ (Ж-155 п. 1) строки ≥ 2025-01-01 не читаются
 REZHIMY_OTN = ("sektor", "imoex")
 MIN_TIK = 8
 
@@ -108,7 +107,7 @@ def zagruzit(period: str, tikery, main: Path | None = None, fajly=None) -> Istoc
         raise NotImplementedError(f"период {period!r}: источники v7 читаются только для polnaya (wf)")
     if period == POLNAYA:              # до акта владельца (Ж-155) — строго < 2025-01-01 на чтении, а не по границам wf (2026-03-01)
         period_v2.proverit_chtenie(POLNAYA, otmetka=period_v2.OTMETKA)
-        end = min(period_v2.PERIODY[POLNAYA].konec + pd.Timedelta(days=1), DO_AKTA)
+        end = period_v2.chtenie_konec(POLNAYA)
         f = fajly or iv6.Fajly(end, main, None)      # period=None: indeks() читает по f.end, а не по granitsa("wf")
         p = POLNAYA
     else:
