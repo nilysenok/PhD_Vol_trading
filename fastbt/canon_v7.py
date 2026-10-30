@@ -40,9 +40,22 @@ def sha_v6(sid: str) -> str:
 
 def load_kub(sid: str, root: Path = KUB7) -> dict:
     """Куб v7 с подгруженной основой: ключ `v6` — куб v6 как есть (его `baza.kub_sha` сверяется в proverit)."""
+    sverit_sha(sid, root)
     k = yaml.safe_load((Path(root) / f"kub_{sid}.yaml").read_text(encoding="utf-8"))
     k["v6"] = c6.load_kub(sid)
     return k
+
+
+def sverit_sha(sid: str, root: Path = KUB7) -> None:
+    """Д5: sha256 kub_{sid}.yaml = строка SHA256SUMS; иначе (или строки нет) — ValueError с обоими хэшами."""
+    name, tab = f"kub_{sid}.yaml", {}
+    for ln in (Path(root) / SUMS).read_text(encoding="utf-8").splitlines():
+        if ln.strip():
+            h, n = ln.split(None, 1)
+            tab[n.strip().lstrip("*")] = h
+    fakt = hashlib.sha256((Path(root) / name).read_bytes()).hexdigest()
+    if tab.get(name) != fakt:
+        raise ValueError(f"{name}: sha256 файла {fakt} ≠ {SUMS} {tab.get(name, 'строки нет')} (куб изменён без обновления хэша)")
 
 
 def novye(kub: dict) -> dict:
