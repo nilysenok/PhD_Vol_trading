@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import proverka_sdviga_wf as P  # noqa: E402
@@ -48,8 +49,8 @@ def test_hvost_posle_styka_proveryaetsya_i_chestnyj_prohodit(monkeypatch, tmp_pa
 
 def test_mutaciya_usdrub_bez_cny_lovitsya(monkeypatch, tmp_path):
     _mir(monkeypatch, tmp_path, _imoex(), bez_cny=True)
-    dx = P.dx_usdrub_schet(tmp_path, pd.Timestamp("2024-12-31"))
-    assert dx[dx.index > STYK + pd.Timedelta(days=1)].notna().sum() == 0      # хвост пуст — на wf это видно в числе строк
+    with pytest.raises(FileNotFoundError, match="CNYRUB_TOM"):                 # было: молча пустой хвост; после #821 (Д4) — отказ
+        P.dx_usdrub_schet(tmp_path, pd.Timestamp("2024-12-31"))
 
 
 def test_mutaciya_sklejka_so_sdvigom_plus_den_blokiruetsya(monkeypatch, tmp_path):

@@ -121,7 +121,10 @@ def dx_usdrub_schet(main: Path, do: pd.Timestamp) -> pd.Series:
     from fastbt import vneshnie_1850 as v
     from fastbt import vneshnie_usdrub as vu
     gr = do + pd.Timedelta(days=1)
-    cny = v.read_bars(main / v.PATHS["cnyrub"], gr) if (main / v.PATHS["cnyrub"]).exists() else None
+    pc = main / v.PATHS["cnyrub"]
+    if not pc.exists() and do > vu.USD_LAST:      # Д4: хвост после стыка без CNY молча пуст — отказ
+        raise FileNotFoundError(f"CNYRUB_TOM: нет {pc}; хвост usdrub после {vu.USD_LAST.date()} пуст")
+    cny = v.read_bars(pc, gr) if pc.exists() else None
     return vu.faktor_usdrub(v.read_bars(main / v.PATHS["usdrub"], gr), cny)[0]
 
 
