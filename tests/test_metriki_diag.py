@@ -34,6 +34,24 @@ def test_ekspoziciya_valovaya_i_dni_bez_pozicii():
     assert D.ekspoziciya([0, 0, 0]) == 0.0
 
 
+def test_ekspoziciya_portfel_valovaya_po_tikeram():
+    w = np.array([[0.5, -0.5], [0.0, 0.0]])  # день 1: лонг A 0,5 и шорт B 0,5
+    assert D.ekspoziciya(w) == 0.5  # (1,0 + 0)/2
+    assert D.ekspoziciya(w[:1]) == 1.0
+    assert D.ekspoziciya(pd.DataFrame(w[:1], columns=["A", "B"])) == 1.0
+    assert D.ekspoziciya([-0.5, 0.5]) == 0.5  # 1-D: один тикер, |w|
+    netto = abs(w[0].sum())  # мутация |Σw| вместо Σ|w| даёт 0
+    assert D.ekspoziciya(w[:1]) != netto
+
+
+def test_sharpe_norm_i_panel_s_matricei():
+    w = np.array([[0.5, -0.5], [0.0, 0.0]] * 2)
+    assert abs(D.sharpe_norm(R, w) - 2 * sd_dn_rukami(R)) < 1e-9
+    daty = pd.bdate_range("2018-01-01", periods=4)
+    p = D.panel_diag(daty, R, w, [2018, 2018], [2.0, 0.0], [1, 1])
+    assert abs(p.loc["итого", D.K_NORM] - 2 * sd_dn_rukami(R)) < 1e-9
+
+
 def test_norm_pri_polovine_dnej_v_pozicii_dvazhdy_dnevnoy():
     n = D.sharpe_norm(R, [1, 0, 1, 0])
     assert abs(n - 2 * sd_dn_rukami(R)) < 1e-9
