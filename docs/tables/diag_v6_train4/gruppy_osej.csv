@@ -1,5 +1,5 @@
 # статус: разработка train4 2016–2019, потолок (in-sample), после аудита
-# kod: база 11a41ad0, diag_v6_pravila.py sha256 d9996d05b8c6d342
+# kod: база 685ee772, diag_v6_pravila.py sha256 008061b83e8f6d3b
 # vhody: kub_S*.yaml + canon_v6.py sha256 6ebcaa6e9dd39eb7405a1d9acffdb77a0f9e8fbbadaaac60a6fc98dab14d0c0f
 # формат: "v": "1"
 sid,os,razdel_kuba,gruppa,spornaya,prichina

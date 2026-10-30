@@ -70,21 +70,35 @@ def test_tolkovanie_soderzhit_te_zhe_porogi():
         assert frag in blok, frag
 
 
-def test_top10_po_msr_ned_bez_vorot_i_tolko_sobol_ok():
-    rows = [dict(klyuch_n=i, status="ok", rol="sobol", msr_ned=float(i), sharpe=-1.0) for i in range(15)]
-    rows += [dict(klyuch_n=99, status="ok", rol="sobol", msr_ned=float("nan"), sharpe=9.0),
-             dict(klyuch_n=98, status="oshibka", rol="sobol", msr_ned=50.0, sharpe=9.0),
-             dict(klyuch_n=97, status="ok", rol="kontrol", msr_ned=60.0, sharpe=9.0),
-             dict(klyuch_n=96, status="ok", rol="sobol", msr_ned=-0.5, sharpe=-9.0)]
-    assert [r["klyuch_n"] for r in D.top10(rows)] == list(range(14, 4, -1))
-    assert not any(math.isnan(r["msr_ned"]) for r in D.top10(rows))
-    assert [r["klyuch_n"] for r in D.top10([r for r in rows if r["klyuch_n"] in (96, 3)])] == [3, 96]   # ворот (Шарп > 0) нет
-    # мутация: ранжирование по дневному Sharpe дало бы другой набор
-    assert [r["klyuch_n"] for r in sorted(rows, key=lambda r: -r["sharpe"])[:3]] != [r["klyuch_n"] for r in D.top10(rows)[:3]]
+def _rows():
+    rows = [dict(klyuch_n=i, status="ok", rol="sobol", msr=float(i), sharpe=-1.0 - i) for i in range(15)]
+    return rows + [dict(klyuch_n=99, status="ok", rol="sobol", msr=float("nan"), sharpe=9.5),
+                   dict(klyuch_n=98, status="oshibka", rol="sobol", msr=50.0, sharpe=9.0),
+                   dict(klyuch_n=97, status="ok", rol="kontrol", msr=60.0, sharpe=9.0),
+                   dict(klyuch_n=96, status="ok", rol="sobol", msr=-0.5, sharpe=-9.0),
+                   dict(klyuch_n=95, status="ok", rol="sobol", msr=None, sharpe=-0.1),
+                   dict(klyuch_n=94, status="ok", rol="sobol", msr=None, sharpe=float("nan"))]
+
+
+def test_top10_po_msr_zapas_sharpe_pomechen_bez_vorot():
+    t = D.top10(_rows())
+    # 99: msr не определён -> sharpe 9,5 (между msr 10 и 9, с пометкой); остальные по msr 14…6
+    assert [r["klyuch_n"] for r in t] == [14, 13, 12, 11, 10, 99, 9, 8, 7, 6]
+    assert [r["klyuch_n"] for r in t if r["pometka_sharpe"]] == [99]
+    assert 94 not in [r["klyuch_n"] for r in t] and 98 not in [r["klyuch_n"] for r in t] and 97 not in [r["klyuch_n"] for r in t]
+    # ворот нет: msr 3, sharpe -0,1 (пометка), msr -0,5 — все в списке
+    assert [(r["klyuch_n"], r["pometka_sharpe"]) for r in D.top10([r for r in _rows() if r["klyuch_n"] in (96, 95, 3)])] == [(3, False), (95, True), (96, False)]
+
+
+def test_mutaciya_ranzhirovanie_po_drugomu_polyu_lovitsya(monkeypatch):
+    ozhid = [r["klyuch_n"] for r in D.top10(_rows())]
+    for pole in ("sharpe", "msr_ned"):
+        monkeypatch.setitem(D.TOP10, "kluch", pole)
+        assert [r["klyuch_n"] for r in D.top10(_rows())] != ozhid, pole
 
 
 def test_top10_tie_po_klyuchu():
-    rows = [dict(klyuch_n=k, status="ok", rol="sobol", msr_ned=1.0) for k in (5, 2, 9)]
+    rows = [dict(klyuch_n=k, status="ok", rol="sobol", msr=1.0) for k in (5, 2, 9)]
     assert [r["klyuch_n"] for r in D.top10(rows)] == [2, 5, 9]
 
 

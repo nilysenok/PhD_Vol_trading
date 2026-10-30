@@ -32,7 +32,7 @@ PRAVILA = dict(
     prochee_dolya_max=0.3,            # причина выхода «конец окна»/«прочее» > 30 %
 )
 PRAVILA_MSP = dict(delta_lambda_min=0.0, delta_aprim_min=0.0)   # план §3: Δ ≤ 0 — слабое место (в толковании порогов МСП нет)
-TOP10 = dict(n=10, kluch="msr_ned", vorota=None, pul="status=ok, rol=sobol", pometka="потолок: ранжирование и метрики на одних данных")
+TOP10 = dict(n=10, kluch="msr", zapas="sharpe", vorota=None, ned="msr_ned (только для отобранных, Д-4, рядом с дневным; Ж-124 п. 3)", pul="status=ok, rol=sobol", pometka="потолок: ранжирование и метрики на одних данных")
 
 # Фиксированный словарь «слабое место → предложение v7» (гипотеза для журнала, не решение).
 PREDLOZHENIYA = {
@@ -118,10 +118,20 @@ def sha_vhodov() -> str:
 
 
 def top10(rows: list) -> list:
-    """Диагностический топ-10 (не отбор): status=ok, rol=sobol, конечный `msr_ned`; 10 лучших по msr_ned, при равенстве — меньший klyuch_n."""
-    k = TOP10["kluch"]
-    godnye = [r for r in rows if r.get("status") == "ok" and r.get("rol") == "sobol" and r.get(k) is not None and math.isfinite(r[k])]
-    return sorted(godnye, key=lambda r: (-r[k], r["klyuch_n"]))[:TOP10["n"]]
+    """Диагностический топ-10 (не отбор): status=ok, rol=sobol; ранг по `msr` (дневной), где он не определён — по `sharpe` (строка копируется
+    с пометкой `pometka_sharpe`); ворот нет; при равенстве — меньший klyuch_n."""
+    def znach(r):
+        for k, pom in ((TOP10["kluch"], False), (TOP10["zapas"], True)):
+            if r.get(k) is not None and math.isfinite(r[k]):
+                return r[k], pom
+        return None
+    out = []
+    for r in rows:
+        z = znach(r) if r.get("status") == "ok" and r.get("rol") == "sobol" else None
+        if z:
+            out.append((z[0], dict(r, pometka_sharpe=z[1])))
+    out.sort(key=lambda t: (-t[0], t[1]["klyuch_n"]))
+    return [r for _, r in out[:TOP10["n"]]]
 
 
 def zapisat_csv(path: Path = CSV) -> None:
