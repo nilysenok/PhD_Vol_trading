@@ -76,3 +76,20 @@ def sravnit(eta: dict, meta_eta: dict, moi: dict, meta_moi: dict, dopusk: float 
     pervoe, chislo, dy, dt = _nepreryvnoe(eta, moi, dopusk)
     return dict(diskretnoe=disk, nepreryvnoe_pervoe=pervoe, nepreryvnoe_chislo=chislo, max_yakor=dy, max_tochki=dt,
                 kod=3 if (pervoe and not disk) else (1 if disk else 0))
+
+
+def bystr_protiv_etalona(rez: dict, dopusk: float = TOL_YAKOR) -> list:
+    """Быстрый слой v6 = эталонный путь на ТОЙ ЖЕ машине (внутри одного набора): для каждой точки с обеими записями
+    `v6bystr__S__i` и `v6tochka__S__i` дискретное — точно, непрерывное ≤ dopusk. -> [(имя, kod 1|3, описание)]; пусто — совпало."""
+    bad = []
+    for m in sorted(rez):
+        if not m.startswith("v6bystr__"):
+            continue
+        e = "v6tochka__" + m[len("v6bystr__"):]
+        if e not in rez:
+            bad.append((m, 1, "нет парной записи эталонного пути"))
+            continue
+        r = sravnit({"t": rez[e]}, {}, {"t": rez[m]}, {}, dopusk)
+        if r["kod"]:
+            bad.append((m, r["kod"], (r["diskretnoe"] or [str(r["nepreryvnoe_pervoe"])])[0]))
+    return bad

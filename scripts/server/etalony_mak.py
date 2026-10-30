@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ekviv  # noqa: E402
 import ekviv_io  # noqa: E402
+import ekviv_sravn  # noqa: E402
 import ekviv_v6  # noqa: E402
 
 
@@ -38,6 +39,10 @@ def main(argv=None) -> int:
         ekviv_v6.dobavit(rez, meta, rez6, m6, kod6)
         print(f"etalony: v6 — записей {len(rez6)} (быстрый слой {sum(m.startswith('v6bystr') for m in rez6)}), "
               f"пропущено не-ok при наборе {sum(m6['v6_propusheno'].values())}; {time.time() - t0 - t5:.0f} с", flush=True)
+    bb = ekviv_sravn.bystr_protiv_etalona(rez)
+    if bb:
+        print(f"FAIL etalony: быстрый слой v6 ≠ эталонный путь на Маке в {len(bb)} точках, первая {bb[0][0]}: {bb[0][2]} — эталоны не собраны")
+        return 1
     nf = ekviv.net_fajla(rez)
     if nf:
         print(f"FAIL etalony: в {len(nf)} записях оценщик не нашёл файл (данных не хватает), первая {nf[0]}: "

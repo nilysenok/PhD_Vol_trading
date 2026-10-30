@@ -72,6 +72,10 @@ def main(argv=None) -> int:
     if pv:
         print(f"FAIL непрерывное [режим {a.rezhim}]: {pv[0]}: {pv[1]}, |Δ| = {pv[2]:.3e} > {pv[3]:g}")
         return 3
+    bb = ekviv_sravn.bystr_protiv_etalona(moi)       # быстрый слой v6 = эталонный путь здесь же (одинаковый сбой на обеих машинах не пройдёт)
+    if bb:
+        print(f"FAIL быстрый слой v6 ≠ эталонный путь [режим {a.rezhim}]: {len(bb)} точек, первая {bb[0][0]}: {bb[0][2]}")
+        return 1 if any(k == 1 for _, k, _ in bb) else 3
     eh = hashlib.sha256(Path(a.etalony).read_bytes()).hexdigest()
     otm.write_text(f"kod={a.kod_sha}\ndannye={a.dannye_sha}\netalony={eh}\nrezhim={a.rezhim}\n")
     print(f"OK [режим {a.rezhim}]: дискретное совпало; {len(tochki)} точек + якорь 6 Sk; max |Δ| якорь {r['max_yakor']:.1e}, "
