@@ -6,6 +6,7 @@ import pytest
 from fastbt import e1_sektor, period_v2, zona
 
 D = pd.Timestamp
+OTM = '{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "%s", "data_snyatiya": "2026-10-30"}' % ("a" * 64)
 
 
 @pytest.fixture(autouse=True)
@@ -16,7 +17,7 @@ def _dev():
 
 def test_granitsa_wf_rovno_pervoe_marta_2026(tmp_path, monkeypatch):
     p = tmp_path / "o.json"
-    p.write_text("{}")
+    p.write_text(OTM)
     monkeypatch.setattr(period_v2, "OTMETKA", p)
     assert zona.END_WF == D("2026-03-01")           # мутация END_WF=03-02 падает и здесь, не только через check()
     with zona.zone_ctx("wf"):
@@ -30,7 +31,7 @@ def test_granitsa_wf_rovno_pervoe_marta_2026(tmp_path, monkeypatch):
 
 def test_put_wf_ne_zalezaet_ot_peremennoj_test_zony(monkeypatch, tmp_path):
     p = tmp_path / "o.json"
-    p.write_text("{}")
+    p.write_text(OTM)
     monkeypatch.setattr(period_v2, "OTMETKA", p)
     monkeypatch.setenv("FASTBT_Z2_DAILY", "/test_locked/x.parquet")
     with zona.zone_ctx("wf"):
@@ -55,11 +56,11 @@ def test_zona_ne_menyaetsya_i_hooki_ne_zovutsya_pri_otkaze(tmp_path, monkeypatch
         zona._hooks.pop()
 
 
-@pytest.mark.xfail(strict=True, reason="находка: period_v2.proverit_chtenie принимает пустой файл (exists), скрипты сервера "
-                   "требуют непустой (-s). Безопаснее «непустой»: случайный touch не снимает замок. Решает автор/владелец.")
-def test_pustaya_otmetka_ne_prinimaetsya(tmp_path, monkeypatch):
+@pytest.mark.parametrize("soderzhimoe", ["", "{}", "не json", "[]", OTM.replace('"sha256"', '"sha"'), OTM.replace("a" * 64, "a" * 63)])
+def test_negodnaya_otmetka_ne_prinimaetsya(tmp_path, monkeypatch, soderzhimoe):
     p = tmp_path / "wf_zamok_snyat.json"
-    p.write_text("")
+    p.write_text(soderzhimoe)
     monkeypatch.setattr(period_v2, "OTMETKA", p)
     with pytest.raises(period_v2.ZamokVladeltsa):
         zona.set_zone("wf")
+    assert zona.name() == "dev"

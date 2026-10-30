@@ -19,8 +19,8 @@ def _pul(daty=DATY, period="wf"):
 def _otmetka(tmp_path, monkeypatch, est=True):
     otm = tmp_path / "wf_zamok_snyat.json"
     if est:
-        otm.write_text("{}")
-    monkeypatch.setattr(PV, "OTMETKA", otm)       # только временный каталог, в репозитории отметки нет
+        otm.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "%s", "data_snyatiya": "2026-10-30"}' % ("a" * 64))
+    monkeypatch.setattr(PV, "OTMETKA", otm)       # только временный каталог (отметка репозитория тестами не используется)
 
 
 def test_wf_bez_otmetki_otkaz(tmp_path, monkeypatch):
@@ -52,8 +52,8 @@ def test_wf_do_2020_bez_otmetki_ok(tmp_path, monkeypatch):
     assert _pul(DATY[DATY < np.datetime64("2020-01-01")]).daty.size > 0
 
 
-def test_otmetki_v_repozitorii_net():
-    assert not PV.OTMETKA.exists()                # ставит владелец, не тест и не агент
+def test_otmetka_v_repozitorii_tolko_godnaya():
+    assert not PV.OTMETKA.exists() or PV.otmetka_godna(PV.OTMETKA)    # ставит владелец; пустой/битый файл — не отметка
 
 
 def test_periods_wf_v_etap1_eval():
