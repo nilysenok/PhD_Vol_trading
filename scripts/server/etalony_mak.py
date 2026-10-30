@@ -27,6 +27,8 @@ def main(argv=None) -> int:
     ap.add_argument("--seed", type=int, default=ekviv.SEED)
     ap.add_argument("--procs", type=int, default=4)
     ap.add_argument("--tochek-v6", type=int, default=ekviv_v6.N_V6, help="точек Соболя куба v6 (поровну по Sk, только status = ok)")
+    ap.add_argument("--kod-sha", help="sha256 tar кода — в meta эталона, на сервере сверяется строго")
+    ap.add_argument("--dannye-sha", help="sha256 манифеста данных — в meta эталона, на сервере сверяется строго")
     ap.add_argument("--bez-v6", action="store_true", help="только набор v5 (как до листа v6)")
     a = ap.parse_args(argv)
     t0 = time.time()
@@ -48,7 +50,8 @@ def main(argv=None) -> int:
         print(f"FAIL etalony: в {len(nf)} записях оценщик не нашёл файл (данных не хватает), первая {nf[0]}: "
               f"{rez[nf[0]]['sig'][-300:]}")        # хвост записи: там status/oshibka с именем файла
         return 1
-    meta.update(ekviv.sreda_meta(), seed=a.seed, tochek=len(tochki), sozdan=time.strftime("%F %T %Z"))
+    meta.update(ekviv.sreda_meta(), seed=a.seed, tochek=len(tochki), sozdan=time.strftime("%F %T %Z"),
+                kod_sha=a.kod_sha, dannye_sha=a.dannye_sha)
     ekviv_io.sohranit(a.out, rez, meta)
     h = hashlib.sha256(Path(a.out).read_bytes()).hexdigest()
     Path(a.out + ".sha256").write_text(f"{h}  {Path(a.out).name}\n")

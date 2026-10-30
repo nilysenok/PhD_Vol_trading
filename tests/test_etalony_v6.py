@@ -128,11 +128,11 @@ def test_mutaciya_perestanovka_dvuh_tochek_lovitsya():
     assert r["kod"] == 1 and r["diskretnoe"]                 # другой индекс Соболя / ключ точки — дискретное
 
 
-def test_mutaciya_hash_vhodov_v6_lovitsya():
+def test_hash_vhodov_v6_ne_sveryaetsya():      # решение дирижёра (класс B): v6_vhody зависит от libm/SVML; строгая сверка — sha кода и данных
     rez, meta = _nabor()
     m2 = copy.deepcopy(meta)
     m2["v6_vhody"]["S1"] = "podmena"
-    assert es.sravnit(rez, meta, copy.deepcopy(rez), m2, 1e-12)["kod"] == 1
+    assert es.sravnit(rez, meta, copy.deepcopy(rez), m2, 1e-12)["kod"] == 0
 
 
 def test_v5_chast_ne_izmenilas_ot_dobavleniya_v6(tmp_path):

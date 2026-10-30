@@ -167,7 +167,7 @@ def test_kvoty_summa_ravna_n(n):
 
 
 # (е) хэши куба и дат v6 тоже сверяются
-@pytest.mark.parametrize("pole", ["v6_kub", "v6_daty", "v6_vhody"])
+@pytest.mark.parametrize("pole", ["v6_kub", "v6_daty"])      # v6_vhody не сверяется (SVML ≠ libm): tests/test_sverka_bez_vhody.py
 def test_hash_v6_lovitsya(pole):
     rez, meta = _nabor()
     m2 = copy.deepcopy(meta)
