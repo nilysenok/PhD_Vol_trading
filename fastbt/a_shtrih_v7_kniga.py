@@ -7,10 +7,14 @@ ks[T] (ключевая ставка, год. доли; None = 0). Порядо�
  2. секторный нетто ≤ 20 %: `kniga_msp.netto` по позициям тикеров сектора (доминирующая сторона режется пропорционально);
  3. таргет 10 %, окно 21, валовое плечо ≤ 2 (`mnozhitel_vola`), маржа сверх 100 % (`marzha_v_den`);
  4. выключатель ×0,5 (`vyklyuchatel`);
- 5. хедж MIX = −β·NAV·f (β окно 63 по книге до хеджа) с комиссией KOM_HEDZH·|Δh|.
-Приближения: (а) сектор масштабирует excess пары тем же множителем, что и позицию тикера — комиссия при смене
-множителя не пересчитывается; (б) сектор из одного тикера или с одной стороной по правилу `netto` обнуляется;
-(в) без poz валовая = 1 NAV. «Выкл.» всех опций + `vesa="vykl"` = `a_shtrih(ravnyj_bez_targeta)` побайтно.
+ 5. хедж MIX = −β·NAV·f (β окно 63 по книге до хеджа).
+Комиссия (Ж-149 п. 1, одно определение — `kniga_msp.komissiya_oborota`, позиции держатся через ночь): хедж — ставка·|Δh|;
+тикер — доплата сверх оплаченного центрами. Сделки центров уже вычтены в X на |ΔP_i| (P — позиция тикера до сектора,
+m, f), в масштабе F·m·f дня; книга платит ставка·|w_i − w_{i−1}|, w = P·F·m·f, а доплачивается
+max(0, ставка·|Δw| − ставка·|ΔP|·F·m·f) по каждому тикеру. Знак не важен (у шорта возврата нет), нижняя граница 0
+(переплаченное центром не возвращается). Ряда «брутто + оборот» центра в этом входе нет — формула с вычитанием.
+Приближения: (а) сектор масштабирует excess пары тем же множителем F, что и позицию тикера; (б) без poz валовая =
+1 NAV, комиссии тикеров нет. «Выкл.» всех опций + `vesa="vykl"` = `a_shtrih(ravnyj_bez_targeta)` побайтно.
 """
 from __future__ import annotations
 
@@ -20,11 +24,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from fastbt.a_shtrih_v7 import vesa_dnya
-from fastbt.kniga_msp import (beta, hedzh_mix, marzha_v_den, mnozhitel_vola, vyklyuchatel)
+from fastbt.kniga_msp import (KOMISSIYA, beta, hedzh_mix, komissiya_oborota, marzha_v_den, mnozhitel_vola,
+                              vyklyuchatel)
 
-# Комиссия фьючерса MIX 0,04 % на сторону от |Δ доли NAV|: общей константы в движке нет (0,0004 — умолчание
-# `commission` в etap1_eval*.py), одно определение — здесь; источник — Ж-093 п. 5 / план Ж-146 Л3.2 шаг 5.
-KOM_HEDZH = 0.0004
 NETTO_SEK = 0.20
 VESA = ("paritet", "ravnyj_risk", "vykl")
 
@@ -41,6 +43,7 @@ class Rezultat:
     poz_itog: np.ndarray    # [N,T] позиции тикеров после сектора (до m, f)
     mix_nan: np.ndarray     # [T] bool: MIX неизвестен, хедж 0
     vesa_flagi: list
+    kom_tik: np.ndarray     # [T] доплата за оборот тикеров сверх оплаченного центрами (Ж-149)
 
 
 def _proverit(X, poz, sektora, imoex, mix, ks):
@@ -115,6 +118,19 @@ def _knizhnyj(X, a, F):
         return np.where(den > 0, num / den, np.nan)
 
 
+def kom_tikerov(W, dP, Fc, stavka=KOMISSIYA):
+    """[T]: Σ_j max(0, komissiya_oborota(W_j,i, W_j,i−1) − ставка·|dP_j,i|·Fc_j,i). W[N,T] — итоговые знаковые доли
+    NAV, dP[N,T] — шаг позиции тикера до сектора и масштаба (центры оплатили его в X), Fc[N,T] = F·m·f."""
+    W, dP, Fc = (np.asarray(v, float) for v in (W, dP, Fc))
+    N, T = W.shape
+    out, prev = np.zeros(T), np.zeros(N)
+    oplacheno = stavka * np.abs(dP) * Fc
+    for i in range(T):
+        out[i] = sum(max(0.0, komissiya_oborota(W[j, i], prev[j], stavka) - oplacheno[j, i]) for j in range(N))
+        prev = W[:, i]
+    return out
+
+
 def kniga_ryada(X, poz, sektora, imoex, mix, ks=None, *, vesa="paritet", hedzh=True, sektor_netto=True,
                 tsel_vol=True, vykl=True, tsel=0.10, plecho=2.0, netto_sek=NETTO_SEK) -> Rezultat:
     if vesa not in VESA:
@@ -145,7 +161,14 @@ def kniga_ryada(X, poz, sektora, imoex, mix, ks=None, *, vesa="paritet", hedzh=T
     ryad = ex_port.copy()
     if tsel_vol or vykl:
         ryad = ex_kniga.copy() * f - marzha
+    kom_tik = np.zeros(T)
+    if poz is not None and (sektor_netto or tsel_vol or vykl):
+        c = m * f
+        P = np.divide(itog, F, out=np.zeros_like(itog), where=F > 0)    # F = 0 только у подмены правила: центр обнулён
+        kom_tik = kom_tikerov(itog * c, np.diff(P, axis=1, prepend=0.0), F * c)
+        ryad = ryad - kom_tik
     if hedzh:
-        kom = KOM_HEDZH * np.abs(np.diff(h, prepend=0.0))
+        h_prev = np.concatenate([[0.0], h[:-1]])
+        kom = np.array([komissiya_oborota(h[i], h_prev[i]) for i in range(T)])
         ryad = ryad + np.where(mix_nan, 0.0, h * np.where(mix_nan, 0.0, mix)) - kom
-    return Rezultat(ryad, a, m, f, h, kom, marzha, itog, mix_nan, flagi)
+    return Rezultat(ryad, a, m, f, h, kom, marzha, itog, mix_nan, flagi, kom_tik)
