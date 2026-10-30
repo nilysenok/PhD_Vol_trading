@@ -1,0 +1,25 @@
+# Куб отбора v7, S5 Pivot (Ж-153, Ж-155 п. 2, Ж-156 п. 3, Ж-157 п. 2; план V7-1a). Правила, min_uderzhanie и seed — как в kub_S1.yaml v7;
+# оси otnositelno у S5 нет (Ж-155 п. 2: S1–S4). N = 100 000 (Ж-157 п. 2: S1–S5). sha256 — в SHA256SUMS. Центр ± 1 шаг от сетки куба v6.
+v: 5
+format: progon-kub
+setka: v7
+data: 2026-10-31
+baza: {setka: v6, kub_sha: 8ad29c8f8d3fb80d1b731dc3fcbbaad925d1721d9a9fc1de8ab34c4cc7467abb}
+sid: S5
+tip: kontr
+periody: [train4, v2, wf]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261105, seed2: 20261106, scramble: true, N: 100000, morris_seed: 20261104}
+suzhenie: "centr±1"
+min_uderzhanie: {dney: 2, tau1: spravka}
+
+signal:
+  pivot_type:   {setka: [fibonacci, woodie, camarilla], centr: woodie}
+  pivot_period: {setka: [den, nedelya, mesyac], centr: nedelya}
+  uroven:       {setka: [1, 2, 3], centr: 2}
+  atr_filtr:    {setka: [0.5, 1.0, 1.5], centr: 1.0}
+  filter_set:   {setka: [2, 3, 4], centr: 3}
+
+osi7:
+  k_okup: {setka: [net, 3], vykl: net, p_vykl: 0.5, zhdet: [V7-3], otkuda: "Ж-150, Ж-156 п. 3", smysl: "вход, только если ожидаемый валовой PnL по терцили ранга и корзине удержания покрывает k × издержки"}
