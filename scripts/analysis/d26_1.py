@@ -28,6 +28,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import l2_lib as L
 import d22_harxp as P
+import d73_features as D73
 
 R = L.REGEN
 D22 = R / 'D22'
@@ -209,10 +210,10 @@ def cal_lead(dates, j, ev=None):
     tp = ud if j == 1 else np.busday_offset(st, j - 1)
     lo, hi = tp + np.timedelta64(1, 'D'), np.busday_offset(st, j)
     res = {'cal_bd': ((hi - lo) / np.timedelta64(1, 'D') + 1).astype(float)}
-    for ty, (d, kf) in ev.items():
+    for ty, (d, kf, kt) in ev.items():
         n, dte = np.zeros(len(ud)), np.full(len(ud), 90.0)
         for i, t in enumerate(ud):
-            k = d[(kf <= t) & (d > tp[i])]
+            k = d[D73.izvestna(kf, kt, t) & (d > tp[i])]
             n[i] = ((k >= lo[i]) & (k <= hi[i])).sum()
             if len(k):
                 dte[i] = min(90.0, float((k.min() - tp[i]) / np.timedelta64(1, 'D')))
@@ -598,10 +599,10 @@ def _perturb(A, cut, rng):
 
 def _perturb_events(cut, rng):
     ev = P._events(); ev2 = {}
-    for ty, (d, kf) in ev.items():  # будущие события, о которых в cut ещё не знали, — случайный сдвиг дат
+    for ty, (d, kf, kt) in ev.items():  # будущие события, о которых в cut ещё не знали, — случайный сдвиг дат
         d2 = d.copy(); m = kf > np.datetime64(cut.date())
         d2[m] = d2[m] + rng.integers(-20, 20, m.sum()).astype('timedelta64[D]')
-        ev2[ty] = (d2, kf)
+        ev2[ty] = (d2, kf, kt)
     return ev, ev2
 
 

@@ -557,10 +557,10 @@ def leak(cut='2020-06-30', step=4, leads=(5, 3), seed=20261026):
                 tmp = OUT / '_leak_intra.parquet'; I.to_parquet(tmp, index=False)
                 saved = P.INTRA; P.INTRA = tmp
                 P._EV.clear(); ev = P._events(); ev2 = {}
-                for ty, (d, kf) in ev.items():
+                for ty, (d, kf, kt) in ev.items():
                     d2 = d.copy(); mk = kf > np.datetime64(t.date())
                     d2[mk] = d2[mk] + rng.integers(-20, 20, mk.sum()).astype('timedelta64[D]')
-                    ev2[ty] = (d2, kf)
+                    ev2[ty] = (d2, kf, kt)
                 P._EV.clear(); P._EV['ev'] = ev2
                 pert = _chain(add_leads(Ah), harj, Ab, FC, j, step, m)
                 P.INTRA = saved; P._EV.clear(); tmp.unlink(missing_ok=True)

@@ -44,6 +44,7 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
+import d73_features as D73  # единственное определение PIT-версии (known_from/known_to)
 MAIN = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')
 DATA = MAIN / 'data'
 REG = DATA / 'regen'
@@ -283,7 +284,8 @@ def load_inputs():
     ev = {}
     for ty in CAL_TYPES:
         d = pd.read_csv(CALD / f'{ty}.csv')
-        ev[ty] = pd.DataFrame({'date': pd.to_datetime(d['date']), 'known_from': pd.to_datetime(d['known_from'])})
+        ev[ty] = pd.DataFrame({'date': pd.to_datetime(d['date']), 'known_from': pd.to_datetime(d['known_from']),
+                               'known_to': D73.known_to_col(d)})
     I['EV'] = ev
     return I
 
@@ -365,9 +367,10 @@ def cal_window(dates, a, b, ev, leak=False):
     res = {'bd': ((hi - lo) / np.timedelta64(1, 'D') + 1).astype(float)}
     for ty, E in ev.items():
         d = E['date'].values.astype('datetime64[D]'); kf = E['known_from'].values.astype('datetime64[D]')
+        kt = E['known_to'].values.astype('datetime64[D]')
         n, dte = np.zeros(len(ud)), np.full(len(ud), 90.0)
         for i, t in enumerate(ud):
-            k = d[((kf <= t) | leak) & (d > t)]
+            k = d[(D73.izvestna(kf, kt, t) | leak) & (d > t)]
             n[i] = ((k >= lo[i]) & (k <= hi[i])).sum()
             if len(k):
                 dte[i] = min(90.0, float((k.min() - t) / np.timedelta64(1, 'D')))
