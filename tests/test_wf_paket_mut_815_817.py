@@ -122,9 +122,6 @@ def test_816_mutaciya_sklejka_12_06_lovitsya(monkeypatch, tmp_path):
     assert not (dx.get(pd.Timestamp("2024-06-12")) == pytest.approx(-0.02))   # 12.06 уже не из CNY — тест выше упал бы
 
 
-@pytest.mark.xfail(strict=True, raises=pytest.fail.Exception,
-                   reason="Д-d в проверочном скрипте (#816): wf без CNYRUB_TOM молча даёт хвост usdrub из одного USD (пусто после 11.06.2024); "
-                          "нужен отказ, как у Fajly.indeks в #815")
 def test_816_wf_bez_cny_otkaz(monkeypatch, tmp_path):
     _mir(monkeypatch, tmp_path, bez_cny=True)
     with pytest.raises(FileNotFoundError, match="CNYRUB_TOM"):
@@ -164,19 +161,47 @@ def test_817_mutaciya_ensure_bez_proverki_gotovnosti_lovitsya(tmp_path, monkeypa
     assert pd.read_parquet(p)["open"].iloc[0] == 9.0                   # затёрт; тест выше (_ne_zvat) эту мутацию роняет
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="Д-a, остаток (#817): при неверном маркере ensure ТИХО затирает ряд wf рядом dev ≤ 2021 "
-                          "(без исключения и предупреждения); нужен громкий отказ или нетронутый ряд с датами > 2021")
-def test_817_nevernyj_marker_ne_zatiraet_wf_tiho(tmp_path, monkeypatch):
+def test_817_nevernyj_marker_wf_gromkij_otkaz_fajl_ne_tronut(tmp_path, monkeypatch):
     p = tmp_path / "ohlcv_daily_1850.parquet"
     D.write_wf(_ryad(2.0, "2026"), p)
     D.marker(p).write_text("0" * 64)                                   # маркер от другого содержимого
-    monkeypatch.setattr(D, "build", lambda main=None: _ryad(9.0, "2021"))
-    try:
+    s0, t0 = _sha(p), p.stat().st_mtime_ns
+    monkeypatch.setattr(D, "build", _ne_zvat)
+    with pytest.raises(RuntimeError, match="маркер не сходится"):
         D.ensure(p, tmp_path)
-    except Exception:
-        return                                                         # громкий отказ — допустимо
-    assert pd.read_parquet(p)["date"].max().year >= 2026               # иначе wf затёрт dev
+    assert (_sha(p), p.stat().st_mtime_ns) == (s0, t0)
+
+
+def test_817_nevernyj_marker_dev_pereborka_prezhnyaya_pobajtno(tmp_path, monkeypatch):
+    p, ref = tmp_path / "ohlcv_daily_1850.parquet", tmp_path / "ref.parquet"
+    dev = _ryad(5.0, "2021")
+    D.write_wf(dev, p)
+    D.marker(p).write_text("0" * 64)
+    new = _ryad(9.0, "2021")
+    new.to_parquet(ref, index=False)
+    monkeypatch.setattr(D, "build", lambda main=None: new)
+    D.ensure(p, tmp_path)
+    assert p.read_bytes() == ref.read_bytes() and D.is_ready(p)        # пересобран из build, маркер заново
+
+
+def test_817_mutaciya_otkaz_na_dev_lovitsya(tmp_path, monkeypatch):
+    monkeypatch.setattr(D, "END", pd.Timestamp("2000-01-01"))          # мутация: порог отказа сдвинут — dev тоже «wf»
+    p = tmp_path / "ohlcv_daily_1850.parquet"
+    D.write_wf(_ryad(5.0, "2021"), p)
+    D.marker(p).write_text("0" * 64)
+    monkeypatch.setattr(D, "build", lambda main=None: _ryad(9.0, "2021"))
+    with pytest.raises(RuntimeError):
+        D.ensure(p, tmp_path)                                          # прежний тест пересборки dev на ней упал бы
+
+
+def test_817_mutaciya_otkaz_snyat_lovitsya(tmp_path, monkeypatch):
+    monkeypatch.setattr(D, "_ne_zatirat_wf", lambda path: None)        # мутация: защита снята
+    p = tmp_path / "ohlcv_daily_1850.parquet"
+    D.write_wf(_ryad(2.0, "2026"), p)
+    D.marker(p).write_text("0" * 64)
+    monkeypatch.setattr(D, "build", lambda main=None: _ryad(9.0, "2021"))
+    D.ensure(p, tmp_path)
+    assert pd.read_parquet(p)["date"].max().year == 2021               # wf затёрт — тест отказа выше упал бы
 
 
 def test_817_marker_dev_osnovnoj_kopii_ne_menyaetsya_pri_importe(tmp_path):
@@ -196,10 +221,16 @@ def test_817_marker_dev_osnovnoj_kopii_ne_menyaetsya_pri_importe(tmp_path):
     assert m.read_bytes() == before
 
 
-@pytest.mark.xfail(strict=True, raises=subprocess.TimeoutExpired,
-                   reason="находка автора #817: `python -m fastbt.data` без маркера зависает (flock сам на себя: __main__ и fastbt.data "
-                          "— два модуля, ensure зовётся из импорта внутри ensure); нужен выход за таймаут")
-def test_817_python_m_fastbt_data_bez_markera_zavisaet(tmp_path):
+def test_817_python_m_fastbt_data_bez_markera_ne_zavisaet(tmp_path):
     env = {**os.environ, "FASTBT_MAIN": str(tmp_path)}
     env.pop("FASTBT_DATA_ROOT", None)
     subprocess.run([sys.executable, "-m", "fastbt.data"], cwd=REPO, env=env, capture_output=True, text=True, timeout=20)
+
+
+@pytest.mark.xfail(strict=True, raises=subprocess.TimeoutExpired,
+                   reason="#823: `python -m fastbt.daily_1850` без маркера зависает (воспроизведено, таймаут 20 с): ensure держит flock, "
+                          "build() импортирует fastbt.data, чей импорт зовёт ensure на том же lock")
+def test_823_python_m_daily_1850_bez_markera_ne_zavisaet(tmp_path):
+    env = {**os.environ, "FASTBT_MAIN": str(tmp_path)}
+    env.pop("FASTBT_DATA_ROOT", None)
+    subprocess.run([sys.executable, "-m", "fastbt.daily_1850"], cwd=REPO, env=env, capture_output=True, text=True, timeout=20)
