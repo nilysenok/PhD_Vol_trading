@@ -29,11 +29,21 @@ from fastbt import daily_1850 as d18
 CUT_MIN = d18.CUT_MIN      # 18:50; 24·60 = вечерние бары в день (мутация)
 ROLL_DAYS = 5              # переход на следующий контракт за 5 рабочих дней до lsttrade; 0 = мутация
 SPLICE_BY_LEVEL = False    # True = доходность по склеенному уровню (скачок на смене контракта; мутация)
-END = pd.Timestamp("2022-01-01")
+END = pd.Timestamp("2022-01-01")   # умолчание (train/dev); wf — только через `granitsa("wf")` при отметке владельца
 IDX = "moex_discovery/data/final_v6/candles_10m/external/"
-PATHS = {"rvi": IDX + "RVI.parquet",
-         "usdrub": "moex_discovery/data/external/moex_iss/currency_10m/USD000UTSTOM.parquet",
+CUR = "moex_discovery/data/external/moex_iss/currency_10m/"
+PATHS = {"rvi": IDX + "RVI.parquet", "usdrub": CUR + "USD000UTSTOM.parquet",
+         "cnyrub": CUR + "CNYRUB_TOM.parquet",   # замена USDRUB после обрыва 11.06.2024 (склейка — `vneshnie_usdrub`)
          "imoex": IDX + "IMOEX.parquet"}
+
+
+def granitsa(period: str | None = None, otmetka=None) -> pd.Timestamp:
+    """Граница чтения (строго <). wf: конец периода + 1 день (2026-03-01), без отметки снятого замка — отказ (Ж-136)."""
+    if period != "wf":
+        return END
+    from fastbt import period_v2
+    period_v2.proverit_chtenie(period, otmetka=period_v2.OTMETKA if otmetka is None else otmetka)
+    return period_v2.PERIODY[period].konec + pd.Timedelta(days=1)
 BR_DIR, BR_JSON = "data/iss_ext/bars_10m/", "data/iss_ext/br_contracts.json"
 SHIFTS = (-2, -1, 0, 1)
 
