@@ -19,20 +19,16 @@ from fastbt.indicators import compute_base
 from fastbt.signals import v5_s12, v5_s34  # noqa: F401  (регистрация семей v5)
 from fastbt.signals.interface import TickerData
 
-T, TIK = 420, ["A", "B", "C", "D"]
+T, TIK, D0 = 420, ["A", "B", "C", "D"], 300
 DATES = pd.bdate_range("2016-01-04", periods=T)
 KARTA = {"A": "X", "B": "X", "C": "Y"}                      # A,B — сектор X; C один в Y (→ IMOEX); D без сектора (→ IMOEX)
 SP = {"S1": dict(ma_window=20, z_entry=1.0, z_exit=0.0), "S3": dict(okno=20, podtv="none"), "S4": dict(period=10, mnozh=2.0),
       "S2": dict(bb_window=20, bb_std=1.5, podtv="none")}
 
 
-def _ryady(seed=7):
-    r = np.random.default_rng(seed)
-    c = pd.DataFrame(100 * np.exp(np.cumsum(r.normal(0, 0.02, (T, 4)), axis=0)), index=DATES, columns=TIK)
-    return c, pd.Series(1000 * np.exp(np.cumsum(r.normal(0, 0.01, T))), index=DATES)
-
-
-C0, IM0 = _ryady()
+RNG = np.random.default_rng(7)
+C0 = pd.DataFrame(100 * np.exp(np.cumsum(RNG.normal(0, 0.02, (T, 4)), axis=0)), index=DATES, columns=TIK)
+IM0 = pd.Series(1000 * np.exp(np.cumsum(RNG.normal(0, 0.01, T))), index=DATES)
 
 
 def mk_td(c, t):
@@ -57,7 +53,6 @@ def sig(e, t="A"):
     return e._signals5(SP[e.sid])[t].sigs[0]
 
 
-# ---------------- G1: net = v6 ----------------
 @pytest.mark.parametrize("sid", ["S1", "S2", "S3", "S4"])
 def test_g1_net_ravno_v6_pobajtno(sid):
     for pt in ({}, {"otnositelno": "net"}):
@@ -74,7 +69,6 @@ def test_g1_os_ubrana_iz_tochki_dlya_v6():
     assert e._otn_razbor({"otnositelno": "imoex", "tau": 3}) == {"tau": 3} and e.otn == "imoex"
 
 
-# ---------------- G2: известный ответ ----------------
 def _pary(trend=0.0):
     c = C0.copy()
     c["A"] = c["B"] * np.exp(trend * np.arange(T))             # A ≡ B (+ тренд); сектор A — только B
@@ -103,10 +97,6 @@ def test_g2_net_kolleg_fon_imoex_s_flagom():
     ss = ev("S3", {"otnositelno": "sektor"})._signals5(SP["S3"])
     assert ss["C"].ss.extra[ot.FLAG][1:].all() and ss["D"].ss.extra[ot.FLAG][1:].all()      # C один в секторе, D без сектора → фон IMOEX, флаг
     assert not ss["A"].ss.extra[ot.FLAG].any()
-
-
-# ---------------- G3: M-d1 ----------------
-D0 = 300
 
 
 def _prichinnost():
@@ -146,7 +136,6 @@ def test_g3_mutaciya_sdvig_fona_lovitsya_izvestnym_otvetom(monkeypatch, k):
         assert not sig(ev("S3", {"otnositelno": "sektor"}, c=_pary())).any()
 
 
-# ---------------- G4: исполнение по реальным ценам ----------------
 def _ispolnenie_real(e):
     for t, u in e._signals5(SP[e.sid]).items():
         td = e.sk._td[t][0]
@@ -171,7 +160,6 @@ def test_g4_mutaciya_ispolnenie_po_otnositelnoj_cene_lovitsya():
         _ispolnenie_real(e)
 
 
-# ---------------- G5: ключ (Д5) ----------------
 def _klyuchi():
     ks = [ev("S3", {"otnositelno": r})._fkey for r in ("net", "sektor", "imoex")]
     ks += [ev("S3", {"otnositelno": "imoex"}, imoex=IM0 * 1.01)._fkey, ev("S3", {"otnositelno": "imoex"}, karta={"A": "Z"})._fkey]
@@ -190,7 +178,6 @@ def test_g5_mutaciya_os_ne_v_klyuche_lovitsya(monkeypatch):
         _klyuchi()
 
 
-# ---------------- G6: отказы ----------------
 def test_g6_dvojnoj_fon_valueerror():
     for r in ("sektor", "imoex"):
         with pytest.raises(ValueError, match="rel_signal"):
