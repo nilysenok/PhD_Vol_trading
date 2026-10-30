@@ -105,7 +105,7 @@ def test_periodicheskij_zamer_lovit_rost(tmp_path):
     cnt.write_text("0")
     # i-й замер: USS растёт на 0,6 ГБ; ΣUSS = 120 × USS; доступно 100 ГБ, всего 251 ГБ; первый замер помещается, затем нет
     body = (f'i=$(( $(cat {cnt}) + 1 )); echo $i > {cnt}; u=$(( i * 600000 )); echo "$u $(( u * 120 ))"')
-    log, _ = _sledit(tmp_path, body, f"{100 * GB} {251 * GB}")
+    log, _ = _sledit(tmp_path, body, f"{100 * GB} {251 * GB}", zhit=8)       # срез — по двум замерам подряд (pamyat-pik): серия длиннее
     assert log.index("помещается") < log.index("СНИЖЕНИЕ")        # рост поймал более поздний замер, не первый
     assert int(cnt.read_text()) >= 2
     mut = (SH / "pamyat.sh").read_text().replace('    sleep "$gran"\n  done', "    return 0\n  done")
