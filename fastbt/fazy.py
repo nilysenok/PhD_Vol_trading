@@ -73,6 +73,8 @@ def zagruzit(koren: Path | None = None, tikery_dir: Path | None = None) -> dict:
     t = pq.read_table(main / "data/fastbt/daily/ohlcv_daily_1850.parquet", columns=["ticker", "date", "close"],
                       filters=[("date", "<", E.to_pydatetime()), ("date", ">=", S.to_pydatetime())])
     akcii = t.to_pandas().pivot(index="date", columns="ticker", values="close").reindex(imoex.index)
+    from fastbt import e1_sektor                          # noqa: PLC0415
+    e1_sektor.proverit_sektory_wf(ROOT / "docs/issledovaniya/2026-10-27_sektory.csv")   # wf: карта подтверждена 2022–2026 или отказ
     sk = pd.read_csv(ROOT / "docs/issledovaniya/2026-10-27_sektory.csv")
     karta = {r.ticker: r.sektor_moex.split(" (")[0].strip() for r in sk.itertuples()}
     return {"imoex": imoex, "akcii": akcii, "karta": karta}

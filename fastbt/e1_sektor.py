@@ -63,8 +63,31 @@ def load_indexes(names, main=None, end: pd.Timestamp | None = None) -> dict:
     return out
 
 
+SEKTORY_PIT_2022 = "docs/issledovaniya/2026-10-30_sostav_sektorov_2022_2026.csv"   # wf-L4a: 15 дат 2022-06-20 … 2025-12-22
+PIT_STALE_DAYS = 120    # последняя ребалансировка + 120 дней (квартал) — дальше сектор не известен (Д4)
+
+
+def proverit_sektory_wf(csv_path, root: Path | None = None) -> None:
+    """Зона wf: статическая карта тикер→индекс (2018–2021) переносится на 2022–2026 только если новая таблица состава
+    подтверждает её на всех датах (тикер на всех датах в том же индексе) и покрывает конец периода; иначе ValueError (Д4)."""
+    from fastbt import zona
+    if zona.name() != "wf":
+        return
+    new = pd.read_csv((root or Path(__file__).resolve().parent.parent) / SEKTORY_PIT_2022, parse_dates=["дата_ребалансировки"])
+    if new["дата_ребалансировки"].max() + pd.Timedelta(days=PIT_STALE_DAYS) < zona.END_WF - pd.Timedelta(days=1):
+        raise ValueError("сектора: таблица состава 2022–2026 не доходит до конца периода wf (Д4)")
+    ind = new.groupby("тикер")["индекс"].agg(set)
+    for r in pd.read_csv(csv_path).itertuples():
+        if r.ticker not in ind.index:
+            raise ValueError(f"сектор {r.ticker}: нет в таблице состава 2022–2026 — перенос карты 2021 вперёд запрещён (Д4)")
+        if ind[r.ticker] != {r.indeks}:
+            raise ValueError(f"сектор {r.ticker}: в 2022–2026 индексы {sorted(ind[r.ticker])}, в карте {r.indeks} — статическая карта неприменима (Д4)")
+
+
 def sektor_map(csv_path, have) -> dict:
-    """{тикер: индекс} для индексов из `have`; прочие (AFLT/MOEXTN, LSRG/MOEXRE) — без индекса, не входят."""
+    """{тикер: индекс} для индексов из `have`; прочие (AFLT/MOEXTN, LSRG/MOEXRE) — без индекса, не входят.
+    В зоне wf карта сверяется с таблицей состава 2022–2026 (`proverit_sektory_wf`)."""
+    proverit_sektory_wf(csv_path)
     df = pd.read_csv(csv_path)
     return {r.ticker: r.indeks for r in df.itertuples() if r.indeks in have}
 

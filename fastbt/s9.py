@@ -161,7 +161,12 @@ PERIOD = "train"
 # Ж-075 п. 1: период В1 — годы метрик и начало окна валидации (= год прогрева); путь A без σ-источников
 PERIODS_S9 = {"train": ((2018, 2019, 2020, 2021), 2017), "train4": ((2016, 2017, 2018, 2019), 2015),
               "v2": (period_v2.YEARS, period_v2.VAL_START),      # Ж-113: 2015–2019, прогрев с 26.08.2014
-              "test1": ((2022, 2023, 2024), 2021)}      # test1 — реверс раунд 1 (Ж-117): зона Z2, прогрев 2021
+              "test1": ((2022, 2023, 2024), 2021),      # test1 — реверс раунд 1 (Ж-117): зона Z2, прогрев 2021
+              "wf": (period_v2.gody("wf"), period_v2.PERIODY["wf"].progrev.year)}   # Ж-136: 2015…2026, прогрев с 2014; зона wf
+
+
+def _zona_perioda(period: str) -> str:
+    return {"test1": "test1", "wf": "wf"}.get(period, "dev")
 
 
 def set_period(period: str) -> None:
@@ -173,9 +178,9 @@ def set_period(period: str) -> None:
         raise ValueError(f"период {period!r}: есть {sorted(PERIODS_S9)}")
     if SCOPE != "dev":
         raise ValueError("период train4/test1 — только в разработке (scope dev)")
+    zona.set_zone(_zona_perioda(period))      # wf без годной отметки — ZamokVladeltsa до смены PERIOD
     PERIOD = period
     YEARS, VAL_START = PERIODS_S9[period]
-    zona.set_zone("test1" if period == "test1" else "dev")
 
 
 @contextlib.contextmanager
@@ -192,7 +197,7 @@ def period_ctx(period: str):
 def _restore_period(period, years, val_start) -> None:
     global PERIOD, YEARS, VAL_START
     PERIOD, YEARS, VAL_START = period, years, val_start
-    zona.set_zone("test1" if period == "test1" else "dev")
+    zona.set_zone(_zona_perioda(period))
 
 
 def _latest_name() -> str:

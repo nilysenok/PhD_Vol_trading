@@ -29,6 +29,7 @@ TABLE_2015 = _DOCS / "2026-10-28_dividendy_2015_2016.csv"
 # Д8 (wf, 2022+): корректировка цен по ГОДНЫМ строкам свода, не по полной таблице; зона dev (≤ 2021) и свода нет — прежние таблицы.
 SVOD = _DOCS / "div_sverka_svod.csv"
 SVOD_OT ="2022-01-01"      # до этой даты — прежние таблицы (побайтно прежнее поведение на train4)
+WF_KALENDAR_DO = "2026-02-20"   # в зоне wf календарь баров обязан дойти сюда (последний торговый день периода 27.02); короче — отказ
 RULE = "last_cum=T+2bars:all-years"   # Д5: правило даты входит в ключ кэша
 # MOEX: расчёты по акциям T+1 с 31.07.2023 (источник уточняет исследователь отдельно; PR #535 — режим NET).
 T1_OT = "2023-07-31"
@@ -82,7 +83,11 @@ def _calendar() -> np.ndarray:
     from fastbt import zona                                                       # noqa: PLC0415
     from fastbt.daily_1850 import out_path                                        # noqa: PLC0415
     d = pd.read_parquet(zona.path("daily", out_path()), columns=["date"])
-    return np.sort(pd.to_datetime(d["date"]).dt.normalize().unique().astype("datetime64[ns]"))
+    cal = np.sort(pd.to_datetime(d["date"]).dt.normalize().unique().astype("datetime64[ns]"))
+    if zona.name() == "wf" and cal[-1] < np.datetime64(WF_KALENDAR_DO):
+        raise FileNotFoundError(f"зона wf: дневной ряд кончается {str(cal[-1])[:10]}, нужен ряд wf до {WF_KALENDAR_DO} "
+                                f"(daily_1850 --wf после докачки); календарь ≤ 2021 для wf не подставляется")
+    return cal
 
 
 from fastbt import zona as _zona                                                  # noqa: E402
