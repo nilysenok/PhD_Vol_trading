@@ -78,7 +78,7 @@ def _poz(evr) -> tuple:
 
 
 def _zapis(r: dict, p, t, evr) -> dict:
-    propusk = _ps().SVERKA_PROPUSK
+    propusk = _ps().SVERKA_PROPUSK | {"vhody"}      # vhody — хэш float-массивов, зависит от libm/SVML; сверка Мак ↔ сервер его не берёт
     r = {k: v for k, v in r.items() if k not in propusk}
     pz, sd, vi = _poz(evr) if p is not None else _poz(None)
     return dict(sig=json.dumps(r, sort_keys=True, default=repr), disk=json.dumps(_bez_vesh(r), sort_keys=True, default=repr),

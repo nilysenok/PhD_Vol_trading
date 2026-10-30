@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Проверка эквивалентности на сервере (Ж-131 п. 3, Ж-133 п. 4): пересчёт набора эталона Мака и сравнение в два уровня (ekviv_sravn.py).
 
-Дискретное (ключи, хэши, kod, vhody, позиции/сделки/индексы) — строго; непрерывное (Шарп, доходности, ряды) — с допуском DOPUSK
+Дискретное (ключи, хэши, kod, sha кода и данных; vhody не сверяется — зависит от libm/SVML; позиции/сделки/индексы) — строго; непрерывное (Шарп, доходности, ряды) — с допуском DOPUSK
 (переменная окружения, по умолчанию 0 = побайтно; якорь — 1e-12 по Ж-131). Печатает: OK / FAIL с первым расхождением и его
 величиной; отдельно max |Δ| по непрерывным величинам — даже при OK. Выход: 0 — OK (пишется --otmetka), 1 — FAIL дискретного
 (стоп), 3 — FAIL только непрерывного (прислать max |Δ| дирижёру, счёт не запускать). Метрики не печатаются.
@@ -53,6 +53,7 @@ def main(argv=None) -> int:
             rez6, m6, kod6 = ekviv_v6.poschitat(t6, b6, a.procs)
             ekviv_v6.dobavit(moi, meta_moi, rez6, m6, kod6)
         meta_moi.update(ekviv.sreda_meta())
+    meta_moi.update(kod_sha=a.kod_sha, dannye_sha=a.dannye_sha)       # строго против эталона, если он их хранит (ekviv_sravn.SHA_VHODOV)
     r = ekviv_sravn.sravnit(eta, meta_eta, moi, meta_moi, dopusk)
     disk, pv = r["diskretnoe"], r["nepreryvnoe_pervoe"]
     nf = ekviv.net_fajla(moi)

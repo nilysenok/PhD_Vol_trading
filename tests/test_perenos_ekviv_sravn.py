@@ -62,7 +62,7 @@ def test_sdvig_indeksa_vyhoda_i_pole_stroki_i_hashi_diskretnye():
     moi = _nabor()
     moi["tochka__S1__5"]["disk"] = '{"status": "ok", "n": 8, "sharpe": null}'
     assert _sr(moi)["kod"] == 1
-    for k, v in (("kod", "k2"), ("vhody", {"S1": "v2"}), ("kub", {"S1": "c2"}), ("daty", {"S1": "d2"})):
+    for k, v in (("kod", "k2"), ("kub", {"S1": "c2"}), ("daty", {"S1": "d2"})):
         assert _sr(_nabor(), meta={**META, k: v})["kod"] == 1
 
 

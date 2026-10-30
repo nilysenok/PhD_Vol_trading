@@ -9,7 +9,10 @@ import numpy as np
 
 TOL_YAKOR = 1e-12
 YAKOR = ("yakor", "v6yakor")
-SHAPKA = ("kod", "vhody", "kub", "daty", "v6_vhody", "v6_kub", "v6_daty")      # v6_* — набор v6 (ekviv_v6.py); у старого эталона None == None
+# vhody / v6_vhody (хэш вычисленных float-массивов: SVML x86 ≠ libm arm64 в последнем бите) НЕ сверяются — как klyuch_sha; сырые входы и код
+# сверяются переносимо: sha манифеста данных и sha tar кода (kod_sha, dannye_sha) — строго, если они записаны в эталоне.
+SHAPKA = ("kod", "kub", "daty", "v6_kub", "v6_daty")      # v6_* — набор v6 (ekviv_v6.py); у старого эталона None == None
+SHA_VHODOV = ("kod_sha", "dannye_sha")
 
 
 def _x(s: str) -> float:
@@ -33,6 +36,9 @@ def _diskretnoe(eta, meta_eta, moi, meta_moi) -> list:
     bad = []
     for k in SHAPKA:
         if meta_eta.get(k) != meta_moi.get(k):
+            bad.append(f"{k}: Мак {meta_eta.get(k)}, здесь {meta_moi.get(k)}")
+    for k in SHA_VHODOV:
+        if meta_eta.get(k) is not None and meta_eta.get(k) != meta_moi.get(k):
             bad.append(f"{k}: Мак {meta_eta.get(k)}, здесь {meta_moi.get(k)}")
     if set(eta) != set(moi):
         bad.append(f"набор записей: нет здесь {sorted(set(eta) - set(moi))[:5]}, лишние {sorted(set(moi) - set(eta))[:5]}")
