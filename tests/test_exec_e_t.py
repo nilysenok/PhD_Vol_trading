@@ -127,10 +127,42 @@ def test_g6_net_bara_T_net_sdelki_bez_podstanovki():
     assert _run([0, 1, 1], days=d5).trades[0].entry_day == 2
 
 
-def test_net_povtornogo_vhoda_v_den_vyhoda_po_signalu():
-    r = _run([1, -1, -1])
-    assert r.trades[0].exit_day == 1 and r.trades[0].reason == "signal"
-    assert r.trades[1].entry_day == 2 and r.trades[1].side == -1               # вход 12:00 дня 1 раньше выхода 18:55 — запрещён
+def _razvorot_ok(r):
+    a, b = r.trades
+    px = _o(2, 720)
+    return (a.exit_day == b.entry_day == 2 and a.exit_bar == b.entry_bar == _bar(720) and a.exit_px == b.entry_px == px
+            and a.side == 1 and b.side == -1)
+
+
+def test_razvorot_v_T_dve_sdelki_komissii_x4():
+    """Решение дирижёра (класс B): сигнал в T противоположен позиции — старая закрыта по cena_T, новая открыта по ней же."""
+    r = _run([0, 1, -1])
+    assert len(r.trades) == 2 and _razvorot_ok(r)
+    assert r.cost.sum() == pytest.approx(4 * COMM)            # вход, выход разворота, вход, выход на конце окна
+    c1, px = _day(1).c[-1], _o(2, 720)
+    assert r.gross[1] == pytest.approx(np.log(px / c1) - np.log(_day(2).c[-1] / px))   # день 2: старая до T, новая после T
+    assert r.pos[2] == -1.0
+
+
+def test_razvorot_mutaciya_vyhod_na_close_lovitsya(monkeypatch):
+    monkeypatch.setattr(exec_e_t.RunT, "_scan", exec_e_run.Run._scan)          # разворот не в T, а выход на close (умолчание #899)
+    r = _run([0, 1, -1])
+    assert len(r.trades) == 1 or not _razvorot_ok(r)
+
+
+def test_sovpadayushchij_signal_nichego_ne_delaet_i_stop_do_T_ne_blokiruet_vhod():
+    assert len(_run([0, 1, 1]).trades) == 1
+    days = [_day(k) for k in range(3)]
+    days[1].l[0] = 100.0                                      # лонг (вход день 0) закрыт стопом на баре 0 дня 1, раньше T
+    r = _run([1, -1, -1], days=days, b=1.0)
+    assert r.trades[0].reason == "stop" and r.trades[0].exit_bar < _bar(720)
+    t = r.trades[1]
+    assert t.entry_day == 1 and t.side == -1 and t.entry_bar == _bar(720) and t.entry_px == _o(1, 720)
+
+
+def test_pokryto_tochka_s_vhod_T_ne_pokryta():
+    assert fast_etap1.pokryto({}) is True
+    assert fast_etap1.pokryto({"vhod_T": "12:00"}) is False
 
 
 def test_parametry_otkaz():
