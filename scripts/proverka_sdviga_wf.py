@@ -241,16 +241,21 @@ def main(argv=None) -> int:
     a = argparse.ArgumentParser()
     a.add_argument("--do", default="2021-12-31")
     a.add_argument("--main", default=None)
+    a.add_argument("--out", default=None, help="куда писать таблицу; для wf (--do позже 2021) обязателен")
     n = a.parse_args(argv)
+    out = Path(n.out) if n.out else OUT
     if pd.Timestamp(n.do).year >= 2022:
         from fastbt import period_v2
         period_v2.proverit_chtenie("wf", otmetka=period_v2.OTMETKA)
+        if not n.out:
+            print("FAIL: для wf нужен --out (таблицу wf не пишем в docs/tables рабочей копии)")
+            return 2
     from fastbt import daily_1850 as d18
     root = Path(n.main) if n.main else d18.default_main()
     t = sobrat(root, pd.Timestamp(n.do))
     t = itog(t)
     ok = bool(t["d1_itog"].all())
-    OUT.write_text(shapka(root, n.do, ok) + t.to_csv(index=False, float_format="%.4f"))
+    out.write_text(shapka(root, n.do, ok) + t.to_csv(index=False, float_format="%.4f"))
     print(t.reindex(columns=["ryad", "tip", "corr_k-2", "corr_k-1", "corr_k+0", "corr_k+1", "ok", "primechanie", "pcorr_fakt", "pcorr_kontrol", "ok2", "d1_itog", "d1_otmetka"]).to_string(index=False))
     return 0 if ok else 1
 
