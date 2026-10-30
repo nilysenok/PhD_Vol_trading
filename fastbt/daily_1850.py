@@ -156,6 +156,12 @@ def ensure(path: Path, main: Path | None = None) -> Path:
     return path
 
 
+def write_wf(d: pd.DataFrame, p: Path) -> None:
+    """Ряд wf + маркер, как у dev: ensure() видит готовый ряд и не затирает его."""
+    d.to_parquet(p, index=False)      # устаревший маркер при сбое не сойдётся с хэшем — ряд не готов
+    _atomic_write(marker(p), sha256(p).encode())
+
+
 def check_data_root(root: str | Path) -> Path:
     """--data-root: только копия НОВОГО ряда (ohlcv_daily_1850.parquet, даты ≤ 2021). Старый ряд
     ohlcv_daily_full (вечерняя сессия) — режим «как до Н6», Ж-019 п. 11 его запрещает. Возвращает путь к ряду."""
@@ -182,7 +188,7 @@ if __name__ == "__main__":
         d = build_wf()
         p = a.out or out_path()
         p.parent.mkdir(parents=True, exist_ok=True)
-        d.to_parquet(p, index=False)
+        write_wf(d, p)
         cal = calendar_extend(list(pd.read_csv(calendar_path())["date"]), d)
         cp = a.calendar_out or p.parents[2] / "calendar" / "torgovye_dni_moex.csv"
         cp.parent.mkdir(parents=True, exist_ok=True)
