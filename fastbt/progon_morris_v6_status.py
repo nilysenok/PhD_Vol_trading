@@ -39,5 +39,18 @@ def status_okna(sr, pt, period: str, fast: bool = False) -> tuple:
     return out, "ok"
 
 
+def nol_sdelok(Y, st: dict) -> tuple:
+    """(bool по точкам, сводка {chislo, ok, dolya}): точка ok с Y целиком 0 = 0 сделок во всех окнах Y (Д4). Доля — от точек ok."""
+    nol = (np.asarray(Y, dtype=np.float64) == 0).all(axis=1)
+    return nol, {"chislo": int(nol.sum()), "ok": int(st["ok"]), "dolya": round(float(nol.sum()) / st["ok"], 4) if st["ok"] else 0.0}
+
+
+def vnimanie(sid: str, nl: dict) -> str | None:
+    """Строка «ВНИМАНИЕ», если у Sk доля точек без сделок > mz.DOLYA_NOL (rc драйвера не меняется)."""
+    if nl["dolya"] <= mz.DOLYA_NOL:
+        return None
+    return f"ВНИМАНИЕ: {sid}: {nl['chislo']} из {nl['ok']} точек ok без сделок во всех окнах Y ({nl['dolya']:.0%} > {mz.DOLYA_NOL:.0%}) — Y по Sk малоинформативен"
+
+
 def y_okna(sr, pt, period: str, fast: bool = False) -> list:
     return status_okna(sr, pt, period, fast)[0]

@@ -20,7 +20,7 @@ import numpy as np
 
 from fastbt import canon_v5 as c5, canon_v6, morris_v6 as mv, morris_v6_zamorozka as mz, progon_server as srv, progon_sobol as ps
 from fastbt.progon_morris_v6_polnyj import zamknut
-from fastbt.progon_morris_v6_status import DO, NAN3, STATUSY, status_okna, y_okna  # noqa: F401 — re-export
+from fastbt.progon_morris_v6_status import DO, NAN3, STATUSY, nol_sdelok, status_okna, vnimanie, y_okna  # noqa: F401 — re-export
 
 CHUNK, YF = 50, "morris_y.jsonl"
 
@@ -43,7 +43,8 @@ def plan(sid: str, kub: dict, ox: list, r: int, mnozh: int, seed: int):
             memo[idx] = (None if c is None else json.dumps(c, sort_keys=True, default=str), c)
         return memo[idx]
 
-    ind, por = mv.traektorii_kanon(L, r, lambda idx: kanon(idx)[0], seed, mnozh)
+    baza = [i for i, (n, _, _) in enumerate(ox) if n in mv.OSI_DOPUSK]          # старт траектории: все допуски «выкл.»
+    ind, por = mv.traektorii_kanon(L, r, lambda idx: kanon(idx)[0], seed, mnozh, baza=baza)
     uniq, pts, nom = {}, [], np.empty(ind.shape[:2], dtype=np.int64)
     for m, t in np.ndindex(nom.shape):
         key, c = kanon(tuple(int(i) for i in ind[m, t]))
@@ -127,11 +128,12 @@ def spisok_osej(kub: dict, ox: list) -> list:
     return [{"os": n, "gruppa": nov.get(n) or gr.get(n, "v5"), "novaya": n in nov} for n, _, _ in ox]
 
 
-def zamorozka(kub: dict, ox: list, nom, por, Y) -> tuple:
-    """(stat по окнам, решение {ось: (заморозить, причина)}) по Y (уникальные точки, 3)."""
+def zamorozka(kub: dict, ox: list, nom, por, Y, nol=None) -> tuple:
+    """(stat по окнам, решение {ось: (заморозить, причина)}) по Y (уникальные точки, 3); nol — точки без сделок (Д4): пары из них не эффект."""
     stat = {}
     for w, okno in enumerate(mz.OKNA):
-        stat[okno] = mv.statistika(mv.effekty(Y[nom, w], nom, por))
+        stat[okno] = mv.statistika(mv.effekty(Y[nom, w], nom, por, None if nol is None else nol[nom]))
+        stat[okno]["n_nol"] = np.zeros(por.shape[1], int) if nol is None else mv.pary_nol(nom, por, nol[nom])
     res = mz.reshenie(spisok_osej(kub, ox), stat)
     return stat, zamknut(kub, res)
 
@@ -151,14 +153,16 @@ def strategiya(sid: str, a, out: Path, rz, r: int | None, mnozh: int = mv.MNOZH)
     otp = dict(kod=sr.kod, vhody=sr.vhody, kub_sha=sha(kp), sobol_seed=seed, period=rz.period, k3=False,
                setka="v6:" + hashlib.sha256(json.dumps([n for n, _, _ in ox]).encode()).hexdigest()[:16], sobol_klyuch=f"morris_r{r}_m{mnozh}")
     Y, ob, st = schitat(sid, pts, sr, rz, out, a.procs, otp, a.prodolzhit, getattr(a, "fast", True))
-    stat, res = zamorozka(kub, ox, nom, por, Y)
+    nol, nl = nol_sdelok(Y, st)
+    stat, res = zamorozka(kub, ox, nom, por, Y, nol)
     akt = mz.pometki(spisok_osej(kub, ox), stat)
     d = out / sid
     sh = dict(sid=sid, period=rz.period, r=r, k=len(ox), mnozh=mnozh, seed=seed, tochek=len(pts), oshibok=sum(ob.values()), statusy=st,
-              kod=sr.kod, kub_sha=otp["kub_sha"])
+              nol_sdelok=nl, kod=sr.kod, kub_sha=otp["kub_sha"])
     mz.zapisat_csv(d / f"morris_{sid}.csv", sh, spisok_osej(kub, ox), stat, res)
-    zam = mz.zapisat_yaml(d / "zamorozka.yaml", time.strftime("%Y-%m-%d"), dict(kub_sha=otp["kub_sha"], kod=sr.kod, csv=sha(d / f"morris_{sid}.csv")), res, st, akt)
-    return dict(tochek=len(pts), oshibok=sum(ob.values()), prichiny=ob, zamorozheno=zam, statusy=st, osi_akt=akt)
+    zam = mz.zapisat_yaml(d / "zamorozka.yaml", time.strftime("%Y-%m-%d"), dict(kub_sha=otp["kub_sha"], kod=sr.kod, csv=sha(d / f"morris_{sid}.csv")),
+                          res, st, akt, nl)
+    return dict(tochek=len(pts), oshibok=sum(ob.values()), prichiny=ob, zamorozheno=zam, statusy=st, osi_akt=akt, nol_sdelok=nl)
 
 
 def main(argv=None) -> int:
@@ -180,8 +184,11 @@ def main(argv=None) -> int:
     for sid in a.strategii.split(","):
         i = strategiya(sid, a, a.out, rz, a.r)
         print(f"{sid}: точек {i['tochek']}, статусы {i['statusy']}, исключений {i['oshibok']}, заморожено {len(i['zamorozheno'])}: {i['zamorozheno']}")
-        for p in (mz.MERTVAYA, mz.MALO):
+        for p in (mz.MERTVAYA, mz.NET_SDELOK, mz.MALO):
             print(f"  {p}: {[k for k, v in i['osi_akt'].items() if v['pometka'] == p]}")
+        nl = i.get("nol_sdelok")
+        if nl:
+            print(f"  nol_sdelok: {nl}" + (f"\n{vnimanie(sid, nl)}" if vnimanie(sid, nl) else ""))
         [print(f"  ошибка ×{k}: {m}") for m, k in i["prichiny"].items()]
     return 0
 
