@@ -5,8 +5,8 @@
 Панель: дни, где есть ≥ 8 тикеров (или все, если тикеров меньше); sigma = std лог-доходностей за 22 дня (≥ 15); ok — есть open 10:00
 следующего дня сетки (LAG). Ряды otnositelno: `otnositelno_v7.fon_ryad` на закрытиях панели для sektor и imoex.
 `sha` (Д5, № 7/38) — все ряды: 10-минутки каждого тикера, панель (закрытия, IMOEX, метки, σ, ok), фон otnositelno; входит в ключ точки.
-Чтение файлов — `zagruzit(period, tikery)`: polnaya = границы wf (2014-06…2026-02-28), только при отметке снятого замка
-(`period_v2.proverit_chtenie`); граница чтения строго < конец + 1 день. Сборка `sobrat` файлов не читает (синтетика в тестах).
+Чтение файлов — `zagruzit(period, tikery)`: polnaya — только при отметке снятого замка (`period_v2.proverit_chtenie`); граница чтения
+строго < min(конец + 1 день, DO_AKTA = 2025-01-01): до акта владельца (Ж-155) строки ≥ 2025 не читаются, в том числе индексы. Сборка `sobrat` файлов не читает (синтетика в тестах).
 """
 from __future__ import annotations
 
@@ -23,7 +23,8 @@ from fastbt.golaya_v7_isp import korpsobytiya
 from fastbt.signals.v7_kross import Panel
 
 POLNAYA = "polnaya"
-PERIOD_FAJL = {POLNAYA: "wf"}          # polnaya читается по границам и замку wf
+PERIOD_FAJL = {POLNAYA: "wf"}          # замок polnaya — отметка владельца, как у wf
+DO_AKTA = pd.Timestamp("2025-01-01")   # исключительно: до акта снятия замка 2025+ (Ж-155 п. 1) строки ≥ 2025-01-01 не читаются
 REZHIMY_OTN = ("sektor", "imoex")
 MIN_TIK = 8
 
@@ -105,8 +106,14 @@ def zagruzit(period: str, tikery, main: Path | None = None, fajly=None) -> Istoc
     from fastbt import istochniki_v6 as iv6
     if period not in PERIOD_FAJL and period != "wf":
         raise NotImplementedError(f"период {period!r}: источники v7 читаются только для polnaya (wf)")
-    p = PERIOD_FAJL.get(period, period)
-    f = fajly or iv6.Fajly(iv6.konec(p), main, p)
+    if period == POLNAYA:              # до акта владельца (Ж-155) — строго < 2025-01-01 на чтении, а не по границам wf (2026-03-01)
+        period_v2.proverit_chtenie(POLNAYA, otmetka=period_v2.OTMETKA)
+        end = min(period_v2.PERIODY[POLNAYA].konec + pd.Timedelta(days=1), DO_AKTA)
+        f = fajly or iv6.Fajly(end, main, None)      # period=None: indeks() читает по f.end, а не по granitsa("wf")
+        p = POLNAYA
+    else:
+        p = PERIOD_FAJL.get(period, period)
+        f = fajly or iv6.Fajly(iv6.konec(p), main, p)
     raw = {t: f.akcii(t) for t in tikery}
     b = f.indeks("imoex")
     if b is None:
