@@ -168,3 +168,53 @@ def test_mutatsiya_zakrytaya_stroka_primenena_lovitsya(tmp_path, monkeypatch):
     monkeypatch.setattr(fdata, "CORP", _korp_s_zakrytymi(tmp_path, "applied"))
     ev = fdata.corp_actions("MTSS")
     assert len(ev) == 2 and (ev["factor"] == 0.87).all()      # такая ошибка видна: тест выше упал бы
+
+
+# ---- граница wf в загрузчике: только при отметке снятого замка ----
+
+def _bez_otmetki(monkeypatch):
+    import functools
+    from fastbt import period_v2 as pv
+    monkeypatch.setattr(pv, "proverit_chtenie", functools.partial(pv.proverit_chtenie, otmetka=Path("/net/otmetki.json")))
+
+
+def _wf_chitaet(mod, p):
+    r = mod.sobytiya_na("2023-02-10", "SBER", path=p, period="wf")
+    return [x["tip"] for x in r] == ["cbr_zasedanie_klyuchevaya_stavka"]
+
+
+def test_wf_s_otmetkoj_chitaet_2022_2026(tmp_path, wf_text):
+    p = tmp_path / "e.csv"
+    p.write_text(wf_text, encoding="utf-8")
+    assert _wf_chitaet(pit, p)
+    assert pit.sobytiya_na("2026-02-13", path=p, period="wf")
+    with pytest.raises(PermissionError):
+        pit.sobytiya_na("2026-03-01", path=p, period="wf")
+
+
+def test_wf_bez_otmetki_otkaz_i_prochie_periody_END(tmp_path, wf_text, monkeypatch):
+    p = tmp_path / "e.csv"
+    p.write_text(wf_text, encoding="utf-8")
+    _bez_otmetki(monkeypatch)
+    with pytest.raises(PermissionError):
+        pit.sobytiya_na("2023-02-10", "SBER", path=p, period="wf")
+    with pytest.raises(PermissionError):
+        pit.sobytiya_na("2023-02-10", "SBER", path=p)
+    with pytest.raises(PermissionError):
+        pit.sobytiya_na("2023-02-10", "SBER", path=p, period="train4")
+
+
+def test_mutatsiya_granitsa_wf_bez_otmetki_lovitsya(tmp_path, wf_text, monkeypatch):
+    from types import ModuleType
+    src = Path(pit.__file__).read_text(encoding="utf-8")
+    old = "    period_v2.proverit_chtenie(\"wf\")\n"
+    assert old in src
+    m = ModuleType("mut")
+    m.__file__ = pit.__file__
+    exec(compile(src.replace(old, "", 1), "mut", "exec"), m.__dict__)
+    p = tmp_path / "e.csv"
+    p.write_text(wf_text, encoding="utf-8")
+    _bez_otmetki(monkeypatch)
+    with pytest.raises(PermissionError):
+        pit.sobytiya_na("2023-02-10", "SBER", path=p, period="wf")      # настоящий код отказывает
+    assert _wf_chitaet(m, p)                                            # мутант читает без отметки -> проверка выше его ловит
