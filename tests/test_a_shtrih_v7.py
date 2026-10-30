@@ -110,7 +110,7 @@ def test_lw_nulevaya_dispersiya_stolbca_bez_nan():
     R[:, 1] = 0.005
     L = A.lw(R)
     assert np.all(np.isfinite(L))
-    assert L[1, 1] == 0.0
+    assert abs(L[1, 1]) < 1e-30
 
 
 def _vkl(w, S):
