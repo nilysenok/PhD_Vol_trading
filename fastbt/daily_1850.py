@@ -22,33 +22,41 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import logging
 import os
 from pathlib import Path
 
 import pandas as pd
 import pyarrow.parquet as pq
 
+from fastbt.kalendar_moex import CALENDAR_MOEX, moex_sessions  # noqa: F401  (имена доступны как D.*)
+
 END = pd.Timestamp("2022-01-01")          # исключительно: только 2018–2021
 OPEN_MIN = 9 * 60 + 50                    # 09:50 — как rv_1850_noquar
 CUT_MIN = 18 * 60 + 50                    # 18:50 — бар с началом ≥ 18:50 в день не входит
 END_WF = pd.Timestamp("2026-03-01")       # wf (Ж-136): исключительно, т.е. по 2026-02-28; читать только при отметке владельца
-WEEKEND_FROM = pd.Timestamp("2025-01-01")  # с этой даты суббота/воскресенье не входят (решение 30.10: только будние сессии);
-#                                            до неё переносные рабочие субботы остаются, как в ряду ≤ 2021
+WEEKEND_FROM = pd.Timestamp("2025-01-01")  # с неё день входит только как основная сессия календаря MOEX (Ж-142 п. 5:
+#                                            рабочие субботы — да, ДСВД и праздники — нет); до неё правило прежнее
 COLS =["ticker", "date", "open", "high", "low", "close", "volume"]
+log = logging.getLogger(__name__)
 
 
 def default_main() -> Path:
     return Path(os.environ.get("FASTBT_MAIN", "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading"))
 
 
-def aggregate(bars: pd.DataFrame, ticker: str, cut_min: int = CUT_MIN) -> pd.DataFrame:
+def aggregate(bars: pd.DataFrame, ticker: str, cut_min: int = CUT_MIN, sessions=None) -> pd.DataFrame:
     """Дневные OHLCV из 10-минуток (колонки timestamp, open, high, low, close, volume).
     Нижняя граница — константа модуля OPEN_MIN (тесты-мутации подменяют её в памяти)."""
     b = bars.sort_values("timestamp")
     mod = b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute
     b = b[(mod >= OPEN_MIN) & (mod < cut_min)]
-    b = b[~((b["timestamp"] >= WEEKEND_FROM) & (b["timestamp"].dt.dayofweek >= 5))]
-    g =b.groupby(b["timestamp"].dt.normalize(), sort=True)
+    day = b["timestamp"].dt.normalize()
+    out_cal = (day >= WEEKEND_FROM) & ~day.isin(moex_sessions() if sessions is None else sessions)
+    if out_cal.any():
+        log.info("%s: дней с барами без основной сессии в календаре MOEX (не включены): %d", ticker, day[out_cal].nunique())
+    b, day = b[~out_cal], day[~out_cal]
+    g =b.groupby(day, sort=True)
     out = pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
                         "close": g["close"].last(), "volume": g["volume"].sum().astype("int64")})
     out.index.name = "date"
@@ -93,30 +101,16 @@ def build_wf(main: Path | None = None, tickers: list[str] | None = None, end: pd
 
 
 def calendar_extend(old_days: list, daily: pd.DataFrame) -> list:
-    """Календарь торговых дней: прежние строки (≤ их последнего дня) без изменений + дни ряда после них.
-    Новые дни — только будни ≥ WEEKEND_FROM (дни, когда торговался хотя бы один тикер); выходных нет."""
+    """Календарь: прежние строки без изменений + дни ряда после них; ≥ WEEKEND_FROM — только основные сессии MOEX."""
     old = sorted(pd.Timestamp(x) for x in old_days)
     new = sorted(set(pd.to_datetime(daily["date"])) - set(old))
-    new = [d for d in new if d > old[-1] and not (d >= WEEKEND_FROM and d.dayofweek >= 5)]
+    ses = moex_sessions()
+    new = [d for d in new if d > old[-1] and not (d >= WEEKEND_FROM and d not in ses)]
     return old + new
 
 
 def calendar_path(main: Path | None = None) -> Path:
     return (main or default_main()) / "data" / "calendar" / "torgovye_dni_moex.csv"
-
-
-def excluded_weekend_days(main: Path, tickers: list[str], end: pd.Timestamp = END_WF) -> pd.DataFrame:
-    """Сколько выходных дней ≥ WEEKEND_FROM исключено по тикерам (дни с барами в [09:50; 18:50) Сб/Вс)."""
-    src = main / "moex_discovery" / "data" / "raw" / "candles_10m"
-    rows = {}
-    for t in tickers:
-        b = pq.read_table(src / f"{t}.parquet", filters=[("timestamp", ">=", WEEKEND_FROM.to_pydatetime()),
-                                                          ("timestamp", "<", end.to_pydatetime())]).to_pandas()
-        mod = b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute
-        b = b[(mod >= OPEN_MIN) & (mod < CUT_MIN) & (b["timestamp"].dt.dayofweek >= 5)]
-        days = b["timestamp"].dt.normalize().drop_duplicates()
-        rows[t] = days.groupby(days.dt.year).size()
-    return pd.DataFrame(rows).fillna(0).astype(int).T
 
 
 def out_path(main: Path | None = None) -> Path:
