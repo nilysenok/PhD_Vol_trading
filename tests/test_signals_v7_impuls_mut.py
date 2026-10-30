@@ -76,7 +76,9 @@ def test_exit_na_poslednem_bare_ryada():
 def test_strength_raven_modulyu_signala():
     b = lenta({DAY: (S_17_18, 90.0)})
     ss = gen(b, "S10", [tk("T", "18:00")])
-    assert ss.sig[0, DAY] == -1 and ss.strength[0, DAY] == 1.0 and ss.strength.dtype == np.float64
+    # плоская лента (ATR = 0): сила не определена → strength 0 и флаг sila_neopr (V7-5, Д4), сторона прежняя
+    assert ss.sig[0, DAY] == -1 and ss.strength[0, DAY] == 0.0 and ss.strength.dtype == np.float64
+    assert ss.extra["sila_neopr"][0, DAY] and not np.isnan(ss.strength).any()
 
 
 def test_tochki_ne_vliyayut_drug_na_druga():
