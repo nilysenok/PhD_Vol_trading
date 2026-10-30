@@ -85,6 +85,30 @@ def test_ten_vnutri_osnovnoj_kopii_zapreshchen(kit):
         W.build_shadow(main, novye, main / "data" / "shadow", out)
 
 
+def test_mjagkij_kontrol_ne_ostanavlivaet_no_ne_glotaet_drugoe():
+    def stop(*a):
+        raise SystemExit("контроль не пройден")
+
+    def boom(*a):
+        raise ValueError("не SystemExit")
+    assert W._mjagkij(stop)(1) is None
+    with pytest.raises(ValueError):
+        W._mjagkij(boom)(1)
+
+
+def test_mutaciya_staraya_s_novymi_matricami_ne_obkhoditsya(kit, tmp_path, monkeypatch):
+    """--staraya разрешает старые входы только когда --novye = основная копия; иначе сверка хэшей остаётся в силе."""
+    main, novye, shadow, out = kit
+    monkeypatch.setenv("FASTBT_MAIN", str(shadow))
+    W.build_shadow(main, novye, shadow, out)
+    p = shadow / "data" / "regen" / "features_pit_v3.parquet"
+    p.unlink()
+    p.symlink_to(main / "data" / "regen" / "features_pit_v3.parquet")
+    monkeypatch.setattr("sys.argv", ["x", "run", "--staraya", "--osnova", str(main), "--novye", str(novye), "--shadow", str(shadow), "--out", str(out)])
+    with pytest.raises(SystemExit, match="старая база"):
+        W.main()
+
+
 def test_otkaz_bez_fastbt_main(kit, monkeypatch):
     main, _, shadow, _ = kit
     monkeypatch.delenv("FASTBT_MAIN", raising=False)

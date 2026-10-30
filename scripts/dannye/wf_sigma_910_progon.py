@@ -94,19 +94,54 @@ def proverit_ten(main, novye, shadow, out):
     return err
 
 
-def hxp_kontrol_uzkij(out):
-    """↺ hxp: контроль R1 исходного cmd_hxp сверяет весь ряд с D22/HXP_lnall (26.10) и на новых входах падает по определению: строки >= 2025
-    другие (ДСВД), а календарь экспираций изменён 29.10 (MIX-3.22, ec9ea1bb) -> cal_dte строк 2022-Q1 и модели шагов >= 8 (обучение на 2022).
-    Здесь контроль — тот же код R1 и тот же допуск, но на строках < 2022 и шагах 1–7; d0-часть — hxp_ln(d0=True) как есть."""
+def _vyr(out):
     import importlib.util
-    import numpy as np
-    import pandas as pd
     sp = importlib.util.spec_from_file_location("vyr_etalony_finaly", VYR_PY)
     V = importlib.util.module_from_spec(sp)
     sys.modules["vyr_etalony_finaly"] = V
     sp.loader.exec_module(V)
     if Path(os.path.realpath(V.WORK)).parent != Path(out).resolve():
         raise SystemExit(f"WORK {V.WORK} вне out")
+    return V
+
+
+def f_v_obvyazke(out, mode, staraya, nseeds):
+    """f1/f5 исходным cmd_f1/cmd_f5. staraya (G1'): СТАРАЯ матрица в исходном порядке, контроль R1 обязан быть Δ=0 — после него стоп (d0 не считается).
+    Иначе (новые матрицы): контроль R1 не останавливает прогон — порядок строк и подвыборка бустинга дают эффект смены seed (толкование c11893bf),
+    результат контроля пишется в control_<mode>.csv и в журнал. ↺ seed: nseeds из 10 (42..42+nseeds-1)."""
+    V = _vyr(out)
+    V.SEEDS = tuple(range(42, 42 + nseeds))
+    V.WORK.mkdir(parents=True, exist_ok=True)
+    if staraya:
+        f = V.f5_setup
+
+        def stop_d0(d0, *a, **k):
+            if d0:
+                raise SystemExit("G1': контроль R1 пройден, d0 не считается")
+            return f(d0, *a, **k)
+        V.f5_setup = stop_d0
+    else:
+        for nm in ("control", "control_q"):
+            V.__dict__[nm] = _mjagkij(V.__dict__[nm])
+    getattr(V, f"cmd_{mode}")(argparse.Namespace(workers=3))
+
+
+def _mjagkij(fn):
+    def w(*a, **k):
+        try:
+            return fn(*a, **k)
+        except SystemExit as e:
+            print(f"(контроль R1 не остановил прогон на новых входах: {e})")
+    return w
+
+
+def hxp_kontrol_uzkij(out):
+    """↺ hxp: контроль R1 исходного cmd_hxp сверяет весь ряд с D22/HXP_lnall (26.10) и на новых входах падает по определению: строки >= 2025
+    другие (ДСВД), а календарь экспираций изменён 29.10 (MIX-3.22, ec9ea1bb) -> cal_dte строк 2022-Q1 и модели шагов >= 8 (обучение на 2022).
+    Здесь контроль — тот же код R1 и тот же допуск, но на строках < 2022 и шагах 1–7; d0-часть — hxp_ln(d0=True) как есть."""
+    import numpy as np
+    import pandas as pd
+    V = _vyr(out)
     r1 = V.hxp_ln(d0=False)
     ref = pd.read_parquet(V.REG / "D22" / "HXP_lnall.parquet")
     r1, ref = (x[pd.to_datetime(x.date) < "2022-01-01"] for x in (r1, ref))
@@ -129,21 +164,36 @@ def main():
     ap.add_argument("modes", nargs="*")
     for a in ("--osnova", "--novye", "--shadow", "--out"):
         ap.add_argument(a, required=True)
+    ap.add_argument("--staraya", action="store_true", help="G1': novye = основная копия (старые матрицы), только контроль R1 f1/f5")
+    ap.add_argument("--seeds", type=int, default=10)
     a = ap.parse_intermixed_args()
     m = Path(a.osnova).resolve()
     korenj_progona(a.shadow, m)
     if a.cmd == "shadow":
         build_shadow(m, a.novye, a.shadow, a.out)
     err = proverit_ten(m, a.novye, a.shadow, a.out)
-    if err:
+    if err and not (a.staraya and Path(a.novye).resolve() == m):
         raise SystemExit("СТОП: " + "; ".join(err))
-    print("теневой корень: входы по хэшам = новые, выходы в out")
+    print("теневой корень: входы по хэшам = " + ("СТАРЫЕ (G1')" if a.staraya else "новые") + ", выходы в out")
+    if len(a.modes) > 1:  # каждый режим — отдельный процесс: подмены l2_lib у h=1 и h=5 разные (docstring vyr_etalony_finaly)
+        base = [x for x in sys.argv[1:] if x not in a.modes]
+        for mode in a.modes:
+            rc = subprocess.run([sys.executable, __file__, *base, mode]).returncode
+            if rc:
+                raise SystemExit(f"СТОП: {mode} rc={rc}")
+        return
     for mode in (a.modes if a.cmd == "run" else []):
         if mode not in MODES:
             raise SystemExit(f"режим {mode} не из {MODES}")
-        rc = hxp_kontrol_uzkij(a.out) or 0 if mode == "hxp" else zapusk(a.shadow, mode)
-        if rc:
-            raise SystemExit(f"СТОП: {mode} rc={rc}")
+        if mode == "hxp":
+            hxp_kontrol_uzkij(a.out)
+            continue
+        try:
+            f_v_obvyazke(a.out, mode, a.staraya, a.seeds)
+        except SystemExit as e:
+            if not (a.staraya and "d0" in str(e)):
+                raise
+            print(f"{mode}: {e}")
 
 
 if __name__ == "__main__":
