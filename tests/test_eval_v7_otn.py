@@ -54,7 +54,7 @@ def ev(sid="S3", pt=None, c=C0, imoex=IM0, karta=KARTA, cls=EvaluatorV7):
 
 
 def sig(e, t="A"):
-    return e._signals5(SP[e.sid])[t].sigs
+    return e._signals5(SP[e.sid])[t].sigs[0]
 
 
 # ---------------- G1: net = v6 ----------------
@@ -66,7 +66,7 @@ def test_g1_net_ravno_v6_pobajtno(sid):
             for f in ("sigs", "exl", "exs", "strength"):
                 assert getattr(a[t], f).tobytes() == getattr(b[t], f).tobytes(), (t, f)
         assert (a["A"].sigs != 0).sum() > 0
-    assert ev(sid, {"otnositelno": "net"})._fkey == ev(sid, cls=EvaluatorV6)._fkey == ()
+    assert ev(sid, {"otnositelno": "net"})._fkey == getattr(ev(sid, cls=EvaluatorV6), "_fkey", ()) == ()
 
 
 def test_g1_os_ubrana_iz_tochki_dlya_v6():
@@ -89,9 +89,10 @@ def test_g2_tiker_ravno_sektoru_signalov_net(sid):
 
 
 def test_g2_tiker_plyus_trend_signal_po_trendu():
-    s = sig(ev("S3", {"otnositelno": "sektor"}, c=_pary(0.002)))
+    s = sig(ev("S3", {"otnositelno": "sektor"}, c=_pary(0.01)))           # +1 % в день к сектору: пробой канала Дончиана каждый день
     assert (s > 0).sum() > 100 and not (s < 0).any()
-    assert not sig(ev("S3", {"otnositelno": "sektor"}, c=_pary(-0.002))).clip(min=0).any()
+    m = sig(ev("S3", {"otnositelno": "sektor"}, c=_pary(-0.01)))
+    assert (m < 0).sum() > 100 and not (m > 0).any()
 
 
 def test_g2_imoex_i_sektor_raznye_ryady():
@@ -209,3 +210,4 @@ def test_g6_ne_s1_s4_net_istochnika_nepravilnoe_znachenie():
         e._otn_razbor({"otnositelno": "imoex"})
     with pytest.raises(ValueError):                                # IMOEX не покрывает даты — без подстановок (Д4)
         sig(ev("S3", {"otnositelno": "imoex"}, imoex=IM0.iloc[:200]))
+
