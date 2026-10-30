@@ -12,6 +12,8 @@ import functools
 import math
 from dataclasses import dataclass, field
 
+import numpy as np
+
 from fastbt.canon_v5 import NET, SIGNAL, TREND, edinica, load_kub
 from fastbt.etap1_eval import YAKOR
 from fastbt.etap1_eval_v2 import NOVYE
@@ -41,6 +43,19 @@ class Razbor:
     m_sily: str = "1"
     rang_tip: str = "tikernyj"
     rang: bool = False                     # нужен ли ранг силы (m ≠ 1, тейк от силы, безубыток от ранга)
+
+
+def rang_nan_u_vseh(sigs, rangi) -> bool:
+    """Тренд × m_sily ≠ 1: есть старты сигнала (дни, где сигнал ≠ 0 и ≠ вчерашнему), но ни у одного нет конечного ранга — вес всех сделок 0
+    (`_ves`: nan_to_num), Y = 0 при ненулевом числе сделок. Для любого rang_tip (tikernyj, srednee, obshchiy), не только tikernyj."""
+    est = False
+    for sig, rg in zip(sigs, rangi):
+        sig = np.asarray(sig, float)
+        start = (sig != 0) & (sig != np.r_[0.0, sig[:-1]])
+        est |= bool(start.any())
+        if np.isfinite(np.asarray(rg, float)[start]).any():
+            return False
+    return est
 
 
 def chisla(v) -> tuple:

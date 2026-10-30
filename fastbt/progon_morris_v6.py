@@ -20,7 +20,7 @@ import numpy as np
 
 from fastbt import canon_v5 as c5, canon_v6, morris_v6 as mv, morris_v6_zamorozka as mz, progon_server as srv, progon_sobol as ps
 from fastbt.progon_morris_v6_polnyj import zamknut
-from fastbt.progon_morris_v6_status import DO, NAN3, STATUSY, baza_bez_sdelok, itog_nol, nol_sdelok, status_okna, vnimanie, y_okna  # noqa: F401 — re-export
+from fastbt.progon_morris_v6_status import DO, NAN3, STATUSY, baza_bez_sdelok, itog_nol, nol_sdelok, ocenka, status_okna, vnimanie, y_okna  # noqa: F401 — re-export
 
 CHUNK, YF = 50, "morris_y.jsonl"
 
@@ -56,19 +56,23 @@ def plan(sid: str, kub: dict, ox: list, r: int, mnozh: int, seed: int):
     return nom, por, pts
 
 
-def _kusok(zad: tuple) -> tuple:
-    sid, a, b = zad
-    sr, ys, ob, st = ps.sreda(sid, ps._W["rz"]), [], {}, dict.fromkeys(STATUSY, 0)
+def _kusok6(zad: tuple) -> tuple:
+    sid, a, b = zad                                            # (a, b, Y, причины, статусы, число сделок по точкам: NaN — неизвестно)
+    sr, ys, ns, ob, st = ps.sreda(sid, ps._W["rz"]), [], [], {}, dict.fromkeys(STATUSY, 0)
     for pt in ps._W["pts"][sid][a:b]:
         try:
-            y, s = status_okna(sr, pt, ps._W["rz"].period, ps._W.get("fast", False))
-            ys.append(y)
+            y, s, n = ocenka(sr, pt, ps._W["rz"].period, ps._W.get("fast", False))
+            ys.append(y), ns.append(n)
         except Exception as e:  # noqa: BLE001 — сбой точки не роняет прогон: Y = NaN, причины с числом — в итоге
-            ys.append(list(NAN3))
+            ys.append(list(NAN3)), ns.append(float("nan"))
             s, m = "oshibka", f"{type(e).__name__}: {e}"[:120]
             ob[m] = ob.get(m, 0) + 1
         st[s] += 1
-    return a, b, ys, ob, st
+    return a, b, ys, ob, st, ns
+
+
+def _kusok(zad: tuple) -> tuple:
+    return _kusok6(zad)[:5]                                    # прежний контракт куска (без числа сделок) — для тестов
 
 
 def _prochitat(f: Path, start: int) -> list:
@@ -101,23 +105,22 @@ def schitat(sid: str, pts: list, sr, rz, out: Path, procs: int, otp: dict, prodo
             try:
                 with cf.ProcessPoolExecutor(procs, mp_context=fk, initializer=ps._init,
                                             initargs=(dict(rz=rz, pts={sid: pts}, fast=fast), fk.Value("i", 0))) as ex, open(d / YF, "a") as f:
-                    for a, b, ys, o, s in ex.map(_kusok, zad):          # по порядку: чекпоинт — непрерывный префикс
-                        f.write(json.dumps({"a": a, "b": b, "y": ys, "ob": o, "st": s}) + "\n"), f.flush()
-                        srv.pisat_chekpoint(d, otp, b - 1, n)
-                        rows.append({"a": a, "b": b, "y": ys, "ob": o, "st": s})
+                    for a, b, ys, o, s, ns in ex.map(_kusok6, zad):     # по порядку: чекпоинт — непрерывный префикс
+                        rows.append({"a": a, "b": b, "y": ys, "ob": o, "st": s, "ns": ns})
+                        f.write(json.dumps(rows[-1]) + "\n"), f.flush(), srv.pisat_chekpoint(d, otp, b - 1, n)
             finally:
                 gc.unfreeze()
                 ps.fabrika = staryj
-        Y = np.full((n, 3), np.nan)
+        Y, NS = np.full((n, 3), np.nan), np.full(n, np.nan)         # старый checkpoint без "ns" → NaN
         for e in rows:
-            Y[e["a"]:e["b"]] = np.array(e["y"], dtype=np.float64)
+            Y[e["a"]:e["b"]], NS[e["a"]:e["b"]] = e["y"], e.get("ns", np.nan)
         ob, st = {}, dict.fromkeys(STATUSY, 0)
         for e in rows:
             for m, k in e.get("ob", {}).items():
                 ob[m] = ob.get(m, 0) + k
             for m, k in e.get("st", {}).items():
                 st[m] += k
-        return Y, ob, st
+        return Y, ob, st, NS
     finally:
         zm.close()
 
@@ -152,9 +155,9 @@ def strategiya(sid: str, a, out: Path, rz, r: int | None, mnozh: int = mv.MNOZH)
     kp = canon_v6.KUB6 / f"kub_{sid}.yaml"
     otp = dict(kod=sr.kod, vhody=sr.vhody, kub_sha=sha(kp), sobol_seed=seed, period=rz.period, k3=False,
                setka="v6:" + hashlib.sha256(json.dumps([n for n, _, _ in ox]).encode()).hexdigest()[:16], sobol_klyuch=f"morris_r{r}_m{mnozh}")
-    Y, ob, st = schitat(sid, pts, sr, rz, out, a.procs, otp, a.prodolzhit, getattr(a, "fast", True))
-    nol, nl = nol_sdelok(Y, st)
-    bz = baza_bez_sdelok(nol, nom)
+    Y, ob, st, ns = schitat(sid, pts, sr, rz, out, a.procs, otp, a.prodolzhit, getattr(a, "fast", True))
+    nol, nl = nol_sdelok(Y, st, ns)
+    bz = baza_bez_sdelok(nol, nom, ns)
     stat, res = zamorozka(kub, ox, nom, por, Y, nol)
     akt = mz.pometki(spisok_osej(kub, ox), stat)
     d = out / sid

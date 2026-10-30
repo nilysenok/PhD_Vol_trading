@@ -21,7 +21,11 @@ OSI_DOPUSK = ("hurst_th", "naklon", "vol_regime_max", "tihiy_othod", "sektor_tre
               "szhatie", "rv_perevorot", "obyom_anom", "rezhim", "vn_uslovie", "pauza_porog")
 # Фильтры v5 (раздел `filtr` кубов v5, 0 = «выкл.»): тоже «И»; в базе траектории тоже «выкл.» (толкование 30.10 17:40, расследование dopuski §0).
 OSI_FILTR_V5 = ("adx_th", "atr_lo", "vol_th", "rsi_th", "mom_n", "dow", "squeeze_pct")
-OSI_BAZA = OSI_DOPUSK + OSI_FILTR_V5
+# Оси, значения которых включают требование ранга (eval_v5_osi.razbor: r.rang): m_sily ≠ "1" (lin, kvadr), bezubytok = rang:*, tejk = sila:*.
+# Ранг у редкого сигнала NaN (MIN_NABL = 20 прошлых кандидатов) → кандидат не входит / вес 0: база с рангом даёт Y = 0 (расследование s6nol, 30.10).
+# Первое значение всех трёх — без ранга ("1", "net", "net"); в базе траектории они «не требует ранга» (индекс 0), ранг включается на своём шаге.
+OSI_RANG = ("m_sily", "bezubytok", "tejk")
+OSI_BAZA = OSI_DOPUSK + OSI_FILTR_V5 + OSI_RANG
 
 
 def indeks(j, L):
