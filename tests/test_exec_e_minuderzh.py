@@ -1,9 +1,7 @@
 """V7-4 (Ж-153 §1.1): минимальное удержание контртренда 2 дня — Params.min_uderzhanie (fastbt/exec_e_minuderzh.py).
 Выход по сигналу и по τ раньше 2-го дня удержания (дней от дня входа) переносится на 2-й; стоп и тейк — с первого дня.
-Синтетика с известным ответом, без сети. Отсчёт — от дня ВХОДА (не сигнала): вход по close дня d, лимитом d+1, в T того же дня.
-G1 выкл. (0, 1) = v6 побайтно; G2 известный ответ; G3 мутация «стоп/тейк тоже переносятся»; G4 мутация «перенос тренду»;
-G5 мутации «от дня сигнала» / «вход всегда d+1» (лимит d+1 и вход в T).
-python3 -m pytest tests/test_exec_e_minuderzh.py -q"""
+Синтетика, без сети. Отсчёт — от дня ВХОДА (close d, лимит d+1, T того же дня). G1 выкл. (0, 1) = v6 побайтно; G2 известный ответ;
+G3 мутация «стоп/тейк переносятся»; G4 «перенос тренду»; G5 «от дня сигнала» / «вход всегда d+1». pytest tests/test_exec_e_minuderzh.py -q"""
 from types import SimpleNamespace
 
 import numpy as np
@@ -11,7 +9,9 @@ import pytest
 
 from fastbt import exec_e, exec_e_minuderzh as M, exec_e_run
 from fastbt.etap1_eval import params_of
-from fastbt.etap1_eval_v2 import NOVYE, EvaluatorV2
+from fastbt.etap1_eval_v2 import NOVYE
+from fastbt.eval_v6 import EvaluatorV6
+from fastbt.eval_v7 import EvaluatorV7
 from fastbt.exec_e_types import Day, Params
 
 SG = 0.01
@@ -29,8 +29,8 @@ def _run(sig, p, days=None, **kw):
     return exec_e.run("X", days, np.array(sig), np.full(len(days), SG), p, **kw)
 
 
-def _tr(res, n=0):
-    t = res.trades[n]
+def _tr(res):
+    t = res.trades[0]
     return t.exit_day, t.exit_px, t.reason
 
 
@@ -44,29 +44,12 @@ def test_g2_signal_dnya_1_perenositsya_na_den_2(side):
     assert len(r2.trades) == 1 and r2.trades[0].entry_day == 0
 
 
-def test_g2_signal_dnya_2_ne_menyaetsya():
-    assert _tr(_run([1, 1, 0, 0, 0], Params(min_uderzhanie=2))) == (2, 102.0, "signal")
-
-
 def test_g2_tau_1_vyhod_na_den_2_a_tau_3_ne_menyaetsya():
     s = [1] * 6
+    assert _tr(_run([1, 1, 0, 0, 0], Params(min_uderzhanie=2))) == (2, 102.0, "signal")      # сигнал дня 2 — без переноса
     assert _tr(_run(s, Params(tau=1))) == (1, 101.0, "vremya")
     assert _tr(_run(s, Params(tau=1, min_uderzhanie=2))) == (2, 102.0, "vremya")
     assert _tr(_run(s, Params(tau=3, min_uderzhanie=2))) == (3, 103.0, "vremya")
-
-
-def test_g2_stop_dnya_1_vyhod_dnya_1():
-    days = [_day(100.0), _day(101.0, lo=90.0, o=101.0)] + [_day(100.0 + i) for i in range(2, 5)]
-    p = dict(b=2.0)                                           # S = 100·(1 − 2·0,01) = 98; гэп/пробой дня 1 → цена min(open, S) = 98
-    assert _tr(_run([1] * 5, Params(**p), days)) == (1, 98.0, "stop")
-    assert _tr(_run([1] * 5, Params(min_uderzhanie=2, **p), days)) == (1, 98.0, "stop")
-
-
-def test_g2_tejk_dnya_1_vyhod_dnya_1():
-    days = [_day(100.0), _day(101.0, hi=110.0, o=101.0)] + [_day(100.0 + i) for i in range(2, 5)]
-    p = dict(a=2.0)                                           # T = 100·(1 + 2·0,01) = 102; high дня 1 = 110 → цена max(open, T) = 102
-    assert _tr(_run([1] * 5, Params(**p), days)) == (1, 102.0, "take")
-    assert _tr(_run([1] * 5, Params(min_uderzhanie=2, **p), days)) == (1, 102.0, "take")
 
 
 def test_g2_signal_vernulsya_na_den_2_pozitsiya_derzhitsya():
@@ -104,27 +87,23 @@ def test_g1_novoe_pole_otdayot_tochku_etalonu():
 
 
 # ---------- G3: стоп и тейк не переносятся ----------
-def _stop_off_early(real):
+def _off_early(real, i):
+    """Мутация: уровень i (0 — стоп, 1 — тейк) в первые 2 дня снят, т. е. «переехал на день 2»."""
     def f(s, j):
-        S, T = real(s, j)
-        return (None, T) if j - s.ej < 2 else (S, T)
+        lv = list(real(s, j))
+        lv[i] = None if j - s.ej < 2 else lv[i]
+        return tuple(lv)
     return f
 
 
-def _take_off_early(real):
-    def f(s, j):
-        S, T = real(s, j)
-        return (S, None) if j - s.ej < 2 else (S, T)
-    return f
-
-
-@pytest.mark.parametrize("mut,kw,hi_lo,ожидание", [
-    (_stop_off_early, dict(b=2.0), dict(lo=90.0), (1, 98.0, "stop")),
-    (_take_off_early, dict(a=2.0), dict(hi=110.0), (1, 102.0, "take"))])
-def test_g3_mutatsiya_stop_tejk_perenosyatsya_lovitsya(monkeypatch, mut, kw, hi_lo, ожидание):
-    days = [_day(100.0), _day(101.0, o=101.0, **hi_lo)] + [_day(100.0 + i) for i in range(2, 5)]
+@pytest.mark.parametrize("i,kw,hi_lo,ожидание", [
+    (0, dict(b=2.0), dict(lo=90.0), (1, 98.0, "stop")), (1, dict(a=2.0), dict(hi=110.0), (1, 102.0, "take"))])
+def test_g3_mutatsiya_stop_tejk_perenosyatsya_lovitsya(monkeypatch, i, kw, hi_lo, ожидание):
+    """G2: стоп S = 100·(1 − 2·0,01) = 98 (пробой дня 1 → min(open, S)), тейк T = 102 (high 110 → max(open, T)): день 1 и с константой, и без."""
+    days = [_day(100.0), _day(101.0, o=101.0, **hi_lo)] + [_day(100.0 + k) for k in range(2, 5)]
+    assert _tr(_run([1] * 5, Params(**kw), days)) == ожидание
     assert _tr(_run([1] * 5, Params(min_uderzhanie=2, **kw), days)) == ожидание          # правка проходит
-    monkeypatch.setattr(exec_e_run.Run, "_levels", mut(exec_e_run.Run._levels))
+    monkeypatch.setattr(exec_e_run.Run, "_levels", _off_early(exec_e_run.Run._levels, i))
     assert _tr(_run([1] * 5, Params(min_uderzhanie=2, **kw), days)) != ожидание          # мутация падает
 
 
@@ -133,24 +112,35 @@ def _pt():
     return dict(k_s="net", tau="net", vhod="rynok", R="net", k_tr="net", bezubytok="net", proverka="bary")
 
 
-def _params(sid, vz):
-    ev = SimpleNamespace(inp=SimpleNamespace(tick={"X": 0.01}), comm=0.0004, sid=sid)
-    return EvaluatorV2._params(ev, _pt(), "X", 5.0, False, dict(NOVYE), vz)
+@pytest.fixture(autouse=True)
+def _bez_dannyh(monkeypatch):
+    monkeypatch.setattr(EvaluatorV6, "__init__", lambda self, *a, **k: None)       # EvaluatorV7 без данных: нужен только _params
+
+
+def _ev(sid, n):
+    ev = EvaluatorV7(sid, None, {}, min_uderzhanie=n)
+    ev.inp, ev.comm, ev._fk = SimpleNamespace(tick={"X": 0.01}), 0.0004, ()
+    return ev
+
+
+def _params(sid, n):
+    return _ev(sid, n)._params(_pt(), "X", 5.0, False, dict(NOVYE), {})
 
 
 @pytest.mark.parametrize("sid,ozhid", [("S1", 2), ("S2", 2), ("S5", 2), ("S6", 2), ("S3", 0), ("S4", 0)])
 def test_g4_konstanta_tolko_kontrtrendu(sid, ozhid):
-    assert _params(sid, {"min_uderzhanie": 2}).min_uderzhanie == ozhid
+    assert _params(sid, 2).min_uderzhanie == ozhid
 
 
 @pytest.mark.parametrize("sid", ["S1", "S3"])
-def test_g4_bez_konstanty_params_kak_v6(sid):
-    assert _params(sid, {}) == params_of(_pt(), 0.01, 5.0, False, 0.0004)
+def test_g4_bez_konstanty_params_i_klyuch_kak_v6(sid):
+    assert _params(sid, 0) == params_of(_pt(), 0.01, 5.0, False, 0.0004) and _ev(sid, 0)._fkey == ()
+    assert _ev(sid, 2)._fkey == ((M.KLYUCH, 2),) * (sid == "S1")        # Д5: константа — в ключе кэша контртренда; тренду ключ прежний
 
 
 def test_g4_mutatsiya_perenos_tomu_zhe_trendu_lovitsya(monkeypatch):
     monkeypatch.setattr(M, "kontrtrend", lambda sid: True)
-    assert _params("S3", {"min_uderzhanie": 2}).min_uderzhanie == 2       # мутация действует; тест выше на ней упал бы
+    assert _params("S3", 2).min_uderzhanie == 2                          # мутация действует; тест выше на ней упал бы
     with pytest.raises(AssertionError):
         test_g4_konstanta_tolko_kontrtrendu("S3", 0)
 
@@ -187,13 +177,12 @@ def _t_dni():
 def test_g5_vhod_v_T_otschet_ot_dnya_vhoda(monkeypatch):
     days, cena = _t_dni()
     sig, p = [0, 1, 0, 0, 0, 0], Params(vhod_T="12:00", min_uderzhanie=2)
-    go = lambda: _run(sig, p, days, cena_T=cena)          # noqa: E731
-    r = go()
+    r = _run(sig, p, days, cena_T=cena)
     assert (r.trades[0].entry_day, r.trades[0].d_sig) == (1, 1)
     assert r.trades[0].exit_day == 3                            # вход день 1 (в T), выход по сигналу дня 2 → день 3
     assert _run(sig, Params(vhod_T="12:00"), days, cena_T=cena).trades[0].exit_day == 2
     monkeypatch.setattr(M, "rano", _ot_dnya_signala(1))        # мутация «вход всегда d+1»: в T считает на день меньше
-    assert go().trades[0].exit_day == 4
+    assert _run(sig, p, days, cena_T=cena).trades[0].exit_day == 4
 
 
 def test_g5_tau_ot_dnya_vhoda_pri_t_vyhod_1500(monkeypatch):

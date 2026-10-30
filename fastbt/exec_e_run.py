@@ -11,6 +11,7 @@ from fastbt.exec_e_rules import (atr_for_day, be_reached, ext_next, limit_level,
                                  take_hit, take_level, tejk_level, v_bare)
 from fastbt.exec_e_piv import enter_levels, piv_check, piv_on
 from fastbt.exec_e_types import Trade
+from fastbt import exec_e_minuderzh as minuderzh
 from fastbt.exec_e_v6 import V6, chast_pair, v5_check, v6_check, v6_on
 from fastbt.exec_e_zayavki import prodlit, reenter
 
@@ -259,7 +260,7 @@ class Run(V6):
             if s.tr is not None:
                 s._exit(i, j, nb - 1, close, s.xo["reason"])
             s.xo = None
-        if s.tr is not None:                        # сигнал дня входа тоже: sig[d+1] != стороне → выход по close d+1
+        if s.tr is not None and not minuderzh.rano(s, j):     # V7-4: min_uderzhanie — до N-го дня от входа signal/vremya не проверяются
             if s.p.tau is not None and j - s.ej >= s.p.tau and j > s.ej:
                 s._leave(i, j, nb, close, "vremya")
             elif s._sig_exit(i):

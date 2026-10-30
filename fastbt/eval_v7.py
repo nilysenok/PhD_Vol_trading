@@ -14,11 +14,12 @@ S8–S12 (S7 не входит, Ж-153 п. 2) — фабрики `fabrika(ist7) 
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 import pandas as pd
 
+from fastbt import exec_e_minuderzh as minuderzh
 from fastbt.eval_v6 import EvaluatorV6
 from fastbt.signals import v7_impuls, v7_kross
 from fastbt.signals.interface import WARMUP, SignalSet, register_family
@@ -101,12 +102,19 @@ for _s in ("S8", "S9"):
 
 
 class EvaluatorV7(EvaluatorV6):
-    def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=None, ist=None, rol: str | None = None, ist7: Ist7 | None = None):
+    min_uder = 0                                                    # V7-4: умолчание на уровне класса (объекты без __init__ в тестах)
+
+    def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=None, ist=None, rol: str | None = None, ist7: Ist7 | None = None, min_uderzhanie: int = 0):
         super().__init__(PROXY.get(sid, sid), inp, base_p, commission, fdr, ist, rol)
         self.sid, self.proxy, self.ist7 = sid, PROXY.get(sid, sid), ist7 or Ist7()
+        self.min_uder = minuderzh.dney(sid, min_uderzhanie)         # V7-4: константа куба, только контртренд; 0 — путь v6
 
     def _k7(self) -> tuple:
-        return (("v7", self.sid, self.ist7.sha),) if self.sid in SEMYI_V7 else ()
+        return ((("v7", self.sid, self.ist7.sha),) if self.sid in SEMYI_V7 else ()) + (((minuderzh.KLYUCH, self.min_uder),) if self.min_uder else ())
+
+    def _params(self, *a):
+        p = super()._params(*a)
+        return replace(p, min_uderzhanie=self.min_uder) if self.min_uder else p
 
     @property
     def _fkey(self) -> tuple:
