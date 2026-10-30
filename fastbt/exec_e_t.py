@@ -4,7 +4,8 @@
 (open 10-мин бара, начинающегося в T; для 18:40 — close этого бара, аукцион). Позиция открывается на баре T (для 18:40 — на
 последнем 5-мин баре 10-мин бара), стоп и тейк — со следующего бара; в 18:40 баров после входа нет. Нет 5-мин бара T в данных
 или cena[i] нечисловая — сделки в этот день нет (без подстановки, Д4); сигнал живёт, решение — на следующий день.
-Если в этот день позицию закрыл выход по сигналу/сроку на close (позже T), входа нет: вход в T раньше выхода — перекрытие во времени.
+Разворот (решение дирижёра, класс B): сигнал в T противоположен позиции — старая закрывается по cena_T, новая открывается по ней же.
+Совпадающий сигнал — ничего. Стоп/тейк старой позиции до T (бар < T) входа в T не мешают; выход на close дня после T (срок, нет бара T) — мешает.
 Комиссия, дивиденды, плата за шорт, конец окна — как у Run (exec_e_run): тот же _enter, _exit, step (Д7)."""
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import math
 import numpy as np
 
 from fastbt.exec_e2 import Run2
+from fastbt.exec_e_types import Day
 from fastbt.t_reshenie_v7 import AUKCION, _minuty
 
 STEP10 = 10                               # длина бара цены T, минуты
@@ -50,16 +52,34 @@ class RunT(Run2):
         super().__init__(*a, **kw)
         s.cena, s.tm = np.asarray(cena, float), _minuty(s.p.vhod_T)
 
+    def _tbar(s, i):
+        """(бар T дня i, цена) или None: нет 5-мин бара T или цена нечисловая — в T сделок нет (Д4)."""
+        b, px = bar_vhoda(s.days[i], s.tm), s.cena[i]
+        return None if b is None or not math.isfinite(px) else (b, float(px))
+
+    def _scan(s, i, j, d, b0):
+        """Утро дня: позиция с прошлых дней, сигнал в T противоположен ей — стоп и тейк только по барам до T, затем разворот
+        в T: выход по cena_T (причина "razvorot", комиссия выхода) и вход в противоположную сторону по ней же (_decide)."""
+        t = s._tbar(i) if b0 == 0 and s.tr.entry_day < i and s.p.exit_signal and s.dir(i) == -s.tr.side else None
+        if t is None:
+            return super()._scan(i, j, d, b0)
+        b, px = t
+        super()._scan(i, j, Day(d.o[:b], d.h[:b], d.l[:b], d.c[:b], False, d.t[:b]), 0)
+        if s.tr is not None:
+            s._exit(i, j, b, px, "razvorot")
+
     def _decide(s, i, j, close, nb):
         sg, sd = s.sigma[i], s.dir(i)
         if s.tr is not None or s.order is not None or s.blocked or not sd or not np.isfinite(sg):
             return
-        if s.last_x is not None and s.last_x.exit_day == i:      # выход на close дня i позже T: входа в T нет
+        t = s._tbar(i)
+        if t is None:
             return
-        d, px = s.days[i], s.cena[i]
-        b = bar_vhoda(d, s.tm)
-        if b is None or not math.isfinite(px):
+        b, px = t
+        x = s.last_x
+        if x is not None and x.exit_day == i and x.reason != "razvorot" and x.exit_bar >= b:   # выход в T или позже — вход перекрыл бы его
             return
+        d = s.days[i]
         s._enter(i, j, b, float(px), b, sg, i, sd)
         S, _ = s._levels(j)
         if not s._stop_vhoda(i, j, d, b, float(px), S):
