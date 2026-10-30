@@ -27,5 +27,7 @@ PRAVILA = [
     # справочник без колонки дат (тикер → сектор; даты только в accessed и as-of в source_url, ≤ 2021-12-30): «без дат»
     ("docs/issledovaniya/2026-10-27_sektory.csv", "csv", (), ("accessed",), "fastbt/e1_sektor.py, fazy.py (сектор тикера)"),
     ("docs/issledovaniya/2026-10-28_sostav_imoex.csv", "csv", ("date_eff", "known_from"), (), "fastbt/vselennaya.py SOSTAV"),
+    ("docs/issledovaniya/div_sverka_svod.csv", "csv", ("record_date", "announce_pit"), (),
+     "fastbt/sobytiya_e1.py SVOD_CSV, istochniki_v6.div_otfiltrovan (свод Д8: без него ось дивидендов v6 закрыта)"),
     ("docs/issledovaniya/2026-10-28_sostav_sektorov.csv", "csv", ("дата_ребалансировки",), (), "состав секторных индексов"),
 ]

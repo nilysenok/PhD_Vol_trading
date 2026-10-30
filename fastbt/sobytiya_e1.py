@@ -95,6 +95,15 @@ def load_div_svod(path=SVOD_CSV) -> pd.DataFrame | None:
                          "announce_date": pd.to_datetime(s["announce_pit"]), "dps_rub": s["dps_rub"]})
 
 
+def trebovat_svod(path=None) -> None:
+    """Старт прогона v6: нет свода Д8 — отказ ДО счёта (иначе точки с sob_tip ∋ div падают ValueError посреди цепочки)."""
+    p = Path(path or SVOD_CSV)
+    if not p.exists():
+        raise SystemExit(f"нет свода Д8 {p}: ось дивидендов v6 закрыта, точки sob_tip ∋ div дадут ошибку. На сервере свод едет "
+                         "усечённой копией манифеста (data/server_2021/docs/issledovaniya/div_sverka_svod.csv -> накладка в корень "
+                         "кода razvernut.sh); пересоберите perenos/ с коммита, где свод есть в docs/server/manifest_dannyh_2021.tsv")
+
+
 def sobytiya(dates, tickers, cbr: pd.DataFrame, div: pd.DataFrame | None = None,
              div_verified: bool = False, do: int = 1, posle: int = 0) -> dict:
     """{имя: {тикер: bool}}; net — ничего не запрещает. div/cbr_div — только при div_verified (таблица по Д8)."""
