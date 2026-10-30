@@ -1,0 +1,364 @@
+# статус: разработка train4 2016–2019, потолок (in-sample), после аудита
+# kod: база 11a41ad0, diag_v6_pravila.py sha256 d9996d05b8c6d342
+# vhody: kub_S*.yaml + canon_v6.py sha256 6ebcaa6e9dd39eb7405a1d9acffdb77a0f9e8fbbadaaac60a6fc98dab14d0c0f
+# формат: "v": "1"
+sid,os,razdel_kuba,gruppa,spornaya,prichina
+S1,ma_tip,signal,signal,net,
+S1,ma_window,signal,signal,net,
+S1,dev_tip,signal,signal,net,
+S1,z_entry,signal,signal,net,
+S1,z_exit,signal,signal,net,
+S1,adx_th,filtr,kontekst,net,
+S1,atr_lo,filtr,kontekst,net,
+S1,vol_th,filtr,kontekst,net,
+S1,rsi_th,filtr,kontekst,net,
+S1,mom_n,filtr,kontekst,net,
+S1,dow,filtr,kontekst,net,
+S1,squeeze_pct,filtr,kontekst,net,
+S1,k_e,vhod,ispolnenie,net,
+S1,T,vhod,ispolnenie,da,вход ли это (исполнение) или параметр тренда: в плане не названа; по разделу vhod — исполнение
+S1,reentry,vhod,ispolnenie,net,
+S1,stop_nach,vyhod,vyhod_risk,net,
+S1,tejk,vyhod,vyhod_risk,net,
+S1,trail,vyhod,vyhod_risk,net,
+S1,bezubytok,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S1,stop_v_plyus,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S1,tau,vyhod,vyhod_risk,net,
+S1,chast,vyhod,vyhod_risk,net,
+S1,pir,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S1,smena,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S1,razmer_tip,vyhod,vyhod_risk,net,
+S1,m_sily,vyhod,vyhod_risk,net,
+S1,rang_tip,vyhod,vyhod_risk,net,
+S1,rel_signal,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S1,dlit,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S1,asim,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S1,norm,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S1,hurst_th,kontekst,kontekst,net,
+S1,naklon,kontekst,kontekst,net,
+S1,vol_regime_max,kontekst,kontekst,net,
+S1,tihiy_othod,kontekst,kontekst,net,
+S1,sektor_trend,kontekst,kontekst,net,
+S1,shirina,kontekst,kontekst,net,
+S1,ma_n,kontekst,kontekst,net,
+S1,porog_shiriny,kontekst,kontekst,net,
+S1,relf_napr,kontekst,kontekst,net,
+S1,relf_k,kontekst,kontekst,net,
+S1,relf_okno,kontekst,kontekst,net,
+S1,relf_bench,kontekst,kontekst,net,
+S1,sob_tip,kontekst,kontekst,net,
+S1,sob_do,kontekst,kontekst,net,
+S1,sob_posle,kontekst,kontekst,net,
+S1,post_shok,kontekst,kontekst,net,
+S1,rv_perevorot,kontekst,kontekst,net,
+S1,obyom_anom,kontekst,kontekst,net,
+S1,rezhim,kontekst,kontekst,net,
+S1,vn_uslovie,kontekst,kontekst,net,
+S1,vn_faktor,kontekst,kontekst,net,
+S1,tf,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал (таймфрейм сигнала)"
+S1,sigma_ist,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск (источник σ для уровней)"
+S1,ed_lim,ispolnenie,ispolnenie,net,
+S1,zhizn,ispolnenie,ispolnenie,net,
+S1,lestnica,ispolnenie,ispolnenie,net,
+S1,gap,ispolnenie,ispolnenie,net,
+S1,t_vyhod,ispolnenie,ispolnenie,da,"время выхода: исполнение, но задаёт и риск удержания"
+S1,vyhod_lim,ispolnenie,ispolnenie,net,
+S1,f_neisp,ispolnenie,ispolnenie,net,
+S1,time_decay,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск"
+S1,pauza_porog,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S1,pauza_okno,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S2,ma_tip,signal,signal,net,
+S2,bb_window,signal,signal,net,
+S2,bb_std,signal,signal,net,
+S2,podtv,signal,signal,net,
+S2,adx_th,filtr,kontekst,net,
+S2,atr_lo,filtr,kontekst,net,
+S2,vol_th,filtr,kontekst,net,
+S2,rsi_th,filtr,kontekst,net,
+S2,mom_n,filtr,kontekst,net,
+S2,dow,filtr,kontekst,net,
+S2,squeeze_pct,filtr,kontekst,net,
+S2,k_e,vhod,ispolnenie,net,
+S2,T,vhod,ispolnenie,da,вход ли это (исполнение) или параметр тренда: в плане не названа; по разделу vhod — исполнение
+S2,reentry,vhod,ispolnenie,net,
+S2,stop_nach,vyhod,vyhod_risk,net,
+S2,tejk,vyhod,vyhod_risk,net,
+S2,trail,vyhod,vyhod_risk,net,
+S2,bezubytok,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S2,stop_v_plyus,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S2,tau,vyhod,vyhod_risk,net,
+S2,chast,vyhod,vyhod_risk,net,
+S2,pir,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S2,smena,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S2,razmer_tip,vyhod,vyhod_risk,net,
+S2,m_sily,vyhod,vyhod_risk,net,
+S2,rang_tip,vyhod,vyhod_risk,net,
+S2,rel_signal,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S2,dlit,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S2,asim,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S2,norm,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S2,hurst_th,kontekst,kontekst,net,
+S2,naklon,kontekst,kontekst,net,
+S2,vol_regime_max,kontekst,kontekst,net,
+S2,tihiy_othod,kontekst,kontekst,net,
+S2,sektor_trend,kontekst,kontekst,net,
+S2,shirina,kontekst,kontekst,net,
+S2,ma_n,kontekst,kontekst,net,
+S2,porog_shiriny,kontekst,kontekst,net,
+S2,relf_napr,kontekst,kontekst,net,
+S2,relf_k,kontekst,kontekst,net,
+S2,relf_okno,kontekst,kontekst,net,
+S2,relf_bench,kontekst,kontekst,net,
+S2,sob_tip,kontekst,kontekst,net,
+S2,sob_do,kontekst,kontekst,net,
+S2,sob_posle,kontekst,kontekst,net,
+S2,post_shok,kontekst,kontekst,net,
+S2,rv_perevorot,kontekst,kontekst,net,
+S2,obyom_anom,kontekst,kontekst,net,
+S2,rezhim,kontekst,kontekst,net,
+S2,vn_uslovie,kontekst,kontekst,net,
+S2,vn_faktor,kontekst,kontekst,net,
+S2,tf,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал (таймфрейм сигнала)"
+S2,sigma_ist,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск (источник σ для уровней)"
+S2,ed_lim,ispolnenie,ispolnenie,net,
+S2,zhizn,ispolnenie,ispolnenie,net,
+S2,lestnica,ispolnenie,ispolnenie,net,
+S2,gap,ispolnenie,ispolnenie,net,
+S2,t_vyhod,ispolnenie,ispolnenie,da,"время выхода: исполнение, но задаёт и риск удержания"
+S2,vyhod_lim,ispolnenie,ispolnenie,net,
+S2,f_neisp,ispolnenie,ispolnenie,net,
+S2,time_decay,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск"
+S2,pauza_porog,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S2,pauza_okno,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S3,okno,signal,signal,net,
+S3,podtv,signal,signal,net,
+S3,adx_th,filtr,kontekst,net,
+S3,atr_lo,filtr,kontekst,net,
+S3,vol_th,filtr,kontekst,net,
+S3,rsi_th,filtr,kontekst,net,
+S3,mom_n,filtr,kontekst,net,
+S3,dow,filtr,kontekst,net,
+S3,k_e,vhod,ispolnenie,net,
+S3,stop_nach,vyhod,vyhod_risk,net,
+S3,tejk,vyhod,vyhod_risk,net,
+S3,trail,vyhod,vyhod_risk,net,
+S3,tau,vyhod,vyhod_risk,net,
+S3,chast,vyhod,vyhod_risk,net,
+S3,razmer_tip,vyhod,vyhod_risk,net,
+S3,m_sily,vyhod,vyhod_risk,net,
+S3,rang_tip,vyhod,vyhod_risk,net,
+S3,rel_signal,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S3,dlit,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S3,asim,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S3,naklon,kontekst,kontekst,net,
+S3,sektor_trend,kontekst,kontekst,net,
+S3,shirina,kontekst,kontekst,net,
+S3,ma_n,kontekst,kontekst,net,
+S3,porog_shiriny,kontekst,kontekst,net,
+S3,relf_napr,kontekst,kontekst,net,
+S3,relf_k,kontekst,kontekst,net,
+S3,relf_okno,kontekst,kontekst,net,
+S3,relf_bench,kontekst,kontekst,net,
+S3,sob_tip,kontekst,kontekst,net,
+S3,sob_do,kontekst,kontekst,net,
+S3,sob_posle,kontekst,kontekst,net,
+S3,post_shok,kontekst,kontekst,net,
+S3,szhatie,kontekst,kontekst,net,
+S3,rv_perevorot,kontekst,kontekst,net,
+S3,obyom_anom,kontekst,kontekst,net,
+S3,rezhim,kontekst,kontekst,net,
+S3,vn_uslovie,kontekst,kontekst,net,
+S3,vn_faktor,kontekst,kontekst,net,
+S3,tf,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал (таймфрейм сигнала)"
+S3,sigma_ist,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск (источник σ для уровней)"
+S3,t_vyhod,ispolnenie,ispolnenie,da,"время выхода: исполнение, но задаёт и риск удержания"
+S3,vhod_tip,ispolnenie,ispolnenie,da,"тип входа (стоп-заявка/подтверждение): исполнение, но влияет и на сигнал"
+S3,time_decay,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск"
+S3,pauza_porog,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S3,pauza_okno,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S3,bezubytok,ispolnenie,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S3,stop_v_plyus,ispolnenie,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S3,pir,ispolnenie,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S3,T,ispolnenie,ispolnenie,da,вход ли это (исполнение) или параметр тренда: в плане не названа; по разделу vhod — исполнение
+S3,reentry,ispolnenie,ispolnenie,net,
+S3,smena,ispolnenie,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S4,period,signal,signal,net,
+S4,mnozh,signal,signal,net,
+S4,adx_th,filtr,kontekst,net,
+S4,atr_lo,filtr,kontekst,net,
+S4,vol_th,filtr,kontekst,net,
+S4,rsi_th,filtr,kontekst,net,
+S4,mom_n,filtr,kontekst,net,
+S4,dow,filtr,kontekst,net,
+S4,k_e,vhod,ispolnenie,net,
+S4,stop_nach,vyhod,vyhod_risk,net,
+S4,tejk,vyhod,vyhod_risk,net,
+S4,trail,vyhod,vyhod_risk,net,
+S4,tau,vyhod,vyhod_risk,net,
+S4,chast,vyhod,vyhod_risk,net,
+S4,razmer_tip,vyhod,vyhod_risk,net,
+S4,m_sily,vyhod,vyhod_risk,net,
+S4,rang_tip,vyhod,vyhod_risk,net,
+S4,rel_signal,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S4,dlit,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S4,asim,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S4,norm,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S4,naklon,kontekst,kontekst,net,
+S4,sektor_trend,kontekst,kontekst,net,
+S4,shirina,kontekst,kontekst,net,
+S4,ma_n,kontekst,kontekst,net,
+S4,porog_shiriny,kontekst,kontekst,net,
+S4,relf_napr,kontekst,kontekst,net,
+S4,relf_k,kontekst,kontekst,net,
+S4,relf_okno,kontekst,kontekst,net,
+S4,relf_bench,kontekst,kontekst,net,
+S4,sob_tip,kontekst,kontekst,net,
+S4,sob_do,kontekst,kontekst,net,
+S4,sob_posle,kontekst,kontekst,net,
+S4,post_shok,kontekst,kontekst,net,
+S4,szhatie,kontekst,kontekst,net,
+S4,rv_perevorot,kontekst,kontekst,net,
+S4,obyom_anom,kontekst,kontekst,net,
+S4,rezhim,kontekst,kontekst,net,
+S4,vn_uslovie,kontekst,kontekst,net,
+S4,vn_faktor,kontekst,kontekst,net,
+S4,tf,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал (таймфрейм сигнала)"
+S4,sigma_ist,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск (источник σ для уровней)"
+S4,t_vyhod,ispolnenie,ispolnenie,da,"время выхода: исполнение, но задаёт и риск удержания"
+S4,vhod_tip,ispolnenie,ispolnenie,da,"тип входа (стоп-заявка/подтверждение): исполнение, но влияет и на сигнал"
+S4,time_decay,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск"
+S4,pauza_porog,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S4,pauza_okno,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S4,bezubytok,ispolnenie,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S4,stop_v_plyus,ispolnenie,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S4,pir,ispolnenie,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S4,T,ispolnenie,ispolnenie,da,вход ли это (исполнение) или параметр тренда: в плане не названа; по разделу vhod — исполнение
+S4,reentry,ispolnenie,ispolnenie,net,
+S4,smena,ispolnenie,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S5,pivot_type,signal,signal,net,
+S5,pivot_period,signal,signal,net,
+S5,uroven,signal,signal,net,
+S5,atr_filtr,signal,signal,da,"раздел signal в S5, по смыслу фильтр; оставлена в сигнале по разделу"
+S5,filter_set,signal,signal,da,"раздел signal в S5/S6, по смыслу фильтры; оставлена в сигнале по разделу"
+S5,adx_th,filtr,kontekst,net,
+S5,atr_lo,filtr,kontekst,net,
+S5,vol_th,filtr,kontekst,net,
+S5,rsi_th,filtr,kontekst,net,
+S5,mom_n,filtr,kontekst,net,
+S5,dow,filtr,kontekst,net,
+S5,squeeze_pct,filtr,kontekst,net,
+S5,k_e,vhod,ispolnenie,net,
+S5,T,vhod,ispolnenie,da,вход ли это (исполнение) или параметр тренда: в плане не названа; по разделу vhod — исполнение
+S5,reentry,vhod,ispolnenie,net,
+S5,stop_nach,vyhod,vyhod_risk,net,
+S5,tejk,vyhod,vyhod_risk,net,
+S5,trail,vyhod,vyhod_risk,net,
+S5,bezubytok,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S5,stop_v_plyus,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S5,tau,vyhod,vyhod_risk,net,
+S5,chast,vyhod,vyhod_risk,net,
+S5,pir,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S5,smena,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S5,razmer_tip,vyhod,vyhod_risk,net,
+S5,m_sily,vyhod,vyhod_risk,net,
+S5,rang_tip,vyhod,vyhod_risk,net,
+S5,rel_signal,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S5,dlit,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S5,asim,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S5,hurst_th,kontekst,kontekst,net,
+S5,naklon,kontekst,kontekst,net,
+S5,vol_regime_max,kontekst,kontekst,net,
+S5,tihiy_othod,kontekst,kontekst,net,
+S5,sektor_trend,kontekst,kontekst,net,
+S5,shirina,kontekst,kontekst,net,
+S5,ma_n,kontekst,kontekst,net,
+S5,porog_shiriny,kontekst,kontekst,net,
+S5,relf_napr,kontekst,kontekst,net,
+S5,relf_k,kontekst,kontekst,net,
+S5,relf_okno,kontekst,kontekst,net,
+S5,relf_bench,kontekst,kontekst,net,
+S5,sob_tip,kontekst,kontekst,net,
+S5,sob_do,kontekst,kontekst,net,
+S5,sob_posle,kontekst,kontekst,net,
+S5,post_shok,kontekst,kontekst,net,
+S5,rv_perevorot,kontekst,kontekst,net,
+S5,obyom_anom,kontekst,kontekst,net,
+S5,rezhim,kontekst,kontekst,net,
+S5,vn_uslovie,kontekst,kontekst,net,
+S5,vn_faktor,kontekst,kontekst,net,
+S5,tf,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал (таймфрейм сигнала)"
+S5,sigma_ist,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск (источник σ для уровней)"
+S5,ed_lim,ispolnenie,ispolnenie,net,
+S5,zhizn,ispolnenie,ispolnenie,net,
+S5,lestnica,ispolnenie,ispolnenie,net,
+S5,gap,ispolnenie,ispolnenie,net,
+S5,t_vyhod,ispolnenie,ispolnenie,da,"время выхода: исполнение, но задаёт и риск удержания"
+S5,vyhod_lim,ispolnenie,ispolnenie,net,
+S5,f_neisp,ispolnenie,ispolnenie,net,
+S5,time_decay,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск"
+S5,piv_buf,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск"
+S5,pauza_porog,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S5,pauza_okno,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S6,vwap_window,signal,signal,net,
+S6,dev_mult,signal,signal,net,
+S6,dir_bias,signal,signal,net,
+S6,filter_set,signal,signal,da,"раздел signal в S5/S6, по смыслу фильтры; оставлена в сигнале по разделу"
+S6,adx_th,filtr,kontekst,net,
+S6,atr_lo,filtr,kontekst,net,
+S6,vol_th,filtr,kontekst,net,
+S6,rsi_th,filtr,kontekst,net,
+S6,mom_n,filtr,kontekst,net,
+S6,dow,filtr,kontekst,net,
+S6,squeeze_pct,filtr,kontekst,net,
+S6,k_e,vhod,ispolnenie,net,
+S6,T,vhod,ispolnenie,da,вход ли это (исполнение) или параметр тренда: в плане не названа; по разделу vhod — исполнение
+S6,reentry,vhod,ispolnenie,net,
+S6,stop_nach,vyhod,vyhod_risk,net,
+S6,tejk,vyhod,vyhod_risk,net,
+S6,trail,vyhod,vyhod_risk,net,
+S6,bezubytok,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S6,stop_v_plyus,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S6,tau,vyhod,vyhod_risk,net,
+S6,chast,vyhod,vyhod_risk,net,
+S6,pir,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S6,smena,vyhod,vyhod_risk,da,в S3/S4 лежит в разделе исполнения; везде — выход-риск
+S6,razmer_tip,vyhod,vyhod_risk,net,
+S6,m_sily,vyhod,vyhod_risk,net,
+S6,rang_tip,vyhod,vyhod_risk,net,
+S6,rel_signal,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S6,dlit,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S6,asim,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S6,norm,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал"
+S6,hurst_th,kontekst,kontekst,net,
+S6,naklon,kontekst,kontekst,net,
+S6,vol_regime_max,kontekst,kontekst,net,
+S6,tihiy_othod,kontekst,kontekst,net,
+S6,sektor_trend,kontekst,kontekst,net,
+S6,shirina,kontekst,kontekst,net,
+S6,ma_n,kontekst,kontekst,net,
+S6,porog_shiriny,kontekst,kontekst,net,
+S6,relf_napr,kontekst,kontekst,net,
+S6,relf_k,kontekst,kontekst,net,
+S6,relf_okno,kontekst,kontekst,net,
+S6,relf_bench,kontekst,kontekst,net,
+S6,sob_tip,kontekst,kontekst,net,
+S6,sob_do,kontekst,kontekst,net,
+S6,sob_posle,kontekst,kontekst,net,
+S6,post_shok,kontekst,kontekst,net,
+S6,rv_perevorot,kontekst,kontekst,net,
+S6,obyom_anom,kontekst,kontekst,net,
+S6,rezhim,kontekst,kontekst,net,
+S6,vn_uslovie,kontekst,kontekst,net,
+S6,vn_faktor,kontekst,kontekst,net,
+S6,tf,kontekst,signal,da,"раздел куба — контекст, по плану — сигнал (таймфрейм сигнала)"
+S6,sigma_ist,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск (источник σ для уровней)"
+S6,ed_lim,ispolnenie,ispolnenie,net,
+S6,zhizn,ispolnenie,ispolnenie,net,
+S6,lestnica,ispolnenie,ispolnenie,net,
+S6,gap,ispolnenie,ispolnenie,net,
+S6,t_vyhod,ispolnenie,ispolnenie,da,"время выхода: исполнение, но задаёт и риск удержания"
+S6,vyhod_lim,ispolnenie,ispolnenie,net,
+S6,f_neisp,ispolnenie,ispolnenie,net,
+S6,time_decay,ispolnenie,vyhod_risk,da,"раздел куба — исполнение, по плану — выход-риск"
+S6,pauza_porog,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
+S6,pauza_okno,ispolnenie,kontekst,da,"раздел куба — исполнение, по плану — контекст (пауза после серии)"
