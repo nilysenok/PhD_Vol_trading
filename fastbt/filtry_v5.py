@@ -16,17 +16,12 @@ import numpy as np
 import pandas as pd
 
 from fastbt.indicators import calc_atr, calc_sma, calc_std
+from fastbt.ma_tipy import ema as _ema
 
 
 def calc_ema(arr, w):
     """EMA с alpha = 2/(w+1), out[0] = arr[0] (daily_upper_bound.py:46-51)."""
-    arr = np.asarray(arr, dtype=float)
-    alpha = 2.0 / (w + 1)
-    out = np.empty_like(arr)
-    out[0] = arr[0]
-    for i in range(1, len(arr)):
-        out[i] = alpha * arr[i] + (1 - alpha) * out[i - 1]
-    return out
+    return _ema(arr, w)   # старт с первого конечного значения (rel-ряд с NaN прогрева)
 
 
 MA_FUNCS = {"sma": calc_sma, "ema": calc_ema}   # тип MA — функция (arr, w); 7 типов ma_tipy — подставит следующий лист
