@@ -46,8 +46,10 @@ def _proverka(mod, tmp_path):
             with pytest.raises(PermissionError):
                 mod.sobytiya_na(bad, path=p)
         q = _csv(tmp_path, ("AAA", "w", "2021-12-30", "2022-01-03", "s"))
+        # ж) строка 2022+ в файле не видна периоду кроме wf (было: PermissionError на чтении), запрос от 2022-01-01 — отказ
+        assert tips(mod.sobytiya_na(date(2021, 12, 31), "AAA", vpered=5, path=q)) == []
         with pytest.raises(PermissionError):
-            mod.sobytiya_na(date(2021, 12, 31), path=q)
+            mod.sobytiya_na(date(2022, 1, 1), "AAA", path=q)
     except (AssertionError, pytest.fail.Exception):
         return False
     return True
@@ -89,6 +91,7 @@ def _bez_proverki_strok():
             return [{**r, "data_obyavleniya": date.fromisoformat(r["data_obyavleniya"]),
                      "data_sobytiya": date.fromisoformat(r["data_sobytiya"])} for r in csv.DictReader(f)]
     m._rows = rows
+    m._rows_dev = rows      # периоды кроме wf читают через _rows_dev: без фильтра 2022+ строка видна
     return m
 
 

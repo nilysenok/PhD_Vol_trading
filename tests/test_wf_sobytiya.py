@@ -48,7 +48,9 @@ def wf_csv(tmp_path, wf_text, monkeypatch):
 def test_do_2022_pobajtovo_prezhnij(wf_text):
     staryj = SE.sobrat()
     assert wf_text.startswith(staryj)
-    assert staryj.encode() == (ROOT / "data" / "events.csv").read_bytes()
+    fajl = (ROOT / "data" / "events.csv").read_text(encoding="utf-8")
+    assert wf_text == fajl                       # файл в data/ = wf-сборка (было: = сборка по умолчанию, ≤ 2021)
+    assert staryj == fajl[:len(staryj)]          # сборка по умолчанию = префикс файла
     assert wf_text.count("\n") - staryj.count("\n") == 346
 
 
