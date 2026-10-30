@@ -77,14 +77,12 @@ def test_yadro_posle_razryva_povtornogo_vhoda_net(gap):
     assert vhody_dnya(b, 2) == []                        # Д5-2: пара вечера перед разрывом снята
 
 
-@pytest.mark.xfail(strict=True, reason="RunStop._reenter обходит Д5-2 (j in s.stale) — эталон входит по устаревшей паре; починка — отдельный PR")
 @pytest.mark.parametrize("gap", [6, 27])
 def test_etalon_posle_razryva_povtornogo_vhoda_net(gap):
     e, _ = oba(gap)
     assert vhody_dnya(e, 2) == []
 
 
-@pytest.mark.xfail(strict=True, reason="RunStop._reenter обходит Д5-2 — быстрый слой v6 ≠ эталон на wf (25.02 → 24.03.2022)")
 @pytest.mark.parametrize("gap", [6, 27])
 def test_posle_razryva_etalon_raven_yadru(gap):
     _same(*oba(gap))
