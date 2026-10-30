@@ -60,7 +60,7 @@ def test_morris_train4_data_2025_po_prezhnemu_otkaz(monkeypatch, tmp_path):
 
 
 def test_server_wf_zona_wf_bez_permissionerror(monkeypatch, tmp_path):
-    monkeypatch.setattr(ps, "fabrika", fabrika_s(DATY_WF))
+    monkeypatch.setattr(ps, "fabrika", fabrika_s(DATY_WF[DATY_WF >= np.datetime64("2015-01-01")]))     # ledger — годы метрик 2015–2026, без прогрева
     monkeypatch.setattr(srv, "CHEKPOINT", 100)
     assert srv.main(["--kub", "v5", "--period", "wf", "--seed", "1", "--n1", "S1=1", "--strategii", "S1", "--procs", "1", "--out", str(tmp_path)]) == 0
     assert zona.name() == "dev"
@@ -98,3 +98,5 @@ def test_mutatsiya_zona_ne_stavitsya_lovitsya(monkeypatch, tmp_path):
     monkeypatch.setattr(ps, "fabrika", fabrika_s(DATY_WF))
     with pytest.raises(PermissionError):
         morris(tmp_path, "wf")
+    rc = srv.main(["--kub", "v5", "--period", "wf", "--seed", "1", "--n1", "S1=1", "--strategii", "S1", "--procs", "1", "--out", str(tmp_path / "s")])
+    assert rc == 2                                                          # сервер: сбой куска PermissionError, не успех
