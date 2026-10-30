@@ -32,6 +32,7 @@ KOD_DIR="$P/kod/$KOD_SHA"
 KOD_SUMS="$P/kod/$KOD_SHA.SHA256SUMS"
 ETALONY="$P/etalony_$KOD_SHORT.npz"
 MANIFEST="$P/manifest_dannyh.tsv"
+PERENOS_DO=${PERENOS_DO:-$(sed -n 's/^perenos_do=//p' "$P/VERSIYA")}   # пакет wf: верхняя дата манифеста записана в VERSIYA при сборке (пусто — ≤ 2021-12-31)
 PY="$P/.venv/bin/python3"
 
 yadra() { echo "${PERENOS_YADRA:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}"; }

@@ -1,0 +1,347 @@
+ticker,tip,data_obyavleniya,data_sobytiya,istochnik,accessed,note
+*,cbr_zasedanie_klyuchevaya_stavka,2022-02-11,2022-02-11,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2022-02-28,2022-02-28,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,внеочередное заседание (календарь cal_mp); объявление = дата решения; дата публикации календаря не подтверждена
+*,cbr_zasedanie_klyuchevaya_stavka,2022-03-18,2022-03-18,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2021-03-04,2022-03-29,https://iss.moex.com/iss/securities/MXH2.json,2026-10-30,SECID MXH2; Фьючерсный контракт MIX-3.22
+RTSI,forts_expiraciya,2020-03-13,2022-03-29,https://iss.moex.com/iss/securities/RIH2.json,2026-10-30,SECID RIH2; Фьючерсный контракт RTS-3.22
+AFLT,forts_expiraciya,2021-08-11,2022-03-30,https://iss.moex.com/iss/securities/AFH2.json,2026-10-30,SECID AFH2; Фьючерсный контракт AFLT-3.22; последний день обращения LSTTRADE 2022-03-29
+ALRS,forts_expiraciya,2021-08-11,2022-03-30,https://iss.moex.com/iss/securities/ALH2.json,2026-10-30,SECID ALH2; Фьючерсный контракт ALRS-3.22; последний день обращения LSTTRADE 2022-03-29
+HYDR,forts_expiraciya,2021-09-02,2022-03-30,https://iss.moex.com/iss/securities/HYH2.json,2026-10-30,SECID HYH2; Фьючерсный контракт HYDR-3.22; последний день обращения LSTTRADE 2022-03-29
+IRAO,forts_expiraciya,2021-09-02,2022-03-30,https://iss.moex.com/iss/securities/IRH2.json,2026-10-30,SECID IRH2; Фьючерсный контракт IRAO-3.22; последний день обращения LSTTRADE 2022-03-29
+LKOH,forts_expiraciya,2021-03-04,2022-03-30,https://iss.moex.com/iss/securities/LKH2.json,2026-10-30,SECID LKH2; Фьючерсный контракт LKOH-3.22; последний день обращения LSTTRADE 2022-03-29
+MGNT,forts_expiraciya,2021-08-11,2022-03-30,https://iss.moex.com/iss/securities/MNH2.json,2026-10-30,SECID MNH2; Фьючерсный контракт MGNT-3.22; последний день обращения LSTTRADE 2022-03-29
+MOEX,forts_expiraciya,2021-09-02,2022-03-30,https://iss.moex.com/iss/securities/MEH2.json,2026-10-30,SECID MEH2; Фьючерсный контракт MOEX-3.22; последний день обращения LSTTRADE 2022-03-29
+MTLR,forts_expiraciya,2022-02-15,2022-03-30,https://iss.moex.com/iss/securities/MCH2.json,2026-10-30,SECID MCH2; Фьючерсный контракт MTLR-3.22; последний день обращения LSTTRADE 2022-03-29
+MTSS,forts_expiraciya,2021-08-11,2022-03-30,https://iss.moex.com/iss/securities/MTH2.json,2026-10-30,SECID MTH2; Фьючерсный контракт MTSI-3.22; последний день обращения LSTTRADE 2022-03-29
+NVTK,forts_expiraciya,2021-09-02,2022-03-30,https://iss.moex.com/iss/securities/NKH2.json,2026-10-30,SECID NKH2; Фьючерсный контракт NOTK-3.22; последний день обращения LSTTRADE 2022-03-29
+PHOR,forts_expiraciya,2022-02-15,2022-03-30,https://iss.moex.com/iss/securities/PHH2.json,2026-10-30,SECID PHH2; Фьючерсный контракт PHOR-3.22; последний день обращения LSTTRADE 2022-03-29
+RTKM,forts_expiraciya,2021-09-02,2022-03-30,https://iss.moex.com/iss/securities/RTH2.json,2026-10-30,SECID RTH2; Фьючерсный контракт RTKM-3.22; последний день обращения LSTTRADE 2022-03-29
+SBER,forts_expiraciya,2021-03-04,2022-03-30,https://iss.moex.com/iss/securities/SRH2.json,2026-10-30,SECID SRH2; Фьючерсный контракт SBRF-3.22; последний день обращения LSTTRADE 2022-03-29
+TATN,forts_expiraciya,2021-08-11,2022-03-30,https://iss.moex.com/iss/securities/TTH2.json,2026-10-30,SECID TTH2; Фьючерсный контракт TATN-3.22; последний день обращения LSTTRADE 2022-03-29
+VTBR,forts_expiraciya,2021-08-11,2022-03-30,https://iss.moex.com/iss/securities/VBH2.json,2026-10-30,SECID VBH2; Фьючерсный контракт VTBR-3.22; последний день обращения LSTTRADE 2022-03-29
+*,cbr_zasedanie_klyuchevaya_stavka,2022-04-08,2022-04-08,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,внеочередное заседание (календарь cal_mp); объявление = дата решения; дата публикации календаря не подтверждена
+*,cbr_zasedanie_klyuchevaya_stavka,2022-04-29,2022-04-29,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2022-05-26,2022-05-26,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,внеочередное заседание (календарь cal_mp); объявление = дата решения; дата публикации календаря не подтверждена
+*,cbr_zasedanie_klyuchevaya_stavka,2022-06-10,2022-06-10,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2021-05-26,2022-06-16,https://iss.moex.com/iss/securities/MXM2.json,2026-10-30,SECID MXM2; Фьючерсный контракт MIX-6.22
+RTSI,forts_expiraciya,2020-06-15,2022-06-16,https://iss.moex.com/iss/securities/RIM2.json,2026-10-30,SECID RIM2; Фьючерсный контракт RTS-6.22
+AFLT,forts_expiraciya,2021-11-15,2022-06-17,https://iss.moex.com/iss/securities/AFM2.json,2026-10-30,SECID AFM2; Фьючерсный контракт AFLT-6.22; последний день обращения LSTTRADE 2022-06-16
+ALRS,forts_expiraciya,2021-11-15,2022-06-17,https://iss.moex.com/iss/securities/ALM2.json,2026-10-30,SECID ALM2; Фьючерсный контракт ALRS-6.22; последний день обращения LSTTRADE 2022-06-16
+HYDR,forts_expiraciya,2021-12-02,2022-06-17,https://iss.moex.com/iss/securities/HYM2.json,2026-10-30,SECID HYM2; Фьючерсный контракт HYDR-6.22; последний день обращения LSTTRADE 2022-06-16
+IRAO,forts_expiraciya,2021-12-02,2022-06-17,https://iss.moex.com/iss/securities/IRM2.json,2026-10-30,SECID IRM2; Фьючерсный контракт IRAO-6.22; последний день обращения LSTTRADE 2022-06-16
+LKOH,forts_expiraciya,2021-06-03,2022-06-17,https://iss.moex.com/iss/securities/LKM2.json,2026-10-30,SECID LKM2; Фьючерсный контракт LKOH-6.22; последний день обращения LSTTRADE 2022-06-16
+MGNT,forts_expiraciya,2021-11-15,2022-06-17,https://iss.moex.com/iss/securities/MNM2.json,2026-10-30,SECID MNM2; Фьючерсный контракт MGNT-6.22; последний день обращения LSTTRADE 2022-06-16
+MOEX,forts_expiraciya,2021-12-02,2022-06-17,https://iss.moex.com/iss/securities/MEM2.json,2026-10-30,SECID MEM2; Фьючерсный контракт MOEX-6.22; последний день обращения LSTTRADE 2022-06-16
+MTLR,forts_expiraciya,2022-02-15,2022-06-17,https://iss.moex.com/iss/securities/MCM2.json,2026-10-30,SECID MCM2; Фьючерсный контракт MTLR-6.22; последний день обращения LSTTRADE 2022-06-16
+MTSS,forts_expiraciya,2021-11-15,2022-06-17,https://iss.moex.com/iss/securities/MTM2.json,2026-10-30,SECID MTM2; Фьючерсный контракт MTSI-6.22; последний день обращения LSTTRADE 2022-06-16
+NVTK,forts_expiraciya,2021-12-02,2022-06-17,https://iss.moex.com/iss/securities/NKM2.json,2026-10-30,SECID NKM2; Фьючерсный контракт NOTK-6.22; последний день обращения LSTTRADE 2022-06-16
+PHOR,forts_expiraciya,2022-02-15,2022-06-17,https://iss.moex.com/iss/securities/PHM2.json,2026-10-30,SECID PHM2; Фьючерсный контракт PHOR-6.22; последний день обращения LSTTRADE 2022-06-16
+RTKM,forts_expiraciya,2021-12-02,2022-06-17,https://iss.moex.com/iss/securities/RTM2.json,2026-10-30,SECID RTM2; Фьючерсный контракт RTKM-6.22; последний день обращения LSTTRADE 2022-06-16
+SBER,forts_expiraciya,2021-06-03,2022-06-17,https://iss.moex.com/iss/securities/SRM2.json,2026-10-30,SECID SRM2; Фьючерсный контракт SBRF-6.22; последний день обращения LSTTRADE 2022-06-16
+TATN,forts_expiraciya,2021-11-15,2022-06-17,https://iss.moex.com/iss/securities/TTM2.json,2026-10-30,SECID TTM2; Фьючерсный контракт TATN-6.22; последний день обращения LSTTRADE 2022-06-16
+VTBR,forts_expiraciya,2021-11-15,2022-06-17,https://iss.moex.com/iss/securities/VBM2.json,2026-10-30,SECID VBM2; Фьючерсный контракт VTBR-6.22; последний день обращения LSTTRADE 2022-06-16
+MOEX,imoex_free_float,2022-06-01,2022-06-17,https://iss.moex.com/iss/sitenews/48026.json,2026-10-30,в таблице free-float итоговой новости; free-float 63%→64%
+MTLR,imoex_free_float,2022-06-01,2022-06-17,https://iss.moex.com/iss/sitenews/48026.json,2026-10-30,в таблице free-float итоговой новости; free-float 43%→42%
+PHOR,imoex_free_float,2022-06-01,2022-06-17,https://iss.moex.com/iss/sitenews/48026.json,2026-10-30,в таблице free-float итоговой новости; free-float 25%→26%
+*,imoex_peresmotr,2022-06-01,2022-06-17,https://iss.moex.com/iss/sitenews/48026.json,2026-10-30,"moex.com/n48026; предварительная 2022-05-27 n47861; дата вступления из предварительной новости; пересмотр марта 2022 перенесён (n43970, 2022-03-01: торги акциями приостановлены 28.02); в базу не вошло: ФСК ЕЭС исключена"
+*,imoex_peresmotr,2022-06-27,2022-06-30,https://iss.moex.com/iss/sitenews/49592.json,2026-10-30,"moex.com/n49592; внеочередной: перевод Petropavlovsk PLC (POGR) в 3-й уровень, вступление 30.06.2022"
+*,cbr_zasedanie_klyuchevaya_stavka,2022-07-22,2022-07-22,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2021-09-24,2022-09-15,https://iss.moex.com/iss/securities/MXU2.json,2026-10-30,SECID MXU2; Фьючерсный контракт MIX-9.22
+RTSI,forts_expiraciya,2021-09-24,2022-09-15,https://iss.moex.com/iss/securities/RIU2.json,2026-10-30,SECID RIU2; Фьючерсный контракт RTS-9.22
+*,cbr_zasedanie_klyuchevaya_stavka,2022-09-16,2022-09-16,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+AFLT,forts_expiraciya,2022-02-03,2022-09-16,https://iss.moex.com/iss/securities/AFU2.json,2026-10-30,SECID AFU2; Фьючерсный контракт AFLT-9.22; последний день обращения LSTTRADE 2022-09-15
+ALRS,forts_expiraciya,2022-02-03,2022-09-16,https://iss.moex.com/iss/securities/ALU2.json,2026-10-30,SECID ALU2; Фьючерсный контракт ALRS-9.22; последний день обращения LSTTRADE 2022-09-15
+HYDR,forts_expiraciya,2022-04-06,2022-09-16,https://iss.moex.com/iss/securities/HYU2.json,2026-10-30,SECID HYU2; Фьючерсный контракт HYDR-9.22; последний день обращения LSTTRADE 2022-09-15
+IRAO,forts_expiraciya,2022-04-06,2022-09-16,https://iss.moex.com/iss/securities/IRU2.json,2026-10-30,SECID IRU2; Фьючерсный контракт IRAO-9.22; последний день обращения LSTTRADE 2022-09-15
+LKOH,forts_expiraciya,2021-09-24,2022-09-16,https://iss.moex.com/iss/securities/LKU2.json,2026-10-30,SECID LKU2; Фьючерсный контракт LKOH-9.22; последний день обращения LSTTRADE 2022-09-15
+MGNT,forts_expiraciya,2022-02-03,2022-09-16,https://iss.moex.com/iss/securities/MNU2.json,2026-10-30,SECID MNU2; Фьючерсный контракт MGNT-9.22; последний день обращения LSTTRADE 2022-09-15
+MOEX,forts_expiraciya,2022-04-06,2022-09-16,https://iss.moex.com/iss/securities/MEU2.json,2026-10-30,SECID MEU2; Фьючерсный контракт MOEX-9.22; последний день обращения LSTTRADE 2022-09-15
+MTLR,forts_expiraciya,2022-04-06,2022-09-16,https://iss.moex.com/iss/securities/MCU2.json,2026-10-30,SECID MCU2; Фьючерсный контракт MTLR-9.22; последний день обращения LSTTRADE 2022-09-15
+MTSS,forts_expiraciya,2022-02-03,2022-09-16,https://iss.moex.com/iss/securities/MTU2.json,2026-10-30,SECID MTU2; Фьючерсный контракт MTSI-9.22; последний день обращения LSTTRADE 2022-09-15
+NVTK,forts_expiraciya,2022-04-06,2022-09-16,https://iss.moex.com/iss/securities/NKU2.json,2026-10-30,SECID NKU2; Фьючерсный контракт NOTK-9.22; последний день обращения LSTTRADE 2022-09-15
+PHOR,forts_expiraciya,2022-04-06,2022-09-16,https://iss.moex.com/iss/securities/PHU2.json,2026-10-30,SECID PHU2; Фьючерсный контракт PHOR-9.22; последний день обращения LSTTRADE 2022-09-15
+RTKM,forts_expiraciya,2022-04-06,2022-09-16,https://iss.moex.com/iss/securities/RTU2.json,2026-10-30,SECID RTU2; Фьючерсный контракт RTKM-9.22; последний день обращения LSTTRADE 2022-09-15
+SBER,forts_expiraciya,2021-09-24,2022-09-16,https://iss.moex.com/iss/securities/SRU2.json,2026-10-30,SECID SRU2; Фьючерсный контракт SBRF-9.22; последний день обращения LSTTRADE 2022-09-15
+TATN,forts_expiraciya,2022-02-03,2022-09-16,https://iss.moex.com/iss/securities/TTU2.json,2026-10-30,SECID TTU2; Фьючерсный контракт TATN-9.22; последний день обращения LSTTRADE 2022-09-15
+VTBR,forts_expiraciya,2022-02-03,2022-09-16,https://iss.moex.com/iss/securities/VBU2.json,2026-10-30,SECID VBU2; Фьючерсный контракт VTBR-9.22; последний день обращения LSTTRADE 2022-09-15
+AFLT,imoex_free_float,2022-09-01,2022-09-16,https://iss.moex.com/iss/sitenews/51125.json,2026-10-30,в таблице free-float итоговой новости; free-float 41%→25%; число акций 2 444 535 448→3 975 771 215 (доп. эмиссия)
+*,imoex_peresmotr,2022-09-01,2022-09-16,https://iss.moex.com/iss/sitenews/51125.json,2026-10-30,moex.com/n51125; предварительная 2022-08-31 n51050; дата вступления из предварительной новости
+*,imoex_peresmotr,2022-09-13,2022-09-16,https://iss.moex.com/iss/sitenews/51313.json,2026-10-30,moex.com/n51313; внеочередной: исключение Квадра из индексов широкого рынка/электроэнергетики с 16.09.2022 (приостановка торгов)
+*,cbr_zasedanie_klyuchevaya_stavka,2022-10-28,2022-10-28,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2021-12-03,2022-12-15,https://iss.moex.com/iss/securities/MXZ2.json,2026-10-30,SECID MXZ2; Фьючерсный контракт MIX-12.22
+RTSI,forts_expiraciya,2021-09-24,2022-12-15,https://iss.moex.com/iss/securities/RIZ2.json,2026-10-30,SECID RIZ2; Фьючерсный контракт RTS-12.22
+*,cbr_zasedanie_klyuchevaya_stavka,2022-12-16,2022-12-16,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+AFLT,forts_expiraciya,2022-02-18,2022-12-16,https://iss.moex.com/iss/securities/AFZ2.json,2026-10-30,SECID AFZ2; Фьючерсный контракт AFLT-12.22; последний день обращения LSTTRADE 2022-12-15
+ALRS,forts_expiraciya,2022-02-18,2022-12-16,https://iss.moex.com/iss/securities/ALZ2.json,2026-10-30,SECID ALZ2; Фьючерсный контракт ALRS-12.22; последний день обращения LSTTRADE 2022-12-15
+HYDR,forts_expiraciya,2022-06-01,2022-12-16,https://iss.moex.com/iss/securities/HYZ2.json,2026-10-30,SECID HYZ2; Фьючерсный контракт HYDR-12.22; последний день обращения LSTTRADE 2022-12-15
+IRAO,forts_expiraciya,2022-06-01,2022-12-16,https://iss.moex.com/iss/securities/IRZ2.json,2026-10-30,SECID IRZ2; Фьючерсный контракт IRAO-12.22; последний день обращения LSTTRADE 2022-12-15
+LKOH,forts_expiraciya,2021-12-02,2022-12-16,https://iss.moex.com/iss/securities/LKZ2.json,2026-10-30,SECID LKZ2; Фьючерсный контракт LKOH-12.22; последний день обращения LSTTRADE 2022-12-15
+MGNT,forts_expiraciya,2022-02-18,2022-12-16,https://iss.moex.com/iss/securities/MNZ2.json,2026-10-30,SECID MNZ2; Фьючерсный контракт MGNT-12.22; последний день обращения LSTTRADE 2022-12-15
+MOEX,forts_expiraciya,2022-06-01,2022-12-16,https://iss.moex.com/iss/securities/MEZ2.json,2026-10-30,SECID MEZ2; Фьючерсный контракт MOEX-12.22; последний день обращения LSTTRADE 2022-12-15
+MTLR,forts_expiraciya,2022-06-01,2022-12-16,https://iss.moex.com/iss/securities/MCZ2.json,2026-10-30,SECID MCZ2; Фьючерсный контракт MTLR-12.22; последний день обращения LSTTRADE 2022-12-15
+MTSS,forts_expiraciya,2022-02-18,2022-12-16,https://iss.moex.com/iss/securities/MTZ2.json,2026-10-30,SECID MTZ2; Фьючерсный контракт MTSI-12.22; последний день обращения LSTTRADE 2022-12-15
+NVTK,forts_expiraciya,2022-06-01,2022-12-16,https://iss.moex.com/iss/securities/NKZ2.json,2026-10-30,SECID NKZ2; Фьючерсный контракт NOTK-12.22; последний день обращения LSTTRADE 2022-12-15
+PHOR,forts_expiraciya,2022-06-01,2022-12-16,https://iss.moex.com/iss/securities/PHZ2.json,2026-10-30,SECID PHZ2; Фьючерсный контракт PHOR-12.22; последний день обращения LSTTRADE 2022-12-15
+RTKM,forts_expiraciya,2022-06-01,2022-12-16,https://iss.moex.com/iss/securities/RTZ2.json,2026-10-30,SECID RTZ2; Фьючерсный контракт RTKM-12.22; последний день обращения LSTTRADE 2022-12-15
+SBER,forts_expiraciya,2021-12-02,2022-12-16,https://iss.moex.com/iss/securities/SRZ2.json,2026-10-30,SECID SRZ2; Фьючерсный контракт SBRF-12.22; последний день обращения LSTTRADE 2022-12-15
+TATN,forts_expiraciya,2022-02-18,2022-12-16,https://iss.moex.com/iss/securities/TTZ2.json,2026-10-30,SECID TTZ2; Фьючерсный контракт TATN-12.22; последний день обращения LSTTRADE 2022-12-15
+VTBR,forts_expiraciya,2022-02-18,2022-12-16,https://iss.moex.com/iss/securities/VBZ2.json,2026-10-30,SECID VBZ2; Фьючерсный контракт VTBR-12.22; последний день обращения LSTTRADE 2022-12-15
+HYDR,imoex_free_float,2022-12-01,2022-12-16,https://iss.moex.com/iss/sitenews/53324.json,2026-10-30,в таблице free-float итоговой новости; free-float 24%→15%
+LSRG,imoex_free_float,2022-12-01,2022-12-16,https://iss.moex.com/iss/sitenews/53324.json,2026-10-30,в таблице free-float итоговой новости; free-float 27%→25%
+*,imoex_peresmotr,2022-12-01,2022-12-16,https://iss.moex.com/iss/sitenews/53324.json,2026-10-30,moex.com/n53324; предварительная 2022-11-25 n53195; дата вступления из предварительной новости
+*,cbr_zasedanie_klyuchevaya_stavka,2023-02-10,2023-02-10,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2022-04-18,2023-03-16,https://iss.moex.com/iss/securities/MXH3.json,2026-10-30,SECID MXH3; Фьючерсный контракт MIX-3.23
+RTSI,forts_expiraciya,2021-09-24,2023-03-16,https://iss.moex.com/iss/securities/RIH3.json,2026-10-30,SECID RIH3; Фьючерсный контракт RTS-3.23
+*,cbr_zasedanie_klyuchevaya_stavka,2023-03-17,2023-03-17,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+AFLT,forts_expiraciya,2022-08-15,2023-03-17,https://iss.moex.com/iss/securities/AFH3.json,2026-10-30,SECID AFH3; Фьючерсный контракт AFLT-3.23; последний день обращения LSTTRADE 2023-03-16
+ALRS,forts_expiraciya,2022-08-15,2023-03-17,https://iss.moex.com/iss/securities/ALH3.json,2026-10-30,SECID ALH3; Фьючерсный контракт ALRS-3.23; последний день обращения LSTTRADE 2023-03-16
+HYDR,forts_expiraciya,2022-09-01,2023-03-17,https://iss.moex.com/iss/securities/HYH3.json,2026-10-30,SECID HYH3; Фьючерсный контракт HYDR-3.23; последний день обращения LSTTRADE 2023-03-16
+IRAO,forts_expiraciya,2022-09-01,2023-03-17,https://iss.moex.com/iss/securities/IRH3.json,2026-10-30,SECID IRH3; Фьючерсный контракт IRAO-3.23; последний день обращения LSTTRADE 2023-03-16
+LKOH,forts_expiraciya,2022-05-12,2023-03-17,https://iss.moex.com/iss/securities/LKH3.json,2026-10-30,SECID LKH3; Фьючерсный контракт LKOH-3.23; последний день обращения LSTTRADE 2023-03-16
+MGNT,forts_expiraciya,2022-08-15,2023-03-17,https://iss.moex.com/iss/securities/MNH3.json,2026-10-30,SECID MNH3; Фьючерсный контракт MGNT-3.23; последний день обращения LSTTRADE 2023-03-16
+MOEX,forts_expiraciya,2022-09-01,2023-03-17,https://iss.moex.com/iss/securities/MEH3.json,2026-10-30,SECID MEH3; Фьючерсный контракт MOEX-3.23; последний день обращения LSTTRADE 2023-03-16
+MTLR,forts_expiraciya,2022-09-01,2023-03-17,https://iss.moex.com/iss/securities/MCH3.json,2026-10-30,SECID MCH3; Фьючерсный контракт MTLR-3.23; последний день обращения LSTTRADE 2023-03-16
+MTSS,forts_expiraciya,2022-08-15,2023-03-17,https://iss.moex.com/iss/securities/MTH3.json,2026-10-30,SECID MTH3; Фьючерсный контракт MTSI-3.23; последний день обращения LSTTRADE 2023-03-16
+NVTK,forts_expiraciya,2022-09-01,2023-03-17,https://iss.moex.com/iss/securities/NKH3.json,2026-10-30,SECID NKH3; Фьючерсный контракт NOTK-3.23; последний день обращения LSTTRADE 2023-03-16
+PHOR,forts_expiraciya,2022-09-01,2023-03-17,https://iss.moex.com/iss/securities/PHH3.json,2026-10-30,SECID PHH3; Фьючерсный контракт PHOR-3.23; последний день обращения LSTTRADE 2023-03-16
+RTKM,forts_expiraciya,2022-09-01,2023-03-17,https://iss.moex.com/iss/securities/RTH3.json,2026-10-30,SECID RTH3; Фьючерсный контракт RTKM-3.23; последний день обращения LSTTRADE 2023-03-16
+SBER,forts_expiraciya,2022-02-18,2023-03-17,https://iss.moex.com/iss/securities/SRH3.json,2026-10-30,SECID SRH3; Фьючерсный контракт SBRF-3.23; последний день обращения LSTTRADE 2023-03-16
+TATN,forts_expiraciya,2022-08-15,2023-03-17,https://iss.moex.com/iss/securities/TTH3.json,2026-10-30,SECID TTH3; Фьючерсный контракт TATN-3.23; последний день обращения LSTTRADE 2023-03-16
+VTBR,forts_expiraciya,2022-08-15,2023-03-17,https://iss.moex.com/iss/securities/VBH3.json,2026-10-30,SECID VBH3; Фьючерсный контракт VTBR-3.23; последний день обращения LSTTRADE 2023-03-16
+MTLR,imoex_free_float,2023-03-02,2023-03-17,https://iss.moex.com/iss/sitenews/54910.json,2026-10-30,в таблице free-float итоговой новости; free-float 42%→43%
+*,imoex_peresmotr,2023-03-02,2023-03-17,https://iss.moex.com/iss/sitenews/54910.json,2026-10-30,moex.com/n54910; предварительная 2023-02-28 n54823; дата вступления из предварительной новости
+*,cbr_zasedanie_klyuchevaya_stavka,2023-04-28,2023-04-28,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2023-06-09,2023-06-09,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2022-06-02,2023-06-15,https://iss.moex.com/iss/securities/MXM3.json,2026-10-30,SECID MXM3; Фьючерсный контракт MIX-6.23
+RTSI,forts_expiraciya,2021-09-24,2023-06-15,https://iss.moex.com/iss/securities/RIM3.json,2026-10-30,SECID RIM3; Фьючерсный контракт RTS-6.23
+AFLT,forts_expiraciya,2022-09-01,2023-06-16,https://iss.moex.com/iss/securities/AFM3.json,2026-10-30,SECID AFM3; Фьючерсный контракт AFLT-6.23; последний день обращения LSTTRADE 2023-06-15
+ALRS,forts_expiraciya,2022-09-01,2023-06-16,https://iss.moex.com/iss/securities/ALM3.json,2026-10-30,SECID ALM3; Фьючерсный контракт ALRS-6.23; последний день обращения LSTTRADE 2023-06-15
+HYDR,forts_expiraciya,2022-12-01,2023-06-16,https://iss.moex.com/iss/securities/HYM3.json,2026-10-30,SECID HYM3; Фьючерсный контракт HYDR-6.23; последний день обращения LSTTRADE 2023-06-15
+IRAO,forts_expiraciya,2022-12-01,2023-06-16,https://iss.moex.com/iss/securities/IRM3.json,2026-10-30,SECID IRM3; Фьючерсный контракт IRAO-6.23; последний день обращения LSTTRADE 2023-06-15
+LKOH,forts_expiraciya,2022-06-01,2023-06-16,https://iss.moex.com/iss/securities/LKM3.json,2026-10-30,SECID LKM3; Фьючерсный контракт LKOH-6.23; последний день обращения LSTTRADE 2023-06-15
+MGNT,forts_expiraciya,2022-09-01,2023-06-16,https://iss.moex.com/iss/securities/MNM3.json,2026-10-30,SECID MNM3; Фьючерсный контракт MGNT-6.23; последний день обращения LSTTRADE 2023-06-15
+MOEX,forts_expiraciya,2022-12-01,2023-06-16,https://iss.moex.com/iss/securities/MEM3.json,2026-10-30,SECID MEM3; Фьючерсный контракт MOEX-6.23; последний день обращения LSTTRADE 2023-06-15
+MTLR,forts_expiraciya,2022-12-01,2023-06-16,https://iss.moex.com/iss/securities/MCM3.json,2026-10-30,SECID MCM3; Фьючерсный контракт MTLR-6.23; последний день обращения LSTTRADE 2023-06-15
+MTSS,forts_expiraciya,2022-09-01,2023-06-16,https://iss.moex.com/iss/securities/MTM3.json,2026-10-30,SECID MTM3; Фьючерсный контракт MTSI-6.23; последний день обращения LSTTRADE 2023-06-15
+NVTK,forts_expiraciya,2022-12-01,2023-06-16,https://iss.moex.com/iss/securities/NKM3.json,2026-10-30,SECID NKM3; Фьючерсный контракт NOTK-6.23; последний день обращения LSTTRADE 2023-06-15
+PHOR,forts_expiraciya,2022-12-01,2023-06-16,https://iss.moex.com/iss/securities/PHM3.json,2026-10-30,SECID PHM3; Фьючерсный контракт PHOR-6.23; последний день обращения LSTTRADE 2023-06-15
+RTKM,forts_expiraciya,2022-12-01,2023-06-16,https://iss.moex.com/iss/securities/RTM3.json,2026-10-30,SECID RTM3; Фьючерсный контракт RTKM-6.23; последний день обращения LSTTRADE 2023-06-15
+SBER,forts_expiraciya,2022-06-01,2023-06-16,https://iss.moex.com/iss/securities/SRM3.json,2026-10-30,SECID SRM3; Фьючерсный контракт SBRF-6.23; последний день обращения LSTTRADE 2023-06-15
+TATN,forts_expiraciya,2022-09-01,2023-06-16,https://iss.moex.com/iss/securities/TTM3.json,2026-10-30,SECID TTM3; Фьючерсный контракт TATN-6.23; последний день обращения LSTTRADE 2023-06-15
+VTBR,forts_expiraciya,2022-09-01,2023-06-16,https://iss.moex.com/iss/securities/VBM3.json,2026-10-30,SECID VBM3; Фьючерсный контракт VTBR-6.23; последний день обращения LSTTRADE 2023-06-15
+*,imoex_peresmotr,2023-06-01,2023-06-16,https://iss.moex.com/iss/sitenews/56480.json,2026-10-30,moex.com/n56480; предварительная 2023-05-30 n56392; дата вступления из предварительной новости
+*,cbr_zasedanie_klyuchevaya_stavka,2023-07-21,2023-07-21,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2023-08-15,2023-08-15,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,внеочередное заседание (календарь cal_mp); объявление = дата решения; дата публикации календаря не подтверждена
+*,cbr_zasedanie_klyuchevaya_stavka,2023-09-15,2023-09-15,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2022-09-02,2023-09-21,https://iss.moex.com/iss/securities/MXU3.json,2026-10-30,SECID MXU3; Фьючерсный контракт MIX-9.23
+RTSI,forts_expiraciya,2021-09-24,2023-09-21,https://iss.moex.com/iss/securities/RIU3.json,2026-10-30,SECID RIU3; Фьючерсный контракт RTS-9.23
+AFLT,forts_expiraciya,2022-12-01,2023-09-22,https://iss.moex.com/iss/securities/AFU3.json,2026-10-30,SECID AFU3; Фьючерсный контракт AFLT-9.23; последний день обращения LSTTRADE 2023-09-21
+ALRS,forts_expiraciya,2022-12-01,2023-09-22,https://iss.moex.com/iss/securities/ALU3.json,2026-10-30,SECID ALU3; Фьючерсный контракт ALRS-9.23; последний день обращения LSTTRADE 2023-09-21
+HYDR,forts_expiraciya,2023-03-01,2023-09-22,https://iss.moex.com/iss/securities/HYU3.json,2026-10-30,SECID HYU3; Фьючерсный контракт HYDR-9.23; последний день обращения LSTTRADE 2023-09-21
+IRAO,forts_expiraciya,2023-03-01,2023-09-22,https://iss.moex.com/iss/securities/IRU3.json,2026-10-30,SECID IRU3; Фьючерсный контракт IRAO-9.23; последний день обращения LSTTRADE 2023-09-21
+LKOH,forts_expiraciya,2022-09-01,2023-09-22,https://iss.moex.com/iss/securities/LKU3.json,2026-10-30,SECID LKU3; Фьючерсный контракт LKOH-9.23; последний день обращения LSTTRADE 2023-09-21
+MGNT,forts_expiraciya,2022-12-01,2023-09-22,https://iss.moex.com/iss/securities/MNU3.json,2026-10-30,SECID MNU3; Фьючерсный контракт MGNT-9.23; последний день обращения LSTTRADE 2023-09-21
+MOEX,forts_expiraciya,2023-03-01,2023-09-22,https://iss.moex.com/iss/securities/MEU3.json,2026-10-30,SECID MEU3; Фьючерсный контракт MOEX-9.23; последний день обращения LSTTRADE 2023-09-21
+MTLR,forts_expiraciya,2023-03-01,2023-09-22,https://iss.moex.com/iss/securities/MCU3.json,2026-10-30,SECID MCU3; Фьючерсный контракт MTLR-9.23; последний день обращения LSTTRADE 2023-09-21
+MTSS,forts_expiraciya,2022-12-01,2023-09-22,https://iss.moex.com/iss/securities/MTU3.json,2026-10-30,SECID MTU3; Фьючерсный контракт MTSI-9.23; последний день обращения LSTTRADE 2023-09-21
+NVTK,forts_expiraciya,2023-03-01,2023-09-22,https://iss.moex.com/iss/securities/NKU3.json,2026-10-30,SECID NKU3; Фьючерсный контракт NOTK-9.23; последний день обращения LSTTRADE 2023-09-21
+PHOR,forts_expiraciya,2023-03-01,2023-09-22,https://iss.moex.com/iss/securities/PHU3.json,2026-10-30,SECID PHU3; Фьючерсный контракт PHOR-9.23; последний день обращения LSTTRADE 2023-09-21
+RTKM,forts_expiraciya,2023-03-01,2023-09-22,https://iss.moex.com/iss/securities/RTU3.json,2026-10-30,SECID RTU3; Фьючерсный контракт RTKM-9.23; последний день обращения LSTTRADE 2023-09-21
+SBER,forts_expiraciya,2022-09-01,2023-09-22,https://iss.moex.com/iss/securities/SRU3.json,2026-10-30,SECID SRU3; Фьючерсный контракт SBRF-9.23; последний день обращения LSTTRADE 2023-09-21
+TATN,forts_expiraciya,2022-12-01,2023-09-22,https://iss.moex.com/iss/securities/TTU3.json,2026-10-30,SECID TTU3; Фьючерсный контракт TATN-9.23; последний день обращения LSTTRADE 2023-09-21
+VTBR,forts_expiraciya,2022-12-01,2023-09-22,https://iss.moex.com/iss/securities/VBU3.json,2026-10-30,SECID VBU3; Фьючерсный контракт VTBR-9.23; последний день обращения LSTTRADE 2023-09-21
+HYDR,imoex_free_float,2023-09-01,2023-09-22,https://iss.moex.com/iss/sitenews/63621.json,2026-10-30,в таблице free-float итоговой новости; free-float 15%→15%; число акций 439 288 905 849→444 793 377 038
+MGNT,imoex_free_float,2023-09-01,2023-09-22,https://iss.moex.com/iss/sitenews/63621.json,2026-10-30,в таблице free-float итоговой новости; free-float 67%→50%
+*,imoex_peresmotr,2023-09-01,2023-09-22,https://iss.moex.com/iss/sitenews/63621.json,2026-10-30,moex.com/n63621; предварительная 2023-08-30 n63504; дата вступления из итоговой новости
+*,cbr_zasedanie_klyuchevaya_stavka,2023-10-27,2023-10-27,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2023-12-15,2023-12-15,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2022-12-02,2023-12-21,https://iss.moex.com/iss/securities/MXZ3.json,2026-10-30,SECID MXZ3; Фьючерсный контракт MIX-12.23
+RTSI,forts_expiraciya,2021-12-10,2023-12-21,https://iss.moex.com/iss/securities/RIZ3.json,2026-10-30,SECID RIZ3; Фьючерсный контракт RTS-12.23
+AFLT,forts_expiraciya,2023-03-01,2023-12-22,https://iss.moex.com/iss/securities/AFZ3.json,2026-10-30,SECID AFZ3; Фьючерсный контракт AFLT-12.23; последний день обращения LSTTRADE 2023-12-21
+ALRS,forts_expiraciya,2023-03-01,2023-12-22,https://iss.moex.com/iss/securities/ALZ3.json,2026-10-30,SECID ALZ3; Фьючерсный контракт ALRS-12.23; последний день обращения LSTTRADE 2023-12-21
+HYDR,forts_expiraciya,2023-05-31,2023-12-22,https://iss.moex.com/iss/securities/HYZ3.json,2026-10-30,SECID HYZ3; Фьючерсный контракт HYDR-12.23; последний день обращения LSTTRADE 2023-12-21
+IRAO,forts_expiraciya,2023-05-31,2023-12-22,https://iss.moex.com/iss/securities/IRZ3.json,2026-10-30,SECID IRZ3; Фьючерсный контракт IRAO-12.23; последний день обращения LSTTRADE 2023-12-21
+LKOH,forts_expiraciya,2022-12-01,2023-12-22,https://iss.moex.com/iss/securities/LKZ3.json,2026-10-30,SECID LKZ3; Фьючерсный контракт LKOH-12.23; последний день обращения LSTTRADE 2023-12-21
+MGNT,forts_expiraciya,2023-03-01,2023-12-22,https://iss.moex.com/iss/securities/MNZ3.json,2026-10-30,SECID MNZ3; Фьючерсный контракт MGNT-12.23; последний день обращения LSTTRADE 2023-12-21
+MOEX,forts_expiraciya,2023-05-31,2023-12-22,https://iss.moex.com/iss/securities/MEZ3.json,2026-10-30,SECID MEZ3; Фьючерсный контракт MOEX-12.23; последний день обращения LSTTRADE 2023-12-21
+MTLR,forts_expiraciya,2023-05-31,2023-12-22,https://iss.moex.com/iss/securities/MCZ3.json,2026-10-30,SECID MCZ3; Фьючерсный контракт MTLR-12.23; последний день обращения LSTTRADE 2023-12-21
+MTSS,forts_expiraciya,2023-03-01,2023-12-22,https://iss.moex.com/iss/securities/MTZ3.json,2026-10-30,SECID MTZ3; Фьючерсный контракт MTSI-12.23; последний день обращения LSTTRADE 2023-12-21
+NVTK,forts_expiraciya,2023-05-31,2023-12-22,https://iss.moex.com/iss/securities/NKZ3.json,2026-10-30,SECID NKZ3; Фьючерсный контракт NOTK-12.23; последний день обращения LSTTRADE 2023-12-21
+PHOR,forts_expiraciya,2023-05-31,2023-12-22,https://iss.moex.com/iss/securities/PHZ3.json,2026-10-30,SECID PHZ3; Фьючерсный контракт PHOR-12.23; последний день обращения LSTTRADE 2023-12-21
+RTKM,forts_expiraciya,2023-05-31,2023-12-22,https://iss.moex.com/iss/securities/RTZ3.json,2026-10-30,SECID RTZ3; Фьючерсный контракт RTKM-12.23; последний день обращения LSTTRADE 2023-12-21
+SBER,forts_expiraciya,2022-12-01,2023-12-22,https://iss.moex.com/iss/securities/SRZ3.json,2026-10-30,SECID SRZ3; Фьючерсный контракт SBRF-12.23; последний день обращения LSTTRADE 2023-12-21
+TATN,forts_expiraciya,2023-03-01,2023-12-22,https://iss.moex.com/iss/securities/TTZ3.json,2026-10-30,SECID TTZ3; Фьючерсный контракт TATN-12.23; последний день обращения LSTTRADE 2023-12-21
+VTBR,forts_expiraciya,2023-03-01,2023-12-22,https://iss.moex.com/iss/securities/VBZ3.json,2026-10-30,SECID VBZ3; Фьючерсный контракт VTBR-12.23; последний день обращения LSTTRADE 2023-12-21
+MGNT,imoex_free_float,2023-12-03,2023-12-22,https://iss.moex.com/iss/sitenews/65813.json,2026-10-30,в таблице free-float итоговой новости; free-float 50%→37%
+*,imoex_peresmotr,2023-12-03,2023-12-22,https://iss.moex.com/iss/sitenews/65813.json,2026-10-30,moex.com/n65813; предварительная 2023-11-30 n65737; дата вступления из итоговой новости; включены MTLR ао и ап (Мечел)
+MTLR,imoex_vklyuchenie,2023-12-03,2023-12-22,https://iss.moex.com/iss/sitenews/65813.json,2026-10-30,"текст новости; ISS IMOEX analytics: нет 2023-12-21, есть 2023-12-22"
+*,cbr_zasedanie_klyuchevaya_stavka,2024-02-16,2024-02-16,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,imoex_peresmotr,2024-02-26,2024-02-27,https://iss.moex.com/iss/sitenews/67843.json,2026-10-30,moex.com/n67843; внеочередной: исключение QIWI PLC (ДР) с 27.02.2024
+IMOEX,forts_expiraciya,2023-03-02,2024-03-21,https://iss.moex.com/iss/securities/MXH4.json,2026-10-30,SECID MXH4; Фьючерсный контракт MIX-3.24
+RTSI,forts_expiraciya,2022-05-12,2024-03-21,https://iss.moex.com/iss/securities/RIH4.json,2026-10-30,SECID RIH4; Фьючерсный контракт RTS-3.24
+*,cbr_zasedanie_klyuchevaya_stavka,2024-03-22,2024-03-22,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+AFLT,forts_expiraciya,2023-05-31,2024-03-22,https://iss.moex.com/iss/securities/AFH4.json,2026-10-30,SECID AFH4; Фьючерсный контракт AFLT-3.24; последний день обращения LSTTRADE 2024-03-21
+ALRS,forts_expiraciya,2023-05-31,2024-03-22,https://iss.moex.com/iss/securities/ALH4.json,2026-10-30,SECID ALH4; Фьючерсный контракт ALRS-3.24; последний день обращения LSTTRADE 2024-03-21
+HYDR,forts_expiraciya,2023-09-07,2024-03-22,https://iss.moex.com/iss/securities/HYH4.json,2026-10-30,SECID HYH4; Фьючерсный контракт HYDR-3.24; последний день обращения LSTTRADE 2024-03-21
+IRAO,forts_expiraciya,2023-09-07,2024-03-22,https://iss.moex.com/iss/securities/IRH4.json,2026-10-30,SECID IRH4; Фьючерсный контракт IRAO-3.24; последний день обращения LSTTRADE 2024-03-21
+LKOH,forts_expiraciya,2023-03-01,2024-03-22,https://iss.moex.com/iss/securities/LKH4.json,2026-10-30,SECID LKH4; Фьючерсный контракт LKOH-3.24; последний день обращения LSTTRADE 2024-03-21
+MGNT,forts_expiraciya,2023-05-31,2024-03-22,https://iss.moex.com/iss/securities/MNH4.json,2026-10-30,SECID MNH4; Фьючерсный контракт MGNT-3.24; последний день обращения LSTTRADE 2024-03-21
+MOEX,forts_expiraciya,2023-09-07,2024-03-22,https://iss.moex.com/iss/securities/MEH4.json,2026-10-30,SECID MEH4; Фьючерсный контракт MOEX-3.24; последний день обращения LSTTRADE 2024-03-21
+MTLR,forts_expiraciya,2023-09-07,2024-03-22,https://iss.moex.com/iss/securities/MCH4.json,2026-10-30,SECID MCH4; Фьючерсный контракт MTLR-3.24; последний день обращения LSTTRADE 2024-03-21
+MTSS,forts_expiraciya,2023-05-31,2024-03-22,https://iss.moex.com/iss/securities/MTH4.json,2026-10-30,SECID MTH4; Фьючерсный контракт MTSI-3.24; последний день обращения LSTTRADE 2024-03-21
+NVTK,forts_expiraciya,2023-09-07,2024-03-22,https://iss.moex.com/iss/securities/NKH4.json,2026-10-30,SECID NKH4; Фьючерсный контракт NOTK-3.24; последний день обращения LSTTRADE 2024-03-21
+PHOR,forts_expiraciya,2023-09-07,2024-03-22,https://iss.moex.com/iss/securities/PHH4.json,2026-10-30,SECID PHH4; Фьючерсный контракт PHOR-3.24; последний день обращения LSTTRADE 2024-03-21
+RTKM,forts_expiraciya,2023-09-07,2024-03-22,https://iss.moex.com/iss/securities/RTH4.json,2026-10-30,SECID RTH4; Фьючерсный контракт RTKM-3.24; последний день обращения LSTTRADE 2024-03-21
+SBER,forts_expiraciya,2023-03-01,2024-03-22,https://iss.moex.com/iss/securities/SRH4.json,2026-10-30,SECID SRH4; Фьючерсный контракт SBRF-3.24; последний день обращения LSTTRADE 2024-03-21
+TATN,forts_expiraciya,2023-05-31,2024-03-22,https://iss.moex.com/iss/securities/TTH4.json,2026-10-30,SECID TTH4; Фьючерсный контракт TATN-3.24; последний день обращения LSTTRADE 2024-03-21
+VTBR,forts_expiraciya,2023-05-31,2024-03-22,https://iss.moex.com/iss/securities/VBH4.json,2026-10-30,SECID VBH4; Фьючерсный контракт VTBR-3.24; последний день обращения LSTTRADE 2024-03-21
+*,imoex_peresmotr,2024-03-04,2024-03-22,https://iss.moex.com/iss/sitenews/68100.json,2026-10-30,moex.com/n68100; предварительная 2024-02-28 n67959; дата вступления из итоговой новости
+*,imoex_peresmotr,2024-03-15,2024-03-22,https://iss.moex.com/iss/sitenews/68343.json,2026-10-30,moex.com/n68343; внеочередной (ОБНОВЛЕНО): исключение акций Yandex N.V. (YNDX) с 22.03.2024
+*,cbr_zasedanie_klyuchevaya_stavka,2024-04-26,2024-04-26,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2024-06-07,2024-06-07,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2023-06-01,2024-06-20,https://iss.moex.com/iss/securities/MXM4.json,2026-10-30,SECID MXM4; Фьючерсный контракт MIX-6.24
+RTSI,forts_expiraciya,2022-06-09,2024-06-20,https://iss.moex.com/iss/securities/RIM4.json,2026-10-30,SECID RIM4; Фьючерсный контракт RTS-6.24
+AFLT,forts_expiraciya,2023-09-07,2024-06-21,https://iss.moex.com/iss/securities/AFM4.json,2026-10-30,SECID AFM4; Фьючерсный контракт AFLT-6.24; последний день обращения LSTTRADE 2024-06-20
+ALRS,forts_expiraciya,2023-09-07,2024-06-21,https://iss.moex.com/iss/securities/ALM4.json,2026-10-30,SECID ALM4; Фьючерсный контракт ALRS-6.24; последний день обращения LSTTRADE 2024-06-20
+HYDR,forts_expiraciya,2023-12-07,2024-06-21,https://iss.moex.com/iss/securities/HYM4.json,2026-10-30,SECID HYM4; Фьючерсный контракт HYDR-6.24; последний день обращения LSTTRADE 2024-06-20
+IRAO,forts_expiraciya,2023-12-07,2024-06-21,https://iss.moex.com/iss/securities/IRM4.json,2026-10-30,SECID IRM4; Фьючерсный контракт IRAO-6.24; последний день обращения LSTTRADE 2024-06-20
+LKOH,forts_expiraciya,2023-05-31,2024-06-21,https://iss.moex.com/iss/securities/LKM4.json,2026-10-30,SECID LKM4; Фьючерсный контракт LKOH-6.24; последний день обращения LSTTRADE 2024-06-20
+MGNT,forts_expiraciya,2023-09-07,2024-06-21,https://iss.moex.com/iss/securities/MNM4.json,2026-10-30,SECID MNM4; Фьючерсный контракт MGNT-6.24; последний день обращения LSTTRADE 2024-06-20
+MOEX,forts_expiraciya,2023-12-07,2024-06-21,https://iss.moex.com/iss/securities/MEM4.json,2026-10-30,SECID MEM4; Фьючерсный контракт MOEX-6.24; последний день обращения LSTTRADE 2024-06-20
+MTLR,forts_expiraciya,2023-12-07,2024-06-21,https://iss.moex.com/iss/securities/MCM4.json,2026-10-30,SECID MCM4; Фьючерсный контракт MTLR-6.24; последний день обращения LSTTRADE 2024-06-20
+MTSS,forts_expiraciya,2023-09-07,2024-06-21,https://iss.moex.com/iss/securities/MTM4.json,2026-10-30,SECID MTM4; Фьючерсный контракт MTSI-6.24; последний день обращения LSTTRADE 2024-06-20
+NVTK,forts_expiraciya,2023-12-07,2024-06-21,https://iss.moex.com/iss/securities/NKM4.json,2026-10-30,SECID NKM4; Фьючерсный контракт NOTK-6.24; последний день обращения LSTTRADE 2024-06-20
+PHOR,forts_expiraciya,2023-12-07,2024-06-21,https://iss.moex.com/iss/securities/PHM4.json,2026-10-30,SECID PHM4; Фьючерсный контракт PHOR-6.24; последний день обращения LSTTRADE 2024-06-20
+RTKM,forts_expiraciya,2023-12-07,2024-06-21,https://iss.moex.com/iss/securities/RTM4.json,2026-10-30,SECID RTM4; Фьючерсный контракт RTKM-6.24; последний день обращения LSTTRADE 2024-06-20
+SBER,forts_expiraciya,2023-05-31,2024-06-21,https://iss.moex.com/iss/securities/SRM4.json,2026-10-30,SECID SRM4; Фьючерсный контракт SBRF-6.24; последний день обращения LSTTRADE 2024-06-20
+TATN,forts_expiraciya,2023-09-07,2024-06-21,https://iss.moex.com/iss/securities/TTM4.json,2026-10-30,SECID TTM4; Фьючерсный контракт TATN-6.24; последний день обращения LSTTRADE 2024-06-20
+VTBR,forts_expiraciya,2023-09-07,2024-06-21,https://iss.moex.com/iss/securities/VBM4.json,2026-10-30,SECID VBM4; Фьючерсный контракт VTBR-6.24; последний день обращения LSTTRADE 2024-06-20
+VTBR,forts_expiraciya,2023-12-07,2024-06-21,https://iss.moex.com/iss/securities/VBU4.json,2026-10-30,SECID VBU4; Фьючерсный контракт VTBR-9.24; последний день обращения LSTTRADE 2024-06-20
+IRAO,imoex_free_float,2024-06-04,2024-06-21,https://iss.moex.com/iss/sitenews/69940.json,2026-10-30,в таблице free-float итоговой новости; free-float 35%→32%
+*,imoex_peresmotr,2024-06-04,2024-06-21,https://iss.moex.com/iss/sitenews/69940.json,2026-10-30,moex.com/n69940; предварительная 2024-05-30 n69811; дата вступления из итоговой новости
+*,cbr_zasedanie_klyuchevaya_stavka,2024-07-26,2024-07-26,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2024-09-13,2024-09-13,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2023-09-08,2024-09-19,https://iss.moex.com/iss/securities/MXU4.json,2026-10-30,SECID MXU4; Фьючерсный контракт MIX-9.24
+RTSI,forts_expiraciya,2022-09-09,2024-09-19,https://iss.moex.com/iss/securities/RIU4.json,2026-10-30,SECID RIU4; Фьючерсный контракт RTS-9.24
+AFLT,forts_expiraciya,2023-12-07,2024-09-20,https://iss.moex.com/iss/securities/AFU4.json,2026-10-30,SECID AFU4; Фьючерсный контракт AFLT-9.24; последний день обращения LSTTRADE 2024-09-19
+ALRS,forts_expiraciya,2023-12-07,2024-09-20,https://iss.moex.com/iss/securities/ALU4.json,2026-10-30,SECID ALU4; Фьючерсный контракт ALRS-9.24; последний день обращения LSTTRADE 2024-09-19
+HYDR,forts_expiraciya,2024-03-06,2024-09-20,https://iss.moex.com/iss/securities/HYU4.json,2026-10-30,SECID HYU4; Фьючерсный контракт HYDR-9.24; последний день обращения LSTTRADE 2024-09-19
+IRAO,forts_expiraciya,2024-03-06,2024-09-20,https://iss.moex.com/iss/securities/IRU4.json,2026-10-30,SECID IRU4; Фьючерсный контракт IRAO-9.24; последний день обращения LSTTRADE 2024-09-19
+LKOH,forts_expiraciya,2023-09-07,2024-09-20,https://iss.moex.com/iss/securities/LKU4.json,2026-10-30,SECID LKU4; Фьючерсный контракт LKOH-9.24; последний день обращения LSTTRADE 2024-09-19
+MGNT,forts_expiraciya,2023-12-07,2024-09-20,https://iss.moex.com/iss/securities/MNU4.json,2026-10-30,SECID MNU4; Фьючерсный контракт MGNT-9.24; последний день обращения LSTTRADE 2024-09-19
+MOEX,forts_expiraciya,2024-03-06,2024-09-20,https://iss.moex.com/iss/securities/MEU4.json,2026-10-30,SECID MEU4; Фьючерсный контракт MOEX-9.24; последний день обращения LSTTRADE 2024-09-19
+MTLR,forts_expiraciya,2024-03-06,2024-09-20,https://iss.moex.com/iss/securities/MCU4.json,2026-10-30,SECID MCU4; Фьючерсный контракт MTLR-9.24; последний день обращения LSTTRADE 2024-09-19
+MTSS,forts_expiraciya,2023-12-07,2024-09-20,https://iss.moex.com/iss/securities/MTU4.json,2026-10-30,SECID MTU4; Фьючерсный контракт MTSI-9.24; последний день обращения LSTTRADE 2024-09-19
+NVTK,forts_expiraciya,2024-03-06,2024-09-20,https://iss.moex.com/iss/securities/NKU4.json,2026-10-30,SECID NKU4; Фьючерсный контракт NOTK-9.24; последний день обращения LSTTRADE 2024-09-19
+PHOR,forts_expiraciya,2024-03-06,2024-09-20,https://iss.moex.com/iss/securities/PHU4.json,2026-10-30,SECID PHU4; Фьючерсный контракт PHOR-9.24; последний день обращения LSTTRADE 2024-09-19
+RTKM,forts_expiraciya,2024-03-06,2024-09-20,https://iss.moex.com/iss/securities/RTU4.json,2026-10-30,SECID RTU4; Фьючерсный контракт RTKM-9.24; последний день обращения LSTTRADE 2024-09-19
+SBER,forts_expiraciya,2023-09-07,2024-09-20,https://iss.moex.com/iss/securities/SRU4.json,2026-10-30,SECID SRU4; Фьючерсный контракт SBRF-9.24; последний день обращения LSTTRADE 2024-09-19
+TATN,forts_expiraciya,2023-12-07,2024-09-20,https://iss.moex.com/iss/securities/TTU4.json,2026-10-30,SECID TTU4; Фьючерсный контракт TATN-9.24; последний день обращения LSTTRADE 2024-09-19
+*,imoex_peresmotr,2024-09-03,2024-09-20,https://iss.moex.com/iss/sitenews/72591.json,2026-10-30,moex.com/n72591; предварительная 2024-08-30 n72393; дата вступления из итоговой новости
+*,cbr_zasedanie_klyuchevaya_stavka,2024-10-25,2024-10-25,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2023-12-08,2024-12-19,https://iss.moex.com/iss/securities/MXZ4.json,2026-10-30,SECID MXZ4; Фьючерсный контракт MIX-12.24
+RTSI,forts_expiraciya,2022-12-09,2024-12-19,https://iss.moex.com/iss/securities/RIZ4.json,2026-10-30,SECID RIZ4; Фьючерсный контракт RTS-12.24
+*,cbr_zasedanie_klyuchevaya_stavka,2024-12-20,2024-12-20,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+AFLT,forts_expiraciya,2024-03-06,2024-12-20,https://iss.moex.com/iss/securities/AFZ4.json,2026-10-30,SECID AFZ4; Фьючерсный контракт AFLT-12.24; последний день обращения LSTTRADE 2024-12-19
+ALRS,forts_expiraciya,2024-03-06,2024-12-20,https://iss.moex.com/iss/securities/ALZ4.json,2026-10-30,SECID ALZ4; Фьючерсный контракт ALRS-12.24; последний день обращения LSTTRADE 2024-12-19
+HYDR,forts_expiraciya,2024-06-05,2024-12-20,https://iss.moex.com/iss/securities/HYZ4.json,2026-10-30,SECID HYZ4; Фьючерсный контракт HYDR-12.24; последний день обращения LSTTRADE 2024-12-19
+IRAO,forts_expiraciya,2024-06-05,2024-12-20,https://iss.moex.com/iss/securities/IRZ4.json,2026-10-30,SECID IRZ4; Фьючерсный контракт IRAO-12.24; последний день обращения LSTTRADE 2024-12-19
+LKOH,forts_expiraciya,2023-12-07,2024-12-20,https://iss.moex.com/iss/securities/LKZ4.json,2026-10-30,SECID LKZ4; Фьючерсный контракт LKOH-12.24; последний день обращения LSTTRADE 2024-12-19
+MGNT,forts_expiraciya,2024-03-06,2024-12-20,https://iss.moex.com/iss/securities/MNZ4.json,2026-10-30,SECID MNZ4; Фьючерсный контракт MGNT-12.24; последний день обращения LSTTRADE 2024-12-19
+MOEX,forts_expiraciya,2024-06-05,2024-12-20,https://iss.moex.com/iss/securities/MEZ4.json,2026-10-30,SECID MEZ4; Фьючерсный контракт MOEX-12.24; последний день обращения LSTTRADE 2024-12-19
+MTLR,forts_expiraciya,2024-06-05,2024-12-20,https://iss.moex.com/iss/securities/MCZ4.json,2026-10-30,SECID MCZ4; Фьючерсный контракт MTLR-12.24; последний день обращения LSTTRADE 2024-12-19
+MTSS,forts_expiraciya,2024-03-06,2024-12-20,https://iss.moex.com/iss/securities/MTZ4.json,2026-10-30,SECID MTZ4; Фьючерсный контракт MTSI-12.24; последний день обращения LSTTRADE 2024-12-19
+NVTK,forts_expiraciya,2024-06-05,2024-12-20,https://iss.moex.com/iss/securities/NKZ4.json,2026-10-30,SECID NKZ4; Фьючерсный контракт NOTK-12.24; последний день обращения LSTTRADE 2024-12-19
+PHOR,forts_expiraciya,2024-06-05,2024-12-20,https://iss.moex.com/iss/securities/PHZ4.json,2026-10-30,SECID PHZ4; Фьючерсный контракт PHOR-12.24; последний день обращения LSTTRADE 2024-12-19
+RTKM,forts_expiraciya,2024-06-05,2024-12-20,https://iss.moex.com/iss/securities/RTZ4.json,2026-10-30,SECID RTZ4; Фьючерсный контракт RTKM-12.24; последний день обращения LSTTRADE 2024-12-19
+SBER,forts_expiraciya,2023-12-07,2024-12-20,https://iss.moex.com/iss/securities/SRZ4.json,2026-10-30,SECID SRZ4; Фьючерсный контракт SBRF-12.24; последний день обращения LSTTRADE 2024-12-19
+TATN,forts_expiraciya,2024-03-06,2024-12-20,https://iss.moex.com/iss/securities/TTZ4.json,2026-10-30,SECID TTZ4; Фьючерсный контракт TATN-12.24; последний день обращения LSTTRADE 2024-12-19
+VTBR,forts_expiraciya,2024-07-16,2024-12-20,https://iss.moex.com/iss/securities/VBZ4.json,2026-10-30,SECID VBZ4; Фьючерсный контракт VTBR-12.24; последний день обращения LSTTRADE 2024-12-19
+MOEX,imoex_free_float,2024-12-04,2024-12-20,https://iss.moex.com/iss/sitenews/75466.json,2026-10-30,в таблице free-float итоговой новости; free-float 65%→64% (действующий 65% не согласуется с 64% после 2022-06: изменение 64→65 между ними не найдено)
+*,imoex_peresmotr,2024-12-04,2024-12-20,https://iss.moex.com/iss/sitenews/75466.json,2026-10-30,moex.com/n75466; предварительная 2024-11-29 n75298; дата вступления из итоговой новости
+*,cbr_zasedanie_klyuchevaya_stavka,2025-02-14,2025-02-14,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2024-03-07,2025-03-20,https://iss.moex.com/iss/securities/MXH5.json,2026-10-30,SECID MXH5; Фьючерсный контракт MIX-3.25
+RTSI,forts_expiraciya,2023-03-10,2025-03-20,https://iss.moex.com/iss/securities/RIH5.json,2026-10-30,SECID RIH5; Фьючерсный контракт RTS-3.25
+*,cbr_zasedanie_klyuchevaya_stavka,2025-03-21,2025-03-21,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+AFLT,forts_expiraciya,2024-06-05,2025-03-21,https://iss.moex.com/iss/securities/AFH5.json,2026-10-30,SECID AFH5; Фьючерсный контракт AFLT-3.25; последний день обращения LSTTRADE 2025-03-20
+ALRS,forts_expiraciya,2024-06-05,2025-03-21,https://iss.moex.com/iss/securities/ALH5.json,2026-10-30,SECID ALH5; Фьючерсный контракт ALRS-3.25; последний день обращения LSTTRADE 2025-03-20
+HYDR,forts_expiraciya,2024-09-05,2025-03-21,https://iss.moex.com/iss/securities/HYH5.json,2026-10-30,SECID HYH5; Фьючерсный контракт HYDR-3.25; последний день обращения LSTTRADE 2025-03-20
+IRAO,forts_expiraciya,2024-09-05,2025-03-21,https://iss.moex.com/iss/securities/IRH5.json,2026-10-30,SECID IRH5; Фьючерсный контракт IRAO-3.25; последний день обращения LSTTRADE 2025-03-20
+LKOH,forts_expiraciya,2024-03-06,2025-03-21,https://iss.moex.com/iss/securities/LKH5.json,2026-10-30,SECID LKH5; Фьючерсный контракт LKOH-3.25; последний день обращения LSTTRADE 2025-03-20
+MGNT,forts_expiraciya,2024-06-05,2025-03-21,https://iss.moex.com/iss/securities/MNH5.json,2026-10-30,SECID MNH5; Фьючерсный контракт MGNT-3.25; последний день обращения LSTTRADE 2025-03-20
+MOEX,forts_expiraciya,2024-09-05,2025-03-21,https://iss.moex.com/iss/securities/MEH5.json,2026-10-30,SECID MEH5; Фьючерсный контракт MOEX-3.25; последний день обращения LSTTRADE 2025-03-20
+MTLR,forts_expiraciya,2024-09-05,2025-03-21,https://iss.moex.com/iss/securities/MCH5.json,2026-10-30,SECID MCH5; Фьючерсный контракт MTLR-3.25; последний день обращения LSTTRADE 2025-03-20
+MTSS,forts_expiraciya,2024-06-05,2025-03-21,https://iss.moex.com/iss/securities/MTH5.json,2026-10-30,SECID MTH5; Фьючерсный контракт MTSI-3.25; последний день обращения LSTTRADE 2025-03-20
+NVTK,forts_expiraciya,2024-09-05,2025-03-21,https://iss.moex.com/iss/securities/NKH5.json,2026-10-30,SECID NKH5; Фьючерсный контракт NOTK-3.25; последний день обращения LSTTRADE 2025-03-20
+PHOR,forts_expiraciya,2024-09-05,2025-03-21,https://iss.moex.com/iss/securities/PHH5.json,2026-10-30,SECID PHH5; Фьючерсный контракт PHOR-3.25; последний день обращения LSTTRADE 2025-03-20
+RTKM,forts_expiraciya,2024-09-05,2025-03-21,https://iss.moex.com/iss/securities/RTH5.json,2026-10-30,SECID RTH5; Фьючерсный контракт RTKM-3.25; последний день обращения LSTTRADE 2025-03-20
+SBER,forts_expiraciya,2024-03-06,2025-03-21,https://iss.moex.com/iss/securities/SRH5.json,2026-10-30,SECID SRH5; Фьючерсный контракт SBRF-3.25; последний день обращения LSTTRADE 2025-03-20
+TATN,forts_expiraciya,2024-06-05,2025-03-21,https://iss.moex.com/iss/securities/TTH5.json,2026-10-30,SECID TTH5; Фьючерсный контракт TATN-3.25; последний день обращения LSTTRADE 2025-03-20
+VTBR,forts_expiraciya,2024-07-16,2025-03-21,https://iss.moex.com/iss/securities/VBH5.json,2026-10-30,SECID VBH5; Фьючерсный контракт VTBR-3.25; последний день обращения LSTTRADE 2025-03-20
+MGNT,imoex_iskluchenie,2025-03-05,2025-03-21,https://iss.moex.com/iss/sitenews/78230.json,2026-10-30,"текст новости; ISS IMOEX analytics: есть 2025-03-20, нет 2025-03-21"
+*,imoex_peresmotr,2025-03-05,2025-03-21,https://iss.moex.com/iss/sitenews/78230.json,2026-10-30,"moex.com/n78230; предварительная 2025-02-28 n78049; дата вступления из итоговой новости; исключены MGNT ао, MTLR ап (ап — не ticker MTLR), Европлан, Самолет"
+*,cbr_zasedanie_klyuchevaya_stavka,2025-04-25,2025-04-25,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2025-06-06,2025-06-06,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2024-06-06,2025-06-19,https://iss.moex.com/iss/securities/MXM5.json,2026-10-30,SECID MXM5; Фьючерсный контракт MIX-6.25
+RTSI,forts_expiraciya,2023-06-08,2025-06-19,https://iss.moex.com/iss/securities/RIM5.json,2026-10-30,SECID RIM5; Фьючерсный контракт RTS-6.25
+AFLT,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/AFM5.json,2026-10-30,SECID AFM5; Фьючерсный контракт AFLT-6.25; последний день обращения LSTTRADE 2025-06-19
+ALRS,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/ALM5.json,2026-10-30,SECID ALM5; Фьючерсный контракт ALRS-6.25; последний день обращения LSTTRADE 2025-06-19
+HYDR,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/HYM5.json,2026-10-30,SECID HYM5; Фьючерсный контракт HYDR-6.25; последний день обращения LSTTRADE 2025-06-19
+IRAO,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/IRM5.json,2026-10-30,SECID IRM5; Фьючерсный контракт IRAO-6.25; последний день обращения LSTTRADE 2025-06-19
+LKOH,forts_expiraciya,2024-06-05,2025-06-20,https://iss.moex.com/iss/securities/LKM5.json,2026-10-30,SECID LKM5; Фьючерсный контракт LKOH-6.25; последний день обращения LSTTRADE 2025-06-19
+MGNT,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/MNM5.json,2026-10-30,SECID MNM5; Фьючерсный контракт MGNT-6.25; последний день обращения LSTTRADE 2025-06-19
+MOEX,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/MEM5.json,2026-10-30,SECID MEM5; Фьючерсный контракт MOEX-6.25; последний день обращения LSTTRADE 2025-06-19
+MTLR,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/MCM5.json,2026-10-30,SECID MCM5; Фьючерсный контракт MTLR-6.25; последний день обращения LSTTRADE 2025-06-19
+MTSS,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/MTM5.json,2026-10-30,SECID MTM5; Фьючерсный контракт MTSI-6.25; последний день обращения LSTTRADE 2025-06-19
+NVTK,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/NKM5.json,2026-10-30,SECID NKM5; Фьючерсный контракт NOTK-6.25; последний день обращения LSTTRADE 2025-06-19
+PHOR,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/PHM5.json,2026-10-30,SECID PHM5; Фьючерсный контракт PHOR-6.25; последний день обращения LSTTRADE 2025-06-19
+RTKM,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/RTM5.json,2026-10-30,SECID RTM5; Фьючерсный контракт RTKM-6.25; последний день обращения LSTTRADE 2025-06-19
+SBER,forts_expiraciya,2024-06-05,2025-06-20,https://iss.moex.com/iss/securities/SRM5.json,2026-10-30,SECID SRM5; Фьючерсный контракт SBRF-6.25; последний день обращения LSTTRADE 2025-06-19
+TATN,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/TTM5.json,2026-10-30,SECID TTM5; Фьючерсный контракт TATN-6.25; последний день обращения LSTTRADE 2025-06-19
+VTBR,forts_expiraciya,2024-12-05,2025-06-20,https://iss.moex.com/iss/securities/VBM5.json,2026-10-30,SECID VBM5; Фьючерсный контракт VTBR-6.25; последний день обращения LSTTRADE 2025-06-19
+MTLR,imoex_iskluchenie,2025-06-06,2025-06-20,https://iss.moex.com/iss/sitenews/90903.json,2026-10-30,"текст новости; ISS IMOEX analytics: есть 2025-06-19, нет 2025-06-20 (ап MTLRP исключены ранее, 2025-03-21)"
+*,imoex_peresmotr,2025-06-06,2025-06-20,https://iss.moex.com/iss/sitenews/90903.json,2026-10-30,"moex.com/n90903; предварительная 2025-05-29 n90638; дата вступления из итоговой новости; исключены MTLR ао, Селигдар"
+*,cbr_zasedanie_klyuchevaya_stavka,2025-07-25,2025-07-25,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+*,cbr_zasedanie_klyuchevaya_stavka,2025-09-12,2025-09-12,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2024-09-06,2025-09-18,https://iss.moex.com/iss/securities/MXU5.json,2026-10-30,SECID MXU5; Фьючерсный контракт MIX-9.25
+RTSI,forts_expiraciya,2023-09-15,2025-09-18,https://iss.moex.com/iss/securities/RIU5.json,2026-10-30,SECID RIU5; Фьючерсный контракт RTS-9.25
+AFLT,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/AFU5.json,2026-10-30,SECID AFU5; Фьючерсный контракт AFLT-9.25; последний день обращения LSTTRADE 2025-09-18
+ALRS,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/ALU5.json,2026-10-30,SECID ALU5; Фьючерсный контракт ALRS-9.25; последний день обращения LSTTRADE 2025-09-18
+HYDR,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/HYU5.json,2026-10-30,SECID HYU5; Фьючерсный контракт HYDR-9.25; последний день обращения LSTTRADE 2025-09-18
+IRAO,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/IRU5.json,2026-10-30,SECID IRU5; Фьючерсный контракт IRAO-9.25; последний день обращения LSTTRADE 2025-09-18
+LKOH,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/LKU5.json,2026-10-30,SECID LKU5; Фьючерсный контракт LKOH-9.25; последний день обращения LSTTRADE 2025-09-18
+MGNT,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/MNU5.json,2026-10-30,SECID MNU5; Фьючерсный контракт MGNT-9.25; последний день обращения LSTTRADE 2025-09-18
+MOEX,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/MEU5.json,2026-10-30,SECID MEU5; Фьючерсный контракт MOEX-9.25; последний день обращения LSTTRADE 2025-09-18
+MTLR,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/MCU5.json,2026-10-30,SECID MCU5; Фьючерсный контракт MTLR-9.25; последний день обращения LSTTRADE 2025-09-18
+MTSS,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/MTU5.json,2026-10-30,SECID MTU5; Фьючерсный контракт MTSI-9.25; последний день обращения LSTTRADE 2025-09-18
+NVTK,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/NKU5.json,2026-10-30,SECID NKU5; Фьючерсный контракт NOTK-9.25; последний день обращения LSTTRADE 2025-09-18
+PHOR,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/PHU5.json,2026-10-30,SECID PHU5; Фьючерсный контракт PHOR-9.25; последний день обращения LSTTRADE 2025-09-18
+RTKM,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/RTU5.json,2026-10-30,SECID RTU5; Фьючерсный контракт RTKM-9.25; последний день обращения LSTTRADE 2025-09-18
+SBER,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/SRU5.json,2026-10-30,SECID SRU5; Фьючерсный контракт SBRF-9.25; последний день обращения LSTTRADE 2025-09-18
+TATN,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/TTU5.json,2026-10-30,SECID TTU5; Фьючерсный контракт TATN-9.25; последний день обращения LSTTRADE 2025-09-18
+VTBR,forts_expiraciya,2025-03-06,2025-09-19,https://iss.moex.com/iss/securities/VBU5.json,2026-10-30,SECID VBU5; Фьючерсный контракт VTBR-9.25; последний день обращения LSTTRADE 2025-09-18
+LSRG,imoex_free_float,2025-09-03,2025-09-19,https://iss.moex.com/iss/sitenews/93297.json,2026-10-30,в таблице free-float итоговой новости; free-float 25%→24%
+MOEX,imoex_free_float,2025-09-03,2025-09-19,https://iss.moex.com/iss/sitenews/93297.json,2026-10-30,в таблице free-float итоговой новости; free-float 64%→65%
+HYDR,imoex_iskluchenie,2025-09-03,2025-09-19,https://iss.moex.com/iss/sitenews/93297.json,2026-10-30,"текст новости; ISS IMOEX analytics: есть 2025-09-18, нет 2025-09-19"
+*,imoex_peresmotr,2025-09-03,2025-09-19,https://iss.moex.com/iss/sitenews/93297.json,2026-10-30,"moex.com/n93297; предварительная 2025-08-29 n93170; дата вступления из итоговой новости; исключены HYDR, Группа Астра, Россети"
+*,cbr_zasedanie_klyuchevaya_stavka,2025-10-24,2025-10-24,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+IMOEX,forts_expiraciya,2024-12-06,2025-12-18,https://iss.moex.com/iss/securities/MXZ5.json,2026-10-30,SECID MXZ5; Фьючерсный контракт MIX-12.25
+RTSI,forts_expiraciya,2023-12-15,2025-12-18,https://iss.moex.com/iss/securities/RIZ5.json,2026-10-30,SECID RIZ5; Фьючерсный контракт RTS-12.25
+*,cbr_zasedanie_klyuchevaya_stavka,2025-12-19,2025-12-19,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
+AFLT,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/AFZ5.json,2026-10-30,SECID AFZ5; Фьючерсный контракт AFLT-12.25; последний день обращения LSTTRADE 2025-12-18
+ALRS,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/ALZ5.json,2026-10-30,SECID ALZ5; Фьючерсный контракт ALRS-12.25; последний день обращения LSTTRADE 2025-12-18
+HYDR,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/HYZ5.json,2026-10-30,SECID HYZ5; Фьючерсный контракт HYDR-12.25; последний день обращения LSTTRADE 2025-12-18
+IRAO,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/IRZ5.json,2026-10-30,SECID IRZ5; Фьючерсный контракт IRAO-12.25; последний день обращения LSTTRADE 2025-12-18
+LKOH,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/LKZ5.json,2026-10-30,SECID LKZ5; Фьючерсный контракт LKOH-12.25; последний день обращения LSTTRADE 2025-12-18
+MGNT,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/MNZ5.json,2026-10-30,SECID MNZ5; Фьючерсный контракт MGNT-12.25; последний день обращения LSTTRADE 2025-12-18
+MOEX,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/MEZ5.json,2026-10-30,SECID MEZ5; Фьючерсный контракт MOEX-12.25; последний день обращения LSTTRADE 2025-12-18
+MTLR,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/MCZ5.json,2026-10-30,SECID MCZ5; Фьючерсный контракт MTLR-12.25; последний день обращения LSTTRADE 2025-12-18
+MTSS,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/MTZ5.json,2026-10-30,SECID MTZ5; Фьючерсный контракт MTSI-12.25; последний день обращения LSTTRADE 2025-12-18
+NVTK,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/NKZ5.json,2026-10-30,SECID NKZ5; Фьючерсный контракт NOTK-12.25; последний день обращения LSTTRADE 2025-12-18
+PHOR,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/PHZ5.json,2026-10-30,SECID PHZ5; Фьючерсный контракт PHOR-12.25; последний день обращения LSTTRADE 2025-12-18
+RTKM,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/RTZ5.json,2026-10-30,SECID RTZ5; Фьючерсный контракт RTKM-12.25; последний день обращения LSTTRADE 2025-12-18
+SBER,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/SRZ5.json,2026-10-30,SECID SRZ5; Фьючерсный контракт SBRF-12.25; последний день обращения LSTTRADE 2025-12-18
+TATN,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/TTZ5.json,2026-10-30,SECID TTZ5; Фьючерсный контракт TATN-12.25; последний день обращения LSTTRADE 2025-12-18
+VTBR,forts_expiraciya,2025-06-04,2025-12-19,https://iss.moex.com/iss/securities/VBZ5.json,2026-10-30,SECID VBZ5; Фьючерсный контракт VTBR-12.25; последний день обращения LSTTRADE 2025-12-18
+*,imoex_peresmotr,2025-12-05,2025-12-19,https://iss.moex.com/iss/sitenews/95882.json,2026-10-30,moex.com/n95882; предварительной нет; дата вступления из итоговой новости; предварительная новость не найдена в просмотренных страницах sitenews
+*,cbr_zasedanie_klyuchevaya_stavka,2026-02-13,2026-02-13,https://www.cbr.ru/dkp/cal_mp/,2026-10-30,объявление = дата решения (дата публикации календаря не подтверждена документацией)
