@@ -85,7 +85,7 @@ def test_g4_net_kolleg_flag_zapisan():
     assert not flag["A"].any() and not flag["B"].any()
     td, ind = mk_td(C, "C")
     ss = ot.semya(get_family("S3", "v5"), "sektor", fon, flag)(td, ind, GRIDS["S3"])
-    assert ss.extra["otn_imoex_vmesto_sektora"].all()
+    assert ss.extra["otn_imoex_vmesto_sektora"][1:].all() and not ss.extra["otn_imoex_vmesto_sektora"][0]
 
 
 def test_den_kolleg_nan_den_imoex_s_flagom():
@@ -114,7 +114,7 @@ def prefiks_neizmenen(fon_fn, t0=250):
 def fon_mut_d1(c, imoex, metki, rezhim):
     """Мутация M-d1: фон дня d берётся с доходностью дня d+1."""
     fon, flag = ot.fon_ryad(c, imoex, metki, rezhim)
-    return fon.shift(-1), flag
+    return fon.shift(-1).fillna(0.0), flag
 
 
 def test_m_d1_prefiks_i_mutaciya_lovitsya():
