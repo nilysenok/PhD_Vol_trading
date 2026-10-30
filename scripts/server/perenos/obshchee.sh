@@ -109,6 +109,23 @@ okruzhenie() {   # данные — только perenos/data, кэши — pere
   mkdir -p "$P/cache" "$P/logs" "$P/ledger" "$P/tables" "$P/proverka"
 }
 
+raspakovat_kod() {   # tar -> kod/<sha256> только чтение (razvernut.sh, obnovit_kod.sh); уже распакован — не трогается
+  [ ! -d "$KOD_DIR" ] || return 0
+  local tmp="$P/kod/.raspakovka_$$" nakl
+  mkdir -p "$tmp"
+  tar -xzf "$KOD_TAR" -C "$tmp" --strip-components=1
+  [ -z "$(find "$tmp" \( -path '*/data/*' -o -name '*test_locked*' -o -name '*test1_2022_2024*' \) -print -quit)" ] || fail "в tar кода есть data/ или test_locked"
+  [ -z "$(find "$tmp" \( -name __pycache__ -o -name '*.pyc' -o -name '*.nbi' -o -name '*.nbc' \) -print -quit)" ] || fail "в tar кода есть __pycache__/numba-кэш — кэш привязан к машине, пересоберите perenos/"
+  nakl=$(kv nakladka)                   # файлы манифеста, которые fastbt читает от корня кода (VERSIYA: nakladka)
+  if [ -n "$nakl" ]; then
+    awk -F'\t' 'NR > 1 && NF { print (NF == 7 ? $6 : $1) }' "$MANIFEST" | { grep -E "$nakl" || true; } \
+      | while IFS= read -r p; do mkdir -p "$tmp/$(dirname "$p")"; cp "data/$p" "$tmp/$p"; done
+  fi
+  sha_spisok "$tmp" > "$KOD_SUMS"
+  mv "$tmp" "$KOD_DIR"
+  chmod -R a-w "$KOD_DIR"
+}
+
 kod_cel() {   # tar тот же, распакованный код не правился (Ж-131 п. 6)
   [ -f "$KOD_TAR" ] || fail "нет $KOD_TAR"
   [ "$(sha_file "$KOD_TAR")" = "$KOD_SHA" ] || fail "sha256 $KOD_TAR ≠ VERSIYA (tar_sha256) — код подменён или скопирован не целиком"

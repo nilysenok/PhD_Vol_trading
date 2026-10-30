@@ -94,6 +94,16 @@ python3 -m fastbt.progon_server --kub v6 --period train4 --seed 1 --zamorozka <.
    Оценщик `EvaluatorV6` получает ряды из `fastbt.istochniki_v6.zagruzit(period, tikery)` (лист Ист-v6); модуля нет — отказ до счёта. Если у `IstochnikiV6` есть `sha`, он входит в `vhody` (ключ кэша, Д5); иначе `vhody` покрывает только входы v5.
 Ограничение: `IstochnikiV6` (ряды для rel_signal, К9–К24, события, внешние условия) в базе не собирается ни одним загрузчиком, поэтому оси, которым нужны эти ряды, на реальных данных дают ошибку точки (`ось … включена, а в IstochnikiV6 нет …`) и остаются «не измерено» (n_akt < 20, не заморожены). Малая проверка на Маке (1 траектория S1, train4): 20 точек, 19 с этой ошибкой.
 
+## Обновление кода (без повторной передачи данных)
+Пакет уже развёрнут (`./razvernut.sh`). Новый код — 4 команды:
+```
+PERENOS_OUT=perenos_new PERENOS_PREDYDUSHCHIJ=perenos scripts/server/sobrat_perenos.sh <коммит>      # Мак
+rsync -av --files-from=perenos_new/spisok_obnovleniya.txt perenos_new/ user@host:perenos/             # Мак
+cd perenos && ./obnovit_kod.sh                                                                         # сервер
+./proverka_yakor.sh                                                                                    # сервер: новая отметка proverka/OK
+```
+`spisok_obnovleniya.txt` — всё, кроме `data/` (tar кода, `VERSIYA`, эталон, скрипты, манифест, `SHA256SUMS`, отметка wf); данные добавляются, только если sha `manifest_dannyh.tsv` ≠ прежнего пакета (без `PERENOS_PREDYDUSHCHIJ` данные не включаются). `obnovit_kod.sh`: сверка `SHA256SUMS`; отказ при живом прогоне (`logs/sobol_*.pid`); `.venv` не пересоздаётся, пины `requirements_server.txt` обязаны совпасть с установленными — иначе отказ с указанием `./razvernut.sh`; sha манифеста совпал с отметкой `proverka/OK` — `data/` не трогается, иначе сверка по новому манифесту (не совпало — отказ); новый код — в `kod/<sha>` только чтение. Старые `kod/<sha>` не удаляются: откат — вернуть прежние `VERSIYA`, `kod_<sha>.tar.gz`, `etalony_<sha>.npz`, `SHA256SUMS` и повторить `./obnovit_kod.sh` и `./proverka_yakor.sh`. Без новой отметки `proverka/OK` (она привязана к sha кода) `zapusk_sobol.sh` откажет.
+
 ## Пины и кэши
 `requirements_server.txt` (и `env/requirements_r2.txt`) содержат `numba==0.60.0`, `llvmlite==0.43.0` и пины numpy 2.0.2, pandas 2.3.3, pyarrow 21.0.0, scipy 1.13.1 — версии Мака; сборщик сверяет их с этим Маком (`versii.py`, расхождение — FAIL), `razvernut.sh` — с сервером (строка `OK versii: ...`, расхождение — FAIL). В tar нет `__pycache__` и numba-кэша (сборщик и `razvernut.sh` проверяют); кэши numba — в `cache/numba/`.
 
