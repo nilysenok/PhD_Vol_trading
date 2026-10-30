@@ -1,0 +1,109 @@
+"""Тестировщик PR #857: мутации и границы окон для `fastbt/a_shtrih_v7_kniga.py` (код не меняется)."""
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from fastbt import a_shtrih_v7_kniga as K
+from fastbt import progon_urovni as pu
+from fastbt.kniga_msp import mnozhitel_vola
+from tests.test_a_shtrih_v7_kniga import _kniga_2beta, _mk, _run
+
+KOM = 0.0004
+
+
+def _beta_menyaetsya():
+    """Книга, у которой β меняется со временем: комиссия обязана идти от |Δh|, не от h."""
+    rng = np.random.default_rng(5)
+    T = 200
+    im = rng.normal(0, 0.001, T)
+    k = np.where(np.arange(T) < 120, 2.0, 3.0)
+    return dict(X=(k * im)[None, None, :], poz=np.ones((1, 1, T)), sektora=np.array([0]), imoex=im,
+                mix=rng.normal(0, 0.01, T), ks=np.zeros(T))
+
+
+def test_g1_tri_sinteticheskih_vykl_ravno_a_shtrih_pobajtno():
+    konf = next(c for c in pu.konfiguracii() if c["rol"] == "ravnyj_bez_targeta")
+    for S, N, T, seed, nan in ((2, 3, 90, 11, True), (5, 6, 200, 12, True), (3, 2, 60, 13, False)):
+        d = _mk(S=S, N=N, T=T, seed=seed, nan=nan)
+        daty = pd.bdate_range("2016-01-04", periods=T)
+        ref = pu.a_shtrih({f"S{k}": d["X"][k] for k in range(S)}, konf, daty)
+        assert ref.tobytes() == _run(d).ryad.tobytes(), (S, N, T)
+
+
+def test_mutatsiya_komissiya_hedzha_ot_beta_vmesto_modulya_izmeneniya_lovitsya():
+    d = _beta_menyaetsya()
+    r = _run(d, hedzh=True)
+    assert np.array_equal(r.kom_hedzh, KOM * np.abs(np.diff(r.h, prepend=0.0)))
+    assert r.kom_hedzh[100] < 1e-9                                  # β стоит -> комиссии нет
+    assert r.kom_hedzh[100] != pytest.approx(KOM * abs(r.h[100]))   # мутация (от |h|) дала бы 0,0008
+
+
+def test_mutatsiya_tsel_bez_okna_s_dnyom_d_lovitsya(monkeypatch):
+    d = _mk(T=150, seed=3)
+    base = _run(d, tsel_vol=True).m
+    orig = K.mnozhitel_vola
+    monkeypatch.setattr(K, "mnozhitel_vola", lambda ex, i, g, tsel=0.10, plecho=2.0: orig(ex, i + 1, g, tsel, plecho))
+    assert not np.array_equal(base, _run(d, tsel_vol=True).m)
+
+
+def test_mutatsiya_plecho_tri_vmesto_dvuh_lovitsya():
+    rng = np.random.default_rng(4)
+    T = 80
+    d = dict(X=rng.normal(0, 1e-5, (1, 1, T)), poz=np.full((1, 1, T), 1.0), sektora=np.array([0]),
+             imoex=rng.normal(0, 0.01, T), mix=np.zeros(T), ks=np.zeros(T))
+    assert (np.abs(_run(d, tsel_vol=True).m[30:]) <= 2.0 + 1e-12).all()
+    assert (np.abs(_run(d, tsel_vol=True, plecho=3.0).m[30:]) > 2.0 + 1e-9).all()    # мутация видна
+
+
+def test_okno_tseli_rovno_21_strogo_menshe_d():
+    rng = np.random.default_rng(6)
+    x = rng.normal(0, 0.01, 100)
+    i = 60
+    y = x.copy(); y[i - 22] += 0.5
+    assert mnozhitel_vola(x, i, 1.0) == mnozhitel_vola(y, i, 1.0)
+    y = x.copy(); y[i - 21] += 0.5
+    assert mnozhitel_vola(x, i, 1.0) != mnozhitel_vola(y, i, 1.0)
+    y = x.copy(); y[i] += 0.5
+    assert mnozhitel_vola(x, i, 1.0) == mnozhitel_vola(y, i, 1.0)
+
+
+def test_beta_okno_63_strogo_menshe_d_cherez_knigu():
+    d = _kniga_2beta(T=200)
+    i = 150
+    h0 = _run(d, hedzh=True).h[i]
+    for j, menyaet in ((i - 64, False), (i - 63, True), (i, False)):
+        d2 = {**d, "imoex": d["imoex"].copy(), "X": d["X"].copy()}
+        d2["imoex"][j] += 0.05
+        d2["X"][0, 0, j] += 0.03
+        assert (_run(d2, hedzh=True).h[i] != h0) == menyaet, j
+
+
+def test_granitsa_mix_nan_vkljuchenie_i_otklyuchenie_platyat_komissiyu():
+    d = _kniga_2beta(T=200)
+    d["mix"][:100] = np.nan
+    d["mix"][150:] = np.nan
+    r = _run(d, hedzh=True)
+    assert r.kom_hedzh[100] > 0 and r.kom_hedzh[150] == pytest.approx(KOM * abs(r.h[149]))
+    assert r.h[150:].tolist() == [0.0] * 50
+
+
+def test_imoex_nan_tozhe_gasit_hedzh_i_ryad_konechen():
+    d = _kniga_2beta(T=200)
+    d["imoex"][120] = np.nan
+    r = _run(d, hedzh=True)
+    assert r.mix_nan[120] and r.h[120] == 0 and np.isfinite(r.ryad[120])
+
+
+def test_otkryto_kommissiya_pri_smene_mnozhitelya_ne_beretsya_potolok():
+    """Фиксируем размер недоначисления: Δ(m·f) не стоит ничего (в `kniga_msp` комиссии на множитель нет совсем).
+    Тест падает, если автор добавит комиссию — тогда обновить число."""
+    d = _mk(S=3, N=4, T=300, seed=21, nan=False)
+    r = _run(d, tsel_vol=True, vykl=True, sektor_netto=False)
+    mf = r.m * r.f
+    oborot = np.nansum(np.abs(np.diff(mf)))
+    ryad_s = r.ryad
+    ex_port = _run(d).ryad
+    assert np.allclose(ryad_s, ex_port * mf - r.marzha, equal_nan=True)   # ни одного вычета за смену m·f
+    assert oborot > 1.0                                                    # дополнительный оборот не нулевой
