@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ekviv  # noqa: E402
 import ekviv_io  # noqa: E402
 import ekviv_sravn  # noqa: E402
+import ekviv_v6  # noqa: E402
 
 
 def main(argv=None) -> int:
@@ -40,12 +41,17 @@ def main(argv=None) -> int:
     tochki = ekviv_io.tochki_iz(eta)
     print(f"proverka[режим {a.rezhim}]: эталон {Path(a.etalony).name} ({meta_eta.get('machine')}, numba {meta_eta.get('numba')}, "
           f"numpy {meta_eta.get('numpy')}, numba_threads {meta_eta.get('numba_threads')}, layer {meta_eta.get('numba_layer')}): "
-          f"якорей {sum(m.startswith('yakor') for m in eta)}, точек {len(tochki)}; DOPUSK {dopusk:g}", flush=True)
+          f"якорей {sum(m.startswith('yakor') for m in eta)}, точек {len(tochki)}; v6: якорей {sum(m.startswith('v6yakor') for m in eta)}, "
+          f"точек {len(ekviv_v6.iz_etalona(eta)[0])}, быстрый слой {len(ekviv_v6.iz_etalona(eta)[1])}; DOPUSK {dopusk:g}", flush=True)
     t0 = time.time()
     if a.moi:
         moi, meta_moi = ekviv_io.zagruzit(a.moi)
     else:
         moi, meta_moi = ekviv.poschitat(tochki, a.procs)
+        if ekviv_v6.est_v6(eta):                  # эталон с набором v6: тот же допуск 1e-12, дискретное строго (Ж-137 п. 4)
+            t6, b6 = ekviv_v6.iz_etalona(eta)
+            rez6, m6, kod6 = ekviv_v6.poschitat(t6, b6, a.procs)
+            ekviv_v6.dobavit(moi, meta_moi, rez6, m6, kod6)
         meta_moi.update(ekviv.sreda_meta())
     r = ekviv_sravn.sravnit(eta, meta_eta, moi, meta_moi, dopusk)
     disk, pv = r["diskretnoe"], r["nepreryvnoe_pervoe"]

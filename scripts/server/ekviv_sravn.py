@@ -8,7 +8,8 @@ TOL_YAKOR = 1e-12 (Ж-131), точки — `dopusk` (переменная DOPUSK
 import numpy as np
 
 TOL_YAKOR = 1e-12
-SHAPKA = ("kod", "vhody", "kub", "daty")
+YAKOR = ("yakor", "v6yakor")
+SHAPKA = ("kod", "vhody", "kub", "daty", "v6_vhody", "v6_kub", "v6_daty")      # v6_* — набор v6 (ekviv_v6.py); у старого эталона None == None
 
 
 def _x(s: str) -> float:
@@ -57,8 +58,8 @@ def _diskretnoe(eta, meta_eta, moi, meta_moi) -> list:
 def _nepreryvnoe(eta, moi, dopusk: float) -> tuple:
     """-> (первое превышение (имя, что, Δ, допуск) или None, число превышений, max Δ якоря, max Δ точек)."""
     pervoe, chislo, dm = None, 0, {True: 0.0, False: 0.0}
-    for m in sorted(set(eta) & set(moi), key=lambda x: (not x.startswith("yakor"), x)):
-        a, b, yak = eta[m], moi[m], m.startswith("yakor")
+    for m in sorted(set(eta) & set(moi), key=lambda x: (not x.startswith(YAKOR), x)):
+        a, b, yak = eta[m], moi[m], m.startswith(YAKOR)
         tol = TOL_YAKOR if yak else dopusk
         ds = [(f"поле {p}", delta(_x(h), _x(b["hex"][p]))) for p, h in sorted(a["hex"].items()) if p in b["hex"]]
         ds += [(f"ряд {k}", delta_ryada(a[k], b[k])) for k in ("p", "t", "pz") if a[k].shape == b[k].shape]
