@@ -32,11 +32,19 @@ _SRC_FILES = {"harj_h1": ("sigma_harj_b_h1_dev", "sigma_pred_h1"), "hyb_h1": ("s
               "harj_h5d": ("sigma_harj_b_h5_dev", "sigma_pred_h5"), "hyb_h5d": ("sigma_hyb_h5_dev", "sigma_pred_h5")}
 
 
-def read_dev(path, cols) -> pd.DataFrame:
-    d = pd.read_parquet(path, columns=cols, filters=[("date", "<=", LAST)])
+WF_CH4 = SRC / "wf" / "ch4_sigma"    # σ̂ C/D walk-forward (#745): те же имена файлов и колонки, что в ch4_dev; ≤ 2021 побайтно равен ch4_dev
+
+
+def katalog(period: str | None = None) -> Path:
+    """Каталог σ̂ модели: wf — `data/regen/wf/ch4_sigma`, прочие периоды — `ch4_dev`."""
+    return WF_CH4 if period == "wf" else CH4
+
+
+def read_dev(path, cols, last: pd.Timestamp = LAST) -> pd.DataFrame:
+    d = pd.read_parquet(path, columns=cols, filters=[("date", "<=", last)])
     d["date"] = pd.to_datetime(d["date"])
-    d = d[d["date"] <= LAST].reset_index(drop=True)
-    assert len(d) == 0 or d["date"].max() <= LAST, "дата > 2021-12-31"
+    d = d[d["date"] <= last].reset_index(drop=True)
+    assert len(d) == 0 or d["date"].max() <= last, f"дата > {last.date()}"
     return d
 
 
@@ -64,9 +72,13 @@ def sigma_naive(rv: pd.DataFrame) -> pd.DataFrame:
     return _out(r, np.sqrt(s))
 
 
-def load_model(name: str) -> pd.DataFrame:
+def load_model(name: str, period: str | None = None) -> pd.DataFrame:
     f, c = _SRC_FILES[name]
-    d = read_dev(CH4 / f"{f}.parquet", ["date", "ticker", c]).rename(columns={c: "sigma"})
+    if period == "wf" and not (WF_CH4 / f"{f}.parquet").exists():
+        raise FileNotFoundError(f"σ̂ {name} для wf: в {WF_CH4} есть только гибрид (hyb_h1, hyb_h5d)")
+    from fastbt import period_v2        # конец wf — 2026-02-28 (Ж-136); иначе LAST
+    last = period_v2.PERIODY["wf"].konec if period == "wf" else LAST
+    d = read_dev(katalog(period) / f"{f}.parquet", ["date", "ticker", c], last).rename(columns={c: "sigma"})
     d["sigma"] = d["sigma"].astype("float64")   # daily-эквивалент h5: σ̂₅ как есть (см. шапку)
     return d.sort_values(["date", "ticker"]).reset_index(drop=True)
 

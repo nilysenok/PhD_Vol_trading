@@ -7,9 +7,8 @@
   cbr — `sobytiya_e1.load_cbr`; div — только годные строки свода Д8 (`div_sverka_svod.csv`, announce_date = announce_pit), div_verified=True;
   свода нет — div_verified=False (❓5): ось дивидендов оценщик отказывает. Содержимое div входит в `sha` (ключ кэша).
 Период — через `period_v2.proverit_chtenie` (wf до отметки владельца — отказ); читается строго < конец периода + 1 день;
-конец позже `zona.end()` (2022) — NotImplementedError (загрузчики ≥ 2022 не подключены), молча не обрезается.
-Д3: значение дня d — из баров < 18:50 d, а Z/σ̂ берутся на d−1 внутри модулей. Д4: дыры остаются NaN (в `Dannye` — вход
-запрещён модулем контекста; в td_rel — ValueError оценщика), ffill нет. Чтение файлов — только класс `Fajly` (в тестах подменяется).
+конец позже `zona.end()` (2022) — NotImplementedError (кроме wf), молча не обрезается. wf: usdrub = USD до 11.06.2024 + CNY (Ж-140), cnyrub в `sha`.
+Д3: значение дня d — из баров < 18:50 d, Z/σ̂ — на d−1 внутри модулей. Д4: дыры остаются NaN, ffill нет. Файлы — только `Fajly`.
 """
 from __future__ import annotations
 
@@ -20,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from fastbt import daily_1850 as d18, e1_rel_sektor as rels, e1_sektor as sek, filtr_e1, kontekst_v6, period_v2, rel_ryad
-from fastbt import rezhim_e1, sigma_real, sobytiya_e1, t_obshchee, vneshnie_1850 as v18, vneshnie_uslovie as vu, zona
+from fastbt import rezhim_e1, sigma_real, sobytiya_e1, t_obshchee, vneshnie_1850 as v18, vneshnie_uslovie as vu, zona, vneshnie_usdrub as vusd
 from fastbt.eval_v6 import IstochnikiV6
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -35,8 +34,9 @@ def _al(s: pd.Series, ix: pd.DatetimeIndex) -> np.ndarray:
 class Fajly:
     """Чтение файлов (только < end). Нет файла индекса/фактора — None (решает вызывающий)."""
 
-    def __init__(self, end: pd.Timestamp, main: Path | None = None):
-        self.end, self.main = end, Path(main) if main else d18.default_main()
+    period = None        # "wf" включает CNY-хвост usdrub и границу wf; прочие периоды — прежнее
+    def __init__(self, end: pd.Timestamp, main: Path | None = None, period: str | None = None):
+        self.end, self.main, self.period = end, Path(main) if main else d18.default_main(), period
 
     def akcii(self, t: str) -> pd.DataFrame:
         return d18.read_bars(self.main / "moex_discovery" / "data" / "raw" / "candles_10m" / f"{t}.parquet", self.end)
@@ -44,7 +44,7 @@ class Fajly:
     def indeks(self, name: str):
         key = name.lower()
         p = self.main / (v18.PATHS[key] if key in v18.PATHS else f"{sek.IDX_DIR}/{name}.parquet")
-        return v18.read_bars(p, self.end) if p.exists() else None
+        return v18.read_bars(p, v18.granitsa("wf") if self.period == "wf" else self.end) if p.exists() else None
 
     def zakrytie(self, t: str) -> pd.Series:
         """Дневной close Н6 тикера (с поправкой на дивиденды, как у оценщика)."""
@@ -65,10 +65,11 @@ class Fajly:
         return out, table
 
     def ryady(self, tikery):
-        """Все входные ряды источников [(имя, DataFrame | Series | None)] для хэша: бары, индексы, факторы, Brent, close, календарь."""
+        """Все входные ряды [(имя, DataFrame | Series | None)] для хэша: бары, индексы, факторы, Brent, close, календарь."""
         names = {n for rows in rels.sektor_pit(ROOT / rels.SEKTORY_CSV).values() for _, n in rows if n}
         out = [(f"akcii:{t}", self.akcii(t)) for t in tikery] + [(f"close:{t}", self.zakrytie(t)) for t in tikery]
-        out += [(f"indeks:{n}", self.indeks(n)) for n in sorted(names | {"imoex", "rvi", "usdrub"})]
+        ids = names | {"imoex", "rvi", "usdrub"} | ({"cnyrub"} if self.period == "wf" else set())   # Д5: CNY — только wf
+        out += [(f"indeks:{n}", self.indeks(n)) for n in sorted(ids)]
         bars, table = self.brent()
         out += [(f"brent:{k}", b) for k, b in sorted(bars.items())] + [("brent_tablica", table)]
         return out + list(zip(("cbr", "div"), self.kalendar()))
@@ -149,6 +150,8 @@ class _Sbor:
                 rv = {s: sigma_real.rv_1850(b) for s, b in bars.items()}
                 r = pd.Series([rv[s].get(d, np.nan) for d, s in zip(br["date"], br["secid"])], index=pd.DatetimeIndex(br["date"]), dtype=float)
                 return br.set_index("date")["ret"], sigma_real.sigma_rv(r, 22)
+            if f == "usdrub" and self.f.period == "wf":      # USD до 11.06.2024, CNY с 12.06.2024 (Ж-140)
+                return vusd.faktor_usdrub(self.f.indeks("usdrub"), self.f.indeks("cnyrub"))
             b = self.f.indeks(f)
             if b is None:
                 raise FileNotFoundError(f"внешний фактор {f}: нет файла баров")
@@ -190,7 +193,7 @@ def sha_ryadov(f: Fajly, tikery) -> str:
 
 def zagruzit(period: str, tikery, main: Path | None = None, fajly: Fajly | None = None) -> IstochnikiV6:
     """Ряды для EvaluatorV6(ist=...) на период `period` (train4 | v2 | wf) и universe `tikery`."""
-    f = fajly or Fajly(konec(period), main)
+    f = fajly or Fajly(konec(period), main, period)
     sbor = _Sbor(f, tikery)
     cbr, div = f.kalendar()
     return IstochnikiV6(dannye=sbor.dannye, rel=sbor.rel, vn=sbor.vn, cbr=cbr, div=div, div_verified=f.div_otfiltrovan(), rel_progrev=True,
