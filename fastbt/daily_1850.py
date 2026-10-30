@@ -31,7 +31,10 @@ import pyarrow.parquet as pq
 END = pd.Timestamp("2022-01-01")          # исключительно: только 2018–2021
 OPEN_MIN = 9 * 60 + 50                    # 09:50 — как rv_1850_noquar
 CUT_MIN = 18 * 60 + 50                    # 18:50 — бар с началом ≥ 18:50 в день не входит
-COLS = ["ticker", "date", "open", "high", "low", "close", "volume"]
+END_WF = pd.Timestamp("2026-03-01")       # wf (Ж-136): исключительно, т.е. по 2026-02-28; читать только при отметке владельца
+WEEKEND_FROM = pd.Timestamp("2025-01-01")  # с этой даты суббота/воскресенье не входят (решение 30.10: только будние сессии);
+#                                            до неё переносные рабочие субботы остаются, как в ряду ≤ 2021
+COLS =["ticker", "date", "open", "high", "low", "close", "volume"]
 
 
 def default_main() -> Path:
@@ -44,7 +47,8 @@ def aggregate(bars: pd.DataFrame, ticker: str, cut_min: int = CUT_MIN) -> pd.Dat
     b = bars.sort_values("timestamp")
     mod = b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute
     b = b[(mod >= OPEN_MIN) & (mod < cut_min)]
-    g = b.groupby(b["timestamp"].dt.normalize(), sort=True)
+    b = b[~((b["timestamp"] >= WEEKEND_FROM) & (b["timestamp"].dt.dayofweek >= 5))]
+    g =b.groupby(b["timestamp"].dt.normalize(), sort=True)
     out = pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
                         "close": g["close"].last(), "volume": g["volume"].sum().astype("int64")})
     out.index.name = "date"
@@ -73,6 +77,46 @@ def build(main: Path | None = None, tickers: list[str] | None = None) -> pd.Data
     from fastbt import zona
     d = d[d["date"] < zona.end()]
     return d.sort_values(["ticker", "date"]).reset_index(drop=True)
+
+
+def build_wf(main: Path | None = None, tickers: list[str] | None = None, end: pd.Timestamp = END_WF) -> pd.DataFrame:
+    """Ряд для wf (06.2014 – end, исключительно): чтение только при отметке владельца (period_v2.proverit_chtenie).
+    Участок < 2022 идентичен build(); после докачки 10-минуток — просто перезапуск."""
+    from fastbt import period_v2
+    from fastbt.data import TICKERS
+    period_v2.proverit_chtenie("wf")
+    src = (main or default_main()) / "moex_discovery" / "data" / "raw" / "candles_10m"
+    flt = [("timestamp", "<", end.to_pydatetime())]
+    parts = [aggregate(pq.read_table(src / f"{t}.parquet", filters=flt).to_pandas(), t) for t in (tickers or TICKERS)]
+    d = pd.concat(parts, ignore_index=True)
+    return d.sort_values(["ticker", "date"]).reset_index(drop=True)
+
+
+def calendar_extend(old_days: list, daily: pd.DataFrame) -> list:
+    """Календарь торговых дней: прежние строки (≤ их последнего дня) без изменений + дни ряда после них.
+    Новые дни — только будни ≥ WEEKEND_FROM (дни, когда торговался хотя бы один тикер); выходных нет."""
+    old = sorted(pd.Timestamp(x) for x in old_days)
+    new = sorted(set(pd.to_datetime(daily["date"])) - set(old))
+    new = [d for d in new if d > old[-1] and not (d >= WEEKEND_FROM and d.dayofweek >= 5)]
+    return old + new
+
+
+def calendar_path(main: Path | None = None) -> Path:
+    return (main or default_main()) / "data" / "calendar" / "torgovye_dni_moex.csv"
+
+
+def excluded_weekend_days(main: Path, tickers: list[str], end: pd.Timestamp = END_WF) -> pd.DataFrame:
+    """Сколько выходных дней ≥ WEEKEND_FROM исключено по тикерам (дни с барами в [09:50; 18:50) Сб/Вс)."""
+    src = main / "moex_discovery" / "data" / "raw" / "candles_10m"
+    rows = {}
+    for t in tickers:
+        b = pq.read_table(src / f"{t}.parquet", filters=[("timestamp", ">=", WEEKEND_FROM.to_pydatetime()),
+                                                          ("timestamp", "<", end.to_pydatetime())]).to_pandas()
+        mod = b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute
+        b = b[(mod >= OPEN_MIN) & (mod < CUT_MIN) & (b["timestamp"].dt.dayofweek >= 5)]
+        days = b["timestamp"].dt.normalize().drop_duplicates()
+        rows[t] = days.groupby(days.dt.year).size()
+    return pd.DataFrame(rows).fillna(0).astype(int).T
 
 
 def out_path(main: Path | None = None) -> Path:
@@ -134,7 +178,20 @@ def check_data_root(root: str | Path) -> Path:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--wf", action="store_true", help="ряд до 2026-02-28 + календарь (в --out-каталог data/…)")
+    ap.add_argument("--calendar-out", type=Path, default=None)
     a = ap.parse_args()
+    if a.wf:
+        d = build_wf()
+        p = a.out or out_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        d.to_parquet(p, index=False)
+        cal = calendar_extend(list(pd.read_csv(calendar_path())["date"]), d)
+        cp = a.calendar_out or p.parents[2] / "calendar" / "torgovye_dni_moex.csv"
+        cp.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame({"date": [x.strftime("%Y-%m-%d") for x in cal]}).to_csv(cp, index=False)
+        print(p, sha256(p), cp, d["date"].max().date())
+        raise SystemExit(0)
     p = a.out or out_path()
     ensure(p)
     print(p, sha256(p))
