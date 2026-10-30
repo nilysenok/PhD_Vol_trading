@@ -10,7 +10,8 @@ PRAVILA = [
     ("moex_discovery/data/external/moex_iss/currency_10m/USD000UTSTOM.parquet", "pq", ("begin",), (), "vneshnie_1850 PATHS['usdrub'] (фактор USDRUB, indeks('usdrub'))"),
     ("moex_volatility/results/final/strategies/data/vpred_aligned.parquet", "pq", ("date",), (), "fastbt/data.py VPRED (load_ticker -> istochniki_v6.Fajly.zakrytie)"),
     ("data/corporate_actions.csv", "csv", ("date",), (), "fastbt/data.py corp_actions"),
-    ("data/calendar/torgovye_dni_moex.csv", "csv", ("date",), (), "торговый календарь MOEX"),
+    ("data/events.csv", "csv", ("data_obyavleniya", "data_sobytiya"), (), "fastbt/sobytiya_pit.py (календарь событий PIT: объявление и событие)"),
+    ("data/calendar/torgovye_dni_moex.csv","csv", ("date",), (), "торговый календарь MOEX"),
     ("fastbt/rates/key_rate_cbr_vladelec.csv", "csv", ("data_vstupleniya",), (), "ставка ЦБ владельца (дата вступления; объявление раньше входа)"),
     *[(f"data/calendar/{n}.csv", "csv", KAL, ("retrieved_at",), f"календарь {n} (PIT: date и known_from)")
       for n in ("cbr", "expirations", "fomc", "imoex_rebal", "imoex_rebal_official", "cpi_us")],
