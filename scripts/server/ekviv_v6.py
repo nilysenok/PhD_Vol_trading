@@ -88,7 +88,12 @@ def _yakor(sr, c, sid, period: str) -> dict:
 
 
 def _zadacha(z: tuple) -> tuple:
-    """(sid, idx | None, bystr, kvota, period) -> (sid, {имя: запись}, kod, vhody, kub_sha, daty_sha, пропущено). idx None — набор по квоте."""
+    with ekviv.zona_perioda(z[-1]):                # wf: зона wf на время задачи (в самом процессе)
+        return _zadacha_zona(z)
+
+
+def _zadacha_zona(z: tuple) -> tuple:
+    """(sid, idx | None, bystr, kvota, period) ->(sid, {имя: запись}, kod, vhody, kub_sha, daty_sha, пропущено). idx None — набор по квоте."""
     sid, idx, bystr, kvota, period = z
     ps = _ps()
     rz = rezhim(sid, period)

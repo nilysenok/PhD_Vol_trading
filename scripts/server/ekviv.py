@@ -10,6 +10,7 @@
   vi   — индексы входа/выхода по тикерам [(тикер, день, +1 вход / −1 выход)], выведены из |позиции| тикера (int64 [k, 3]).
 Метрик не печатает."""
 import concurrent.futures as cf
+import contextlib
 import json
 import multiprocessing as mp
 import os
@@ -100,7 +101,18 @@ def _zapis(r: dict, p, t, evr) -> dict:
                 hex=_hexy(r), p=_ryad(p), t=_ryad(t), pz=pz, sd=sd, vi=vi)
 
 
+def zona_perioda(period: str):
+    """wf: зона wf (данные по 2026-02-28) на время счёта, на выходе (и при ошибке) прежняя зона; train4 — зона не меняется."""
+    from fastbt import zona
+    return zona.zone_ctx("wf") if period == "wf" else contextlib.nullcontext()
+
+
 def _zadacha(z: tuple) -> tuple:
+    with zona_perioda(z[-1]):                      # в самом процессе задачи: зона не наследуется из fork
+        return _zadacha_zona(z)
+
+
+def _zadacha_zona(z: tuple) -> tuple:
     """(sid, [i], yakor, period) -> (sid, {imya: запись}, kod, vhody, {kub_sha, daty_sha}) в одном процессе (один оценщик на Sk)."""
     sid, idx, yakor, period = z
     ps, rz = _ps(), rz_perioda(period)

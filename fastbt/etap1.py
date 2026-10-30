@@ -95,7 +95,7 @@ def sk_evaluator(sid: str):
 def window_idx(dates, start, y0: int, end) -> tuple:
     """(s0, a0, i1): начало прогрева, первый день метрик (1 января y0), конец окна. a0 — граница ex-ante для h (❓1)."""
     f = lambda d: int(np.searchsorted(dates, np.datetime64(d)))      # noqa: E731
-    return f(start), f(f"{y0}-01-01"), f(end)
+    return f(start), f(f"{y0}-01-01"), min(f(end), len(dates) - 1)    # ряд кончается раньше end (wf: 02-27 при 02-28) — i1 = его последний день
 
 
 def _konec_z2(ev) -> pd.Timestamp:
