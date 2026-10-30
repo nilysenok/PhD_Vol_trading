@@ -82,8 +82,6 @@ def test_storona_pobajtno_prezhnyaya_i_strength_v_semye():
         assert (sila[side == 0] == 0).all()
 
 
-@pytest.mark.xfail(strict=True, reason="Д4: при ATR = 0 сила подменена на ±1 (сигнал с неопределённой силой попадает в ранг); "
-                                       "правильно — NaN/0 с флагом")
 def test_atr_nol_sila_ne_podmenyaetsya_edinicej():
     b = b10_iz(lambda i, s: 101.0 if (i == DAY and s in POSLEDNIJ_1H) else 100.0, 12)    # плоско (TR = 0), затем пробой вверх
     side = I.proboj(b, "1h", "18:30")
