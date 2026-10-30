@@ -107,11 +107,11 @@ def test_g2_mutatsiya_bufer_ne_vykl_lovitsya():
 
 
 # ---- G3: M-d1 ----
-def _prichinno(fn, c, m, metki, d=250):
+def _prichinno(fn, c, m, metki, d=270):
     """Скор до дня d включительно не меняется, если испортить цены после d."""
     a = fn(c, m, metki)
     c2, m2 = c.copy(), m.copy()
-    c2.iloc[d + 1:] *= 3.7
+    c2.iloc[d + 1:] *= np.linspace(0.3, 3.7, c.shape[1])[None, :] ** 2    # разные множители: ранги меняются
     m2.iloc[d + 1:] *= 0.4
     b = fn(c2, m2, metki)
     return _eq(a[:d + 1], b[:d + 1])
@@ -127,8 +127,9 @@ def test_g3_skor_prichinen(sid):
 @pytest.mark.parametrize("sid", ["S7", "S8", "S9"])
 def test_g3_mutatsiya_d_plus_1_lovitsya(sid):
     c, m, metki = _ceny()
-    # скор дня d берёт c[d+1]: сдвиг цен на -1 перед панелью
-    mut = lambda c_, m_, mk: kv.panel(c_.shift(-1), m_.shift(-1), mk, sid)   # noqa: E731
+    # скор дня d берёт будущее: у S8 последние 21 день окна не используются, поэтому для неё опережение 25 дней
+    k = -25 if sid == "S8" else -1
+    mut = lambda c_, m_, mk: kv.panel(c_.shift(k), m_.shift(k), mk, sid)   # noqa: E731
     assert not _prichinno(mut, c, m, metki)
 
 
@@ -214,7 +215,7 @@ def test_g5_placebo_sohranyaet_chislo_nog():
         a = np.nansum(sg * sk >= 0.5, axis=1)
         b = np.nansum(sg * p >= 0.5, axis=1)
         assert np.array_equal(a, b)
-    assert np.array_equal(np.sort(sk, axis=1), np.sort(p, axis=1))     # множество значений дня цело (NaN в конце)
+    assert np.array_equal(np.sort(sk, axis=1), np.sort(p, axis=1), equal_nan=True)     # множество значений дня цело (NaN в конце)
     assert not _eq(sk, p)                                              # перестановка не тождественна
     assert (np.isnan(sk).sum(1) == np.isnan(p).sum(1)).all()
 
