@@ -81,9 +81,11 @@ def test_svod_ne_chitaet_sam_sebya_i_zapis_chitaetsya(tmp_path):
     assert len(ds.svod(tmp_path)) == 1
 
 
-def test_realnyj_svod_146_godnyh_iz_173():
+def test_realnyj_svod_213_godnyh_iz_247_a_do_2021_146_iz_173():
     s = ds.svod()
-    assert (len(s), sum(x["godna"] for x in s)) == (173, 146)
+    assert (len(s), sum(x["godna"] for x in s)) == (247, 213)
+    do21 = [x for x in s if x["record_date"] <= "2021-12-31"]
+    assert (len(do21), sum(x["godna"] for x in do21)) == (173, 146)      # прежние числа сохранены
     assert ds.SVOD.read_text(encoding="utf-8") == _tekst(s)
     # круг 2 перекрывает круг 1 на реальных файлах
     d = {(x["ticker"], x["record_date"]): x for x in s}

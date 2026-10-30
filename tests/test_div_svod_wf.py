@@ -114,11 +114,11 @@ def test_realnyj_svod_usechenie_2021_dayot_prezhnij(tmp_path):
     assert hashlib.sha256(cp.read_bytes()).hexdigest() == SHA_2021
 
 
-def test_realnyj_svod_pokryvaet_do_2026_02_i_2022_2024_pochti_ne_godny():
+def test_realnyj_svod_pokryvaet_do_2026_02_i_godnye_po_godam():
     rows = list(csv.DictReader(open(REPO / "docs/issledovaniya/div_sverka_svod.csv", encoding="utf-8")))
     god = {y: sum(int(r["godna"]) for r in rows if r["record_date"][:4] == y) for y in map(str, range(2022, 2027))}
     assert max(r["record_date"] for r in rows) <= "2026-02-28" and "2026-01-12" in {r["record_date"] for r in rows}
-    assert god["2022"] == 0 and god["2023"] == 0 and god["2024"] == 0 and god["2025"] == 15 and god["2026"] == 2
+    assert [god[y] for y in sorted(god)] == [12, 16, 21, 16, 2]
 
 
 def test_mutaciya_2022_plyus_godny_bez_podtverzhdeniya_lovitsya(tmp_path, monkeypatch):
