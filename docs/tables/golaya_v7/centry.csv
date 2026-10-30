@@ -1,0 +1,7 @@
+sid,tip,porog,bufer,cap,rebal,opredelenie,tau,vhod,t_sig,spravochno_vhod_T,istochnik
+S7,secheniye,0.5,0.0,3,den,razvorot 5 dn k IMOEX,,,,,plan Zh-146 par.7 v1
+S8,secheniye,0.5,0.0,3,nedelya,momentum 12-1,,,,,plan Zh-146 par.7 v1
+S9,secheniye,0.5,0.0,3,nedelya,sila k sektoru 63 dn,,,,,plan Zh-146 par.7 v1
+S10,impuls,,,,,proboy kanala 20 polnyh 1ch-bar,2,d1,18:30,17:00|18:00|18:40,plan Zh-146 par.7 v1
+S11,impuls,,,,,proboy kanala 20 polnyh 2ch-bar (Zh-107),2,d1,18:30,17:00|18:00|18:40,plan Zh-146 par.7 v1
+S12,impuls,,,,,soglasie proboev 1ch i 2ch v odnu storonu v tot zhe den,2,d1,18:30,17:00|18:00|18:40,plan Zh-146 par.7 v1
