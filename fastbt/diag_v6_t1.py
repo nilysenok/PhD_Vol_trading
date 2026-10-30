@@ -43,7 +43,8 @@ def _sk(koren: Path) -> list:
     return sorted(p.name for p in koren.iterdir() if (p / f"morris_{p.name}.csv").exists())
 
 
-def _stroki_sk(koren: Path, sid: str, gr: dict) -> list:
+def df_sk(koren: Path, sid: str, gr: dict) -> pd.DataFrame:
+    """Строки morris_<Sk>.csv + g (группа владельца), izm (измерена), ne_ocen (нет сделок в паре), mertv."""
     df = _chitat_csv(koren / sid / f"morris_{sid}.csv")
     zam = yaml.safe_load((koren / sid / "zamorozka.yaml").read_text(encoding="utf-8")) or {}
     net_sdelok = set(zam.get("ne_ocenyeny_net_sdelok") or [])
@@ -53,7 +54,11 @@ def _stroki_sk(koren: Path, sid: str, gr: dict) -> list:
     df["izm"] = ok
     df["ne_ocen"] = df["os"].isin(net_sdelok)
     df["mertv"] = df["os"].isin(mertvye)
-    out = []
+    return df
+
+
+def _stroki_sk(koren: Path, sid: str, gr: dict) -> list:
+    df, out = df_sk(koren, sid, gr), []
     for okno, d in df.groupby("okno", sort=True):
         tot = d.loc[d["izm"], "mu_star"].sum()
         for g in pr.GRUPPY:
@@ -99,8 +104,11 @@ def tablica_1(koren, gruppy_csv=None) -> tuple:
 
 if __name__ == "__main__":
     import sys
+
+    from fastbt import diag_v6_t1_chastota as ch
     d, v = tablica_1(sys.argv[1])
     out = Path(sys.argv[2])
-    out.parent.mkdir(parents=True, exist_ok=True)
-    d.to_csv(out, index=False)
+    ch.zapisat(d, out)
+    ch.zapisat(ch.tablica_chastota(sys.argv[1]), out.with_name("t1_chastota.csv"))
+    ch.zapisat(ch.sravnenie(sys.argv[1]), out.with_name("t1_sravnenie.csv"))
     print(d.to_string(index=False), "\n" + v)
