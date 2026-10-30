@@ -193,14 +193,25 @@ def test_sha_pravka_yaml_bez_hasha_lovitsya_detektorom(tmp_path):
     assert "kub_S9.yaml" in c7.sha_nesovpadenia(d)
 
 
-@pytest.mark.xfail(strict=True, reason="ДЕФЕКТ #909: load_kub/proverit не сверяют SHA256SUMS — правка yaml без хэша загружается молча")
 def test_sha_pravka_yaml_bez_hasha_otkaz_zagruzki(tmp_path):
     d = tmp_path / "v7"
     shutil.copytree(V7, d)
     f = d / "kub_S1.yaml"
     f.write_text(f.read_text(encoding="utf-8").replace("N: 100000", "N: 100001"))
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         c7.load_kub("S1", root=d)
+
+
+def test_mut_sverit_sha_ne_vyzyvaetsya_lovitsya(tmp_path, monkeypatch):
+    """Мутация: вызов sverit_sha удалён — правленый yaml грузится молча, тест отказа обязан это поймать."""
+    monkeypatch.setattr(c7, "sverit_sha", lambda *a, **k: None)
+    d = tmp_path / "v7"
+    shutil.copytree(V7, d)
+    f = d / "kub_S1.yaml"
+    f.write_text(f.read_text(encoding="utf-8").replace("N: 100000", "N: 100001"))
+    with pytest.raises(pytest.fail.Exception):
+        with pytest.raises(ValueError):
+            c7.load_kub("S1", root=d)
 
 
 def test_pravka_signala_otkaz_proverit(kuby):
