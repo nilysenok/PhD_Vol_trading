@@ -1,5 +1,4 @@
 """Боевой загрузчик рядов оценщика v6: `zagruzit(period, tikery) -> IstochnikiV6` (лист Ист-v6, Ж-135: только код и малые проверки).
-
 Собирает ряды для осей v6 из существующих загрузчиков, ничего не придумывая:
   dannye(t, td) → kontekst_v6.Dannye на td.dates: σ̂ rv5/rv22/rv66 (`sigma_real`), Z рынка (`t_obshchee.Z_ryad`), режим IMOEX
     (`rezhim_e1.rezhim_arrays`), сектор К9–К12 (`e1_sektor.Ctx`), К13–К16 (`e1_rel_sektor.Ctx`, bench сектор/рынок);
@@ -32,9 +31,8 @@ def _al(s: pd.Series, ix: pd.DatetimeIndex) -> np.ndarray:
 
 
 class Fajly:
-    """Чтение файлов (только < end). Нет файла индекса/фактора — None (решает вызывающий)."""
-
-    period = None        # "wf" включает CNY-хвост usdrub и границу wf; прочие периоды — прежнее
+    """Чтение файлов (только < end). Нет файла индекса/фактора — None (решает вызывающий); wf без CNYRUB_TOM — отказ."""
+    period = None       # "wf" включает CNY-хвост usdrub и границу wf; прочие периоды — прежнее
     def __init__(self, end: pd.Timestamp, main: Path | None = None, period: str | None = None):
         self.end, self.main, self.period = end, Path(main) if main else d18.default_main(), period
 
@@ -44,6 +42,8 @@ class Fajly:
     def indeks(self, name: str):
         key = name.lower()
         p = self.main / (v18.PATHS[key] if key in v18.PATHS else f"{sek.IDX_DIR}/{name}.parquet")
+        if self.period == "wf" and key == "cnyrub" and not p.exists():     # Д4: без CNY ось usdrub молча пуста после 11.06.2024
+            raise FileNotFoundError(f"wf: нет файла CNYRUB_TOM {p} — ось usdrub после 11.06.2024 была бы пустой")
         return v18.read_bars(p, v18.granitsa("wf") if self.period == "wf" else self.end) if p.exists() else None
 
     def zakrytie(self, t: str) -> pd.Series:
