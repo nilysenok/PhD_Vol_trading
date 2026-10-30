@@ -196,7 +196,7 @@ def test_sha_v_klyuche_tochki(monkeypatch):
     from fastbt.eval_v6 import EvaluatorV6, IstochnikiV6
     from fastbt.etap1_eval_v2 import EvaluatorV2
     keys = []
-    monkeypatch.setattr(EvaluatorV2, "evaluate_v2", lambda self, pt, period: keys.append(self._fkey))
+    monkeypatch.setattr(EvaluatorV2, "evaluate_v2", lambda self, pt, period, vozm=None: keys.append(self._fkey))
     monkeypatch.setattr(EvaluatorV6, "__init__", lambda self, sid, ist: self.__dict__.update(sid=sid, ist=ist, inp=SimpleNamespace(sigma={})))
     monkeypatch.setattr("fastbt.eval_v6.razdelit", lambda sid, pt: ({}, {"rezhim": "imoex_ma200"}))
     monkeypatch.setattr("fastbt.eval_v6.razbor", lambda *a: SimpleNamespace(filtr={}, nov={}, pt4={}, sp={}, ext={}))

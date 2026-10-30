@@ -1,0 +1,3 @@
+sid,tochka,pravilo,istochnik
+S5,"{""pivot_type"": ""woodie"", ""pivot_period"": ""nedelya"", ""uroven"": 2, ""atr_filtr"": 1.0, ""filter_set"": 3}",srednij element kazhdoj osi (golaya_tf_v5.tsentr; v[len//2]) setki v5_s56.G5,predregistraciya: dobavleno POSLE pervogo progona #891 (31.10); pravilo to zhe chto u S1-S4 v golaya_otnositelno_v7/centry.csv
+S6,"{""dev_mult"": 1.75, ""dir_bias"": ""ON"", ""filter_set"": 2, ""vwap_window"": 20}",srednij element kazhdoj osi (golaya_tf_v5.tsentr; v[len//2]) setki v5_s56.G6,predregistraciya: dobavleno POSLE pervogo progona #891 (31.10); pravilo to zhe chto u S1-S4 v golaya_otnositelno_v7/centry.csv

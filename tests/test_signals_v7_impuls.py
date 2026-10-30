@@ -65,7 +65,7 @@ def test_forma_signalset_i_warmup():
     assert isinstance(ss, IF.SignalSet) and ss.k == 3 and ss.params[1]["T"] == "17:00"
     assert ss.sig.shape == ss.exit_l.shape == ss.exit_s.shape == ss.strength.shape == (3, ND)
     assert ss.sig.dtype == np.int8 and ss.exit_l.dtype == bool and ss.exit_s.dtype == bool
-    assert ss.strength.dtype == np.float64 and ss.extra == {} and ss.split is True
+    assert ss.strength.dtype == np.float64 and set(ss.extra) == {"sila_neopr"} and not ss.extra["sila_neopr"].any() and ss.split is True
     assert not ss.sig[:, :IF.WARMUP].any() and not ss.exit_l[:, :IF.WARMUP].any()
     assert ss.sig.any()
 
@@ -90,7 +90,8 @@ def test_known_answer_proboj_vverh_i_vniz():
     for cena, znak in ((110.0, 1), (90.0, -1)):
         ss = gen(proboj(S_POSLE_17, cena=cena), pts=[tochka("T", "18:00")])
         assert ss.sig[0, DAY] == znak and np.count_nonzero(ss.sig[0]) == 1
-        assert ss.strength[0, DAY] > 0 and ss.strength[0, DAY - 1] == 0
+        # плоская лента: ATR = 0 → сила не определена (V7-5, Д4): strength 0 и флаг, не подстановка ±1
+        assert ss.strength[0, DAY] == 0 and ss.extra["sila_neopr"][0, DAY] and not ss.extra["sila_neopr"][0, DAY - 1]
 
 
 def test_mutaciya_cena_posle_T_lovitsya():
