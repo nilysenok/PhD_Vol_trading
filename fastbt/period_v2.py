@@ -35,8 +35,8 @@ class Period:
 PERIODY = {"train4": Period("train4", pd.Timestamp("2015-01-01"), 2016, pd.Timestamp("2019-12-31")),
            "v2": Period("v2", START, 2015, pd.Timestamp("2019-12-31")),
            "wf": Period("wf", pd.Timestamp("2014-06-01"), 2015, pd.Timestamp("2026-02-28")),   # walk-forward, Ж-136
-           # вся история куба v7 (Ж-155 п. 7): прогрев 26.08.2014–31.12.2016, оценка 01.01.2017–27.02.2026; зона данных — wf
-           "polnaya": Period("polnaya", START, 2017, pd.Timestamp("2026-02-27"))}
+           # вся история куба v7 (Ж-155 п. 7): прогрев 26.08.2014–31.12.2016, оценка 01.01.2017–31.12.2025 (Ж-159; янв–фев 2026 — справочно); зона данных — wf
+           "polnaya": Period("polnaya", START, 2017, pd.Timestamp("2025-12-31"))}
 OTMETKA = Path(__file__).resolve().parents[1] / "docs/resheniya/wf_zamok_snyat.json"            # отметку ставит владелец
 ZAKRYTO_RE = re.compile(r"(^|/)test_locked(/|$)|_(test|202[2-9])([_./]|$)")                     # как zamki.json: чтение
 

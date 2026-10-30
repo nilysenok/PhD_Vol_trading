@@ -89,4 +89,22 @@ def test_polnaya_bez_otmetki_otkaz_do_chteniya(main, monkeypatch, tmp_path):
 
 def test_period_polnaya_opredelen_kak_v_progone():
     p = period_v2.PERIODY["polnaya"]
-    assert p.progrev == pd.Timestamp("2014-08-26") and p.y0 == 2017 and p.konec == pd.Timestamp("2026-02-27")
+    assert p.progrev == pd.Timestamp("2014-08-26") and p.y0 == 2017 and p.konec == pd.Timestamp("2025-12-31")      # Ж-159
+    assert E.DO_AKTA == pd.Timestamp("2025-01-01")                              # чтение до акта: одна строка, меняется после акта
+
+
+def test_vechernyaya_sessiya_ne_vhodit_v_istochniki():
+    """Бары с началом ≥ 18:50 (вечерняя сессия) не меняют ни 10-минутки, ни панель: sha тот же, слоты < 53."""
+    base = {t: _bary(10.0 * (i + 1)) for i, t in enumerate(TK)}
+    vech = {}
+    for t, b in base.items():
+        e = b[b["timestamp"].dt.minute == 0].copy()
+        e["timestamp"] = e["timestamp"].dt.normalize() + pd.Timedelta(hours=19, minutes=10)
+        e[["open", "high", "low", "close"]] *= 3.0
+        vech[t] = pd.concat([b, e], ignore_index=True)
+    im = pd.Series(1000.0 + np.arange(len(DNI.append(PRE))), index=DNI.append(PRE).sort_values())
+    karta = pd.DataFrame({"ticker": TK, "indeks": ["MOEXFN", "MOEXFN", "MOEXOG"]})
+    kw = dict(korp=lambda b, t: b, mnozh=lambda t, d, c: np.ones(len(c)))
+    a = E.sobrat(base, im, karta, TK, "2014-01-01", "2025-01-01", **kw)
+    b = E.sobrat(vech, im, karta, TK, "2014-01-01", "2025-01-01", **kw)
+    assert a.sha == b.sha and max(x["slot"].max() for x in b.b10.values()) == 52
