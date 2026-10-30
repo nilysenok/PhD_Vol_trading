@@ -119,3 +119,16 @@ def test_kniga_dnya_hedzh_platit_po_izmeneniyu_bety():
     b = km.kniga_dnya(71, *ARGS, ist, k=6)
     assert a.hedzh != b.hedzh
     assert b.komissiya == pytest.approx(C * abs(b.hedzh - a.hedzh)) and b.komissiya > 0
+
+
+def test_nan_v_R_ili_T_otkaz_pri_pozicii_i_dopustim_bez_pozicii():
+    """Д4: NaN при позиции ≠ 0 — ValueError с днём и столбцом; NaN на тикере без позиции (сторона 0) допустим."""
+    rb, tt, rng = _sborshchik()
+    rb2 = rb.copy()
+    rb2[40, 0] = np.nan
+    with pytest.raises(ValueError, match="день .* столбец"):
+        _progon(rb2, tt, rng)
+    tt3 = tt.copy()
+    tt3[40, 1] = np.nan
+    r = _progon(rb, tt3, rng, storona=(1.0, 0.0))      # B без сигналов -> позиции нет
+    assert np.isfinite(r.ex_kniga.to_numpy()).all()
