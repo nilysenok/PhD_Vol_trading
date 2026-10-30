@@ -28,7 +28,6 @@ TABLE = _DOCS / "2026-10-27_dividendy_2017_2021.csv"
 TABLE_2015 = _DOCS / "2026-10-28_dividendy_2015_2016.csv"
 # Д8 (wf, 2022+): корректировка цен по ГОДНЫМ строкам свода, не по полной таблице; зона dev (≤ 2021) и свода нет — прежние таблицы.
 SVOD = _DOCS / "div_sverka_svod.csv"
-MARKER_SVOD = "SVOD"        # FASTBT_Z2_DIV=SVOD — 2022+ из годных строк свода
 SVOD_OT ="2022-01-01"      # до этой даты — прежние таблицы (побайтно прежнее поведение на train4)
 RULE = "last_cum=T+2bars:all-years"   # Д5: правило даты входит в ключ кэша
 # MOEX: расчёты по акциям T+1 с 31.07.2023 (источник уточняет исследователь отдельно; PR #535 — режим NET).
@@ -38,14 +37,11 @@ DIV_NALOG = 0.87        # доля дивиденда, попадающая в P
 
 
 def _svod_on() -> bool:
-    """Свод Д8 подключён явно: FASTBT_Z2_DIV=SVOD (маркер, как NET) в зоне не dev; нет файла свода — FileNotFoundError.
-    Переменная не задана — прежнее поведение зоны (таблица FASTBT_Z2_DIV / отказ)."""
-    import os                                            # noqa: PLC0415
+    """Свод Д8 подключён автоматически в зоне wf; нет файла свода — FileNotFoundError, нет колонки godna_korr — ValueError.
+    Прочие зоны (dev, test1) — прежнее поведение."""
     from fastbt import zona                              # noqa: PLC0415
-    if os.environ.get("FASTBT_Z2_DIV") != MARKER_SVOD:
+    if zona.name() != "wf":
         return False
-    if zona.name() == "dev":
-        raise ValueError(f"FASTBT_Z2_DIV={MARKER_SVOD} допустим только вне зоны dev")
     if not Path(SVOD).exists():
         raise FileNotFoundError(f"свод Д8 не найден: {SVOD}")
     return True
@@ -119,11 +115,15 @@ def _read(path: Path, ticker: str) -> pd.DataFrame:
 
 
 def _read_svod(ticker: str) -> pd.DataFrame:
-    """Годные (godna=1) строки свода Д8 с реестром >= SVOD_OT; реестр позже последнего бара ряда пропускается:
+    """Строки свода Д8 с godna_korr=1 (подтверждены реестр и сумма; дата объявления цене не нужна — иначе выплата без
+    найденной даты объявления оставила бы ложный гэп) с реестром >= SVOD_OT; реестр позже последнего бара ряда пропускается:
     календаря за ним нет, last_cum считался бы неверно (день гэпа всё равно вне ряда)."""
-    s = pd.read_csv(SVOD, dtype={"godna": int})
+    s = pd.read_csv(SVOD)
+    if "godna_korr" not in s.columns:
+        raise ValueError(f"в своде {SVOD} нет колонки godna_korr (пересобрать scripts/div_svod.py)")
+    s["godna_korr"] = s["godna_korr"].astype(int)
     rec = pd.to_datetime(s["record_date"])
-    s = s[(s["ticker"] == ticker) & (s["godna"] == 1) & (s["dps_rub"] > 0) & (rec >= pd.Timestamp(SVOD_OT))
+    s = s[(s["ticker"] == ticker) & (s["godna_korr"] == 1) & (s["dps_rub"] > 0) & (rec >= pd.Timestamp(SVOD_OT))
           & (rec <= _calendar()[-1])].copy()
     s["last_cum_date"] = last_cum(pd.to_datetime(s["record_date"])) if len(s) else pd.Series(dtype="datetime64[ns]")
     return s[["last_cum_date", "dps_rub"]]
