@@ -70,7 +70,7 @@ class RunStop(Run2):
         строго после бара выхода; не более одного повторного входа за день. Гэп через уровень — по open. done_re ставится до проверки
         уровней: тогда Run.step не вызывает свой (лимитный) reenter."""
         x = s.last_x
-        if (not s.p.reentry_den or s.tr is not None or s.order is not None or j == 0 or x is None or x.exit_day != i
+        if (not s.p.reentry_den or j in s.stale or s.tr is not None or s.order is not None or j == 0 or x is None or x.exit_day != i
                 or x.reason not in INTRA or s.done_re == i or x.exit_bar + 1 >= len(d.c)):
             return
         s.done_re = i
