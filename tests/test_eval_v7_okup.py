@@ -1,6 +1,5 @@
 """V7-3: ось k_okup в оценщике v7 (fastbt/eval_v7_okup.py), синтетика. Данные не читает.
-G1 «net = путь v6» (точка, ключ кэша); G2 известный ответ (терциль 1 проходит, 2 и 3 — нет; сделок не больше); G3 M-d1 (закрытая в день входа
-не входит, закрытая в d−1 входит); G4 ключ кэша содержит k; порядок «тень без маски → основной прогон с маской». Реальные точки — внизу (тяжёлый, FASTBT_V6_REAL=1)."""
+G1 net = путь v6; G2 известный ответ; G3 M-d1 (закрытая в день входа не входит, в d−1 входит); G4 k в ключе кэша; порядок тень → маска. Реальные — внизу (FASTBT_V6_REAL=1)."""
 import os
 from types import SimpleNamespace
 
@@ -67,7 +66,7 @@ def _obuchenie(g2=0.2):
     return [_tr(j, g[j % 3]) for j in range(60, 300)]
 
 
-STARTY = (330, 334, 338)                                       # терцили 1, 2, 3 (1 + i % 3 для i = 330, 334, 338: 330 % 3 = 0, 334 % 3 = 1, 338 % 3 = 2)
+STARTY = (330, 334, 338)                                       # терцили 1, 2, 3 (1 + i % 3)
 
 
 def _allow(e, starts=STARTY):
@@ -76,7 +75,6 @@ def _allow(e, starts=STARTY):
     return sig, a
 
 
-# ---------------- G2: известный ответ ----------------
 def test_g2_izvestnyj_otvet_terciL_1_prohodit_2_i_3_net():
     e = _ev(_obuchenie(g2=0.2))
     e._okup_zh = O.zhurnal(e, e._rows({}, "p", False))
@@ -85,15 +83,11 @@ def test_g2_izvestnyj_otvet_terciL_1_prohodit_2_i_3_net():
     assert gate_trades(sig, a).astype(bool).sum() <= sig.astype(bool).sum()
     assert (gate_trades(sig, a) != 0).sum() == 1 and (gate_trades(sig, ~np.zeros(N, bool)) != 0).sum() == 3
     assert a.sum() == N - 2                                              # маска трогает только дни старта
-
-
-def test_g2_k2_porog_nizhe_terciL_2_prohodit():
-    e = _ev(_obuchenie(g2=0.2), k=2)                                     # 0,2 ≥ 2 × 0,08 = 0,16
-    e._okup_zh = O.zhurnal(e, e._rows({}, "p", False))
+    e.vyzovy.clear()
+    e._okup_k = 2                                                        # 0,2 ≥ 2 × 0,08 = 0,16
     assert [bool(_allow(e)[1][i]) for i in STARTY] == [True, True, False]
 
 
-# ---------------- журнал сделок ----------------
 def test_zhurnal_izvestnyj_otvet_shorty_otkrytye_chasti():
     e = _ev([])
     short = _tr(90, 10.0, side=-1)                                       # шорт 100 → 90: +10 %
@@ -106,18 +100,13 @@ def test_zhurnal_izvestnyj_otvet_shorty_otkrytye_chasti():
     assert pd.Timestamp(r.vyhod) == pd.Timestamp(DATES[92]) and r.uderzhanie == (DATES[92] - DATES[91]).astype("timedelta64[D]").astype(int)
 
 
-def test_zhurnal_pustoj():
-    z = O.zhurnal(_ev([]), [(0, SimpleNamespace(trades=[]), 0, N - 1)])
-    assert len(z) == 0 and {"vyhod", "tercil", "uderzhanie", "gross", "kom", "short"} <= set(z.columns)
-
-
 def test_pustoj_zhurnal_vhod_razreshen():
     e = _ev([])
-    e._okup_zh = O.zhurnal(e, e._rows({}, "p", False))
-    assert _allow(e)[1].all()                                            # < 20 сделок — вход разрешён с флагом
+    z = O.zhurnal(e, e._rows({}, "p", False))
+    e._okup_zh = z
+    assert len(z) == 0 and list(z.columns) == O.KOLS and _allow(e)[1].all()      # < 20 сделок — вход разрешён с флагом
 
 
-# ---------------- G3: M-d1 ----------------
 def _d1_trades(vyhod20):
     """19 сделок терциля 1 (убыточных), закрытых до дня входа d = dates[211]; 20-я закрывается в день vyhod20."""
     return [_tr(j, -1.0) for j in range(60, 117, 3)] + [_tr(117, -1.0, vyhod=vyhod20)]
@@ -145,23 +134,24 @@ def test_tercil_tolko_po_dnyam_do_resheniya():
     assert O.tercil(iz, 330) == O.tercil(SILA, 330)
 
 
-# ---------------- порядок: тень без маски → основной прогон с маской ----------------
 def test_ten_bez_maski_potom_osnovnoj_s_maskoj():
     e = _ev(_obuchenie())
     O.OkupMixin._rows(e, {}, "p", False)
     assert e.vyzovy == [True, False] and e._okup_zh is None                    # первый вызов без журнала, второй — с журналом; состояние снято
-
-
-def test_vykl_odin_prohod():
-    e = _ev(_obuchenie(), k=None)
+    e = _ev(_obuchenie(), k=None)                                              # выкл. — один проход
     O.OkupMixin._rows(e, {}, "p", False)
     assert e.vyzovy == [True]
 
 
-# ---------------- G1/G4: точка и ключ ----------------
 def _v7():
     e = object.__new__(EvaluatorV7)
     e.sid, e.proxy, e.ist7, e._fk = "S1", "S1", SimpleNamespace(sha="x"), ()
+    return e
+
+
+def _with_k(k):
+    e = _v7()
+    e._okup_k = k
     return e
 
 
@@ -182,12 +172,8 @@ def test_osi_k_nedopustimyj_otkaz():
             O.k_iz_tochki({"k_okup": k})
 
 
-def test_g4_klyuch_kesha_soderzhit_k(monkeypatch):
-    keys = []
-    for k in (None, 2, 3):
-        e = _v7()
-        e._okup_k = k
-        keys.append(e._fkey)
+def test_g4_klyuch_kesha_soderzhit_k():
+    keys = [_with_k(k)._fkey for k in (None, 2, 3)]
     assert len({repr(x) for x in keys}) == 3 and keys[0] == ()
 
 
@@ -198,7 +184,6 @@ def test_g4_mutaciya_k_ne_v_klyuche_lovitsya(monkeypatch):
     assert a._fkey == b._fkey                                                  # на каноне ключи различны (тест выше падал бы)
 
 
-# ---------------- реальные точки (G1, тяжёлый) ----------------
 real = pytest.mark.skipif(os.environ.get("FASTBT_V6_REAL") != "1" or not __import__("fastbt.daily_1850", fromlist=["x"]).out_path().exists(),
                           reason="тяжёлый реальный тест (FASTBT_V6_REAL=1, дневной ряд 18:50); данные ≥ 2025 не читаются")
 
@@ -209,10 +194,7 @@ def test_g1_realnaya_tochka_net_pobajtno_kak_bez_osi(sid):
     from fastbt import etap1
     inp, base = etap1.build_inputs(sid, period="train4"), etap1.base_point(sid)
     e = EvaluatorV7(sid, inp, base)
-    r0, x0, t0 = e.evaluate_v2(dict(base), "train4")
-    r1, x1, t1 = e.evaluate_v2({**base, "k_okup": "net"}, "train4")
-    for r in (r0, r1):
-        r.pop("t_sek", None)
+    (r0, x0, t0), (r1, x1, t1) = (e.evaluate_v2(p, "train4") for p in (dict(base), {**base, "k_okup": "net"}))
+    r0.pop("t_sek", None), r1.pop("t_sek", None)
     assert repr(r0) == repr(r1) and x0.tobytes() == x1.tobytes() and t0.tobytes() == t1.tobytes()
-    r3, _, _ = e.evaluate_v2({**base, "k_okup": 3}, "train4")
-    assert sum(r3["sdelok_y"].values()) <= sum(r0["sdelok_y"].values())          # маска только запрещает входы
+    assert sum(e.evaluate_v2({**base, "k_okup": 3}, "train4")[0]["sdelok_y"].values()) <= sum(r0["sdelok_y"].values())    # маска только запрещает
