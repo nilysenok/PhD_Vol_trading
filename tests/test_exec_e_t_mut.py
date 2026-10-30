@@ -146,13 +146,44 @@ def _zaderzhka(sig):
     return len(r.trades), late
 
 
-def test_izmerenie_poteri_na_dne_razvorota(capsys):
-    """Не утверждение, а измерение: доля входов, сдвинутых на день из-за запрета «выход на close + вход в T в один день»."""
-    for pf, pz in ((0.1, 0.0), (0.1, 0.2), (0.05, 0.0)):
-        n, late = _zaderzhka(_markov(400, pf, pz, 3))
-        print(f"p_flip={pf} p_flat={pz}: сделок {n}, сдвинуто на день {late} ({late / n:.0%})")
+def proverka_razvorot(res, days, sig):
+    """Разворот в T дня 1: обе операции по cena_T на баре T, четыре комиссии, позиции не пересекаются."""
+    t0, t1 = res.trades[0], res.trades[1]
+    px = days[1].o[BT]
+    assert t0.reason == "razvorot" and (t0.exit_day, t0.exit_bar, t0.exit_px) == (1, BT, px)
+    assert (t1.entry_day, t1.entry_bar, t1.entry_px, t1.side) == (1, BT, px, -1)
+    assert [t0.fee_in, t0.fee_out, t1.fee_in] == [COMM] * 3 and t1.fee_out in (COMM, 0.0) and t0.exit_day is not None
+    assert t0.exit_bar <= t1.entry_bar
+
+
+def test_razvorot_v_T_obe_operacii_po_cene_T_chetyre_komissii_sdvigov_net():
+    days, sig = _tri(), [1, -1, -1]
+    r = _run(sig, days, Params(vhod_T="12:00"))
+    proverka_razvorot(r, days, sig)
+    assert r.cost.sum() == pytest.approx(4 * COMM)
     n, late = _zaderzhka(_markov(400, 0.1, 0.0, 3))
-    assert late / n > 0.5                                       # тренд «всегда в рынке»: большинство входов — после разворота
+    assert n > 20 and late == 0                                 # сдвинутых на день входов нет (до правки было 88 %)
+
+
+def test_mut_razvorot_bez_zakrytiya_staroj_pozicii_lovitsya(monkeypatch):
+    """Мутация: на развороте старая позиция не закрывается, новая открывается поверх (две позиции сразу)."""
+    days, sig = _tri(), [1, -1, -1]
+    orig = exec_e_t.RunT._decide
+
+    def dve(s, i, j, close, nb):
+        if s.tr is not None and s.dir(i) == -s.tr.side:
+            staraya, s.tr = s.tr, None
+            orig(s, i, j, close, nb)
+            if s.tr is None:
+                s.tr = staraya
+        else:
+            orig(s, i, j, close, nb)
+
+    monkeypatch.setattr(exec_e_t.RunT, "_scan", lambda s, i, j, d, b0: Run2._scan(s, i, j, d, b0))   # без выхода "razvorot"
+    monkeypatch.setattr(exec_e_t.RunT, "_decide", dve)
+    r = _run(sig, days, Params(vhod_T="12:00"))
+    with pytest.raises(AssertionError):
+        proverka_razvorot(r, days, sig)
 
 
 def test_vyhod_stopom_do_T_ne_dolzhen_blokirovat_vhod():
@@ -162,8 +193,7 @@ def test_vyhod_stopom_do_T_ne_dolzhen_blokirovat_vhod():
         d["l"][0] = 100.0
     r = _run([1, -1, -1], [_day(0), _day(1, f), _day(2)], Params(vhod_T="12:00", b=1.0, exit_signal=True))
     assert r.trades[0].reason == "stop" and r.trades[0].exit_bar < BT
-    if len(r.trades) < 2 or r.trades[1].entry_day != 1:
-        pytest.xfail("находка #899: вход в T пропущен после выхода стопом ДО T (exit_day == i)")
+    assert len(r.trades) >= 2 and r.trades[1].entry_day == 1 and r.trades[1].side == -1
 
 
 # --- 5. мутации цены/бара входа ---
@@ -218,7 +248,6 @@ def test_vhod_T_v_Params_uhodit_na_etalon_gromko():
         fast_etap1.run("T", _tri(), np.array([0, 1, 1]), np.full(3, 0.01), p)
 
 
-@pytest.mark.xfail(strict=True, reason="находка #899: pokryto(pt) не знает ключа vhod_T — точка с ним считается покрытой (латентно: куб ключа ещё не несёт)")
 def test_pokryto_tochka_s_vhod_T_ne_pokryta():
     assert fast_etap1.pokryto({}) is True
     assert fast_etap1.pokryto({"vhod_T": "12:00"}) is False
