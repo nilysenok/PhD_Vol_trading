@@ -89,6 +89,19 @@ def test_g3_testy_sh_suhoj_rezhim(tmp_path):
     assert r2.returncode != 0 and "FAIL" in r2.stdout              # нет tar -> отказ
 
 
+def test_g3_zabrat_testy_beret_tolko_itog(tmp_path):
+    srv, dst = tmp_path / "srv", tmp_path / "dst"
+    (srv / "testy" / "abc").mkdir(parents=True)
+    (srv / "testy" / "abc" / "itog.txt").write_text("sha=abc\n")
+    (srv / "testy" / "abc" / "big.bin").write_text("data")
+    (srv / "testy" / "abc" / "data").mkdir()
+    (srv / "testy" / "abc" / "data" / "x.csv").write_text("1")
+    r = subprocess.run(["bash", str(REPO / "scripts/server/perenos/zabrat.sh"), "--testy", str(srv), str(dst)],
+                       capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert sorted(p.name for p in dst.rglob("*") if p.is_file()) == ["itog.txt"]
+
+
 def test_g3_sums_ne_sovpadaet_otkaz(tmp_path):
     p, tar, sha = _paket(tmp_path)
     tar.write_bytes(tar.read_bytes() + b"x")

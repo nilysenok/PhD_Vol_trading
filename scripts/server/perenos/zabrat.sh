@@ -10,7 +10,8 @@ set -euo pipefail
 say() { printf '%s  %s\n' "$(date '+%F %T')" "$*"; }
 fail() { printf 'FAIL: %s\n' "$*"; exit 1; }
 
-agr=0
+agr=0; testy=0
+if [ "${1:-}" = "--testy" ]; then testy=1; shift; fi     # Ж-160 п. 2: только итог pytest сервера (./testy.sh)
 if [ "${1:-}" = "--agregaty" ]; then agr=1; shift; fi   # Ж-156 п. 4: только строки ledger (p*/rows.jsonl с полем agr), без port/tik; сырые сделки — по запросу
 src=${1:-}; dst=${2:-}
 [ -n "$src" ] && [ -n "$dst" ] || fail "использование: ./zabrat.sh [--agregaty] user@host:perenos <каталог на Маке>"
@@ -19,6 +20,13 @@ RSYNC=(${PERENOS_RSYNC:-rsync} -a --human-readable)
 [ "${PERENOS_DRYRUN:-0}" = 1 ] && RSYNC+=(-n -v)
 src=${src%/}
 mkdir -p "$dst"
+if [ "$testy" = 1 ]; then   # Ж-160: итоги pytest сервера — только testy/<sha>/itog.txt и pytest.log
+  say "забираю итоги pytest: testy/*/itog.txt, pytest.log -> $dst/testy/"
+  "${RSYNC[@]}" --prune-empty-dirs --include='*/' --include='itog.txt' --include='pytest.log' --exclude='*' "$src/testy/" "$dst/testy/" \
+    || fail "rsync testy/ — вывод выше"
+  echo "OK zabrat --testy: $(find "$dst/testy" -name itog.txt | wc -l | tr -d ' ') итогов в $dst/testy"
+  exit 0
+fi
 for d in tables logs; do
   say "забираю $d/ -> $dst/$d/"
   "${RSYNC[@]}" "$src/$d/" "$dst/$d/" || fail "rsync $d/ — вывод выше"
