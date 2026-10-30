@@ -111,12 +111,22 @@ def _main_v_tmp(tmp_path, monkeypatch):
     return (tmp_path / "out.csv").read_bytes()
 
 
+def _prefiks():
+    """Файл data/events.csv целиком и его префикс <= 2021 (сборка по умолчанию)."""
+    fajl = (ROOT / "data" / "events.csv").read_bytes()
+    return fajl, fajl[:len(T.SE.sobrat().encode())]
+
+
 def test_g_main_po_umolchaniyu_daet_prezhnij_fajl(tmp_path, monkeypatch):
-    assert _main_v_tmp(tmp_path, monkeypatch) == (ROOT / "data" / "events.csv").read_bytes()
+    """Было: == весь файл. Стало: режим по умолчанию = префикс <= 2021 текущего файла, строго короче целого."""
+    fajl, pref = _prefiks()
+    out = _main_v_tmp(tmp_path, monkeypatch)
+    assert out == pref and len(out) < len(fajl)
 
 
 def test_g_main_na_sobrat_wf_lovitsya(tmp_path, monkeypatch):
-    """Мутация: режим по умолчанию собирает wf (346 строк 2022+) — побайтная сверка с прежним файлом падает."""
+    """Мутация: режим по умолчанию собирает wf (346 строк 2022+) — вывод перестаёт быть префиксом <= 2021."""
+    fajl, pref = _prefiks()
     wf = T.SE.sobrat_wf()
     monkeypatch.setattr(T.SE, "sobrat", lambda: wf)
-    assert _main_v_tmp(tmp_path, monkeypatch) != (ROOT / "data" / "events.csv").read_bytes()
+    assert _main_v_tmp(tmp_path, monkeypatch) != pref

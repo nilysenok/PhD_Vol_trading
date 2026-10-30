@@ -7,7 +7,7 @@ import pytest
 
 from fastbt import daily_1850 as D
 from fastbt import period_v2
-from tests.test_wf_daily import bars, frame
+from test_wf_daily import bars, frame
 
 
 def days(agg_df) -> list:
