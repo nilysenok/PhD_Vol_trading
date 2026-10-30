@@ -120,8 +120,10 @@ def test_sig_ne_zavisit_ot_budushchih_barov(sid):
     """Обрезка ленты после дня i не меняет сигнал дней ≤ i; дописанные после T бары дня d тоже не меняют сигнал дня d."""
     b = sluchaynyj(60, 7)
     full = I.signal_dnya(b, sid, "18:30")
-    for i in (20, 35, 50):
-        d = b.loc[b["slot"] == 0, "date"].drop_duplicates().iloc[i]
+    nz = np.flatnonzero(full.to_numpy() != 0)
+    assert len(nz) >= 3
+    for i in np.r_[nz[1:4], nz[1:4] - 1]:           # обрезка на дне сигнала и накануне: d+1 не должен просочиться
+        d = full.index[i]
         cut = I.signal_dnya(b[b["date"] <= d], sid, "18:30")
         pd.testing.assert_series_equal(cut, full[full.index <= d])
     b2 = b.copy()
