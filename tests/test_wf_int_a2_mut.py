@@ -2,7 +2,8 @@
 
 Не пойманы были: (1) зона не сбрасывается при ПРЯМОМ set_period wf → train4 (автор проверял возврат только через period_ctx);
 (2) граница календаря WF_KALENDAR_DO сдвинута (проходит 2026-01-01, тест автора проверял только 2021-12-30 и 2026-02-27).
-Найдено, не мутация: календарь wf принимает бары ≥ 2026-03-01; состав 2022+ виден в зоне dev — оба теста xfail(strict)."""
+Находки первой версии (бары ≥ END_WF в календаре wf, пустой ряд) автор исправил; тесты стали обычными.
+Состав 2022+ в зоне dev: на базе и на ветке ValueError (устаревание 120 дней, Д4) — моя первая находка была ошибкой тестировщика."""
 from __future__ import annotations
 
 import numpy as np
@@ -47,7 +48,6 @@ def test_kalendar_wf_granica_20_fevralya(tmp_path, monkeypatch):
         assert dv._calendar()[-1] == np.datetime64("2026-02-20")
 
 
-@pytest.mark.xfail(strict=True, reason="мелкая находка #794: пустой ряд даёт IndexError cal[-1], а не отказ с причиной (не тихо — не блокер)")
 def test_kalendar_wf_pustoj_otkaz(tmp_path, monkeypatch):
     """Пустой ряд — отказ с причиной (FileNotFoundError/ValueError), а не IndexError."""
     p = tmp_path / "daily.parquet"
@@ -58,7 +58,6 @@ def test_kalendar_wf_pustoj_otkaz(tmp_path, monkeypatch):
             dv._calendar()
 
 
-@pytest.mark.xfail(strict=True, reason="находка #794: календарь wf не обрезается и не отвергает бары ≥ END_WF (2026-03-01)")
 def test_kalendar_wf_ne_vyhodit_za_end_wf(tmp_path, monkeypatch):
     _parquet(tmp_path, monkeypatch, "2026-03-13")
     with zona.zone_ctx("wf"):
@@ -69,8 +68,16 @@ def test_kalendar_wf_ne_vyhodit_za_end_wf(tmp_path, monkeypatch):
         assert cal[-1] < np.datetime64(zona.END_WF.date())
 
 
-@pytest.mark.xfail(strict=True, reason="находка #794: состав 2022+ из новой таблицы виден в зоне dev (sostav не смотрит на zona)")
 def test_sostav_2022_ne_vidno_v_zone_dev():
-    old = vs._sostav_table(str(vs.SOSTAV), vs.SOSTAV_COL)
+    """Д4: в dev дата за порогом устаревания — ValueError (таблица 2022+ не видна, перенос вперёд не молчит)."""
     assert zona.name() == "dev"
-    assert vs.sostav("2024-06-25") == old[-1][1]
+    with pytest.raises(ValueError, match="Д4"):
+        vs.sostav("2024-06-25")
+
+
+def test_sostav_v_predelah_poroga_dev_posledniaya_stroka():
+    old = vs._sostav_table(str(vs.SOSTAV), vs.SOSTAV_COL)
+    last = [tk for de, tk in old if de <= pd.Timestamp("2021-12-30")][-1]
+    assert vs.sostav("2021-12-30") == last == vs.sostav("2022-03-01")
+    with zona.zone_ctx("wf"):
+        assert vs.sostav("2021-12-30") == last
