@@ -45,7 +45,7 @@ sys.path.insert(0, str(HERE))
 import harx as HX
 import gibrid_har as GH
 
-DATA = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data')
+DATA = Path(os.environ.get('FASTBT_MAIN', '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')) / 'data'  # К-4: корень данных из окружения
 REG = DATA / 'regen'
 CACHE = REG / 'R2' / 'cache' / 'E'
 INDEX = REG / 'R2' / 'cache' / 'INDEX_E.csv'

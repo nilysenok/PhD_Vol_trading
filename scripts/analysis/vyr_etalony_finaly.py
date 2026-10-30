@@ -44,7 +44,7 @@ python3 scripts/analysis/vyr_etalony_finaly.py etalon|hxp|f1|f5|f22|leak1|leak5|
 import os
 for _k in ('OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'VECLIB_MAXIMUM_THREADS'):
     os.environ[_k] = '1'
-DATA_S = '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data'
+DATA_S = os.environ.get('FASTBT_MAIN', '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading') + '/data'  # К-4
 os.environ['L2_FEAT'] = DATA_S + '/regen/features_pit_v3_rrv.parquet'  # до импорта l2_lib (матрица D22_h1); у f5 — d24_1.set_matrix
 import sys, time, hashlib, argparse, tempfile, warnings, multiprocessing as mp
 from pathlib import Path

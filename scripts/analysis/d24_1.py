@@ -21,7 +21,7 @@ python3 scripts/analysis/d24_1.py gate  --h 1 --tag D24_1_h1_d812m --cur D12_h1_
 import argparse, json, multiprocessing as mp, os, sys, time
 from pathlib import Path
 
-R0 = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen')
+R0 = Path(os.environ.get('FASTBT_MAIN', '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')) / 'data' / 'regen'  # К-4
 os.environ.setdefault('L2_FEAT', str(R0 / 'features_pit_v3.parquet'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np, pandas as pd

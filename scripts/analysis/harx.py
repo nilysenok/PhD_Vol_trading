@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gibrid_har as GH
 import d7_block as D7
 
-DATA = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data')
+DATA = Path(os.environ.get('FASTBT_MAIN', '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')) / 'data'  # К-4: корень данных из окружения
 REGEN = DATA / 'regen'
 FEAT = REGEN / 'features_pit_v3.parquet'
 ALPHAS = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2, 0.1, 0.3, 1.0)

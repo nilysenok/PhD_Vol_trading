@@ -31,13 +31,14 @@ import lightgbm as lgb, xgboost as xgb
 from sklearn.linear_model import LinearRegression
 
 warnings.filterwarnings('ignore')
-DATA = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data')
+MAIN = Path(os.environ.get('FASTBT_MAIN', '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading'))  # К-4: корень данных из окружения
+DATA = MAIN / 'data'
 REGEN = DATA / 'regen'
 L2DIR = REGEN / 'L2'
 FEAT = Path(os.environ.get('L2_FEAT', str(REGEN / 'features_pit_v2.parquet')))  # Д12: L2_FEAT=<...>/features_pit_v3.parquet (as-of)
 FEAT_CFG = FEAT.with_suffix('.config.json') if FEAT.with_suffix('.config.json').exists() else REGEN / 'features_pit_v2.config.json'
 CAL = DATA / 'calendar'
-RVI10 = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/moex_discovery/data/external/moex_iss/indices_10m/RVI.parquet')
+RVI10 = Path(MAIN / 'moex_discovery/data/external/moex_iss/indices_10m/RVI.parquet')
 TEST_YEARS = list(range(2017, 2026))  # шаг k -> тестовый год 2016+k; val = год перед тестовым
 PAT, NMAX = 30, 1000
 MAX_BIN = int(os.environ.get('L2_MAXBIN', 255))  # (63 — только для сверки с Bv2: LGBM 63, XGB 64) решение 25.10 (после проверки max_bin 63 владельцем): B v2b и уровень 2 — 255
@@ -225,7 +226,7 @@ def f_hadd(A, h):
     return pd.DataFrame(out, index=A.index)
 
 
-CANDLES = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/moex_discovery/data/final_v6/candles_10m')
+CANDLES = Path(MAIN / 'moex_discovery/data/final_v6/candles_10m')
 CLOSE1850 = L2DIR / 'close1850.parquet'
 
 

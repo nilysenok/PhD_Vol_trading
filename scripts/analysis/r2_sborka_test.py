@@ -59,7 +59,7 @@ python3 scripts/analysis/r2_sborka_test.py                   # фаза F, по�
         e8: {lam: 0.5, k: 0 | 3 | 5 | 10, w: 0.5, g_file: test_locked/R2/G/<ворота>_h22_test.parquet}   # константы разработки; g_file при k > 0
       hyb — финал сборки своего h (победитель h=1 / h=5 или F_h(d0) с s² сборки). halt (остановка торгов) применяется всегда.
 """
-import argparse, hashlib, subprocess, sys, tempfile
+import argparse, hashlib, os, subprocess, sys, tempfile
 from pathlib import Path
 import numpy as np, pandas as pd
 import pyarrow.parquet as pq
@@ -67,7 +67,7 @@ import yaml
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
-MAIN = Path('/Users/nilysenok/Desktop/Старое/PhD_Vol_trading')
+MAIN = Path(os.environ.get('FASTBT_MAIN', '/Users/nilysenok/Desktop/Старое/PhD_Vol_trading'))  # К-4
 REGEN = MAIN / 'data' / 'regen'
 LOCKED = REGEN / 'test_locked'
 OUTDIR = LOCKED / 'R2' / 'final'
