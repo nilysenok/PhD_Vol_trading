@@ -1,11 +1,12 @@
 """V6-12d, синтетика (без данных): пивот S5 / VWAP S6 и pol_puti (eval_v6_piv), оси тренда на стоп-заявке (eval_v6_trend), свёртки canon_v6
 (time_decay → «выкл.», reentry тренда), GOTOVY по осям, ключ кэша. Реальные данные — test_eval_v6d_real.py (FASTBT_V6_REAL=1)."""
 from types import SimpleNamespace
+from unittest import mock
 
 import numpy as np
 import pytest
 
-from fastbt import canon_v5, canon_v6, eval_v6, eval_v6_piv as piv6, eval_v6_trend as trend6
+from fastbt import canon_v5, canon_v6, canon_v6_nesovm as nesovm, eval_v6, eval_v6_piv as piv6, eval_v6_trend as trend6
 from fastbt.etap1_eval_v2 import NeSchitana
 from fastbt.eval_v6 import fkey, razdelit
 from fastbt.exec_e_piv import PivUrovni
@@ -117,8 +118,10 @@ def test_reentry_tolko_na_stop_zayavke(sid):
 @pytest.mark.parametrize("sid", SIDS)
 def test_sobol_vtoroj_chastiy_otkryvaet_novye_osi_i_hranit_tochki(sid):
     kub = canon_v6.load_kub(sid)
+    with mock.patch.object(nesovm, "PRAVILA", ()):                                # без правил несовместимости: смысл прежний
+        assert len(canon_v6.tochki_v6(kub, 0, 2000)[0]) / 2000 > 0.45, sid        # time_decay больше не выбрасывает точки (было ≈ 29 %)
     pts, vyb = canon_v6.tochki_v6(kub, 0, 2000)
-    assert len(pts) / 2000 > 0.45, (sid, len(pts))                                # time_decay больше не выбрасывает точки (было ≈ 29 %)
+    assert len(pts) / 2000 > 0.30, (sid, len(pts))                                # 30.10: правила canon_v6_nesovm; замер 2000: S1 0.363, S2 0.363, S5 0.343, S6 0.325
     nov, cs = canon_v6.novye(kub), [c for _, c in pts]
     for n in ("piv_buf", "bezubytok", "stop_v_plyus", "pir", "reentry"):
         if n in nov and not (n == "piv_buf" and sid != "S5"):
