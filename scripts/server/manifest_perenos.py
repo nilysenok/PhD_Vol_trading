@@ -114,7 +114,7 @@ def proverit(p: str, bez_dat: str, do: pd.Timestamp = GRANICA) -> tuple[str, str
         return "net", f"имя содержит 202x (год > {do.year}), не читался"
     f = CHITATELI.get(Path(p).suffix.lower())
     try:
-        r = f(p) if f else "NODATES"
+        r = (jd.max_data(p, pit=do > GRANICA) if f is jd.max_data else f(p)) if f else "NODATES"
     except Exception as e:  # noqa: BLE001 — любой сбой чтения = отказ, не пропуск
         return "net", f"не прочитан ({type(e).__name__})"
     if isinstance(r, str):
