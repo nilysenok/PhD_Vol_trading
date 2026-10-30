@@ -25,6 +25,7 @@ NET = c5.NET
 NOVYE7 = ("k_okup", "otnositelno")
 OSI7 = "osi7"
 SUMS = "SHA256SUMS"
+GOTOVY_V7 = c6.GOTOVY | {"V7-1a", "V7-3"}      # для счёта годных: оси v7 открыты (оценщик — V7-3, E1)
 
 
 def suzhenie(g: list) -> list:
@@ -77,9 +78,18 @@ def proverit(kub: dict) -> None:
         raise ValueError(f"{sid}: min_uderzhanie: dney 2 — у контртренда, у тренда нет")
 
 
+def dvojnoj_fon(q: dict, kub: dict) -> bool:
+    """otnositelno ≠ net вместе с rel_signal ≠ «выкл.» v6 (syroy): фон вычитается дважды → точка несовместима."""
+    rs = kub["v6"].get("kontekst", {}).get("rel_signal")
+    return bool(rs) and q.get("otnositelno", NET) != NET and q.get("rel_signal", rs["vykl"]) != rs["vykl"]
+
+
 def canon_v7(sid: str, pt: dict, kub: dict):
-    """Точка → канон v7 (оси v7 в «выкл.» убраны, зависимые от выключенного k_okup — тоже; остальное — canon_v6) или None."""
+    """Точка → канон v7 (оси v7 в «выкл.» убраны, зависимые от выключенного k_okup — тоже; остальное — canon_v6) или None.
+    None и при двойном фоне (`dvojnoj_fon`)."""
     nov, q = novye(kub), dict(pt)
+    if dvojnoj_fon(q, kub):
+        return None
     for n, v in nov.items():
         if v.get("roditel") and all(q.get(r, NET) == NET for r in v["roditel"]):
             q[n] = NET
@@ -139,8 +149,8 @@ def main() -> int:
     for sid in [s for s in SIDS if (KUB7 / f"kub_{s}.yaml").exists()]:
         k = load_kub(sid)
         proverit(k)
-        ox = osi(k)
-        g = sum(canon_v7(sid, tochka(ox, rng.random(len(ox))), k) is not None for _ in range(ok))
+        ox = osi(k, GOTOVY_V7)
+        g =sum(canon_v7(sid, tochka(ox, rng.random(len(ox))), k) is not None for _ in range(ok))
         print(f"{sid} | {len(osi(k, None))} | {obem(k):.4e} | {g} | {k['sobol']['N']}")
     return 0
 

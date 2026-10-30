@@ -107,7 +107,31 @@ def test_k_okup_i_otnositelno_ostayutsya_v_kanone(kuby):
     base = c7.canon_v7("S1", dict(pt, k_okup="net", otnositelno="net"), k)
     assert "k_okup" not in base and "otnositelno" not in base
     assert c7.canon_v7("S1", dict(pt, k_okup=3, otnositelno="net"), k)["k_okup"] == 3
-    assert c7.canon_v7("S1", dict(pt, k_okup="net", otnositelno="imoex"), k)["otnositelno"] == "imoex"
+    assert c7.canon_v7("S1", dict(pt, k_okup="net", otnositelno="imoex", rel_signal="syroy"), k)["otnositelno"] == "imoex"
+
+
+@pytest.mark.parametrize("sid", ("S1", "S2", "S3", "S4"))
+def test_otnositelno_i_rel_signal_vmeste_nesovmestimy(sid, kuby):
+    """Фон не вычитается дважды: otnositelno ≠ net требует rel_signal = syroy (выкл. v6); иначе точка выбрасывается."""
+    k = kuby[sid]
+    pts = [p for p in _tochki(c6.osi(k["v6"], c6.GOTOVY), 300, 5) if c6.canon_v6(sid, p, k["v6"])]
+    assert len(pts) > 30
+    for p in pts:
+        for o in ("sektor", "imoex"):
+            c = c7.canon_v7(sid, dict(p, k_okup="net", otnositelno=o, rel_signal="sektor"), k)
+            assert c is None
+            c = c7.canon_v7(sid, dict(p, k_okup="net", otnositelno=o, rel_signal="syroy"), k)
+            assert c is not None and c["otnositelno"] == o
+        assert c7.canon_v7(sid, dict(p, k_okup="net", otnositelno="net", rel_signal="rynok"), k) is not None
+
+
+def test_mutatsiya_pravilo_dvojnogo_fona_snyato_lovitsya(kuby, monkeypatch):
+    k = kuby["S1"]
+    p = next(p for p in _tochki(c6.osi(k["v6"], c6.GOTOVY), 100, 5) if c6.canon_v6("S1", p, k["v6"]))
+    bad = dict(p, k_okup="net", otnositelno="imoex", rel_signal="rynok")
+    assert c7.canon_v7("S1", bad, k) is None
+    monkeypatch.setattr(c7, "dvojnoj_fon", lambda q, k: False)
+    assert c7.canon_v7("S1", bad, k) is not None          # без правила точка проходит — тест выше упал бы
 
 
 def test_mutatsiya_k_okup_vykl_ne_ubiraetsya_lovitsya(kuby):
