@@ -71,6 +71,7 @@ def _no_lookahead(d, j=100, **kw):
 
 
 _ALL = dict(vesa="ravnyj_risk", hedzh=True, sektor_netto=True, tsel_vol=True, vykl=True)
+_MUT = {**_ALL, "sektor_netto": False}     # сектор может обнулить день и скрыть мутацию; он проверяется в G3
 
 
 def test_g2_net_utechki_v_vesa_m_f_h():
@@ -80,19 +81,19 @@ def test_g2_net_utechki_v_vesa_m_f_h():
 def test_g2_mutatsiya_beta_s_dnyom_d_lovitsya(monkeypatch):
     orig = K.beta
     monkeypatch.setattr(K, "beta", lambda ex, im, i, okno=63: orig(ex, im, i + 1, okno))
-    assert not _no_lookahead(_mk(T=150, seed=2), **_ALL)
+    assert not _no_lookahead(_mk(T=150, seed=2), **_MUT)
 
 
 def test_g2_mutatsiya_sigma_tselevaya_s_dnyom_d_lovitsya(monkeypatch):
     orig = K.mnozhitel_vola
     monkeypatch.setattr(K, "mnozhitel_vola", lambda ex, i, g, tsel=0.10, plecho=2.0: orig(ex, i + 1, g, tsel, plecho))
-    assert not _no_lookahead(_mk(T=150, seed=2), **_ALL)
+    assert not _no_lookahead(_mk(T=150, seed=2), **_MUT)
 
 
 def test_g2_mutatsiya_sigma_vesov_s_dnyom_d_lovitsya(monkeypatch):
     orig = K.vesa_dnya
     monkeypatch.setattr(K, "vesa_dnya", lambda ex, i, okno=252, rezhim="paritet": orig(ex, i + 1, okno, rezhim))
-    assert not _no_lookahead(_mk(T=150, seed=2), **_ALL)
+    assert not _no_lookahead(_mk(T=150, seed=2), **_MUT)
 
 
 def test_g2_mutatsiya_vyklyuchatel_s_dnyom_d_lovitsya(monkeypatch):
@@ -166,7 +167,7 @@ def test_g3_sektor_vkl_bez_pozicij_otkaz():
 # ---- G4: комиссия хеджа
 def _kniga_2beta(T=130, seed=7):
     rng = np.random.default_rng(seed)
-    im = rng.normal(0, 0.01, T)
+    im = rng.normal(0, 0.001, T)       # тихая книга: выключатель молчит, пока тест не вызовет скачок
     return dict(X=(2.0 * im)[None, None, :], poz=np.ones((1, 1, T)), sektora=np.array([0]), imoex=im,
                 mix=rng.normal(0, 0.01, T), ks=np.zeros(T))
 
@@ -246,7 +247,7 @@ def test_vyklyuchatel_poltora_i_hedzh_umnozhen_na_f():
     b = r.h[131] / r.f[131]
     off = _run(d, hedzh=True, vykl=False)
     assert off.f[131] == 1.0 and (r.h[131] / 0.5) == pytest.approx(b)
-    assert abs(r.h[131]) < abs(off.h[131]) * 0.9 + 1e-9 or r.h[131] != off.h[131]
+    assert off.h[131] == pytest.approx(2 * r.h[131])
 
 
 # ---- веса Sk
