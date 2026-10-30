@@ -8,7 +8,8 @@ TOL_YAKOR = 1e-12 (Ж-131), точки — `dopusk` (переменная DOPUSK
 import numpy as np
 
 TOL_YAKOR = 1e-12
-SHAPKA = ("kod", "vhody", "kub", "daty")
+YAKOR = ("yakor", "v6yakor")
+SHAPKA = ("kod", "vhody", "kub", "daty", "v6_vhody", "v6_kub", "v6_daty")      # v6_* — набор v6 (ekviv_v6.py); у старого эталона None == None
 
 
 def _x(s: str) -> float:
@@ -57,8 +58,8 @@ def _diskretnoe(eta, meta_eta, moi, meta_moi) -> list:
 def _nepreryvnoe(eta, moi, dopusk: float) -> tuple:
     """-> (первое превышение (имя, что, Δ, допуск) или None, число превышений, max Δ якоря, max Δ точек)."""
     pervoe, chislo, dm = None, 0, {True: 0.0, False: 0.0}
-    for m in sorted(set(eta) & set(moi), key=lambda x: (not x.startswith("yakor"), x)):
-        a, b, yak = eta[m], moi[m], m.startswith("yakor")
+    for m in sorted(set(eta) & set(moi), key=lambda x: (not x.startswith(YAKOR), x)):
+        a, b, yak = eta[m], moi[m], m.startswith(YAKOR)
         tol = TOL_YAKOR if yak else dopusk
         ds = [(f"поле {p}", delta(_x(h), _x(b["hex"][p]))) for p, h in sorted(a["hex"].items()) if p in b["hex"]]
         ds += [(f"ряд {k}", delta_ryada(a[k], b[k])) for k in ("p", "t", "pz") if a[k].shape == b[k].shape]
@@ -75,3 +76,20 @@ def sravnit(eta: dict, meta_eta: dict, moi: dict, meta_moi: dict, dopusk: float 
     pervoe, chislo, dy, dt = _nepreryvnoe(eta, moi, dopusk)
     return dict(diskretnoe=disk, nepreryvnoe_pervoe=pervoe, nepreryvnoe_chislo=chislo, max_yakor=dy, max_tochki=dt,
                 kod=3 if (pervoe and not disk) else (1 if disk else 0))
+
+
+def bystr_protiv_etalona(rez: dict, dopusk: float = TOL_YAKOR) -> list:
+    """Быстрый слой v6 = эталонный путь на ТОЙ ЖЕ машине (внутри одного набора): для каждой точки с обеими записями
+    `v6bystr__S__i` и `v6tochka__S__i` дискретное — точно, непрерывное ≤ dopusk. -> [(имя, kod 1|3, описание)]; пусто — совпало."""
+    bad = []
+    for m in sorted(rez):
+        if not m.startswith("v6bystr__"):
+            continue
+        e = "v6tochka__" + m[len("v6bystr__"):]
+        if e not in rez:
+            bad.append((m, 1, "нет парной записи эталонного пути"))
+            continue
+        r = sravnit({"t": rez[e]}, {}, {"t": rez[m]}, {}, dopusk)
+        if r["kod"]:
+            bad.append((m, r["kod"], (r["diskretnoe"] or [str(r["nepreryvnoe_pervoe"])])[0]))
+    return bad

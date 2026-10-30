@@ -18,7 +18,7 @@ prover() {   # $1 — режим numpy; печатает итог режима, 
   export FASTBT_NO_CACHE=1                       # как при сборке эталона на Маке: всё считается заново
   log="$P/logs/proverka_r${r}_$(date +%Y%m%d_%H%M%S).log"
   n=$(processov)
-  say "режим $r: пересчёт эталона: якорь A_fix × 6 Sk + 200 точек, процессов $n (по Sk — не больше 6); лог $log"
+  say "режим $r: пересчёт эталона: якорь A_fix × 6 Sk + 200 точек, плюс набор v6 (якорь v6 × 6 Sk + 200 точек, если он в эталоне), процессов $n (по Sk — не больше 6); лог $log"
   set +e
   (cd "$KOD_DIR" && "$PY" "$KOD_DIR/scripts/server/proverka_ekviv.py" --etalony "$ETALONY" --otmetka "$otm" --rezhim "$r" \
     --kod-sha "$KOD_SHA" --dannye-sha "$(sha_file "$MANIFEST")" --procs "$n") > "$log" 2>&1
