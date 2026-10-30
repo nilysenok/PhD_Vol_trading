@@ -205,6 +205,9 @@ def kuby_iz_argv(a, ap) -> tuple:
             ap.error("--k3/--n1/--rol/--zamorozka — только для --kub v5 | v6")
         return {c["sid"]: (p, c) for p, c in ((Path(p), zagruzit_kub(p, a.period, a.seed)) for p in a.kub)}, ps.R0, None
     sids, v = a.strategii.split(","), a.kub[0]
+    if v == "v6":
+        from fastbt import sobytiya_e1
+        sobytiya_e1.trebovat_svod()
     if a.seed not in (None, 1, 2) or (a.zamorozka and v != "v6"):
         ap.error("--seed: 1 | 2; --zamorozka — только для --kub v6")
     rz, _ = ps.rezhim(argparse.Namespace(kub=v, period=a.period, seed=a.seed or 1, k3=a.k3, n1=a.n1, root=None, zamorozka=a.zamorozka), sids, ap)

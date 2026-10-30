@@ -148,7 +148,7 @@ def usech(koren: Path, vyhod: Path, tolko: str = "") -> list[dict]:
             # дата в начале имени справочной таблицы — день её создания (2026), не данные; manifest_perenos не читает файлы с
             # годом 202x в имени, поэтому копия лежит без префикса даты, а в манифесте istochnik = исходное имя (его читает fastbt)
             dst = vyhod / rel
-            if rel.startswith("docs/issledovaniya/"):
+            if rel.startswith("docs/issledovaniya/") and dst.name[:4].isdigit():      # свод Д8 без даты в имени — имя не режется
                 dst = dst.with_name(dst.name.split("_", 1)[1])
             st = usech_pq(src, dst, kol[0]) if vid == "pq" else usech_json(src, dst) if vid == "json" else usech_csv(src, dst, kol, och)
             zap.append(dict(rel=rel, dst=dst, st=st, chit=chit, sha_src=mp.sha256(str(src)), bez=not kol))

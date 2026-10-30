@@ -10,6 +10,7 @@ import yaml
 
 from fastbt import canon_v5 as C5
 from fastbt import canon_v6 as C6
+from fastbt import canon_v6_nesovm as nesovm
 
 R = Path(C6.ROOT)
 SIDS = [f"S{k}" for k in range(1, 7)]
@@ -61,21 +62,33 @@ def tochki_v5(sid, n):
     return C5.tochki_v5(C5.load_kub(sid), 0, n)[0]
 
 
-# --- v5 ⊂ v6 ---------------------------------------------------------------------------------------------------------
+def ok_tochka(sid, k6):
+    """Первая точка v5, которую canon_v6_nesovm не выбрасывает (точка 0 кубов S3/S4 — тренд с тейком от силы на стоп-заявке, правило 3)."""
+    return next(c for _, c in tochki_v5(sid, 60) if not nesovm.nesovm(sid, {**c, **vykl(k6)}))
+
+
+# --- v5 ⊂ v6 за вычетом точек, выброшенных canon_v6_nesovm (30.10), и только их ------------------------------------------
 @pytest.mark.parametrize("sid", SIDS)
 def test_v5_vlozhena_v_v6_na_tochkakh_v5(sid):
     k6 = raw("v6", sid)
     pts = tochki_v5(sid, 600)
     assert len(pts) > 100
+    nbros = 0
     for i, c in pts:
-        assert C6.canon_v6(sid, {**c, **vykl(k6)}) == c, i
+        q = {**c, **vykl(k6)}
+        if nesovm.nesovm(sid, q):
+            assert C6.canon_v6(sid, q) is None, i                  # выброшена правилом
+            nbros += 1
+        else:
+            assert C6.canon_v6(sid, q) == c, i                     # остальные — ровно канон v5
+    assert nbros < len(pts) // 2                                   # (в v5-кубе S6 правила не срабатывают ни на одной из 600 точек, в S3/S4 — на трети)
 
 
 @pytest.mark.parametrize("sid", SIDS)
 def test_vklyuchennaya_novaya_os_popadaet_v_kanon(sid):
     """Обратное: включённая (не свёрнутая) новая ось остаётся в каноне — иначе v5 ⊂ v6 выполнялась бы тривиально."""
     k6 = raw("v6", sid)
-    c = tochki_v5(sid, 1)[0][1]
+    c = ok_tochka(sid, k6)
     nprov = 0
     for n, v in novye_raw(k6).items():
         if v.get("roditel") or n in ("dlit", "piv_buf", "lestnica", "ed_lim", "vyhod_lim", "time_decay", "smena", "reentry"):   # time_decay — свёртка без tau / при тейке ≠ net; smena/reentry (тренд) — по vhod_tip (V6-12d)
@@ -150,11 +163,17 @@ def test_s4_period_pri_norm_s252_dayot_odinakovyj_kanon():
     k6, k5 = raw("v6", sid), raw("v5", sid)
     per = list(k5["signal"]["period"]["setka"])
     assert len(per) >= 3
+    nprov = 0
     for i, c in tochki_v5(sid, 40):
         base = {**c, **vykl(k6), "norm": "s252"}
+        if nesovm.nesovm(sid, base):                  # правила от period не зависят: выброшена при любом period
+            assert all(C6.canon_v6(sid, {**base, "period": p}) is None for p in per), i
+            continue
         kan = [C6.canon_v6(sid, {**base, "period": p}) for p in per]
         assert all(k is not None and k == kan[0] and k["norm"] == "s252" for k in kan), i
-    c = tochki_v5(sid, 1)[0][1]                       # при norm = okno (выкл.) period действует
+        nprov += 1
+    assert nprov >= 5
+    c = ok_tochka(sid, k6)                            # при norm = okno (выкл.) period действует
     k = [C6.canon_v6(sid, {**c, **vykl(k6), "period": p}) for p in per]
     assert len({str(x) for x in k}) == len(per)
 
@@ -169,9 +188,15 @@ def test_dlit_trenda_bez_podtverzhdeniya_svernut(sid):
         c.pop("vhod_tip", None)
         for vt in ("stop_zayavka", None):
             q = dict(c) if vt is None else {**c, "vhod_tip": vt}
+            if nesovm.nesovm(sid, q):                 # выброшена правилом (3: тейк от силы на стоп-заявке) — dlit не меняет
+                assert all(C6.canon_v6(sid, {**q, "dlit": d}) is None for d in dl), (i, vt)
+                continue
             kan = [C6.canon_v6(sid, {**q, "dlit": d}) for d in dl]
             assert all(k == kan[0] and "dlit" not in k for k in kan), (i, vt)
-        kan = [C6.canon_v6(sid, {**c, "vhod_tip": "podtverzhdenie", "dlit": d}) for d in dl]
+        qp = {**c, "vhod_tip": "podtverzhdenie"}
+        if nesovm.nesovm(sid, qp):
+            continue
+        kan = [C6.canon_v6(sid, {**qp, "dlit": d}) for d in dl]
         assert [k.get("dlit", dl[0]) for k in kan] == dl and "dlit" not in kan[0], i   # «выкл.» (1) в канон не пишется
 
 

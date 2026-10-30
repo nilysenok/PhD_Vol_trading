@@ -94,7 +94,7 @@ printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%
   "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$NAKLADKA" "$NT" "$NL" "$(date '+%F %T %Z')" > "$OUT/VERSIYA"
 say "   numba: NUMBA_NUM_THREADS=$NT NUMBA_THREADING_LAYER=$NL (на эталоне и на сервере)"
 
-say "4/6 эталоны Мака: якорь A_fix × 6 Sk на train4 + ${PERENOS_ETALONY_TOCHEK:-200} точек (код tar, данные $OUT/data)"
+say "4/6 эталоны Мака: якорь A_fix × 6 Sk на train4 + ${PERENOS_ETALONY_TOCHEK:-200} точек + набор v6: якорь v6 × 6 Sk + 200 точек куба v6 (код tar, данные $OUT/data)"
 mkdir -p "$TMP/cache"
 (cd "$K" && env NUMBA_NUM_THREADS="$NT" NUMBA_THREADING_LAYER="$NL" PYTHONPATH="$K" FASTBT_MAIN="$OUT/data" FASTBT_BARS1M="$OUT/data/data/regen/D25/bars1m" \
   FASTBT_NO_CACHE=1 FASTBT_CACHE="$TMP/cache/fastbt" FASTBT_E1_CACHE="$TMP/cache/etap1" FASTBT_FS_CACHE="$TMP/cache/fs" \
