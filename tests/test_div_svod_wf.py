@@ -111,7 +111,32 @@ def test_vyplat_net_ne_idet_v_svod(tmp_path):
 def test_realnyj_svod_usechenie_2021_dayot_prezhnij(tmp_path):
     cp = tmp_path / "svod.csv"
     usech_2021.usech_csv(REPO / "docs/issledovaniya/div_sverka_svod.csv", cp, ("record_date", "announce_pit"))
-    assert hashlib.sha256(cp.read_bytes()).hexdigest() == SHA_2021
+    bez_korr = "".join(ln.rsplit(",", 1)[0] + "\n" for ln in cp.read_text(encoding="utf-8").splitlines())   # без godna_korr
+    assert hashlib.sha256(bez_korr.encode()).hexdigest() == SHA_2021
+
+
+MAN = REPO / "docs/server/manifest_dannyh_2021.tsv"
+SVOD_REL = "docs/issledovaniya/div_sverka_svod.csv"
+
+
+def _manifest_sha(tekst):
+    (r,) = [ln.split("\t") for ln in tekst.splitlines()[1:] if ln.split("\t")[0].endswith("div_sverka_svod.csv")]
+    return r[1], r[6]       # sha256 усечённой копии, sha256_istochnika
+
+
+def test_manifest_sha_istochnika_ravno_sha_svoda_a_kopii_ravno_usechennoj(tmp_path):
+    sha_kopii, sha_ist = _manifest_sha(MAN.read_text(encoding="utf-8"))
+    assert sha_ist == hashlib.sha256((REPO / SVOD_REL).read_bytes()).hexdigest()
+    cp = tmp_path / "svod.csv"
+    usech_2021.usech_csv(REPO / SVOD_REL, cp, ("record_date", "announce_pit"))
+    assert sha_kopii == hashlib.sha256(cp.read_bytes()).hexdigest()
+
+
+def test_mutaciya_staryj_sha_istochnika_lovitsya():
+    tekst = MAN.read_text(encoding="utf-8")
+    ist = _manifest_sha(tekst)[1]
+    _, staryj = _manifest_sha(tekst.replace("\t" + SVOD_REL + "\t" + ist, "\t" + SVOD_REL + "\t" + SHA_2021))
+    assert staryj != hashlib.sha256((REPO / SVOD_REL).read_bytes()).hexdigest()
 
 
 def test_realnyj_svod_pokryvaet_do_2026_02_i_godnye_po_godam():
@@ -119,6 +144,29 @@ def test_realnyj_svod_pokryvaet_do_2026_02_i_godnye_po_godam():
     god = {y: sum(int(r["godna"]) for r in rows if r["record_date"][:4] == y) for y in map(str, range(2022, 2027))}
     assert max(r["record_date"] for r in rows) <= "2026-02-28" and "2026-01-12" in {r["record_date"] for r in rows}
     assert [god[y] for y in sorted(god)] == [12, 16, 21, 16, 2]
+
+
+def test_net_istochnika_s_podtverzhdennymi_reestrom_i_summoj_godna_korr_a_ne_godna(tmp_path):
+    _sverka(tmp_path, "net_istochnika", name="2026-10-30_div_sverka_A.csv", src="2017_2021")
+    (r,) = ds.svod(tmp_path)
+    assert (r["godna"], r["godna_korr"]) == (0, 1)
+
+
+def test_rashozhdenie_summy_ili_reestra_godna_korr_nol(tmp_path):
+    for rec2, dps2 in (("2023-04-20", "99"), ("2023-04-21", "10")):
+        with open(tmp_path / "2026-10-30_div_sverka_A.csv", "w", encoding="utf-8", newline="") as fh:
+            w = csv.writer(fh)
+            w.writerow(SV)
+            w.writerow(["NVTK", "2023-04-20", "2023-03-01", "10", "2017_2021", "", rec2, "", dps2, "vtoroy", "rashozhdenie", ""])
+        (r,) = ds.svod(tmp_path)
+        assert (r["godna"], r["godna_korr"]) == (0, 0)
+
+
+def test_mutaciya_godna_korr_ravno_godna_lovitsya(tmp_path, monkeypatch):
+    monkeypatch.setattr(ds, "_korr", lambda r: 0 if r["verified"] != "yes" else 1)     # подложено: godna_korr повторяет godna
+    _sverka(tmp_path, "net_istochnika", name="2026-10-30_div_sverka_A.csv", src="2017_2021")
+    (r,) = ds.svod(tmp_path)
+    assert (r["godna"], r["godna_korr"]) != (0, 1)      # честная строка (0, 1) этой подменой не воспроизводится
 
 
 def test_mutaciya_2022_plyus_godny_bez_podtverzhdeniya_lovitsya(tmp_path, monkeypatch):
