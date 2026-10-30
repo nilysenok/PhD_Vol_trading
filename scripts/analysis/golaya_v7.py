@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 from fastbt import bars_agg, daily_1850 as d18, dividendy, impuls_v7 as imp, kross_seksiya as ks, kross_v7 as kv  # noqa: E402
 from fastbt import metriki_diag as md, metriki_e as me, msp, progon_kontrol as pk, t_reshenie_v7 as tr  # noqa: E402
 from fastbt.data import TICKERS  # noqa: E402
-from fastbt.golaya_v7_isp import KOMISSIYA, ZAEM, ispolnit  # noqa: E402
+from fastbt.golaya_v7_isp import KOMISSIYA, ZAEM, ispolnit, korpsobytiya, placebo_ryad, skor_k2  # noqa: E402
 from fastbt.period_v2 import PERIODY, proverit_chtenie  # noqa: E402
 
 END, PERIODY_OK, T_DOP, N_POVT, SEED = pd.Timestamp("2020-01-01"), ("train4", "v2"), ("17:00", "18:00", "18:40"), 20, 20261031
@@ -49,7 +49,7 @@ def iz_barov(raw: dict, im: pd.DataFrame, period: str, tk=None) -> dict:
     P, tk = PERIODY[period], list(tk or TICKERS)
     cl, op, cr, dv, ist, rw = {}, {}, {}, {}, {}, {}
     for t in tk:
-        b = raw[t][lambda x: (x["timestamp"] >= P.progrev) & (x["timestamp"] < END)]
+        b = korpsobytiya(raw[t][lambda x: (x["timestamp"] >= P.progrev) & (x["timestamp"] < END)], t)
         dd = d18.aggregate(b, t).set_index("date")
         dts, cr[t] = dd.index.values, dd["close"]
         f = pd.Series(dividendy.adjust_ohlc(t, dts, dd["close"].to_numpy(), np.ones(len(dd)))[0], dd.index)    # множитель дня
@@ -90,7 +90,7 @@ def signaly(D: dict, sid: str, ctl=None, tochka: dict | None = None) -> np.ndarr
         c = CENTR[sid]
         sk = kv.rebal(kv.panel(D["c"], D["im"]["CLOSE"], D["metki"], sid), D["daty"], c["rezhim"])
         if ctl:
-            sk = kv.k2(sk, ctl[1]) if ctl[0] == "k2" else kv.placebo_sechenie(sk, ctl[1])
+            sk = skor_k2(D, sk, ctl[1]) if ctl[0] == "k2" else placebo_ryad(sk, ctl[1])
         return kv.storona(sk, D["sigma"], D["metki"], D["ok"], c["porog"], c["bufer"], c["cap"])
     tochka = tochka or shag(sid)
     ts = CENTR[sid]["T"] if tochka["vhod"] == "d1" else tochka["T"]

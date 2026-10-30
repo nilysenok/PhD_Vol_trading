@@ -11,11 +11,36 @@ d+τ; флаг `exit_l`/`exit_s` дня k (k ≥ день входа для `d1`
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 
+from fastbt import data as fd, kross_v7 as kv
 from fastbt.kross_seksiya import DNEI, ZAEM
 from fastbt.tf_os_v5 import KOMISSIYA
 
 VHODY = ("d1", "T")
+
+
+def korpsobytiya(b: pd.DataFrame, t: str) -> pd.DataFrame:
+    """Сплиты/консолидации (data.corp_actions, как движок load_ticker(corp=True)): 10-минутки до даты × factor, объём ÷ factor."""
+    b = b.assign(volume=b["volume"].astype(float))
+    for _, ev in fd.corp_actions(t).iterrows():
+        m, f = (b["timestamp"] < ev["date"]).to_numpy(), float(ev["factor"])
+        b.loc[m, ["open", "high", "low", "close"]] *= f
+        b.loc[m, "volume"] /= f
+    return b
+
+
+def placebo_ryad(sk: np.ndarray, seed: int) -> np.ndarray:
+    """Плацебо (б): ОДНА перестановка тикеров на весь ряд — оборот и автокорреляция скора целы, привязка к тикеру порвана."""
+    return sk[:, np.random.default_rng(seed).permutation(sk.shape[1])]
+
+
+def skor_k2(D: dict, sk: np.ndarray, lag: int) -> np.ndarray:
+    """к2: циклический сдвиг скора только внутри окна метрик (дни прогрева без скора в окно не заносятся)."""
+    w = np.flatnonzero(D["win"])
+    out = sk.copy()
+    out[w] = kv.k2(sk[w], lag)
+    return out
 
 
 def proverka_d2(sig_i: int, vhod_i: int) -> None:
