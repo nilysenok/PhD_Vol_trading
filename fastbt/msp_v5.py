@@ -2,8 +2,10 @@
 
 Вход — сигналы членов ансамбля, которые пересчитывает вызывающий (в ledger 2.1 стороны и силы нет):
   sig[Sk] = {"storona": [d×тикер] ∈ {−1,0,+1}, "sila": [d×тикер], "g": [d×тикер]} — всё по данным к 18:50 дня d;
-  sigma [d×тикер] — σ̂_d; sektor {тикер: сектор}; dohod [d×тикер] — excess-доходность ставки, ПРИНЯТОЙ на день d
-  (исполнение d+1, Д2; вызывающий выравнивает); imoex [d] — то же для хеджа MIX.
+  sigma [d×тикер] — σ̂_d; sektor {тикер: сектор}; dohod = {"R_brutto": [d×тикер],
+  "T": [d×тикер]} — брутто-доходность ставки ПРИНЯТОЙ на день d на единицу позиции (знаковая, без комиссии) и
+  оборот дня на единицу (≥ 0, Σ|pos| входов и выходов, `tf_os_v5.dohod`); исполнение d+1, Д2, вызывающий выравнивает;
+  imoex [d] — то же для хеджа MIX. ex_kniga = u·R_brutto − ставка·Σ|u|·T − ставка·|Δ хеджа|.
 День d: скоры (фазы по ≤ d−1, `fazy._LAG = 1`) -> `kniga_msp.kniga_dnya` по истории строк < d -> только потом доходность d
 дописывается в историю. λ = 0 — фазы выключены (вес 1), совпадает с запуском без фаз побайтно.
 Данные ≥ 2020 не читаются (ValueError).
@@ -47,6 +49,16 @@ def _kvartal(idx) -> np.ndarray:
     return (idx.year * 4 + (idx.month - 1) // 3).to_numpy()
 
 
+def _bez_nan(r, t, poziciya, i, daty, kand):
+    """NaN в R_brutto/T законен только там, где позиции нет (дня нет в данных); при позиции ≠ 0 — отказ (Д4)."""
+    bad = (np.isnan(r) | np.isnan(t)) & poziciya
+    if bad.any():
+        j = int(np.flatnonzero(bad)[0])
+        raise ValueError(f"NaN в R_brutto/T при позиции ≠ 0: день {daty[i].date()} (строка {i}), столбец {kand[j]}; "
+                         "молча в 0 не заменяется (Д4)")
+    return np.nan_to_num(r), np.nan_to_num(t)
+
+
 def progon(sig: dict, sigma: pd.DataFrame, sektor: dict, dohod: pd.DataFrame, imoex: pd.Series, lam: float,
            dannye: dict | None = None, faza_r=None, faza_s=None, k: int = 20, rho: float = 0.01,
            plecho: float = 2.0, tsel: float = 0.10, porog: float = 0.0) -> Rezultat:
@@ -60,7 +72,13 @@ def progon(sig: dict, sigma: pd.DataFrame, sektor: dict, dohod: pd.DataFrame, im
     kand = pd.MultiIndex.from_product([sks, tik], names=["sk", "tiker"])
     S = np.concatenate([sc[s].reindex(daty)[tik].to_numpy(float) for s in sks], axis=1)       # [T, S·N]
     sg = np.tile(sigma.reindex(daty)[tik].to_numpy(float), (1, len(sks)))
-    R = np.nan_to_num(np.tile(dohod.reindex(daty)[tik].to_numpy(float), (1, len(sks))))
+    if not (isinstance(dohod, dict) and {"R_brutto", "T"} <= set(dohod)):
+        raise ValueError("dohod: нужен dict {'R_brutto','T'} (брутто на единицу позиции со знаком и оборот дня ≥ 0); "
+                         "один ряд с комиссией внутри даёт шорту возврат комиссии (Ж-149)")
+    pan = lambda x: np.tile(x.reindex(daty)[tik].to_numpy(float), (1, len(sks)))     # noqa: E731 — NaN остаются до цикла
+    R, Tn = pan(dohod["R_brutto"]), pan(dohod["T"])
+    if (Tn[~np.isnan(Tn)] < 0).any():
+        raise ValueError("T (оборот дня на единицу позиции) должен быть ≥ 0")
     sek = np.array([sektor[t] for _ in sks for t in tik], dtype=object)
     skid = np.repeat(np.arange(len(sks)), len(tik))
     im = np.nan_to_num(imoex.reindex(daty).to_numpy(float))
@@ -71,10 +89,12 @@ def progon(sig: dict, sigma: pd.DataFrame, sektor: dict, dohod: pd.DataFrame, im
     for i in range(T):
         it = kniga_msp.kniga_dnya(i, S[i], sg[i], sek, skid, ist, k, rho, plecho, tsel)
         u0 = kniga_msp.vybor_stavok(S[i], sg[i], sek, k, rho)
+        Ri, Ti = _bez_nan(R[i], Tn[i], (u0 != 0) | (it.u != 0), i, daty, kand)    # Д4: NaN допустим только без позиции
         for j in range(len(sks)):                                      # история пишется ПОСЛЕ решения дня i
-            ist["ex_sk"][i, j] = float((u0 * R[i])[skid == j].sum())
-        ist["ex_port"][i] = float((it.u / (it.m * it.vykl)) @ R[i])
-        ist["ex_kniga"][i] = float(it.u @ R[i] + it.hedzh * im[i])
+            ist["ex_sk"][i, j] = float((u0 * Ri)[skid == j].sum())
+        ist["ex_port"][i] = float((it.u / (it.m * it.vykl)) @ Ri)
+        kom_akcii = kniga_msp.KOMISSIYA * float(np.abs(it.u) @ Ti)                     # Ж-149: всегда, не зависит от знака
+        ist["ex_kniga"][i] = float(it.u @ Ri + it.hedzh * im[i]) - kom_akcii - it.komissiya   # + оборот хеджа MIX
         U[i], H[i] = it.u, it.hedzh
     return Rezultat(pd.DataFrame(U, index=daty, columns=kand), pd.Series(H, index=daty, name="hedzh"),
                     pd.Series(ist["ex_kniga"], index=daty, name="ex_kniga"), sc)
