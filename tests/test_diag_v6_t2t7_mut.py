@@ -63,10 +63,11 @@ def test_dubl_klyucha_odin_raz_mutaciya_bez_dedupa_lovitsya(tmp_path):
 def test_prochee_vse_vne_slovarya_summa_dolej_edinica(monkeypatch):
     r = _row(1, 5, pr={"stop": 0.6, "part": 0.2, "pir": 0.1, "sessiya": 0.1})      # вне словаря: 0,4
     assert T._prochee(r) == pytest.approx(0.4)
-    pul = {"S1": [_row(i, 5, pr={"stop": 0.3, "take": 0.1, "part": 0.6}) for i in range(1, 4)]}
-    for x in T.tablica_7(pul):
-        if x["rang"] != "med":
-            assert sum(x[k] for k in T.SLOVAR) + x["prochee"] == pytest.approx(1.0)
+    pul = {"S1": [_row(i, 10, pr={**dict.fromkeys(T.SLOVAR, 0.0), "stop": 0.3, "take": 0.1, "part": 0.6}) for i in range(1, 4)]}
+    t7 = [x for x in T.tablica_7(pul) if x["rang"] != "med"]
+    assert len(t7) == 3                                                     # ворота пройдены (40 сделок), цикл не пустой
+    for x in t7:
+        assert sum(x[k] for k in T.SLOVAR) + x["prochee"] == pytest.approx(1.0)
     monkeypatch.setattr(T, "_prochee", lambda r: 0.0)                       # мутация: «прочее» отброшено
     x = [x for x in T.tablica_7(pul) if x["rang"] == 1][0]
     assert sum(x[k] for k in T.SLOVAR) + x["prochee"] != pytest.approx(1.0)
