@@ -8,7 +8,7 @@ import pytest
 
 from fastbt import etap1, etap1_data as D, fast_etap1
 from fastbt.etap1 import E1Inputs
-from tests import test_prefiks_v5_v6 as P
+import test_prefiks_v5_v6 as P
 
 
 def _inp(tick: float) -> E1Inputs:
