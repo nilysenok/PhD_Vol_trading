@@ -210,7 +210,7 @@
 ## 13. Гейты этого файла
 - G1 — пп. 1–6 Ж-155 дословно. CHECK: `grep -c 'не меньше 7 из 9; медиана Sharpe по годам > 0' docs/preregistraciya_v3_chernovik.md` · EXPECT 2 (цитата и эта строка) · EVIDENCE: 2; дословность пп. 1–6 — `diff` с `origin/kanon-v22-pereschet:docs/resheniya/resheniya.md` строки 2339–2371: совпадение.
 - G2 — формулировка Ж-154 п. 6 дословно. CHECK: `grep -c 'поправкам на множественность (PBO, DSR) и walk-forward' docs/preregistraciya_v3_chernovik.md` · EXPECT 2 · EVIDENCE: 2.
-- G3 — оценка §11 воспроизводится. CHECK: `python3 -I scratchpad/prereg_v3/ocenka_v3b.py | grep -m1 'P = 80'` · EXPECT `P = 80: основной (Моррис + s1 + к3) 6 ч 21 м / 14 ч 03 м; с seed-2 и контролями 8 ч 49 м / 19 ч 00 м` · EVIDENCE: совпало (31.10 02:2x).
+- G3 — оценка §11 воспроизводится. CHECK: `python3 -I scratchpad/prereg_v3/ocenka_v3b.py | grep -m1 'P = 80'` · EXPECT `P = 80: основной (Моррис + s1 + к3) 6 ч 21 м / 14 ч 03 м; с seed-2 и контролями 8 ч 49 м / 19 ч 00 м` · EVIDENCE: совпало (31.10 02:09).
 - G6 — правило Ж-157 п. 2 дословно. CHECK: `grep -c 'к2 хуже неё не менее чем в 70 % перестановок и плацебо хуже не менее чем в 70 %' docs/preregistraciya_v3_chernovik.md` · EXPECT ≥ 2 (цитата §1.2, В-24) · EVIDENCE: 3 (§1.2, В-24, эта строка).
 - G4 — walk-forward убран. CHECK: `grep -c '^## 7. Walk-forward' docs/preregistraciya_v3_chernovik.md` · EXPECT 1 (раздел — одна строка) · EVIDENCE: 1.
 - G5 — ручной: данные ≥ 2022, `test_locked/`, `.env` не читались; код не менялся; Соболь не запускался · EVIDENCE: ручной, `git status` — один новый файл.
