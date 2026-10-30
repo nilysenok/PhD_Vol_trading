@@ -19,6 +19,17 @@ TYPES = ['cbr', 'fomc', 'cpi_ru', 'cpi_us', 'dividends_expected', 'dividends_act
          'imoex_rebal']
 
 
+def known_to_col(df):
+    """known_to файла календаря (NaT — версия действует; нет колонки — все NaT). Единственное чтение known_to."""
+    return pd.to_datetime(df['known_to']) if 'known_to' in df else pd.Series(pd.NaT, index=df.index, dtype='datetime64[ns]')
+
+
+def izvestna(kf, kt, t):
+    """Единственное определение PIT-версии (Д7): версия известна на t, если known_from <= t < known_to (NaT — без конца).
+    kf, kt — массивы или Series; t — скаляр. Читатели берут на t только такие строки."""
+    return (kf <= t) & (pd.isna(kt) | (kt > t))
+
+
 def load_events(cal_dir=CAL, types=TYPES):
     """{тип: DataFrame[date, known_from]} (datetime64), без внеплановых. Пустой/отсутствующий файл -> пустой."""
     out = {}
@@ -28,6 +39,7 @@ def load_events(cal_dir=CAL, types=TYPES):
         if 'vneplan' in df:
             df = df[df['vneplan'].fillna(0).astype(int) == 0]
         out[ty] = pd.DataFrame({'date': pd.to_datetime(df['date']), 'known_from': pd.to_datetime(df['known_from'])})
+        out[ty]['known_to'] = known_to_col(df)  # версия даты действует до known_to (PIT: перенос заменяет дату)
     return out
 
 
@@ -36,7 +48,7 @@ def features(t, h, events):
     t = pd.Timestamp(t).normalize()
     res = {}
     for ty, df in events.items():
-        known = df[df['known_from'] <= t]  # только то, что известно на t
+        known = df[izvestna(df['known_from'], df['known_to'] if 'known_to' in df else pd.NaT, t)]  # известное на t
         d = known['date']
         res['n_%s_h%d' % (ty, h)] = int(((d > t) & (d <= t + pd.Timedelta(days=h))).sum())
         fut = d[d > t]

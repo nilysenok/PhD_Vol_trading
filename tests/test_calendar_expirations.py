@@ -12,7 +12,8 @@ ISKLYUCHENIYA = {pd.Timestamp("2022-03-29")}
 
 
 def _load() -> pd.DataFrame:
-    return pd.read_csv(CSV, parse_dates=["date", "known_from"])
+    d = pd.read_csv(CSV, parse_dates=["date", "known_from", "known_to"])
+    return d[d["known_to"].isna()].reset_index(drop=True)  # действующие версии; история — test_calendar_expirations_pit.py
 
 
 def _tretiy_chetverg(d: pd.Timestamp) -> bool:
