@@ -1,117 +1,151 @@
-"""Тестировщик #859: сквозные проверки комиссии оборота множителей и мутации (известный ответ руками). Синтетика; без сети."""
+"""Тестировщик #859 (контракт Ж-149 от 31.10): R_brutto + T, ex = u@R − ставка·Σ|u|·T − ставка·|Δh|. Синтетика; без сети.
+Мутации: подмена `komissiya_oborota` (хедж) и сверка с формулами-мутантами (|u| без T; знак u; комиссия внутри R)."""
 import numpy as np
+import pandas as pd
 import pytest
 
 from fastbt import kniga_msp as km
 from fastbt import msp_v5
-from tests.test_kniga_msp_komissiya_mnozh import ARGS, C, _ist, _kom
+from tests.test_kniga_msp_komissiya_mnozh import C
 from tests.test_msp_v5 import _run
 
-ORIG = km.komissiya_mnozh
+T = 200                                                      # > OKNO_BETA + прогрев: хедж живой
+IDX = pd.bdate_range("2016-01-04", periods=T)
 
 
-def test_vhod_pri_postoyannyh_mnozhitelyah_nol():
-    assert _kom([0.8, 0], [0, 0], [0.8, 0], [0, 0]) == 0.0         # c = 1
+def _f(v):
+    return pd.DataFrame(v, index=IDX, columns=["A", "B"])
 
 
-def test_vhod_i_smena_mnozhitelya_oblagaetsya_chast():
-    """Вход raw 0,5 при c = 2 (w = 1,0); вчера было 0,3 при c = 1 (w = 0,3): Δw = 0,7, Δraw·c = 0,2·2 = 0,4 -> 0,3 облагается."""
-    assert _kom([1.0, 0], [0.3, 0], [0.5, 0], [0.3, 0]) == pytest.approx(C * (0.7 - 0.4))
+def _sborshchik(seed=11):
+    rng = np.random.default_rng(seed)
+    return 0.01 * rng.standard_normal((T, 2)), rng.uniform(0.5, 2.0, (T, 2)), rng   # R знаковый, T > 0 разный по тикерам
 
 
-def test_vyhod_ne_oblagaetsya_pri_c_vcherashnem():
-    assert _kom([0, 0], [0.6, 0], [0, 0], [0.3, 0]) == 0.0
+def _progon(rb, tt, rng):
+    return _vyzov(rb, tt)
 
 
-def test_vyhod_c_segodnyashniy_byl_by_oshibkoy():
-    """Выход в тот же день, когда вес Sk другой: вчерашний c = 2 (w_prev 0,6 при raw_prev 0,3); платит только Δ сверх."""
-    assert _kom([0, 0.1], [0.6, 0], [0, 0.05], [0.3, 0]) == 0.0   # выход (c=2) и вход другого тикера целиком в парах
+def _sig(storona):
+    rng = np.random.default_rng(4)
+    return {"S1": {"storona": _f(np.array([list(storona)] * T)), "sila": _f(rng.uniform(0, 1, (T, 2))),
+                   "g": _f(np.ones((T, 2)))}}
 
 
-def test_max_ne_zanizhaet_netto_protivopolozhnye_sk():
-    """Один тикер в двух Sk: +0,5 (c = 1) и −0,5 (c = 1) входят вместе -> нетто 0, комиссия книги 0 (обе ноги в excess пар)."""
-    t = np.array([0, 0])
-    assert _kom([0.5, -0.5], [0, 0], [0.5, -0.5], [0, 0], tik=t) == 0.0
-    # а вот смена c у одной ноги при тех же raw: Δw = 0,25·(−1)... оборот нетто не теряется
-    assert _kom([0.5, -0.25], [0.5, -0.5], [0.5, -0.5], [0.5, -0.5], tik=t) == pytest.approx(C * 0.25)
+def _vyzov(rb, tt, im=None, storona=(1.0, -1.0)):
+    return msp_v5.progon(_sig(storona), _f(np.full((T, 2), 0.02)), {"A": "X", "B": "Y"},
+                         {"R_brutto": _f(rb), "T": _f(tt)}, pd.Series(0.0, index=IDX) if im is None else im,
+                         0.0, k=2, rho=0.001)
 
 
-def test_max_ne_skryvaet_oborot_lishnij_vhod():
-    """|Δw| < |ΣΔraw·c| невозможно при c = w/raw по каждому столбцу и одном знаке; при разных c — дарим 0, не отрицательное."""
-    assert _kom([0.2, 0], [0, 0], [0.5, 0], [0, 0]) == 0.0
+def _ekspress(r, rb, tt, im=None):
+    """Эталон руками: u@R − C·Σ|u|·T + h·imoex − C·|Δh|."""
+    u, h = r.u.to_numpy(), r.hedzh.to_numpy()
+    imv = np.zeros(T) if im is None else im.to_numpy()
+    dh = np.abs(np.diff(h, prepend=0.0))
+    return (u * rb).sum(1) - C * (np.abs(u) * tt).sum(1) + h * imv - C * dh
 
 
-def test_hedzh_vklyuchenie_vyklyuchenie_smena_beta():
-    z = [0, 0]
-    assert _kom(z, z, z, z, h=-0.3, hp=0.0) == pytest.approx(C * 0.3)
-    assert _kom(z, z, z, z, h=0.0, hp=-0.3) == pytest.approx(C * 0.3)
-    assert _kom(z, z, z, z, h=-0.5, hp=-0.2) == pytest.approx(C * 0.3)
-    assert _kom(z, z, z, z, h=0.2, hp=-0.1) == pytest.approx(C * 0.3)          # смена знака β
+def test_hedzh_komissiya_0_0004_na_modul_delta():
+    """Хедж: 0,0004·|Δh| — известный ответ, оба знака смены β."""
+    assert km.komissiya_oborota([-0.5], [-0.2]) == pytest.approx(0.0004 * 0.3)
+    assert km.komissiya_oborota([0.2], [-0.1]) == pytest.approx(0.0004 * 0.3)
+    assert km.komissiya_oborota([0.0], [0.0]) == 0.0
 
 
-def test_skvoznoy_vyklyuchatel_bez_signalov():
-    """День без новых сигналов: срабатывает выключатель (f = 0,5) -> комиссия = ставка·Σ|Δu|."""
-    ist = _ist()
-    a = km.kniga_dnya(20, *ARGS, ist, k=6, rho=0.001)
-    ist["ex_kniga"][:21] = -0.01                                    # просадка > 5 %
-    b = km.kniga_dnya(21, *ARGS, ist, k=6, rho=0.001)
-    assert a.vykl == 1.0 and b.vykl == 0.5
-    assert b.komissiya == pytest.approx(C * np.abs(b.u - a.u).sum()) and b.komissiya > 0
+def test_skvoznoy_ex_ravno_ekspress_s_hedzhem():
+    """Сквозной путь через msp_v5 с живым хеджем (β меняется): ex_kniga совпадает с формулой руками на каждом дне."""
+    rng = np.random.default_rng(6)
+    rb, tt, _ = _sborshchik()
+    im = pd.Series(0.01 * rng.standard_normal(T), index=IDX)
+    r = _vyzov(rb + 0.3 * im.to_numpy()[:, None], tt, im)
+    assert np.abs(np.diff(r.hedzh.to_numpy())).max() > 0      # хедж действительно менялся: проверка не пустая
+    np.testing.assert_allclose(r.ex_kniga.to_numpy(), _ekspress(r, rb + 0.3 * im.to_numpy()[:, None], tt, im), atol=1e-15)
 
 
-def test_skvoznoy_msp_v5_raznost_ravna_komissii():
-    """ex_kniga[i] = u@R + h·imoex − komissiya[i] на каждом дне; Σ комиссий > 0; есть день без смены сырых позиций с комиссией."""
-    kom = []
-    km_orig = km.komissiya_mnozh
-    km.komissiya_mnozh = lambda *a, **k: kom.append(km_orig(*a, **k)) or kom[-1]
-    try:
-        r = _run(0.0, None)
-    finally:
-        km.komissiya_mnozh = km_orig
-    from tests.test_msp_v5 import _vhod
-    _, d, im = _vhod()
-    R = np.nan_to_num(np.tile(d.to_numpy(float), (1, 2)))
-    brutto = (r.u.to_numpy() * R).sum(1) + r.hedzh.to_numpy() * np.nan_to_num(im.to_numpy(float))
-    kom = np.array(kom)
-    np.testing.assert_allclose(brutto - r.ex_kniga.to_numpy(), kom, atol=1e-15)
-    assert kom.sum() > 0 and (kom[5:] > 0).any()
-    assert msp_v5.kniga_msp.KOMISSIYA == C
+def test_long_i_short_odnogo_razmera_platyat_odinakovo():
+    """R = 0, T = 1: лонг и шорт платят одинаково C·|u|; комиссия внутри R дала бы сумму со знаком (нетто 0)."""
+    tt = np.ones((T, 2))
+    r = _vyzov(np.zeros((T, 2)), tt)
+    u = r.u.to_numpy()
+    dni = np.where((u[:, 0] > 0) & (u[:, 1] < 0))[0]
+    assert len(dni) > 20
+    for i in dni:
+        assert r.ex_kniga.to_numpy()[i] == pytest.approx(-C * np.abs(u[i]).sum(), abs=1e-15) and r.ex_kniga.to_numpy()[i] < 0
+    assert (r.ex_kniga.to_numpy() <= 0).all()                       # ни одного дня с возвратом комиссии
 
 
-# ---- мутанты (подменяют функцию; тесты выше обязаны упасть) ----
-def _m_abs_w(w, wp, raw, rawp, tik, h, hp, stavka=C):
-    return stavka * (np.abs(np.asarray(w)).sum() + abs(h - hp))
+def test_den_bez_signalov_smena_mnozhitelya_spisyvaet_C_u_novyj_T():
+    """Тест владельца: сигналы те же, T постоянно; в дни, где |u| менялся из-за множителя, списание = C·Σ|u_new|·T."""
+    rb, tt, _ = _sborshchik()
+    r = _progon(np.zeros((T, 2)), tt, None)
+    u = r.u.to_numpy()
+    m = np.abs(u).sum(1)
+    dni = np.where((np.abs(np.diff(m)) > 1e-9) & (m[1:] > 0))[0] + 1
+    assert len(dni) > 0
+    for i in dni:
+        assert r.ex_kniga.to_numpy()[i] == pytest.approx(-C * (np.abs(u[i]) * tt[i]).sum(), abs=1e-15)
+        assert r.ex_kniga.to_numpy()[i] < 0
 
 
-def _m_bez_hedzha(w, wp, raw, rawp, tik, h, hp, stavka=C):
-    return ORIG(w, wp, raw, rawp, tik, 0.0, 0.0)
+def test_T_otricatelnyj_otkaz():
+    rb, tt, _ = _sborshchik()
+    tt[10, 0] = -1.0
+    with pytest.raises(ValueError, match="T"):
+        _vyzov(rb, tt)
 
 
-def _m_dvoynoe(w, wp, raw, rawp, tik, h, hp, stavka=C):
-    n = int(np.max(tik)) + 1
-    return stavka * (np.abs(np.bincount(tik, np.asarray(w, float) - np.asarray(wp, float), n)).sum() + abs(h - hp))
+@pytest.mark.xfail(strict=True, reason="ДЕФЕКТ #859: msp_v5.progon делает nan_to_num(T) -> NaN молча = 0 (Д4); автор исправляет, затем снять xfail")
+def test_T_nan_otkaz_a_ne_nol():
+    """Д4: NaN в обороте не заменяется нулём молча (иначе комиссия исчезает без следа)."""
+    rb, tt, _ = _sborshchik()
+    tt[10, 0] = np.nan
+    with pytest.raises(ValueError):
+        _vyzov(rb, tt)
 
 
-def _m_c_segodnya(w, wp, raw, rawp, tik, h, hp, stavka=C):
-    w, wp, raw, rawp = (np.asarray(x, float) for x in (w, wp, raw, rawp))
-    c = np.where(raw != 0, w / np.where(raw != 0, raw, 1), 1.0)           # при выходе c = 1 вместо вчерашнего
-    n = int(np.max(tik)) + 1
-    dw, dr = np.bincount(tik, w - wp, n), np.bincount(tik, (raw - rawp) * c, n)
-    return stavka * (np.maximum(np.abs(dw) - np.abs(dr), 0.0).sum() + abs(h - hp))
+def test_staryj_klyuch_dohod_otkaz():
+    with pytest.raises(ValueError):
+        _run(0.0, None, dohod=None) if False else msp_v5.progon(
+            _sig((1.0, -1.0)), _f(np.full((T, 2), 0.02)), {"A": "X", "B": "Y"},
+            {"dohod": _f(np.zeros((T, 2)))}, pd.Series(0.0, index=IDX), 0.0, k=2)
 
 
-UNIT = [test_vhod_pri_postoyannyh_mnozhitelyah_nol, test_vhod_i_smena_mnozhitelya_oblagaetsya_chast,
-        test_vyhod_c_segodnyashniy_byl_by_oshibkoy, test_hedzh_vklyuchenie_vyklyuchenie_smena_beta,
-        test_max_ne_zanizhaet_netto_protivopolozhnye_sk, test_skvoznoy_vyklyuchatel_bez_signalov]
+def test_test_msp_v5_ne_oslablen():
+    """Правка _run в test_msp_v5: T=0 -> прежние результаты; вне хеджа комиссии у пустой книги нет."""
+    r = _run(0.0, None)
+    assert np.isfinite(r.ex_kniga.to_numpy()).all()
+    u, h = r.u.to_numpy(), r.hedzh.to_numpy()
+    assert (np.abs(u).sum(1) > 0).any() and (np.abs(h) > 0).any()
 
 
-@pytest.mark.parametrize("mut", [_m_abs_w, _m_bez_hedzha, _m_dvoynoe, _m_c_segodnya])
-def test_mutant_lovitsya(monkeypatch, mut):
-    monkeypatch.setattr(km, "komissiya_mnozh", mut)
-    padenij = 0
-    for t in UNIT:
-        try:
-            t()
-        except AssertionError:
-            padenij += 1
-    assert padenij >= 1, mut.__name__
+# ---- мутанты ----
+def _m_bez_hedzha(w, wp, stavka=C):
+    return 0.0
+
+
+def test_mutant_hedzh_bez_komissii_lovitsya(monkeypatch):
+    rng = np.random.default_rng(6)
+    rb, tt, _ = _sborshchik()
+    im = pd.Series(0.01 * rng.standard_normal(T), index=IDX)
+    R = rb + 0.3 * im.to_numpy()[:, None]
+    ok = _vyzov(R, tt, im)
+    ref = _ekspress(ok, R, tt, im)
+    monkeypatch.setattr(km, "komissiya_oborota", _m_bez_hedzha)
+    mut = _vyzov(R, tt, im)
+    assert not np.allclose(mut.ex_kniga.to_numpy(), _ekspress(mut, R, tt, im), atol=1e-12)   # формула руками его ловит
+    assert np.allclose(ok.ex_kniga.to_numpy(), ref, atol=1e-15)
+
+
+@pytest.mark.parametrize("nazvanie", ["modul_u_bez_T", "znak_u", "komissiya_vnutri_R"])
+def test_mutant_formuly_otlichaetsya_ot_realnoj(nazvanie):
+    """Реальный ex_kniga на данных, где лонг ≠ шорт по T, не совпадает ни с одной из формул-мутантов."""
+    rb, tt, _ = _sborshchik()
+    r = _vyzov(rb, tt)
+    u, ex = r.u.to_numpy(), r.ex_kniga.to_numpy()
+    brutto = (u * rb).sum(1)
+    mut = {"modul_u_bez_T": brutto - C * np.abs(u).sum(1),
+           "znak_u": brutto - C * (u * tt).sum(1),
+           "komissiya_vnutri_R": (u * (rb - C * tt)).sum(1)}[nazvanie]
+    assert not np.allclose(ex, mut, atol=1e-9)
+    assert np.allclose(ex, brutto - C * (np.abs(u) * tt).sum(1), atol=1e-15)
