@@ -88,8 +88,9 @@ def test_mutaciya_fill_value_false_lovitsya(main, otmetka):
 
 # --- ставка ЦБ ------------------------------------------------------------------------------------------------------------------
 def _stavka_otkazyvaet(fn):
+    konec = msp.rate_cbr().index[-1]                  # фактический конец ряда, не зашитая дата
     with pytest.raises(ValueError):
-        fn(pd.date_range("2026-02-05", "2026-02-27"))
+        fn(pd.date_range(konec - pd.Timedelta(days=2), konec + pd.Timedelta(days=1)))
 
 
 def test_stavka_za_kontsom_ryada_otkaz():
