@@ -1,0 +1,32 @@
+# Куб отбора v7, S1 MeanRev (Ж-153, Ж-155 п. 2, Ж-156 п. 3, Ж-157 п. 2; план V7-1a). Коммитится до счёта (otbor_statistika.md п. 1);
+# sha256 — в SHA256SUMS этого каталога. v7 = куб v6 (baza) с сигнальными осями «центр ± 1 шаг» + новые оси osi7. Канон — fastbt/canon_v7.py.
+# Правило сжатия (толкование [31.10 01:29] п. 1): центр — setka[len // 2] оси куба v6, соседи — по порядку значений в yaml, у оси
+#  из двух значений остаются оба. Общие оси v6 (фильтры, вход, выход, контекст, исполнение) — как в kub_S1.yaml v6, здесь не повторяются.
+# osi7: k_okup ∈ {net, 3} (net = выкл.; Ж-156 п. 3: значение 2 — позже добором по устойчивой области); otnositelno ∈ {net, sektor, imoex}
+#  (Ж-155 п. 2; fastbt/otnositelno_v7.py). p_vykl 0,5 как у прочих корневых осей v6. «net» — поведение v6 побайтно (v6 ⊂ v7).
+# min_uderzhanie: контртренд не выходит по сигналу и по τ раньше 2-го дня (стоп и тейк — с первого); τ = 1 — справочный проход, вне N.
+# N = 100 000 точек Соболя на проход (Ж-156 п. 3), до выброса несовместимых; seed Соболя v7 — 20261105/20261106, Моррис — 20261104.
+v: 5
+format: progon-kub
+setka: v7
+data: 2026-10-31
+baza: {setka: v6, kub_sha: ebb925e7c757662b82d99d28ca9fe3ac2accc160e8004eeac04f3cb8ed252b73}
+sid: S1
+tip: kontr
+periody: [train4, v2, wf]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261105, seed2: 20261106, scramble: true, N: 100000, morris_seed: 20261104}
+suzhenie: "centr±1"
+min_uderzhanie: {dney: 2, tau1: spravka}
+
+signal:
+  ma_tip:    {setka: [wma, hma, dema], centr: hma}
+  ma_window: {setka: [25, 30, 35], centr: 30}
+  dev_tip:   {setka: [std, atr], centr: atr}
+  z_entry:   {setka: [1.5, 1.75, 2.0], centr: 1.75}
+  z_exit:    {setka: [0.3, 0.5, 0.7], centr: 0.5}
+
+osi7:
+  k_okup:      {setka: [net, 3], vykl: net, p_vykl: 0.5, zhdet: [V7-3], otkuda: "Ж-150, Ж-156 п. 3", smysl: "вход, только если ожидаемый валовой PnL по терцили ранга и корзине удержания покрывает k × издержки"}
+  otnositelno: {setka: [net, sektor, imoex], vykl: net, p_vykl: 0.5, zhdet: [V7-1a], otkuda: "Ж-155 п. 2; fastbt/otnositelno_v7.py", smysl: "сигнал по относительному ряду тикера против сектора или IMOEX"}
