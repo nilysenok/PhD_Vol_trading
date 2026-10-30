@@ -14,6 +14,7 @@ import pandas as pd
 from fastbt import bars_agg as ba
 
 KANAL = 20
+ATR_OKNO = 14      # баров того же ТФ для ATR силы пробоя (V7-5)
 TF = {"S10": "1h", "S11": "2h"}
 GRANITSA = pd.Timestamp("2020-01-01")
 
@@ -41,6 +42,37 @@ def proboj(b10: pd.DataFrame, tf: str, t_sig: str, kanal: int = KANAL) -> pd.Ser
     s = np.where(f["close"] > hi, 1, np.where(f["close"] < lo, -1, 0))
     s = pd.Series(s, index=f["date"].to_numpy())
     return s[f["slot"].to_numpy() == n_full - 1]
+
+
+def sila_proboja(b10: pd.DataFrame, tf: str, t_sig: str, kanal: int = KANAL, atr_okno: int = ATR_OKNO) -> pd.Series:
+    """Знаковая сила пробоя дня d: (close − граница канала) / ATR(tf); лонг > 0 (над верхней), шорт < 0 (под нижней), иначе 0.
+
+    ATR — среднее истинного диапазона atr_okno баров того же ТФ, строго до бара решения (shift(1), М-d1)."""
+    k = ba.K[tf]
+    n_full = (_minuty(t_sig) - ba.OPEN_MIN) // (ba.STEP * k)
+    f = ba.resample(b10, k)
+    f = f[f["slot"] < n_full].sort_values(["date", "slot"]).reset_index(drop=True)
+    pc = f["close"].shift(1)
+    tr = pd.concat([f["high"] - f["low"], (f["high"] - pc).abs(), (f["low"] - pc).abs()], axis=1).max(axis=1)
+    atr = tr.rolling(atr_okno).mean().shift(1)
+    hi = f["high"].shift(1).rolling(kanal).max()
+    lo = f["low"].shift(1).rolling(kanal).min()
+    raz = np.where(f["close"] > hi, f["close"] - hi, np.where(f["close"] < lo, f["close"] - lo, 0.0))
+    ok = (atr > 0).to_numpy()
+    # ATR не определён или 0 (нулевой диапазон): сила = ±1 (прежняя бинарная), чтобы сигнал не имел силу 0
+    s = pd.Series(np.where(ok, raz / atr.where(atr > 0, 1.0), np.sign(raz)), index=f["date"].to_numpy())
+    return s[f["slot"].to_numpy() == n_full - 1]
+
+
+def sila_dnya(b10: pd.DataFrame, sid: str, t_sig: str = "18:30") -> pd.Series:
+    """Знаковая сила дня для sid ∈ {S10, S11, S12}; S12 — сторона согласия × среднее |силы| S10 и S11."""
+    signal_dnya(b10, sid, t_sig)                                    # те же проверки sid, t_sig, границы 2020
+    if sid != "S12":
+        return sila_proboja(b10, TF[sid], t_sig)
+    a, b = (sila_proboja(b10, TF[x], t_sig) for x in ("S10", "S11"))
+    idx = a.index.union(b.index)
+    a, b = a.reindex(idx).fillna(0.0), b.reindex(idx).fillna(0.0)
+    return np.sign(a).where(np.sign(a) == np.sign(b), 0.0) * (a.abs() + b.abs()) / 2
 
 
 def soglasie(a: pd.Series, b: pd.Series) -> pd.Series:
