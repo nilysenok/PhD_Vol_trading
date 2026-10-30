@@ -13,8 +13,6 @@ def test_v_setke_net_tochnogo_ravenstva_k_predelu():
     assert all(k != nsv.predel_z(int(w)) for w, k in PARY)
 
 
-@pytest.mark.xfail(strict=True, reason="находка #770: при k == (w−1)/√w сигнал достижим (w−1 равных цен и скачок), а правило ≥ точку выбрасывает; "
-                                      "нужно «>». На сетке равенства нет — числа не меняются.")
 @pytest.mark.parametrize("w", [5, 25, 100])
 def test_na_tochnom_predele_signal_est_i_pravilo_ne_vybrasyvaet(w):
     k = nsv.predel_z(w)
