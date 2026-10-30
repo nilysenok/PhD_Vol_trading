@@ -88,6 +88,13 @@ def test_polnaya_bez_otmetki_otkaz_do_chteniya(main, monkeypatch, tmp_path):
     assert seen == []
 
 
+def test_ist7_nesyot_istochnik_otnositelno(main):
+    """IstochnikiV7.ist7() отдаёт Ist7.otn (IMOEX панели): без него ось otnositelno на сервере — ValueError «нет otn»."""
+    s = E.zagruzit(E.POLNAYA, TK, main=main)
+    i7 = s.ist7()
+    assert i7.otn is not None and i7.otn.imoex.index.equals(s.panel.imoex.index) and len(i7.otn.sha) == 64
+
+
 def test_period_polnaya_opredelen_kak_v_progone():
     p = period_v2.PERIODY["polnaya"]
     assert p.progrev == pd.Timestamp("2014-08-26") and p.y0 == 2017 and p.konec == pd.Timestamp("2026-02-27")   # как в #911

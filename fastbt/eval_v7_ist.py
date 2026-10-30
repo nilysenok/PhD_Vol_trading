@@ -37,7 +37,8 @@ class IstochnikiV7:
     sha: str = ""                  # Д5: хэш всех рядов; входит в ключ точки (как IstochnikiV6.sha)
 
     def ist7(self) -> Ist7:
-        return Ist7(b10=self.b10, panel=self.panel)
+        from fastbt.eval_v7_otn import OtnIst
+        return Ist7(b10=self.b10, panel=self.panel, otn=OtnIst(imoex=self.panel.imoex.astype(float)))     # карта секторов проекта (karta=None)
 
 
 def korr10(b: pd.DataFrame, f: pd.Series) -> pd.DataFrame:
