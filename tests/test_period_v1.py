@@ -144,7 +144,7 @@ def test_window_idx_default_i_v1():
     from fastbt import etap1
     d = _dates()
     s, a, i = etap1.window_idx(d, D.START, 2018, "2020-01-01")
-    assert d[s] >= np.datetime64("2017-01-01") > d[s - 1] and d[a] >= np.datetime64("2018-01-01") > d[a - 1] and i == len(d)
+    assert d[s] >= np.datetime64("2017-01-01") > d[s - 1] and d[a] >= np.datetime64("2018-01-01") > d[a - 1] and i == len(d) - 1   # ряд кончается раньше границы: i1 — его последний день (wfП-8)
     s, a, i = etap1.window_idx(d, D.START_V1, 2016, "2020-01-01")
     assert d[s] >= np.datetime64("2015-01-01") > d[s - 1] and d[a] >= np.datetime64("2016-01-01") > d[a - 1]
     assert str(d[a])[:10] == "2016-01-01" and str(d[s - 1])[:4] == "2014"        # первый торговый день 2016; 2015 — прогрев
