@@ -116,13 +116,25 @@ def ryady_indeksov(main: Path, W: dict, do: pd.Timestamp) -> tuple[list, pd.Seri
     return rows, im
 
 
+def dx_usdrub_schet(main: Path, do: pd.Timestamp) -> pd.Series:
+    """Доходность оси usdrub — тот же ряд, что читает счёт: USD до 11.06.2024, CNY после (vneshnie_usdrub, #795)."""
+    from fastbt import vneshnie_1850 as v
+    from fastbt import vneshnie_usdrub as vu
+    gr = do + pd.Timedelta(days=1)
+    cny = v.read_bars(main / v.PATHS["cnyrub"], gr) if (main / v.PATHS["cnyrub"]).exists() else None
+    return vu.faktor_usdrub(v.read_bars(main / v.PATHS["usdrub"], gr), cny)[0]
+
+
 def ryady_vneshnie(main: Path, im: pd.Series, do: pd.Timestamp) -> list:
     from fastbt import vneshnie_1850 as v
     y = im.dropna().to_frame("x")
     rows = []
     for n in ("usdrub", "rvi"):
-        s = v.close_1850(v.read_bars(main / v.PATHS[n], do + pd.Timedelta(days=1)), n)
-        rows.append(stroka(f"vneshnie_{n}", "izmenenie", "r IMOEX_{d+k}", profil(v.change(n, s).to_frame("x"), y)))
+        if n == "usdrub":
+            ch = dx_usdrub_schet(main, do)
+        else:
+            ch = v.change(n, v.close_1850(v.read_bars(main / v.PATHS[n], do + pd.Timedelta(days=1)), n))
+        rows.append(stroka(f"vneshnie_{n}", "izmenenie", "r IMOEX_{d+k}", profil(ch.to_frame("x"), y)))
     b = v.load_brent(main).set_index("date")["ret"]
     rows.append(stroka("vneshnie_brent", "izmenenie", "r IMOEX_{d+k}", profil(b[b.index <= do].to_frame("x"), y)))
     return rows
