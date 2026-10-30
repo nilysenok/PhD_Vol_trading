@@ -2,8 +2,8 @@
 
 Всё строго до `end` (исключительно); первый день после окна (Н5, строка b−1) — одна «свеча» из close Н6, без
 внутридневных баров и σ. σ — только `sigma_real` (RV из 10-минуток до 18:50), `features_pit_v3.rv` не читается.
-Тик (❓4): минимальная положительная разность цен 5-мин баров за год; на тикер берётся максимум по годам окна
-(консервативнее: проход сквозь уровень на больший шаг). Данные читаются через `daily_1850.default_main()` и
+Тик (❓4): минимальная положительная разность цен 5-мин баров за год; на тикер — максимум по годам прогрева
+(бары до 1 января года start+1), причинно и не зависит от длины окна (Д3). Данные читаются через `daily_1850.default_main()` и
 `bars5m` (FASTBT_BARS1M).
 """
 from __future__ import annotations
@@ -29,14 +29,22 @@ def _one_bar(c: float) -> Day:
     return Day(a, a, a, a, False)
 
 
-def tick_of(b: pd.DataFrame) -> float:
-    """Шаг цены тикера: max по годам min положительной разности различных цен (OHLC), округление 1e-8."""
-    out = []
-    for _, g in b.groupby(pd.to_datetime(b["date"]).dt.year):
-        p = np.unique(np.round(g[["open", "high", "low", "close"]].to_numpy(float).ravel(), 8))
-        d = np.diff(p[np.isfinite(p)])
-        out.append(float(d[d > 1e-9].min()) if (d > 1e-9).any() else 0.0)
-    return max(out) if out else 0.0
+def _tick_year(g: pd.DataFrame) -> float:
+    p = np.unique(np.round(g[["open", "high", "low", "close"]].to_numpy(float).ravel(), 8))
+    d = np.diff(p[np.isfinite(p)])
+    return float(d[d > 1e-9].min()) if (d > 1e-9).any() else 0.0
+
+
+def tick_of(b: pd.DataFrame, do: pd.Timestamp) -> float:
+    """Шаг цены тикера — причинный (Д3): max по годам min положительной разности различных цен (OHLC, 1e-8),
+    но только по барам строго ДО `do` (конец прогрева). Для любого дня окна d ≥ do это данные ≤ d−1, поэтому
+    шаг не зависит от длины окна (префикс-свойство). Правило тикера без баров до `do` (поздний листинг):
+    шаг по первому году его данных; внутри этого года причинность не гарантируется (объявлено)."""
+    yr = pd.to_datetime(b["date"]).dt.year
+    m = (pd.to_datetime(b["date"]) < do).to_numpy()
+    if not m.any() and len(b):
+        m = (yr == yr.min()).to_numpy()
+    return max((_tick_year(g) for _, g in b[m].groupby(yr.to_numpy()[m])), default=0.0)
 
 
 def _minutes(b: pd.DataFrame) -> np.ndarray:
@@ -68,7 +76,7 @@ def build_days(t: str, dates: np.ndarray, close: np.ndarray, s0: int, i1: int, e
         a = grp.get(key)
         days.append(Day(empty, empty, empty, empty, True) if a is None else Day(a[:, 0], a[:, 1], a[:, 2], a[:, 3], False, t=grt[key]))
     days.append(_one_bar(float(close[i1])))
-    return days, tick_of(b)
+    return days, tick_of(b, pd.Timestamp(year=(start or START).year + 1, month=1, day=1))
 
 
 def load_sigma(tickers, end: pd.Timestamp, main=None) -> dict:

@@ -6,9 +6,10 @@
 #    VERSIYA (коммит, sha256 tar), requirements_server.txt, manifest_dannyh.tsv, data/ (файлы манифеста, sha256 сверены),
 #    kuby/ (yaml кубов из коммита), etalony_<коммит12>.npz (якорь A_fix + 200 точек, считается здесь из кода tar и data/),
 #    razvernut.sh, proverka_yakor.sh, zapusk_sobol.sh, zabrat.sh, obshchee.sh, manifest_proverka.py, versii.py,
-#    spisok_perenosa.txt (для rsync --files-from), SHA256SUMS (всё, кроме data/ — её сверяет манифест).
+#    spisok_perenosa.txt и spisok_obnovleniya.txt (для rsync --files-from; второй без data/, если манифест тот же), SHA256SUMS (всё, кроме data/ — её сверяет манифест).
 # Окружение: PERENOS_OUT (perenos/ в корне копии), PERENOS_MANIFEST (docs/server/manifest_dannyh_2021.tsv),
-#   PERENOS_DANNYE (основная копия — откуда данные), PERENOS_ETALONY_PROCS (6), PERENOS_ETALONY_TOCHEK (200).
+#   PERENOS_DANNYE (основная копия — откуда данные), PERENOS_ETALONY_PROCS (6), PERENOS_ETALONY_TOCHEK (200),
+#   PERENOS_PREDYDUSHCHIJ (прежний perenos/: сверка sha манифеста для spisok_obnovleniya.txt).
 # Отказ: каталог назначения не пуст; манифест с test_locked / test1_2022_2024 / max_data > 2021-12-31 / sha256 не сходится.
 set -euo pipefail
 say() { printf '%s  %s\n' "$(date '+%F %T')" "$*"; }
@@ -111,6 +112,15 @@ summy_paketa "$OUT" > "$TMP/SHA256SUMS"
 mv "$TMP/SHA256SUMS" "$OUT/SHA256SUMS"
 { (cd "$OUT" && find . -path ./data -prune -o -type f -print | sed 's|^\./||' | sort); sed 's|^|data/|' "$TMP/spisok_dannyh.txt"; } > "$TMP/spisok"
 mv "$TMP/spisok" "$OUT/spisok_perenosa.txt"
+# список для ./obnovit_kod.sh: всё кроме data/; данные — только если sha манифеста ≠ sha манифеста прежнего пакета (PERENOS_PREDYDUSHCHIJ)
+(cd "$OUT" && find . -path ./data -prune -o -type f -print | sed 's|^\./||' | sort) > "$TMP/obn"
+if [ -n "${PERENOS_PREDYDUSHCHIJ:-}" ] && [ -f "$PERENOS_PREDYDUSHCHIJ/manifest_dannyh.tsv" ] \
+   && [ "$(sha_file "$PERENOS_PREDYDUSHCHIJ/manifest_dannyh.tsv")" != "$(sha_file "$OUT/manifest_dannyh.tsv")" ]; then
+  sed 's|^|data/|' "$TMP/spisok_dannyh.txt" >> "$TMP/obn"; say "   манифест изменился — данные в spisok_obnovleniya.txt"
+else
+  say "   манифест тот же (или PERENOS_PREDYDUSHCHIJ не задан) — данные в spisok_obnovleniya.txt не включены"
+fi
+mv "$TMP/obn" "$OUT/spisok_obnovleniya.txt"
 python3 "$K/scripts/server/manifest_proverka.py" --manifest "$OUT/manifest_dannyh.tsv" --koren "$OUT/data" --strogo \
   ${PERENOS_DO:+--do "$PERENOS_DO" --otmetka "${PERENOS_OTMETKA:-$REPO/docs/resheniya/wf_zamok_snyat.json}"} >/dev/null \
   || fail "после эталонов в data/ появились файлы вне манифеста"
@@ -119,5 +129,6 @@ say "6/6 готово"
 echo "   перенос на сервер (одна команда; user@host — ваш):"
 echo "   rsync -av --files-from=$OUT/spisok_perenosa.txt $OUT/ user@host:perenos/"
 echo "   на сервере: cd perenos && ./razvernut.sh && ./proverka_yakor.sh"
+echo "   обновление кода (данные те же): rsync -av --files-from=$OUT/spisok_obnovleniya.txt $OUT/ user@host:perenos/ ; на сервере ./obnovit_kod.sh && ./proverka_yakor.sh"
 nd=$(wc -l < "$TMP/spisok_dannyh.txt" | tr -d ' ')
 echo "OK perenos: $OUT; kod $SHORT (tar sha256 $TAR_SHA); данных $nd файлов, $(du -sh "$OUT/data" | cut -f1); kod_slit=$slit"

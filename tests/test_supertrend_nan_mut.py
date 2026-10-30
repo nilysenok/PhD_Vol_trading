@@ -44,8 +44,6 @@ def test_start_trebuet_vse_tri_ryada(kto):
 
 
 @pytest.mark.skipif(not _est(), reason="нет FASTBT_MAIN / дневного ряда 18:50")
-@pytest.mark.xfail(strict=True, reason="БЛОКЕР #762: на относительном ряду NaN-префикс отравляет compute_base (adx14 ≡ 0) → фильтр ADX>20 "
-                   "отсекает все сигналы S4; одной правки supertrend мало. Снять xfail, когда сигналы появятся.")
 def test_real_s4_sektor_signaly_cherez_semyu():
     from fastbt import etap1, istochniki_v6
     from fastbt.eval_v6_osi import rel_td_ind
