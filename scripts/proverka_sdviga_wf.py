@@ -227,6 +227,16 @@ def shapka(main: Path, do: str, ok: bool) -> str:
     return f"# статус: {st}; до {do}; Д1 {'пройдена' if ok else 'НЕ ПРОЙДЕНА'}\n# код: {kod}\n# хэши входов: {vh}\n"
 
 
+def itog(t: pd.DataFrame) -> pd.DataFrame:
+    """Ряд проходит, если ok; ряды σ̂ — если ok ИЛИ ok2 (толкования 30.10 22:10). Прочие ряды — только ok."""
+    ok2 = t["ok2"].eq(True) if "ok2" in t else pd.Series(False, index=t.index)
+    sig = t["ryad"].str.startswith("sigma_") & ok2
+    t = t.copy()
+    t["d1_itog"] = t["ok"].astype(bool) | sig
+    t["d1_otmetka"] = np.where(~t["ok"].astype(bool) & sig, "Д1 через вторую проверку", "")
+    return t
+
+
 def main(argv=None) -> int:
     a = argparse.ArgumentParser()
     a.add_argument("--do", default="2021-12-31")
@@ -238,9 +248,10 @@ def main(argv=None) -> int:
     from fastbt import daily_1850 as d18
     root = Path(n.main) if n.main else d18.default_main()
     t = sobrat(root, pd.Timestamp(n.do))
-    ok = bool(t["ok"].all())
+    t = itog(t)
+    ok = bool(t["d1_itog"].all())
     OUT.write_text(shapka(root, n.do, ok) + t.to_csv(index=False, float_format="%.4f"))
-    print(t.reindex(columns=["ryad", "tip", "corr_k-2", "corr_k-1", "corr_k+0", "corr_k+1", "ok", "primechanie", "pcorr_fakt", "pcorr_kontrol", "ok2"]).to_string(index=False))
+    print(t.reindex(columns=["ryad", "tip", "corr_k-2", "corr_k-1", "corr_k+0", "corr_k+1", "ok", "primechanie", "pcorr_fakt", "pcorr_kontrol", "ok2", "d1_itog", "d1_otmetka"]).to_string(index=False))
     return 0 if ok else 1
 
 

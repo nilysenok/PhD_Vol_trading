@@ -74,6 +74,27 @@ def test_sigma_sglazhennyj_bez_utechki_argmax_km1_vtoraya_zelenaya():
     assert v["ok2"] and abs(v["pcorr_fakt"]) < 0.5 * abs(v["pcorr_kontrol"])
 
 
+def kod(monkeypatch, tmp_path, ryad, ok, ok2):
+    t = pd.DataFrame([{**P.stroka(ryad, "t", "c", {-2: 0.1, -1: 0.3, 0: 0.9 if ok else 0.2, 1: 0.3}), "ok2": ok2}])
+    monkeypatch.setattr(P, "OUT", tmp_path / "t.csv")
+    monkeypatch.setattr(P, "shapka", lambda *a: "# s\n")
+    monkeypatch.setattr(P, "sobrat", lambda m, d: t)
+    return P.main(["--do", "2021-12-31", "--main", str(tmp_path)]), (tmp_path / "t.csv").read_text()
+
+
+def test_kod_vyhoda_sigma_utechka_krasnaya(monkeypatch, tmp_path):
+    assert kod(monkeypatch, tmp_path, "sigma_h5", False, False)[0] != 0
+
+
+def test_kod_vyhoda_sigma_sglazhennyj_zelenyj_s_otmetkoj(monkeypatch, tmp_path):
+    k, csv = kod(monkeypatch, tmp_path, "sigma_h22", False, True)
+    assert k == 0 and "Д1 через вторую проверку" in csv
+
+
+def test_kod_vyhoda_ne_sigma_ok2_ne_spasaet(monkeypatch, tmp_path):
+    assert kod(monkeypatch, tmp_path, "atr14", False, True)[0] != 0
+
+
 def test_pustoj_ryad_vtoraya_ne_prohodit():
     y, _ = seriya(n=10)
     assert not P.vtoraya_sigma(y, y)["ok2"]
