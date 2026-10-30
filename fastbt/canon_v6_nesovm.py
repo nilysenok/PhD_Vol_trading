@@ -88,10 +88,12 @@ def predel_z(w: int) -> float:
 
 def bb_predel(sid: str, q: dict) -> bool:
     """9 (не отказ оценщика — структурный ноль сигнала, расследование s2nol, лист Б): S2 при SMA и масштабе «окно» требует |z| ≥ bb_std,
-    а |z| ≤ predel_z(bb_window) → при bb_std ≥ предела сигналов нет ни на каком ряде. Для ma_tip ≠ sma предел не доказан (MA другая) — не трогаем;
+    а |z| ≤ predel_z(bb_window), предел достижим (w−1 равных цен и скачок) → сигналов нет ни на каком ряде только при bb_std > предела.
+    Допуск 1e-9 относительный: на плавающей точке z на самом пределе может выйти чуть выше/ниже; ошибка в сторону «оставить» стоит одной
+    пустой точки, в сторону «выбросить» — потери реальной. Для ma_tip ≠ sma предел не доказан (MA другая) — не трогаем;
     norm = s252: σ за 252 дня, предел 15,8 — вне сетки. Откат: убрать из PRAVILA."""
     return (sid == "S2" and q.get("ma_tip", "sma") == "sma" and q.get("norm", "okno") == "okno"
-            and float(q["bb_std"]) >= predel_z(int(q["bb_window"])))
+            and float(q["bb_std"]) > predel_z(int(q["bb_window"])) * (1 + 1e-9))
 
 
 PRAVILA = (vyhod_lim_t_vyhod, parab_drugie, trend_tejk_sily, pol_puti_ma_tip, piv_edinstvennyj_stop, piv_pol_puti, rodnoy_uroven,
