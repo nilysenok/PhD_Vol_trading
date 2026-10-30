@@ -23,7 +23,7 @@ from fastbt.canon_v5 import NET, SIGNAL, TREND, tip
 from fastbt.etap1_data import _one_bar, gate_trades
 from fastbt.etap1_eval import PERIODS, RM_OFF
 from fastbt.etap1_eval_v2 import NOVYE, EvaluatorV2, NeSchitana
-from fastbt.eval_v5_osi import RHO_RISK, razbor
+from fastbt.eval_v5_osi import RHO_RISK, rang_nan_u_vseh, razbor
 from fastbt.exec_e_v4sloj import filtr_signala
 from fastbt.fast_filtry_v5 import calc_adx_nb, maska_atr_expand_nb, rang_nb
 from fastbt.fdr import OSNOVNOY
@@ -214,6 +214,9 @@ class EvaluatorV5(EvaluatorV2):
             raise NeSchitana(f"{self.sid}: родной уровень tejk_signal.rodnoy_uroven — формула v4, с осями {r.sp} не совпадает")
         info = self._start(period)
         rk =self._ranki(info) if r.rang else None
+        if rk is not None and r.nov["vhod_tip"] == "stop_zayavka" and r.m_sily != "1" and \
+                rang_nan_u_vseh([info[t][4] for t in self.sk.tickers], [rk[t][0] for t in self.sk.tickers]):
+            raise NeSchitana(f"{self.sid}: тренд × m_sily {r.m_sily!r} × rang_tip {r.rang_tip!r}: ранга нет ни у одного старта — вес сделок 0")
         for ti, t in enumerate(self.sk.tickers):
             s0, b, a, dates, sig, sg, al = info[t]
             rg = None
