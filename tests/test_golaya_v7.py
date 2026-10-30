@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / "scripts" / "analysis")]
 import golaya_s7_s9 as ref  # noqa: E402
 import golaya_v7 as gv  # noqa: E402
+import golaya_v7_tablicy as gt  # noqa: E402
 from fastbt import bars_agg, daily_1850 as d18, kross_v7 as kv, metriki_diag as md  # noqa: E402
 from fastbt.golaya_v7_isp import ispolnit  # noqa: E402
 
@@ -26,7 +27,7 @@ def bary(seed=0, dni=420, start="2015-03-02", tk=TK):
     for j, t in enumerate(tk):
         r = np.random.default_rng([seed, j])
         ts = (days.values[:, None] + mins.values[None, :]).ravel()
-        c = 100 * np.exp(np.cumsum(r.normal(0, 0.004, len(ts))))
+        c = 3000 * np.exp(np.cumsum(r.normal(0, 0.004, len(ts))))
         o = np.r_[c[0], c[:-1]]
         out[t] = pd.DataFrame(dict(timestamp=ts, open=o, high=np.maximum(o, c) * 1.001, low=np.minimum(o, c) * 0.999,
                                    close=c, volume=r.integers(100, 1000, len(ts))))
@@ -82,7 +83,7 @@ def _utechka(D, s, d, fn):
     """Сигнал дней ≤ d не должен зависеть от данных после d (M-d1)."""
     D2 = dict(D)
     D2["c"] = D["c"].copy()
-    D2["c"].iloc[d + 1:] *= 1.5
+    D2["c"].iloc[d + 1:] *= np.linspace(1.5, 0.6, D["c"].shape[1])      # разный множитель по тикерам: ранги меняются
     D2["cr"], D2["_sig"] = D2["c"], {}
     if s in ("S10", "S11", "S12"):
         D2["ist"] = {t: b.assign(close=np.where(b["date"] > D["daty"][d], b["close"] * 1.5, b["close"]),
@@ -99,12 +100,12 @@ def test_m_d1_signaly_ne_vidyat_budushchee(D):
 def test_m_d1_myutaciya_lovitsya(D, monkeypatch):
     orig = kv.panel
     monkeypatch.setattr(kv, "panel", lambda c, im, m, sid: orig(c.shift(-1), im, m, sid))
-    assert not _utechka(D, "S8", 330, lambda x, y: gv.signaly(x, y))
+    assert not _utechka(D, "S7", 330, lambda x, y: gv.signaly(x, y))
 
 
 def test_ispolnitel_d_i_ceny_odnoy_shkaly(D):
     """Замечание 1: цены нескорректированные + D на день отсечки (после НДФЛ); сигналы S7–S9 — на скорректированных."""
-    assert D["div_nalog"] == 0.87 and "нескорр" in gv.shapka(D, "train4")["ceny_i_D"]
+    assert D["div_nalog"] == 0.87 and "нескорр" in gt.shapka(D, "train4")["ceny_i_D"]
     D2 = dict(D)
     D2["div"] = D["div"].copy()
     D2["div"].iloc[200, 0] = 5.0
@@ -118,19 +119,22 @@ def test_ispolnitel_d_i_ceny_odnoy_shkaly(D):
     assert (b - gv.schet(D, -sig, vhod="d1", tau=3)["pnl"])[200] < 0
 
 
-def test_exit_flagi_obertki_ne_vliyayut_pri_d1():
-    """Замечание 2: флаги выхода обёртки S10–S12 (exit на d+τ у любого сигнала) при vhod=d1 и τ не меняют сделки."""
-    r, T = np.random.default_rng(1), 120
-    c = 100 * np.exp(np.cumsum(r.normal(0, .01, T)))
-    o, dts = np.r_[c[0], c[:-1]], pd.bdate_range("2016-01-04", periods=T)
-    for _ in range(20):
-        sig = (r.random(T) < .2) * r.choice([-1, 1], T)
-        ex = np.zeros(T, bool)
-        idx = np.flatnonzero(sig) + 2
-        ex[idx[idx < T]] = True
-        kw = dict(sig=sig.astype(np.int8), o=o, c=c, vhod="d1", tau=2, dates=dts, rate=np.full(T, .07))
-        a, b = ispolnit(**kw), ispolnit(**kw, exit_l=ex, exit_s=ex)
-        assert a["sdelki"] == b["sdelki"] and np.array_equal(a["excess"], b["excess"])
+def test_exit_flagi_obertki_zakryvayut_chuzhuyu_poziciyu():
+    """Замечание 2 (найдено): флаг exit обёртки S10–S12 от пропущенного сигнала закрывает позицию нового по open раньше τ;
+    поэтому драйвер флаги НЕ подаёт — выход по τ (close), и schet == исполнитель без флагов."""
+    T = 40
+    c = 100 + np.arange(T) * 0.5
+    o, dts = c - 0.2, pd.bdate_range("2016-01-04", periods=T)
+    sig = np.zeros(T, np.int8)
+    sig[10:13] = 1                                              # сигналы 10, 11, 12 подряд
+    ex = np.zeros(T, bool)
+    ex[np.flatnonzero(sig) + 2] = True                          # как обёртка: exit на d+τ у каждого сигнала
+    kw = dict(sig=sig, o=o, c=c, vhod="d1", tau=2, dates=dts, rate=np.full(T, .07))
+    a, b = ispolnit(**kw), ispolnit(**kw, exit_l=ex, exit_s=ex)
+    assert a["sdelki"][1][4] == c[14] and b["sdelki"][1][4] == o[14] and a["sdelki"] != b["sdelki"]
+    dd = pd.DataFrame(index=dts)
+    Dm = dict(daty=dts, tk=["X"], o=dd.assign(X=o), cr=dd.assign(X=c), div=dd.assign(X=0.0), stavka=np.full(T, .07), _pT={})
+    assert np.array_equal(gv.schet(Dm, sig.reshape(-1, 1), vhod="d1", tau=2)["excess"], a["excess"])
 
 
 def test_stroka_polna_i_diagnostika(D):
@@ -139,7 +143,7 @@ def test_stroka_polna_i_diagnostika(D):
     for k in ("mSR", "msr_ned", "beta", "dolya_dispersii_rynka", "sdelok_v_god", "pnl_pct_god", "kom_pct_god", "excess_pct_god",
               md.K_NORM, md.K_SDELOK, md.K_CENA, "mSR_2016"):
         assert k in r, k
-    h = gv.shapka(D, "train4")
+    h = gt.shapka(D, "train4")
     for k in ("v", "status", "okno_s", "okno_po", "zaderzhka", "chestnaya", "kod", "vhody", "ceny_i_D"):
         assert h[k], k
     assert h["v"] == "7.0-gol" and h["chestnaya"] == "net"
@@ -156,8 +160,8 @@ def test_pustaya_lenta_i_znak(D):
 
 def test_kontroli_20_i_p(D):
     for s in ("S8", "S11"):
-        k2 = gv.kontrol(D, s, "k2")
-        pl = gv.kontrol(D, s, "placebo")
+        k2 = gt.kontrol(D, s, "k2")
+        pl = gt.kontrol(D, s, "placebo")
         assert len(k2) == len(pl) == 20
         assert not np.allclose(k2, pl)
 
@@ -181,3 +185,15 @@ def test_spravka_kniga_ravna_svod_csv_train4():
     sv = pd.read_csv(f).set_index("strategiya")
     for s in ("S7", "S8", "S9"):
         assert abs(gv.stroka(gv.kniga_spravka(D, s), D)["mSR"] - sv.loc[s, "mSR"]) <= 1e-12, s
+
+
+def test_tablicy_pishut_tri_fajla_s_shapkoj(D, tmp_path):
+    gt.tablicy(D, "train4", tmp_path, n=2)
+    for nm in ("svod", "k2", "placebo"):
+        f = tmp_path / f"{nm}_train4.csv"
+        h = f.read_text(encoding="utf-8").splitlines()[0]
+        assert h.startswith("# {") and '"v": "7.0-gol"' in h and '"chestnaya": "net"' in h
+    sv = pd.read_csv(tmp_path / "svod_train4.csv", comment="#")
+    assert len(sv) == 3 * 2 + 3 * 4 and {"msr_ned", md.K_NORM, md.K_CENA}.issubset(sv.columns)
+    k2 = pd.read_csv(tmp_path / "k2_train4.csv", comment="#")
+    assert list(k2["strategiya"]) == list(SID) and (k2["n"] == 2).all()
