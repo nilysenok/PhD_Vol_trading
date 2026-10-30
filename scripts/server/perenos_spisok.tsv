@@ -28,3 +28,7 @@ moex_discovery/data/external/moex_iss/currency_10m/CNYRUB_TOM.parquet	vneshnie_1
 data/iss_ext/bars_10m/BR*.parquet	istochniki_v6.Fajly.brent (10-минутки контрактов Brent BR*)
 data/iss_ext/br_contracts.json	vneshnie_1850.contract_table (календарь контрактов Brent)
 moex_volatility/results/final/strategies/data/vpred_aligned.parquet	fastbt/data.py VPRED (load_ticker; istochniki_v6.Fajly.zakrytie)
+# куб v7 (V7-8b, fastbt/eval_v7_ist.py, период polnaya 2014-06…2026-02-28, пакет --do 2026-02-28): новых файлов не требует — источники v7 читают
+# уже перечисленное: 10-минутки 17 тикеров (moex_discovery/data/raw/candles_10m + data/regen/candles_10m_2014_2015), IMOEX и секторные
+# индексы (final_v6/candles_10m/external), корпсобытия (data/corporate_actions.csv), календарь (data/calendar/torgovye_dni_moex.csv);
+# docs/issledovaniya (сектора, свод Д8, дивиденды, календарь MOEX 2025–2026) едут кодом/усечёнными копиями (usech_pravila.py). Проверка: tests/test_perenos_v7.py
