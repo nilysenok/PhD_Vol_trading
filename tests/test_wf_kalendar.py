@@ -9,7 +9,7 @@ import pytest
 
 from fastbt import daily_1850 as D
 from fastbt.kalendar_moex import sessions_without_bars
-from tests.test_wf_daily import bars, frame
+from test_wf_daily import bars, frame
 
 MAIN = D.default_main()
 CANDLES = MAIN / "moex_discovery" / "data" / "raw" / "candles_10m"

@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 import re
 from pathlib import Path
 
@@ -53,10 +54,21 @@ def kvartaly_spisok(period: str) -> list:
     return [f"{y}Q{q}" for y in gody(period) for q in range(1, 5) if (y, q) <= (p.konec.year, p.konec.quarter)]
 
 
+def otmetka_godna(otmetka) -> bool:
+    """Отметка снятого замка годна: файл непустой, корректный JSON-объект с ключами preregistraciya_v2, sha256 (64 hex),
+    data_snyatiya (формат акта `scripts/server/akt_snyatiya_zamka.py`). sha с файлом предрегистрации не сверяется."""
+    try:
+        d = json.loads(Path(otmetka).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return (isinstance(d, dict) and bool(d.get("preregistraciya_v2")) and bool(d.get("data_snyatiya"))
+            and isinstance(d.get("sha256"), str) and re.fullmatch(r"[0-9a-f]{64}", d["sha256"]) is not None)
+
+
 def proverit_chtenie(period: str, put=None, otmetka: Path = OTMETKA) -> None:
-    """Отказ с понятным сообщением: период с днями ≥ 2022 или путь ≥ 2022/test_locked/ без отметки владельца."""
+    """Отказ с понятным сообщением: период с днями ≥ 2022 или путь ≥ 2022/test_locked/ без годной отметки владельца."""
     zakryto = (period in PERIODY and PERIODY[period].konec.year >= 2022) or (put is not None and ZAKRYTO_RE.search(str(put)))
-    if zakryto and not Path(otmetka).exists():
+    if zakryto and not otmetka_godna(otmetka):
         raise ZamokVladeltsa(f"период {period!r}/путь {put!r}: данные ≥ 2022 закрыты (замок test_locked/, Ж-136); "
                              f"читать можно после отметки владельца {Path(otmetka).name} — отказ")
 
@@ -94,3 +106,8 @@ def hold_years(a: dict, ticker: str, dates, kach=None, period=None) -> dict:
     """{год: позиции на весь ряд} → то же с удержанием в невалидные дни."""
     ok = valid_vec(ticker, dates, kach, period)
     return {Y: hold_invalid(v, ok) for Y, v in a.items()}
+
+
+if __name__ == "__main__":      # python3 period_v2.py <отметка>: выход 0 — годна (для perenos/obshchee.sh и manifest_perenos.py)
+    import sys
+    sys.exit(0 if len(sys.argv) == 2 and otmetka_godna(sys.argv[1]) else 1)

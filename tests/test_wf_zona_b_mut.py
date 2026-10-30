@@ -11,7 +11,7 @@ DNI = ["2019-12-30", "2021-03-01", "2026-02-27", "2026-03-01", "2026-03-02"]
 @pytest.fixture
 def otmetka(tmp_path, monkeypatch):
     p = tmp_path / "wf_zamok_snyat.json"
-    p.write_text("{}")
+    p.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64 + '", "data_snyatiya": "2026-10-30"}')
     monkeypatch.setattr(period_v2, "OTMETKA", p)
     return p
 
