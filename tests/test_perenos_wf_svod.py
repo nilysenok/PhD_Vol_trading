@@ -48,9 +48,14 @@ def _tri_prohoda(tmp_path):
     zapisat_wf(tmp_path / "wf_k3", seed=3, k3=True)
 
 
+def _otm_json() -> str:
+    """Корректная отметка (формат docs/resheniya/wf_zamok_snyat.json); sha синтетический."""
+    return '{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "%s", "data_snyatiya": "2026-10-30"}' % ("a" * 64)
+
+
 def _otmetka(tmp_path, monkeypatch):
     otm = tmp_path / "wf_zamok_snyat.json"           # только временный каталог; в репозитории отметки нет
-    otm.write_text("{}")
+    otm.write_text(_otm_json())
     monkeypatch.setattr(PV, "OTMETKA", otm)
 
 

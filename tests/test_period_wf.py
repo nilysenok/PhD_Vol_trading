@@ -54,8 +54,9 @@ def stats_FS():
     return stats.F_S
 
 
-def test_g4_wf_do_snyatiya_zamka_otkaz(tmp_path):
+def test_g4_wf_do_snyatiya_zamka_otkaz(tmp_path, monkeypatch):
     otm = tmp_path / "net.json"
+    monkeypatch.setattr(pv.proverit_chtenie, "__defaults__", (None, otm))   # замок «не снят» независимо от отметки в репозитории
     with pytest.raises(pv.ZamokVladeltsa, match="замок"):
         pv.proverit_chtenie("wf", otmetka=otm)
     with pytest.raises(pv.ZamokVladeltsa):
@@ -67,10 +68,14 @@ def test_g4_wf_do_snyatiya_zamka_otkaz(tmp_path):
     pv.proverit_chtenie("train4", otmetka=otm)                     # ≤ 2021 открыты
     pv.proverit_chtenie("v2", put="data/regen/ch4_dev/sigma_2021.csv", otmetka=otm)
     otm.write_text("{}")
+    with pytest.raises(pv.ZamokVladeltsa):
+        pv.proverit_chtenie("wf", otmetka=otm)                     # пустой объект — не отметка
+    otm.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "%s", "data_snyatiya": "2026-10-30"}' % ("a" * 64))
     pv.proverit_chtenie("wf", otmetka=otm)                         # с отметкой владельца — проходит
 
 
-def test_g4_progon_otkazyvaet_wf():
+def test_g4_progon_otkazyvaet_wf(tmp_path, monkeypatch):
+    monkeypatch.setattr(pv.proverit_chtenie, "__defaults__", (None, tmp_path / "net.json"))   # умолчание otmetka связано при def
     import fastbt.progon_sobol as ps
     assert "wf" in ps.OKNO and ps.OKNO["wf"] == ("2015-01-01", "2014-06-01")
     assert ps.OKNO["train4"] == ("2016-01-01", "2015-01-01") and ps.OKNO["v2"] == ("2015-01-01", "2014-08-26")
