@@ -46,12 +46,34 @@ def test_razrez_uderzhanie_i_tercil_izvestnyj_otvet():
 
 
 def test_itogovaya_stroka():
-    assert iz.itog(_df(SINT)) == ("издержки съедают 6 % валового; окупаются сделки с удержанием ≥ 4 дней и рангом ≥ 2 "
-                                  "(терциль; доля издержек < 30 % валового)")
+    assert iz.itog(_df(SINT)) == ("издержки съедают 6 % валового; окупаются (валовой > 0, доля издержек < 30 %) сделки с удержанием: 4–10, >10 дней; "
+                                  "ранг (терциль): 2, 3")
 
 
 def test_itog_bez_valovogo():
-    assert "не определено" in iz.itog(_df([("2016-02-01", "2016-02-02", 1, 1, -1.0, 0.2, 0.0)]))
+    assert iz.itog(_df([("2016-02-01", "2016-02-02", 1, 1, -1.0, 0.2, 0.0)])) == "валовой ≤ 0 — не окупается при любых издержках"
+
+
+def test_itog_perechislyaet_a_ne_ge_N():
+    rows = [("2016-02-01", "2016-02-04", 3, 3, 10.0, 0.2, 0.0), ("2016-03-01", "2016-03-15", 14, 3, -5.0, 0.2, 0.0)]
+    s = iz.itog(_df(rows))
+    assert "удержанием: 2–3 дней" in s and "≥" not in s            # старшая корзина с валовым ≤ 0 не окупается
+
+
+def test_vyhod_v_vyhodnoj_ne_teryaetsya_v_sharpe():
+    sb = _df([("2016-02-01", "2016-02-06", 5, 1, 1.0, 0.0, 0.0), ("2016-03-01", "2016-03-02", 1, 1, 2.0, 0.0, 0.0)])   # 06.02.2016 — суббота
+    pt = sb.assign(vyhod=pd.to_datetime(["2016-02-05", "2016-03-02"]))                                                  # пятница
+    assert iz.sharpe_dn(sb, "gross") == iz.sharpe_dn(pt, "gross") and not np.isnan(iz.sharpe_dn(sb, "gross"))
+
+
+def test_sdelka_cherez_konec_okna_zakryvaetsya_31_12_2019(tmp_path):
+    p = tmp_path / "s.csv"
+    h = "sid,variant,tiker,data_vhoda,data_vyhoda,uderzhanie_dn,storona,tip_vhoda,tf,vhod,sila,tercil_sily,pnl_do_izderzhek,komissiya,plata_za_short,stavka,pnl_posle\n"
+    p.write_text("# {}\n" + h + "S7,centr,X,2019-12-27,2020-01-03,7,1,рынок,,d1,1.0,3,0.01,0.001,0.0,0.0,0.009\n", encoding="utf-8")
+    iz.OTBROSHENO.clear()
+    iz.ZAKRYTO_NA_KONCE.clear()
+    df = iz.chitat_golaya(p)
+    assert len(df) == 1 and df.vyhod.iloc[0] == pd.Timestamp("2019-12-31") and df.uderzhanie.iloc[0] == 4 and iz.ZAKRYTO_NA_KONCE["golaya"] == 1
 
 
 def test_sharpe_do_i_posle_rjadom_posle_men_she():
@@ -92,8 +114,8 @@ def test_chitat_golaya_otbrasyvaet_2020_i_2015(tmp_path):
     p = tmp_path / "s.csv"
     h = "sid,variant,tiker,data_vhoda,data_vyhoda,uderzhanie_dn,storona,tip_vhoda,tf,vhod,sila,tercil_sily,pnl_do_izderzhek,komissiya,plata_za_short,stavka,pnl_posle\n"
     r = lambda a, b: f"S7,centr,X,{a},{b},1,1,рынок,,d1,1.0,3,0.01,0.001,0.0,0.0,0.009\n"   # noqa: E731
-    p.write_text("# {}\n" + h + r("2015-12-30", "2015-12-31") + r("2016-02-01", "2016-02-02") + r("2019-12-30", "2020-01-02") + r("2020-03-02", "2020-03-03"), encoding="utf-8")
+    p.write_text("# {}\n" + h + r("2015-12-30", "2015-12-31") + r("2016-02-01", "2016-02-02") + r("2020-03-02", "2020-03-03"), encoding="utf-8")
     iz.OTBROSHENO.clear()
     df = iz.chitat_golaya(p)
-    assert len(df) == 1 and df.vhod.iloc[0] == pd.Timestamp("2016-02-01") and iz.OTBROSHENO["golaya"] == 3
+    assert len(df) == 1 and df.vhod.iloc[0] == pd.Timestamp("2016-02-01") and iz.OTBROSHENO["golaya"] == 2
     assert abs(df.gross.iloc[0] - 1.0) < 1e-12                         # доли капитала → %

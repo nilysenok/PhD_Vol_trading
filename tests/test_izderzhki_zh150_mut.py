@@ -41,9 +41,10 @@ def test_mut_progrev_2015_v_okne(tmp_path, monkeypatch):
 
 
 def test_granica_2019_2020_sdelka_ne_zakryvaetsya_na_kontse_okna(tmp_path):
-    """Вход 2019, выход 2020: отбрасывается целиком (правило Н5 «закрыть на конце окна» НЕ применено) — фиксируем поведение."""
+    """Вход 2019, выход 2020: по Н5 закрывается на конце окна 31.12.2019 (исправлено по замечанию тестировщика)."""
     iz.OTBROSHENO.clear()
-    assert len(iz.chitat_golaya(_csv(tmp_path, [("2019-12-30", "2020-01-02")]))) == 0
+    df = iz.chitat_golaya(_csv(tmp_path, [("2019-12-30", "2020-01-02")]))
+    assert len(df) == 1 and df.vyhod.iloc[0] == pd.Timestamp("2019-12-31")
 
 
 def test_sharpe_dn_ignoriruet_vyhod_vne_rabochih_dnej():

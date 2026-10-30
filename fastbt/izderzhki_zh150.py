@@ -1,5 +1,5 @@
-"""Разложение издержек по сделкам (Ж-150), справочно, train4 (2016–2019); отбора нет. Данных ≥ 2020 не читает: строки с входом или выходом
-≥ 2020-01-01 отбрасываются при загрузке (их число — в `OTBROSHENO`). Издержки = комиссия + плата за шорт; ставка — отдельный столбец
+"""Разложение издержек по сделкам (Ж-150), справочно, train4 (2016–2019); отбора нет. Окно входов 2016-01-01…2019-12-31: вход < 2016-01-01 — прогрев 2015,
+отбрасывается (`OTBROSHENO`); сделка, выходящая за 2019-12-31, закрывается на конце окна (Н5; `ZAKRYTO_NA_KONCE`, PnL журнала не пересчитан). Издержки = комиссия + плата за шорт; ставка — отдельный столбец
 и в «итого после» входит. Доля издержек — от ВАЛОВОГО PnL (до издержек). Sharpe дн. — приближённо: PnL сделки на дату выхода, нулевые
 рабочие дни окна включены, ddof=1, ×√252. Единицы PnL — % капитала (голые идеи, вес 1/N) или % x движка (v6)."""
 from __future__ import annotations
@@ -14,6 +14,7 @@ D0, D1 = pd.Timestamp("2016-01-01"), pd.Timestamp("2019-12-31")
 KORZ = ("1", "2–3", "4–10", ">10")
 POROG, OKNO, MIN_OBS, KS = 0.30, 252, 30, (2, 3, 5)
 OTBROSHENO: dict = {}
+ZAKRYTO_NA_KONCE: dict = {}
 KOLS = ["src", "sid", "tochka", "variant", "tip_vhoda", "tf", "tiker", "vhod", "vyhod", "uderzhanie", "tercil", "gross", "kom", "short", "stavka", "net"]
 
 
@@ -25,9 +26,13 @@ def _diapazon(df: pd.DataFrame, nm: str) -> pd.DataFrame:
     df = df.copy()
     for c in ("vhod", "vyhod"):
         df[c] = pd.to_datetime(df[c])
-    ok = (df.vhod >= D0) & (df.vyhod <= D1)
+    ok = (df.vhod >= D0) & (df.vhod <= D1)               # вход < 2016-01-01 — прогрев 2015, в окно не входит
     OTBROSHENO[nm] = OTBROSHENO.get(nm, 0) + int((~ok).sum())
     df = df[ok].copy()
+    dl = df.vyhod > D1                                   # правило Н5: сделка через конец окна закрывается на конце окна (31.12.2019)
+    ZAKRYTO_NA_KONCE[nm] = ZAKRYTO_NA_KONCE.get(nm, 0) + int(dl.sum())
+    df.loc[dl, "vyhod"] = D1                             # PnL журнала не пересчитан: цен в журнале нет (оговорка)
+    df.loc[dl, "uderzhanie"] = (D1 - df.loc[dl, "vhod"]).dt.days
     df["korz"] = df.uderzhanie.map(korzina)
     return df.reset_index(drop=True)
 
@@ -64,7 +69,8 @@ def dolya(kom: float, short: float, gross: float, baza: str = "valovoj") -> floa
 
 def sharpe_dn(df: pd.DataFrame, col: str) -> float:
     dni = pd.bdate_range(D0, D1)
-    s = df.groupby("vyhod")[col].sum().reindex(dni, fill_value=0.0)
+    d = dni[np.clip(dni.searchsorted(df.vyhod.values, side="right") - 1, 0, len(dni) - 1)]   # выход в нерабочий день — на предыдущий рабочий
+    s = df[col].groupby(d).sum().reindex(dni, fill_value=0.0)
     return float(s.mean() / s.std(ddof=1) * np.sqrt(252)) if s.std(ddof=1) > 0 else float("nan")
 
 
@@ -110,16 +116,21 @@ def k_okup(df: pd.DataFrame, k: int, lag: int = 1) -> list:
 
 
 def itog(df: pd.DataFrame) -> str:
-    """Итоговая строка по сделкам центров голых идей и v6 (без вариантов входа T): издержки/валовой; граница удержания и ранга, где доля < 30 %."""
+    """Итоговая строка по центрам голых идей и v6 (без вариантов входа T). Окупаются корзины, где валовой > 0 И доля издержек < 30 % валового;
+    перечисляются все такие корзины (не «≥ N»: корзины могут не идти подряд, у старших валовой бывает ≤ 0)."""
     d = df[df.variant.isin(["", "centr"])]
     gr = d.gross.sum()
-    x = f"{dolya(d.kom.sum(), d['short'].fillna(0).sum(), gr) * 100:.0f}" if gr > 0 else "не определено (валовой ≤ 0)"
-    n = next((b for b in KORZ if dolya(*(lambda s: (s.kom.sum(), s["short"].fillna(0).sum(), s.gross.sum()))(d[d.korz == b])) < POROG), None)
+    if gr <= 0:
+        return "валовой ≤ 0 — не окупается при любых издержках"
+
+    def ok(s):
+        return s.gross.sum() > 0 and dolya(s.kom.sum(), s["short"].fillna(0).sum(), s.gross.sum()) < POROG
+    ns = [b for b in KORZ if ok(d[d.korz == b])]
     dr = d[d.tercil.notna()]
-    p = next((t for t in (1, 2, 3) if dolya(*(lambda s: (s.kom.sum(), s["short"].fillna(0).sum(), s.gross.sum()))(dr[dr.tercil == t])) < POROG), None)
-    nn = {"1": 1, "2–3": 2, "4–10": 4, ">10": 11}.get(n)
-    return (f"издержки съедают {x} % валового; окупаются сделки с удержанием ≥ {nn if nn else 'не достигнуто'} дней "
-            f"и рангом ≥ {p if p else 'не достигнуто'} (терциль; доля издержек < 30 % валового)")
+    ps = [str(t) for t in (1, 2, 3) if ok(dr[dr.tercil == t])]
+    x = dolya(d.kom.sum(), d["short"].fillna(0).sum(), gr) * 100
+    return (f"издержки съедают {x:.0f} % валового; окупаются (валовой > 0, доля издержек < 30 %) сделки с удержанием: {', '.join(ns) or 'нет'} дней; "
+            f"ранг (терциль): {', '.join(ps) or 'нет'}")
 
 
 def tablica(df: pd.DataFrame) -> pd.DataFrame:
