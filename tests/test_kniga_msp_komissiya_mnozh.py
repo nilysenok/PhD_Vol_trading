@@ -26,9 +26,50 @@ def test_dnevnye_stavki_excess_pary_uzhe_platit_polnyj_oborot():
     assert cost3.sum() == pytest.approx(3 * cost1.sum())
 
 
-def test_hedzh_oblagaetsya():
-    assert km.komissiya_mnozh(-0.4, -0.1) == pytest.approx(C * 0.3)
-    assert km.komissiya_mnozh(0.0, 0.0) == 0.0
+def test_komissiya_oborota_izvestnyj_otvet():
+    """C·Σ|Δw| руками: |0,5−0|+|−1−(−0,5)|+|0,2−0,2| = 1,0."""
+    assert km.komissiya_oborota([0.5, -1.0, 0.2], [0.0, -0.5, 0.2]) == pytest.approx(C * 1.0)
+    assert km.komissiya_oborota([-0.4], [-0.1]) == pytest.approx(C * 0.3)
+
+
+def test_mutaciya_modul_w_vmesto_delta_lovitsya():
+    """Неизменная позиция оборота не даёт; мутант Σ|w| списал бы C·1,5."""
+    w = [0.5, -1.0]
+    assert km.komissiya_oborota(w, w) == 0.0
+    assert km.komissiya_oborota(w, w) != pytest.approx(C * np.abs(w).sum())
+    assert km.komissiya_oborota([1.0], [0.0]) == pytest.approx(C)      # вход с нуля платит |w|, а не 0
+
+
+@pytest.mark.xfail(strict=True, reason="msp_v5: ex_kniga = u @ R линейно по знаку u; комиссия пары, зашитая в R "
+                   "на единицу лонга, у шорта (u<0) даёт ВОЗВРАТ комиссии; значит «комиссия через excess·w» верна только "
+                   "если вызывающий строит R с учётом знака — builder dohod для msp_v5 в репозитории не найден")
+def test_msp_v5_den_tolko_mnozhitel_spisyvaet_komissiyu_pary_cherez_excess():
+    """Тест владельца (Ж-149) через msp_v5: каждый день позиция пары открывается и закрывается (`tf_os_v5.dohod`,
+    оборот 2·|pos|), excess пары net. Ожидание: netto-excess книги = брутто − C·оборот·|w| при новом весе w = u (m меняется
+    между днями, сигналов не меняется): комиссия списана ровно один раз, через excess·w."""
+    import pandas as pd
+
+    from fastbt import msp_v5
+    T, tik = 60, ["A", "B"]
+    idx = pd.bdate_range("2016-01-04", periods=T)
+    rng = np.random.default_rng(11)
+    o = 100.0 + np.zeros((T, 2))
+    c = o * (1 + 0.01 * rng.standard_normal((T, 2)))
+    gross, net = np.zeros((T, 2)), np.zeros((T, 2))
+    for j, p in enumerate((1, 1)):                     # R на единицу лонга (знак даёт u); один бар в день -> закрытие
+        g, cost, turn = tf_os_v5.dohod(np.full(T, p), o[:, j], c[:, j], np.arange(T))
+        assert (turn == 2).all()
+        gross[:, j], net[:, j] = g, g - cost
+    f = lambda v: pd.DataFrame(v, index=idx, columns=tik)      # noqa: E731
+    sig = {"S1": {"storona": f(np.array([[1.0, -1.0]] * T)), "sila": f(rng.uniform(0, 1, (T, 2))),
+                  "g": f(np.ones((T, 2)))}}
+    sigma, sektor, im = f(np.full((T, 2), 0.02)), {"A": "X", "B": "Y"}, pd.Series(0.0, index=idx)
+    r = msp_v5.progon(sig, sigma, sektor, f(net), im, 0.0, k=2, rho=0.001)
+    u = r.u.to_numpy()[:, [0, 1]]
+    razn = r.ex_kniga.to_numpy() - (u * gross).sum(axis=1)
+    assert np.allclose(razn, -C * 2 * np.abs(u).sum(axis=1))
+    m = np.abs(u).sum(axis=1)
+    assert (np.abs(np.diff(m[30:])) > 1e-9).any()          # множитель действительно менялся между днями
 
 
 def _ist(T=40):

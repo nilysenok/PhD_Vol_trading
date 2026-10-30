@@ -120,13 +120,13 @@ def vyklyuchatel(ex_kniga: np.ndarray, i: int, tsel=0.10) -> float:
     return VYKL_MNOZH if plohaya else 1.0
 
 
-def komissiya_mnozh(hedzh: float, hedzh_prev: float, stavka=KOMISSIYA) -> float:
-    """Комиссия (доля NAV) за оборот, не оплаченный в excess пар: хедж MIX, ставка·|Δ хеджа|.
-    Ставки-акции дневные: excess пары (`tf_os_v5.dohod`) закрыт к последнему бару дня и платит ставку на |pos| входа и
-    выхода, а excess·w масштабируется весом линейно — смена множителей, весов Sk, нетто, лимитов между днями лишь меняет
-    размер завтрашней внутридневной сделки, её комиссия уже в excess·w. Облагать |Δw| акций — двойной учёт.
-    Хедж MIX (open→open IMOEX, `hedzh·imoex`) переносится через ночь и комиссии в excess не имеет."""
-    return float(stavka * abs(hedzh - hedzh_prev))
+def komissiya_oborota(w, w_prev, stavka=KOMISSIYA) -> float:
+    """Единое определение (Д7, Ж-149): комиссия, доля NAV = ставка·Σ|w − w_prev| по любым позициям, перенесённым
+    через ночь. МСП зовёт её только для хеджа MIX (open→open IMOEX, комиссии в excess нет): ставки-акции дневные,
+    excess пары (`tf_os_v5.dohod`) закрыт к вечеру и платит вход и выход при размере w, смена множителей между днями
+    лишь меняет размер завтрашней сделки — |Δw| акций был бы двойным учётом. A′-расширенная (позиции через ночь) —
+    зовёт для всего."""
+    return float(stavka * np.abs(np.asarray(w, float) - np.asarray(w_prev, float)).sum())
 
 
 @dataclass
@@ -149,6 +149,6 @@ def kniga_dnya(i, score, sigma, sektor, sk, ist: dict, k=20, rho=0.01, plecho=2.
     f = vyklyuchatel(ist["ex_kniga"], i, tsel)
     b = beta(ist["ex_kniga"], ist["imoex"], i)
     wf, h = u * m * f, hedzh_mix(b) * f
-    kom = komissiya_mnozh(h, ist.get("pred", {"h": 0.0})["h"])
+    kom = komissiya_oborota(h, ist.get("pred", {"h": 0.0})["h"])
     ist["pred"] = {"h": h}
     return Itog(wf, h, w, m, f, kom)
