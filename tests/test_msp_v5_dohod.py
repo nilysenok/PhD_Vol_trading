@@ -35,13 +35,35 @@ def test_odin_bar_v_den_izvestnyj_otvet():
     assert np.isnan(r.iloc[2]) and list(t.iloc[:2]) == [2.0, 2.0]
 
 
+def _pos(den, znak):
+    """Конвенция `tf_os_v5.pozicii`: первый бар дня без позиции, вход — open 2-го бара, выход — close последнего."""
+    p = np.full(len(den), znak, np.int8)
+    p[np.r_[True, den[1:] != den[:-1]]] = 0
+    return p
+
+
+def test_tri_bara_izvestnyj_otvet():
+    o = np.array([100.0, 102.0, 101.0])
+    c = np.array([101.0, 101.0, 103.0])
+    den = np.full(3, pd.Timestamp("2018-01-09").value)
+    _, _, r, t = M.ryad_dnya(np.zeros(3, np.int8), o, c, den)
+    assert r.iloc[0] == pytest.approx((101 / 102 - 1) + (103 / 101 - 1))      # бар 1 без позиции
+    assert t.iloc[0] == 2.0
+
+
+def test_long_i_short_platyat_odinakovo():
+    o, c, den = _bary()
+    _, _, r, t = M.ryad_dnya(np.zeros(len(o), np.int8), o, c, den)
+    assert (RATE * abs(1) * t).equals(RATE * abs(-1) * t) and (t == 2.0).all()
+
+
 @pytest.mark.parametrize("znak", [1, -1])
 def test_summa_ravna_dohod_tf_os(znak):
-    """u·R − ставка·|u|·T = чистый доход `tf_os_v5.dohod` (pos = znak весь день) на дне d+1 с точностью 1e-12."""
+    """u·R − ставка·|u|·T = чистый доход `tf_os_v5.dohod` (позиция по конвенции pozicii) на дне d+1, 1e-12."""
     o, c, den = _bary()
     dni, st, r, t = M.ryad_dnya(np.zeros(len(o), np.int8), o, c, den)
     r, t = M.sdvig_d_plus_1(r, t)
-    g, cost, _ = TF.dohod(np.full(len(o), znak, np.int8), o, c, den, RATE)
+    g, cost, _ = TF.dohod(_pos(den, znak), o, c, den, RATE)
     net = pd.Series(g - cost, index=den).groupby(level=0).sum().set_axis(dni)
     mine = znak * r - RATE * abs(znak) * t
     assert np.allclose(mine.iloc[:-1].values, net.iloc[1:].values, rtol=0, atol=1e-12)
@@ -51,7 +73,7 @@ def test_mutaciya_komissiya_so_znakom_lovitsya():
     o, c, den = _bary()
     dni, st, r, t = M.ryad_dnya(np.zeros(len(o), np.int8), o, c, den)
     r, t = M.sdvig_d_plus_1(r, t)
-    g, cost, _ = TF.dohod(np.full(len(o), -1, np.int8), o, c, den, RATE)
+    g, cost, _ = TF.dohod(_pos(den, -1), o, c, den, RATE)
     net = pd.Series(g - cost, index=den).groupby(level=0).sum().set_axis(dni).iloc[1:].values
     zlo = (-1 * r - RATE * (-1) * t).iloc[:-1].values          # комиссия умножена на u: шорт получает возврат
     assert not np.allclose(zlo, net, rtol=0, atol=1e-12)
