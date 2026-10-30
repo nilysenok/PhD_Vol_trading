@@ -95,13 +95,42 @@ def test_T_otricatelnyj_otkaz():
         _vyzov(rb, tt)
 
 
-@pytest.mark.xfail(strict=True, reason="ДЕФЕКТ #859: msp_v5.progon делает nan_to_num(T) -> NaN молча = 0 (Д4); автор исправляет, затем снять xfail")
-def test_T_nan_otkaz_a_ne_nol():
-    """Д4: NaN в обороте не заменяется нулём молча (иначе комиссия исчезает без следа)."""
+def _den_s_poziciej():
     rb, tt, _ = _sborshchik()
-    tt[10, 0] = np.nan
-    with pytest.raises(ValueError):
+    u = _vyzov(rb, tt).u.to_numpy()
+    i = int(np.flatnonzero(u[:, 0] != 0)[10])
+    return rb, tt, i
+
+
+def test_T_nan_otkaz_a_ne_nol():
+    """Д4: NaN в обороте при позиции ≠ 0 не заменяется нулём молча (иначе комиссия исчезает без следа)."""
+    rb, tt, i = _den_s_poziciej()
+    tt[i, 0] = np.nan
+    with pytest.raises(ValueError, match="NaN"):
         _vyzov(rb, tt)
+
+
+def test_R_nan_pri_pozicii_otkaz():
+    rb, tt, i = _den_s_poziciej()
+    rb[i, 0] = np.nan
+    with pytest.raises(ValueError, match="NaN"):
+        _vyzov(rb, tt)
+
+
+def test_nan_bez_poziciji_dopustim():
+    """NaN в день без позиции (прогрев) — законно, не отказ."""
+    rb, tt, i = _den_s_poziciej()
+    rb[0, :] = np.nan
+    tt[0, :] = np.nan
+    assert np.isfinite(_vyzov(rb, tt).ex_kniga.to_numpy()).all()
+
+
+def test_mutant_nan_to_num_vozvrashchen_lovitsya(monkeypatch):
+    """Мутант: _bez_nan снова молча зануляет NaN -> тесты отказа обязаны упасть."""
+    monkeypatch.setattr(msp_v5, "_bez_nan", lambda r, t, p, i, d, k: (np.nan_to_num(r), np.nan_to_num(t)))
+    for t in (test_T_nan_otkaz_a_ne_nol, test_R_nan_pri_pozicii_otkaz):
+        with pytest.raises(BaseException):
+            t()
 
 
 def test_staryj_klyuch_dohod_otkaz():
