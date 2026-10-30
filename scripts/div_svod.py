@@ -47,7 +47,8 @@ def chitat(papka: Path = DIR) -> list[dict]:
         with open(p, encoding="utf-8", newline="") as fh:
             for r in csv.DictReader(fh):
                 if r["record_date"]:
-                    by_key[(r["ticker"], r["record_date"], r["src_tablica"])] = r
+                    wf = r["src_tablica"] != "2017_2021"     # 2022+: два платежа в один реестр различаются суммой
+                    by_key[(r["ticker"], r["record_date"], r["src_tablica"], _num(r["dps_rub"]) if wf else None)] = r
     return list(by_key.values())
 
 
@@ -87,16 +88,20 @@ def godna_wf(url: str) -> str:
 
 def chitat_wf(papka: Path = DIR) -> list[dict]:
     """Строки 2022 – 2026-02 в виде строк свода; ключ (ticker, record_date, dps): два платежа в один реестр не склеиваются."""
+    sverka = {(r["ticker"], r["record_date"], _num(r["dps_rub"])) for r in chitat(papka) if r["src_tablica"] in ("2022_2024", "2025_2026")}
     by_key: dict = {}
     for pat in FILES_WF:
         for p in sorted(glob.glob(str(Path(papka) / pat))):
             with open(p, encoding="utf-8", newline="") as fh:
                 for r in csv.DictReader(fh):
-                    if r["record_date"] and (_num(r["dps_rub"]) or 0) > 0:
-                        by_key[(r["ticker"], r["record_date"], r["dps_rub"])] = r
+                    k = (r["ticker"], r["record_date"], _num(r["dps_rub"]))
+                    if r["record_date"] and (k[2] or 0) > 0 and k not in sverka:   # сверенные строки идут из chitat
+                        by_key[k] = dict(r, wf2224="2022_2024" in Path(p).name)
     out = []
     for r in by_key.values():
         ann, prichina = r.get("announce_date") or "", godna_wf(r.get("source_url"))
+        if r["wf2224"]:
+            prichina = "net_sverki_wf"       # 2022–2024: одного dohod/ссылки в колонке мало, нужен файл сверки div_sverka_wf_*
         if not prichina and not ann:
             prichina = "net_daty_obyavleniya"
         out.append({"ticker": r["ticker"], "record_date": r["record_date"], "dps_rub": r["dps_rub"], "announce_pit": ann,

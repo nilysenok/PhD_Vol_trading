@@ -29,8 +29,8 @@ def _zapis(papka, name, rows):
         w.writerows(rows)
 
 
-def _svod(tmp_path, url, ann="2023-03-01", rec="2023-04-20", dps="10", name="2026-10-29_dividendy_2022_2024.csv"):
-    _zapis(tmp_path, name, [["NVTK", rec, "2023-04-19", ann, dps, url, "2026-10-29"]])
+def _svod(tmp_path, url, ann="2023-03-01", rec="2023-04-20", dps="10", name="2026-10-29_dividendy_2025_2026.csv"):
+    _zapis(tmp_path, name, [["NVTK", rec, "2023-04-19", ann, dps, url, "2026-10-29"]])    # дата не важна: фильтра по году нет
     return ds.svod(tmp_path)
 
 
@@ -50,8 +50,41 @@ def test_dva_agregatora_ne_nezavisimy(tmp_path):
 
 
 def test_novost_plyus_agregator_godna(tmp_path):
-    (r,) = _svod(tmp_path, "https://www.interfax.ru/business/1 ; https://www.dohod.ru/x", name="2026-10-29_dividendy_2025_2026.csv")
+    (r,) = _svod(tmp_path, "https://www.interfax.ru/business/1 ; https://www.dohod.ru/x")
     assert r["godna"] == 1
+
+
+SV = ["ticker", "record_date", "announce_date", "dps_rub", "src_tablica", "source2_url", "record_date_2", "announce_date_2",
+      "dps_rub_2", "tip_istochnika", "verified", "primechanie"]
+
+
+def _sverka(tmp_path, verified, name="2026-10-30_div_sverka_wf_P.csv", src="2022_2024"):
+    with open(tmp_path / name, "w", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(SV)
+        w.writerow(["NVTK", "2023-04-20", "2023-03-01", "10", src, "", "2023-04-20", "2023-03-05", "10", "vtoroy", verified, ""])
+
+
+def test_2022_2024_bez_sverki_ne_godna_dazhe_s_pervichnoj_ssylkoj(tmp_path):
+    (r,) = _svod(tmp_path, PERV, name="2026-10-29_dividendy_2022_2024.csv")
+    assert (r["godna"], r["prichina"]) == (0, "net_sverki_wf")
+
+
+def test_sverka_wf_podhvatyvaetsya_i_zamenyaet_syruyu_stroku(tmp_path):
+    _zapis(tmp_path, "2026-10-29_dividendy_2022_2024.csv", [["NVTK", "2023-04-20", "x", "2023-03-01", "10", AGR, "x"]])
+    _sverka(tmp_path, "yes")
+    (r,) = ds.svod(tmp_path)
+    assert (r["godna"], r["announce_pit"]) == (1, "2023-03-05")      # более поздняя из дат
+    _sverka(tmp_path, "net_istochnika")
+    (r,) = ds.svod(tmp_path)
+    assert r["godna"] == 0
+
+
+def test_sverka_2025_2026_zamenyaet_pravilo_po_hostam(tmp_path):
+    _zapis(tmp_path, "2026-10-29_dividendy_2025_2026.csv", [["NVTK", "2023-04-20", "x", "2023-03-01", "10", PERV, "x"]])
+    _sverka(tmp_path, "net_istochnika", name="2026-10-30_div_sverka_wf_R.csv", src="2025_2026")
+    (r,) = ds.svod(tmp_path)
+    assert r["godna"] == 0
 
 
 def test_pustaya_ssylka_ne_godna(tmp_path):
@@ -85,7 +118,7 @@ def test_realnyj_svod_pokryvaet_do_2026_02_i_2022_2024_pochti_ne_godny():
     rows = list(csv.DictReader(open(REPO / "docs/issledovaniya/div_sverka_svod.csv", encoding="utf-8")))
     god = {y: sum(int(r["godna"]) for r in rows if r["record_date"][:4] == y) for y in map(str, range(2022, 2027))}
     assert max(r["record_date"] for r in rows) <= "2026-02-28" and "2026-01-12" in {r["record_date"] for r in rows}
-    assert god["2022"] == 0 and god["2023"] == 0 and god["2024"] == 1 and god["2025"] == 15 and god["2026"] == 2
+    assert god["2022"] == 0 and god["2023"] == 0 and god["2024"] == 0 and god["2025"] == 15 and god["2026"] == 2
 
 
 def test_mutaciya_2022_plyus_godny_bez_podtverzhdeniya_lovitsya(tmp_path, monkeypatch):
