@@ -1,0 +1,21 @@
+# Куб отбора v7, S9 сила к сектору (низкий приоритет) (Ж-153, Ж-155 п. 2, Ж-156 п. 3; план V7-1b). Устройство и ❓ про N — как в kub_S8.yaml; sha256 — в SHA256SUMS.
+# Полная решётка 108 различных точек, N = 50 000 индексов Соболя.
+v: 5
+format: progon-kub
+setka: v7
+data: 2026-10-31
+sid: S9
+tip: sechenie
+periody: [train4, v2, wf]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261105, seed2: 20261106, scramble: true, N: 50000, morris_seed: 20261104}
+
+signal:
+  porog: {setka: [0.3, 0.5, 0.7]}
+  bufer: {setka: [0, 0.1, 0.2]}
+  cap:   {setka: [2, 3, 4]}
+  rebal: {setka: [den, nedelya]}
+
+osi7:
+  k_okup: {setka: [net, 3], vykl: net, p_vykl: 0.5, zhdet: [V7-3], otkuda: "Ж-150, Ж-156 п. 3", smysl: "вход, только если ожидаемый валовой PnL по терцили ранга и корзине удержания покрывает k × издержки"}
