@@ -70,19 +70,20 @@ def privesti(df, old):
 
 
 def dopisat(old, new, col, konec=KONEC):
-    """old + хвост: из new берутся строки со col строго позже old[col].max() и датой <= konec.
-    Возвращает (итог, расхождения): расхождения = число строк пересечения (col <= old max), которых в new нет или которые отличаются."""
+    """old + хвост, дата <= konec. Всё до последнего дня old — как было, никогда не заменяется.
+    Последний день old сверяется с ISS (колонки времени и цен; value/volume не сравниваются: у CNY ISS их больше не отдаёт):
+    если неполон или расходится (обрыв прошлой выгрузки) — заменяется данными ISS целиком, иначе не трогается; дальше — хвост.
+    Возвращает (итог, заменено): число строк последнего дня old, замененных данными ISS."""
     new = obrezat(new[old.columns.intersection(new.columns)], col, konec)
     k_old, k_new = pd.to_datetime(old[col]), pd.to_datetime(new[col])
-    m = k_old.max()
-    tail = privesti(new[k_new > m], old)
-    over = privesti(new[k_new <= m], old)
-    # пересечение: все строки old с begin >= первого begin нового ответа против строк ответа <= old max
-    ov_old = old[k_old >= k_new.min()] if len(new) else old.iloc[0:0]
-    cmp = ov_old.merge(over, how='outer', indicator=True)
-    bad = int((cmp['_merge'] != 'both').sum())
-    out = pd.concat([old, tail[old.columns]], ignore_index=True)
-    return out, bad
+    day = k_old.max().normalize()
+    last_old, last_new = old[k_old.dt.normalize() == day], new[k_new.dt.normalize() == day]
+    cc = [c for c in ('timestamp', 'begin', 'end', 'open', 'close', 'high', 'low') if c in old.columns]
+    cmp = last_old[cc].merge(privesti(last_new, old)[cc], how='outer', indicator=True)
+    zamena = len(last_new) > 0 and bool((cmp['_merge'] != 'both').any())
+    base = old[k_old.dt.normalize() < day] if zamena else old
+    tail = new[k_new.dt.normalize() >= day] if zamena else new[k_new > k_old.max()]
+    return pd.concat([base, privesti(tail, old)[old.columns]], ignore_index=True), (len(last_old) if zamena else 0)
 
 
 def akcii(root, out, tikery=None):
@@ -98,7 +99,7 @@ def akcii(root, out, tikery=None):
         o = out / 'moex_discovery/data/raw/candles_10m' / p.name
         o.parent.mkdir(parents=True, exist_ok=True)
         res.to_parquet(o, index=False)
-        print(p.stem, len(old), len(res), 'расхождений пересечения', bad, flush=True)
+        print(p.stem, len(old), len(res), 'заменено строк последнего дня', bad, flush=True)
 
 
 def indeksy(root, out):
@@ -116,7 +117,7 @@ def indeksy(root, out):
         o = out / 'moex_discovery/data' / sub / f'{n}.parquet'
         o.parent.mkdir(parents=True, exist_ok=True)
         res.to_parquet(o, index=False)
-        print(n, len(old), len(res), 'расхождений пересечения', bad, flush=True)
+        print(n, len(old), len(res), 'заменено строк последнего дня', bad, flush=True)
         # копии final_v6/external берут свежий ответ ISS целиком (частичный последний бар старого файла — на день докачки — не тянут)
         cut = obrezat(new, 'begin')
         fresh = pd.concat([old[pd.to_datetime(old['begin']) < pd.to_datetime(cut['begin']).min()], privesti(cut, old)], ignore_index=True)

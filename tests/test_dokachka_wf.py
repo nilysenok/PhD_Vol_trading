@@ -41,19 +41,49 @@ def test_dopisat_staroe_neizmenno_i_hvost_dobavlen():
     assert list(res["timestamp"].iloc[2:]) == list(pd.to_datetime(["2026-02-04 10:00", "2026-02-27 10:00"]))
 
 
-def test_dopisat_rashozhdenie_peresecheniya_schitaetsya():
+def test_oborvannyj_poslednij_den_zamenyaetsya():
     old = _bars(["2026-02-03 10:00", "2026-02-03 10:10"])
     new = _bars(["2026-02-03 10:00", "2026-02-03 10:10", "2026-02-04 10:00"])
-    new.loc[1, "close"] = 9.9          # ISS отдал другое значение уже имеющейся строки
-    res, bad = D.dopisat(old, new, "timestamp")
-    assert bad == 2                    # строка есть в old и в new с разными значениями: обе стороны outer-merge
-    assert res.iloc[:2].equals(old)    # старое не перезаписано
+    new.loc[1, "close"] = 9.9          # ISS отдал другое значение бара последнего дня (обрыв прошлой выгрузки)
+    res, zam = D.dopisat(old, new, "timestamp")
+    assert zam == 2 and res["close"].tolist() == [1.5, 9.9, 1.5]
 
 
-def test_dopisat_propavshaya_stroka_peresecheniya_schitaetsya():
+def test_polnyj_poslednij_den_ne_trogaetsya():
     old = _bars(["2026-02-03 10:00", "2026-02-03 10:10"])
-    new = _bars(["2026-02-03 10:00", "2026-02-04 10:00"])
-    assert D.dopisat(old, new, "timestamp")[1] == 1
+    new = _bars(["2026-02-03 10:00", "2026-02-03 10:10", "2026-02-04 10:00"])
+    res, zam = D.dopisat(old, new, "timestamp")
+    assert zam == 0 and res.iloc[:2].equals(old) and len(res) == 3
+
+
+def test_propavshaya_stroka_poslednego_dnya_zamenyaetsya_a_pustoj_otvet_net():
+    old = _bars(["2026-02-03 10:00", "2026-02-03 10:10"])
+    assert D.dopisat(old, _bars(["2026-02-03 10:00", "2026-02-04 10:00"]), "timestamp")[1] == 2
+    res, zam = D.dopisat(old, _bars([]), "timestamp")   # ISS ничего не вернул — старое остаётся
+    assert zam == 0 and res.equals(old)
+
+
+def test_ranshie_dni_nikogda_ne_zamenyayutsya():
+    old = _bars(["2026-02-02 10:00", "2026-02-03 10:00"])
+    new = _bars(["2026-02-02 10:00", "2026-02-03 10:00", "2026-02-04 10:00"])
+    new.loc[0, "close"] = 7.7          # расходится предпоследний день — не трогаем
+    res, zam = D.dopisat(old, new, "timestamp")
+    assert zam == 0 and res.iloc[:2].equals(old)
+    new.loc[1, "close"] = 8.8          # расходится последний — заменяем только его
+    res, zam = D.dopisat(old, new, "timestamp")
+    assert zam == 1 and res["close"].tolist() == [1.5, 8.8, 1.5]
+
+
+def test_mutaciya_zamenyaet_i_predposlednij_den_lovitsya(monkeypatch):
+    """Мутант: день для замены берётся на сутки раньше. test_ranshie_dni_... обязан на нём упасть."""
+    old = _bars(["2026-02-02 10:00", "2026-02-03 10:00"])
+    new = _bars(["2026-02-02 10:00", "2026-02-03 10:00", "2026-02-04 10:00"])
+    new.loc[0, "close"] = 7.7
+    src = Path(D.__file__).read_text(encoding="utf-8").replace("day = k_old.max().normalize()", "day = k_old.max().normalize() - pd.Timedelta(days=1)")
+    ns = {"__name__": "mut"}
+    exec(compile(src, "mut", "exec"), ns)
+    res, zam = ns["dopisat"](old, new, "timestamp")
+    assert zam != 0 and not res.iloc[:2].equals(old)   # мутант заменил бы предпоследний день; test_ranshie_dni_... это запрещает
 
 
 def test_posle_28_fevralya_nichego_ne_pishetsya():
