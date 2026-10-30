@@ -1,0 +1,26 @@
+# Куб отбора v7, S10 импульс 1ч (Ж-153 пп. 1–4, Ж-156 п. 3; план V7-1b). sha256 — в SHA256SUMS. Канон — fastbt/canon_v7b.py.
+# Сигнал: tau ∈ {2,3,5} (τ = 1 — справочный проход, вне N); vhod ∈ {d1, T}; T — дочерняя ось, действует при vhod = T (при d1 сворачивается).
+# Общие оси выхода и риска (osi_s3) — значения куба S3 v6 как есть (толкования [31.10 01:29] п. 2); канон — правила тренда canon_v6.
+# Не входят: tau v5, k_e и зависящие от лимитки, t_vyhod, time_decay, фильтры v5, контекст v6, пауза. k_okup ∈ {net, 3} (Ж-156 п. 3).
+# N = 200 000 точек Соболя на проход (Ж-156 п. 3), до выброса несовместимых; seed Соболя 20261105/20261106, Моррис 20261104.
+v: 5
+format: progon-kub
+setka: v7
+data: 2026-10-31
+baza: {setka: v6, kub_sha: 2651d948256ebf22d340c2c46602d544ab42368be96700cbc6b0724ec79ac259, iz: S3}
+sid: S10
+tip: impuls
+periody: [train4, v2, wf]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261105, seed2: 20261106, scramble: true, N: 200000, morris_seed: 20261104}
+
+signal:
+  tau:  {setka: [2, 3, 5], spravka: 1}
+  vhod: {setka: [d1, T]}
+  T:    {setka: ["17:00", "18:00", "18:40"], roditel: {vhod: T}}
+
+osi_s3: [stop_nach, tejk, trail, chast, razmer_tip, m_sily, rang_tip, sigma_ist, bezubytok, stop_v_plyus, pir]
+
+osi7:
+  k_okup: {setka: [net, 3], vykl: net, p_vykl: 0.5, zhdet: [V7-3], otkuda: "Ж-150, Ж-156 п. 3", smysl: "вход, только если ожидаемый валовой PnL по терцили ранга и корзине удержания покрывает k × издержки"}

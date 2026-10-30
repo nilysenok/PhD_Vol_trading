@@ -1,0 +1,25 @@
+# Куб отбора v7, S2 Bollinger (Ж-153, Ж-155 п. 2, Ж-156 п. 3, Ж-157 п. 2; план V7-1a). Правила, osi7, min_uderzhanie, N и seed — как в kub_S1.yaml v7.
+# sha256 — в SHA256SUMS этого каталога. Центр ± 1 шаг от сетки куба v6; общие оси v6 — как есть. Канон — fastbt/canon_v7.py.
+v: 5
+format: progon-kub
+setka: v7
+data: 2026-10-31
+baza: {setka: v6, kub_sha: a123b232e9201dea0c06854c65307c6eefa5c84df97b524b13751aa048b51953}
+sid: S2
+tip: kontr
+periody: [train4, v2, wf]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261105, seed2: 20261106, scramble: true, N: 100000, morris_seed: 20261104}
+suzhenie: "centr±1"
+min_uderzhanie: {dney: 2, tau1: spravka}
+
+signal:
+  ma_tip:    {setka: [wma, hma, dema], centr: hma}
+  bb_window: {setka: [25, 30, 35], centr: 30}
+  bb_std:    {setka: [1.75, 2.0, 2.25], centr: 2.0}
+  podtv:     {setka: [rsi30, rsi20, volume], centr: rsi20}
+
+osi7:
+  k_okup:      {setka: [net, 3], vykl: net, p_vykl: 0.5, zhdet: [V7-3], otkuda: "Ж-150, Ж-156 п. 3", smysl: "вход, только если ожидаемый валовой PnL по терцили ранга и корзине удержания покрывает k × издержки"}
+  otnositelno: {setka: [net, sektor, imoex], vykl: net, p_vykl: 0.5, zhdet: [V7-1a], otkuda: "Ж-155 п. 2; fastbt/otnositelno_v7.py", smysl: "сигнал по относительному ряду тикера против сектора или IMOEX"}
