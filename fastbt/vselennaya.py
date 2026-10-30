@@ -17,6 +17,7 @@ import pandas as pd
 REPO = Path(__file__).resolve().parent.parent
 DATA_ROOT = Path(os.environ.get("VSEL_DATA", "/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/data/regen/V40"))
 SOSTAV = REPO / "docs" / "issledovaniya" / "2026-10-28_sostav_imoex.csv"
+SOSTAV_2022 = REPO / "docs" / "issledovaniya" / "2026-10-30_sostav_imoex_2022_2026.csv"   # wf: 2022 – 02.2026 (wf-L4a, #750)
 LAST_YEAR = 2021
 
 
@@ -57,6 +58,29 @@ def _sostav_table(path: str, col: str = "date_eff") -> tuple[tuple[pd.Timestamp,
     return tuple(rows)
 
 
+def zona_wf() -> bool:
+    """Таблица 2022+ подключается только в зоне wf; в dev/test1 состав после 2021 не из неё (прежнее поведение)."""
+    from fastbt import zona
+    return zona.name() == "wf"
+
+
+def _vidno_s(date_eff: pd.Timestamp, known_from) -> pd.Timestamp:
+    """Строка новой таблицы видна не раньше max(date_eff, known_from) (point-in-time, Д3)."""
+    return date_eff if pd.isna(known_from) else max(date_eff, pd.Timestamp(known_from))
+
+
+@lru_cache(maxsize=None)
+def _sostav_wf(old: str, new: str) -> tuple[tuple[pd.Timestamp, frozenset], ...]:
+    """Прежняя таблица как есть + строки новой с date_eff позже последней прежней (2021-12-17 дублируется — берётся прежняя)."""
+    rows = list(_sostav_table(old, SOSTAV_COL))
+    t = pd.read_csv(new, usecols=[SOSTAV_COL, "known_from", "tickers"], parse_dates=[SOSTAV_COL, "known_from"])
+    for a, k, b in zip(t[SOSTAV_COL], t["known_from"], t["tickers"]):
+        if a > rows[-1][0]:
+            rows.append((_vidno_s(a, k), frozenset(str(b).split())))
+    rows.sort(key=lambda x: x[0])
+    return tuple(rows)
+
+
 def sostav_dates(sostav_path: Path | str = SOSTAV) -> list[pd.Timestamp]:
     return [d for d, _ in _sostav_table(str(sostav_path)) if d.year <= LAST_YEAR]
 
@@ -67,7 +91,9 @@ def sostav(d, sostav_path: Path | str = SOSTAV) -> frozenset:
     ts = pd.Timestamp(d)
     cur: frozenset = frozenset()
     last = None
-    for de, tk in _sostav_table(str(sostav_path), SOSTAV_COL):
+    rows = (_sostav_wf(str(sostav_path), str(SOSTAV_2022)) if ts.year > LAST_YEAR and zona_wf() and str(sostav_path) == str(SOSTAV)
+            else _sostav_table(str(sostav_path), SOSTAV_COL))
+    for de, tk in rows:
         if de <= ts:
             cur, last = tk, de
         else:
@@ -109,7 +135,9 @@ def U(d, k: int = 40, sostav_path: Path | str = SOSTAV, root: Path | str = DATA_
 def digest(sostav_path: Path | str = SOSTAV, root: Path | str = DATA_ROOT) -> str:
     """SHA-256 файла состава и всех файлов оборота (по имени, сортировка)."""
     h = hashlib.sha256()
-    for p in [Path(sostav_path), *sorted((Path(root) / "daily_value").glob("*.csv"))]:
+    from fastbt import zona
+    extra = [SOSTAV_2022] if zona.name() == "wf" and str(sostav_path) == str(SOSTAV) else []   # dev: хэш прежний
+    for p in [Path(sostav_path), *extra, *sorted((Path(root) / "daily_value").glob("*.csv"))]:
         h.update(p.name.encode())
         h.update(p.read_bytes())
     return h.hexdigest()
