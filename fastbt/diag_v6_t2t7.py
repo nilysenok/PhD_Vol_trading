@@ -1,5 +1,5 @@
 """Диагностика v6 train4 (Ж-145), лист Д-3: таблицы (2), (7) и оговорки по строкам ledger 2.2 (читатель без tik/ — Д-1).
-Топ-10 — `diag_v6_pravila.top10` (по `msr`, запас `sharpe`; ворота ≥ 30 сделок за окно = Σ sdelok_y), пороги — `PRAVILA`.
+Топ-10 — `diag_v6_pravila.top10` (по дневному `sharpe`, ворота ≥ 30 сделок за окно = Σ sdelok_y), пороги — `PRAVILA`.
 Пул Sk = rol=sobol из train4_v6_s1 ∪ train4_v6_s2, дубль klyuch_n — один раз. Данных ≥ 2020 не читает.
 Запуск: `FASTBT_MAIN=$PWD python3 -m fastbt.diag_v6_t2t7 <ledger/> <out/>`."""
 from __future__ import annotations
@@ -17,7 +17,7 @@ from fastbt import diag_v6_pravila as P
 from fastbt.diag_v6_chtenie import ChitatelPort
 
 PROHODY = {"s1": "train4_v6_s1", "s2": "train4_v6_s2"}
-POLYA = ("klyuch_n", "strategiya", "status", "rol", "msr", "sharpe", "sdelok_y", "prichiny", "sloy", "sobol_i")
+POLYA = ("klyuch_n", "strategiya", "status", "rol", "msr", "sharpe", "sdelok_y", "prichiny", "sloy", "sobol_i", "skew", "kurt")
 SLOVAR = ("stop", "take", "trail", "bu", "vremya", "signal", "lim")   # словарь причин `etap1_eval.v11`; всё вне него — «прочее»
 BRENT = (dt.date(2021, 11, 24), dt.date(2021, 12, 31))               # пропуск ряда Brent (толкования [31.10 00:12])
 NAN = float("nan")
@@ -90,8 +90,8 @@ def chitat_pul(root, sids=None) -> tuple:
     return pul, meta
 
 
-def top10_po_sk(pul: dict, min_sdelok: int = 30) -> dict:
-    return {sid: P.top10(rows, min_sdelok) for sid, rows in pul.items()}
+def top10_po_sk(pul: dict, min_sdelok: int = 30, pole: str | None = None) -> dict:
+    return {sid: P.top10(rows, min_sdelok, pole) for sid, rows in pul.items()}
 
 
 def _vybrosheno(meta: dict, prohody) -> float:
@@ -188,11 +188,11 @@ def main(root, out) -> None:
     zapisat(out / "t2.csv", t2, vyvod(t2, "(2)"))
     zapisat(out / "t7.csv", t7, vyvod(t7, "(7)"))
     zapisat(out / "ogovorki.csv", og, "(оговорки) числа, порогов нет")
-    for nm, g in (("top10.csv", 30), ("top10_bez_vorot.csv", 0)):
-        top = [dict(sid=s, rang=i, sobol_i=r["sobol_i"], prohod=r["prohod"], klyuch=r["klyuch_n"], msr=r["msr"], sharpe=r["sharpe"],
-                    sdelok_okno=P.sdelok_okno(r), pometka_sharpe=r["pometka_sharpe"]) for s, t in top10_po_sk(pul, g).items()
-               for i, r in enumerate(t, 1)]
-        zapisat(out / nm, top, f"(топ-10) ворота: сделок за окно (Σ sdelok_y) ≥ {g}; вход для Д-4; msr, где не определён — sharpe")
+    for nm, g, pole in (("top10.csv", 30, "sharpe"), ("top10_msr_vorota.csv", 30, "msr"), ("top10_bez_vorot.csv", 0, "msr")):
+        top = [dict(sid=s, rang=i, sobol_i=r["sobol_i"], prohod=r["prohod"], klyuch=r["klyuch_n"], sharpe=r["sharpe"], msr=r["msr"],
+                    msr_plohoy=r["msr_plohoy"], sdelok_okno=P.sdelok_okno(r), pometka_sharpe=r["pometka_sharpe"])
+               for s, t in top10_po_sk(pul, g, pole).items() for i, r in enumerate(t, 1)]
+        zapisat(out / nm, top, f"(топ-10) ранг по {pole}, ворота: Σ sdelok_y ≥ {g}; вход для Д-4; msr_plohoy: |skew| > {P.SKEW_MAX} или kurt > {P.KURT_MAX}")
     print({s: sum(r["status"] == "ok" and P.sdelok_okno(r) >= 30 for r in rows) for s, rows in pul.items()}, "— прошли ворота ≥ 30 сделок")
 
 

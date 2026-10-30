@@ -32,7 +32,8 @@ PRAVILA = dict(
     prochee_dolya_max=0.3,            # причина выхода «конец окна»/«прочее» > 30 %
 )
 PRAVILA_MSP = dict(delta_lambda_min=0.0, delta_aprim_min=0.0)   # план §3: Δ ≤ 0 — слабое место (в толковании порогов МСП нет)
-TOP10 = dict(n=10, kluch="msr", zapas="sharpe", vorota=None, ned="msr_ned (только для отобранных, Д-4, рядом с дневным; Ж-124 п. 3)", pul="status=ok, rol=sobol", pometka="потолок: ранжирование и метрики на одних данных")
+SKEW_MAX, KURT_MAX = 3.0, 20.0     # дневной mSR «плохо обусловлен» (умолчание дирижёра, толкования [31.10]); поля `skew`/`kurt` строки ledger
+TOP10 = dict(n=10, kluch="sharpe", zapas="sharpe", vorota=None, ned="msr_ned (только для отобранных, Д-4, рядом с дневным; Ж-124 п. 3)", pul="status=ok, rol=sobol", pometka="потолок: ранжирование и метрики на одних данных")
 
 # Фиксированный словарь «слабое место → предложение v7» (гипотеза для журнала, не решение).
 PREDLOZHENIYA = {
@@ -122,11 +123,20 @@ def sdelok_okno(r: dict) -> float:
     return float(sum((r.get("sdelok_y") or {}).values()))
 
 
-def top10(rows: list, min_sdelok: int = 30) -> list:
-    """Диагностический топ-10 (не отбор): status=ok, rol=sobol, сделок за окно ≥ `min_sdelok` (ворота, толкования [31.10 00:53]; 0 — без ворот);
-    ранг по `msr` (дневной), где он не определён — по `sharpe` (строка копируется с пометкой `pometka_sharpe`); при равенстве — меньший klyuch_n."""
+def msr_plohoy(r: dict) -> bool:
+    """Дневной mSR плохо обусловлен (редкий ряд, mVaR → +0): |skew| > SKEW_MAX или kurt > KURT_MAX по полям строки; нет полей — False."""
+    sk, ku = r.get("skew"), r.get("kurt")
+    return bool((sk is not None and math.isfinite(sk) and abs(sk) > SKEW_MAX) or (ku is not None and math.isfinite(ku) and ku > KURT_MAX))
+
+
+def top10(rows: list, min_sdelok: int = 30, pole: str | None = None) -> list:
+    """Диагностический топ-10 (не отбор): status=ok, rol=sobol, сделок за окно ≥ `min_sdelok` (ворота; 0 — без ворот); ранг по `pole`
+    (по умолчанию TOP10["kluch"] = `sharpe`, дневной, без запасного поля). pole="msr" — прежний вариант: где mSR не определён — по `sharpe`
+    (пометка `pometka_sharpe`). К строке добавляется `msr_plohoy`. При равенстве — меньший klyuch_n."""
+    pole = pole or TOP10["kluch"]
+
     def znach(r):
-        for k, pom in ((TOP10["kluch"], False), (TOP10["zapas"], True)):
+        for k, pom in ((pole, False), (TOP10["zapas"], True)) if pole == "msr" else ((pole, False),):
             if r.get(k) is not None and math.isfinite(r[k]):
                 return r[k], pom
         return None
@@ -134,7 +144,7 @@ def top10(rows: list, min_sdelok: int = 30) -> list:
     for r in rows:
         z = znach(r) if r.get("status") == "ok" and r.get("rol") == "sobol" and sdelok_okno(r) >= min_sdelok else None
         if z:
-            out.append((z[0], dict(r, pometka_sharpe=z[1])))
+            out.append((z[0], dict(r, pometka_sharpe=z[1], msr_plohoy=msr_plohoy(r))))
     out.sort(key=lambda t: (-t[0], t[1]["klyuch_n"]))
     return [r for _, r in out[:TOP10["n"]]]
 

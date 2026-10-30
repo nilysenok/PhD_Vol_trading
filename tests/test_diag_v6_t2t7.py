@@ -42,15 +42,30 @@ _TOP = T.top10_po_sk
 def _bez_vorot(request, monkeypatch):
     """Синтетика G3.1–G3.4 — без ворот (min_sdelok=0); ворота проверяют тесты с меткой `vorota`."""
     if "vorota" not in request.node.name:
-        monkeypatch.setattr(T, "top10_po_sk", lambda pul, m=0: _TOP(pul, m))
+        monkeypatch.setitem(P.TOP10, "kluch", "msr")                  # синтетика G3.x задана рангом по msr (sharpe = 13 − i)
+        monkeypatch.setattr(T, "top10_po_sk", lambda pul, m=0, pole=None: _TOP(pul, m, pole))
 
 
 def _tochka(i, sdelok_god, **kw):
-    return dict(_r(i, "s1", float(i), 1.0, sdelok_god, OK), **kw)
+    return dict(_r(i, "s1", float(i), float(i), sdelok_god, OK), **kw)
+
+
+def test_vorota_rang_po_sharpe_po_umolchaniyu_mutaciya_msr_lovitsya(monkeypatch):
+    """Новое правило: ранг по дневному sharpe. Точка 1: sharpe 2, msr 900 (взрыв при редком ряде); точка 2: sharpe 3, msr 1."""
+    pul = {"S1": [_tochka(1, 10, sharpe=2.0, msr=900.0, skew=9.0, kurt=80.0), _tochka(2, 10, sharpe=3.0, msr=1.0, skew=0.5, kurt=4.0)]}
+    top = T.top10_po_sk(pul)["S1"]
+    assert [r["sobol_i"] for r in top] == [2, 1] and [r["msr_plohoy"] for r in top] == [False, True]
+    assert [r["sobol_i"] for r in T.top10_po_sk(pul, 30, "msr")["S1"]] == [1, 2]       # прежний вариант — параметром
+    monkeypatch.setitem(P.TOP10, "kluch", "msr")                                       # мутация: ранжирование по msr
+    assert [r["sobol_i"] for r in T.top10_po_sk(pul)["S1"]] != [2, 1]
+
+
+def test_vorota_msr_plohoy_porogi():
+    f = P.msr_plohoy
+    assert f({"skew": 3.1}) and f({"skew": -3.1}) and f({"kurt": 20.1}) and not (f({"skew": 3.0, "kurt": 20.0}) or f({}))
 
 
 def test_vorota_29_ne_vhodit_30_vhodit():
-    """Сделок за окно = Σ sdelok_y (4 года): 29 → нет, 30 → да; i=1…3 дают 7,25·4 = 29 / 7,5·4 = 30."""
     pul = {"S1": [_tochka(1, 7.25), _tochka(2, 7.5), _tochka(3, 20)]}
     assert [r["sobol_i"] for r in T.top10_po_sk(pul)["S1"]] == [3, 2]
     assert [r["sobol_i"] for r in T.top10_po_sk(pul, 0)["S1"]] == [3, 2, 1]
@@ -58,10 +73,9 @@ def test_vorota_29_ne_vhodit_30_vhodit():
 
 
 def test_mutaciya_vorota_po_prinyato_lovitsya(monkeypatch):
-    """№ 41: ворота по `prinyato` (принятые сигналы) вместо реальных сделок: точка с 29 сделками, но большим prinyato, прошла бы."""
     pul = {"S1": [_tochka(1, 7.25, prinyato=500), _tochka(2, 7.5, prinyato=1)]}
-    monkeypatch.setattr(P, "sdelok_okno", lambda r: float(r.get("prinyato", 0)))
-    assert [r["sobol_i"] for r in T.top10_po_sk(pul)["S1"]] != [2]       # мутант пускает i=1 и не пускает i=2
+    monkeypatch.setattr(P, "sdelok_okno", lambda r: float(r.get("prinyato", 0)))     # № 41: ворота по prinyato вместо сделок
+    assert [r["sobol_i"] for r in T.top10_po_sk(pul)["S1"]] != [2]       # мутант пускает i=1 (29 сделок) и не пускает i=2 (30)
 
 
 def _vse(t2):
