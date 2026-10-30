@@ -37,9 +37,10 @@ def max_data(p) -> pd.Timestamp | str:
     return max(m) if m else "NODATES"
 
 
-def usech(src: Path, dst: Path) -> tuple[int, int, str | None]:
-    """Копия с записями, где все даты <= 2021-12-31: (оставлено, отброшено, max дата <= 2021)."""
-    ok = [z for z in _zapisi(src) if all(d <= GRANICA for d in _daty(z))]
+def usech(src: Path, dst: Path, granica=None) -> tuple[int, int, str | None]:
+    """Копия с записями, где все даты <= granica (умолч. GRANICA = 2021-12-31): (оставлено, отброшено, max дата)."""
+    g = pd.Timestamp(GRANICA if granica is None else granica)
+    ok = [z for z in _zapisi(src) if all(d <= g for d in _daty(z))]
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_text(json.dumps(ok, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     m = [d for z in ok for d in _daty(z)]

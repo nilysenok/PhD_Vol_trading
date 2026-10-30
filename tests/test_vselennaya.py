@@ -61,12 +61,27 @@ def test_bez_oborota_ne_v_U_i_v_otchet(env):
     assert V.bez_oborota("2016-06-01", s2, r) == {"Z"}
 
 
-def test_otkaz_ot_2022(env):
-    with pytest.raises(ValueError):
-        V.sostav("2022-01-03", env[0])
-    with pytest.raises(ValueError):
-        V.U("2022-01-03", sostav_path=env[0], root=env[1])
-    with pytest.raises(ValueError):
+def test_otkaz_ot_2022(env, tmp_path, monkeypatch):
+    """Без отметки снятого замка ≥ 2022 — отказ именно из-за замка (а не из-за устаревшего состава/пустого года)."""
+    from fastbt import period_v2
+    monkeypatch.setattr(period_v2, "OTMETKA", tmp_path / "net.json")
+    for f in (lambda: V.sostav("2022-01-03", env[0]), lambda: V.U("2022-01-03", sostav_path=env[0], root=env[1]),
+              lambda: V.oborot_goda("A", 2022, str(env[1]))):
+        with pytest.raises(ValueError, match="нет отметки"):
+            f()
+
+
+def test_s_otmetkoy_granitsa_goda_wf(env, tmp_path, monkeypatch):
+    """С отметкой: 2026 (последний год wf) читается, 2027 — отказ; год 2022 без строк оборота — отказ (Д4), не 0.0."""
+    from fastbt import period_v2
+    (tmp_path / "otm.json").write_text("{}")
+    monkeypatch.setattr(period_v2, "OTMETKA", tmp_path / "otm.json")
+    (env[1] / "daily_value" / "A.csv").write_text("date,value\n2026-02-27,7\n")
+    V.oborot_goda.cache_clear()
+    assert V.oborot_goda("A", 2026, str(env[1])) == 7.0
+    with pytest.raises(ValueError, match="позже конца"):
+        V.oborot_goda("A", 2027, str(env[1]))
+    with pytest.raises(ValueError, match="нет строк года"):
         V.oborot_goda("A", 2022, str(env[1]))
 
 

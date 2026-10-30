@@ -29,21 +29,7 @@ grep -q '^OK versii' logs_versii.txt || fail "версии пакетов ≠ п
 
 say "4/5 код: kod_$KOD_SHORT.tar.gz -> kod/$KOD_SHA (только чтение)"
 [ "$(sha_file "$KOD_TAR")" = "$KOD_SHA" ] || fail "sha256 tar ≠ VERSIYA"
-if [ ! -d "$KOD_DIR" ]; then
-  tmp="$P/kod/.raspakovka_$$"
-  mkdir -p "$tmp"
-  tar -xzf "$KOD_TAR" -C "$tmp" --strip-components=1
-  [ -z "$(find "$tmp" \( -path '*/data/*' -o -name '*test_locked*' -o -name '*test1_2022_2024*' \) -print -quit)" ] || fail "в tar кода есть data/ или test_locked"
-  [ -z "$(find "$tmp" \( -name __pycache__ -o -name '*.pyc' -o -name '*.nbi' -o -name '*.nbc' \) -print -quit)" ] || fail "в tar кода есть __pycache__/numba-кэш — кэш привязан к машине, пересоберите perenos/"
-  nakl=$(kv nakladka)                   # файлы манифеста, которые fastbt читает от корня кода (VERSIYA: nakladka)
-  if [ -n "$nakl" ]; then
-    awk -F'\t' 'NR > 1 && NF { print (NF == 7 ? $6 : $1) }' "$MANIFEST" | { grep -E "$nakl" || true; } \
-      | while IFS= read -r p; do mkdir -p "$tmp/$(dirname "$p")"; cp "data/$p" "$tmp/$p"; done
-  fi
-  sha_spisok "$tmp" > "$KOD_SUMS"
-  mv "$tmp" "$KOD_DIR"
-  chmod -R a-w "$KOD_DIR"
-fi
+raspakovat_kod
 kod_cel
 otmetka_paketa
 say "   файлов кода $(wc -l < "$KOD_SUMS" | tr -d ' '), каталог только для чтения"
