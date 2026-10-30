@@ -1,0 +1,24 @@
+# Куб отбора v7, S6 VWAP (Ж-153, Ж-155 п. 2, Ж-156 п. 3, Ж-157 п. 2; план V7-1a). Правила, min_uderzhanie и seed — как в kub_S1.yaml v7;
+# оси otnositelno у S6 нет (Ж-155 п. 2: S1–S4). N = 50 000 (Ж-157 п. 2: S6 — низкий бюджет). sha256 — в SHA256SUMS. Центр ± 1 шаг от сетки куба v6.
+v: 5
+format: progon-kub
+setka: v7
+data: 2026-10-31
+baza: {setka: v6, kub_sha: 64be8646701d0b2743c0315428fcfe0dbbf7702e69b823e1cd3234f4cc28fa5d}
+sid: S6
+tip: kontr
+periody: [train4, v2, wf]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261105, seed2: 20261106, scramble: true, N: 50000, morris_seed: 20261104}
+suzhenie: "centr±1"
+min_uderzhanie: {dney: 2, tau1: spravka}
+
+signal:
+  vwap_window: {setka: [18, 20, 25], centr: 20}
+  dev_mult:    {setka: [1.5, 1.75, 2.0], centr: 1.75}
+  dir_bias:    {setka: ["OFF", "ON"], centr: "ON"}
+  filter_set:  {setka: [1, 2, 3], centr: 2}
+
+osi7:
+  k_okup: {setka: [net, 3], vykl: net, p_vykl: 0.5, zhdet: [V7-3], otkuda: "Ж-150, Ж-156 п. 3", smysl: "вход, только если ожидаемый валовой PnL по терцили ранга и корзине удержания покрывает k × издержки"}
