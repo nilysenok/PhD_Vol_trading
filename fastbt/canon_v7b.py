@@ -21,6 +21,7 @@ GOTOVY_B = c7.GOTOVY_V7
 
 def load_kub(sid: str, root: Path = c7.KUB7) -> dict:
     """Куб v7; у импульса ключ `s3` — куб S3 v6 как есть (источник значений общих осей)."""
+    c7.sverit_sha(sid, root)
     k = yaml.safe_load((Path(root) / f"kub_{sid}.yaml").read_text(encoding="utf-8"))
     if sid in IMPULS:
         k["s3"] = c6.load_kub("S3")
