@@ -140,6 +140,21 @@ def _atomic_write(path: Path, data: bytes) -> None:
     os.replace(tmp, path)
 
 
+def _ne_zatirat_wf(path: Path) -> None:
+    """Ряд с датами ≥ 2022 (wf) при несошедшемся маркере не пересобирается dev-рядом ≤ 2021: громкий отказ."""
+    m = marker(path)
+    if not (path.exists() and m.exists()):       # нет файла / нет маркера: сборка как раньше
+        return
+    try:
+        mx = pd.Timestamp(pd.read_parquet(path, columns=["date"])["date"].max())
+    except Exception:                            # оборванный файл (нет футера): дат не узнать — пересборка как раньше
+        return
+    sf, sm = sha256(path), m.read_text().strip()
+    if mx >= END and sf != sm:
+        raise RuntimeError(f"{path}: ряд с датами ≥ 2022 (wf), маркер не сходится — не перезаписываю dev-рядом ≤ 2021; "
+                           f"sha файла {sf}, sha маркера {sm}")
+
+
 def ensure(path: Path, main: Path | None = None) -> Path:
     """Собрать ряд, если он не готов (data/fastbt в git не идёт). Запись: временный файл в той же папке,
     os.replace, затем маркер с хэшем; параллельные процессы идут по очереди под flock."""
@@ -148,6 +163,7 @@ def ensure(path: Path, main: Path | None = None) -> Path:
     with open(path.with_name(f".{path.name}.lock"), "w") as lk:
         fcntl.flock(lk, fcntl.LOCK_EX)
         if not is_ready(path):
+            _ne_zatirat_wf(path)
             marker(path).unlink(missing_ok=True)
             tmp = path.with_name(f".{path.name}.{os.getpid()}.parquet.tmp")
             build(main).to_parquet(tmp, index=False)

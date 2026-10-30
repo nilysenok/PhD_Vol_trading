@@ -31,7 +31,7 @@ POS_PRE2026 = STRAT / "walkforward_v4" / "daily_positions_pre2026.parquet"
 TICKERS = sorted(["AFLT", "ALRS", "HYDR", "IRAO", "LKOH", "LSRG", "MGNT", "MOEX",
                   "MTLR", "MTSS", "NVTK", "OGKB", "PHOR", "RTKM", "SBER", "TATN", "VTBR"])
 
-if "FASTBT_DATA_ROOT" not in os.environ:
+if "FASTBT_DATA_ROOT" not in os.environ and __name__ != "__main__":     # `-m fastbt.data`: build() импортирует fastbt.data вторым модулем → flock на себя
     from fastbt.daily_1850 import ensure as _ensure
     _ensure(OHLCV, MAIN)            # нет файла — собрать из candles_10m (≤ 2021)
 
