@@ -77,7 +77,7 @@ def zhurnal(sr, comm: float) -> tuple:
     своего интервала [вход; выход]; g вне интервалов сделок и комиссия строк без события — ne_otneseno (по датам, в x-единицах).
     Комиссия строки делится поровну между событиями в ней: сумма точна, разбивка по сделкам — приближённая (ограничение)."""
     df, inv, eng, rs, keep, col = _seti(sr)
-    T, out, tp, ne, lo = int(keep.sum()), [], np.zeros((len(rs), int(keep.sum()))), np.zeros(int(keep.sum())), 0
+    out, tp, ne, lo = [], np.zeros((len(rs), int(keep.sum()))), np.zeros(int(keep.sum())), 0
     for ti, r in enumerate(rs):
         t = sr.tikery[ti]
         dt, b = sr.evr.inp.meta[t]["dates"], sr.evr._b(t, PERIOD)
@@ -85,25 +85,42 @@ def zhurnal(sr, comm: float) -> tuple:
         sl = slice(lo, lo + len(r.g))
         lo = sl.stop
         di, cn = inv[sl], eng.cnt[inv[sl]]
-        ok, own, sg, sob = keep[di], np.zeros(len(r.g), bool), np.zeros(len(r.g)), []
-        for tr in (x for x in r.trades if x.parent is None):
-            k0, kg, ke = max(tr.row0, a) - a, _k_dohoda(tr, b) - a, _k_vyhoda(tr, r, a, b)
-            if kg < k0:
-                continue
-            ks = np.arange(k0, kg + 1)
-            own[ks], sg[ks] = True, tr.side
-            sob.append((k0, ke, len(out)))
-            out.append(_zapis(t, dt, tr, b, float(r.sides[k0]) or 1.0, float(np.sum((r.g[ks] / cn[ks])[ok[ks]])), 0.0))
-        rk, nsob = r.sides * comm / cn * ok, np.zeros(len(r.g))   # комиссия строки делится поровну между событиями (входы/выходы) в ней
-        for k0, ke, _ in sob:
-            nsob[k0] += 1
-            nsob[ke] += 1
-        for k0, ke, j in sob:
-            out[j]["komissiya"] = float(rk[k0] / nsob[k0] + rk[ke] / nsob[ke])
-        np.add.at(ne, col[di[ok & ~own]], (r.g / cn)[ok & ~own])
-        np.add.at(ne, col[di[ok & (nsob == 0)]], -rk[ok & (nsob == 0)])   # комиссия строк без событий журнала
-        tp[ti, col[di][ok]] += (r.expo * sg)[ok]
+        ok = keep[di]
+        g_ost, k_ost = r.g / cn, r.sides * comm / cn * ok          # остатки строки после ног (в x-единицах)
+        for leg in _NOGI.get(id(r), [r]):                          # лестница: ноги по w/2 считаются отдельно (иначе g двух ног на одном интервале)
+            sg, g_ost, k_ost = _noga(out, leg, (t, dt, a, b), cn, ok, comm, (g_ost, k_ost))
+            tp[ti, col[di][ok]] += (leg.expo * sg)[ok]
+        np.add.at(ne, col[di[ok]], (g_ost - k_ost)[ok])            # g вне ног и комиссия строк без события
     return out, tp, ne
+
+
+def _noga(out, leg, tdab, cn, ok, comm, ost) -> tuple:
+    """Сделки ноги (родители — g и комиссия; частичные выходы и добавки — отдельными строками со ссылкой `roditel`). → (знак, остатки)."""
+    t, dt, a, b = tdab
+    g_ost, k_ost = ost
+    rk, nsob = leg.sides * comm / cn * ok, np.zeros(len(leg.g))      # комиссия строки делится поровну между событиями (входы/выходы) в ней
+    sg, own, sob, idx, vl = np.zeros(len(leg.g)), np.zeros(len(leg.g), bool), [], {}, np.full(len(leg.g), -1)
+    for n, tr in enumerate(leg.trades):
+        if tr.parent is not None:
+            continue
+        k0, kg, ke = max(tr.row0, a) - a, _k_dohoda(tr, b) - a, _k_vyhoda(tr, leg, a, b)
+        if kg < k0:
+            continue
+        ks = np.arange(k0, kg + 1)
+        sg[ks], own[ks] = tr.side, True
+        nsob[k0] += 1
+        nsob[ke] += 1
+        sob.append((k0, ke, len(out)))
+        idx[n], vl[ks] = len(out), len(out)               # строка-владелец: позднейшая сделка перекрывает (как wr в run_e1)
+        out.append(_zapis(t, dt, tr, b, float(leg.sides[k0]) or 1.0, 0.0, 0.0))
+    for k0, ke, j in sob:
+        out[j]["komissiya"] = float(rk[k0] / nsob[k0] + rk[ke] / nsob[ke])
+        out[j]["pnl_do_izderzhek"] = float(np.sum((leg.g / cn)[(vl == j) & ok]))
+    for tr in (x for x in leg.trades if x.parent is not None and x.parent in idx):   # ноги-дочерние: g/комиссия уже в родителе (gross × вес)
+        z = _zapis(t, dt, tr, b, out[idx[tr.parent]]["ves"], 0.0, 0.0)
+        out.append({**z, "roditel": idx[tr.parent], "frac": tr.frac, "vhodit_v_roditelya": True})
+    g_ost = g_ost - np.where(own, leg.g / cn, 0.0)
+    return sg, g_ost, k_ost - np.where(nsob > 0, rk, 0.0)
 
 
 def _k_dohoda(tr, b: int) -> int:
@@ -126,11 +143,34 @@ def _zapis(t, dt, tr, b: int, w: float, g: float, kom: float) -> dict:
                 pnl_do_izderzhek=g, komissiya=kom, fee_in=tr.fee_in, fee_out=tr.fee_out)
 
 
+_NOGI: dict = {}     # id(строки ряда тикера) → ноги лестницы (E1Rows), пока идёт пересчёт точки
+
+
+def _zahvat(mod, imya: str):
+    """Подмена mod.sum_rows: запоминает ноги, из которых сложена строка (оригинал вызывается как есть)."""
+    orig = getattr(mod, imya)
+
+    def f(rs):
+        res = orig(rs)
+        _NOGI[id(res)] = list(rs)
+        return res
+    return orig, f
+
+
 def perescet(sid: str, seed: str, i: int, koren, zam, kesh=KESH) -> dict:
     """Пересчёт точки i: G4.1 → счёт → суммы port, x, tik_poz, журнал, метрики, кэш .npz. → dict."""
     pt, rz, r0 = proverit_klyuch(sid, seed, i, koren, zam)
     ps.fabrika, sr = None, ps.sreda(sid, rz)
-    row, x, _ = ps.schitat_tochku(sr, sid, i, pt, "perescet", False, r0.get("sloy") == "fast", lm.V22, rz)[0:3]
+    from fastbt import etap1_eval_v2, eval_v6_ispoln
+    _NOGI.clear()
+    mods = [(m, *_zahvat(m, "sum_rows")) for m in (etap1_eval_v2, eval_v6_ispoln)]
+    for m, _, f in mods:
+        m.sum_rows = f
+    try:
+        row, x, _ = ps.schitat_tochku(sr, sid, i, pt, "perescet", False, r0.get("sloy") == "fast", lm.V22, rz)[0:3]
+    finally:
+        for m, orig, _ in mods:
+            m.sum_rows = orig
     if row["status"] != "ok":
         raise ValueError(f"{sid} i={i}: статус {row['status']}: {row.get('prichina')}")
     pp, _, sd, _ = sr.evr.poz
