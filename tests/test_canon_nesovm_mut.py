@@ -26,12 +26,12 @@ def tochki(sid):
     for row in u:
         pt = {n: g[c6._indeks(x, len(g), sp.get("p_vykl"))] for (n, g, sp), x in zip(ox, row)}
         real = c6.canon_v6(sid, pt, kub)
-        with mock.patch.object(nsv, "PRAVILA", ()):
+        with mock.patch.object(nsv, "PRAVILA", nsv.PRAVILA[8:]):     # без отказов 1–8; правило 9 (не отказ) остаётся
             c0 = c6.canon_v6(sid, pt, kub)
         if c0 is None:
             assert real is None
             continue
-        out.append((pt, real, c0, {i + 1 for i, f in enumerate(nsv.PRAVILA) if f(sid, c0)}, otkazy(sid, c0)))
+        out.append((pt, real, c0, {i + 1 for i, f in enumerate(nsv.PRAVILA[:8]) if f(sid, c0)}, otkazy(sid, c0)))   # 9 — не отказ оценщика
     return out
 
 
@@ -52,7 +52,7 @@ def test_poryadok_do_canon_v5_na_sluchajnyh_tochkah(sid):
     for row in u:
         pt = {n: g[c6._indeks(x, len(g), sp.get("p_vykl"))] for (n, g, sp), x in zip(ox, row)}
         real = c6.canon_v6(sid, pt, kub)
-        with mock.patch.object(nsv, "PRAVILA", ()):
+        with mock.patch.object(nsv, "PRAVILA", nsv.PRAVILA[8:]):
             c0 = c6.canon_v6(sid, pt, kub)
         assert (real is None) == (c0 is None or nsv.nesovm(sid, c0))
 
@@ -75,7 +75,7 @@ def test_vybroshennaya_tochka_poluchila_by_otkaz_po_prichine(sid):
 def test_edinichnye_srabatyvaniya_v_vyborke():
     """Правило 8 в выборке Соболя (2000 точек × 6 кубов) одно не срабатывает (только с 1 или 7): его точность — адресной точкой ниже.
     Правило 6 после свёртки правила 5 (толкования 30.10 06:40) срабатывает само: раньше его накрывало 5 (7 точек, всегда с 5)."""
-    odin = {k: 0 for k in range(1, len(nsv.PRAVILA) + 1)}
+    odin = {k: 0 for k in range(1, 9)}      # правило 9 не отказ оценщика — test_canon_bb_predel.py
     for sid in SIDS:
         for _, _, _, trig, _ in tochki(sid):
             if len(trig) == 1:

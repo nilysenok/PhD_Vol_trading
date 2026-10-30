@@ -3,7 +3,8 @@
 Каждое правило — ровно то условие, по которому оценщик (или движок) отказывает точке: NeSchitana / ValueError. Условия не шире и не уже.
 Отказ в оценщике остаётся защитой. Данных не читает. Правила — функции `(sid, q) -> bool` (True — точка несовместима); q — точка до canon_v5.
 Правило 1 — eval_v6_ispoln.proverit + exec_e._check_params; 2 — exec_e_parab.parab_check; 3 — eval_v5._rows (a_rang, RunStop);
-4 — eval_v6_piv.proverit (pol_puti); 5, 6 — eval_v6_piv.proverit (пивот-стоп); 7 — eval_v6._rows (norm) и eval_v5._rows (rodnoy_ok).
+4 — eval_v6_piv.proverit (pol_puti); 5, 6 — eval_v6_piv.proverit (пивот-стоп); 7 — eval_v6._rows (norm) и eval_v5._rows (rodnoy_ok);
+9 — не отказ, а структурный ноль сигнала S2 (предел Боллинджера).
 """
 from __future__ import annotations
 
@@ -79,9 +80,22 @@ def rodnoy_tau_vyhod_lim(sid: str, q: dict) -> bool:
     return edinica(q.get("tejk", NET)) == "rodnoy" and q.get("vyhod_lim", NET) == "da" and q.get("tau", NET) != NET
 
 
-PRAVILA = (vyhod_lim_t_vyhod, parab_drugie, trend_tejk_sily, pol_puti_ma_tip, piv_edinstvennyj_stop, piv_pol_puti, rodnoy_uroven,
-           rodnoy_tau_vyhod_lim)
+def predel_z(w: int) -> float:
+    """Точный максимум |close − SMA_w| / σ_w в окне w, куда входит текущий бар, σ — выборочная (ddof=1; indicators.calc_std): (w−1)/√w.
+    Достигается, когда w−1 прошлых цен равны; при ddof=0 было бы √(w−1)."""
+    return (w - 1) / w ** 0.5
 
+
+def bb_predel(sid: str, q: dict) -> bool:
+    """9 (не отказ оценщика — структурный ноль сигнала, расследование s2nol, лист Б): S2 при SMA и масштабе «окно» требует |z| ≥ bb_std,
+    а |z| ≤ predel_z(bb_window) → при bb_std ≥ предела сигналов нет ни на каком ряде. Для ma_tip ≠ sma предел не доказан (MA другая) — не трогаем;
+    norm = s252: σ за 252 дня, предел 15,8 — вне сетки. Откат: убрать из PRAVILA."""
+    return (sid == "S2" and q.get("ma_tip", "sma") == "sma" and q.get("norm", "okno") == "okno"
+            and float(q["bb_std"]) >= predel_z(int(q["bb_window"])))
+
+
+PRAVILA = (vyhod_lim_t_vyhod, parab_drugie, trend_tejk_sily, pol_puti_ma_tip, piv_edinstvennyj_stop, piv_pol_puti, rodnoy_uroven,
+           rodnoy_tau_vyhod_lim, bb_predel)
 
 def nesovm(sid: str, q: dict) -> bool:
     return any(p(sid, q) for p in PRAVILA)

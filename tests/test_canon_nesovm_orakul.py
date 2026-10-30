@@ -81,7 +81,7 @@ def rashozhdeniya(sid):
     """Точки, где правила и оракул расходятся: [(c0, правила, отказы)]. Пусто — каноны не получают отказ и не шире отказа."""
     bad = []
     for c0, otk in vyborka(sid):
-        trig = {i + 1 for i, f in enumerate(nsv.PRAVILA) if f(sid, c0)}
+        trig = {i + 1 for i, f in enumerate(nsv.PRAVILA[:8]) if f(sid, c0)}     # 1–8 — отказы оценщика; 9 (bb_predel) — не отказ, свой тест
         if trig & {1, 8}:
             trig |= {1, 8}                  # движок (exec_e._check_params) одним текстом отказывает и по правилу 1, и по правилу 8
         if not otk <= trig or bool(trig) != bool(otk):
@@ -100,7 +100,7 @@ def test_vyborka_nepustaya_po_kazhdoj_prichine():
 
 
 def test_mutaciya_pravilo_snyato_lovitsya_svojstvom():
-    for i in range(len(nsv.PRAVILA)):
+    for i in range(8):                                  # 1–8; правило 9 (не отказ) — test_canon_bb_predel.py
         with mock.patch.object(nsv, "PRAVILA", tuple(p for k, p in enumerate(nsv.PRAVILA) if k != i)):
             assert any(rashozhdeniya(s) for s in SIDS), i
 
