@@ -32,6 +32,17 @@ def _ryad(seed, steps_test, steps_val, f0, extra=None):
     return d
 
 
+def _v1(old):
+    """v1: σ̂ (float32) всех test-строк шага 8 прежнего ряда и хвоста, которого в прежнем нет (σ̂ хвоста - свои значения, не К-5)."""
+    t = old[(old.part == "test") & (old.step == 8)]
+    tail = pd.DataFrame([dict(date=t.date.max() + pd.offsets.BDay(1), ticker=k, rv_pred=4.0e-4 * (1 + i)) for i, k in enumerate(TK)])
+    return pd.concat([t[["date", "ticker", "rv_pred"]], tail]).assign(sigma_pred_h1=lambda d: np.sqrt(d.rv_pred).astype("float32"))[["date", "ticker", "sigma_pred_h1"]]
+
+
+def _sk(old, new, **kw):
+    return W.sklejka(old, new, _v1(old), **kw)
+
+
 @pytest.fixture
 def kit():
     old = _ryad(1, range(1, 9), (7, 8, 9), 1.2)
@@ -43,7 +54,7 @@ def kit():
 
 def test_sklejka_znacheniya(kit):
     old, new = kit
-    s = W.sklejka(old, new)
+    s = _sk(old, new)
     k = ["date", "ticker", "step", "part"]
     a = old[old.step <= 8].merge(s, on=k, suffixes=("", "_s"))
     assert len(a) == (old.step <= 8).sum() and np.array_equal(a.leg_raw, a.leg_raw_s) and np.array_equal(a.F_sm, a.F_sm_s)
@@ -57,10 +68,15 @@ def test_sklejka_znacheniya(kit):
     assert (v[v.step == 7].leg_raw.values == old[(old.part == "val") & (old.step == 7)].leg_raw.values).all()
 
 
-def test_hvost_shaga_8_iz_k5_s_prezhnim_F(kit):
+def test_hvost_shaga_8_iz_v1_s_prezhnim_F(kit):
     old, new = kit
-    s = W.sklejka(old, new)
+    s = _sk(old, new)
     t8 = s[(s.part == "test") & (s.step == 8)]
+    tl = t8[~t8.set_index(["date", "ticker"]).index.isin(old[(old.part == "test") & (old.step == 8)].set_index(["date", "ticker"]).index)]
+    v = _v1(old).merge(tl, on=["date", "ticker"])
+    assert len(v) == len(TK) and np.array_equal(v.rv_pred, v.sigma_pred_h1.astype("float64") ** 2)  # rv = σ̂², не К-5
+    assert np.allclose(v.leg_raw * v.F_sm, v.rv_pred, rtol=1e-12)
+    assert not np.isclose(v.rv_pred, new[(new.part == "test") & (new.step == 8) & new.date.isin(tl.date)].rv_pred.values[: len(v)]).any()
     assert len(t8) == len(old[(old.part == "test") & (old.step == 8)]) + len(TK)
     assert t8.F_sm.nunique() == 1 and t8.F_sm.iloc[0] == old[(old.part == "test") & (old.step == 8)].F_sm.iloc[0]
     assert np.allclose(t8.rv_pred, t8.leg_raw * t8.F_sm, rtol=1e-12)
@@ -68,11 +84,11 @@ def test_hvost_shaga_8_iz_k5_s_prezhnim_F(kit):
 
 def test_g1_chestnyj_i_mutatsiya_granitsa_6(kit):
     old, new = kit
-    itog = W.sklejka(old, new).query("part == 'test'")
+    itog = _sk(old, new).query("part == 'test'")
     staryj = old[old.part == "test"]
     assert W.g1(itog, staryj)["ok"]
     with pytest.raises(AssertionError):
-        W.sklejka(old, new, posl=6)  # граница склейки сдвинута: шаги 7-8 взяты бы из нового прогона
+        _sk(old, new, posl=6)  # граница склейки сдвинута: шаги 7-8 взяты бы из нового прогона
     nt = new[new.part == "test"]
     bad = itog.drop(columns=["leg_raw"]).merge(nt[["date", "ticker", "step", "leg_raw"]], on=["date", "ticker", "step"])  # leg_raw шагов 1-8 из К-5
     assert not W.g1(bad, staryj)["ok"]
@@ -81,14 +97,14 @@ def test_g1_chestnyj_i_mutatsiya_granitsa_6(kit):
 def test_mutatsiya_9_10_iz_prezhnego_ryada(kit):
     old, new = kit
     with pytest.raises(AssertionError):
-        W.sklejka(old, new, posl=10)  # всё из прежнего: шагов 9-10 К-5 нет
+        _sk(old, new, posl=10)  # всё из прежнего: шагов 9-10 К-5 нет
     with pytest.raises(AssertionError):
-        W.sklejka(old, new, posl=9)
+        _sk(old, new, posl=9)
 
 
 def test_g3_dyra_i_konec(kit):
     old, new = kit
-    itog = W.sklejka(old, new).query("part == 'test'")
+    itog = _sk(old, new).query("part == 'test'")
     konec = itog.date.max()
     assert W.g3(itog, new, konec)["ok"]
     dyra = itog.drop(itog[itog.step == 9].index[5])  # одна строка потеряна
@@ -102,7 +118,7 @@ def test_g3_dyra_i_konec(kit):
 
 def test_g2_nezavisimyj_s2_shaga_10_i_mutatsiya_val9_staryj(kit):
     old, new = kit
-    s = W.sklejka(old, new)
+    s = _sk(old, new)
     f = W.f_s2_embargo(s[s.part == "val"], s, 1, 10)
     itog = s[(s.part == "test") & (s.step == 10)].assign(F_sm=f)
     assert W.g2(itog, s, 1)["ok"]

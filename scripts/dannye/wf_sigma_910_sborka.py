@@ -3,7 +3,7 @@
 scripts/analysis/ не правится. r2_sborka_test читает vyr/final_d0_h{h}_test (test_locked корня FASTBT_MAIN) -> склеенный файл кладётся в
 теневой корень (настоящие файлы, не симлинки: allowed() сверяет resolve()); выход пишется в теневой test_locked/R2/final, оттуда копия в out.
 Склейка: тест и val шагов <= 8 - основная копия; тест и val шагов 9-10 - К-5; строки теста шага 8, которых нет в основной копии (хвост
-24-30.12.2024: старый ряд оборван по цели), - из К-5 (↺ другой seed, 17/85 строк), F_sm шага 8 - старый. F_sm шагов 9-10 во входе пересчитан по
+24-30.12.2024, 17/85 строк), - из v1 (sigma_hyb): rv_pred = σ̂² (float32, отн. ошибка <= 1.2e-7), F_sm шага 8 - старый, leg_raw = rv_pred / F_sm. F_sm шагов 9-10 во входе пересчитан по
 правилу R1 (gibrid_bias.s2_est) на склеенных val - иначе kontrol_r1 сборки отвергает вход. Выход - не в data/.
   python3 scripts/dannye/wf_sigma_910_sborka.py --main <основная копия> --k5 <k5/out> --shadow <k6/shadow> --out <k6/out>"""
 import argparse
@@ -42,17 +42,24 @@ def f_sm_r1(val, k):
     return float(np.exp(BI.s2_est("sm", E, "c", k) / 2))
 
 
-def sklejka(old, new, posl=POSL_STARYJ):
-    """old, new - final_d0_h{h}_test (part, step, leg_raw, rv_actual, F_sm, rv_pred ...). -> склеенный вход сборки."""
+def sklejka(old, new, v1=None, posl=POSL_STARYJ):
+    """old, new - final_d0_h{h}_test; v1 - sigma_hyb_h{h}_dev (σ̂ хвоста шага 8). -> склеенный вход сборки."""
     o, n = old[old.step <= posl], new[new.step > posl]
     assert len(n) and set(n.step) == {9, 10}, "К-5: нужны шаги 9-10"
     ot = o[o.part == "test"]
     Fst = ot.groupby("step").F_sm.first()
-    fill = new[(new.part == "test") & (new.step <= posl)]
-    fill = fill[~fill.set_index(KEYS).index.isin(ot.set_index(KEYS).index)].copy()
-    assert fill.step.isin([posl]).all(), "дыры старого ряда - только хвост шага 8"
+    assert v1 is not None, "хвост шага 8 - из v1 (σ̂), v1 обязателен"
+    nt = new[(new.part == "test") & (new.step <= posl)]
+    gap = nt[~nt.set_index(KEYS).index.isin(ot.set_index(KEYS).index)]
+    assert gap.step.isin([posl]).all(), "дыры старого ряда - только хвост шага 8"
+    sg = [c for c in v1.columns if c.startswith("sigma_pred_h")][0]
+    fill = v1.merge(gap[KEYS], on=["date", "ticker"])  # хвост = ключи дыры, значения - v1; rv = σ̂² (σ̂ = float32(sqrt(rv_pred)))
+    assert len(fill) == len(gap), "v1 не содержит весь хвост шага 8"
+    fill = fill.assign(year=2016 + posl, part="test", rv_actual=np.nan, design=ot.design.iloc[0])
     fill["F_sm"] = fill.step.map(Fst).values
-    fill["rv_pred"] = fill.leg_raw * fill.F_sm
+    fill["rv_pred"] = fill[sg].astype("float64") ** 2
+    fill["leg_raw"] = fill.rv_pred / fill.F_sm
+    fill = fill.drop(columns=sg)
     s = pd.concat([o, fill, n], ignore_index=True)
     val = s[s.part == "val"]
     for k in (9, 10):
@@ -147,25 +154,35 @@ def schet(shadow, out):
     return R.OUTDIR
 
 
+def shapka(vhody, vyhody):
+    """Шапка выхода: {имя: sha256 файла} для входов и выходов (пути - Path)."""
+    return {k: _sha(p) for k, p in {**vhody, **vyhody}.items()}
+
+
 def main():
-    ap = argparse.ArgumentParser()
+    ap =argparse.ArgumentParser()
     for a in ("main", "k5", "shadow", "out", "novye"):  # novye - корень с data/regen/features_pit_v3.parquet без ДСВД (rv для Д1)
         ap.add_argument("--" + a, required=True)
     a = ap.parse_args()
     main_, k5, out = Path(a.main), Path(a.k5), Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     mr = main_ / "data" / "regen"
-    spl, shapka = {}, {}
+    spl, vhody = {}, {}
     for h in (1, 5):
         po, pn = mr / "test_locked" / "vyr" / f"final_d0_h{h}_test.parquet", k5 / "test_locked_vyr" / f"final_d0_h{h}_test.parquet"
-        spl[h] = sklejka(pd.read_parquet(po), pd.read_parquet(pn))
-        shapka.update({f"staryj_h{h}": _sha(po), f"k5_h{h}": _sha(pn)})
-    od = schet(postroit(main_, a.shadow, spl), out)
+        pv = mr / "wf" / "ch4_sigma" / f"sigma_hyb_h{h}_dev.parquet"
+        spl[h] = sklejka(pd.read_parquet(po), pd.read_parquet(pn), pd.read_parquet(pv))
+        vhody.update({f"staryj_h{h}": po, f"k5_h{h}": pn, f"v1_h{h}": pv})
+    sh = postroit(main_, a.shadow, spl)
+    vhody.update({f"sklejka_h{h}": sh / "data" / "regen" / "test_locked" / "vyr" / f"final_d0_h{h}_test.parquet" for h in (1, 5)})
+    od = schet(sh, out)
     rep = {}
     sys.path.insert(0, str(HERE))
     import wf_sigma_cd as W
     rv = {k: pd.read_parquet(r / "data" / "regen" / "features_pit_v3.parquet", columns=["date", "ticker", "rv"]) for k, r in (("s", main_), ("n", Path(a.novye)))}
-    shapka["rv_staryj"], shapka["rv_novyj"] = (_sha(r / "data" / "regen" / "features_pit_v3.parquet") for r in (main_, Path(a.novye)))
+    vhody.update(rv_staryj=main_ / "data" / "regen" / "features_pit_v3.parquet", rv_novyj=Path(a.novye) / "data" / "regen" / "features_pit_v3.parquet",
+                 kod_sborki=HERE.parent / "analysis" / "r2_sborka_test.py", spec=HERE.parents[1] / "models" / "designs" / "r2" / "r2_A_sborka.yaml")
+    vyhody = {f"vyhod_h{h}": od / f"final_d0_s2emb_h{h}_test.parquet" for h in (1, 5)}
     for h in (1, 5):
         f = od / f"final_d0_s2emb_h{h}_test.parquet"
         shutil.copy2(f, out / f.name)
@@ -174,11 +191,7 @@ def main():
         nov = pd.read_parquet(k5 / "test_locked_vyr" / f"final_d0_h{h}_test.parquet")
         v1 = pd.read_parquet(mr / "wf" / "ch4_sigma" / f"sigma_hyb_h{h}_dev.parquet")
         rep[f"h{h}"] = dict(G1=g1(it, old), G2=g2(it, spl[h], h), G3=g3(it, nov), G4=g4(it, rv["s"], rv["n"], W), G6=g6(it, v1, h))
-        shapka[f"vyhod_h{h}"] = _sha(f)
-        shapka[f"sklejka_h{h}"] = hashlib.sha256(pd.util.hash_pandas_object(spl[h]).values.tobytes()).hexdigest()
-    shapka["kod_sborki"] = _sha(HERE.parent / "analysis" / "r2_sborka_test.py")
-    shapka["spec"] = _sha(HERE.parents[1] / "models" / "designs" / "r2" / "r2_A_sborka.yaml")
-    (out / "sborka_shapka.json").write_text(json.dumps(shapka, indent=1))
+    (out / "sborka_shapka.json").write_text(json.dumps(shapka(vhody, vyhody), indent=1))
     (out / "gates_k6.json").write_text(json.dumps(rep, indent=1, default=str))
     print(json.dumps(rep, indent=1, default=str))
 
