@@ -101,3 +101,9 @@ def zone_ctx(zone: str):
         yield
     finally:
         set_zone(old)
+
+
+def zona_perioda(period: str):
+    """Точки входа счёта: wf — зона wf (данные по 2026-02-28) на время счёта, на выходе (и при ошибке) прежняя зона;
+    прочие периоды — зона не меняется. Пулы — fork: дети наследуют зону родителя, поставленную до создания пула."""
+    return zone_ctx("wf") if period == "wf" else contextlib.nullcontext()

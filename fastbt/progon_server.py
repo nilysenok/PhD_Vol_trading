@@ -234,10 +234,12 @@ def main(argv=None) -> int:
     ap.add_argument("--kod-slit", action="store_true")
     ap.add_argument("--fast", action="store_true", help="быстрый слой (Ж-083) для покрытых точек")
     a = ap.parse_args(argv)
-    kubs, rz, n = kuby_iz_argv(a, ap)
-    if len(kubs) != len(a.kub) and a.kub not in (["v5"], ["v6"]):
-        raise SystemExit("одна стратегия указана дважды")
-    itog = progon(kubs, a.out, a.procs, n, a.prodolzhit, a.kod_slit, a.fast, rz=rz, ledger=a.ledger)
+    from fastbt import zona
+    with zona.zona_perioda(a.period):                               # wf: зона wf до пула (fork — дети наследуют); выход — прежняя зона
+        kubs, rz, n = kuby_iz_argv(a, ap)
+        if len(kubs) != len(a.kub) and a.kub not in (["v5"], ["v6"]):
+            raise SystemExit("одна стратегия указана дважды")
+        itog = progon(kubs, a.out, a.procs, n, a.prodolzhit, a.kod_slit, a.fast, rz=rz, ledger=a.ledger)
     for s, v in itog.items():
         print(f"{s}: посчитано {v['n']}, ошибок {v['oshibok']}, чекпоинт {v['posledniy_i']}, сбой {v['sboy']}")
     return 2 if any(v["sboy"] or v["oshibok"] for v in itog.values()) else 0
