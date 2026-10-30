@@ -30,7 +30,7 @@ def test_den_rebalansirovki_bez_signalov_spisyvaet_komissiyu():
     c = r.m * r.f
     dc = np.abs(np.diff(c))
     assert (dc > 1e-9).sum() > 20                                        # ребалансировок много, сигналов нет
-    ozid = np.concatenate([[0.0], KOM * 2.0 * dc])                        # Σ|P| = 2 (по 1 на тикер), знак не важен
+    ozid = np.concatenate([[0.0], KOM * 1.0 * dc])                        # P = poz/N = ±0,5 -> Σ|P| = 1, знак не важен
     assert (r.kom_tik[1:][dc > 1e-9] > 0).all()
     assert r.kom_tik == pytest.approx(ozid, abs=1e-15)
     ex_port = _run(d).ryad
