@@ -88,4 +88,5 @@ def test_flagi_tolko_paroj_i_tolko_v5(fake, tmp_path):
 def test_zapusk_sobol_spravka_posle_polnogo_prohoda_v_svoj_katalog():
     s = SH.read_text(encoding="utf-8")
     assert "s1 s2 k3 spravka" in s                                         # порядок: полные проходы, затем spravka
-    assert "--rol spravka --t-vyhod close" in s and '${per}_spravka_close' in s
+    assert "--rol spravka --t-vyhod close" in s and '${per}_${pv}spravka_close' in s
+    assert 'pv=""; [ "$kub" = v6 ] && pv="v6_"' in s                      # v5: <per>_spravka_close, v6: <per>_v6_spravka_close

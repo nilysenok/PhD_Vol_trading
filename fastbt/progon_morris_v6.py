@@ -181,18 +181,19 @@ def main(argv=None) -> int:
                     help="быстрый слой (fast_etap1.patched(), как в progon_sobol) — по умолчанию; --no-fast — эталонный путь")
     ap.add_argument("--prodolzhit", action="store_true")
     a = ap.parse_args(argv)
-    from fastbt import sobytiya_e1
+    from fastbt import sobytiya_e1, zona
     sobytiya_e1.trebovat_svod()
     rz = ps.Rezhim("v6", a.period, "seed", False, "t0d")
     ps.OCENSHCHIK_V5 = ("fastbt.eval_v6", "EvaluatorV6")           # setka != progon → ps.ocenshchik берёт этот класс
-    for sid in a.strategii.split(","):
-        i = strategiya(sid, a, a.out, rz, a.r)
-        print(f"{sid}: точек {i['tochek']}, статусы {i['statusy']}, исключений {i['oshibok']}, заморожено {len(i['zamorozheno'])}: {i['zamorozheno']}")
-        for p in (mz.MERTVAYA, mz.NET_SDELOK, mz.MALO):
-            print(f"  {p}: {[k for k, v in i['osi_akt'].items() if v['pometka'] == p]}")
-        if i.get("nol_sdelok"):
-            print(itog_nol(sid, i["nol_sdelok"], i["baza_bez_sdelok"]))
-        [print(f"  ошибка ×{k}: {m}") for m, k in i["prichiny"].items()]
+    with zona.zona_perioda(a.period):                               # wf: зона wf до пула (fork — дети наследуют); выход — прежняя зона
+        for sid in a.strategii.split(","):
+            i = strategiya(sid, a, a.out, rz, a.r)
+            print(f"{sid}: точек {i['tochek']}, статусы {i['statusy']}, исключений {i['oshibok']}, заморожено {len(i['zamorozheno'])}: {i['zamorozheno']}")
+            for p in (mz.MERTVAYA, mz.NET_SDELOK, mz.MALO):
+                print(f"  {p}: {[k for k, v in i['osi_akt'].items() if v['pometka'] == p]}")
+            if i.get("nol_sdelok"):
+                print(itog_nol(sid, i["nol_sdelok"], i["baza_bez_sdelok"]))
+            [print(f"  ошибка ×{k}: {m}") for m, k in i["prichiny"].items()]
     return 0
 
 
