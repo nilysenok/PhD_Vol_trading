@@ -135,12 +135,13 @@ def test_g4_signal_ne_vidit_d_plus_1(sid, rez):
     assert _bez_budushchego(sid, rez)
 
 
-@pytest.mark.parametrize("sid", ["S7", "S8", "S9"])
-def test_g4_mutaciya_d_plus_1_lovitsya(sid, monkeypatch):
+@pytest.mark.parametrize("sid,sdvig", [("S7", 1), ("S8", 25), ("S9", 1)])
+def test_g4_mutaciya_d_plus_1_lovitsya(sid, sdvig, monkeypatch):
+    """S8 (12−1) по построению не зависит от последних 21 дня, поэтому утечку в нём видно только при сдвиге ≥ 22."""
     orig = kv.panel
 
     def pan_d1(c, imoex, metki, s):
-        return np.vstack([orig(c, imoex, metki, s)[1:], np.full((1, c.shape[1]), np.nan)])   # скор дня d+1 в строке d
+        return np.vstack([orig(c, imoex, metki, s)[sdvig:], np.full((sdvig, c.shape[1]), np.nan)])   # скор дня d+sdvig в строке d
 
     monkeypatch.setattr(kv, "panel", pan_d1)
     assert not _bez_budushchego(sid, "den")
