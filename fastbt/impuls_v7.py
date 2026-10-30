@@ -1,0 +1,62 @@
+"""Л1.2 (Ж-146): сигналы S10–S12 из 10-минуток — импульс на 1ч и 2ч (определения: tolkovaniya [31.10 00:04], в1).
+
+S10 — пробой канала из KANAL полных 1ч-баров на последнем полном баре дня; S11 — то же на 2ч (эталон — Ж-107,
+`golaya_tf_v5.impuls_signal`, при t_sig = 18:30 совпадает побайтно); S12 — согласие: S10 и S11 в один день в одну сторону.
+Бар полный, если он закончился ≤ t_sig (момент решения T): бар с концом позже t_sig в сигнал не входит, дни после d тоже.
+Вход — не раньше d+1 (Д2) или в T: это дело исполнителя (Л1.3), здесь только сигнал дня. Читает только переданную ленту;
+лента с днями ≥ 2020-01-01 отвергается. Движок не трогает. Статус: разработка, до аудита.
+"""
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+
+from fastbt import bars_agg as ba
+
+KANAL = 20
+TF = {"S10": "1h", "S11": "2h"}
+GRANITSA = pd.Timestamp("2020-01-01")
+
+
+def _minuty(t_sig: str) -> int:
+    """'ЧЧ:ММ' → минуты от полуночи; вне [10:00; 18:50] — ValueError."""
+    try:
+        h, m = (int(x) for x in str(t_sig).split(":"))
+    except ValueError:
+        raise ValueError(f"t_sig {t_sig!r}: ожидается 'ЧЧ:ММ'") from None
+    t = h * 60 + m
+    if not ba.OPEN_MIN <= t <= ba.CLOSE_MIN:
+        raise ValueError(f"t_sig {t_sig!r} вне окна сигналов 10:00–18:50")
+    return t
+
+
+def proboj(b10: pd.DataFrame, tf: str, t_sig: str, kanal: int = KANAL) -> pd.Series:
+    """Сигнал дня d (±1/0) = пробой канала kanal полных баров tf на последнем полном баре дня (закрыт ≤ t_sig)."""
+    k = ba.K[tf]
+    n_full = (_minuty(t_sig) - ba.OPEN_MIN) // (ba.STEP * k)       # полных баров tf в дне к t_sig
+    f = ba.resample(b10, k)
+    f = f[f["slot"] < n_full].sort_values(["date", "slot"]).reset_index(drop=True)
+    hi = f["high"].shift(1).rolling(kanal).max()
+    lo = f["low"].shift(1).rolling(kanal).min()
+    s = np.where(f["close"] > hi, 1, np.where(f["close"] < lo, -1, 0))
+    s = pd.Series(s, index=f["date"].to_numpy())
+    return s[f["slot"].to_numpy() == n_full - 1]
+
+
+def soglasie(a: pd.Series, b: pd.Series) -> pd.Series:
+    """Согласие двух сигналов: сторона, если обе одинаковы и не нулевые, иначе 0 (день вне одного из рядов = 0)."""
+    idx = a.index.union(b.index)
+    x, y = a.reindex(idx).fillna(0).astype(int), b.reindex(idx).fillna(0).astype(int)
+    return x.where(x == y, 0)
+
+
+def signal_dnya(b10: pd.DataFrame, sid: str, t_sig: str = "18:30") -> pd.Series:
+    """Сигнал дня ±1/0 для sid ∈ {S10, S11, S12}; b10 — 10-минутки (date, slot, OHLCV), как после `bars_agg.prep_10m`."""
+    if sid not in ("S10", "S11", "S12"):
+        raise ValueError(f"sid {sid!r}: ожидается S10, S11 или S12")
+    _minuty(t_sig)
+    if len(b10) and pd.Timestamp(b10["date"].max()) >= GRANITSA:
+        raise ValueError("лента с днями ≥ 2020-01-01: чтение за границей разработки (2020) запрещено")
+    if sid == "S12":
+        return soglasie(proboj(b10, TF["S10"], t_sig), proboj(b10, TF["S11"], t_sig))
+    return proboj(b10, TF[sid], t_sig)
