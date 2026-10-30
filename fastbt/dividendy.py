@@ -26,6 +26,10 @@ TABLE = _DOCS / "2026-10-27_dividendy_2017_2021.csv"
 # 2015–2016 (PR #385): потолок — только dohod.ru, первичные не сверены (primary_checked=no); last_cum_date в файле нет,
 # считается здесь тем же правилом T+2, что и для 2017–2021 (docs/issledovaniya/2026-10-27_dividendy.md), по календарю дневных баров.
 TABLE_2015 = _DOCS / "2026-10-28_dividendy_2015_2016.csv"
+# Д8 (wf, 2022+): корректировка цен по ГОДНЫМ строкам свода, не по полной таблице; зона dev (≤ 2021) и свода нет — прежние таблицы.
+SVOD = _DOCS / "div_sverka_svod.csv"
+MARKER_SVOD = "SVOD"        # FASTBT_Z2_DIV=SVOD — 2022+ из годных строк свода
+SVOD_OT ="2022-01-01"      # до этой даты — прежние таблицы (побайтно прежнее поведение на train4)
 RULE = "last_cum=T+2bars:all-years"   # Д5: правило даты входит в ключ кэша
 # MOEX: расчёты по акциям T+1 с 31.07.2023 (источник уточняет исследователь отдельно; PR #535 — режим NET).
 T1_OT = "2023-07-31"
@@ -33,9 +37,23 @@ RULE_T1 = f"last_cum=T+1bars:record>={T1_OT}"   # в ключ — только �
 DIV_NALOG = 0.87        # доля дивиденда, попадающая в PnL (после НДФЛ 13 %); div_nalog = 1.0 — полный D
 
 
+def _svod_on() -> bool:
+    """Свод Д8 подключён явно: FASTBT_Z2_DIV=SVOD (маркер, как NET) в зоне не dev; нет файла свода — FileNotFoundError.
+    Переменная не задана — прежнее поведение зоны (таблица FASTBT_Z2_DIV / отказ)."""
+    import os                                            # noqa: PLC0415
+    from fastbt import zona                              # noqa: PLC0415
+    if os.environ.get("FASTBT_Z2_DIV") != MARKER_SVOD:
+        return False
+    if zona.name() == "dev":
+        raise ValueError(f"FASTBT_Z2_DIV={MARKER_SVOD} допустим только вне зоны dev")
+    if not Path(SVOD).exists():
+        raise FileNotFoundError(f"свод Д8 не найден: {SVOD}")
+    return True
+
+
 def _tables() -> list[Path]:
     from fastbt import zona                              # noqa: PLC0415
-    if zona.div_net():                                   # NET: без таблицы 2022–2024, явно (не пустой файл)
+    if zona.div_net() or _svod_on():                     # NET: без 2022+ явно; свод: 2022+ идёт из него, не из таблицы Z2
         z2 = []
     else:
         z2 = [] if zona.name() == "dev" else [zona.path("div")]      # зона Z2: + таблица 2022–2024 (FASTBT_Z2_DIV)
@@ -55,6 +73,8 @@ def digest() -> str:
         h.update(b"bez_dividendov:2022-2024")            # режим в ключе: кэш без дивидендов ≠ кэш с таблицей
     for p in _tables():
         h.update(p.read_bytes())
+    if _svod_on():
+        h.update(b"svod_D8:" + Path(SVOD).read_bytes())  # свод в ключе: смена годности строки 2022+ = другой кэш
     from fastbt import zona                              # noqa: PLC0415
     rule = RULE if zona.name() == "dev" else RULE + ";" + RULE_T1   # все реестры dev <= 2021: правило T+1 их не касается
     return hashlib.sha1(h.digest() + repr(float(DIV_NALOG)).encode() + rule.encode()).hexdigest()
@@ -98,9 +118,23 @@ def _read(path: Path, ticker: str) -> pd.DataFrame:
     return t[["last_cum_date", "dps_rub"]]
 
 
+def _read_svod(ticker: str) -> pd.DataFrame:
+    """Годные (godna=1) строки свода Д8 с реестром >= SVOD_OT; реестр позже последнего бара ряда пропускается:
+    календаря за ним нет, last_cum считался бы неверно (день гэпа всё равно вне ряда)."""
+    s = pd.read_csv(SVOD, dtype={"godna": int})
+    rec = pd.to_datetime(s["record_date"])
+    s = s[(s["ticker"] == ticker) & (s["godna"] == 1) & (s["dps_rub"] > 0) & (rec >= pd.Timestamp(SVOD_OT))
+          & (rec <= _calendar()[-1])].copy()
+    s["last_cum_date"] = last_cum(pd.to_datetime(s["record_date"])) if len(s) else pd.Series(dtype="datetime64[ns]")
+    return s[["last_cum_date", "dps_rub"]]
+
+
 def events(ticker: str) -> pd.DataFrame:
     """События тикера: last_cum_date (datetime64), dps_rub > 0; по возрастанию даты."""
-    t = pd.concat([_read(p, ticker) for p in _tables()], ignore_index=True)
+    parts = [_read(p, ticker) for p in _tables()]
+    if _svod_on():
+        parts.append(_read_svod(ticker))
+    t = pd.concat(parts, ignore_index=True)
     return t.sort_values("last_cum_date").reset_index(drop=True)
 
 
