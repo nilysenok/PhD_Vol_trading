@@ -52,6 +52,9 @@ processov() {   # $1 — период (необязателен). По умол�
 
 otmetka_wf() {   # период wf читает данные ≥ 2022: только при отметке снятого замка (копия docs/resheniya/wf_zamok_snyat.json; ставит владелец)
   [ -s "$P/wf_zamok_snyat.json" ] || fail "wf: нет отметки $P/wf_zamok_snyat.json (её ставит владелец, не агент) — счёт не запускаю"
+  # содержимое: непустой JSON с preregistraciya_v2, sha256 (64 hex), data_snyatiya — та же функция, что в fastbt/period_v2.py
+  { [ ! -f "$KOD_DIR/fastbt/period_v2.py" ] || "$PY" "$KOD_DIR/fastbt/period_v2.py" "$P/wf_zamok_snyat.json"; } \
+    || fail "wf: отметка $P/wf_zamok_snyat.json не годна (нужен JSON с preregistraciya_v2, sha256, data_snyatiya) — счёт не запускаю"
 }
 
 otmetka_paketa() {   # отметка wf в коде (kod/<sha>/docs/resheniya/): печатает SHA файла и SHA предрегистрации v2 из неё; нет отметки — ничего (wf откажет)

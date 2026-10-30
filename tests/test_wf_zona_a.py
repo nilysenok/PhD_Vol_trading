@@ -18,7 +18,7 @@ def _dev():
 @pytest.fixture
 def otmetka(tmp_path, monkeypatch):
     p = tmp_path / "wf_zamok_snyat.json"
-    p.write_text("{}")
+    p.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "%s", "data_snyatiya": "2026-10-30"}' % ("a" * 64))
     monkeypatch.setattr(period_v2, "OTMETKA", p)
     return p
 
