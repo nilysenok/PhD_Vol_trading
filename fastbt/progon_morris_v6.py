@@ -176,6 +176,8 @@ def main(argv=None) -> int:
     ap.add_argument("--r", type=int, help="траекторий (по умолчанию 5000 // (k + 1)); 1 — малая проверка")
     ap.add_argument("--prodolzhit", action="store_true")
     a = ap.parse_args(argv)
+    from fastbt import sobytiya_e1
+    sobytiya_e1.trebovat_svod()
     rz = ps.Rezhim("v6", a.period, "seed", False, "t0d")
     ps.OCENSHCHIK_V5 = ("fastbt.eval_v6", "EvaluatorV6")           # setka != progon → ps.ocenshchik берёт этот класс
     for sid in a.strategii.split(","):
