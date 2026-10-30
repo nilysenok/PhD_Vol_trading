@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fastbt import canon_v5, canon_v6, ledger_v2
+from fastbt import canon_v5, canon_v6, eval_v6, ledger_v2
 from fastbt.eval_v6 import EvaluatorV6
 from fastbt.eval_v7 import EvaluatorV7
 
@@ -39,19 +39,27 @@ def _pool(sid):
     return pool
 
 
+VNESHNIE = {"rel_signal", "sob_tip", "vn_uslovie", *eval_v6.KONTEKST}      # оси, которым нужны внешние ряды IstochnikiV6 (здесь не подаются)
+
+
 def tochki_ledger(sid, k=2):
-    """Первые k точек p00 с ≥ 2 сделками: значения восстановлены по кубу, klyuch пересобран и равен записанному."""
+    """Первые k точек ledger (p00…) с ≥ 2 сделками без внешних рядов: значения восстановлены по кубу, klyuch пересобран и равен записанному."""
     pool, out = _pool(sid), []
-    for line in (LEDGER / sid / "p00" / "rows.jsonl").read_text().splitlines():
-        r = json.loads(line)
-        kl = {n: v for n, v in r["klyuch"].items() if n not in ("period", "komissiya", "fdr")} if r["status"] == "ok" else {}
-        if sum(r.get("sdelok_y", {}).values()) < 2 or any(n not in pool or v not in pool[n] for n, v in kl.items()):
-            continue
-        pt = {n: pool[n][v] for n, v in kl.items()}
-        if ledger_v2.klyuch(sid, pt, "train4", 0.0004, "t0d") == r["klyuch"]:
+    for sh in range(7):
+        for line in (LEDGER / sid / f"p{sh:02d}" / "rows.jsonl").read_text().splitlines():
+            r = json.loads(line)
+            kl = {n: v for n, v in r["klyuch"].items() if n not in ("period", "komissiya", "fdr")} if r["status"] == "ok" else {}
+            if sum(r.get("sdelok_y", {}).values()) < 2 or any(n not in pool or v not in pool[n] for n, v in kl.items()):
+                continue
+            pt = {n: pool[n][v] for n, v in kl.items()}
+            try:
+                if eval_v6.razdelit(sid, pt)[1].keys() & VNESHNIE or ledger_v2.klyuch(sid, pt, "train4", 0.0004, "t0d") != r["klyuch"]:
+                    continue
+            except ValueError:
+                continue
             out.append((r, pt))
-        if len(out) == k:
-            break
+            if len(out) == k:
+                return out
     return out
 
 
@@ -64,6 +72,7 @@ def test_g1_realnye_tochki_ledger_v7_ravno_v6_pobaytno():
     tk = tochki_ledger(sid)
     assert len(tk) == 2, "не удалось восстановить 2 точки ledger (тип значений или klyuch)"
     daty = inp.meta[inp.sk.tickers[0]]["dates"]
+    daty = daty[(daty >= np.datetime64("2016-01-01")) & (daty <= np.datetime64("2019-12-31"))]       # окно ledger train4
     for r, pt in tk:
         r6, x6, t6 = e6.evaluate_v2(pt, "train4")
         r7, x7, t7 = e7.evaluate_v2(pt, "train4")
