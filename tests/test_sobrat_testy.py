@@ -55,8 +55,9 @@ def test_g2_mutaciya_filtr_2022_snyat_lovitsya(tmp_path):
     mut.write_text("\n".join('cp "$TMP/vse.txt" "$TMP/belyj.txt"' if "# FILTR2022" in s else s
                              for s in tekst.splitlines()) + "\n", encoding="utf-8")
     r = _sobrat(mut, tmp_path / "m")
-    assert r.returncode == 0, r.stdout + r.stderr
-    assert _plohie(next((tmp_path / "m").glob("testy_*.tar.gz"))) != []   # проверка G1 на мутанте падает
+    assert r.returncode != 0 and "FAIL" in r.stdout and "tar_iskluchit_2022plus" in r.stdout, r.stdout + r.stderr
+    assert not list((tmp_path / "m").glob("SHA256SUMS_testy"))             # пакет не выдан
+    assert _plohie(next((tmp_path / "m").glob("testy_*.tar.gz"))) != []   # и tar мутанта действительно «грязный»
 
 
 def _paket(tmp_path):
