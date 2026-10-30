@@ -12,7 +12,14 @@ import pytest
 import fastbt.agregaty_v7 as A
 import fastbt.ledger_v2 as L
 from fastbt import fazy
-from fastbt.metriki_e import msr, nedelnye_summy, sr_dnevnoy
+from fastbt.metriki_e import msr, nedelnye_summy, sharpe, sr_dnevnoy
+
+
+def test_mutaciya_bez_sqrt252_lovitsya(monkeypatch):
+    monkeypatch.setattr(A, "SHKALA", 1.0)
+    with pytest.raises(AssertionError):
+        assert A.agregaty({"agr": AGR})["sharpe_itog"] == pytest.approx(sharpe(X), abs=1e-12)
+    assert A.SHKALA == 1.0 and sr_dnevnoy(X) != sharpe(X)
 
 DATY = np.arange(np.datetime64("2017-01-02"), np.datetime64("2026-03-01"))
 DATY = DATY[np.is_busday(DATY)]
@@ -28,12 +35,12 @@ GOD = DATY.astype("datetime64[Y]").astype(int) + 1970
 def test_sharpe_po_godam_iz_summ_raven_dnevnomu_ryadu():
     ag = A.agregaty({"agr": AGR})
     for g in A.GODY_V7:
-        assert ag["sharpe_gody"][g] == pytest.approx(sr_dnevnoy(X[GOD == g]), abs=1e-12)
+        assert ag["sharpe_gody"][g] == pytest.approx(sharpe(X[GOD == g]), abs=1e-12)     # Д7: определение проекта, √252
         assert ag["sdelok_gody"][g] == SD[GOD == g].sum()
         assert ag["ekspoziciya_gody"][g] == pytest.approx(POZ[GOD == g].mean(), abs=1e-12)
-    assert ag["sharpe_itog"] == pytest.approx(sr_dnevnoy(X), abs=1e-12)
+    assert ag["sharpe_itog"] == pytest.approx(sharpe(X), abs=1e-12)
     for i, r in enumerate(A.REZHIMY):
-        assert ag["sharpe_rezhimy"][r] == pytest.approx(sr_dnevnoy(X[REZ == i]), abs=1e-12)   # дни без режима (−1) не входят
+        assert ag["sharpe_rezhimy"][r] == pytest.approx(sharpe(X[REZ == i]), abs=1e-12)   # дни без режима (−1) не входят
 
 
 def test_msr_nedeli_iz_summ_raven_ryadu():
@@ -72,7 +79,7 @@ def test_mutaciya_god_po_date_vhoda_lovitsya(monkeypatch):
     monkeypatch.setattr(A, "_god", lambda d: (np.asarray(d, "datetime64[D]") + np.timedelta64(7, "D")).astype("datetime64[Y]").astype(int) + 1970)
     ag = A.agregaty({"agr": A.sobrat(DATY, X, POZ, SD, REZ)})
     with pytest.raises(AssertionError):
-        assert ag["sharpe_gody"][2018] == pytest.approx(sr_dnevnoy(X[GOD == 2018]), abs=1e-12)
+        assert ag["sharpe_gody"][2018] == pytest.approx(sharpe(X[GOD == 2018]), abs=1e-12)
 
 
 def test_staraya_stroka_22_chitaetsya_i_agr_prohodit_pisatel(tmp_path):

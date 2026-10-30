@@ -9,7 +9,8 @@ agregaty() на них отдаёт None; proverit_stroku_22 и Pisatel не м�
                               год недели — год её последнего торгового дня в ряду: n недель, Σw, Σw², Σw³, Σw⁴ (для CF-поправки);
    "r": [n, s, q, sd, ex]   — по трём режимам рынка за весь период, порядок REZHIMY = (рост, падение, боковик);
                               режим дня d — компонента trend из fazy._priznaki по IMOEX на d−1 (_LAG = 1); дни без режима не входят}.
-x — избыточная дневная доходность портфеля после комиссий. Sharpe — дневной шкалы (ddof = 1, как metriki_e.sr_dnevnoy)."""
+x — избыточная дневная доходность портфеля после комиссий. Sharpe — как metriki_e.sharpe (Д7: √252, ddof = 1).
+Год недели — год её последнего торгового дня в ряду (неделя через границу года идёт в год своего последнего дня)."""
 from __future__ import annotations
 
 from math import sqrt
@@ -18,7 +19,10 @@ import numpy as np
 import pandas as pd
 
 from fastbt import fazy
-from fastbt.metriki_e import Z95
+from fastbt.metriki_e import Z95, sharpe, sr_dnevnoy
+
+_REF = np.array([1.0, 2.0, 4.0])
+SHKALA = sharpe(_REF) / sr_dnevnoy(_REF)            # годовая шкала проекта (√252), из metriki_e
 
 VERSIYA = "7.1"
 GODY_V7 = tuple(range(2017, 2027))                  # 2017…2025 и янв–фев 2026 (справочно)
@@ -64,11 +68,12 @@ def sobrat(daty, x, poz, sdelki, rezhim, gody: tuple = GODY_V7) -> dict:
 
 
 def sharpe_iz_summ(n: float, s: float, q: float) -> float:
-    """mean/sd (ddof = 1) из n, Σx, Σx²; n < 2 → nan; sd ≤ 1e-12 → 0 (как metriki_e.sr_dnevnoy)."""
+    """Sharpe проекта (Д7): metriki_e.sharpe — годовая шкала, ddof = 1, избыточная доходность — из n, Σx, Σx²;
+    n < 2 → nan; sd ≤ 1e-12 → 0. Масштаб берётся из metriki_e (отношение sharpe / sr_dnevnoy), не литералом."""
     if n < 2:
         return float("nan")
     var = max((q - s * s / n) / (n - 1), 0.0)
-    return float(s / n / sqrt(var)) if sqrt(var) > 1e-12 else 0.0
+    return float(SHKALA * s / n / sqrt(var)) if sqrt(var) > 1e-12 else 0.0
 
 
 def msr_iz_summ(n: float, s1: float, s2: float, s3: float, s4: float, g: int = 52) -> float:
