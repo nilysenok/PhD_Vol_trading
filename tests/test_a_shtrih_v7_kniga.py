@@ -201,7 +201,7 @@ def _kniga_2beta(T=130, seed=7):
 def test_g4_komissiya_hedzha_rovno_0004_na_modul_izmeneniya():
     d = _kniga_2beta()
     r = _run(d, hedzh=True)
-    assert K.KOM_HEDZH == KOM
+    assert K.komissiya_oborota(1.0, 0.0) == KOM                   # Ж-149: одно определение, отдельной константы нет
     assert (r.h[:63] == 0).all()
     assert r.h[63] == pytest.approx(-2.0, abs=1e-9)                # β=2 -> продажа 2·NAV
     assert r.kom_hedzh[63] == pytest.approx(KOM * 2.0, abs=1e-11)
@@ -221,7 +221,7 @@ def test_g4_znak_hedzha_protivopolozhen_bete():
 
 def test_g4_mutatsiya_bez_komissii_lovitsya(monkeypatch):
     d = _kniga_2beta()
-    monkeypatch.setattr(K, "KOM_HEDZH", 0.0)
+    monkeypatch.setattr(K, "komissiya_oborota", lambda w, wp, stavka=0.0: 0.0)
     assert not np.isclose(_run(d, hedzh=True).kom_hedzh[63], KOM * 2.0)
 
 

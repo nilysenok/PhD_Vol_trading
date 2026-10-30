@@ -96,17 +96,21 @@ def test_imoex_nan_tozhe_gasit_hedzh_i_ryad_konechen():
     assert r.mix_nan[120] and r.h[120] == 0 and np.isfinite(r.ryad[120])
 
 
-def test_otkryto_kommissiya_pri_smene_mnozhitelya_ne_beretsya_potolok():
-    """Фиксируем размер недоначисления: Δ(m·f) не стоит ничего (в `kniga_msp` комиссии на множитель нет совсем).
-    Тест падает, если автор добавит комиссию — тогда обновить число."""
-    d = _mk(S=3, N=4, T=300, seed=21, nan=False)
+def test_kommissiya_pri_smene_mnozhitelya_beretsya_zh149():
+    """Известный ответ руками: один тикер, позиция P = 1 константна (сигналов нет, ΔP = 0 со 2-го дня), центры не платят.
+    Книга обязана взять ставка·|Δ(m·f)|·|P| на каждой смене множителя; день 0 — вход оплачен центром (0)."""
+    rng = np.random.default_rng(21)
+    T = 200
+    sd = np.where(np.arange(T) < 100, 0.004, 0.02)
+    d = dict(X=(rng.normal(0, 1, T) * sd)[None, None, :], poz=np.ones((1, 1, T)), sektora=np.array([0]),
+             imoex=rng.normal(0, 0.005, T), mix=np.zeros(T), ks=np.zeros(T))
     r = _run(d, tsel_vol=True, vykl=True, sektor_netto=False)
-    mf = r.m * r.f
-    oborot = np.nansum(np.abs(np.diff(mf)))
-    ryad_s = r.ryad
+    dmf = np.abs(np.diff(r.m * r.f))
+    assert (dmf > 1e-9).sum() > 20
+    assert r.kom_tik[0] == 0.0
+    assert r.kom_tik[1:] == pytest.approx(KOM * dmf, abs=1e-15)
     ex_port = _run(d).ryad
-    assert np.allclose(ryad_s, ex_port * mf - r.marzha, equal_nan=True)   # ни одного вычета за смену m·f
-    assert oborot > 1.0                                                    # дополнительный оборот не нулевой
+    assert r.ryad == pytest.approx(ex_port * r.m * r.f - r.marzha - r.kom_tik, abs=1e-15, nan_ok=True)
 
 
 # ---- Ж-149: нетто сектора от капитала, а не от валовой сектора (усиление мутации автора, она связана через `or`)
