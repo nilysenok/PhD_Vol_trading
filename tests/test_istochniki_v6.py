@@ -212,6 +212,7 @@ def test_konec_perioda_i_zamok(tmp_path, monkeypatch):
     monkeypatch.setattr(period_v2, "OTMETKA", tmp_path / "net.json")
     with pytest.raises(period_v2.ZamokVladeltsa):
         iv.konec("wf")
-    (tmp_path / "net.json").write_text("{}")
+    (tmp_path / "net.json").write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64
+                                       + '", "data_snyatiya": "2026-10-30"}')
     assert iv.konec("wf") == pd.Timestamp("2026-03-01")      # с отметкой (wf-L1b): конец периода + 1 день, исключительно
     assert iv.konec("train4") == pd.Timestamp("2022-01-01")  # dev-периоды — как было

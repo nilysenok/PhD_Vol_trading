@@ -30,7 +30,8 @@ def _ledger(root: Path, period="wf"):
 
 def _otmetka(tmp_path, monkeypatch):
     otm = tmp_path / "wf_zamok_snyat.json"
-    otm.write_text("{}")
+    otm.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64
+                   + '", "data_snyatiya": "2026-10-30"}')
     monkeypatch.setattr(PV, "OTMETKA", otm)       # только временный каталог, в репозитории отметки нет
 
 
