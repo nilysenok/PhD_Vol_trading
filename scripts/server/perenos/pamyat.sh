@@ -12,15 +12,18 @@ pamyat_reshenie() {   # $1 — процессов n, $2 — USS одного п�
 }
 
 pamyat_uss() {   # $1 — pid цепочки: "<макс USS КБ> <сумма USS КБ>" потомков (ps -A -o pid=,ppid=; USS — smaps_rollup)
-  local p s mx=0 sm=0 f="${PERENOS_PROC:-/proc}"
-  for p in $(ps -A -o pid=,ppid= | awk -v root="$1" '{ par[$1] = $2 }
-      END { for (p in par) { q = p; while (q in par && q != root) q = par[q]; if (q == root && p != root) print p } }'); do
+  local p ch s mx=0 sm=0 f="${PERENOS_PROC:-/proc}"
+  while read -r p ch; do
     [ -r "$f/$p/smaps_rollup" ] || continue
     # прогрев кэшей (один процесс держит все данные, ~1,9 ГБ) — вне замера: считаем рабочих пула (~0,23 ГБ); у прогрева в cmdline «progrev_»
     tr '\0' ' ' < "$f/$p/cmdline" 2>/dev/null | grep -q 'progrev_' && continue
     s=$(awk '/^Private_(Clean|Dirty):/ { t += $2 } END { print t + 0 }' "$f/$p/smaps_rollup")
-    sm=$((sm + s)); [ "$s" -gt "$mx" ] && mx=$s
-  done
+    sm=$((sm + s))
+    # главный процесс progon_server (родитель пула: у него есть дети; у рабочих cmdline тот же — форки, детей нет): в сумму один раз, в максимум не входит
+    [ "$ch" -gt 0 ] && tr '\0' ' ' < "$f/$p/cmdline" 2>/dev/null | grep -q 'progon_server' && continue
+    [ "$s" -gt "$mx" ] && mx=$s
+  done < <(ps -A -o pid=,ppid= | awk -v root="$1" '{ par[$1] = $2; ch[$2]++ }
+      END { for (p in par) { q = p; while (q in par && q != root) q = par[q]; if (q == root && p != root) print p, ch[p] + 0 } }')
   echo "$mx $sm"
 }
 
@@ -38,7 +41,7 @@ pamyat_ostanovit() {   # $1 — pid: потомки и сам процесс
 }
 
 pamyat_sledit() {   # $1 — период, $2 — pid цепочки, $3 — n; фоновый наблюдатель: замер каждые PERENOS_PAMYAT_INTERVAL с, пока цепочка жива
-  local per=$1 pid=$2 n=$3 lg="$P/logs/pamyat_$1.log" gran="${PERENOS_PAMYAT_INTERVAL:-45}" mx sm av tm tot nn np top=0 lastlog=0
+  local per=$1 pid=$2 n=$3 lg="$P/logs/pamyat_$1.log" gran="${PERENOS_PAMYAT_INTERVAL:-45}" mx sm av tm tot nn np top=0 lastlog=0 podryad=0 ugroza
   while kill -0 "$pid" 2>/dev/null; do
     read -r mx sm <<< "$(pamyat_uss "$pid")"
     read -r av tm <<< "$(pamyat_svobodno)"
@@ -48,14 +51,20 @@ pamyat_sledit() {   # $1 — период, $2 — pid цепочки, $3 — n; 
     if [ "${mx:-0}" -gt 0 ]; then
       [ "$mx" -gt "$top" ] && top=$mx
       tot=$((av + sm)); [ -n "$tm" ] && [ "$tm" -gt 0 ] && [ "$tot" -gt "$tm" ] && tot=$tm
-      nn=$(pamyat_reshenie "$n" "$top" "$tot")
-      if [ "$nn" -lt "$n" ]; then
+      # решение — по ТЕКУЩЕМУ замеру (накопленный максимум хранил бы разовый пик вечно); срез — при превышении в двух замерах подряд
+      # или сразу, если MemAvailable < 5 % MemTotal (настоящая угроза OOM). Пик одного замера в конце прохода (30.10) пул не режет
+      nn=$(pamyat_reshenie "$n" "$mx" "$tot")
+      ugroza=0; [ -n "$tm" ] && [ "$tm" -gt 0 ] && [ $((av * 20)) -lt "$tm" ] && ugroza=1
+      if [ "$nn" -lt "$n" ]; then podryad=$((podryad + 1)); else podryad=0; fi
+      if [ "$nn" -lt "$n" ] && [ "$podryad" -lt 2 ] && [ "$ugroza" = 0 ]; then
+        echo "$(date '+%F %T') $per: превышение в одном замере (USS макс $((mx / 1024)) МБ, снизило бы до $nn из $n) — ждём второго" >> "$lg"
+      elif [ "$nn" -lt "$n" ]; then
         echo "$(date '+%F %T') $per: СНИЖЕНИЕ процессов $n → $nn: USS макс $((top / 1024)) МБ, доступно $((tot / 1024)) МБ, нужно $n × USS × 1,15 = $((n * top * 115 / 100 / 1024)) МБ" | tee -a "$lg"
         pamyat_ostanovit "$pid"; sleep 2
         PERENOS_PROCS=$nn nohup bash "$P/zapusk_sobol.sh" __ryad "$per" >> "$P/logs/sobol_${per}_pamyat.log" 2>&1 < /dev/null &
         np=$!; echo "$np" > "$P/logs/sobol_$per.pid"; echo "$nn" > "$P/logs/sobol_$per.procs"
         echo "$(date '+%F %T') $per: продолжение с $nn процессами, pid $np, лог logs/sobol_${per}_pamyat.log" >> "$lg"
-        pid=$np; n=$nn; top=0; lastlog=0
+        pid=$np; n=$nn; top=0; lastlog=0; podryad=0
       elif [ "$top" -ge $((lastlog * 11 / 10 + 1)) ]; then
         echo "$(date '+%F %T') $per: память: $n × $((top / 1024)) МБ × 1,15 помещается в $((tot / 1024)) МБ; процессов $n" >> "$lg"; lastlog=$top
       fi
