@@ -1,0 +1,5 @@
+sid,tochka,otnositelno,vhod,istochnik
+S1,"{""dev_tip"": ""atr"", ""ma_tip"": ""hma"", ""ma_window"": 30, ""z_entry"": 2.0, ""z_exit"": 1.0}",net|sektor|imoex,d1,centr v5 = srednij element osi (golaya_tf_v5.tsentr) plan Zh-146 L2.2
+S2,"{""bb_std"": 2.5, ""bb_window"": 30, ""ma_tip"": ""hma"", ""podtv"": ""rsi20""}",net|sektor|imoex,d1,centr v5 = srednij element osi (golaya_tf_v5.tsentr) plan Zh-146 L2.2
+S3,"{""okno"": 25, ""podtv"": ""volume""}",net|sektor|imoex,d1,centr v5 = srednij element osi (golaya_tf_v5.tsentr) plan Zh-146 L2.2
+S4,"{""mnozh"": 2.25, ""period"": 20}",net|sektor|imoex,d1,centr v5 = srednij element osi (golaya_tf_v5.tsentr) plan Zh-146 L2.2
