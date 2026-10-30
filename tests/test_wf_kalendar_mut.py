@@ -6,7 +6,7 @@ import pytest
 
 from fastbt import daily_1850 as D
 from fastbt import kalendar_moex as K
-from tests.test_wf_kalendar import DAYS, SYN
+from test_wf_kalendar import DAYS, SYN
 
 
 def test_missing_calendar_csv_refuses(tmp_path):
