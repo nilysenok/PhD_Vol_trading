@@ -65,11 +65,9 @@ def test_4_pol_puti_trebuet_sma(sid):
 def test_5_piv_edinstvennyj_stop():
     piv, ok = _g("S5", "stop_nach", "piv:next"), {}
     assert not nesovm("S5", stop_nach=piv, **ok)
-    for kw in (dict(trail="atr:1.0"), dict(bezubytok="atr:1.0"), dict(stop_v_plyus="2:1"), dict(chast="1/2:1"), dict(pir=0.5),
-               dict(tejk="rr:1.0"), dict(razmer_tip="risk_sigma")):
-        assert nesovm("S5", stop_nach=piv, **kw), kw
+    assert nesovm("S5", stop_nach=piv, tejk="rr:1.0")
     assert not nesovm("S5", stop_nach=piv, tejk=_g("S5", "tejk", "piv:R"))   # второй пивотный канал — тейк, совместим
-    assert nesovm("S6", stop_nach=_g("S6", "stop_nach", "vwap"), trail="atr:1.0")
+    assert nesovm("S6", stop_nach=_g("S6", "stop_nach", "vwap"), tejk="rr:1.0")
 
 
 def test_6_piv_stop_i_pol_puti():
@@ -110,7 +108,7 @@ def _bez(i):
 @pytest.mark.parametrize("i,sid,kw", [
     (0, "S1", dict(k_e=0.5, vyhod_lim="da", t_vyhod="1500")), (1, "S3", dict(trail="parab:0.02:0.1", bezubytok="atr:1.0", stop_nach="atr:2.0")),
     (2, "S3", dict(tejk="sila:0.5:1")), (3, "S1", dict(tejk="pol_puti", ma_tip="ema")),
-    (4, "S5", dict(stop_nach="piv:next", trail="atr:1.0")), (5, "S5", dict(stop_nach="piv:next", tejk="pol_puti")),
+    (4, "S5", dict(stop_nach="piv:next", tejk="rr:1.0")), (5, "S5", dict(stop_nach="piv:next", tejk="pol_puti")),
     (6, "S1", dict(tejk="rodnoy", norm="s252", ma_tip="sma", dev_tip="std", z_exit=0.5))])
 def test_mutaciya_pravilo_snyato_lovitsya(i, sid, kw):
     assert nesovm(sid, **kw)

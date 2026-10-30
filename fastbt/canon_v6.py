@@ -145,7 +145,7 @@ def canon_v6(sid: str, pt: dict, kub: dict | None = None):
         q["reentry"] = off("reentry")                                     # повторный вход тренда — только на стоп-заявке (V6-11c)
     if sid == "S4" and q.get("norm") == "s252" and "period" in q:        # V6-5 (#648): при s252 period не влияет
         q["period"] = (kub or _kub(sid))["v5"]["signal"]["period"]["setka"][0]
-    if nsv.nesovm(sid, q):                                                # 7 сочетаний, где оценщик отказывает (canon_v6_nesovm)
+    if nsv.nesovm(sid, nsv.svernut(q)):                                            # 7 сочетаний, где оценщик отказывает (canon_v6_nesovm)
         return None
     c = c5.canon_v5(sid, {k: v for k, v in q.items() if k not in nov})
     if c is None:

@@ -12,6 +12,16 @@ from fastbt.canon_v5 import NET, SIGNAL, TREND, edinica
 _EXT_PIV = ("trail", "bezubytok", "stop_v_plyus", "chast")      # оси, ставящие atr_m/step_s/parab/b0/b0_c/sp/chast в Params (eval_v5_osi._vyhod)
 
 
+def svernut(q: dict) -> dict:
+    """Пивот/VWAP-стоп — единственный: оси ведения стопа (трейл, безубыток, stop_v_plyus), chast (R — расстояние до начального стопа, его нет),
+    пирамида (риск добавки — от стопа) и размер risk_sigma (вес от расстояния до стопа) при нём не действуют → «выкл.» (свёртка, как piv_buf),
+    а не None. Меняет q на месте. Тейк rr (R от стопа) — содержательная ось тейка: не сворачивается, остаётся отказом (правило 5)."""
+    if edinica(q.get("stop_nach")) in ("piv", "vwap"):
+        q.update({n: NET for n in _EXT_PIV if n in q})
+        q.update({n: v for n, v in (("pir", 0), ("razmer_tip", "ravnyj")) if n in q})
+    return q
+
+
 def _est(q: dict, n: str) -> bool:
     return q.get(n, NET) != NET
 
@@ -41,9 +51,9 @@ def pol_puti_ma_tip(sid: str, q: dict) -> bool:
 
 
 def piv_edinstvennyj_stop(sid: str, q: dict) -> bool:
-    """5: пивот- или VWAP-стоп — единственный: без трейла, безубытка, stop_v_plyus, chast, пирамиды, rr и risk_sigma."""
+    """5 (остаток после свёртки): пивот- или VWAP-стоп — единственный: тейк rr (R от стопа) невозможен. Остальное сворачивается (svernut)."""
     return edinica(q.get("stop_nach")) in ("piv", "vwap") and (
-        any(_est(q, n) for n in _EXT_PIV) or _pir(q) or edinica(q.get("tejk", NET)) == "rr" or q.get("razmer_tip") == "risk_sigma")
+        _pir(q) or edinica(q.get("tejk", NET)) == "rr" or q.get("razmer_tip") == "risk_sigma")     # pir, risk_sigma — защита, если свёртку обошли
 
 
 def piv_pol_puti(sid: str, q: dict) -> bool:
