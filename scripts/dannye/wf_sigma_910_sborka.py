@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""К-6: r2_sborka_test -> final_d0_s2emb_h{1,5} для σ̂ C/D на wf: шаги 1-8 прежний ряд, шаги 9-10 прогон К-5 (без ДСВД, конец 2026-02-03).
+scripts/analysis/ не правится. r2_sborka_test читает vyr/final_d0_h{h}_test (test_locked корня FASTBT_MAIN) -> склеенный файл кладётся в
+теневой корень (настоящие файлы, не симлинки: allowed() сверяет resolve()); выход пишется в теневой test_locked/R2/final, оттуда копия в out.
+Склейка: тест и val шагов <= 8 - основная копия; тест и val шагов 9-10 - К-5; строки теста шага 8, которых нет в основной копии (хвост
+24-30.12.2024: старый ряд оборван по цели), - из К-5 (↺ другой seed, 17/85 строк), F_sm шага 8 - старый. F_sm шагов 9-10 во входе пересчитан по
+правилу R1 (gibrid_bias.s2_est) на склеенных val - иначе kontrol_r1 сборки отвергает вход. Выход - не в data/.
+  python3 scripts/dannye/wf_sigma_910_sborka.py --main <основная копия> --k5 <k5/out> --shadow <k6/shadow> --out <k6/out>"""
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+import shutil
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+HERE = Path(__file__).resolve().parent
+KEYS = ["date", "ticker", "step"]
+KONEC = pd.Timestamp("2026-02-03")
+POSL_STARYJ = 8
+VYR = tuple(f"{n}_d0_h{h}_test.parquet" for n in ("etalon", "final") for h in (1, 5, 22))
+
+
+def _sha(p):
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
+
+
+def f_sm_r1(val, k):
+    """F_sm шага k по правилу R1 (gibrid_bias.s2_est sm: val-шаги k-2..k, y > 1e-12) = exp(s²/2). val: step, rv_actual, leg_raw."""
+    sys.path.insert(0, str(HERE.parent / "analysis"))
+    import gibrid_bias as BI
+    v = val[val.rv_actual > 1e-12]
+    E = {"c": {int(s): np.log(g.rv_actual.values + 1e-10) - np.log(g.leg_raw.values) for s, g in v.groupby("step")}}
+    return float(np.exp(BI.s2_est("sm", E, "c", k) / 2))
+
+
+def sklejka(old, new, posl=POSL_STARYJ):
+    """old, new - final_d0_h{h}_test (part, step, leg_raw, rv_actual, F_sm, rv_pred ...). -> склеенный вход сборки."""
+    o, n = old[old.step <= posl], new[new.step > posl]
+    assert len(n) and set(n.step) == {9, 10}, "К-5: нужны шаги 9-10"
+    ot = o[o.part == "test"]
+    Fst = ot.groupby("step").F_sm.first()
+    fill = new[(new.part == "test") & (new.step <= posl)]
+    fill = fill[~fill.set_index(KEYS).index.isin(ot.set_index(KEYS).index)].copy()
+    assert fill.step.isin([posl]).all(), "дыры старого ряда - только хвост шага 8"
+    fill["F_sm"] = fill.step.map(Fst).values
+    fill["rv_pred"] = fill.leg_raw * fill.F_sm
+    s = pd.concat([o, fill, n], ignore_index=True)
+    val = s[s.part == "val"]
+    for k in (9, 10):
+        m = (s.part == "test") & (s.step == k)
+        s.loc[m, "F_sm"] = f_sm_r1(val, k)
+        s.loc[m, "rv_pred"] = s.loc[m, "leg_raw"] * s.loc[m, "F_sm"]
+    return s.sort_values(["part", "step", "date", "ticker"]).reset_index(drop=True)
+
+
+def f_s2_embargo(val, cal, h, k, kappa=0.5):
+    """Независимый пересчёт F шага k: s² по val-шагам k-2..k (годы < 2016+k), без строк, чья цель [t+1, t+h] заходит в 2016+k."""
+    c = cal[["date", "ticker"]].drop_duplicates().sort_values(["ticker", "date"])
+    c["tend"] = c.groupby("ticker").date.shift(-h)
+    v = val[(val.step.between(max(1, k - 2), k)) & (val.rv_actual > 1e-12)].merge(c, on=["date", "ticker"], how="left")
+    v = v[v.tend < pd.Timestamp(f"{2016 + k}-01-01")]
+    e = np.log(v.rv_actual.values + 1e-10) - np.log(v.leg_raw.values)
+    return float(np.exp(kappa * np.var(e)))
+
+
+def g1(itog, staryj):
+    """Шаги 1-8: значения итога = прежнего final_d0_s2emb на его ключах; ключи старого все есть."""
+    s = staryj[staryj.step <= POSL_STARYJ]
+    m = s.merge(itog, on=KEYS, how="left", suffixes=("_o", "_n"))
+    d = {c: float(np.nanmax(np.abs(m[c + "_o"] - m[c + "_n"]))) if m[c + "_n"].notna().all() else float("inf") for c in ("leg_raw", "F_sm", "rv_pred")}
+    return dict(n=len(s), **{"max_abs_" + c: v for c, v in d.items()}, ok=all(v == 0 for v in d.values()))
+
+
+def g2(itog, spl, h):
+    """F шага 10 итога = независимый пересчёт по склеенным val (val 8 старый, 9-10 К-5)."""
+    f = f_s2_embargo(spl[spl.part == "val"], spl, h, 10)
+    got = itog[itog.step == 10].F_sm.unique()
+    return dict(F_nezavisimyj=f, F_itog=[float(x) for x in got], ok=len(got) == 1 and abs(got[0] / f - 1) < 1e-9)
+
+
+def g3(itog, novyj, konec=KONEC):
+    """Последняя дата = конец; ключи итога = ключи К-5 по всем шагам (дыр и лишних строк нет, ДСВД нет, т.к. К-5 без них)."""
+    t = novyj[novyj.part == "test"].set_index(KEYS).index
+    i = itog.set_index(KEYS).index
+    nm, nl = len(t.difference(i)), len(i.difference(t))
+    return dict(posl=str(itog.date.max().date()), propusk=nm, lishnih=nl, ok=itog.date.max() == konec and nm == 0 and nl == 0)
+
+
+def g4(itog, rv_staryj, rv_novyj, W):
+    """Д1 (wf_sigma_cd.sdvig, Спирмен ln σ̂² с ln RV_{d+k}, k -2...+1) на итоговом ряде: до 2025 - RV основной матрицы, с 2025 - новой."""
+    x = itog[["date", "ticker", "rv_pred"]].assign(sig=lambda d: np.sqrt(d.rv_pred))
+    r = {}
+    for nm, rv, lo, hi in (("2017_2024", rv_staryj, "2017-01-01", "2024-12-31"), ("2025_2026", rv_novyj, "2025-01-01", "2026-02-03")):
+        t = W.sdvig(x, "sig", rv, lo, hi)
+        r[nm] = dict(corr={str(k): round(v, 4) for k, v in t["corr"].items()}, argmax=t["argmax"], ok=t["ok"])
+    return dict(r, ok=all(v["ok"] for v in r.values()))
+
+
+def g6(itog, v1, h):
+    """Δ ln σ̂ = 0.5 ln rv_pred - ln σ̂ v1 по шагам (медиана |Δ|)."""
+    m = itog.merge(v1.rename(columns={f"sigma_pred_h{h}": "s1"}), on=["date", "ticker"])
+    m["d"] = np.abs(0.5 * np.log(m.rv_pred) - np.log(m.s1.astype(float)))
+    g = m.groupby("step").d.agg(["median", "max", "count"])
+    return {int(k): dict(med=round(float(r["median"]), 6), max=round(float(r["max"]), 4), n=int(r["count"])) for k, r in g.iterrows()}
+
+
+def postroit(main, shadow, spl):
+    """Теневой корень: симлинки на основную копию; test_locked/vyr - настоящие файлы (склейка для h=1,5), test_locked/R2/final - пустой."""
+    spec = importlib.util.spec_from_file_location("wk5", HERE / "wf_sigma_910_progon.py")
+    P = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(P)
+    main, shadow = Path(main).resolve(), Path(shadow).resolve()
+    assert main not in shadow.parents and shadow != main, "теневой корень внутри основной копии запрещён"
+    P._mirror(main, shadow, replace=("data",))
+    P._mirror(main / "data", shadow / "data", replace=("regen",))
+    mr, rg = main / "data" / "regen", shadow / "data" / "regen"
+    P._mirror(mr, rg, replace=("test_locked",))
+    P._mirror(mr / "test_locked", rg / "test_locked", replace=("vyr", "R2"))
+    v = rg / "test_locked" / "vyr"
+    v.mkdir(parents=True, exist_ok=True)
+    for f in VYR:
+        shutil.copy2(mr / "test_locked" / "vyr" / f, v / f)
+    for h, s in spl.items():
+        s.to_parquet(v / f"final_d0_h{h}_test.parquet", index=False)
+    P._mirror(mr / "test_locked" / "R2", rg / "test_locked" / "R2", replace=("final",))
+    (rg / "test_locked" / "R2" / "final").mkdir(parents=True, exist_ok=True)
+    return shadow
+
+
+def schet(shadow, out):
+    """r2_sborka_test.run без правок кода; журнал - в out (не в docs/)."""
+    os.environ["FASTBT_MAIN"] = str(shadow)
+    sys.path.insert(0, str(HERE.parent / "analysis"))
+    import r2_sborka_test as R
+    assert str(R.MAIN.resolve()) == str(Path(shadow).resolve()), "FASTBT_MAIN не принят сборкой"
+    R.JOURNAL = Path(out) / "dev_log_r2_A.md"
+    R.run(R.SPEC)
+    return R.OUTDIR
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    for a in ("main", "k5", "shadow", "out", "novye"):  # novye - корень с data/regen/features_pit_v3.parquet без ДСВД (rv для Д1)
+        ap.add_argument("--" + a, required=True)
+    a = ap.parse_args()
+    main_, k5, out = Path(a.main), Path(a.k5), Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    mr = main_ / "data" / "regen"
+    spl, shapka = {}, {}
+    for h in (1, 5):
+        po, pn = mr / "test_locked" / "vyr" / f"final_d0_h{h}_test.parquet", k5 / "test_locked_vyr" / f"final_d0_h{h}_test.parquet"
+        spl[h] = sklejka(pd.read_parquet(po), pd.read_parquet(pn))
+        shapka.update({f"staryj_h{h}": _sha(po), f"k5_h{h}": _sha(pn)})
+    od = schet(postroit(main_, a.shadow, spl), out)
+    rep = {}
+    sys.path.insert(0, str(HERE))
+    import wf_sigma_cd as W
+    rv = {k: pd.read_parquet(r / "data" / "regen" / "features_pit_v3.parquet", columns=["date", "ticker", "rv"]) for k, r in (("s", main_), ("n", Path(a.novye)))}
+    shapka["rv_staryj"], shapka["rv_novyj"] = (_sha(r / "data" / "regen" / "features_pit_v3.parquet") for r in (main_, Path(a.novye)))
+    for h in (1, 5):
+        f = od / f"final_d0_s2emb_h{h}_test.parquet"
+        shutil.copy2(f, out / f.name)
+        it = pd.read_parquet(f)
+        old = pd.read_parquet(mr / "test_locked" / "R2" / "final" / f.name)
+        nov = pd.read_parquet(k5 / "test_locked_vyr" / f"final_d0_h{h}_test.parquet")
+        v1 = pd.read_parquet(mr / "wf" / "ch4_sigma" / f"sigma_hyb_h{h}_dev.parquet")
+        rep[f"h{h}"] = dict(G1=g1(it, old), G2=g2(it, spl[h], h), G3=g3(it, nov), G4=g4(it, rv["s"], rv["n"], W), G6=g6(it, v1, h))
+        shapka[f"vyhod_h{h}"] = _sha(f)
+        shapka[f"sklejka_h{h}"] = hashlib.sha256(pd.util.hash_pandas_object(spl[h]).values.tobytes()).hexdigest()
+    shapka["kod_sborki"] = _sha(HERE.parent / "analysis" / "r2_sborka_test.py")
+    shapka["spec"] = _sha(HERE.parents[1] / "models" / "designs" / "r2" / "r2_A_sborka.yaml")
+    (out / "sborka_shapka.json").write_text(json.dumps(shapka, indent=1))
+    (out / "gates_k6.json").write_text(json.dumps(rep, indent=1, default=str))
+    print(json.dumps(rep, indent=1, default=str))
+
+
+if __name__ == "__main__":
+    main()
