@@ -16,7 +16,7 @@ import pandas as pd
 from fastbt import canon_v6, eval_v6_ispoln as isp6, eval_v6_osi as osi6, eval_v6_piv as piv6, eval_v6_trend as trend6, kontekst_v6, \
     sobytiya_e1, vneshnie_uslovie
 from fastbt.canon_v5 import NET, SIGNAL, TREND, tip
-from fastbt.eval_v5 import EvaluatorV5, UROVNI, maska
+from fastbt.eval_v5 import EvaluatorV5, UROVNI, maska, proverit_vozm
 from fastbt.eval_v5_osi import razbor
 from fastbt.etap1_eval_v2 import NOVYE, EvaluatorV2, NeSchitana
 from fastbt.eval_v6_ist import IstochnikiV6      # noqa: F401  (имя остаётся в eval_v6)
@@ -164,8 +164,7 @@ class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
         """Точка v6 → (строка ledger v2.0, excess портфеля, excess тикеров); контракт EvaluatorV5."""
-        if vozm:
-            raise ValueError("vozm у оценщика v6 не поддержан")
+        vozm = proverit_vozm(vozm, "v6")
         pt5, self.v6 = razdelit(self.sid, pt)
         pt5, self.piv = piv6.razobrat(trend6.vernut(self.sid in TREND, pt5, self.v6))
         self.r5 = r = razbor(self.sid, pt5, SIGNAL[self.sid], self.rol)
@@ -181,7 +180,7 @@ class EvaluatorV6(isp6.IspolnMixin, EvaluatorV5):
                 self._filtr6(r.filtr, k, self.v6[k], t)
         self._fkey = fkey(r.filtr, self.v6) + ((("ist", self.ist.sha),) if self.v6 and self.ist.sha else ())
         nov = {k: v for k, v in r.nov.items() if v != NOVYE[k]}
-        return EvaluatorV2.evaluate_v2(self, {**r.pt4, **r.sp, **nov}, period)
+        return EvaluatorV2.evaluate_v2(self, {**r.pt4, **r.sp, **nov}, period, vozm)
 
     @staticmethod
     def _filtr6(f: dict, k: str, x, t: str) -> None:
