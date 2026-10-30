@@ -74,14 +74,18 @@ def paritet(S: np.ndarray, tol: float = 1e-12, maxit: int = 200) -> np.ndarray:
     def f(y):
         return 0.5 * y @ S @ y - np.log(y).sum() / n
 
+    def err(y):
+        return np.max(np.abs(y * (S @ y) / (y @ S @ y / n) - 1.0))
+
     y = 1.0 / np.sqrt(np.diag(S))
     for _ in range(maxit):
         g = S @ y - 1.0 / (n * y)
-        if np.max(np.abs(y * (S @ y) / (y @ S @ y / n) - 1.0)) < tol:
+        if err(y) < tol:
             break
         step = np.linalg.solve(S + np.diag(1.0 / (n * y * y)), g)
         t = 1.0
-        while t > 1e-12 and (np.any(y - t * step <= 0) or f(y - t * step) > f(y)):
+        # у оптимума разность f ниже шума float (~1e-16): шаг принимается и при убывании невязки (иначе стоп на ~1e-8)
+        while t > 1e-12 and (np.any(y - t * step <= 0) or (f(y - t * step) > f(y) and err(y - t * step) >= err(y))):
             t *= 0.5
         y = y - t * step
     w = y / y.sum()
