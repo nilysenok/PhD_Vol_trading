@@ -52,6 +52,7 @@ def _ryad(shift=0):
 
 def _ist7(patch, shift=0):
     patch.setattr(v7_impuls.I, "signal_dnya", lambda b10, sid, t_sig="18:30": _ryad(shift))
+    patch.setattr(v7_impuls.I, "sila_dnya", lambda b10, sid, t_sig="18:30": _ryad(shift).abs() + 1.0)
     return eval_v7.Ist7(b10={"T": pd.DataFrame({"date": pd.DatetimeIndex([])})})
 
 
