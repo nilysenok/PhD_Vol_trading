@@ -2,8 +2,8 @@
 
 Периоды train4 и v2 (< 2020-01-01; перед чтением — proverit_chtenie; wf запрещён). Статус: разработка, до аудита, потолок.
 Цены и D (замечание 1): исполнитель получает НЕскорректированные open 10:00 и close 18:50 и D = дивиденд ПОСЛЕ НДФЛ (gap_divs × 0,87,
-свод Д8) на день отсечки; D дня без цены тикера переносится на ближайший день тикера. Сигналы S7–S9 — на скорректированных ценах,
-S10–S12 — на нескорректированных 10-минутках (❓ ложные пробои на отсечках). Вес капитала на тикер 1/N. S7–S9 — состояние: каждый
+свод Д8) на день отсечки; D дня без цены тикера переносится на ближайший день тикера. Сигналы S7–S9 и S10–S12 — на скорректированных
+ценах (adjust_ohlc; 10-минутки × множитель дня дневки, mutations № 33), исполнение — на реальных. Вес капитала на тикер 1/N. S7–S9 — состояние: каждый
 отрезок знака — сделка, выход по смене знака (open дня после). S10–S12: выход через τ по close; флаги exit обёртки v7_impuls НЕ
 подаются (замечание 2: флаг пропущенного сигнала закрывает позицию нового по open раньше τ — тест). Справочная книга S7–S9 —
 kross_seksiya.kniga, сверена с golaya_s7_s9/svod.csv. Контроли, шапка, таблицы и запуск — golaya_v7_tablicy.py (лимит 200 строк).
@@ -38,6 +38,12 @@ def chitat_imoex(period: str) -> pd.DataFrame:
     return x[~x.index.duplicated()].sort_index()
 
 
+def _korr10(b: pd.DataFrame, f: pd.Series) -> pd.DataFrame:
+    """10-минутки × множитель корректировки дня (тот же, что у дневки): сигналы S10–S12 на скорректированном ряду."""
+    k = f.reindex(pd.DatetimeIndex(b["timestamp"].dt.normalize())).fillna(1.0).to_numpy()
+    return b.assign(**{c: b[c] * k for c in ("open", "high", "low", "close")})
+
+
 def iz_barov(raw: dict, im: pd.DataFrame, period: str, tk=None) -> dict:
     """Входы драйвера из 10-минуток (timestamp, OHLCV) по тикерам и IMOEX (OPEN, CLOSE)."""
     P, tk = PERIODY[period], list(tk or TICKERS)
@@ -46,10 +52,10 @@ def iz_barov(raw: dict, im: pd.DataFrame, period: str, tk=None) -> dict:
         b = raw[t][lambda x: (x["timestamp"] >= P.progrev) & (x["timestamp"] < END)]
         dd = d18.aggregate(b, t).set_index("date")
         dts, cr[t] = dd.index.values, dd["close"]
-        cl[t] = pd.Series(dividendy.adjust_ohlc(t, dts, dd["close"].to_numpy(), dd["close"].to_numpy())[0], dd.index)
-        dv[t] = pd.Series(dividendy.gap_divs(t, dts) * dividendy.DIV_NALOG, dd.index)
+        f = pd.Series(dividendy.adjust_ohlc(t, dts, dd["close"].to_numpy(), np.ones(len(dd)))[0], dd.index)    # множитель дня
+        cl[t], dv[t] = dd["close"] * f, pd.Series(dividendy.gap_divs(t, dts) * dividendy.DIV_NALOG, dd.index)
         b10 = b[b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute == 600]
-        op[t], ist[t], rw[t] = b10.groupby(b10["timestamp"].dt.normalize())["open"].first(), bars_agg.prep_10m(b), b
+        op[t], ist[t], rw[t] = b10.groupby(b10["timestamp"].dt.normalize())["open"].first(), bars_agg.prep_10m(_korr10(b, f)), b
     c = pd.DataFrame(cl)[tk]
     c = c[c.notna().sum(axis=1) >= 8]
     daty, im = pd.DatetimeIndex(c.index), im[im.index < END].reindex(c.index)
@@ -99,10 +105,10 @@ def signaly(D: dict, sid: str, ctl=None, tochka: dict | None = None) -> np.ndarr
 
 
 def _izb(sd, dts, rate, Dv) -> list:
-    """Избыточное PnL сделок на единицу цены входа: ход + D − комиссия на обе стороны − ставка − заём шорта (ночи e…x−1)."""
+    """Сделки на единицу цены входа: (до издержек: ход + D; комиссия на обе стороны; заём шорта; ставка) за ночи e…x−1."""
     g = np.append(np.diff(dts.values.astype("datetime64[D]")).astype(float), 1.0) / ks.DNEI
     cd, cn, zs = (np.cumsum(np.r_[0.0, a]) for a in (Dv, rate * g, g * ZAEM))
-    return [s * ((px - pe) + cd[x + 1] - cd[e + 1]) / pe - KOMISSIYA * (1 + px / pe) - (cn[x] - cn[e]) - (zs[x] - zs[e] if s < 0 else 0.0)
+    return [(s * ((px - pe) + cd[x + 1] - cd[e + 1]) / pe, KOMISSIYA * (1 + px / pe), (zs[x] - zs[e]) if s < 0 else 0.0, cn[x] - cn[e])
             for s, e, x, pe, px in sd]
 
 
@@ -124,7 +130,7 @@ def schet(D: dict, sig: np.ndarray, vhod: str = "d1", tau=None, sost: bool = Fal
     """Дневные ряды портфеля (вес тикера 1/N) через исполнитель; sd — сделки (день входа, избыточное PnL, дней)."""
     n, N = len(D["daty"]), len(D["tk"])
     o = {k: np.zeros(n) for k in ("pnl", "kom", "zaem", "stavka", "gross", "vhody")}
-    o["sd"], cs = [], np.cumsum(D["div"].to_numpy(), axis=0)
+    o["sd"], o["tr"], cs = [], [], np.cumsum(D["div"].to_numpy(), axis=0)
     if vhod == "T" and T not in D["_pT"]:
         D["_pT"][T] = np.column_stack([tr.cena_T(D["raw"][t], T).set_index("date")["cena"].reindex(D["daty"]).to_numpy() for t in D["tk"]])
     pT = D["_pT"][T] if vhod == "T" else None
@@ -138,10 +144,19 @@ def schet(D: dict, sig: np.ndarray, vhod: str = "d1", tau=None, sost: bool = Fal
             for k in ("pnl", "kom", "zaem", "stavka"):
                 o[k][idx] += r[k] / N
             o["gross"][idx] += np.abs(r["poz"]) / N
-            o["sd"] += [(int(idx[e]), z, x - e) for (s, e, x, pe, px), z in zip(r["sdelki"], _izb(r["sdelki"], dts, rate, Dv))]
-            o["vhody"][idx[[e for _, e, *_ in r["sdelki"]]]] += 1
+            for (s, e, x, pe, px), z in zip(r["sdelki"], _izb(r["sdelki"], dts, rate, Dv)):       # tr: журнал сделок (на единицу, вес 1/N)
+                o["sd"].append((int(idx[e]), z[0] - z[1] - z[2] - z[3], x - e))
+                o["tr"].append((j, int(idx[e - 1] if vhod == "d1" else idx[e]), int(idx[e]), int(idx[x]), s, *z))
+                o["vhody"][idx[e]] += 1
     o["excess"] = o["pnl"] - o["kom"] - o["zaem"] - o["stavka"]
     return o
+
+
+def sila(D: dict, sid: str):
+    """|скор| S7–S9 на день решения [T, N] (после ребалансировки); у бинарных S10–S12 силы нет — None."""
+    if sid not in SECH:
+        return None
+    return np.abs(kv.rebal(kv.panel(D["c"], D["im"]["CLOSE"], D["metki"], sid), D["daty"], CENTR[sid]["rezhim"]))
 
 
 def kniga_spravka(D: dict, sid: str) -> dict:

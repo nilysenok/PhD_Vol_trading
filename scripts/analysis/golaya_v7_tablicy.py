@@ -33,19 +33,46 @@ def shapka(D: dict, period: str) -> dict:
     return {"v": "7.0-gol", "status": "разработка, до аудита, потолок, голая идея", "okno_s": f"{PERIODY[period].y0}-01-01",
             "okno_po": str(PERIODY[period].konec.date()), "zaderzhka": "d+1 (центры); T=17:00|18:00|18:40 — справочно", "chestnaya": "net",
             "kod": kod, "vhody": h, "ceny_i_D": "исполнение: нескорректированные open 10:00/close 18:50; D после НДФЛ ×0,87 на день отсечки "
-            "(свод Д8); сигналы S7–S9 на скорректированных, S10–S12 на нескорректированных 10-минутках"}
+            "(свод Д8); сигналы S7–S12 на скорректированном ряду (adjust_ohlc, 10-минутки × множитель дня)"}
+
+
+def tercil(sl: np.ndarray, d: int, v: float, okno: int = 252, minimum: int = 30):
+    """Терциль силы v по окну |скор| дней d−okno…d−1 (строго до дня решения d); мало наблюдений — пусто."""
+    w = sl[max(0, d - okno):d]
+    w = w[np.isfinite(w) & (w >= gv.CENTR["S8"]["porog"])]
+    if len(w) < minimum or not np.isfinite(v):
+        return ""
+    return int(1 + (v > np.quantile(w, 1 / 3)) + (v > np.quantile(w, 2 / 3)))
+
+
+def zhurnal(D: dict, sid: str, o: dict, variant: str, tochka: dict) -> pd.DataFrame:
+    """Журнал сделок (Ж-150); PnL в долях капитала (вес тикера 1/N): сумма «pnl_posle» = сумма excess исполнителя."""
+    N, sl, dt = len(D["tk"]), gv.sila(D, sid), D["daty"]
+    tf = {"S10": "1ч", "S11": "2ч", "S12": "согласие 1ч+2ч"}.get(sid, "")
+    vh = "d1" if tochka["vhod"] == "d1" else f"T={tochka['T']}"
+    rows = []
+    for j, d, e, x, s, br, kom, zm, st in o["tr"]:
+        v = float(sl[d, j]) if sl is not None else float("nan")
+        rows.append(dict(sid=sid, variant=variant, tiker=D["tk"][j], data_vhoda=dt[e].date(), data_vyhoda=dt[x].date(),
+                         uderzhanie_dn=(dt[x] - dt[e]).days, storona=s, tip_vhoda="рынок", tf=tf, vhod=vh, sila=v,
+                         tercil_sily=tercil(sl, d, v) if sl is not None else "", pnl_do_izderzhek=br / N, komissiya=kom / N,
+                         plata_za_short=zm / N, stavka=st / N, pnl_posle=(br - kom - zm - st) / N))
+    return pd.DataFrame(rows)
 
 
 def tablicy(D: dict, period: str, out: Path, n: int = gv.N_POVT) -> None:
-    svod, k2, pl = [], [], []
+    svod, k2, pl, zh = [], [], [], []
     for sid in gv.SECH + gv.IMPULS:
         o = gv.schet(D, gv.signaly(D, sid), **gv.shag(sid))
+        zh.append(zhurnal(D, sid, o, "centr", gv.shag(sid)))
         svod.append({"strategiya": sid, "variant": "centr", **gv.stroka(o, D)})
         if sid in gv.SECH:
             svod.append({"strategiya": sid, "variant": "spravka_kniga", **gv.stroka(gv.kniga_spravka(D, sid), D)})
         for T in (gv.T_DOP if sid in gv.IMPULS else ()):
             tk = gv.shag(sid, "T", T)
-            svod.append({"strategiya": sid, "variant": f"vhod_T:{T}", **gv.stroka(gv.schet(D, gv.signaly(D, sid, None, tk), **tk), D)})
+            oT = gv.schet(D, gv.signaly(D, sid, None, tk), **tk)
+            zh.append(zhurnal(D, sid, oT, f"vhod_T:{T}", tk))
+            svod.append({"strategiya": sid, "variant": f"vhod_T:{T}", **gv.stroka(oT, D)})
         fakt = gv.mera(o, D)
         for tip, rows in (("k2", k2), ("placebo", pl)):
             v = np.array(kontrol(D, sid, tip, n))
@@ -55,6 +82,7 @@ def tablicy(D: dict, period: str, out: Path, n: int = gv.N_POVT) -> None:
     h = "# " + json.dumps(shapka(D, period), ensure_ascii=False) + "\n"
     for nm, rows in (("svod", svod), ("k2", k2), ("placebo", pl)):
         (out / f"{nm}_{period}.csv").write_text(h + pd.DataFrame(rows).to_csv(index=False), encoding="utf-8")
+    (out / f"sdelki_{period}.csv").write_text(h + pd.concat(zh, ignore_index=True).to_csv(index=False), encoding="utf-8")
 
 
 if __name__ == "__main__":
