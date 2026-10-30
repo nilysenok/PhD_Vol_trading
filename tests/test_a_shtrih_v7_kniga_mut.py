@@ -107,3 +107,35 @@ def test_otkryto_kommissiya_pri_smene_mnozhitelya_ne_beretsya_potolok():
     ex_port = _run(d).ryad
     assert np.allclose(ryad_s, ex_port * mf - r.marzha, equal_nan=True)   # ни одного вычета за смену m·f
     assert oborot > 1.0                                                    # дополнительный оборот не нулевой
+
+
+# ---- Ж-149: нетто сектора от капитала, а не от валовой сектора (усиление мутации автора, она связана через `or`)
+def _poz_itog(poz_tikerov, sektora):
+    from tests.test_a_shtrih_v7_kniga import _odin_den
+    N = len(poz_tikerov)                         # _odin_den делит позицию на N (P = poz/N)
+    return _odin_den(np.asarray(poz_tikerov) * N, sektora).poz_itog[:, 0]
+
+
+def _proverka_pravila(f):
+    """Известный ответ: одиночный 0,1 цел; long 0,3 + short 0,05 -> нетто ровно 0,2 (long режется до 0,25)."""
+    a = f([0.1, 0.0], [0, 1])
+    b = f([0.3, -0.05], [0, 0])
+    return np.allclose(a, [0.1, 0.0]) and np.allclose(b, [0.25, -0.05]) and abs(b.sum() - 0.20) < 1e-12
+
+
+def test_g3_pravilo_ot_kapitala_na_pravilnom_kode():
+    assert _proverka_pravila(_poz_itog)
+
+
+def test_g3_mutatsiya_netto_ot_valovoj_sektora_lovitsya_zhestko(monkeypatch):
+    from fastbt.kniga_msp import netto
+
+    def staroe(u, sektor, maks=0.2):
+        out = np.asarray(u, float).copy()
+        for s in np.unique(sektor):
+            idx = np.flatnonzero(sektor == s)
+            out[idx] = netto(out[idx], maks)
+        return out
+
+    monkeypatch.setattr(K, "sektor_netto", staroe)
+    assert not _proverka_pravila(_poz_itog)     # на мутанте одиночный 0,1 обнуляется -> проверка проваливается
