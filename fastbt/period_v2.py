@@ -70,12 +70,17 @@ def trim_td(td):
                                sigma={h: cut(a) for h, a in td.sigma.items()})
 
 
-def valid_vec(ticker: str, dates, kach=None) -> np.ndarray:
-    """Валидность тикер-дня по правилу качества; даты вне календаря 10-минуток — невалидны."""
+def valid_vec(ticker: str, dates, kach=None, period=None, main=None) -> np.ndarray:
+    """Валидность тикер-дня по правилу качества; даты вне календаря 10-минуток — невалидны.
+    period="wf": календарь строится до конца wf (при отметке замка); дата позже последнего дня календаря + 3 суток — ValueError,
+    а не молчаливое «невалидно» (fill_value=False раньше делал невалидным каждый день ≥ 2020)."""
     if kach is None:
         from fastbt import vselennaya_kachestvo as vk
-        kach = vk.default()
-    return kach.valid[ticker].reindex(pd.DatetimeIndex(dates), fill_value=False).to_numpy(bool)
+        kach = vk.default(main, period)
+    d = pd.DatetimeIndex(dates)
+    if period == "wf" and len(d) and d.max() > kach.dates[-1] + pd.Timedelta(days=3):
+        raise ValueError(f"валидность на {d.max().date()}: календарь баров кончается {kach.dates[-1].date()} (молча «невалидно» нельзя)")
+    return kach.valid[ticker].reindex(d, fill_value=False).to_numpy(bool)
 
 
 def hold_invalid(pos: np.ndarray, valid: np.ndarray) -> np.ndarray:
@@ -85,7 +90,7 @@ def hold_invalid(pos: np.ndarray, valid: np.ndarray) -> np.ndarray:
     return pos[np.maximum.accumulate(idx)]
 
 
-def hold_years(a: dict, ticker: str, dates, kach=None) -> dict:
+def hold_years(a: dict, ticker: str, dates, kach=None, period=None) -> dict:
     """{год: позиции на весь ряд} → то же с удержанием в невалидные дни."""
-    ok = valid_vec(ticker, dates, kach)
+    ok = valid_vec(ticker, dates, kach, period)
     return {Y: hold_invalid(v, ok) for Y, v in a.items()}

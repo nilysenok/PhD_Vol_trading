@@ -166,11 +166,12 @@ class _Sbor:
 def konec(period: str) -> pd.Timestamp:
     """Граница чтения (строго <): `zona.end()` (2022-01-01). Сетка td оценщика (sk._td) идёт до конца dev-ряда (2021), а не до конца
     периода, поэтому ряды читаются на всю dev-зону; метрики периода их не используют. Замок ≥ 2022 — `proverit_chtenie`;
-    загрузчики ≥ 2022 (wf после снятия замка) не подключены — NotImplementedError, молчаливой обрезки нет."""
+    wf при отметке — конец периода + 1 день (2026-03-01); остальные загрузчики границ (e1_sektor.END и др.) — своими листами."""
     period_v2.proverit_chtenie(period, otmetka=period_v2.OTMETKA)
     if period_v2.PERIODY[period].konec >= zona.end():
-        raise NotImplementedError(f"период {period!r}: файлы баров лежат по тем же путям, но загрузчики (zona.end(), e1_sektor.END, "
-                                  f"daily_1850) режут чтение на {zona.end().date()}; расширять границы — отдельное решение, не здесь")
+        if period != "wf":
+            raise NotImplementedError(f"период {period!r}: загрузчики ≥ 2022 для него не подключены")
+        return period_v2.PERIODY[period].konec + pd.Timedelta(days=1)     # wf: 2026-03-01 исключительно, только при отметке (выше)
     return zona.end()
 
 

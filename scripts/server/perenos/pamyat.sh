@@ -27,9 +27,18 @@ pamyat_ostanovit() {   # $1 — pid: потомки и сам процесс
   done
 }
 
+pamyat_checkpoint_novyj() {   # $1 — период: есть checkpoint.json новее pid-файла старта (чекпоинты прошлых проходов не в счёт)
+  local pidf="$P/logs/sobol_$1.pid" f
+  for f in "$P"/ledger/"$1"*/S*/checkpoint.json; do
+    [ -e "$f" ] || continue
+    [ ! -e "$pidf" ] || [ "$f" -nt "$pidf" ] && return 0
+  done
+  return 1
+}
+
 pamyat_sledit() {   # $1 — период, $2 — pid цепочки, $3 — n; фоновый наблюдатель
   local per=$1 pid=$2 n=$3 lg="$P/logs/pamyat_$1.log" t=0 mx sm av tot nn np
-  while ! ls "$P"/ledger/"$per"*/S*/checkpoint.json >/dev/null 2>&1 && [ "$t" -lt "${PERENOS_PAMYAT_ZHDAT:-600}" ]; do
+  while ! pamyat_checkpoint_novyj "$per" && [ "$t" -lt "${PERENOS_PAMYAT_ZHDAT:-600}" ]; do
     kill -0 "$pid" 2>/dev/null || break; sleep 1; t=$((t + 1))
   done
   kill -0 "$pid" 2>/dev/null || { echo "$(date '+%F %T') $per: цепочка закончилась до замера памяти" >> "$lg"; return 0; }

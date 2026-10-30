@@ -2,6 +2,7 @@
 
 Мутации подкладываются в копию исходника (замена строки + exec) и обязаны ронять проверку `_proverka`.
 """
+import csv
 from datetime import date
 from pathlib import Path
 from types import ModuleType
@@ -66,11 +67,56 @@ def test_obyavleno_pozzhe_ne_otdayotsya(tmp_path):
     ('r["data_obyavleniya"] <= d\n', 'r["data_sobytiya"] <= d\n'),          # сравнение по дате события
     ('r["data_obyavleniya"] <= d\n', 'r["data_obyavleniya"] < d\n'),        # < вместо <=
     ('r["ticker"] in ("*", ticker)', 'r["ticker"] == ticker'),              # * не раздаётся
-    ("if d >= END:", "if False:"),                                          # запрос >= 2022
-    ('if r["data_sobytiya"] >= END or r["data_obyavleniya"] >= END:', "if False:"),   # строки >= 2022
-], ids=["po_data_sobytiya", "strogo_menshe", "zvezda", "chtenie_2022", "stroki_2022"])
+], ids=["po_data_sobytiya", "strogo_menshe", "zvezda"])
 def test_mutatsii_lovyatsya(tmp_path, old, new):
     assert not _proverka(_mutant(old, new), tmp_path)
+
+
+# Граница >= 2022 не закреплена строками исходника: можно ввести параметр границы для wf (отметка снятого
+# замка, period_v2.proverit_chtenie), пока по умолчанию (без wf) чтение >= 2022 отказывает. Мутации — поведенческие.
+def _kopiya():
+    m = ModuleType("mut")
+    m.__file__ = real.__file__
+    exec(compile(SRC, "mut", "exec"), m.__dict__)
+    return m
+
+
+def _bez_proverki_strok():
+    m = _kopiya()
+
+    def rows(path=None):
+        with open(path or m.PATH, newline="", encoding="utf-8") as f:
+            return [{**r, "data_obyavleniya": date.fromisoformat(r["data_obyavleniya"]),
+                     "data_sobytiya": date.fromisoformat(r["data_sobytiya"])} for r in csv.DictReader(f)]
+    m._rows = rows
+    return m
+
+
+def _granitsa_otkryta():
+    m = _kopiya()
+    m.END = date(9999, 1, 1)
+    return m
+
+
+def test_mutatsiya_chtenie_2022_lovitsya(tmp_path):
+    assert not _proverka(_granitsa_otkryta(), tmp_path)
+
+
+def test_mutatsiya_stroki_2022_lovitsya(tmp_path):
+    assert not _proverka(_bez_proverki_strok(), tmp_path)
+
+
+def test_wf_granitsa_ostayotsya_zakrytoj_posle_konca_perioda(tmp_path, monkeypatch):
+    """Замок wf снят (граница сдвинута до 2026-03-01): 2022–2026-02 читаются, позже — отказ, как и раньше."""
+    p = _csv(tmp_path, ("AAA", "x", "2025-06-01", "2025-06-03", "s"), ("AAA", "q", "2026-02-13", "2026-02-13", "s"))
+    monkeypatch.setattr(real, "END", date(2026, 3, 1))
+    assert [r["tip"] for r in real.sobytiya_na("2025-06-02", "AAA", vpered=5, path=p)] == ["x"]
+    assert [r["tip"] for r in real.sobytiya_na("2026-02-13", path=p)] == ["q"]
+    with pytest.raises(PermissionError):
+        real.sobytiya_na("2026-03-01", path=p)
+    r = _csv(tmp_path, ("AAA", "w", "2026-02-27", "2026-03-02", "s"))
+    with pytest.raises(PermissionError):
+        real.sobytiya_na("2026-02-27", path=r)
 
 
 def test_realnyj_fajl_bez_2022_i_digest():
