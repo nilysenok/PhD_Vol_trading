@@ -120,7 +120,8 @@ def test_G4_den_bez_barov_do_T_net_v_sostoyanii():
 def test_G1_T_1850_pobajtno_ravno_daily_1850():
     b, T = bars(), "18:50"
     pd.testing.assert_frame_equal(R.td_T(b, "AAAA", T), D.aggregate(b, "AAAA"), check_exact=True)
-    assert R.td_T(b, "AAAA", T).to_numpy().tobytes() == D.aggregate(b, "AAAA").to_numpy().tobytes()
+    num = ["open", "high", "low", "close", "volume"]        # object-колонки (ticker) tobytes сравнивает адреса, не значения
+    assert R.td_T(b, "AAAA", T)[num].to_numpy().tobytes() == D.aggregate(b, "AAAA")[num].to_numpy().tobytes()
 
 
 def test_G1_cut_1850_ne_pokhozh_na_17():
