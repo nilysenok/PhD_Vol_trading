@@ -45,8 +45,6 @@ def _s_konsolidaciej(tmp_path, monkeypatch):
     return raw, im, t, data
 
 
-@pytest.mark.xfail(strict=True, reason="А: драйвер голых идей не применяет corporate_actions (движок — data.load_ticker(corp=True)); "
-                                       "IRAO В2: S7 centr +101 %/год от одной сделки 11.12.2014→20.01.2015")
 def test_a_konsolidaciya_primenyaetsya_k_cenam_drajvera(tmp_path, monkeypatch):
     raw, im, t, data = _s_konsolidaciej(tmp_path, monkeypatch)
     D = gv.iz_barov(raw, im, "train4", TK)
@@ -56,8 +54,8 @@ def test_a_konsolidaciya_primenyaetsya_k_cenam_drajvera(tmp_path, monkeypatch):
         assert abs(np.log(x[i] / x[i - 1])) < 0.2, f"{k}: скачок ×{x[i] / x[i - 1]:.0f} в день консолидации"
 
 
-def test_a_dlinnaya_sdelka_cherez_konsolidaciyu_vidit_skachok(tmp_path, monkeypatch):
-    """Воспроизведение механизма А (проходит сейчас): лонг через день события получает ≈ +FAKTOR−1 на единицу цены входа."""
+def test_a_dlinnaya_sdelka_cherez_konsolidaciyu_ne_vidit_skachka(tmp_path, monkeypatch):
+    """После починки А: лонг через день события не получает ≈ +FAKTOR−1 на единицу цены входа."""
     raw, im, t, data = _s_konsolidaciej(tmp_path, monkeypatch)
     D = gv.iz_barov(raw, im, "train4", TK)
     i, j = int(np.flatnonzero(D["daty"] == data)[0]), TK.index(t)
@@ -66,7 +64,7 @@ def test_a_dlinnaya_sdelka_cherez_konsolidaciyu_vidit_skachok(tmp_path, monkeypa
     o = gv.schet(D, sig, vhod="d1", tau=None, sost=True)
     (_, _, e, x, s, br, *_), = o["tr"]
     assert D["daty"][e] < data <= D["daty"][x] and s == 1
-    assert br > 0.5 * FAKTOR
+    assert abs(br) < 0.5
 
 
 def test_a_dvizhok_primenyaet_konsolidaciyu_tak_zhe_kak_v_csv():
@@ -121,8 +119,6 @@ def D():
     return gv.iz_barov(raw, im, "train4", TK)
 
 
-@pytest.mark.xfail(strict=True, reason="В: placebo_sechenie переставляет тикеры каждый день независимо, в том числе внутри недели "
-                                       "недельного решения S8/S9; train4: S8 1770 сделок/год против 56, комиссия 8,3 %/год против 0,27 %")
 @pytest.mark.parametrize("sid", ["S8", "S9"])
 def test_v_placebo_nedelnogo_secheniya_ne_menyaetsya_vnutri_nedeli(D, sid):
     nr = _ne_rebal(D["daty"])
@@ -131,8 +127,6 @@ def test_v_placebo_nedelnogo_secheniya_ne_menyaetsya_vnutri_nedeli(D, sid):
     assert max(p) <= c, (c, p)
 
 
-@pytest.mark.xfail(strict=True, reason="В: плацебо S8/S9 меняет назначение скор → тикер на каждом решении, оборот кратно выше центра "
-                                       "(перестановка раз в неделю на train4 S8 — всё ещё 367 сделок/год против 56)")
 @pytest.mark.parametrize("sid", ["S8", "S9"])
 def test_v_placebo_nedelnogo_secheniya_oborot_kak_u_centra(D, sid):
     c = _smen(gv.signaly(D, sid))
@@ -140,12 +134,11 @@ def test_v_placebo_nedelnogo_secheniya_oborot_kak_u_centra(D, sid):
     assert c > 0 and max(p) <= 2 * c, (c, p)
 
 
-def test_v_placebo_s7_oborot_vyshe_centra(D):
-    """В, S7 (решение каждый день): плацебо рвёт устойчивость 5-дневного скора — смен стороны больше, чем у центра.
-    Закрепляет механизм (на train4: 1773 сделки/год против 811, комиссия 8,4 % против 3,8 %); это не нарушение каденции решения."""
+def test_v_placebo_s7_oborot_kak_u_centra(D):
+    """В, S7 после починки: одна перестановка на весь ряд — оборот плацебо ≈ центру (не в разы выше)."""
     c = _smen(gv.signaly(D, "S7"))
     p = [_smen(gv.signaly(D, "S7", ("placebo", gv.SEED + s))) for s in range(3)]
-    assert min(p) > c, (c, p)
+    assert c > 0 and max(p) <= 1.5 * c and min(p) >= 0.5 * c, (c, p)
 
 
 def test_v_placebo_ne_trogaet_ceny_i_neytralnost(D):
