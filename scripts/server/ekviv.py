@@ -19,11 +19,26 @@ import random
 import numpy as np
 
 SEED, N_TOCHEK = 20261029, 200
+PERIOD_PO_DO = {"": "train4", "2021-12-31": "train4", "2026-02-28": "wf"}      # perenos_do из VERSIYA -> период эталона
 
 
 def _ps():
     from fastbt import progon_sobol as ps
     return ps
+
+
+def period_po_do(do) -> str:
+    """Период эталона по `perenos_do` (VERSIYA / PERENOS_DO): пусто и 2021-12-31 — train4, 2026-02-28 — wf; иное — отказ."""
+    do = (do or "").strip()
+    if do not in PERIOD_PO_DO:
+        raise ValueError(f"perenos_do = {do!r}: эталоны считаются для {sorted(k for k in PERIOD_PO_DO if k)} (или пусто = train4) — отказ")
+    return PERIOD_PO_DO[do]
+
+
+def rz_perioda(period: str):
+    """train4 — прежний R0 (ключ среды и пути те же); wf — тот же прежний путь (setka progon, EvaluatorV2) с периодом wf."""
+    ps = _ps()
+    return ps.R0 if period == ps.PERIOD else ps.R0._replace(period=period)
 
 
 def vybor(n: int = N_TOCHEK, seed: int = SEED) -> list:
@@ -86,13 +101,13 @@ def _zapis(r: dict, p, t, evr) -> dict:
 
 
 def _zadacha(z: tuple) -> tuple:
-    """(sid, [i], yakor) -> (sid, {imya: запись}, kod, vhody, {kub_sha, daty_sha}) в одном процессе (один оценщик на Sk)."""
-    sid, idx, yakor = z
-    ps = _ps()
+    """(sid, [i], yakor, period) -> (sid, {imya: запись}, kod, vhody, {kub_sha, daty_sha}) в одном процессе (один оценщик на Sk)."""
+    sid, idx, yakor, period = z
+    ps, rz = _ps(), rz_perioda(period)
     from fastbt import ledger_v2 as lm
-    sr, c, out = ps.sreda(sid), ps.load_kub(sid), {}
+    sr, c, out = ps.sreda(sid, rz), ps.load_kub(sid, rz), {}
     if yakor:
-        r, p, t = sr.evr.evaluate_v2(sr.evr.full({}), ps.PERIOD)
+        r, p, t = sr.evr.evaluate_v2(sr.evr.full({}), period)
         if p is None:
             raise RuntimeError(f"якорь A_fix {sid}: оценщик не дал ряда ({r})")
         out[f"yakor__{sid}"] = _zapis(r, p, t, sr.evr)
@@ -100,14 +115,17 @@ def _zadacha(z: tuple) -> tuple:
         _, pt = ps.tochki(c, i, i + 1)[0]
         r, p, t = ps.schitat_tochku(sr, sid, i, pt, "ekviv", False, False, lm.V21)
         out[f"tochka__{sid}__{i}"] = _zapis(r, p, t, sr.evr)
-    mf = ps.manifest(sid, sr, c, False)
+    mf = ps.manifest(sid, sr, c, False, rz)
     return sid, out, sr.kod, sr.vhody, dict(kub_sha=mf["kub_sha"], daty_sha=mf["daty_sha"])
 
 
-def poschitat(tochki: list, procs: int) -> tuple:
-    """-> (rez {imya: запись}, meta {kod, vhody{sid}, kub{sid}, daty{sid}}). Задача — одна Sk (якорь + её точки)."""
+def poschitat(tochki: list, procs: int, period: str = "train4") -> tuple:
+    """-> (rez {imya: запись}, meta {kod, vhody{sid}, kub{sid}, daty{sid}[, period]}). Задача — одна Sk (якорь + её точки).
+    wf: только якорь A_fix (точки Соболя v5 на wf не считаются: tochki должен быть пуст); в meta period = wf (train4 — ключа нет, побайтно как раньше)."""
     ps = _ps()
-    zad = [(sid, [i for s, i in tochki if s == sid], True) for sid in ps.SIDS]
+    if period != ps.PERIOD and tochki:
+        raise ValueError(f"период {period}: точки Соболя v5 считаются только на train4, на wf — якорь A_fix × 6 Sk")
+    zad = [(sid, [i for s, i in tochki if s == sid], True, period) for sid in ps.SIDS]
     rez, kod, vhody, kub, daty = {}, set(), {}, {}, {}
     if procs <= 1:
         it = map(_zadacha, zad)
@@ -122,7 +140,8 @@ def poschitat(tochki: list, procs: int) -> tuple:
         ex.shutdown()
     if len(kod) != 1:
         raise RuntimeError(f"разный хэш кода в процессах: {sorted(kod)}")
-    return rez, dict(kod=kod.pop(), vhody=vhody, kub=kub, daty=daty)
+    meta = dict(kod=kod.pop(), vhody=vhody, kub=kub, daty=daty)
+    return rez, meta if period == ps.PERIOD else dict(meta, period=period)
 
 
 def net_fajla(rez: dict) -> list:

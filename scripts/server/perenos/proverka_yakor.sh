@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Проверка эквивалентности (Ж-131 п. 3, Ж-133 п. 4): ./proverka_yakor.sh из каталога perenos/ после ./razvernut.sh.
-# Два уровня против эталона Мака etalony_<коммит>.npz (якорь A_fix 6 Sk на train4 + 200 точек):
+# Два уровня против эталона Мака etalony_<коммит>.npz (якорь A_fix 6 Sk на train4 + 200 точек; пакет wf — perenos_do из VERSIYA: якорь на wf + v6 на wf):
 #   дискретное (хэши данных/куба, kod, vhody, ключи, статусы, сделки, индексы входа/выхода) — строго;
 #   непрерывное (Шарп, доходности, ряды) — с допуском DOPUSK (по умолчанию 1e-12 и для якоря, и для точек, Ж-137 п. 3; меняет только владелец).
 # Печатает OK / FAIL с первым расхождением и величиной, и отдельно max |Δ| по непрерывным — даже при OK.
@@ -21,7 +21,7 @@ prover() {   # $1 — режим numpy; печатает итог режима, 
   say "режим $r: пересчёт эталона: якорь A_fix × 6 Sk + 200 точек, плюс набор v6 (якорь v6 × 6 Sk + 200 точек, если он в эталоне), процессов $n (по Sk — не больше 6); лог $log"
   set +e
   (cd "$KOD_DIR" && "$PY" "$KOD_DIR/scripts/server/proverka_ekviv.py" --etalony "$ETALONY" --otmetka "$otm" --rezhim "$r" \
-    --kod-sha "$KOD_SHA" --dannye-sha "$(sha_file "$MANIFEST")" --procs "$n") > "$log" 2>&1
+    --kod-sha "$KOD_SHA" --dannye-sha "$(sha_file "$MANIFEST")" --procs "$n" --do "${PERENOS_DO:-}") > "$log" 2>&1
   rc=$?
   set -e
   grep -E '^(proverka|OK|FAIL)' "$log" || { echo "FAIL [режим $r]: проверка упала (код $rc) — хвост лога:"; tail -n 5 "$log"; rc=1; }
