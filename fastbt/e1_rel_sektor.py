@@ -13,10 +13,15 @@
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
 from fastbt import e1_sektor as sek
+
+ROOT = Path(__file__).resolve().parent.parent
+LAST_DEV = pd.Timestamp("2021-12-31")    # за этой датой сектор известен только из таблицы 2022–2026 (Д4: не переносить 2021 вперёд)
 
 CLOSE_LAG = 0       # close индекса за d; −1 = close d+1 (мутация, контракт §2Б.3)
 SIGMA_LAG = 1       # σ̂ берётся за d−1; 0 = σ̂_d (мутация)
@@ -28,7 +33,12 @@ load_indexes = sek.load_indexes
 
 def sektor_pit(csv_path=SEKTORY_CSV) -> dict:
     """{тикер: [(дата ребалансировки, индекс | None)]} по возрастанию даты."""
-    df = pd.read_csv(csv_path, parse_dates=["дата_ребалансировки"]).sort_values("дата_ребалансировки")
+    df = pd.read_csv(csv_path, parse_dates=["дата_ребалансировки"])
+    if str(csv_path) == str(SEKTORY_CSV) or Path(csv_path) == ROOT / SEKTORY_CSV:    # зона wf: + таблица 2022–2026
+        from fastbt import zona
+        if zona.name() == "wf":
+            df = pd.concat([df, pd.read_csv(ROOT / sek.SEKTORY_PIT_2022, parse_dates=["дата_ребалансировки"])], ignore_index=True)
+    df = df.sort_values("дата_ребалансировки", kind="stable")
     out: dict = {}
     for r in df.itertuples(index=False):
         idx = None if r.индекс == NO_INDEX else r.индекс
@@ -53,7 +63,11 @@ class Ctx:
     def rel(self, t: str, w: int):
         """(rel_d по дням close[t], имя индекса по дням). rel = NaN, где значения нет или индекса нет."""
         c = self.close[t]
-        names = _names(self.pit.get(t, []), c.index)
+        rows = self.pit.get(t, [])
+        if rows and c.index.max() > LAST_DEV and c.index.max() > rows[-1][0] + pd.Timedelta(days=sek.PIT_STALE_DAYS):
+            raise ValueError(f"сектор {t}: даты до {c.index.max().date()}, последняя ребалансировка {rows[-1][0].date()} — "
+                             f"сектор 2021 вперёд не переносится (Д4)")
+        names = _names(rows, c.index)
         rel = pd.Series(np.nan, index=c.index)
         r = np.log(c).diff()
         sg = self.sigma[t].reindex(c.index).shift(SIGMA_LAG)
