@@ -1,0 +1,13 @@
+put	prichina	chitatel
+data/regen/candles_10m_2014_2015/sverka.csv	нет колонки дат и нет обоснования «без дат»	то же, формат csv
+data/calendar/cbr.csv	max_data 2026-12-18 > 2026-02-28; заменён усечённой копией (manifest_dannyh_wf.tsv)	fastbt/etap1_data.py, sobytiya_e1.py (ставка ЦБ, события)
+data/calendar/expirations.csv	max_data 2026-12-17 > 2026-02-28; заменён усечённой копией (manifest_dannyh_wf.tsv)	экспирации (календарные признаки)
+data/calendar/fomc.csv	max_data 2026-12-09 > 2026-02-28; заменён усечённой копией (manifest_dannyh_wf.tsv)	календарные признаки (события)
+data/calendar/imoex_rebal.csv	max_data 2026-12-18 > 2026-02-28; заменён усечённой копией (manifest_dannyh_wf.tsv)	ребалансировки IMOEX (события)
+data/calendar/imoex_rebal_official.csv	max_data 2026-12-18 > 2026-02-28; заменён усечённой копией (manifest_dannyh_wf.tsv)	ребалансировки IMOEX (события)
+data/calendar/dividends_actual.csv	нет значений дат	календарь дивидендов (сверка fastbt/dividendy.py)
+data/calendar/dividends_expected.csv	нет значений дат	календарь дивидендов (ожидаемые)
+data/calendar/cpi_ru.csv	нет значений дат	календарь макро-событий
+data/calendar/cpi_us.csv	max_data 2026-12-10 > 2026-02-28; заменён усечённой копией (manifest_dannyh_wf.tsv)	календарь макро-событий
+data/iss_ext/bars_10m/BRF8_2018.parquet	нет значений дат	istochniki_v6.Fajly.brent (10-минутки контрактов Brent BR*)
+data/iss_ext/br_contracts.json	max_data 2026-05-04 > 2026-02-28; заменён усечённой копией (manifest_dannyh_wf.tsv)	vneshnie_1850.contract_table (календарь контрактов Brent)
