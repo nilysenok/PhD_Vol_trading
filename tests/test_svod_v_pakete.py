@@ -35,9 +35,12 @@ def test_manifest_soderzhit_svod_i_sha_sovpadaet(tmp_path):
     assert put == "data/server_2021/docs/issledovaniya/div_sverka_svod.csv" and mx <= "2021-12-31"
     cp = tmp_path / "svod.csv"
     st = usech_2021.usech_csv(REPO / SVOD_REL, cp, ("record_date", "announce_pit"))
-    assert st.otbrosheno == 0 and st.max_data <= "2021-12-31"
-    assert _sha(cp) == sha == sha_ist == _sha(REPO / SVOD_REL), "усечённая копия ≠ источник"
-    assert cp.read_bytes() == (REPO / SVOD_REL).read_bytes()
+    assert (st.stroki, st.otbrosheno) == (173, 74) and st.max_data <= "2021-12-31"   # свод 247 строк: 74 с датой 2022+ усечены
+    assert _sha(cp) == sha, "усечённая копия ≠ sha копии в манифесте"
+    assert _sha(REPO / SVOD_REL) == sha_ist != sha, "sha источника в манифесте ≠ полный свод (или совпал с копией)"
+    assert cp.read_text(encoding="utf-8").splitlines()[0].endswith(",godna_korr"), "копия без godna_korr"
+    полный = (REPO / SVOD_REL).read_text(encoding="utf-8").splitlines()
+    assert all(ln in полный for ln in cp.read_text(encoding="utf-8").splitlines())
 
 
 def test_svod_v_nakladke_a_ne_v_data_syrye():
@@ -74,7 +77,7 @@ def test_s_nakladkoj_div_verified_istina(tmp_path):
     kod = _paket(tmp_path, True)
     (tmp_path / "p.py").write_text(PROVERKA, encoding="utf-8")
     r = _zapusk(kod, str(tmp_path / "p.py"))
-    assert r.returncode == 0 and "SVOD True True 146" in r.stdout, r.stdout + r.stderr[-600:]
+    assert r.returncode == 0 and "SVOD True True 213" in r.stdout, r.stdout + r.stderr[-600:]
 
 
 def test_bez_nakladki_svod_ne_vidno_i_div_verified_lozh(tmp_path):

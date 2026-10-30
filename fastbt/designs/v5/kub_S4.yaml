@@ -6,7 +6,7 @@ setka: v5
 sid: S4
 tip: trend
 period: train4
-periody: [train4, v2]
+periody: [train4, v2, wf]
 komissiya: 0.0004
 fdr: t0d
 sobol: {seed: 20261030, seed2: 20261031, scramble: true, N1: 32768}

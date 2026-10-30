@@ -29,5 +29,8 @@ PRAVILA = [
     ("docs/issledovaniya/2026-10-28_sostav_imoex.csv", "csv", ("date_eff", "known_from"), (), "fastbt/vselennaya.py SOSTAV"),
     ("docs/issledovaniya/div_sverka_svod.csv", "csv", ("record_date", "announce_pit"), (),
      "fastbt/sobytiya_e1.py SVOD_CSV, istochniki_v6.div_otfiltrovan (свод Д8: без него ось дивидендов v6 закрыта)"),
+    # календарь основных сессий MOEX 2025–2026 (fastbt/kalendar_moex.py): нужен ТОЛЬКО пакету wf (--do 2026-02-28); при --do 2021
+    # копия пуста по датам и отвергается (в манифест ≤ 2021 не входит); читается лениво (daily_1850.aggregate, calendar_extend)
+    ("docs/issledovaniya/2026-10-30_kalendar_moex_2025_2026.csv", "csv", ("date",), ("accessed",), "fastbt/kalendar_moex.py CALENDAR_MOEX (wf: дни ≥ 2025)"),
     ("docs/issledovaniya/2026-10-28_sostav_sektorov.csv", "csv", ("дата_ребалансировки",), (), "состав секторных индексов"),
 ]

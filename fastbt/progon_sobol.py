@@ -185,8 +185,12 @@ def sreda(sid: str, rz: Rezhim = R0) -> Sreda:
     if _W.get("sid") != (sid, rz):
         _W.pop("sreda", None)
         sr = fabrika(sid) if fabrika else fabrika_real(sid, rz)
-        if sr.daty.size == 0 or sr.daty.max() >= np.datetime64("2020-01-01"):
-            raise ValueError(f"{sid}: в рядах есть даты ≥ 2020 — отказ (Ж-082)")
+        verh = "2020-01-01"
+        if rz.period == "wf":                              # только wf и только с отметкой владельца (Ж-136)
+            period_v2.proverit_chtenie("wf")
+            verh = str(np.datetime64(period_v2.PERIODY["wf"].konec.date()) + 1)
+        if sr.daty.size == 0 or sr.daty.max() >= np.datetime64(verh):
+            raise ValueError(f"{sid}: в рядах есть даты ≥ {verh[:4]} — отказ (Ж-082)")
         if rz.setka != "progon" and getattr(sr.evr, "fdr", "нет атрибута fdr") != rz.fdr:
             raise ValueError(f"{sid}: оценщик {type(sr.evr).__name__} не считает fdr = {rz.fdr!r} куба "
                              f"(у него {getattr(sr.evr, 'fdr', 'нет атрибута fdr')!r}) — отказ, не молчаливый null")

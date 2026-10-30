@@ -16,7 +16,13 @@ import yaml
 OKNA = ("<=2016", "<=2017", "<=2018")
 PORIG_U, MIN_AKT = 0.05, 20
 MERTVAYA, MALO = "мёртвая: не оценена", "мало шагов"
-KOLONKI = ("os", "gruppa", "novaya", "okno", "n_akt", "mu_star", "sigma", "U95", "zamorozit", "prichina")
+NET_SDELOK, DOLYA_NOL = "не оценена: нет сделок", 0.5      # Д4: Y целиком 0 при статусе ok; доля > 50 % у Sk — «ВНИМАНИЕ» в итоге драйвера
+KOLONKI =("os", "gruppa", "novaya", "okno", "n_akt", "mu_star", "sigma", "U95", "zamorozit", "prichina")
+
+
+def _nol(stat: dict, i: int) -> bool:
+    """Ось i имела активные шаги, отброшенные как «обе точки без сделок» (stat[окно]['n_nol'], если задан)."""
+    return any(int(stat[w].get("n_nol", np.zeros(i + 1, int))[i]) > 0 for w in OKNA)
 
 
 def reshenie(osi: list[dict], stat: dict[str, dict]) -> dict[str, tuple[bool, str]]:
@@ -30,6 +36,8 @@ def reshenie(osi: list[dict], stat: dict[str, dict]) -> dict[str, tuple[bool, st
         u = [float(stat[w]["U95"][i]) for w in OKNA]
         if not o["novaya"]:
             res[o["os"]] = (False, "ось v5: не замораживается")
+        elif max(n) == 0 and _nol(stat, i):
+            res[o["os"]] = (False, f"не измерено, {NET_SDELOK}: n_akt {n}, шаги были, но обе точки пары без сделок (Д4)")
         elif max(n) == 0:
             res[o["os"]] = (False, f"не измерено, {MERTVAYA}: n_akt {n}, ось не заморожена и не значима")
         elif min(n) < MIN_AKT:
@@ -71,11 +79,13 @@ def pometki(osi: list[dict], stat: dict[str, dict]) -> dict:
     out = {}
     for i, o in enumerate(osi):
         n = [int(stat[w]["n_akt"][i]) for w in OKNA]
-        out[o["os"]] = {"n_akt": n, "pometka": MERTVAYA if max(n) == 0 else MALO if min(n) < MIN_AKT else None}
+        mert = NET_SDELOK if _nol(stat, i) else MERTVAYA
+        out[o["os"]] = {"n_akt": n, "pometka": mert if max(n) == 0 else MALO if min(n) < MIN_AKT else None}
     return out
 
 
-def zapisat_yaml(path: Path, data: str, vhody: dict, res: dict, statusy: dict | None = None, osi_akt: dict | None = None) -> list[str]:
+def zapisat_yaml(path: Path, data: str, vhody: dict, res: dict, statusy: dict | None = None, osi_akt: dict | None = None,
+                  nol_sdelok: dict | None = None, baza_bez_sdelok: dict | None = None) -> list[str]:
     """zamorozka.yaml: v, дата, sha входов (kub_sha, kod, csv), правило, список замороженных осей. Возвращает список.
     statusy — счётчик ok / ne_schitana / none_kanon / oshibka; osi_akt — `pometki`: активные шаги и метки «мёртвая»/«мало шагов»."""
     zam = sorted(k for k, (z, _) in res.items() if z)
@@ -83,8 +93,13 @@ def zapisat_yaml(path: Path, data: str, vhody: dict, res: dict, statusy: dict | 
          "osi": zam, "prichiny": {k: res[k][1] for k in zam}}
     if statusy is not None:
         d["statusy"] = statusy
+    if nol_sdelok is not None:        # {chislo, ok, dolya}: точки ok с Y целиком 0 (0 сделок во всех окнах Y)
+        d["nol_sdelok"] = nol_sdelok
+    if baza_bez_sdelok is not None:   # {chislo, r, dolya}: базы траекторий (первые точки) без сделок
+        d["baza_bez_sdelok"] = baza_bez_sdelok
     if osi_akt is not None:
         d["osi_aktivnye"] = osi_akt
+        d["ne_ocenyeny_net_sdelok"] = sorted(k for k, v in osi_akt.items() if v["pometka"] == NET_SDELOK)
         d["mertvye_ne_ocenyeny"] = sorted(k for k, v in osi_akt.items() if v["pometka"] == MERTVAYA)
         d["malo_shagov"] = sorted(k for k, v in osi_akt.items() if v["pometka"] == MALO)
     path.write_text(yaml.safe_dump(d, allow_unicode=True, sort_keys=False), "utf-8")

@@ -84,12 +84,27 @@ def _key(ticker: str, start: str, end: str, window: str, src: Path) -> str:
     return f"{ticker}_{window}_{start}_{end}_{h.hexdigest()[:16]}"
 
 
+def _proverit_wf(ticker: str, end: str, src: Path) -> None:
+    """end позже END (2021-12-31): только при отметке снятого замка, не позже конца wf, и файл {T}_{Y}.csv каждого
+    года 2022…end.year обязан существовать (нет файла — ошибка, а не молча пустой год, Д4)."""
+    from fastbt import period_v2
+    period_v2.proverit_chtenie("wf", otmetka=period_v2.OTMETKA)
+    if pd.Timestamp(end) > period_v2.PERIODY["wf"].konec:
+        raise ValueError(f"end {end}: позже конца периода wf {period_v2.PERIODY['wf'].konec.date()}")
+    for y in range(pd.Timestamp(END).year + 1, pd.Timestamp(end).year + 1):
+        if not (src / f"{ticker}_{y}.csv").exists():
+            raise FileNotFoundError(f"{src / f'{ticker}_{y}.csv'}: нет 1-минуток года {y}, а период просит {end}")
+
+
 def load_bars5m(ticker: str, start: str = START, end: str = END, window: str = "osnovnaya",
                 src: Path | None = None, cache: Path | None = None) -> pd.DataFrame:
-    """5-минутки тикера за [start; end]. Столбцы COLS; кэш на диске (FASTBT_NO_CACHE=1 — выключить)."""
+    """5-минутки тикера за [start; end]. Столбцы COLS; кэш на диске (FASTBT_NO_CACHE=1 — выключить).
+    end > END (2021-12-31) — только wf при отметке снятого замка (_proverit_wf)."""
     if window not in WINDOWS:
         raise ValueError(f"окно {window!r}: допустимо {sorted(WINDOWS)}")
     src, cache = Path(src or SRC), Path(cache or CACHE)
+    if pd.Timestamp(end) > pd.Timestamp(END):
+        _proverit_wf(ticker, end, src)
     use = os.environ.get("FASTBT_NO_CACHE", "") != "1"
     p = cache / f"{_key(ticker, start, end, window, src)}.parquet"
     if use and p.exists():

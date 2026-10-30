@@ -95,6 +95,27 @@ def calc_adx(high, low, close, period=14):
 
 
 def compute_base(close, high, low, open_arr, volume):
+    """Базовые индикаторы. Ведущий NaN-префикс (прогрев относительного ряда) отрезается, индикаторы считаются на конечной
+    части и дополняются NaN назад до исходных дат (без подстановок, Д4; vf_pass — True, как при NaN в объёме).
+    Без префикса — побайтно прежнее (`_compute_base0`)."""
+    close, high, low, open_arr, volume = (np.asarray(x) for x in (close, high, low, open_arr, volume))
+    ok = np.isfinite(close) & np.isfinite(high) & np.isfinite(low) & np.isfinite(open_arr)
+    f = int(np.argmax(ok)) if ok.any() else len(close)
+    if f == 0 or f == len(close):
+        return _compute_base0(close, high, low, open_arr, volume)
+    part = _compute_base0(close[f:], high[f:], low[f:], open_arr[f:], volume[f:])
+    out = {}
+    for k, v in part.items():
+        if k == "_volume":
+            out[k] = volume
+            continue
+        full = np.full(f + len(v), True) if v.dtype == bool else np.full(f + len(v), np.nan)
+        full[f:] = v
+        out[k] = full
+    return out
+
+
+def _compute_base0(close, high, low, open_arr, volume):
     ind = {}
     n = len(close)
     ind["atr14"] = calc_atr(high, low, close, 14)
