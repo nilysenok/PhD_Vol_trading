@@ -35,6 +35,11 @@ def _tag(tags, f, msgs, exc):
         tags |= {t for m, t in msgs.items() if m in str(e)}
 
 
+def otkazy_pravila():
+    """Правила-отказы оценщика: все, кроме bb_predel (структурный ноль, не отказ). Отбор по тождеству функции, не по индексу."""
+    return tuple(p for p in nsv.PRAVILA if p is not nsv.bb_predel)
+
+
 def otkazy(sid, c):
     """Номера правил 1–7, по которым оценщик/движок отказал бы канонической точке c (первый отказ в каждой проверке)."""
     pt5, v6 = ev6.razdelit(sid, c)
@@ -81,7 +86,7 @@ def rashozhdeniya(sid):
     """Точки, где правила и оракул расходятся: [(c0, правила, отказы)]. Пусто — каноны не получают отказ и не шире отказа."""
     bad = []
     for c0, otk in vyborka(sid):
-        trig = {i + 1 for i, f in enumerate(nsv.PRAVILA[:8]) if f(sid, c0)}     # 1–8 — отказы оценщика; 9 (bb_predel) — не отказ, свой тест
+        trig = {i + 1 for i, f in enumerate(otkazy_pravila()) if f(sid, c0)}     # 1–8 — отказы оценщика; 9 (bb_predel) — не отказ, свой тест
         if trig & {1, 8}:
             trig |= {1, 8}                  # движок (exec_e._check_params) одним текстом отказывает и по правилу 1, и по правилу 8
         if not otk <= trig or bool(trig) != bool(otk):
@@ -100,8 +105,8 @@ def test_vyborka_nepustaya_po_kazhdoj_prichine():
 
 
 def test_mutaciya_pravilo_snyato_lovitsya_svojstvom():
-    for i in range(8):                                  # 1–8; правило 9 (не отказ) — test_canon_bb_predel.py
-        with mock.patch.object(nsv, "PRAVILA", tuple(p for k, p in enumerate(nsv.PRAVILA) if k != i)):
+    for i in range(len(otkazy_pravila())):              # правила-отказы; bb_predel (не отказ) — test_canon_bb_predel.py
+        with mock.patch.object(nsv, "PRAVILA", tuple(p for p in nsv.PRAVILA if p is not otkazy_pravila()[i])):
             assert any(rashozhdeniya(s) for s in SIDS), i
 
 

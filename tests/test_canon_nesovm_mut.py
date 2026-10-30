@@ -7,7 +7,7 @@ from unittest import mock
 import numpy as np
 import pytest
 from scipy.stats import qmc
-from test_canon_nesovm_orakul import N, SIDS, otkazy
+from test_canon_nesovm_orakul import N, SIDS, otkazy, otkazy_pravila
 
 from fastbt import canon_v6 as c6, canon_v6_nesovm as nsv
 
@@ -26,12 +26,12 @@ def tochki(sid):
     for row in u:
         pt = {n: g[c6._indeks(x, len(g), sp.get("p_vykl"))] for (n, g, sp), x in zip(ox, row)}
         real = c6.canon_v6(sid, pt, kub)
-        with mock.patch.object(nsv, "PRAVILA", nsv.PRAVILA[8:]):     # без отказов 1–8; правило 9 (не отказ) остаётся
+        with mock.patch.object(nsv, "PRAVILA", (nsv.bb_predel,)):     # без отказов оценщика; bb_predel (не отказ) остаётся
             c0 = c6.canon_v6(sid, pt, kub)
         if c0 is None:
             assert real is None
             continue
-        out.append((pt, real, c0, {i + 1 for i, f in enumerate(nsv.PRAVILA[:8]) if f(sid, c0)}, otkazy(sid, c0)))   # 9 — не отказ оценщика
+        out.append((pt, real, c0, {i + 1 for i, f in enumerate(otkazy_pravila()) if f(sid, c0)}, otkazy(sid, c0)))   # bb_predel — не отказ оценщика
     return out
 
 
@@ -52,7 +52,7 @@ def test_poryadok_do_canon_v5_na_sluchajnyh_tochkah(sid):
     for row in u:
         pt = {n: g[c6._indeks(x, len(g), sp.get("p_vykl"))] for (n, g, sp), x in zip(ox, row)}
         real = c6.canon_v6(sid, pt, kub)
-        with mock.patch.object(nsv, "PRAVILA", nsv.PRAVILA[8:]):
+        with mock.patch.object(nsv, "PRAVILA", (nsv.bb_predel,)):
             c0 = c6.canon_v6(sid, pt, kub)
         assert (real is None) == (c0 is None or nsv.nesovm(sid, c0))
 
@@ -75,7 +75,7 @@ def test_vybroshennaya_tochka_poluchila_by_otkaz_po_prichine(sid):
 def test_edinichnye_srabatyvaniya_v_vyborke():
     """Правило 8 в выборке Соболя (2000 точек × 6 кубов) одно не срабатывает (только с 1 или 7): его точность — адресной точкой ниже.
     Правило 6 после свёртки правила 5 (толкования 30.10 06:40) срабатывает само: раньше его накрывало 5 (7 точек, всегда с 5)."""
-    odin = {k: 0 for k in range(1, 9)}      # правило 9 не отказ оценщика — test_canon_bb_predel.py
+    odin = {k: 0 for k in range(1, len(otkazy_pravila()) + 1)}      # bb_predel не отказ оценщика — test_canon_bb_predel.py
     for sid in SIDS:
         for _, _, _, trig, _ in tochki(sid):
             if len(trig) == 1:
@@ -100,7 +100,7 @@ def test_adresnaya_tochnost_pravil_6_i_8(sid, kw, pravila, otkaz):
     with mock.patch.object(nsv, "PRAVILA", ()):
         c0 = c6.canon_v6(sid, baza(sid, **kw))
     assert c0 is not None
-    assert {i + 1 for i, f in enumerate(nsv.PRAVILA) if f(sid, c0)} == pravila
+    assert {i + 1 for i, f in enumerate(otkazy_pravila()) if f(sid, c0)} == pravila
     otk = otkazy(sid, c0)
     assert otk == otkaz or (pravila == {1} and otk <= {1, 8} and otk)
     assert (c6.canon_v6(sid, baza(sid, **kw)) is None) == bool(pravila)
