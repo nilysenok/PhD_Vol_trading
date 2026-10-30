@@ -42,7 +42,8 @@ def _vhod():
 
 def _run(lam, dannye=None, dohod=None, k=6):
     sigma, d, im = _vhod()
-    return msp_v5.progon(_sig(), sigma, SEKTOR, d if dohod is None else dohod, im, lam, dannye, k=k)
+    rb = d if dohod is None else dohod                           # контракт Ж-149: R_brutto + T (T=0 — как прежде)
+    return msp_v5.progon(_sig(), sigma, SEKTOR, {"R_brutto": rb, "T": rb * 0.0}, im, lam, dannye, k=k)
 
 
 def _b(r):
