@@ -112,8 +112,6 @@ def test_run_vyhod_polnyj_d1_18_strok(tmp_path, bez_zamka):
     assert t.groupby("rol").size().to_dict() == {"ряд": 6, "контроль": 12}
 
 
-@pytest.mark.xfail(strict=True, reason="в wf_sigma_cd.py нет запрета на --out внутри test_locked/ (мутация (г) не ловится кодом); "
-                                       "когда гард появится — xfail станет XPASS и потребует снять отметку")
 def test_vyhod_v_test_locked_zapreshchen(tmp_path, bez_zamka):
     main, spec, _ = T.make_main(tmp_path)
     with pytest.raises(SystemExit):
