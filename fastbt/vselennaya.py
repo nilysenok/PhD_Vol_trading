@@ -58,6 +58,12 @@ def _sostav_table(path: str, col: str = "date_eff") -> tuple[tuple[pd.Timestamp,
     return tuple(rows)
 
 
+def zona_wf() -> bool:
+    """Таблица 2022+ подключается только в зоне wf; в dev/test1 состав после 2021 не из неё (прежнее поведение)."""
+    from fastbt import zona
+    return zona.name() == "wf"
+
+
 def _vidno_s(date_eff: pd.Timestamp, known_from) -> pd.Timestamp:
     """Строка новой таблицы видна не раньше max(date_eff, known_from) (point-in-time, Д3)."""
     return date_eff if pd.isna(known_from) else max(date_eff, pd.Timestamp(known_from))
@@ -85,7 +91,7 @@ def sostav(d, sostav_path: Path | str = SOSTAV) -> frozenset:
     ts = pd.Timestamp(d)
     cur: frozenset = frozenset()
     last = None
-    rows = (_sostav_wf(str(sostav_path), str(SOSTAV_2022)) if ts.year > LAST_YEAR and str(sostav_path) == str(SOSTAV)
+    rows = (_sostav_wf(str(sostav_path), str(SOSTAV_2022)) if ts.year > LAST_YEAR and zona_wf() and str(sostav_path) == str(SOSTAV)
             else _sostav_table(str(sostav_path), SOSTAV_COL))
     for de, tk in rows:
         if de <= ts:

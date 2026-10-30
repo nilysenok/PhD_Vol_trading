@@ -84,6 +84,10 @@ def _calendar() -> np.ndarray:
     from fastbt.daily_1850 import out_path                                        # noqa: PLC0415
     d = pd.read_parquet(zona.path("daily", out_path()), columns=["date"])
     cal = np.sort(pd.to_datetime(d["date"]).dt.normalize().unique().astype("datetime64[ns]"))
+    if zona.name() == "wf":
+        cal = cal[cal < np.datetime64(zona.END_WF)]       # бары ≥ 2026-03-01 в календарь wf не входят
+    if len(cal) == 0:
+        raise FileNotFoundError(f"зона {zona.name()}: дневной ряд пуст — календаря торгов нет")
     if zona.name() == "wf" and cal[-1] < np.datetime64(WF_KALENDAR_DO):
         raise FileNotFoundError(f"зона wf: дневной ряд кончается {str(cal[-1])[:10]}, нужен ряд wf до {WF_KALENDAR_DO} "
                                 f"(daily_1850 --wf после докачки); календарь ≤ 2021 для wf не подставляется")
