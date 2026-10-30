@@ -141,18 +141,23 @@ def _atomic_write(path: Path, data: bytes) -> None:
 
 
 def _ne_zatirat_wf(path: Path) -> None:
-    """Ряд с датами ≥ 2022 (wf) при несошедшемся маркере не пересобирается dev-рядом ≤ 2021: громкий отказ."""
-    m = marker(path)
-    if not (path.exists() and m.exists()):       # нет файла / нет маркера: сборка как раньше
+    """Ряд с датами ≥ 2022 (wf) не пересобирается dev-рядом ≤ 2021 ни при каком состоянии маркера: громкий отказ."""
+    if not path.exists():                        # нет файла: сборка как раньше
         return
     try:
         mx = pd.Timestamp(pd.read_parquet(path, columns=["date"])["date"].max())
     except Exception:                            # оборванный файл (нет футера): дат не узнать — пересборка как раньше
         return
-    sf, sm = sha256(path), m.read_text().strip()
-    if mx >= END and sf != sm:
-        raise RuntimeError(f"{path}: ряд с датами ≥ 2022 (wf), маркер не сходится — не перезаписываю dev-рядом ≤ 2021; "
-                           f"sha файла {sf}, sha маркера {sm}")
+    if mx < END:
+        return
+    m = marker(path)
+    sm = m.read_text().strip() if m.exists() else "нет маркера"
+    sf = sha256(path)
+    if sm == sf:                                 # готовый ряд: ensure до сюда не доходит (is_ready); защита готовности — отдельный тест
+        return
+    why = "маркер не сходится" if m.exists() else "маркера нет"
+    raise RuntimeError(f"{path}: ряд с датами ≥ 2022 (wf), {why} — не перезаписываю dev-рядом ≤ 2021; "
+                       f"sha файла {sf}, sha маркера {sm}")
 
 
 def ensure(path: Path, main: Path | None = None) -> Path:
@@ -160,13 +165,20 @@ def ensure(path: Path, main: Path | None = None) -> Path:
     os.replace, затем маркер с хэшем; параллельные процессы идут по очереди под flock."""
     import fcntl
     path.parent.mkdir(parents=True, exist_ok=True)
+    guard = f"_FASTBT_ENSURE_{path.name}"       # `-m fastbt.daily_1850`: build() → import fastbt.data → второй ensure
+    if os.environ.get(guard) == str(os.getpid()):   # того же процесса на тот же lock: уже держим его, вложенный вызов — пропуск
+        return path
     with open(path.with_name(f".{path.name}.lock"), "w") as lk:
         fcntl.flock(lk, fcntl.LOCK_EX)
         if not is_ready(path):
             _ne_zatirat_wf(path)
             marker(path).unlink(missing_ok=True)
             tmp = path.with_name(f".{path.name}.{os.getpid()}.parquet.tmp")
-            build(main).to_parquet(tmp, index=False)
+            os.environ[guard] = str(os.getpid())
+            try:
+                build(main).to_parquet(tmp, index=False)
+            finally:
+                os.environ.pop(guard, None)
             os.replace(tmp, path)
             _atomic_write(marker(path), sha256(path).encode())
     return path
