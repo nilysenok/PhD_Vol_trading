@@ -23,13 +23,13 @@ for d in tables logs; do
 done
 say "забираю ledger/: метки (manifest.json, checkpoint.json, SHA256SUMS*, daty.npy)"
 "${RSYNC[@]}" --prune-empty-dirs --include='*/' --include='manifest.json' --include='checkpoint.json' --include='SHA256SUMS*' \
-  --include='daty.npy' --exclude='*' "$src/ledger/" "$dst/ledger/" || fail "rsync ledger/ (метки) — вывод выше"
+  --include='daty.npy' --include='zamorozka.yaml' --include='morris_y.jsonl' --include='morris_*.csv' --exclude='*' "$src/ledger/" "$dst/ledger/" || fail "rsync ledger/ (метки) — вывод выше"
 n21=0; n20=0
 if [ "${PERENOS_DRYRUN:-0}" != 1 ]; then
   while IFS= read -r m; do
     sk=$(dirname "${m#"$dst"/ledger/}")
-    if grep -q '"v": "2.1"' "$m"; then
-      say "ledger 2.1: $sk — шарды"
+    if grep -Eq '"v": "2\.(1|2)"' "$m"; then   # явный список: 2.1 и 2.2 (2.2 = 2.1 + setka, rol, klyuch_n)
+      say "ledger 2.1/2.2: $sk — шарды"
       "${RSYNC[@]}" --exclude='.zamok' "$src/ledger/$sk/" "$dst/ledger/$sk/" || fail "rsync ledger/$sk — вывод выше"
       n21=$((n21 + 1))
     else

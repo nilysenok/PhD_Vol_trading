@@ -54,9 +54,17 @@ def stats_FS():
     return stats.F_S
 
 
+def _bez_otmetki(monkeypatch, tmp_path):
+    """Отметка снятого замка теперь лежит в репозитории: «без отметки» моделируется несуществующим путём во всех вызовах
+    proverit_chtenie без явного otmetka (значение по умолчанию связано при определении, поэтому подмена OTMETKA не работает)."""
+    import functools
+    net = tmp_path / "net.json"
+    monkeypatch.setattr(pv, "proverit_chtenie", functools.partial(pv.proverit_chtenie, otmetka=net))
+    return net
+
+
 def test_g4_wf_do_snyatiya_zamka_otkaz(tmp_path, monkeypatch):
-    otm = tmp_path / "net.json"
-    monkeypatch.setattr(pv.proverit_chtenie, "__defaults__", (None, otm))   # замок «не снят» независимо от отметки в репозитории
+    otm = _bez_otmetki(monkeypatch, tmp_path)
     with pytest.raises(pv.ZamokVladeltsa, match="замок"):
         pv.proverit_chtenie("wf", otmetka=otm)
     with pytest.raises(pv.ZamokVladeltsa):
@@ -64,7 +72,7 @@ def test_g4_wf_do_snyatiya_zamka_otkaz(tmp_path, monkeypatch):
     with pytest.raises(pv.ZamokVladeltsa):
         pv.proverit_chtenie("v2", put="test_locked/x.csv", otmetka=otm)
     with pytest.raises(pv.ZamokVladeltsa):
-        ev.EvaluatorV2.evaluate_v2(object(), {}, "wf")            # раньше любого чтения; отметки владельца в репозитории нет
+        ev.EvaluatorV2.evaluate_v2(object(), {}, "wf")            # раньше любого чтения; отметка подменена на несуществующую
     pv.proverit_chtenie("train4", otmetka=otm)                     # ≤ 2021 открыты
     pv.proverit_chtenie("v2", put="data/regen/ch4_dev/sigma_2021.csv", otmetka=otm)
     otm.write_text("{}")
@@ -75,8 +83,10 @@ def test_g4_wf_do_snyatiya_zamka_otkaz(tmp_path, monkeypatch):
 
 
 def test_g4_progon_otkazyvaet_wf(tmp_path, monkeypatch):
-    monkeypatch.setattr(pv.proverit_chtenie, "__defaults__", (None, tmp_path / "net.json"))   # умолчание otmetka связано при def
+    """Проверяет: без отметки proverit_v5 отказывает ZamokVladeltsa (замок раньше проверки periody куба). С отметкой в
+    репозитории wf упирается в ValueError «не объявлен в кубе (periody)» — это чинит лист объявления wf в кубах."""
     import fastbt.progon_sobol as ps
+    _bez_otmetki(monkeypatch, tmp_path)
     assert "wf" in ps.OKNO and ps.OKNO["wf"] == ("2015-01-01", "2014-06-01")
     assert ps.OKNO["train4"] == ("2016-01-01", "2015-01-01") and ps.OKNO["v2"] == ("2015-01-01", "2014-08-26")
     rz = ps.Rezhim("v5", "wf", 1, False, None)

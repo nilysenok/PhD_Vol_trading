@@ -52,8 +52,17 @@ def test_wf_do_2020_bez_otmetki_ok(tmp_path, monkeypatch):
     assert _pul(DATY[DATY < np.datetime64("2020-01-01")]).daty.size > 0
 
 
-def test_otmetka_v_repozitorii_tolko_godnaya():
-    assert not PV.OTMETKA.exists() or PV.otmetka_godna(PV.OTMETKA)    # ставит владелец; пустой/битый файл — не отметка
+def test_otmetka_v_repozitorii_godnaya():
+    assert PV.otmetka_godna(PV.OTMETKA)           # непустой JSON с ключами preregistraciya_v2, sha256 (64 hex), data_snyatiya
+
+
+def test_otmetka_v_repozitorii_sovpadaet_s_preregistraciej():
+    import hashlib
+    import json
+    assert PV.OTMETKA.is_file()                   # замок 2022+ снят владельцем 30.10 (Ж-136); отметку ставит владелец, не тест
+    o = json.loads(PV.OTMETKA.read_text(encoding="utf-8"))
+    pre = PV.OTMETKA.parents[2] / o["preregistraciya_v2"]
+    assert o["sha256"] == hashlib.sha256(pre.read_bytes()).hexdigest()     # правка предрегистрации без новой отметки — красное
 
 
 def test_periods_wf_v_etap1_eval():

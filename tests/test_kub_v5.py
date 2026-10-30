@@ -55,7 +55,7 @@ def test_kub_format_i_obyavleno_do_scheta(sid):
     k = KUBY[sid]
     C.proverit(k)
     assert k["sobol"]["N1"] == 32768 and k["sobol"]["seed"] != k["sobol"]["seed2"] and k["sobol"]["scramble"] is True
-    assert k["periody"] == ["train4", "v2"] and k["period"] == "train4" and k["komissiya"] == 0.0004 and k["fdr"] == "t0d"
+    assert k["periody"] == ["train4", "v2", "wf"] and k["period"] == "train4" and k["komissiya"] == 0.0004 and k["fdr"] == "t0d"
     assert k["zakrepleno"]["tf"] == "den" and set(k["faza3"]) == {"consec", "min_hold", "cooldown", "min_sily"}
     assert "uroven_razmera" in k["msp"] and "uroven_razmera" not in urovni(k)       # Ж-129 (5): уровень — слой портфеля
 
