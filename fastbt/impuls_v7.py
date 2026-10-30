@@ -59,8 +59,8 @@ def sila_proboja(b10: pd.DataFrame, tf: str, t_sig: str, kanal: int = KANAL, atr
     lo = f["low"].shift(1).rolling(kanal).min()
     raz = np.where(f["close"] > hi, f["close"] - hi, np.where(f["close"] < lo, f["close"] - lo, 0.0))
     ok = (atr > 0).to_numpy()
-    # ATR не определён или 0 (нулевой диапазон): сила = ±1 (прежняя бинарная), чтобы сигнал не имел силу 0
-    s = pd.Series(np.where(ok, raz / atr.where(atr > 0, 1.0), np.sign(raz)), index=f["date"].to_numpy())
+    # пробой при ATR не определён или 0: сила не определена = NaN (Д4: без подстановки); нет пробоя — 0
+    s = pd.Series(np.where(ok, raz / atr.where(atr > 0, 1.0), np.where(raz != 0, np.nan, 0.0)), index=f["date"].to_numpy())
     return s[f["slot"].to_numpy() == n_full - 1]
 
 
@@ -70,9 +70,9 @@ def sila_dnya(b10: pd.DataFrame, sid: str, t_sig: str = "18:30") -> pd.Series:
     if sid != "S12":
         return sila_proboja(b10, TF[sid], t_sig)
     a, b = (sila_proboja(b10, TF[x], t_sig) for x in ("S10", "S11"))
-    idx = a.index.union(b.index)
-    a, b = a.reindex(idx).fillna(0.0), b.reindex(idx).fillna(0.0)
-    return np.sign(a).where(np.sign(a) == np.sign(b), 0.0) * (a.abs() + b.abs()) / 2
+    side = signal_dnya(b10, "S12", t_sig)                           # сторона прежняя; сила NaN, если у одной ноги не определена
+    mag = (a.abs().reindex(side.index) + b.abs().reindex(side.index)) / 2
+    return (side * mag).where(side != 0, 0.0)
 
 
 def soglasie(a: pd.Series, b: pd.Series) -> pd.Series:

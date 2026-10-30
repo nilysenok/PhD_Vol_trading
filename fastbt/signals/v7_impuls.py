@@ -47,18 +47,20 @@ def semya(sid: str, ist: dict):
         kesh, ksila, sig = {}, {}, np.zeros((len(grid), n), dtype=np.int8)
         ex = np.zeros((len(grid), n), dtype=bool)
         st = np.zeros((len(grid), n), dtype=np.float64)
+        neopr = np.zeros((len(grid), n), dtype=bool)
         for k, p in enumerate(grid):
             tau, vhod, T = _tochka(p)
             t_sig = T_D1 if vhod == "d1" else T
             if t_sig not in kesh:
                 kesh[t_sig] = I.signal_dnya(b10, sid, t_sig).reindex(dni).fillna(0).astype(np.int8).to_numpy()
-                ksila[t_sig] = I.sila_dnya(b10, sid, t_sig).reindex(dni).fillna(0.0).abs().to_numpy()
+                ksila[t_sig] = I.sila_dnya(b10, sid, t_sig).reindex(dni).abs().to_numpy()   # NaN = сила не определена
             sig[k] = kesh[t_sig]
             sig[k, :WARMUP] = 0
-            st[k] = np.where(sig[k] != 0, ksila[t_sig], 0.0)
+            neopr[k] = (sig[k] != 0) & np.isnan(ksila[t_sig])          # сила не определена: в рангах не участвует
+            st[k] = np.where((sig[k] != 0) & ~neopr[k], ksila[t_sig], 0.0)
             idx = np.flatnonzero(sig[k]) + tau
             ex[k, idx[idx < n]] = True
         return SignalSet(sig=sig, exit_l=ex, exit_s=ex.copy(), strength=st,
-                         params=list(grid), split=True, extra={})
+                         params=list(grid), split=True, extra={"sila_neopr": neopr})
 
     return fn
