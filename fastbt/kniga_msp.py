@@ -12,6 +12,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from fastbt.progon_urovni import _istoriya, _prosadka
+from fastbt.tf_os_v5 import KOMISSIYA      # Д7: та же ставка, что в движке (0,04 % на сторону)
 
 MAX_SEKTOR, NETTO, LAM_SR, OTKL_SR, OTKL_MNOZH = 3, 0.30, 0.5, -0.5, 0.25
 OKNO_TSEL, OKNO_SK, OKNO_SR, OKNO_BETA, OKNO_VYKL = 21, 63, 252, 63, 10
@@ -119,6 +120,15 @@ def vyklyuchatel(ex_kniga: np.ndarray, i: int, tsel=0.10) -> float:
     return VYKL_MNOZH if plohaya else 1.0
 
 
+def komissiya_oborota(w, w_prev, stavka=KOMISSIYA) -> float:
+    """Единое определение (Д7, Ж-149): комиссия, доля NAV = ставка·Σ|w − w_prev| по любым позициям, перенесённым
+    через ночь. МСП зовёт её только для хеджа MIX (open→open IMOEX, комиссии в excess нет): ставки-акции дневные,
+    excess пары (`tf_os_v5.dohod`) закрыт к вечеру и платит вход и выход при размере w, смена множителей между днями
+    лишь меняет размер завтрашней сделки — |Δw| акций был бы двойным учётом. A′-расширенная (позиции через ночь) —
+    зовёт для всего."""
+    return float(stavka * np.abs(np.asarray(w, float) - np.asarray(w_prev, float)).sum())
+
+
 @dataclass
 class Itog:
     u: np.ndarray        # веса ставок в долях NAV (после всего, кроме хеджа)
@@ -126,14 +136,19 @@ class Itog:
     w_sk: np.ndarray
     m: float
     vykl: float
+    komissiya: float = 0.0   # доля NAV за оборот множителей и хеджа в день i; вычитает вызывающий из доходности дня
 
 
 def kniga_dnya(i, score, sigma, sektor, sk, ist: dict, k=20, rho=0.01, plecho=2.0, tsel=0.10) -> Itog:
-    """ist: ex_sk [T,S], ex_port [T] (m=1), ex_kniga [T] (после шагов 8–10), imoex [T], kvartal [T] — строки ≥ i не читаются."""
+    """ist: ex_sk [T,S], ex_port [T] (m=1), ex_kniga [T] (после шагов 8–10), imoex [T], kvartal [T] — строки ≥ i не читаются.
+    ist["pred"] — состояние предыдущего вызова (пишет сама): вчерашний хедж для комиссии его оборота."""
     u = vybor_stavok(score, sigma, sektor, k, rho)
     w = vesa_sk(ist["ex_sk"], ist["kvartal"], i)
     u = netto(u * (len(w) * w)[np.asarray(sk)])
     m = mnozhitel_vola(ist["ex_port"], i, np.abs(u).sum(), tsel, plecho)
     f = vyklyuchatel(ist["ex_kniga"], i, tsel)
     b = beta(ist["ex_kniga"], ist["imoex"], i)
-    return Itog(u * m * f, hedzh_mix(b) * f, w, m, f)
+    wf, h = u * m * f, hedzh_mix(b) * f
+    kom = komissiya_oborota(h, ist.get("pred", {"h": 0.0})["h"])
+    ist["pred"] = {"h": h}
+    return Itog(wf, h, w, m, f, kom)
