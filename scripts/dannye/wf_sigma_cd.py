@@ -214,7 +214,14 @@ def d1(s: pd.DataFrame, col: str, rv: pd.DataFrame, ryad: str) -> pd.DataFrame:
 
 # ======================= запуск =======================
 
+def proverit_out(out: Path | None) -> None:
+    """Выход не пишется внутрь test_locked/ (по разрешённому пути, с учётом симлинков) — отказ до чтения входов."""
+    if out is not None and "test_locked" in Path(out).resolve().parts:
+        raise SystemExit(f"СТОП: --out {out} внутри test_locked/ — запись туда запрещена")
+
+
 def run(main: Path, out: Path | None, spec: Path = ROOT / SPEC) -> dict:
+    proverit_out(out)
     kal = pd.read_parquet(main / KAL, columns=["date", "ticker", "rv"])
     kal["date"] = pd.to_datetime(kal["date"])
     rep, ser, shagi, d1t = dict(v=V), {}, [], []
