@@ -54,7 +54,6 @@ def test_sharpe_dn_ignoriruet_vyhod_vne_rabochih_dnej():
     assert tot == 1.0 and s == s   # сделка в субботу молча потеряна из ряда (дефект малый: у движка выходы — рабочие дни)
 
 
-@pytest.mark.xfail(strict=True, reason="ДЕФЕКТ: itog берёт ПЕРВУЮ корзину с долей < 30 % и пишет «≥ N дней»; старшие корзины с gross ≤ 0 (nan) не проверяются")
 def test_itog_nemonotonnost_korzin():
     rows = [("2016-02-01", "2016-02-04", 3, 3, 10.0, 0.2, 0.0), ("2016-03-01", "2016-03-15", 14, 3, -5.0, 0.2, 0.0)]
     assert "≥ 2 дней" not in iz.itog(_df(rows))
