@@ -79,10 +79,12 @@ def rate_2013() -> pd.Series:
 
 def rate_on(days) -> pd.Series:
     """Ставка на календарные дни по датам вступления (ffill только внутри ряда); день раньше
-    первой даты ряда — ValueError (Д4), не NaN и не bfill."""
+    первой даты ряда и день позже последней строки ряда — ValueError (Д4), не NaN, не bfill и не ffill за концом."""
     r, days = rate_cbr(), pd.DatetimeIndex(days)
     if len(days) and days.min() < r.index[0]:
         raise ValueError(f"ставка на {days.min().date()}: ряд начинается {r.index[0].date()}")
+    if len(days) and days.max() > r.index[-1]:
+        raise ValueError(f"ставка на {days.max().date()}: ряд кончается {r.index[-1].date()} (за концом ряда ffill не тянется)")
     return r.reindex(r.index.union(days)).sort_index().ffill().reindex(days)
 
 

@@ -90,8 +90,8 @@ slit=0
 git -C "$REPO" merge-base --is-ancestor "$FULL" origin/kanon-v22-pereschet 2>/dev/null && slit=1
 # потоки и слой numba: одни и те же при эталоне на Маке и во всех скриптах сервера (obshchee.sh читает их из VERSIYA)
 NT=${PERENOS_NUMBA_THREADS:-1}; NL=${PERENOS_NUMBA_LAYER:-workqueue}
-printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%s\nnakladka=%s\nnumba_threads=%s\nnumba_layer=%s\nsobran=%s\n' \
-  "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$NAKLADKA" "$NT" "$NL" "$(date '+%F %T %Z')" > "$OUT/VERSIYA"
+printf 'commit=%s\ncommit_short=%s\ntar=kod_%s.tar.gz\ntar_sha256=%s\nkod_slit=%s\nnakladka=%s\nnumba_threads=%s\nnumba_layer=%s\nsobran=%s\nperenos_do=%s\n' \
+  "$FULL" "$SHORT" "$SHORT" "$TAR_SHA" "$slit" "$NAKLADKA" "$NT" "$NL" "$(date '+%F %T %Z')" "${PERENOS_DO:-}" > "$OUT/VERSIYA"
 say "   numba: NUMBA_NUM_THREADS=$NT NUMBA_THREADING_LAYER=$NL (на эталоне и на сервере)"
 
 say "4/6 эталоны Мака: якорь A_fix × 6 Sk на train4 + ${PERENOS_ETALONY_TOCHEK:-200} точек + набор v6: якорь v6 × 6 Sk + 200 точек куба v6 (код tar, данные $OUT/data)"
