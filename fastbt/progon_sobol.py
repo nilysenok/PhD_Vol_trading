@@ -269,6 +269,8 @@ def schitat_kusok(zad: tuple) -> tuple:
         r, ex_p, ex_t = schitat_tochku(sr, sid, i, pt, _W["ist"], _W["kod_slit"], _W["fast"], v, rz)
         if v == lm.V22:
             r.update(setka=mf["setka"], rol=rz.rol, klyuch_n=lm.klyuch_n(sid, r["klyuch"]))
+            if _W.get("rezhim_dnya") is not None and poz_ok and r["status"] == "ok":   # v7: агрегаты (ctx["rezhim_dnya"] — agregaty_v7.rezhim_dnya на sr.daty)
+                r["agr"] = importlib.import_module("fastbt.agregaty_v7").sobrat(sr.daty, ex_p, sr.evr.poz[0], sr.evr.poz[2], _W["rezhim_dnya"])
         importlib.import_module("fastbt.zaem_v2").pisat(w, r, ex_p, ex_t, getattr(sr.evr, "zaem", None),
                                                            sr.evr.poz if poz_ok and v in lm.SUMMY_V and r["status"] == "ok" else None)   # Ж-089: ряд платы за заём; Л7b: |pos|
         importlib.import_module("fastbt.tejk_signal").pisat_diag(w.pd, r, getattr(sr.evr, "diag", None) if r["status"] == "ok" else None)   # Ж-087

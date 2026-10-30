@@ -88,6 +88,11 @@ def proverit_stroku_22(r: dict, setka=None) -> None:
         raise ValueError("ledger 2.2: setka строки ≠ manifest")
     if r.get("klyuch_n") != klyuch_n(r.get("strategiya"), r.get("klyuch")):
         raise ValueError("ledger 2.2: klyuch_n не сходится с klyuch")
+    if r.get("agr") is not None:                    # v7 (Ж-155 п. 3): необязательное поле агрегатов, формат — fastbt.agregaty_v7
+        a, ng = r["agr"], len(r["agr"].get("gody", ()))
+        if not ng or [len(x) for x in a.get("d", ())] != [ng] * 5 or [len(x) for x in a.get("w", ())] != [ng] * 5 \
+                or [len(x) for x in a.get("r", ())] != [3] * 5:
+            raise ValueError("ledger 2.2: поле agr неверной формы")
 
 
 def kvartaly(daty: np.ndarray, x: np.ndarray) -> dict:
