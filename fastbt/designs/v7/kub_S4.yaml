@@ -1,0 +1,22 @@
+# Куб отбора v7, S4 Keltner (тренд) (Ж-153, Ж-155 п. 2, Ж-156 п. 3, Ж-157 п. 2; план V7-1a). Правила, osi7, N и seed — как в kub_S1.yaml v7.
+# sha256 — в SHA256SUMS этого каталога. Центр ± 1 шаг от сетки куба v6; общие оси v6 — как есть. У тренда минимального удержания нет.
+v: 5
+format: progon-kub
+setka: v7
+data: 2026-10-31
+baza: {setka: v6, kub_sha: 67e0937e62a657c61ed3f0abcba44d45f02c99988551c0e01c8e3f9987ca0ea3}
+sid: S4
+tip: trend
+periody: [train4, v2, wf]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261105, seed2: 20261106, scramble: true, N: 100000, morris_seed: 20261104}
+suzhenie: "centr±1"
+
+signal:
+  period: {setka: [18, 20, 25], centr: 20}
+  mnozh:  {setka: [2.0, 2.25, 2.5], centr: 2.25}
+
+osi7:
+  k_okup:      {setka: [net, 3], vykl: net, p_vykl: 0.5, zhdet: [V7-3], otkuda: "Ж-150, Ж-156 п. 3", smysl: "вход, только если ожидаемый валовой PnL по терцили ранга и корзине удержания покрывает k × издержки"}
+  otnositelno: {setka: [net, sektor, imoex], vykl: net, p_vykl: 0.5, zhdet: [V7-1a], otkuda: "Ж-155 п. 2; fastbt/otnositelno_v7.py", smysl: "сигнал по относительному ряду тикера против сектора или IMOEX"}

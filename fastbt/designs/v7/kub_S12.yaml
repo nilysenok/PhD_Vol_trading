@@ -1,0 +1,22 @@
+# Куб отбора v7, S12 импульс 1ч+2ч (согласие) (Ж-153 пп. 1–4, Ж-156 п. 3; план V7-1b). Устройство, правила и seed — как в kub_S10.yaml; sha256 — в SHA256SUMS.
+v: 5
+format: progon-kub
+setka: v7
+data: 2026-10-31
+baza: {setka: v6, kub_sha: 2651d948256ebf22d340c2c46602d544ab42368be96700cbc6b0724ec79ac259, iz: S3}
+sid: S12
+tip: impuls
+periody: [train4, v2, wf]
+komissiya: 0.0004
+fdr: t0d
+sobol: {seed: 20261105, seed2: 20261106, scramble: true, N: 200000, morris_seed: 20261104}
+
+signal:
+  tau:  {setka: [2, 3, 5], spravka: 1}
+  vhod: {setka: [d1, T]}
+  T:    {setka: ["17:00", "18:00", "18:40"], roditel: {vhod: T}}
+
+osi_s3: [stop_nach, tejk, trail, chast, razmer_tip, m_sily, rang_tip, sigma_ist, bezubytok, stop_v_plyus, pir]
+
+osi7:
+  k_okup: {setka: [net, 3], vykl: net, p_vykl: 0.5, zhdet: [V7-3], otkuda: "Ж-150, Ж-156 п. 3", smysl: "вход, только если ожидаемый валовой PnL по терцили ранга и корзине удержания покрывает k × издержки"}
