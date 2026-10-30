@@ -36,9 +36,15 @@ if "FASTBT_DATA_ROOT" not in os.environ:
     _ensure(OHLCV, MAIN)            # нет файла — собрать из candles_10m (≤ 2021)
 
 
-def _read_cut(p: Path) -> pd.DataFrame:
+def _read_cut(p: Path, period: str | None = None) -> pd.DataFrame:
     """σ̂ (файлы гл. 3/4 с историей до 2026): зона dev — как было; вне dev строки с date ≥ zona.end() отсекаются
-    фильтром parquet на чтении, до любого расчёта. Дневной ряд Z2 не режется, а отклоняется (daily_df, zona.check)."""
+    фильтром parquet на чтении, до любого расчёта. Дневной ряд Z2 не режется, а отклоняется (daily_df, zona.check).
+    period="wf" (или зона "wf"): только при отметке снятого замка (period_v2.proverit_chtenie); режет на конец периода
+    + 1 день (2026-03-01), HARD-граница 2025 для wf не действует."""
+    if period == "wf" or zona.name() == "wf":
+        from fastbt import period_v2
+        period_v2.proverit_chtenie("wf", otmetka=period_v2.OTMETKA)
+        return pd.read_parquet(p, filters=[("date", "<", period_v2.PERIODY["wf"].konec + pd.Timedelta(days=1))])
     if zona.name() == "dev":
         return pd.read_parquet(p)
     d = pd.read_parquet(p, filters=[("date", "<", zona.end())])

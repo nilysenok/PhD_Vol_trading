@@ -20,27 +20,39 @@ def digest() -> str:
     return hashlib.sha1(Path(PATH).read_bytes()).hexdigest()
 
 
-def _rows(path=None) -> list:
+def _granitsa(period=None):
+    """Граница чтения: период wf — 2026-03-01 (искл.) только при отметке снятого замка (period_v2.proverit_chtenie);
+    без отметки — ZamokVladeltsa (PermissionError). Прочие периоды — END."""
+    if period != "wf":
+        return END
+    from fastbt import period_v2
+    period_v2.proverit_chtenie("wf")
+    return period_v2.PERIODY["wf"].konec.date() + timedelta(days=1)
+
+
+def _rows(path=None, end=None) -> list:
+    end = end or END
     out = []
     with open(path or PATH, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
             r["data_obyavleniya"] = date.fromisoformat(r["data_obyavleniya"])
             r["data_sobytiya"] = date.fromisoformat(r["data_sobytiya"])
-            if r["data_sobytiya"] >= END or r["data_obyavleniya"] >= END:
+            if r["data_sobytiya"] >= end or r["data_obyavleniya"] >= end:
                 raise PermissionError(f"событие {r['tip']} {r['data_sobytiya']}: данные >= 2022 не читаются")
             out.append(r)
     return out
 
 
-def sobytiya_na(d, ticker=None, vpered: int = 0, path=None) -> list:
+def sobytiya_na(d, ticker=None, vpered: int = 0, path=None, period=None) -> list:
     """События с data_sobytiya в [d, d+vpered] дней, известные к d (data_obyavleniya <= d).
 
-    ticker=None — все; иначе события тикера и `*`. vpered=0 — события ровно дня d."""
+    ticker=None — все; иначе события тикера и `*`. vpered=0 — события ровно дня d. period="wf" — см. _granitsa."""
     d = date.fromisoformat(str(d)[:10])
-    if d >= END:
-        raise PermissionError(f"{d}: данные >= 2022 не читаются")
+    end = _granitsa(period)
+    if d >= end:
+        raise PermissionError(f"{d}: данные >= {end} не читаются")
     konec = d + timedelta(days=vpered)
-    return [r for r in _rows(path)
+    return [r for r in (_rows(path) if period is None else _rows(path, end))
             if r["data_obyavleniya"] <= d
             and d <= r["data_sobytiya"] <= konec
             and (ticker is None or r["ticker"] in ("*", ticker))]

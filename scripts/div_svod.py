@@ -23,7 +23,7 @@ AGREGATORY = {"dohod.ru", "investmint.ru", "investfuture.ru", "smart-lab.ru"}
 PERVICHNYE = {"moex.com", "phosagro.ru", "novatek.ru", "company.rt.ru", "lukoil.ru", "ogk2.ru", "interrao.ru", "ir.mts.ru",
               "ir.aeroflot.ru"}
 FILES_WF = ("*_dividendy_2022_2024.csv", "*_dividendy_2025_2026.csv")
-COLS = ["ticker", "record_date", "dps_rub", "announce_pit", "godna", "prichina"]
+COLS = ["ticker", "record_date", "dps_rub", "announce_pit", "godna", "prichina", "godna_korr"]
 
 
 def _num(s: str) -> float | None:
@@ -69,7 +69,15 @@ def stroka(r: dict) -> dict:
     if not prichina and not ann:
         prichina = "net_daty_obyavleniya"
     return {"ticker": r["ticker"], "record_date": r["record_date"], "dps_rub": r["dps_rub"], "announce_pit": ann,
-            "godna": 0 if prichina else 1, "prichina": prichina}
+            "godna": 0 if prichina else 1, "prichina": prichina, "godna_korr": _korr(r)}
+
+
+def _korr(r: dict) -> int:
+    """godna_korr (корректировка цен #678, tolkovaniya 30.10 14:55): подтверждены реестр и сумма; дата объявления не нужна."""
+    a, b = _num(r["dps_rub"]), _num(r.get("dps_rub_2"))
+    if a is None or b is None or not r.get("record_date_2") or r["record_date"] != r["record_date_2"]:
+        return 0
+    return int(abs(a - b) <= 0.01 * max(1.0, abs(a)))
 
 
 def hosty(url: str) -> set:
@@ -105,7 +113,8 @@ def chitat_wf(papka: Path = DIR) -> list[dict]:
         if not prichina and not ann:
             prichina = "net_daty_obyavleniya"
         out.append({"ticker": r["ticker"], "record_date": r["record_date"], "dps_rub": r["dps_rub"], "announce_pit": ann,
-                    "godna": 0 if prichina else 1, "prichina": prichina})
+                    "godna": 0 if prichina else 1, "prichina": prichina,
+                    "godna_korr": int(prichina in ("", "net_daty_obyavleniya"))})
     return out
 
 

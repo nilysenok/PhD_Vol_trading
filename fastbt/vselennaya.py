@@ -3,7 +3,7 @@
 sostav(d): последний date_eff <= d (known_from не используется: консервативно по date_eff).
 U(d, k): ранг по Σ value за год d.year-1, фиксирован на весь год d.year (ex-ante). Ничья — по тикеру.
 Тикер без оборота в прошлом году (нет файла / нет строк / сумма <= 0) в U не входит.
-Данные >= 2022 не читаются (отказ). Оборот: {root}/daily_value/{T}.csv (date,value), только чтение.
+Данные >= 2022 не читаются (отказ), кроме периода wf при отметке снятого замка (_otkryto); за концом состава/оборота — отказ. Оборот: {root}/daily_value/{T}.csv (date,value), только чтение.
 """
 from __future__ import annotations
 
@@ -20,10 +20,24 @@ SOSTAV = REPO / "docs" / "issledovaniya" / "2026-10-28_sostav_imoex.csv"
 LAST_YEAR = 2021
 
 
+STALE_DAYS = 120   # состав IMOEX меняется поквартально (макс. интервал в таблице — 105 дней); дальше последней строки + 120 — отказ
+
+
+def _otkryto(y: int) -> None:
+    """Год > 2021: только при отметке снятого замка wf и не позже конца периода (период_v2.proverit_chtenie)."""
+    from fastbt import period_v2
+    try:
+        period_v2.proverit_chtenie("wf", otmetka=period_v2.OTMETKA)
+    except period_v2.ZamokVladeltsa as e:
+        raise ValueError(f"данные >= 2022 не читаются (нет отметки снятого замка): {y}") from e
+    if y > period_v2.PERIODY["wf"].konec.year:
+        raise ValueError(f"год {y}: позже конца периода wf")
+
+
 def _year(d) -> int:
     y = pd.Timestamp(d).year
     if y > LAST_YEAR:
-        raise ValueError(f"данные >= 2022 не читаются: {d}")
+        _otkryto(y)
     return y
 
 
@@ -52,11 +66,14 @@ def sostav(d, sostav_path: Path | str = SOSTAV) -> frozenset:
     _year(d)
     ts = pd.Timestamp(d)
     cur: frozenset = frozenset()
+    last = None
     for de, tk in _sostav_table(str(sostav_path), SOSTAV_COL):
         if de <= ts:
-            cur = tk
+            cur, last = tk, de
         else:
             break
+    if ts.year > LAST_YEAR and last is not None and ts > last + pd.Timedelta(days=STALE_DAYS):
+        raise ValueError(f"состав IMOEX на {ts.date()}: последняя запись {last.date()} (> {STALE_DAYS} дней) — состав 2022+ не подключён (Д4)")
     return cur
 
 
@@ -64,12 +81,14 @@ def sostav(d, sostav_path: Path | str = SOSTAV) -> frozenset:
 def oborot_goda(ticker: str, year: int, root: str = str(DATA_ROOT)) -> float:
     """Σ value тикера за календарный год; 0.0, если файла или строк за год нет."""
     if year > LAST_YEAR:
-        raise ValueError(f"данные >= 2022 не читаются: {year}")
+        _otkryto(year)
     p = Path(root) / "daily_value" / f"{ticker}.csv"
     if not p.exists():
         return 0.0
     t = pd.read_csv(p, usecols=["date", "value"])
     t = t[pd.to_datetime(t["date"]).dt.year == year]
+    if year > LAST_YEAR and t.empty:
+        raise ValueError(f"оборот {ticker} за {year}: в {p.name} нет строк года (0.0 молча не подставляется, Д4)")
     return float(t["value"].sum())
 
 

@@ -8,10 +8,10 @@ v: 4
 format: progon-kub
 setka: v6
 data: 2026-10-30
-baza: {setka: v5, kub_sha: ea66df6d2380e92ea19357517423584672f292e2067b5de2c37de1f9931b2e2d}
+baza: {setka: v5, kub_sha: 890cfb549726d48ca89524582810bec9e5ea642cd0485e9c8bbc6746fe0bcc1c}
 sid: S3
 tip: trend
-periody: [train4, v2]
+periody: [train4, v2, wf]
 komissiya: 0.0004
 fdr: t0d
 sobol: {seed: 20261102, seed2: 20261103, scramble: true, N: 200000, morris_seed: 20261101}

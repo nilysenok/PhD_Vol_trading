@@ -113,7 +113,7 @@ def allow(pt, t: str, dates, ctx: Ctx | None = None):
             if not BEZ_INDEKSA_VPUSKAT:
                 lo[:], sr[:] = False, False
         else:
-            up, dn = (x.reindex(dt).fillna(False).to_numpy(bool) for x in ctx.trend(name, n))
+            up, dn = (x.reindex(dt, fill_value=False).to_numpy(bool) for x in ctx.trend(name, n))
             lo, sr = (up, dn) if st == "po_trendu" else (dn, up)
     if sh != "net":
         b = ctx.breadth(n).reindex(dt).to_numpy(float)

@@ -87,7 +87,7 @@ def test_8_rodnoy_tau_vyhod_lim():
     assert not nesovm("S2", **ok, tau="net")                              # без τ rodnoy идёт по close
     assert nesovm("S2", **ok, tau=5)
     assert not nesovm("S2", **{**ok, "vyhod_lim": "net"}, tau=5)
-    with mock.patch.object(nsv, "PRAVILA", nsv.PRAVILA[:-1]):
+    with mock.patch.object(nsv, "PRAVILA", tuple(p for p in nsv.PRAVILA if p is not nsv.rodnoy_tau_vyhod_lim)):
         assert not nesovm("S2", **ok, tau=5)                               # мутант без правила 8 пропускает точку, на которой движок падает
 
 

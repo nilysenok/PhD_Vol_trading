@@ -1,7 +1,7 @@
 """Семь типов скользящих для осей S1/S2 сетки v5 (Ж-127): SMA, EMA, WMA, HMA, DEMA, TEMA, KAMA.
 
 Формулы — как в защищённой версии (коммит 6a7a4636, moex_volatility/scripts/daily_upper_bound.py,
-строки 46–91): EMA α = 2/(n+1), старт x[0], без NaN-хвоста; WMA веса 1..n, NaN первые n-1;
+строки 46–91): EMA α = 2/(n+1), старт с первого конечного x (при конечном x[0] — x[0]), до него NaN; WMA веса 1..n, NaN первые n-1;
 HMA (в источнике «hull») = WMA(2·WMA(n//2) − WMA(n), max(int(√n),1)); DEMA = 2·E1 − E2;
 KAMA fast=2, slow=30, старт x[n-1], ER=0 при пути < 1e-12; SMA — pandas rolling, min_periods=n.
 TEMA — расширение по Ж-125 п. 1, в защищённом коде нет: 3·E1 − 3·E2 + E3 на том же EMA (старт x[0]).
@@ -25,9 +25,13 @@ def sma(x, n):
 def ema(x, n):
     x = np.asarray(x, float)
     a = 2.0 / (n + 1)
-    out = np.empty_like(x)
-    out[0] = x[0]
-    for i in range(1, len(x)):
+    out = np.full_like(x, np.nan)
+    ok = np.flatnonzero(np.isfinite(x))
+    if len(ok) == 0:
+        return out
+    k = ok[0]   # старт с первого конечного значения: NaN прогрева не заражает ряд (Д4: без подстановок)
+    out[k] = x[k]
+    for i in range(k + 1, len(x)):
         out[i] = a * x[i] + (1 - a) * out[i - 1]
     return out
 
@@ -70,9 +74,16 @@ def sma_nb(x, n):
 @njit(cache=True)
 def ema_nb(x, n):
     a = 2.0 / (n + 1)
-    out = np.empty(len(x))
-    out[0] = x[0]
-    for i in range(1, len(x)):
+    out = np.full(len(x), np.nan)
+    k = -1
+    for i in range(len(x)):
+        if np.isfinite(x[i]):
+            k = i
+            break
+    if k < 0:
+        return out
+    out[k] = x[k]
+    for i in range(k + 1, len(x)):
         out[i] = a * x[i] + (1 - a) * out[i - 1]
     return out
 

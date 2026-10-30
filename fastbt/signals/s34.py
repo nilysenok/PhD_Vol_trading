@@ -62,7 +62,21 @@ def rolling_ext(x, w, is_max):
 
 @njit(cache=True)
 def supertrend(high, low, close, period, mult):
-    """calc_supertrend c22a4b3: ST[t] (NaN до бара period)."""
+    """calc_supertrend c22a4b3: ST[t] (NaN до бара period). Старт — от первого бара с конечными H/L/C (прогрев относительного
+    ряда не обнуляет весь ST): ST[f+period…], до него NaN, без подстановок (Д4). Начало ряда конечное (f=0) — побайтно прежнее."""
+    n = len(close)
+    f = 0
+    while f < n and not (np.isfinite(high[f]) and np.isfinite(low[f]) and np.isfinite(close[f])):
+        f += 1
+    out = np.full(n, np.nan)
+    if f < n:
+        out[f:] = _supertrend0(high[f:], low[f:], close[f:], period, mult)
+    return out
+
+
+@njit(cache=True)
+def _supertrend0(high, low, close, period, mult):
+    """Ядро calc_supertrend c22a4b3 на ряду, начинающемся с конечного бара."""
     n = len(close)
     tr = np.empty(n)
     tr[0] = high[0] - low[0]
