@@ -102,21 +102,20 @@ def test_vykl_v7_ravno_v6_klyuch(sid, kuby):
 
 
 def test_k_okup_i_otnositelno_ostayutsya_v_kanone(kuby):
-    k, pt = kuby["S1"], _tochki(c6.osi(c6.load_kub("S1"), c6.GOTOVY), 1, 1)[0]
+    k = kuby["S1"]
+    pt = next(p for p in _tochki(c6.osi(c6.load_kub("S1"), c6.GOTOVY), 50, 1) if c6.canon_v6("S1", p, k["v6"]))
     base = c7.canon_v7("S1", dict(pt, k_okup="net", otnositelno="net"), k)
-    if base is None:
-        pytest.skip("точка несовместима")
     assert "k_okup" not in base and "otnositelno" not in base
     assert c7.canon_v7("S1", dict(pt, k_okup=3, otnositelno="net"), k)["k_okup"] == 3
     assert c7.canon_v7("S1", dict(pt, k_okup="net", otnositelno="imoex"), k)["otnositelno"] == "imoex"
 
 
-def test_mutatsiya_k_okup_vykl_ne_ubiraetsya_lovitsya(kuby, monkeypatch):
-    """Мутация: k_okup = выкл. остаётся в каноне — ключ точки v6 ≠ ключу v7."""
+def test_mutatsiya_k_okup_vykl_ne_ubiraetsya_lovitsya(kuby):
+    """Мутация: k_okup = выкл. остаётся в каноне — ключ точки v6 ≠ ключу v7 (ловит test_vykl_v7_ravno_v6_klyuch; здесь — прямо)."""
     k = kuby["S3"]
-    pt = _tochki(c6.osi(c6.load_kub("S3"), c6.GOTOVY), 1, 3)[0]
-    c = c7.canon_v7("S3", dict(pt, k_okup="net"), k)
-    assert c is None or "k_okup" not in c
+    for pt in _tochki(c6.osi(c6.load_kub("S3"), c6.GOTOVY), 100, 3):
+        c = c7.canon_v7("S3", dict(pt, k_okup="net", otnositelno="net"), k)
+        assert c is None or ("k_okup" not in c and "otnositelno" not in c)
 
 
 def test_sha256sums_sovpadayut():
