@@ -120,15 +120,17 @@ def vyklyuchatel(ex_kniga: np.ndarray, i: int, tsel=0.10) -> float:
     return VYKL_MNOZH if plohaya else 1.0
 
 
-def komissiya_mnozh(w, w_prev, u0, u0_prev, mf: float, tik, hedzh: float, hedzh_prev: float, stavka=KOMISSIYA) -> float:
-    """Комиссия (доля NAV) за оборот сверх сделок пары (Ж-149): по каждому тикеру ставка·max(0, |Δw| − |Δu0|·m·f),
-    w — итоговые веса (после m, f), u0 — до множителей; столбцы одного тикера (`tik`) складываются в нетто.
-    |Δu0|·m·f — вход/выход ставки, уже в excess пары (она масштабируется весом); остальное — оборот от таргета,
-    плеча, нетто-масштаба и выключателя. Хедж MIX сделкой пары не покрыт: ставка·|Δ хеджа| целиком."""
+def komissiya_mnozh(w, w_prev, raw, raw_prev, tik, hedzh: float, hedzh_prev: float, stavka=KOMISSIYA) -> float:
+    """Комиссия (доля NAV) за оборот сверх сделок пар (Ж-149): по тикеру ставка·max(0, |Δw| − |Σ Δraw·c|).
+    w — итоговые веса, raw — СЫРАЯ позиция пары (до весов Sk, нетто, сектора, таргета, плеча, выключателя),
+    c = w/raw — сегодняшний коэффициент цепочки (при выходе raw=0 — вчерашний w_prev/raw_prev). Δraw·c — вход/выход
+    сделок, уже в excess пары; всё остальное изменение веса (Sk, нетто, сектор, m, f) облагается. Столбцы одного
+    тикера (`tik`) складываются в нетто. Хедж MIX сделкой пары не покрыт: ставка·|Δ хеджа| целиком."""
+    w, wp, raw, rawp = (np.asarray(x, float) for x in (w, w_prev, raw, raw_prev))
+    c = np.where(raw != 0, w / np.where(raw != 0, raw, 1), np.where(rawp != 0, wp / np.where(rawp != 0, rawp, 1), 0.0))
     n = int(np.max(tik)) + 1 if len(tik) else 0
-    dw = np.bincount(tik, np.asarray(w, float) - w_prev, n)
-    du = np.bincount(tik, np.asarray(u0, float) - u0_prev, n)
-    return float(stavka * (np.maximum(np.abs(dw) - np.abs(du) * mf, 0.0).sum() + abs(hedzh - hedzh_prev)))
+    dw, dr = np.bincount(tik, w - wp, n), np.bincount(tik, (raw - rawp) * c, n)
+    return float(stavka * (np.maximum(np.abs(dw) - np.abs(dr), 0.0).sum() + abs(hedzh - hedzh_prev)))
 
 
 @dataclass
@@ -146,6 +148,7 @@ def kniga_dnya(i, score, sigma, sektor, sk, ist: dict, k=20, rho=0.01, plecho=2.
     Необязательно ist["tik"] — индекс тикера столбца (по умолчанию каждый столбец — свой тикер); ist["pred"] — состояние
     предыдущего вызова (пишет сама), нужное для комиссии оборота множителей."""
     u = vybor_stavok(score, sigma, sektor, k, rho)
+    raw = u
     w = vesa_sk(ist["ex_sk"], ist["kvartal"], i)
     u = netto(u * (len(w) * w)[np.asarray(sk)])
     m = mnozhitel_vola(ist["ex_port"], i, np.abs(u).sum(), tsel, plecho)
@@ -153,8 +156,8 @@ def kniga_dnya(i, score, sigma, sektor, sk, ist: dict, k=20, rho=0.01, plecho=2.
     b = beta(ist["ex_kniga"], ist["imoex"], i)
     wf, h = u * m * f, hedzh_mix(b) * f
     nul = np.zeros(len(u))
-    p = ist.get("pred", {"u0": nul, "w": nul, "h": 0.0})
+    p = ist.get("pred", {"raw": nul, "w": nul, "h": 0.0})
     tik = np.asarray(ist.get("tik", np.arange(len(u))), int)
-    kom = komissiya_mnozh(wf, p["w"], u, p["u0"], m * f, tik, h, p["h"])
-    ist["pred"] = {"u0": u, "w": wf, "h": h}
+    kom = komissiya_mnozh(wf, p["w"], raw, p["raw"], tik, h, p["h"])
+    ist["pred"] = {"raw": raw, "w": wf, "h": h}
     return Itog(wf, h, w, m, f, kom)
