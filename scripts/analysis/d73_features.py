@@ -28,6 +28,8 @@ def load_events(cal_dir=CAL, types=TYPES):
         if 'vneplan' in df:
             df = df[df['vneplan'].fillna(0).astype(int) == 0]
         out[ty] = pd.DataFrame({'date': pd.to_datetime(df['date']), 'known_from': pd.to_datetime(df['known_from'])})
+        if 'known_to' in df:  # версия даты действует до known_to (PIT: перенос заменяет прежнюю дату)
+            out[ty]['known_to'] = pd.to_datetime(df['known_to'])
     return out
 
 
@@ -37,6 +39,8 @@ def features(t, h, events):
     res = {}
     for ty, df in events.items():
         known = df[df['known_from'] <= t]  # только то, что известно на t
+        if 'known_to' in known:
+            known = known[known['known_to'].isna() | (known['known_to'] > t)]
         d = known['date']
         res['n_%s_h%d' % (ty, h)] = int(((d > t) & (d <= t + pd.Timedelta(days=h))).sum())
         fut = d[d > t]
