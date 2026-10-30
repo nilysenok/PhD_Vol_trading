@@ -3,8 +3,6 @@ import copy
 import sys
 from pathlib import Path
 
-import pytest
-
 SERVER = Path(__file__).resolve().parents[1] / "scripts/server"
 sys.path.insert(0, str(SERVER))
 import ekviv_sravn as es  # noqa: E402
@@ -26,7 +24,6 @@ def test_staryj_etalon_bez_sha_ne_sveryaetsya():
     assert r["kod"] == 0
 
 
-@pytest.mark.xfail(strict=True, reason="#788 блокер-не-блокер: sobrat_perenos.sh не передаёт --kod-sha/--dannye-sha в etalony_mak.py")
 def test_sobrat_perenos_peredayot_sha_v_etalony():
     src = (SERVER / "sobrat_perenos.sh").read_text()
     stroka = src[src.index("etalony_mak.py"):].split("\n\n")[0]
