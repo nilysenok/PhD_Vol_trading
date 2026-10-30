@@ -15,6 +15,7 @@ import yaml
 
 OKNA = ("<=2016", "<=2017", "<=2018")
 PORIG_U, MIN_AKT = 0.05, 20
+MERTVAYA, MALO = "мёртвая: не оценена", "мало шагов"
 KOLONKI = ("os", "gruppa", "novaya", "okno", "n_akt", "mu_star", "sigma", "U95", "zamorozit", "prichina")
 
 
@@ -29,8 +30,10 @@ def reshenie(osi: list[dict], stat: dict[str, dict]) -> dict[str, tuple[bool, st
         u = [float(stat[w]["U95"][i]) for w in OKNA]
         if not o["novaya"]:
             res[o["os"]] = (False, "ось v5: не замораживается")
+        elif max(n) == 0:
+            res[o["os"]] = (False, f"не измерено, {MERTVAYA}: n_akt {n}, ось не заморожена и не значима")
         elif min(n) < MIN_AKT:
-            res[o["os"]] = (False, f"не измерено: n_akt {n} < {MIN_AKT}")
+            res[o["os"]] = (False, f"не измерено, {MALO}: n_akt {n} < {MIN_AKT}")
         elif all(x < PORIG_U for x in u):  # NaN < 0,05 ложно
             res[o["os"]] = (True, f"U95 {[round(x, 4) for x in u]} < {PORIG_U} в трёх окнах")
         else:
@@ -62,10 +65,27 @@ def zapisat_csv(path: Path, shapka: dict, osi: list[dict], stat: dict[str, dict]
                             *(f"{float(s[c][i]):.6g}" for c in ("mu_star", "sigma", "U95")), zam, pr])
 
 
-def zapisat_yaml(path: Path, data: str, vhody: dict, res: dict) -> list[str]:
-    """zamorozka.yaml: v, дата, sha входов (kub_sha, kod, csv), правило, список замороженных осей. Возвращает список."""
+def pometki(osi: list[dict], stat: dict[str, dict]) -> dict:
+    """{ось: {n_akt: [по окнам], pometka}} — активные шаги всех осей (и v5); метка «мёртвая: не оценена» (0 шагов во всех окнах),
+    «мало шагов» (< MIN_AKT в каком-то окне) или None."""
+    out = {}
+    for i, o in enumerate(osi):
+        n = [int(stat[w]["n_akt"][i]) for w in OKNA]
+        out[o["os"]] = {"n_akt": n, "pometka": MERTVAYA if max(n) == 0 else MALO if min(n) < MIN_AKT else None}
+    return out
+
+
+def zapisat_yaml(path: Path, data: str, vhody: dict, res: dict, statusy: dict | None = None, osi_akt: dict | None = None) -> list[str]:
+    """zamorozka.yaml: v, дата, sha входов (kub_sha, kod, csv), правило, список замороженных осей. Возвращает список.
+    statusy — счётчик ok / ne_schitana / none_kanon / oshibka; osi_akt — `pometki`: активные шаги и метки «мёртвая»/«мало шагов»."""
     zam = sorted(k for k, (z, _) in res.items() if z)
     d = {"v": 1, "data": data, "vhody": vhody, "pravilo": {"okna": list(OKNA), "U95_lt": PORIG_U, "n_akt_ge": MIN_AKT},
          "osi": zam, "prichiny": {k: res[k][1] for k in zam}}
+    if statusy is not None:
+        d["statusy"] = statusy
+    if osi_akt is not None:
+        d["osi_aktivnye"] = osi_akt
+        d["mertvye_ne_ocenyeny"] = sorted(k for k, v in osi_akt.items() if v["pometka"] == MERTVAYA)
+        d["malo_shagov"] = sorted(k for k, v in osi_akt.items() if v["pometka"] == MALO)
     path.write_text(yaml.safe_dump(d, allow_unicode=True, sort_keys=False), "utf-8")
     return zam
