@@ -115,7 +115,7 @@ def tochki_sobol(n=3000):
     out = []
     for row in u:
         pt = {a: g[c6._indeks(x, len(g), sp.get("p_vykl"))] for (a, g, sp), x in zip(ox, row)}
-        with mock.patch.object(nsv, "PRAVILA", nsv.PRAVILA[:8]):
+        with mock.patch.object(nsv, "PRAVILA", tuple(p for p in nsv.PRAVILA if p is not nsv.bb_predel)):
             c0 = c6.canon_v6("S2", pt, KUB)
         out.append((c6.canon_v6("S2", pt, KUB), c0))
     return out
@@ -158,7 +158,7 @@ def test_mutaciya_predel_ne_toy_storony_lovitsya(imya):
 
 def test_mutaciya_pravilo_snyato_lovitsya():
     from test_canon_nesovm import baza
-    with mock.patch.object(nsv, "PRAVILA", nsv.PRAVILA[:8]):
+    with mock.patch.object(nsv, "PRAVILA", tuple(p for p in nsv.PRAVILA if p is not nsv.bb_predel)):
         assert c6.canon_v6("S2", baza("S2", ma_tip="sma", bb_window=7, bb_std=4.0), KUB) is not None      # без правила точка проходит
     with mock.patch.object(nsv, "bb_predel", lambda sid, q: False):
         assert not proshel_li_orakul()                                                                     # и оракул это видит
