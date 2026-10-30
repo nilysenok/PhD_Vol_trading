@@ -5,6 +5,7 @@ import pytest
 
 from fastbt import canon_v5 as C5
 from fastbt import canon_v6 as C6
+from fastbt import canon_v6_nesovm as nesovm
 
 SIDS = [s for s in C6.SIDS if (C6.KUB6 / f"kub_{s}.yaml").exists()]
 KUBY = {s: C6.load_kub(s) for s in SIDS}
@@ -41,10 +42,16 @@ def test_snyatye_yakorya_sovpadayut_s_vykl(sid):
 
 
 def vlozhena(sid, canon, n=400):
-    """v5 ⊂ v6: канон v5 + все новые оси «выкл.» → канон v6 без новых осей и равен канону v5."""
+    """v5 ⊂ v6 за вычетом точек, выброшенных canon_v6_nesovm (30.10), и только их: канон v5 + все новые оси «выкл.» → канон v6 без новых осей, равный канону v5;
+    выброшенная правилом точка — None, и None бывает только у неё."""
     kub = KUBY[sid]
     pts, _ = C5.tochki_v5(kub["v5"], 0, n)
-    return all(canon(sid, {**c, **vykl(kub)}, kub) == c for _, c in pts)
+    for _, c in pts:
+        q = {**c, **vykl(kub)}
+        r, bros = canon(sid, q, kub), nesovm.nesovm(sid, q)
+        if (r is None) != bros or (r is not None and r != c):
+            return False
+    return True
 
 
 @pytest.mark.parametrize("sid", SIDS)
@@ -63,7 +70,8 @@ def test_mutaciya_vykl_ne_vybrasyvaetsya_lovitsya():
 def test_sobol_bez_gotovykh_osej_raven_v5(sid):
     kub = copy.deepcopy(KUBY[sid])
     kub["sobol"] = kub["v5"]["sobol"]
-    assert C6.tochki_v6(kub, 0, 300, gotovy=frozenset())[0] == C5.tochki_v5(kub["v5"], 0, 300)[0]   # V6-12b: GOTOVY уже не пуст
+    v5 = [(i, c) for i, c in C5.tochki_v5(kub["v5"], 0, 300)[0] if not nesovm.nesovm(sid, c)]       # 30.10: минус выброшенные canon_v6_nesovm
+    assert C6.tochki_v6(kub, 0, 300, gotovy=frozenset())[0] == v5                                    # V6-12b: GOTOVY уже не пуст
 
 
 def test_gotovy_vhodyat_v_sobol_po_listam():

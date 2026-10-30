@@ -32,7 +32,7 @@ def fake(monkeypatch):
     monkeypatch.setattr(ps, "fabrika", sreda)
 
 
-def progon(tmp_path, r=60, prodolzhit=False):
+def progon(tmp_path, r=200, prodolzhit=False):         # 30.10: было 60; canon_v6_nesovm выбрасывает 64 % точек S1 → шагов с активной осью втрое меньше, n_akt ≥ 20 требует больше траекторий
     a = argparse.Namespace(procs=2, prodolzhit=prodolzhit)
     return pm.strategiya(SID, a, tmp_path, REZ, r, mnozh=2)
 

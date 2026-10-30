@@ -6,11 +6,12 @@
 Мутации (в коде, по одной; откат git checkout -- fastbt/): пивот со строки d+1 (eval_v6_piv.tm: slice(s0 + 1, …)); снята свёртка time_decay (canon_v6);
 ось тренда не передаётся в Params (eval_v6_trend.vernut / primenit) — каждая роняет файл."""
 from types import SimpleNamespace
+from unittest import mock
 
 import numpy as np
 import pytest
 
-from fastbt import canon_v5, canon_v6, eval_v5, eval_v6_piv as piv6, etap1_eval_v2, tejk_signal
+from fastbt import canon_v5, canon_v6, canon_v6_nesovm as nesovm, eval_v5, eval_v6_piv as piv6, etap1_eval_v2, tejk_signal
 from fastbt.eval_v5_osi import yakor
 from fastbt.eval_v6 import EvaluatorV6, fkey
 from fastbt.exec_e_piv import PivUrovni
@@ -157,8 +158,11 @@ def test_reentry_pri_podtverzhdenii_odin_kanon(sid):
 @pytest.mark.parametrize("sid", canon_v5.SIDS)
 def test_N_sobolya_ne_umenshaetsya_ot_svertok(sid):
     kub = canon_v6.load_kub(sid)
+    with mock.patch.object(nesovm, "PRAVILA", ()):                               # свёртки без правил несовместимости: смысл прежний
+        pts0, vyb0 = canon_v6.tochki_v6(kub, 0, 512)
+    assert len(pts0) / 512 > 0.45, (sid, len(pts0), vyb0)                        # свёртка склеивает каноны, а не выбрасывает точки (было ≈ 29 %)
     pts, vyb = canon_v6.tochki_v6(kub, 0, 512)
-    assert len(pts) / 512 > 0.45, (sid, len(pts), vyb)                           # свёртка склеивает каноны, а не выбрасывает точки (было ≈ 29 %)
+    assert len(pts) / 512 > 0.30, (sid, len(pts), vyb)                           # 30.10: правила несовместимости (canon_v6_nesovm) выбрасывают ещё 21–26 % (замер 512: S1 0.37 … S6 0.32; запас ≈ 7 п.п.)
 
 
 # ---------------- (4) fkey ----------------

@@ -19,7 +19,7 @@ from pathlib import Path
 import yaml
 from scipy.stats import qmc
 
-from fastbt import canon_v5 as c5
+from fastbt import canon_v5 as c5, canon_v6_nesovm as nsv
 
 ROOT = c5.ROOT
 KUB6 = ROOT / "fastbt/designs/v6"
@@ -145,6 +145,8 @@ def canon_v6(sid: str, pt: dict, kub: dict | None = None):
         q["reentry"] = off("reentry")                                     # повторный вход тренда — только на стоп-заявке (V6-11c)
     if sid == "S4" and q.get("norm") == "s252" and "period" in q:        # V6-5 (#648): при s252 period не влияет
         q["period"] = (kub or _kub(sid))["v5"]["signal"]["period"]["setka"][0]
+    if nsv.nesovm(sid, nsv.svernut(q)):                                            # 7 сочетаний, где оценщик отказывает (canon_v6_nesovm)
+        return None
     c = c5.canon_v5(sid, {k: v for k, v in q.items() if k not in nov})
     if c is None:
         return None
@@ -161,9 +163,7 @@ def obem(kub: dict, zamorozheno=()) -> float:
 
 
 def _indeks(u: float, L: int, p) -> int:
-    if p is None:
-        return min(int(u * L), L - 1)
-    return 0 if u < p else 1 + min(int((u - p) / (1 - p) * (L - 1)), L - 2)
+    return min(int(u * L), L - 1) if p is None else (0 if u < p else 1 + min(int((u - p) / (1 - p) * (L - 1)), L - 2))
 
 
 def tochki_v6(kub: dict, n0: int, n1: int, seed: str = "seed", gotovy=GOTOVY) -> tuple:
