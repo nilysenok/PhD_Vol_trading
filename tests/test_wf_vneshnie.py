@@ -79,7 +79,7 @@ def test_net_cny_posle_obryva_znacheniy_net():
 # --- граница wf и отметка снятого замка ---------------------------------------------------
 def test_granitsa_wf_s_otmetkoi(tmp_path):
     otm = tmp_path / "wf_zamok_snyat.json"
-    otm.write_text("{}")
+    otm.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64 + '", "data_snyatiya": "2026-10-30"}')
     assert v.granitsa("wf", otmetka=otm) == D("2026-03-01")
 
 
@@ -98,7 +98,7 @@ def test_read_bars_wf_chitaet_2026_do_28_02(tmp_path):
     p = tmp_path / "x.parquet"
     pd.DataFrame({"begin": ts.strftime("%Y-%m-%d %H:%M:%S"), "close": [1.0, 2.0, 3.0]}).to_parquet(p)
     otm = tmp_path / "o.json"
-    otm.write_text("{}")
+    otm.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64 + '", "data_snyatiya": "2026-10-30"}')
     b = v.read_bars(p, v.granitsa("wf", otmetka=otm))
     assert list(b["close"]) == [1.0, 2.0]
     assert len(v.read_bars(p)) == 0 or v.read_bars(p)["timestamp"].max() < D("2022-01-01")

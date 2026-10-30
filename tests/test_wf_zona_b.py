@@ -12,7 +12,7 @@ DNI_54 = ["2019-12-30", "2021-03-01", "2025-03-03", "2026-02-27", "2026-03-02"]
 @pytest.fixture
 def otmetka(tmp_path, monkeypatch):
     p = tmp_path / "wf_zamok_snyat.json"
-    p.write_text("{}")
+    p.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64 + '", "data_snyatiya": "2026-10-30"}')
     monkeypatch.setattr(period_v2, "OTMETKA", p)
     return p
 
@@ -161,7 +161,7 @@ def test_bars5m_wf(tmp_path, bez_otmetki, monkeypatch):
     out = bars5m.load_bars5m("AAA", **kw)                            # умолчание до 2021 — отметка не нужна
     assert out.date.max() == pd.Timestamp("2021-12-30")
     p = tmp_path / "otm.json"
-    p.write_text("{}")
+    p.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64 + '", "data_snyatiya": "2026-10-30"}')
     monkeypatch.setattr(period_v2, "OTMETKA", p)
     with pytest.raises(FileNotFoundError, match="2023"):
         bars5m.load_bars5m("AAA", end="2026-02-28", **kw)            # нет файла 2023 — не молчаливый пустой год
@@ -182,6 +182,6 @@ def test_read_cut_wf(tmp_path, bez_otmetki, monkeypatch):
     with pytest.raises(period_v2.ZamokVladeltsa):
         data._read_cut(p, "wf")
     o = tmp_path / "o.json"
-    o.write_text("{}")
+    o.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64 + '", "data_snyatiya": "2026-10-30"}')
     monkeypatch.setattr(period_v2, "OTMETKA", o)
     assert list(data._read_cut(p, "wf")["x"]) == [1, 2, 3]            # 2025 не режется HARD-ом, 2026-03-02 отрезан

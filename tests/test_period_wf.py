@@ -76,6 +76,9 @@ def test_g4_wf_do_snyatiya_zamka_otkaz(tmp_path, monkeypatch):
     pv.proverit_chtenie("train4", otmetka=otm)                     # ≤ 2021 открыты
     pv.proverit_chtenie("v2", put="data/regen/ch4_dev/sigma_2021.csv", otmetka=otm)
     otm.write_text("{}")
+    with pytest.raises(pv.ZamokVladeltsa):
+        pv.proverit_chtenie("wf", otmetka=otm)                     # пустой объект — не отметка
+    otm.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "%s", "data_snyatiya": "2026-10-30"}' % ("a" * 64))
     pv.proverit_chtenie("wf", otmetka=otm)                         # с отметкой владельца — проходит
 
 

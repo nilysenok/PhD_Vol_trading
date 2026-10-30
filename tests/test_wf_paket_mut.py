@@ -43,7 +43,7 @@ def _stroki(p: Path) -> list[str]:
 def test_main_do_wf_rezhet_po_do_s_otmetkoj(tmp_path, monkeypatch):
     monkeypatch.setattr(U, "CUT", U.CUT)                                    # глобал main восстанавливается после теста
     otm = tmp_path / "otm.json"
-    otm.write_text("{}")
+    otm.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64 + '", "data_snyatiya": "2026-10-30"}')
     assert U.main(_koren(tmp_path) + ["--do", DO, "--otmetka", str(otm)]) == 0
     assert _stroki(tmp_path / "data/server_wf/data/calendar/cbr.csv") == ["2021-05-03", "2021-12-31", "2022-01-03", "2026-02-13"]   # known_from 03-10 > DO — нет
     assert not (tmp_path / "data/server_2021").exists()                     # мутация (г): CUT=2021 оставила бы одну строку 2021

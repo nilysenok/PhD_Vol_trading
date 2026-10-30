@@ -43,10 +43,14 @@ def idx_daily(bars: pd.DataFrame, name: str) -> pd.Series:
     return d.set_index("date")["close"].astype(float)
 
 
-def load_indexes(names, main=None, end: pd.Timestamp = END) -> dict:
-    """{имя: close 18:50 по дням}; только < end (≤ 2022-01-01, фильтр на чтении). Нет файла — имени нет в ответе."""
+def load_indexes(names, main=None, end: pd.Timestamp | None = None) -> dict:
+    """{имя: close 18:50 по дням}; только < end (≤ 2022-01-01, в зоне wf — ≤ zona.end(); фильтр на чтении). Нет файла — имени нет."""
     import pyarrow.parquet as pq
-    if end > END:
+
+    from fastbt import zona
+    lim = zona.end() if zona.name() == "wf" else END
+    end = lim if end is None else end
+    if end > lim:
         raise PermissionError("e1_sektor: даты ≥ 2022 не читаются")
     base = Path(main) if main else d18.default_main() / IDX_DIR    # main — каталог с {имя}.parquet
     out = {}

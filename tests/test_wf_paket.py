@@ -63,7 +63,7 @@ def _otkaz(fn) -> bool:
 
 def test_bez_otmetki_otkaz_s_otmetkoj_prinimaetsya(tmp_path):
     net, est = tmp_path / "net.json", tmp_path / "est.json"
-    est.write_text(json.dumps({"sha256": "x"}))
+    est.write_text(json.dumps({"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "a" * 64, "data_snyatiya": "2026-10-30"}))
     assert _otkaz(lambda: MP.verhnyaya_data(DO, net))
     assert MP.verhnyaya_data(DO, est) == pd.Timestamp(DO)
     assert MP.verhnyaya_data("2021-12-31", net) == pd.Timestamp("2021-12-31")      # умолчание отметки не требует
