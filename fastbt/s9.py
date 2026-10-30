@@ -89,6 +89,16 @@ SOURCES_V2 = {
     "naive_h1": (CH4 / "sigma_naive_dev.parquet", "sigma_pred_h1", "h1"),
     "naive_h5": (CH4 / "sigma_naive_dev.parquet", "sigma_pred_h1", "h5"),   # √RV_w от h не зависит
 }
+CH4_WF = REGEN / "wf" / "ch4_sigma"      # σ̂ C/D wf (#745): только гибрид; SHA — SHA256SUMS; ≤ 2021 побайтно = ch4_dev
+
+
+def sigma_src(period: str | None = None) -> tuple:
+    """(источники σ v2, файл SHA): wf — гибрид из `wf/ch4_sigma`; прочие периоды — прежние `ch4_dev`."""
+    if period != "wf":
+        return SOURCES_V2, CH4 / "SHA256.txt"
+    return ({k: (CH4_WF / p.name, c, h) for k, (p, c, h) in SOURCES_V2.items() if k.startswith("hyb")}, CH4_WF / "SHA256SUMS")
+
+
 V2 = False
 POMETKA = "после аудита (Н1–Н5, H3, ключи кэшей)"     # ЭТ, 26.10: таблицы v2 на коде 9b85bff
 # Ъ 23:10, п. 3: проверка RVI на сдвиг (S0, PR #245) — пометка в таблицах выбора D
@@ -251,13 +261,13 @@ def use_v2(comm: float | None = None) -> dict:
     global V2, TABLES, SUFFIX, COMM
     if SCOPE != "dev":
         raise SystemExit("--sigma-set v2 — только --scope dev (тест закрыт)")
-    ref = {}
-    for ln in (CH4 / "SHA256.txt").read_text().splitlines():
+    ref, sha = {}, {}
+    sources, sha_file = sigma_src(PERIOD)
+    for ln in sha_file.read_text().splitlines():
         parts = ln.split()
         if len(parts) >= 2 and len(parts[0]) == 64:
             ref[Path(parts[1]).name] = parts[0]
-    sha = {}
-    for lab, (p, _, _) in SOURCES_V2.items():
+    for lab, (p, _, _) in sources.items():
         h = hashlib.sha256(Path(p).read_bytes()).hexdigest()
         if ref.get(Path(p).name) != h:
             raise SystemExit(f"SHA σ не совпал с SHA256.txt: {Path(p).name}")
@@ -266,7 +276,7 @@ def use_v2(comm: float | None = None) -> dict:
     COMM = COMM_V2 if comm is None else comm
     SUFFIX = "_v2" if abs(COMM - COMM_V2) < 1e-12 else f"_v2_k{COMM * 100:.3f}".replace(".", "")
     SOURCES.clear()
-    SOURCES.update(SOURCES_V2)
+    SOURCES.update(sources)
     return sha
 
 
