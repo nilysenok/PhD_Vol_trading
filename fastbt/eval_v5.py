@@ -104,6 +104,14 @@ def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, **kw):
                             res.x_orders, res.x_fills, ((1.0 - res.free) * wr * sh)[a:b], res.n_bez_tejka)
 
 
+def proverit_vozm(vozm: dict | None, semya: str) -> dict:
+    """vozm у v5/v6 — только {"sig_fn": f(t, sig, dates)}: подмена сигнала до слоя исполнения (к2, плацебо); прочее — отказ."""
+    vz = dict(vozm or {})
+    if set(vz) - {"sig_fn"} or ("sig_fn" in vz and not callable(vz["sig_fn"])):
+        raise ValueError(f"vozm у оценщика {semya}: поддержан только вызываемый sig_fn, получено {sorted(vz)}")
+    return vz
+
+
 class EvaluatorV5(EvaluatorV2):
     STROGAYA = True
     rol: str | None = None          # роль прохода (spravka — Ж-137 п. 6); умолчание класса: оценщик без __init__ (тесты) — основной
@@ -169,7 +177,10 @@ class EvaluatorV5(EvaluatorV2):
             s0, b = m["s0"], self._b(t, period)
             dates = m["dates"][:b + 1]
             sig = self._sig5(t, s0, b)
-            al = self._allow(r.pt4, t, dates, sig, "net")
+            fn = self._ctx["vozm"].get("sig_fn")                       # контроль к2/плацебо (Д-7): подмена сигнала ДО фильтров и исполнения, как _sig2
+            if fn is not None:
+                sig = np.asarray(fn(t, sig, dates), float)
+            al =self._allow(r.pt4, t, dates, sig, "net")
             sg = self.inp.sigma[r.pt4["sigma"]][t][:b + 1]
             out[t] = (s0, b, int(np.searchsorted(dates, np.datetime64(f"{y0}-01-01"))), dates, gate_trades(sig, al), sg, al)
         return out
@@ -237,14 +248,13 @@ class EvaluatorV5(EvaluatorV2):
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
         """Точка v5 (после canon_v5) → (строка ledger v2.0, excess портфеля, excess тикеров) — контракт EvaluatorV2."""
-        if vozm:
-            raise ValueError("vozm у оценщика v5 не поддержан")
+        vozm = proverit_vozm(vozm, "v5")
         self.r5 = r = razbor(self.sid, pt, SIGNAL[self.sid] if self.semya == "v5" else self.sk.sig_names, self.rol)
         if self.semya == "v4" and (r.rang or r.filtr or self.sid in TREND and r.ext.get("k_e")):
             raise ValueError("semya v4 — только для сверки якоря: без ранга, фильтров v5 и k_e")
         self._fkey = tuple(sorted(r.filtr.items()))
         nov = {k: v for k, v in r.nov.items() if v != NOVYE[k]}
-        return super().evaluate_v2({**r.pt4, **r.sp, **nov}, period)
+        return super().evaluate_v2({**r.pt4, **r.sp, **nov}, period, vozm)
 
 
 def vne_bara(evr: EvaluatorV5, rel: float = 1e-9) -> dict:
