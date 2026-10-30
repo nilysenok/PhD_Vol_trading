@@ -9,7 +9,7 @@ import pytest
 
 from fastbt import kniga_msp, msp_v5, tf_os_v5 as TF
 from fastbt import msp_v5_dohod as M
-from tests.test_msp_v5_dohod import _b10
+from test_msp_v5_dohod import _b10
 
 TOCHKA = dict(okno=10, podtv="none")
 

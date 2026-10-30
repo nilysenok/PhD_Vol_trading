@@ -7,7 +7,7 @@ import pytest
 
 from fastbt import diag_v6_chtenie as C
 from fastbt import ledger_v2 as L
-from tests.test_diag_v6_chtenie import _legkiy, _zapisat
+from test_diag_v6_chtenie import _legkiy, _zapisat
 
 
 def _port(root, nom, p="p00"):
@@ -105,7 +105,7 @@ def test_gonka_shard_zapisan_a_sha_net(tmp_path):
 
 def _dubl_raznye(tmp_path):
     _zapisat(tmp_path, [0, 1], potok=0)
-    from tests.test_diag_v6_chtenie import MAN, T, _row
+    from test_diag_v6_chtenie import MAN, T, _row
     w = L.Pisatel22(tmp_path, "S1", 1, MAN, shard=2, daty=np.arange("2016-01-01", "2020-01-01", dtype="datetime64[D]"))
     rng = np.random.default_rng(99)
     w.add(_row(0), rng.normal(0, 1e-3, T), rng.normal(0, 1e-3, (17, T)))

@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 
 from fastbt import diag_v6_t1 as t1
-from tests.test_diag_v6_t1 import OKNA, _zapisat, _stroka
+from test_diag_v6_t1 import OKNA, _zapisat, _stroka
 
 
 def _vhod(tmp_path, osi_s):

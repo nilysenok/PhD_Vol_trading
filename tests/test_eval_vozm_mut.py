@@ -8,7 +8,7 @@ import pytest
 
 from fastbt import eval_v5, ledger_v2
 from fastbt import progon_kontrol as pk
-from tests.test_eval_vozm_sig_fn import SP, _ev, _pt, real  # noqa: F401
+from test_eval_vozm_sig_fn import SP, _ev, _pt, real  # noqa: F401
 
 ONES = {"sig_fn": lambda t, s, d: np.ones(len(s))}
 

@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from fastbt import k_okup_v7 as K
-from tests.test_k_okup_v7 import D, _tr, _vh, _zhurnal
+from test_k_okup_v7 import D, _tr, _vh, _zhurnal
 
 ORIG = K._ozhidanie
 
