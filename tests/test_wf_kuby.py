@@ -13,7 +13,8 @@ import fastbt.progon_sobol as ps
 KORENX = Path(__file__).resolve().parents[1]
 SIDS = [f"S{i}" for i in range(1, 7)]
 KUBY = [(v, s) for v in ("v5", "v6") for s in SIDS]
-BAZA = "origin/kanon-v22-pereschet"
+# Коммит базы ДО слияния #743 (первый родитель f4dac3b0): кубы без wf, periody == [train4, v2].
+BAZA = "5f47c628958e71c49ff87264a11ca16b8bc94f2f"
 
 
 def put(v, s):
@@ -23,7 +24,7 @@ def put(v, s):
 def baza_kub(v, s):
     r = subprocess.run(["git", "show", f"{BAZA}:fastbt/designs/{v}/kub_{s}.yaml"], cwd=KORENX, capture_output=True, text=True)
     if r.returncode:
-        pytest.skip(f"нет {BAZA}")
+        pytest.skip(f"нет коммита {BAZA[:8]} или .git")
     return yaml.safe_load(r.stdout)
 
 

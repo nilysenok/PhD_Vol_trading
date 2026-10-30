@@ -19,8 +19,8 @@ def _pul(daty=DATY, period="wf"):
 def _otmetka(tmp_path, monkeypatch, est=True):
     otm = tmp_path / "wf_zamok_snyat.json"
     if est:
-        otm.write_text("{}")
-    monkeypatch.setattr(PV, "OTMETKA", otm)       # только временный каталог, в репозитории отметки нет
+        otm.write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "%s", "data_snyatiya": "2026-10-30"}' % ("a" * 64))
+    monkeypatch.setattr(PV, "OTMETKA", otm)       # только временный каталог (отметка репозитория тестами не используется)
 
 
 def test_wf_bez_otmetki_otkaz(tmp_path, monkeypatch):
@@ -50,6 +50,10 @@ def test_prochie_periody_otkaz_kak_ranshe(period, tmp_path, monkeypatch):
 def test_wf_do_2020_bez_otmetki_ok(tmp_path, monkeypatch):
     _otmetka(tmp_path, monkeypatch, est=False)
     assert _pul(DATY[DATY < np.datetime64("2020-01-01")]).daty.size > 0
+
+
+def test_otmetka_v_repozitorii_godnaya():
+    assert PV.otmetka_godna(PV.OTMETKA)           # непустой JSON с ключами preregistraciya_v2, sha256 (64 hex), data_snyatiya
 
 
 def test_otmetka_v_repozitorii_sovpadaet_s_preregistraciej():

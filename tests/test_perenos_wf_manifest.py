@@ -60,9 +60,16 @@ def test_sborshchik_bez_otmetki_otkaz_do_chteniya(tmp_path, capsys):
     assert not (tmp_path / "o").exists()                                     # ничего не записано
     (tmp_path / "net.json").write_text("")                                   # пустая отметка — не отметка
     assert M.main(arg) == 1
-    (tmp_path / "net.json").write_text('{"sha256": "x"}')
+    (tmp_path / "net.json").write_text('{"sha256": "x"}')                    # не хватает ключей — не отметка (как period_v2)
+    assert M.main(arg) == 1
+    (tmp_path / "net.json").write_text(_otm_json())
     assert M.main(arg) == 0 and (tmp_path / "o/m.tsv").exists()
     assert M.main(["--koren", str(tmp_path), "--spisok", str(_spisok(tmp_path)), "--vyhod", str(tmp_path / "o/m2.tsv")]) == 0   # умолчание без отметки
+
+
+def _otm_json() -> str:
+    """Корректная отметка (формат docs/resheniya/wf_zamok_snyat.json); sha синтетический."""
+    return '{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "%s", "data_snyatiya": "2026-10-30"}' % ("a" * 64)
 
 
 def _mf(tmp: Path, md: str) -> Path:
@@ -78,14 +85,14 @@ def test_proverka_manifesta_do_i_otmetka(tmp_path, capsys):
     assert "> 2021-12-31" in capsys.readouterr().out
     net = ["--manifest", str(m), "--koren", str(tmp_path / "k"), "--do", DO, "--otmetka", str(tmp_path / "net.json")]
     assert MP.main(net) == 1 and "нет отметки" in capsys.readouterr().out
-    (tmp_path / "net.json").write_text("{}")
+    (tmp_path / "net.json").write_text(_otm_json())
     ok = MP.prochitat(m, MP.granica_wf(DO, tmp_path / "net.json"))
     assert ok[0][3] == "2026-02-28"
     assert MP.prochitat(_mf(tmp_path, "2021-12-31"))                                                      # умолчание: 2021 — можно
 
 
 def test_proverka_manifesta_data_posle_do_otvergaetsya(tmp_path):
-    (tmp_path / "o.json").write_text("{}")
+    (tmp_path / "o.json").write_text(_otm_json())
     m = _mf(tmp_path, "2026-03-02")
     try:
         MP.prochitat(m, MP.granica_wf(DO, tmp_path / "o.json"))

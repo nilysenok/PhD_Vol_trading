@@ -9,6 +9,7 @@ sha256 в --koren совпадают с манифестом. --istochnik — с
 Файлы читаются только для sha256 (содержимое не печатается)."""
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -40,11 +41,21 @@ def _put_ok(put: str, n: int) -> None:
         raise Otkaz(f"строка {n}: путь {put!r} не относительный/не нормальный")
 
 
+def otmetka_godna(otmetka) -> bool:
+    """Условие то же, что `fastbt.period_v2.otmetka_godna` (файл едет в пакет один, без fastbt — stdlib-копия; согласие — tests/test_wf_otmetka.py)."""
+    try:
+        d = json.loads(Path(otmetka).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return (isinstance(d, dict) and bool(d.get("preregistraciya_v2")) and bool(d.get("data_snyatiya"))
+            and isinstance(d.get("sha256"), str) and re.fullmatch(r"[0-9a-f]{64}", d["sha256"]) is not None)
+
+
 def granica_wf(do: str, otmetka: Path) -> str:
     """Верхняя дата манифеста: > 2021-12-31 (wf) — только при отметке снятого замка (непустой файл), иначе Otkaz."""
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", do):
         raise Otkaz(f"--do {do!r}: не дата")
-    if do > GRANICA and not (otmetka.is_file() and otmetka.stat().st_size > 0):
+    if do > GRANICA and not otmetka_godna(otmetka):
         raise Otkaz(f"--do {do} > {GRANICA}: нет отметки снятого замка {otmetka} (её ставит владелец)")
     return do
 

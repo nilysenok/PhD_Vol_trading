@@ -135,10 +135,23 @@ def razobrat(spisok: Path) -> list[tuple[str, str, str]]:
     return out
 
 
+def _otmetka_godna(otmetka) -> bool:
+    """Одна проверка отметки на всех: `fastbt.period_v2.otmetka_godna` (файл грузится по пути, без импорта пакета fastbt)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_period_v2", Path(__file__).resolve().parents[2] / "fastbt/period_v2.py")
+    m = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = m          # dataclass в period_v2 ищет свой модуль в sys.modules
+    try:
+        spec.loader.exec_module(m)
+        return m.otmetka_godna(otmetka)
+    finally:
+        sys.modules.pop(spec.name, None)
+
+
 def verhnyaya_data(do: str, otmetka: Path = OTMETKA) -> pd.Timestamp:
     """Верхняя дата манифеста: > 2021-12-31 — только при отметке снятого замка (непустой файл), иначе PermissionError."""
     d = pd.Timestamp(do)
-    if d > GRANICA and not (Path(otmetka).is_file() and Path(otmetka).stat().st_size > 0):
+    if d > GRANICA and not _otmetka_godna(otmetka):
         raise PermissionError(f"--do {do} > 2021-12-31: нет отметки снятого замка {otmetka} (её ставит владелец) — манифест не собирается")
     return d
 
