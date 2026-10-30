@@ -73,13 +73,14 @@ def test_vybroshennaya_tochka_poluchila_by_otkaz_po_prichine(sid):
 
 
 def test_edinichnye_srabatyvaniya_v_vyborke():
-    """Правила 6 и 8 в выборке Соболя (2000 точек × 6 кубов) одни не срабатывают (6 — 7 точек, всегда с 5; 8 — только с 1 или 7): их точность — адресными точками ниже."""
+    """Правило 8 в выборке Соболя (2000 точек × 6 кубов) одно не срабатывает (только с 1 или 7): его точность — адресной точкой ниже.
+    Правило 6 после свёртки правила 5 (толкования 30.10 06:40) срабатывает само: раньше его накрывало 5 (7 точек, всегда с 5)."""
     odin = {k: 0 for k in range(1, len(nsv.PRAVILA) + 1)}
     for sid in SIDS:
         for _, _, _, trig, _ in tochki(sid):
             if len(trig) == 1:
                 odin[next(iter(trig))] += 1
-    assert [k for k, v in odin.items() if not v] == [6, 8], odin
+    assert [k for k, v in odin.items() if not v] == [8], odin
 
 
 _KE = dict(tejk="rodnoy", k_e=0.5, vyhod_lim="da", t_vyhod="close")
@@ -103,3 +104,41 @@ def test_adresnaya_tochnost_pravil_6_i_8(sid, kw, pravila, otkaz):
     otk = otkazy(sid, c0)
     assert otk == otkaz or (pravila == {1} and otk <= {1, 8} and otk)
     assert (c6.canon_v6(sid, baza(sid, **kw)) is None) == bool(pravila)
+
+
+SVERNUTYE = {"trail", "bezubytok", "stop_v_plyus", "chast", "pir", "razmer_tip"}
+VYKL = {"trail": "net", "bezubytok": "net", "stop_v_plyus": "net", "chast": "net", "pir": 0, "razmer_tip": "ravnyj"}
+
+
+def _piv(sid, c):
+    return c6.c5.edinica(c.get("stop_nach")) in ("piv", "vwap")
+
+
+@pytest.mark.parametrize("sid", ("S5", "S6"))
+def test_svertka_trogaet_tolko_svernutye_osi(sid):
+    """Свёртка (толкования 30.10 06:40): у пивот/VWAP-точек меняются только 6 осей и только на «выкл.»; остальные точки не меняются; свёрнутая не получает отказа."""
+    kub, npiv = c6._kub(sid), 0
+    for pt, _, c0, trig, otk in tochki(sid):
+        with mock.patch.object(nsv, "svernut", lambda q: q), mock.patch.object(nsv, "PRAVILA", ()):
+            raw = c6.canon_v6(sid, pt, kub)
+        if raw is None:
+            continue
+        izm = {k for k in set(raw) | set(c0) if raw.get(k, VYKL.get(k)) != c0.get(k, VYKL.get(k))}
+        assert izm <= SVERNUTYE | {"rang_tip"} and (_piv(sid, c0) or not izm), izm   # rang_tip — следствие: canon_v5 сворачивает его, когда bezubytok = rang стал net
+        assert all(c0.get(k, VYKL.get(k)) == VYKL.get(k, "tikernyj") for k in izm)
+        npiv += _piv(sid, c0) and not trig
+        assert not (_piv(sid, c0) and not trig and otk)           # свёрнутая (и не выброшенная) точка оценщиком не отказывается
+    assert npiv >= 20, npiv                                       # пивот-точки в выборке есть
+
+
+@pytest.mark.parametrize("sid", ("S5", "S6"))
+def test_tochki_otlichayushchiesya_tolko_svernutymi_osyami_sovpadayut(sid):
+    kub = c6._kub(sid)
+    st = next(v for n, g, _ in c6.osi(kub) if n == "stop_nach" for v in g if str(v).startswith(("piv:next", "vwap")))
+    for pt, _, c0, trig, _ in tochki(sid):
+        if _piv(sid, c0) and not trig:
+            a = c6.canon_v6(sid, {**pt, "trail": "atr:1.0", "bezubytok": "atr:1.0", "pir": 0.5, "razmer_tip": "risk_sigma"}, kub)
+            b = c6.canon_v6(sid, {**pt, "trail": "net", "bezubytok": "net", "pir": 0, "razmer_tip": "ravnyj"}, kub)
+            assert a == b, (a, b)
+            return
+    pytest.fail(f"{sid}: нет пивот-точки ({st})")
