@@ -23,7 +23,8 @@ from fastbt import e1_sektor as sek
 ROOT = Path(__file__).resolve().parent.parent
 LAST_DEV = pd.Timestamp("2021-12-31")    # за этой датой сектор известен только из таблицы 2022–2026 (Д4: не переносить 2021 вперёд)
 
-CLOSE_LAG = 0       # close индекса за d; −1 = close d+1 (мутация, контракт §2Б.3)
+DAWN = pd.Timestamp("1900-01-01")        # дата «всегда» у постоянного бенчмарка (= kontekst_v6.DAWN)
+CLOSE_LAG = 0      # close индекса за d; −1 = close d+1 (мутация, контракт §2Б.3)
 SIGMA_LAG = 1       # σ̂ берётся за d−1; 0 = σ̂_d (мутация)
 SEKTORY_CSV = "docs/issledovaniya/2026-10-28_sostav_sektorov.csv"
 NO_INDEX = "нет"
@@ -64,7 +65,8 @@ class Ctx:
         """(rel_d по дням close[t], имя индекса по дням). rel = NaN, где значения нет или индекса нет."""
         c = self.close[t]
         rows = self.pit.get(t, [])
-        if rows and c.index.max() > LAST_DEV and c.index.max() > rows[-1][0] + pd.Timedelta(days=sek.PIT_STALE_DAYS):
+        # запись с DAWN — постоянный бенчмарк «рынок» (kontekst_v6.rynok_ctx), не составной сектор: Д4 к ней не применяется
+        if rows and rows[-1][0] > DAWN and c.index.max() > LAST_DEV and c.index.max() > rows[-1][0] + pd.Timedelta(days=sek.PIT_STALE_DAYS):
             raise ValueError(f"сектор {t}: даты до {c.index.max().date()}, последняя ребалансировка {rows[-1][0].date()} — "
                              f"сектор 2021 вперёд не переносится (Д4)")
         names = _names(rows, c.index)
