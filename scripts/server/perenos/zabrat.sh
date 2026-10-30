@@ -10,8 +10,10 @@ set -euo pipefail
 say() { printf '%s  %s\n' "$(date '+%F %T')" "$*"; }
 fail() { printf 'FAIL: %s\n' "$*"; exit 1; }
 
+agr=0
+if [ "${1:-}" = "--agregaty" ]; then agr=1; shift; fi   # Ж-156 п. 4: только строки ledger (p*/rows.jsonl с полем agr), без port/tik; сырые сделки — по запросу
 src=${1:-}; dst=${2:-}
-[ -n "$src" ] && [ -n "$dst" ] || fail "использование: ./zabrat.sh user@host:perenos <каталог на Маке>"
+[ -n "$src" ] && [ -n "$dst" ] || fail "использование: ./zabrat.sh [--agregaty] user@host:perenos <каталог на Маке>"
 case "$dst" in *:*) fail "назначение — локальный каталог на Маке, не сервер" ;; esac
 RSYNC=(${PERENOS_RSYNC:-rsync} -a --human-readable)
 [ "${PERENOS_DRYRUN:-0}" = 1 ] && RSYNC+=(-n -v)
@@ -28,7 +30,11 @@ n21=0; n20=0
 if [ "${PERENOS_DRYRUN:-0}" != 1 ]; then
   while IFS= read -r m; do
     sk=$(dirname "${m#"$dst"/ledger/}")
-    if grep -Eq '"v": "2\.(1|2)"' "$m"; then   # явный список: 2.1 и 2.2 (2.2 = 2.1 + setka, rol, klyuch_n)
+    if [ "$agr" = 1 ]; then
+      say "агрегаты: $sk — только rows.jsonl"
+      "${RSYNC[@]}" --prune-empty-dirs --include='*/' --include='rows.jsonl' --exclude='*' "$src/ledger/$sk/" "$dst/ledger/$sk/" || fail "rsync ledger/$sk (rows) — вывод выше"
+      n21=$((n21 + 1))
+    elif grep -Eq '"v": "2\.(1|2)"' "$m"; then   # явный список: 2.1 и 2.2 (2.2 = 2.1 + setka, rol, klyuch_n)
       say "ledger 2.1/2.2: $sk — шарды"
       "${RSYNC[@]}" --exclude='.zamok' "$src/ledger/$sk/" "$dst/ledger/$sk/" || fail "rsync ledger/$sk — вывод выше"
       n21=$((n21 + 1))
