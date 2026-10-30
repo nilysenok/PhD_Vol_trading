@@ -6,6 +6,8 @@ S7–S9): в день разворота позиция — новой сдел�
 Среднее X по тикерам равно excess портфеля `golaya_v7.schet` (вес 1/N) — тест. Только d1: вход в T в книгу не идёт."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 from fastbt.golaya_v7_isp import ispolnit
@@ -57,6 +59,39 @@ def pary(D: dict, sig: np.ndarray, EL=None, ES=None, *, vhod: str = "d1", tau=No
         X[j, idx] = sum(r["excess"] for r in rs)
         P[j, idx] = _znak_poz(rs, len(idx))
     return X, P
+
+
+def cc_dohodnost(close, daty) -> np.ndarray:
+    """IMOEX close→close дня d (close d−1 → close d), как ряды центров; считается на собственных днях ряда, затем на daty (нет дня — NaN).
+    Не open→open: книга A′ держит позиции через ночь, рынок обязан быть выровнен по тому же дню (Ж-146, #892)."""
+    import pandas as pd
+    c = pd.Series(close).astype(float)
+    return (c / c.shift(1) - 1.0).reindex(pd.DatetimeIndex(daty)).to_numpy(float)
+
+
+def mix_cc(daty, katalog, dney: int = 2) -> np.ndarray:
+    """MIX close→close дня d внутри активного контракта (ролл как в `mix_skleyka`: за `dney` дней до экспирации); close d−1 того же
+    контракта; нет цены на d−1 или d — NaN (хедж 0, Д4), ноль — ошибка данных."""
+    import pandas as pd
+    from fastbt import mix_skleyka as mx
+    daty = pd.DatetimeIndex(daty)
+    kont = {}
+    for f in sorted(Path(katalog).glob("MX*.csv")):
+        df = pd.read_csv(f, usecols=["TRADEDATE", "SECID", "OPEN", "CLOSE"], parse_dates=["TRADEDATE"])
+        df = df[(df["TRADEDATE"] < mx.GRANICA) & df["CLOSE"].notna() & df["OPEN"].notna()]
+        if len(df):
+            kont[df["SECID"].iloc[0]] = df.set_index("TRADEDATE")[["OPEN", "CLOSE"]]
+    rolly = sorted((mx.data_rolla(v, daty, dney), s) for s, v in kont.items())
+    out = np.full(len(daty), np.nan)
+    for i in range(1, len(daty)):
+        s = next((s for r, s in rolly if r >= daty[i]), None)
+        if s is None:
+            continue
+        c1, c0 = kont[s]["CLOSE"].get(daty[i], np.nan), kont[s]["CLOSE"].get(daty[i - 1], np.nan)
+        if c1 <= 0 or c0 <= 0:
+            raise ValueError(f"CLOSE <= 0 у {s} вокруг {daty[i].date()}")
+        out[i] = c1 / c0 - 1.0
+    return out
 
 
 def proverka_sdviga(X: np.ndarray, P: np.ndarray, cr: np.ndarray, lags=(-2, -1, 0, 1)) -> dict:

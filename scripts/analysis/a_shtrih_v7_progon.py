@@ -18,7 +18,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "scripts" / "analysis")]
 import a_shtrih_v7 as drv  # noqa: E402
 import golaya_otnositelno_v7 as gotn  # noqa: E402
 import golaya_v7 as gv  # noqa: E402
-from fastbt import a_shtrih_v7_vhody as V, daily_1850 as d18, metriki_e as me, mix_skleyka as mx, progon_urovni as pu  # noqa: E402
+from fastbt import a_shtrih_v7_vhody as V, daily_1850 as d18, metriki_e as me, progon_urovni as pu  # noqa: E402
 from fastbt.signals import v5_s56  # noqa: E402
 from fastbt.sravneniya_wf import sravnit  # noqa: E402
 
@@ -59,8 +59,9 @@ def sektora(D: dict) -> np.ndarray:
 
 
 def vhod_knigi(D: dict, X, P, d1: dict) -> dict:
-    mix = mx.skleit(mx.zagruzit_kontrakty(Path(d18.default_main()) / "data" / "iss_mix_2015_2019"), D["daty"])["ret_oo"].to_numpy()
-    return dict(X=X, poz=P, sektora=sektora(D), imoex=np.asarray(D["rm"], float), mix=mix, ks=np.asarray(D["stavka"], float),
+    mix = V.mix_cc(D["daty"], Path(d18.default_main()) / "data" / "iss_mix_2015_2019")      # close→close дня d, как ряды центров (#892)
+    imoex = V.cc_dohodnost(gv.chitat_imoex(D["period"])["CLOSE"], D["daty"])
+    return dict(X=X, poz=P, sektora=sektora(D), imoex=imoex, mix=mix, ks=np.asarray(D["stavka"], float),
                 daty=np.asarray(D["daty"].values).astype("datetime64[D]"), znak="znakovyj", istochnik="ryady_centrov_S1_S12_v5_v7", d1=d1)
 
 
