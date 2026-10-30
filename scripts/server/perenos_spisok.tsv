@@ -1,6 +1,7 @@
 # шаблон (от корня основной копии)	читатель	[без_дат: обоснование]
 # Ж-131 п. 1: Соболь v5 train4/В2, калибратор v5, контроли, фазы, голые идеи; позже validation 2020-2021 (<= 2021, входит)
 data/fastbt/daily/ohlcv_daily_1850.parquet	fastbt/data.py daily_df (дневной ряд 18:50) -> все сигналы S1-S6, progon_sobol, kalibr_v5, tf_os_v5, fazy.py
+data/fastbt/daily/ohlcv_daily_1850.parquet.sha256	fastbt/data.py ensure() сверяет sha дневки с маркером (без маркера пересобирает ряд dev поверх wf)	без дат: файл-маркер sha256, даты нет
 moex_discovery/data/raw/candles_10m/*.parquet	fastbt/daily_1850.py build/ensure + fastbt/bars_agg.py (агрегация ТФ для tf_os_v5)
 data/regen/candles_10m_2014_2015/*.parquet	10-минутки 2014-2015 (прогрев В2 с 06.2014; кандидат на daily_1850)
 data/regen/candles_10m_2014_2015/*.csv	то же, формат csv
@@ -23,6 +24,7 @@ data/regen/ch4_dev/*.parquet	fastbt/data.py vpred_df/align_sigma (σ-ряды г
 # оценщик v6 (fastbt/istochniki_v6.zagruzit, vneshnie_1850; трассировка открытий, Морриса S1 r=1 на train4 и v2); оригиналы > 2021 отвергаются, едут усечённые копии (usech_pravila.py)
 moex_discovery/data/final_v6/candles_10m/external/*.parquet	rezhim_e1.imoex_daily, e1_sektor, vneshnie_1850 (IMOEX, секторные индексы, RVI)
 moex_discovery/data/external/moex_iss/currency_10m/USD000UTSTOM.parquet	vneshnie_1850 PATHS['usdrub'] (фактор USDRUB)
+moex_discovery/data/external/moex_iss/currency_10m/CNYRUB_TOM.parquet	vneshnie_1850 PATHS['cnyrub'] (фактор CNY; без файла ось usdrub пуста с 12.06.2024)
 data/iss_ext/bars_10m/BR*.parquet	istochniki_v6.Fajly.brent (10-минутки контрактов Brent BR*)
 data/iss_ext/br_contracts.json	vneshnie_1850.contract_table (календарь контрактов Brent)
 moex_volatility/results/final/strategies/data/vpred_aligned.parquet	fastbt/data.py VPRED (load_ticker; istochniki_v6.Fajly.zakrytie)

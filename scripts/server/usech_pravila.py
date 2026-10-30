@@ -34,4 +34,9 @@ PRAVILA = [
     # копия пуста по датам и отвергается (в манифест ≤ 2021 не входит); читается лениво (daily_1850.aggregate, calendar_extend)
     ("docs/issledovaniya/2026-10-30_kalendar_moex_2025_2026.csv", "csv", ("date",), ("accessed",), "fastbt/kalendar_moex.py CALENDAR_MOEX (wf: дни ≥ 2025)"),
     ("docs/issledovaniya/2026-10-28_sostav_sektorov.csv", "csv", ("дата_ребалансировки",), (), "состав секторных индексов"),
+    # составы 2022–2026 нужны ТОЛЬКО пакету wf (--do 2026-02-28); при --do 2021 копия пуста и отвергается
+    ("docs/issledovaniya/2026-10-30_sostav_imoex_2022_2026.csv", "csv", ("date_eff", "known_from"), (), "fastbt/vselennaya.py SOSTAV (wf: 2022–2026)"),
+    ("docs/issledovaniya/2026-10-30_sostav_sektorov_2022_2026.csv", "csv", ("дата_ребалансировки",), (), "состав секторных индексов (wf: 2022–2026)"),
+    # CNY: хвост 06.2024–02.2026 фактора usdrub (vneshnie_1850.PATHS['cnyrub']); при --do 2021 копия пуста и отвергается
+    ("moex_discovery/data/external/moex_iss/currency_10m/CNYRUB_TOM.parquet", "pq", ("begin",), (), "vneshnie_1850 PATHS['cnyrub'] (фактор CNY)"),
 ]
