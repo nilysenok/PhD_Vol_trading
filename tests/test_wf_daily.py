@@ -92,4 +92,7 @@ def test_up_to_2021_same_as_current_series(t):
     pd.testing.assert_frame_equal(cur, new)
     assert new["date"].max() < D.END
     wf = D.build_wf(tickers=[t])
-    assert not ((wf["date"] >= D.WEEKEND_FROM) & (wf["date"].dt.dayofweek >= 5)).any()
+    # нет сб/вс ≥ 2025, кроме основных сессий календаря MOEX (рабочая суббота 01.11.2025); ДСВД и праздников нет
+    wk = wf[(wf["date"] >= D.WEEKEND_FROM) & (wf["date"].dt.dayofweek >= 5)]
+    assert set(wk["date"]) <= D.moex_sessions()
+    assert set(wf.loc[wf["date"] >= D.WEEKEND_FROM, "date"]) <= D.moex_sessions()
