@@ -140,7 +140,7 @@ def _new_axes(p: Params, ed) -> bool:
 
 
 def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, nalog=None, ed=None, tejk_M=None,
-        urovni=None, rang=None, dates=None) -> Result:
+        urovni=None, rang=None, dates=None, cena_T=None) -> Result:
     """dates[i] — календарная дата строки i (при Params.razryv: заявка, поставленная вечером перед разрывом > razryv дней, снимается; None — не проверяется).
     rang[d] — ранг силы сигнала дня d, [0; 1] (V6-b: Params.b0_c, fastbt/exec_e_v6.py); иначе не нужен.
     urovni — уровни стоп-заявок по дням (vhod_tip = stop_zayavka, fastbt/stop_zayavki.py), обязателен при нём, иначе не принимается.
@@ -175,7 +175,11 @@ def run(ticker, days, sig, sigma, p: Params, rf_cal=None, close=None, div=None, 
         raise ValueError("urovni нужны ровно при vhod_tip = stop_zayavka")
     if urovni is not None and any(len(urovni[k]) != len(days) for k in ("up", "dn", "xl", "xs")):
         raise ValueError("days, urovni разной длины")
-    if urovni is not None:
+    from fastbt import exec_e_t
+    exec_e_t.proverka(p, cena_T, len(days), urovni)         # Л6.3 v7: vhod_T ⇔ cena_T
+    if p.vhod_T is not None:
+        r = exec_e_t.RunT(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, atr=atr, rang=rang, cena=cena_T, **un)
+    elif urovni is not None:
         from fastbt.exec_e_stop import RunStop
         r = RunStop(ticker, days, sig, sigma, p, close, div, nal, ed=ed, tejk_M=tejk_M, urovni=urovni, atr=atr, rang=rang, **un)
     else:

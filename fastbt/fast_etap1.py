@@ -308,6 +308,8 @@ def pokryto(pt: dict) -> bool:
     `filtr` — только net | cbr (прежние `sobytiya`), заём — только 0. Остальное драйвер считает медленным путём."""
     from fastbt.etap1_eval import NET
     from fastbt.rangi_v6 import RANG_TIPY
+    if pt.get("vhod_T") is not None:        # Л6.3 v7: вход в T — эталонный путь (быстрое ядро — лист V7-6)
+        return False
     umolch = dict(ed_lim="sigma", zhizn="den", lestnica=NET, gap="vhod", k_x=NET, storona="obe",
                   tejk_signal=NET, rho=NET, m_tip="1", rang_tip="tikernyj")   # Ж-084: tejk_signal ≠ net; V6-c: rho ≠ net — медленный путь (эталон)
     if fx.YADRO_ISP_GOTOV:       # Ф-v6-osi: оси исполнения в ядре (gap, zhizn, вход ed; лесенка — две ноги обычных вызовов run): значения куба v6

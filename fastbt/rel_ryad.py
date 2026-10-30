@@ -21,6 +21,7 @@ from fastbt import daily_1850 as d18
 
 REZHIMY = ("syroy", "sektor", "rynok")
 F_DO_PERVOJ, F_NET_SEKTORA, F_NET_INDEKSA = "do_pervoj_rebalansirovki", "net_sektora", "net_indeksa"
+F_NET_BAROV = "net_barov_indeksa"      # сектор есть, но в этот день баров индекса нет (2022-03-24/25) — откат на IMOEX
 RYNOK_KEY = "__rynok__"
 
 BAR_COLS = ["timestamp", "open", "high", "low", "close", "volume"]
@@ -100,10 +101,16 @@ def td_rel_sektor(tick, imoex, indeksy: dict, rows, ticker: str):
     pairs = [indeks_dnya(rows, d, indeksy) for d in days]
     keys = pd.Series([n or RYNOK_KEY for n, _ in pairs], index=days)
     parts = {}
-    for k in set(keys):
+    for k in set(keys) | {RYNOK_KEY}:
         rb = sinhronnye_bary(tick, imoex if k == RYNOK_KEY else indeksy[k])
         parts[k] = rb.assign(_d=rb["timestamp"].dt.normalize())
-    flags = pd.DataFrame({"date": days, "benchmark": [n or "IMOEX" for n, _ in pairs], "flag": [f for _, f in pairs]})
+    flg = [f for _, f in pairs]
+    dset = {k: set(p["_d"]) for k, p in parts.items()}
+    for i, (d, k) in enumerate(keys.items()):      # дыра внутри ряда сектора (после его первого дня): день — по IMOEX, не отказ всей оценки
+        if k != RYNOK_KEY and dset[k] and d > min(dset[k]) and d not in dset[k]:
+            keys[d], flg[i] = RYNOK_KEY, F_NET_BAROV
+    flags = pd.DataFrame({"date": days, "benchmark": ["IMOEX" if k == RYNOK_KEY else k for k in keys],
+                          "flag": flg})
     b = _chain(parts, keys)
     return (d18.aggregate(b, ticker) if len(b) else td_rel(tick.iloc[0:0], imoex.iloc[0:0], ticker)), flags
 
