@@ -19,6 +19,9 @@ MNOZH, B_BOOT = 10, 1000
 # пауза) — запрещающие, `filtr: true` в кубах v6 (сверяет tests/test_morris_baza.py). База траектории — все они «выкл.» (индекс 0).
 OSI_DOPUSK = ("hurst_th", "naklon", "vol_regime_max", "tihiy_othod", "sektor_trend", "shirina", "relf_napr", "sob_tip", "post_shok",
               "szhatie", "rv_perevorot", "obyom_anom", "rezhim", "vn_uslovie", "pauza_porog")
+# Фильтры v5 (раздел `filtr` кубов v5, 0 = «выкл.»): тоже «И»; в базе траектории тоже «выкл.» (толкование 30.10 17:40, расследование dopuski §0).
+OSI_FILTR_V5 = ("adx_th", "atr_lo", "vol_th", "rsi_th", "mom_n", "dow", "squeeze_pct")
+OSI_BAZA = OSI_DOPUSK + OSI_FILTR_V5
 
 
 def indeks(j, L):

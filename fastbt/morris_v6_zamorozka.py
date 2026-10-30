@@ -85,7 +85,7 @@ def pometki(osi: list[dict], stat: dict[str, dict]) -> dict:
 
 
 def zapisat_yaml(path: Path, data: str, vhody: dict, res: dict, statusy: dict | None = None, osi_akt: dict | None = None,
-                  nol_sdelok: dict | None = None) -> list[str]:
+                  nol_sdelok: dict | None = None, baza_bez_sdelok: dict | None = None) -> list[str]:
     """zamorozka.yaml: v, дата, sha входов (kub_sha, kod, csv), правило, список замороженных осей. Возвращает список.
     statusy — счётчик ok / ne_schitana / none_kanon / oshibka; osi_akt — `pometki`: активные шаги и метки «мёртвая»/«мало шагов»."""
     zam = sorted(k for k, (z, _) in res.items() if z)
@@ -95,6 +95,8 @@ def zapisat_yaml(path: Path, data: str, vhody: dict, res: dict, statusy: dict | 
         d["statusy"] = statusy
     if nol_sdelok is not None:        # {chislo, ok, dolya}: точки ok с Y целиком 0 (0 сделок во всех окнах Y)
         d["nol_sdelok"] = nol_sdelok
+    if baza_bez_sdelok is not None:   # {chislo, r, dolya}: базы траекторий (первые точки) без сделок
+        d["baza_bez_sdelok"] = baza_bez_sdelok
     if osi_akt is not None:
         d["osi_aktivnye"] = osi_akt
         d["ne_ocenyeny_net_sdelok"] = sorted(k for k, v in osi_akt.items() if v["pometka"] == NET_SDELOK)

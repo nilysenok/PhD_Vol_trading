@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 import yaml
 
-from fastbt import canon_v6, eval_v6, morris_v6 as mv, morris_v6_zamorozka as mz, progon_morris_v6 as pm, progon_morris_v6_status as st
+from fastbt import canon_v5 as c5, canon_v6, eval_v6, morris_v6 as mv, morris_v6_zamorozka as mz, progon_morris_v6 as pm, progon_morris_v6_status as st
 
 L = [3, 2, 4, 2, 3, 2, 4, 2]
 BAZA = [0, 2, 4, 6]            # оси-допуски синтетического куба
@@ -64,12 +64,49 @@ def test_spisok_dopuskov_raven_filtr_true_kubov_i_podklyuchen():
     assert set(mv.OSI_DOPUSK) <= eval_v6.PODKLYUCHENO
 
 
-def test_plan_realnogo_kuba_baza_vykl():
-    kub, ox = pm.setka("S1")
-    baza = [i for i, (n, _, _) in enumerate(ox) if n in mv.OSI_DOPUSK]
-    assert len(baza) >= 10
+def test_filtry_v5_konstanta_ravna_razdelu_filtr_kubov_v5():
+    vse = set()
+    for sid in c5.SIDS:
+        kub = c5.load_kub(sid)
+        assert all(g[0] == 0 for g in (kub["filtr"][n]["setka"] for n in kub["filtr"])), "«выкл.» фильтра v5 — 0 первым"
+        vse |= set(kub["filtr"])
+    assert vse == set(mv.OSI_FILTR_V5) and not set(mv.OSI_FILTR_V5) & set(mv.OSI_DOPUSK)
+
+
+@pytest.mark.parametrize("sid", ["S1", "S5"])
+def test_plan_realnogo_kuba_baza_bez_filtrov_v5_i_dopuskov(sid):
+    kub, ox = pm.setka(sid)
+    nazv = [n for n, _, _ in ox]
+    baza = [i for i, n in enumerate(nazv) if n in mv.OSI_BAZA]
+    assert len(baza) >= 10 and {"adx_th", "rsi_th", "mom_n"} <= {nazv[i] for i in baza}
     I, _ = mv.traektorii_kanon([len(g) for _, g, _ in ox], 3, lambda idx: idx, mv.SEED, 2, baza=baza)
     proverit_bazu(I, baza)
+
+
+def test_mutatsiya_filtry_v5_v_baze_sluchajny_lovitsya():
+    kub, ox = pm.setka("S5")
+    baza = [i for i, (n, _, _) in enumerate(ox) if n in mv.OSI_DOPUSK]               # подложено: v5 не в базе
+    vse = [i for i, (n, _, _) in enumerate(ox) if n in mv.OSI_BAZA]
+    I, _ = mv.traektorii_kanon([len(g) for _, g, _ in ox], 6, lambda idx: idx, mv.SEED, 2, baza=baza)
+    with pytest.raises(AssertionError, match="включённый допуск"):
+        proverit_bazu(I, vse)
+
+
+def test_baza_bez_sdelok_schitaetsya_po_pervym_tochkam():
+    nom = np.array([[0, 1, 2], [3, 1, 2], [4, 5, 6]])
+    nol = np.array([True, False, False, True, False, False, False])
+    bz = st.baza_bez_sdelok(nol, nom)
+    assert bz == {"chislo": 2, "r": 3, "dolya": 0.6667}
+    assert st.baza_bez_sdelok(nol, nom[:1]) == {"chislo": 1, "r": 1, "dolya": 1.0}
+    s = st.itog_nol("S5", {"chislo": 0, "ok": 5, "dolya": 0.0}, bz)
+    assert "ВНИМАНИЕ: S5: 2 из 3 баз" in s
+    assert "ВНИМАНИЕ" not in st.itog_nol("S5", {"chislo": 0, "ok": 5, "dolya": 0.0}, {"chislo": 0, "r": 3, "dolya": 0.0})
+
+
+def test_baza_bez_sdelok_v_yaml(tmp_path):
+    bz = {"chislo": 1, "r": 3, "dolya": 0.3333}
+    mz.zapisat_yaml(tmp_path / "z.yaml", "2026-10-30", {}, {}, None, None, None, bz)
+    assert yaml.safe_load((tmp_path / "z.yaml").read_text("utf-8"))["baza_bez_sdelok"] == bz
 
 
 def test_schetchik_nol_sdelok_i_vnimanie():

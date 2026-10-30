@@ -20,7 +20,7 @@ import numpy as np
 
 from fastbt import canon_v5 as c5, canon_v6, morris_v6 as mv, morris_v6_zamorozka as mz, progon_server as srv, progon_sobol as ps
 from fastbt.progon_morris_v6_polnyj import zamknut
-from fastbt.progon_morris_v6_status import DO, NAN3, STATUSY, nol_sdelok, status_okna, vnimanie, y_okna  # noqa: F401 — re-export
+from fastbt.progon_morris_v6_status import DO, NAN3, STATUSY, baza_bez_sdelok, itog_nol, nol_sdelok, status_okna, vnimanie, y_okna  # noqa: F401 — re-export
 
 CHUNK, YF = 50, "morris_y.jsonl"
 
@@ -43,7 +43,7 @@ def plan(sid: str, kub: dict, ox: list, r: int, mnozh: int, seed: int):
             memo[idx] = (None if c is None else json.dumps(c, sort_keys=True, default=str), c)
         return memo[idx]
 
-    baza = [i for i, (n, _, _) in enumerate(ox) if n in mv.OSI_DOPUSK]          # старт траектории: все допуски «выкл.»
+    baza = [i for i, (n, _, _) in enumerate(ox) if n in mv.OSI_BAZA]          # старт траектории: допуски v6 и фильтры v5 «выкл.»
     ind, por = mv.traektorii_kanon(L, r, lambda idx: kanon(idx)[0], seed, mnozh, baza=baza)
     uniq, pts, nom = {}, [], np.empty(ind.shape[:2], dtype=np.int64)
     for m, t in np.ndindex(nom.shape):
@@ -154,15 +154,16 @@ def strategiya(sid: str, a, out: Path, rz, r: int | None, mnozh: int = mv.MNOZH)
                setka="v6:" + hashlib.sha256(json.dumps([n for n, _, _ in ox]).encode()).hexdigest()[:16], sobol_klyuch=f"morris_r{r}_m{mnozh}")
     Y, ob, st = schitat(sid, pts, sr, rz, out, a.procs, otp, a.prodolzhit, getattr(a, "fast", True))
     nol, nl = nol_sdelok(Y, st)
+    bz = baza_bez_sdelok(nol, nom)
     stat, res = zamorozka(kub, ox, nom, por, Y, nol)
     akt = mz.pometki(spisok_osej(kub, ox), stat)
     d = out / sid
     sh = dict(sid=sid, period=rz.period, r=r, k=len(ox), mnozh=mnozh, seed=seed, tochek=len(pts), oshibok=sum(ob.values()), statusy=st,
-              nol_sdelok=nl, kod=sr.kod, kub_sha=otp["kub_sha"])
+              nol_sdelok=nl, baza_bez_sdelok=bz, kod=sr.kod, kub_sha=otp["kub_sha"])
     mz.zapisat_csv(d / f"morris_{sid}.csv", sh, spisok_osej(kub, ox), stat, res)
     zam = mz.zapisat_yaml(d / "zamorozka.yaml", time.strftime("%Y-%m-%d"), dict(kub_sha=otp["kub_sha"], kod=sr.kod, csv=sha(d / f"morris_{sid}.csv")),
-                          res, st, akt, nl)
-    return dict(tochek=len(pts), oshibok=sum(ob.values()), prichiny=ob, zamorozheno=zam, statusy=st, osi_akt=akt, nol_sdelok=nl)
+                          res, st, akt, nl, bz)
+    return dict(tochek=len(pts), oshibok=sum(ob.values()), prichiny=ob, zamorozheno=zam, statusy=st, osi_akt=akt, nol_sdelok=nl, baza_bez_sdelok=bz)
 
 
 def main(argv=None) -> int:
@@ -186,9 +187,8 @@ def main(argv=None) -> int:
         print(f"{sid}: точек {i['tochek']}, статусы {i['statusy']}, исключений {i['oshibok']}, заморожено {len(i['zamorozheno'])}: {i['zamorozheno']}")
         for p in (mz.MERTVAYA, mz.NET_SDELOK, mz.MALO):
             print(f"  {p}: {[k for k, v in i['osi_akt'].items() if v['pometka'] == p]}")
-        nl = i.get("nol_sdelok")
-        if nl:
-            print(f"  nol_sdelok: {nl}" + (f"\n{vnimanie(sid, nl)}" if vnimanie(sid, nl) else ""))
+        if i.get("nol_sdelok"):
+            print(itog_nol(sid, i["nol_sdelok"], i["baza_bez_sdelok"]))
         [print(f"  ошибка ×{k}: {m}") for m, k in i["prichiny"].items()]
     return 0
 

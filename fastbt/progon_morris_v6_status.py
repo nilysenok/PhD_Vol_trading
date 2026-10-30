@@ -45,6 +45,20 @@ def nol_sdelok(Y, st: dict) -> tuple:
     return nol, {"chislo": int(nol.sum()), "ok": int(st["ok"]), "dolya": round(float(nol.sum()) / st["ok"], 4) if st["ok"] else 0.0}
 
 
+def baza_bez_sdelok(nol, nom) -> dict:
+    """База траектории = её первая точка (nom[:, 0] — номера уникальных точек): {chislo, r, dolya} баз с Y целиком 0 (страж «база даёт сделки»)."""
+    b = np.asarray(nol, dtype=bool)[np.asarray(nom)[:, 0]]
+    return {"chislo": int(b.sum()), "r": int(b.size), "dolya": round(float(b.mean()), 4) if b.size else 0.0}
+
+
+def itog_nol(sid: str, nl: dict, bz: dict) -> str:
+    """Строки итога драйвера: счётчики и «ВНИМАНИЕ» (nol_sdelok > 50 %; baza_bez_sdelok > 0); rc не меняется."""
+    s = [f"  nol_sdelok: {nl}", f"  baza_bez_sdelok: {bz}", vnimanie(sid, nl)]
+    if bz["chislo"] > 0:
+        s.append(f"ВНИМАНИЕ: {sid}: {bz['chislo']} из {bz['r']} баз траекторий без сделок — эффекты осей на этой траектории не измерены")
+    return "\n".join(x for x in s if x)
+
+
 def vnimanie(sid: str, nl: dict) -> str | None:
     """Строка «ВНИМАНИЕ», если у Sk доля точек без сделок > mz.DOLYA_NOL (rc драйвера не меняется)."""
     if nl["dolya"] <= mz.DOLYA_NOL:
