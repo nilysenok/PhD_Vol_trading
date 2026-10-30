@@ -52,7 +52,9 @@ def aggregate(bars: pd.DataFrame, ticker: str, cut_min: int = CUT_MIN, sessions=
     mod = b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute
     b = b[(mod >= OPEN_MIN) & (mod < cut_min)]
     day = b["timestamp"].dt.normalize()
-    out_cal = (day >= WEEKEND_FROM) & ~day.isin(moex_sessions() if sessions is None else sessions)
+    late = day >= WEEKEND_FROM
+    # календарь MOEX читается лениво: только если в данных есть дни ≥ WEEKEND_FROM (train4/v2 файла не требуют; пакет без него)
+    out_cal = late & ~day.isin((moex_sessions() if sessions is None else sessions) if late.any() else ())
     if out_cal.any():
         log.info("%s: дней с барами без основной сессии в календаре MOEX (не включены): %d", ticker, day[out_cal].nunique())
     b, day = b[~out_cal], day[~out_cal]
@@ -104,8 +106,9 @@ def calendar_extend(old_days: list, daily: pd.DataFrame) -> list:
     """Календарь: прежние строки без изменений + дни ряда после них; ≥ WEEKEND_FROM — только основные сессии MOEX."""
     old = sorted(pd.Timestamp(x) for x in old_days)
     new = sorted(set(pd.to_datetime(daily["date"])) - set(old))
-    ses = moex_sessions()
-    new = [d for d in new if d > old[-1] and not (d >= WEEKEND_FROM and d not in ses)]
+    new = [d for d in new if d > old[-1]]
+    ses = moex_sessions() if any(d >= WEEKEND_FROM for d in new) else frozenset()    # лениво: до 2025 файл не нужен
+    new = [d for d in new if not (d >= WEEKEND_FROM and d not in ses)]
     return old + new
 
 
