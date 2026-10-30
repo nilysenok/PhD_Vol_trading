@@ -101,6 +101,7 @@ mkdir -p "$TMP/cache"
   FASTBT_NO_CACHE=1 FASTBT_CACHE="$TMP/cache/fastbt" FASTBT_E1_CACHE="$TMP/cache/etap1" FASTBT_FS_CACHE="$TMP/cache/fs" \
   FASTBT_BARS5M_CACHE="$TMP/cache/bars5m" NUMBA_CACHE_DIR="$TMP/cache/numba" PYTHONPYCACHEPREFIX="$TMP/cache/pyc" \
   python3 "$K/scripts/server/etalony_mak.py" --out "$OUT/etalony_$SHORT.npz" \
+  --kod-sha "$TAR_SHA" --dannye-sha "$(sha_file "$OUT/manifest_dannyh.tsv")" \
   --tochek "${PERENOS_ETALONY_TOCHEK:-200}" --procs "${PERENOS_ETALONY_PROCS:-6}") > "$TMP/etalony.log" 2>&1 \
   || { tail -n 15 "$TMP/etalony.log"; fail "эталоны не собраны (лог $TMP/etalony.log)"; }
 grep '^etalony' "$TMP/etalony.log"

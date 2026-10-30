@@ -16,6 +16,8 @@ pamyat_uss() {   # $1 — pid цепочки: "<макс USS КБ> <сумма U
   for p in $(ps -A -o pid=,ppid= | awk -v root="$1" '{ par[$1] = $2 }
       END { for (p in par) { q = p; while (q in par && q != root) q = par[q]; if (q == root && p != root) print p } }'); do
     [ -r "$f/$p/smaps_rollup" ] || continue
+    # прогрев кэшей (один процесс держит все данные, ~1,9 ГБ) — вне замера: считаем рабочих пула (~0,23 ГБ); у прогрева в cmdline «progrev_»
+    tr '\0' ' ' < "$f/$p/cmdline" 2>/dev/null | grep -q 'progrev_' && continue
     s=$(awk '/^Private_(Clean|Dirty):/ { t += $2 } END { print t + 0 }' "$f/$p/smaps_rollup")
     sm=$((sm + s)); [ "$s" -gt "$mx" ] && mx=$s
   done
