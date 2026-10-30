@@ -72,8 +72,10 @@ PT = {**YAKOR, "tau": 5, "k_s": 2.0, "R": 2.0, "a": 1, "proverka": "bars5m", "vh
 def spy(monkeypatch):
     calls = []
 
-    def run(t, days, sig, sigma, p, close=None, w=None, win=None, div=None):
-        calls.append(dict(t=t, sig=np.array(sig), w=np.array(w), p=p, win=win, div=div))
+    def run(t, days, sig, sigma, p, close=None, w=None, win=None, div=None, dates=None):
+        assert dates is not None and len(dates) == len(sig)          # Д5-2: оценщик обязан передать даты строк (как exec_e.run)
+        assert np.array_equal(dates, DATES[:len(dates)])
+        calls.append(dict(t=t, sig=np.array(sig), w=np.array(w), p=p, win=win, div=div, dates=np.array(dates)))
         return types.SimpleNamespace(g=None)
     monkeypatch.setattr(PE, "run_e1", run)
     monkeypatch.setattr(EE, "run_e1", run)

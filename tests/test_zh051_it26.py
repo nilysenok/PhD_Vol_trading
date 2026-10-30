@@ -24,7 +24,8 @@ def _div_i_spy(monkeypatch):
 def spy(monkeypatch):
     calls = []
 
-    def run(t, days, sig, sigma, p, close=None, w=None, win=None, div=None):
+    def run(t, days, sig, sigma, p, close=None, w=None, win=None, div=None, dates=None):
+        assert dates is not None and len(dates) == len(sig)          # Д5-2: даты строк передаются, как в exec_e.run
         calls.append(dict(t=t, sig=np.array(sig), w=np.array(w), p=p, win=win))
         return types.SimpleNamespace(g=np.zeros(win[1] - win[0]), trades=[])
     for m in (PE, EE, AE):
