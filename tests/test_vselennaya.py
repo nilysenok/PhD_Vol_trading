@@ -74,7 +74,8 @@ def test_otkaz_ot_2022(env, tmp_path, monkeypatch):
 def test_s_otmetkoy_granitsa_goda_wf(env, tmp_path, monkeypatch):
     """С отметкой: 2026 (последний год wf) читается, 2027 — отказ; год 2022 без строк оборота — отказ (Д4), не 0.0."""
     from fastbt import period_v2
-    (tmp_path / "otm.json").write_text("{}")
+    (tmp_path / "otm.json").write_text('{"preregistraciya_v2": "docs/preregistraciya_v2.md", "sha256": "' + "a" * 64
+                                       + '", "data_snyatiya": "2026-10-30"}')
     monkeypatch.setattr(period_v2, "OTMETKA", tmp_path / "otm.json")
     (env[1] / "daily_value" / "A.csv").write_text("date,value\n2026-02-27,7\n")
     V.oborot_goda.cache_clear()
