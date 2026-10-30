@@ -227,9 +227,6 @@ def test_817_python_m_fastbt_data_bez_markera_ne_zavisaet(tmp_path):
     subprocess.run([sys.executable, "-m", "fastbt.data"], cwd=REPO, env=env, capture_output=True, text=True, timeout=20)
 
 
-@pytest.mark.xfail(strict=True, raises=subprocess.TimeoutExpired,
-                   reason="#823: `python -m fastbt.daily_1850` без маркера зависает (воспроизведено, таймаут 20 с): ensure держит flock, "
-                          "build() импортирует fastbt.data, чей импорт зовёт ensure на том же lock")
 def test_823_python_m_daily_1850_bez_markera_ne_zavisaet(tmp_path):
     env = {**os.environ, "FASTBT_MAIN": str(tmp_path)}
     env.pop("FASTBT_DATA_ROOT", None)
