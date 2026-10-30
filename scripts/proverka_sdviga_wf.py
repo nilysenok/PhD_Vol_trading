@@ -90,9 +90,10 @@ def ryady_aktsii(W: dict) -> list:
     rows = []
     for h in ("h1", "h5", "h22"):
         s = np.log(W[h].clip(lower=1e-12) ** 2)
+        v2 = vtoraya_sigma(s, lrv)
         if h == "h1":                                       # неоконный: уровень (оконные — только по приращениям, их уровень персистентен)
-            rows.append(stroka(f"sigma_{h}", "uroven", "ln RV_{d+k}", profil(s, lrv)))
-        rows.append(stroka(f"sigma_{h}", "prirashcheniya", "ln RV_{d+k}", profil(s, lrv, True)))     # цель — дневная RV, как в ch4_dev/proverka_sdvig.csv
+            rows.append({**stroka(f"sigma_{h}", "uroven", "ln RV_{d+k}", profil(s, lrv)), **v2})
+        rows.append({**stroka(f"sigma_{h}", "prirashcheniya", "ln RV_{d+k}", profil(s, lrv, True)), **v2})     # цель — дневная RV, как в ch4_dev/proverka_sdvig.csv
     rng = np.log(W["high"] / W["low"]).clip(lower=1e-6)
     tr = pd.concat([W["high"] - W["low"], (W["high"] - W["close"].shift()).abs(), (W["low"] - W["close"].shift()).abs()]).groupby(level=0).max()
     atr = np.log((tr / W["close"]).rolling(14).mean())
@@ -152,14 +153,46 @@ def stavka_ok(st: pd.DataFrame, zasedaniya: np.ndarray) -> bool:
     return True
 
 
+def stavka_tablica(do: pd.Timestamp) -> pd.DataFrame:
+    """Смены ставки тем же рядом, что читает счёт (msp.rate_cbr): csv владельца < 2022 + parquet ЦБ ≥ 2022 (RATE_SPLICE)."""
+    from fastbt import msp
+    st = pd.read_csv(ROOT / "fastbt/rates/key_rate_cbr_vladelec.csv", parse_dates=["data_vstupleniya"], comment="#")
+    st = st[st["data_vstupleniya"] <= do]
+    if do < msp.RATE_SPLICE:                        # до 2022 ряд счёта = csv; parquet не читаем
+        return st
+    r = msp.rate_cbr()
+    ch = r[(r.diff().fillna(1) != 0) & (r.index >= msp.RATE_SPLICE) & (r.index <= do)]
+    pq = pd.DataFrame({"data_vstupleniya": ch.index, "stavka_pct": ch.to_numpy() * 100.0})
+    return pd.concat([st[st["data_vstupleniya"] < msp.RATE_SPLICE], pq], ignore_index=True)
+
+
+def chastnaya(x: pd.DataFrame, y: pd.DataFrame, L: int = 2) -> float:
+    """Медиана по тикерам корреляции остатков x_d и y_{d+1} после регрессии на y_d…y_{d−L} (с константой)."""
+    out = []
+    for c in [c for c in x.columns if c in y.columns]:
+        d = pd.concat([x[c], y[c].shift(-1)] + [y[c].shift(i) for i in range(L + 1)], axis=1).dropna()
+        if len(d) < 30:
+            continue
+        A, v = np.c_[np.ones(len(d)), d.iloc[:, 2:].to_numpy()], d.iloc[:, :2].to_numpy()
+        e = v - A @ np.linalg.lstsq(A, v, rcond=None)[0]
+        out.append(np.corrcoef(e[:, 0], e[:, 1])[0, 1])
+    return float(np.nanmedian(out)) if out else np.nan
+
+
+def vtoraya_sigma(s: pd.DataFrame, lrv: pd.DataFrame) -> dict:
+    """Вторая проверка σ̂ (ln σ̂², приращения): частная корреляция с ln RV_{d+1} при контроле RV_d…RV_{d−2};
+    контроль — тот же ряд с подложенной утечкой +1 день. Проходит, если |факт| < ½|контроль|."""
+    f, k = chastnaya(s.diff(), lrv), chastnaya(s.shift(-1).diff(), lrv)
+    return {"pcorr_fakt": f, "pcorr_kontrol": k, "ok2": bool(abs(f) < 0.5 * abs(k))}   # NaN → False
+
+
 def ryady_sobytiya(do: pd.Timestamp, im: pd.Series, r: pd.DataFrame) -> list:
     from fastbt import dividendy
     ev = pd.read_csv(ROOT / "data/events.csv", parse_dates=["data_obyavleniya", "data_sobytiya"])
     ev = ev[ev["data_sobytiya"] <= do]
     pit = bool((ev["data_obyavleniya"] <= ev["data_sobytiya"]).all())
     zased = ev[ev["tip"].str.startswith("cbr_zasedanie")]["data_sobytiya"].to_numpy()
-    st = pd.read_csv(ROOT / "fastbt/rates/key_rate_cbr_vladelec.csv", parse_dates=["data_vstupleniya"], comment="#")
-    st = st[st["data_vstupleniya"] <= do]
+    st = stavka_tablica(do)
     dr = st.set_index("data_vstupleniya")["stavka_pct"].reindex(im.index, method="ffill").diff().abs().fillna(0)
     rows = [stroka("stavka_cbr", "stupenchataya", "|r IMOEX|_{d+k}", profil(dr.to_frame("x"), im.abs().to_frame("x")), stavka_ok(st, zased)),
             {**stroka("sobytiya", "pit", "", {}), "ok": pit, "primechanie": "объявлено не позже события" if pit else "событие раньше объявления"}]
@@ -207,7 +240,7 @@ def main(argv=None) -> int:
     t = sobrat(root, pd.Timestamp(n.do))
     ok = bool(t["ok"].all())
     OUT.write_text(shapka(root, n.do, ok) + t.to_csv(index=False, float_format="%.4f"))
-    print(t[["ryad", "tip", "corr_k-2", "corr_k-1", "corr_k+0", "corr_k+1", "ok", "primechanie"]].to_string(index=False))
+    print(t.reindex(columns=["ryad", "tip", "corr_k-2", "corr_k-1", "corr_k+0", "corr_k+1", "ok", "primechanie", "pcorr_fakt", "pcorr_kontrol", "ok2"]).to_string(index=False))
     return 0 if ok else 1
 
 
