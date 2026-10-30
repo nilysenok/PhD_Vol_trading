@@ -28,6 +28,7 @@ import json, warnings
 from pathlib import Path
 import numpy as np, pandas as pd
 import lightgbm as lgb, xgboost as xgb
+import d73_features as D73  # единственное определение PIT-версии (known_from/known_to)
 from sklearn.linear_model import LinearRegression
 
 warnings.filterwarnings('ignore')
@@ -115,7 +116,7 @@ def load_calendar(types=CAL_TYPES, cal_dir=CAL):
         d = pd.read_csv(cal_dir / f'{ty}.csv')
         if 'vneplan' in d:
             d = d[d['vneplan'].fillna(0).astype(int) == 0]
-        ev[ty] = (pd.to_datetime(d['date']).values, pd.to_datetime(d['known_from']).values)
+        ev[ty] = (pd.to_datetime(d['date']).values, pd.to_datetime(d['known_from']).values, D73.known_to_col(d).values)
     return ev
 
 
@@ -124,10 +125,10 @@ def f_cal(dates, h, ev):
     W = np.timedelta64(int(round(h * 7 / 5)), 'D')
     ud = np.array(sorted(pd.unique(pd.to_datetime(dates))), dtype='datetime64[ns]')
     res = {}
-    for ty, (d, kf) in ev.items():
+    for ty, (d, kf, kt) in ev.items():
         n, dte = np.zeros(len(ud)), np.full(len(ud), np.nan)
         for i, t in enumerate(ud):
-            k = d[kf <= t]
+            k = d[D73.izvestna(kf, kt, t)]
             fut = k[k > t]
             n[i] = ((fut <= t + W)).sum()
             if len(fut):
@@ -380,10 +381,10 @@ def f_season(A, ev=None):
     qe = ud.to_period('Q').end_time.normalize()
     out['days_to_qend'] = (qe - ud).days.astype(float)
     ev = ev or load_calendar(('expirations',))
-    d, kf = ev['expirations']
+    d, kf, kt = ev['expirations']
     wk = np.zeros(len(ud))
     for i, t in enumerate(ud.values):
-        k = d[kf <= t]
+        k = d[D73.izvestna(kf, kt, t)]
         wk[i] = float(np.any((k >= t - np.timedelta64(int(pd.Timestamp(t).dayofweek), 'D')) & (k <= t + np.timedelta64(6 - int(pd.Timestamp(t).dayofweek), 'D'))))
     out['expiry_week'] = wk
     out['month'] = ud.month.astype(float)

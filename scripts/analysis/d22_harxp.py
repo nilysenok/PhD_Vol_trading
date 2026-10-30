@@ -16,6 +16,7 @@ import numpy as np, pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import harx as HX
+import d73_features as D73  # единственное определение PIT-версии (known_from/known_to)
 import gibrid_har as GH
 
 DATA = HX.DATA
@@ -62,7 +63,8 @@ def _events(cal_dir=DATA / 'calendar'):
         ev = {}
         for ty in CAL_TYPES:
             d = pd.read_csv(cal_dir / f'{ty}.csv')
-            ev[ty] = (pd.to_datetime(d['date']).values.astype('datetime64[D]'), pd.to_datetime(d['known_from']).values.astype('datetime64[D]'))
+            ev[ty] = (pd.to_datetime(d['date']).values.astype('datetime64[D]'), pd.to_datetime(d['known_from']).values.astype('datetime64[D]'),
+                      D73.known_to_col(d).values.astype('datetime64[D]'))
         _EV['ev'] = ev
     return _EV['ev']
 
@@ -77,10 +79,10 @@ def cal_window(dates, a, b, ev=None):
     lo = (np.busday_offset(st, a - 1) if a > 1 else ud) + np.timedelta64(1, 'D')
     hi = np.busday_offset(st, b)
     res = {'cal_bd': ((hi - lo) / np.timedelta64(1, 'D') + 1).astype(float)}
-    for ty, (d, kf) in ev.items():
+    for ty, (d, kf, kt) in ev.items():
         n, dte = np.zeros(len(ud)), np.full(len(ud), 90.0)
         for i, t in enumerate(ud):
-            k = d[(kf <= t) & (d > t)]
+            k = d[D73.izvestna(kf, kt, t) & (d > t)]
             n[i] = ((k >= lo[i]) & (k <= hi[i])).sum()
             if len(k):
                 dte[i] = min(90.0, float((k.min() - t) / np.timedelta64(1, 'D')))
@@ -217,10 +219,10 @@ def leak_test(A, names, cuts=('2019-06-30', '2021-12-31', '2023-06-30'), seed=20
         I.loc[f, 'gap_on'] = rng.normal(0, 0.01, f.sum())
         tmp = OUT / '_leak_intra.parquet'; I.to_parquet(tmp, index=False); INTRA = tmp
         ev = _events(); ev2 = {}
-        for ty, (d, kf) in ev.items():  # будущие события, о которых в t ещё не знали, — случайный сдвиг дат
+        for ty, (d, kf, kt) in ev.items():  # будущие события, о которых в t ещё не знали, — случайный сдвиг дат
             d2 = d.copy(); m = kf > np.datetime64(t.date())
             d2[m] = d2[m] + rng.integers(-20, 20, m.sum()).astype('timedelta64[D]')
-            ev2[ty] = (d2, kf)
+            ev2[ty] = (d2, kf, kt)
         for k in [k for k in _EV if k != 'ev']:
             _EV.pop(k)
         _EV['ev'] = ev2

@@ -120,12 +120,23 @@ def third(y, m, wd):
     return d + dt.timedelta((wd - d.weekday()) % 7 + 14)
 
 
-# Известные переносы экспираций вместо «третьего четверга»: дата по правилу -> строка факта.
-# Поля: фактическая дата, событие, источник, retrieved_at, known_from.
+# Известные переносы экспираций вместо «третьего четверга»: дата по правилу -> версии даты (PIT, Д3).
+# Версия: дата, событие, источник, retrieved_at, тип, known_from, known_to (пусто — действует).
+# Читатель отдаёт на t версии с known_from <= t < known_to. MIX-3.22: moex.com n45304 (15.03.2022),
+# n45520 (23.03.2022), n45596 (24.03.2022); docs/issledovaniya/moex_perenos_ekspiracii_2022.md.
+_MXH2 = 'https://iss.moex.com/iss/securities/MXH2.json; '
 EXPIRY_EXCEPTIONS = {
-    '2022-03-17': ('2022-03-29', 'MOEX futures expiry MIX-3.22 (MXH2; перенос с 17.03, LSTDELDATE)',
-                   'https://iss.moex.com/iss/securities/MXH2.json; https://www.moex.com/n45596',
-                   '2026-10-29', '2022-01-01'),
+    '2022-03-17': [
+        ('2022-03-17', 'MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)',
+         'https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026)',
+         '2026-10-25', 'план', '2022-01-01', '2022-03-15'),
+        ('2022-03-24', 'MOEX futures expiry MIX-3.22 (перенос с 17.03 на 24.03)',
+         'https://www.moex.com/n45304', '2026-10-30', 'факт', '2022-03-15', '2022-03-23'),
+        ('2022-03-30', 'MOEX futures expiry MIX-3.22 (перенос с 24.03 на 30.03)',
+         'https://www.moex.com/n45520', '2026-10-30', 'факт', '2022-03-23', '2022-03-24'),
+        ('2022-03-29', 'MOEX futures expiry MIX-3.22 (MXH2; перенос с 17.03, LSTDELDATE)',
+         _MXH2 + 'https://www.moex.com/n45596', '2026-10-29', 'факт', '2022-03-24', ''),
+    ],
 }
 
 
@@ -136,12 +147,11 @@ def expirations(today, exceptions=None):
         for m in (3, 6, 9, 12):
             d = third(y, m, 3).isoformat()
             if d in exceptions:
-                fd, ev, url, got, kf = exceptions[d]
-                rows.append([fd, ev, url, got, 'факт', kf, ''])
+                rows += [[fd, ev, url, got, typ, kf, '', kt] for fd, ev, url, got, typ, kf, kt in exceptions[d]]
             else:
                 rows.append(row(d, 'MOEX quarterly futures expiry (Si/RTS/MIX, third Thursday)',
                                 'https://iss.moex.com/iss/securities/SiH6.json (LSTTRADE; правило сверено 2019-2026)',
-                                'план', '%d-01-01' % y, '', today))
+                                'план', '%d-01-01' % y, '', today) + [''])
     return rows
 
 
@@ -165,7 +175,7 @@ def moex():
 def write(name, rows, out=None):
     with open(os.path.join(out or OUT, name + '.csv'), 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
-        w.writerow(HDR)
+        w.writerow(HDR + ['known_to'] if name == 'expirations' else HDR)
         w.writerows(sorted(rows))
     print(name, len(rows))
 
