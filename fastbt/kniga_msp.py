@@ -120,17 +120,13 @@ def vyklyuchatel(ex_kniga: np.ndarray, i: int, tsel=0.10) -> float:
     return VYKL_MNOZH if plohaya else 1.0
 
 
-def komissiya_mnozh(w, w_prev, raw, raw_prev, tik, hedzh: float, hedzh_prev: float, stavka=KOMISSIYA) -> float:
-    """Комиссия (доля NAV) за оборот сверх сделок пар (Ж-149): по тикеру ставка·max(0, |Δw| − |Σ Δraw·c|).
-    w — итоговые веса, raw — СЫРАЯ позиция пары (до весов Sk, нетто, сектора, таргета, плеча, выключателя),
-    c = w/raw — сегодняшний коэффициент цепочки (при выходе raw=0 — вчерашний w_prev/raw_prev). Δraw·c — вход/выход
-    сделок, уже в excess пары; всё остальное изменение веса (Sk, нетто, сектор, m, f) облагается. Столбцы одного
-    тикера (`tik`) складываются в нетто. Хедж MIX сделкой пары не покрыт: ставка·|Δ хеджа| целиком."""
-    w, wp, raw, rawp = (np.asarray(x, float) for x in (w, w_prev, raw, raw_prev))
-    c = np.where(raw != 0, w / np.where(raw != 0, raw, 1), np.where(rawp != 0, wp / np.where(rawp != 0, rawp, 1), 0.0))
-    n = int(np.max(tik)) + 1 if len(tik) else 0
-    dw, dr = np.bincount(tik, w - wp, n), np.bincount(tik, (raw - rawp) * c, n)
-    return float(stavka * (np.maximum(np.abs(dw) - np.abs(dr), 0.0).sum() + abs(hedzh - hedzh_prev)))
+def komissiya_mnozh(hedzh: float, hedzh_prev: float, stavka=KOMISSIYA) -> float:
+    """Комиссия (доля NAV) за оборот, не оплаченный в excess пар: хедж MIX, ставка·|Δ хеджа|.
+    Ставки-акции дневные: excess пары (`tf_os_v5.dohod`) закрыт к последнему бару дня и платит ставку на |pos| входа и
+    выхода, а excess·w масштабируется весом линейно — смена множителей, весов Sk, нетто, лимитов между днями лишь меняет
+    размер завтрашней внутридневной сделки, её комиссия уже в excess·w. Облагать |Δw| акций — двойной учёт.
+    Хедж MIX (open→open IMOEX, `hedzh·imoex`) переносится через ночь и комиссии в excess не имеет."""
+    return float(stavka * abs(hedzh - hedzh_prev))
 
 
 @dataclass
@@ -145,19 +141,14 @@ class Itog:
 
 def kniga_dnya(i, score, sigma, sektor, sk, ist: dict, k=20, rho=0.01, plecho=2.0, tsel=0.10) -> Itog:
     """ist: ex_sk [T,S], ex_port [T] (m=1), ex_kniga [T] (после шагов 8–10), imoex [T], kvartal [T] — строки ≥ i не читаются.
-    Необязательно ist["tik"] — индекс тикера столбца (по умолчанию каждый столбец — свой тикер); ist["pred"] — состояние
-    предыдущего вызова (пишет сама), нужное для комиссии оборота множителей."""
+    ist["pred"] — состояние предыдущего вызова (пишет сама): вчерашний хедж для комиссии его оборота."""
     u = vybor_stavok(score, sigma, sektor, k, rho)
-    raw = u
     w = vesa_sk(ist["ex_sk"], ist["kvartal"], i)
     u = netto(u * (len(w) * w)[np.asarray(sk)])
     m = mnozhitel_vola(ist["ex_port"], i, np.abs(u).sum(), tsel, plecho)
     f = vyklyuchatel(ist["ex_kniga"], i, tsel)
     b = beta(ist["ex_kniga"], ist["imoex"], i)
     wf, h = u * m * f, hedzh_mix(b) * f
-    nul = np.zeros(len(u))
-    p = ist.get("pred", {"raw": nul, "w": nul, "h": 0.0})
-    tik = np.asarray(ist.get("tik", np.arange(len(u))), int)
-    kom = komissiya_mnozh(wf, p["w"], raw, p["raw"], tik, h, p["h"])
-    ist["pred"] = {"raw": raw, "w": wf, "h": h}
+    kom = komissiya_mnozh(h, ist.get("pred", {"h": 0.0})["h"])
+    ist["pred"] = {"h": h}
     return Itog(wf, h, w, m, f, kom)

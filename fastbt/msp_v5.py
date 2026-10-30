@@ -66,7 +66,7 @@ def progon(sig: dict, sigma: pd.DataFrame, sektor: dict, dohod: pd.DataFrame, im
     im = np.nan_to_num(imoex.reindex(daty).to_numpy(float))
     T = len(daty)
     ist = {"ex_sk": np.zeros((T, len(sks))), "ex_port": np.zeros(T), "ex_kniga": np.zeros(T),
-           "imoex": im, "kvartal": _kvartal(daty), "tik": np.tile(np.arange(len(tik)), len(sks))}
+           "imoex": im, "kvartal": _kvartal(daty)}
     U, H = np.zeros((T, len(kand))), np.zeros(T)
     for i in range(T):
         it = kniga_msp.kniga_dnya(i, S[i], sg[i], sek, skid, ist, k, rho, plecho, tsel)
@@ -74,7 +74,7 @@ def progon(sig: dict, sigma: pd.DataFrame, sektor: dict, dohod: pd.DataFrame, im
         for j in range(len(sks)):                                      # история пишется ПОСЛЕ решения дня i
             ist["ex_sk"][i, j] = float((u0 * R[i])[skid == j].sum())
         ist["ex_port"][i] = float((it.u / (it.m * it.vykl)) @ R[i])
-        ist["ex_kniga"][i] = float(it.u @ R[i] + it.hedzh * im[i]) - it.komissiya      # Ж-149: оборот множителей и хеджа
+        ist["ex_kniga"][i] = float(it.u @ R[i] + it.hedzh * im[i]) - it.komissiya      # Ж-149: оборот хеджа MIX
         U[i], H[i] = it.u, it.hedzh
     return Rezultat(pd.DataFrame(U, index=daty, columns=kand), pd.Series(H, index=daty, name="hedzh"),
                     pd.Series(ist["ex_kniga"], index=daty, name="ex_kniga"), sc)
