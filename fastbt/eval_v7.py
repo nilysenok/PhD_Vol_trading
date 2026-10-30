@@ -21,6 +21,8 @@ import pandas as pd
 
 from fastbt import exec_e_minuderzh as minuderzh
 from fastbt.eval_v6 import EvaluatorV6
+from fastbt.eval_v7_okup import OkupMixin
+from fastbt.eval_v7_otn import OtnMixin
 from fastbt.signals import v7_impuls, v7_kross
 from fastbt.signals.interface import WARMUP, SignalSet, register_family
 from fastbt.unit import Unit
@@ -34,6 +36,7 @@ class Ist7:
     """Источники семей v7: b10 {тикер: 10-минутки} — S10–S12; panel (v7_kross.Panel) — S8, S9."""
     b10: dict | None = None
     panel: object | None = None
+    otn: object | None = None          # eval_v7_otn.OtnIst: IMOEX и карта секторов оси otnositelno (S1–S4); в sha не входит — ключ ("otn", …)
 
     @property
     def sha(self) -> str:
@@ -101,7 +104,7 @@ for _s in ("S8", "S9"):
     register_family(_s, _fabrika_sech(_s), "v7")
 
 
-class EvaluatorV7(EvaluatorV6):
+class EvaluatorV7(OkupMixin, OtnMixin, EvaluatorV6):
     min_uder = 0                                                    # V7-4: умолчание на уровне класса (объекты без __init__ в тестах)
 
     def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=None, ist=None, rol: str | None = None, ist7: Ist7 | None = None, min_uderzhanie: int = 0):
@@ -110,7 +113,7 @@ class EvaluatorV7(EvaluatorV6):
         self.min_uder = minuderzh.dney(sid, min_uderzhanie)         # V7-4: константа куба, только контртренд; 0 — путь v6
 
     def _k7(self) -> tuple:
-        return ((("v7", self.sid, self.ist7.sha),) if self.sid in SEMYI_V7 else ()) + (((minuderzh.KLYUCH, self.min_uder),) if self.min_uder else ())
+        return ((("v7", self.sid, self.ist7.sha),) if self.sid in SEMYI_V7 else ()) + self._otn_key() + self._okup_key() + (((minuderzh.KLYUCH, self.min_uder),) if self.min_uder else ())
 
     def _params(self, *a):
         p = super()._params(*a)
@@ -134,4 +137,4 @@ class EvaluatorV7(EvaluatorV6):
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
         if self.sid in SEMYI_V7:
             raise ValueError(f"{self.sid}: полный путь точки S8–S12 — после канона v7 (V7-1b) и оси k_okup (V7-3); здесь только сигнал")
-        return super().evaluate_v2(pt, period, vozm)
+        return super().evaluate_v2(self._otn_razbor(pt), period, vozm)
