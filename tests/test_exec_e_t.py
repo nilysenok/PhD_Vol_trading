@@ -121,8 +121,8 @@ def test_g6_net_bara_T_net_sdelki_bez_podstanovki():
     assert np.isnan(cena[1]) and np.isfinite(cena[[0, 2]]).all()
     r = _run([0, 1, 1], cena=cena)
     assert r.trades[0].entry_day == 2 and len(r.trades) == 1                   # день 1 пропущен, ffill нет
-    ff = _run([0, 1, 1], cena=pd.Series(cena).ffill().to_numpy())
-    assert ff.trades[0].entry_day == 1                        # мутация ffill даёт вход на «чужой» цене — и тест это видит
+    with pytest.raises(ValueError):                           # мутация ffill: «чужая» цена дня 0 вне бара T дня 1 — инвариант _v_bare её ловит
+        _run([0, 1, 1], cena=pd.Series(cena).ffill().to_numpy())
     d5 = [_day(0), _day(1, drop=(720,)), _day(2)]             # цена есть, а 5-мин бара T в данных нет — тоже без сделки
     assert _run([0, 1, 1], days=d5).trades[0].entry_day == 2
 
