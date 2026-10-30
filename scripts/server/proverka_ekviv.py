@@ -32,13 +32,19 @@ def main(argv=None) -> int:
     ap.add_argument("--procs", type=int, default=4)
     ap.add_argument("--moi", help="готовый npz вместо пересчёта")
     ap.add_argument("--rezhim", default="1", help="метка режима (1 — как есть, 2 — без AVX512/SVML) в отметке и вердикте")
+    ap.add_argument("--do", default=os.environ.get("PERENOS_DO", ""), help="perenos_do из VERSIYA: пусто | 2021-12-31 — train4, 2026-02-28 — wf")
     a = ap.parse_args(argv)
+    period = ekviv.period_po_do(a.do)
     dopusk = float(os.environ.get("DOPUSK", "1e-12"))      # Ж-137 п. 3: якорь и точки ≤ 1e-12, дискретное — строго
     otm = Path(a.otmetka)
     otm.parent.mkdir(parents=True, exist_ok=True)
     otm.unlink(missing_ok=True)
     eta, meta_eta = ekviv_io.zagruzit(a.etalony)
     tochki = ekviv_io.tochki_iz(eta)
+    if meta_eta.get("period", "train4") != period:       # период пересчёта — из VERSIYA; эталон другого периода — стоп, а не молчаливая сверка train4
+        print(f"FAIL дискретное [режим {a.rezhim}]: период эталона {meta_eta.get('period', 'train4')}, perenos_do {a.do!r} даёт {period} — "
+              "--do не передан или эталон не того пакета")
+        return 1
     print(f"proverka[режим {a.rezhim}]: эталон {Path(a.etalony).name} ({meta_eta.get('machine')}, numba {meta_eta.get('numba')}, "
           f"numpy {meta_eta.get('numpy')}, numba_threads {meta_eta.get('numba_threads')}, layer {meta_eta.get('numba_layer')}): "
           f"якорей {sum(m.startswith('yakor') for m in eta)}, точек {len(tochki)}; v6: якорей {sum(m.startswith('v6yakor') for m in eta)}, "
@@ -47,10 +53,10 @@ def main(argv=None) -> int:
     if a.moi:
         moi, meta_moi = ekviv_io.zagruzit(a.moi)
     else:
-        moi, meta_moi = ekviv.poschitat(tochki, a.procs)
+        moi, meta_moi = ekviv.poschitat(tochki, a.procs, period)
         if ekviv_v6.est_v6(eta):                  # эталон с набором v6: тот же допуск 1e-12, дискретное строго (Ж-137 п. 4)
             t6, b6 = ekviv_v6.iz_etalona(eta)
-            rez6, m6, kod6 = ekviv_v6.poschitat(t6, b6, a.procs)
+            rez6, m6, kod6 = ekviv_v6.poschitat(t6, b6, a.procs, period=period)
             ekviv_v6.dobavit(moi, meta_moi, rez6, m6, kod6)
         meta_moi.update(ekviv.sreda_meta())
     meta_moi.update(kod_sha=a.kod_sha, dannye_sha=a.dannye_sha)       # строго против эталона, если он их хранит (ekviv_sravn.SHA_VHODOV)

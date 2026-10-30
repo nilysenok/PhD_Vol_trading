@@ -3,12 +3,14 @@
 Плюс набор v6 (ekviv_v6.py: якорь v6 × 6 Sk + 200 точек куба v6, эталон и быстрый слой; записи `v6*__…`, v5-часть не меняется).
 
 Запускает `scripts/server/sobrat_perenos.sh` из распакованного tar кода (PYTHONPATH = каталог tar, FASTBT_MAIN = данные Мака,
-сверенные с манифестом). Данные — только train4 (≤ 2019); ≥ 2022 и test_locked не читаются. Метрики не печатаются.
+сверенные с манифестом). Данные — train4 (≤ 2019); при --do 2026-02-28 (пакет wf, отметка владельца) — период wf; test_locked не читается.
+Метрики не печатаются.
     python3 scripts/server/etalony_mak.py --out perenos/etalony_<коммит>.npz [--tochek 200] [--procs 4]
 """
 import argparse
 import hashlib
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -30,14 +32,17 @@ def main(argv=None) -> int:
     ap.add_argument("--kod-sha", help="sha256 tar кода — в meta эталона, на сервере сверяется строго")
     ap.add_argument("--dannye-sha", help="sha256 манифеста данных — в meta эталона, на сервере сверяется строго")
     ap.add_argument("--bez-v6", action="store_true", help="только набор v5 (как до листа v6)")
+    ap.add_argument("--do", default=os.environ.get("PERENOS_DO", ""),
+                    help="perenos_do пакета: пусто | 2021-12-31 — train4 (как раньше), 2026-02-28 — wf (якоря v5 и точки v6 на wf)")
     a = ap.parse_args(argv)
     t0 = time.time()
-    tochki = ekviv.vybor(a.tochek, a.seed)
-    print(f"etalony: якорь A_fix × 6 Sk на train4 и {len(tochki)} точек (seed {a.seed}), процессов {a.procs}", flush=True)
-    rez, meta = ekviv.poschitat(tochki, a.procs)
+    period = ekviv.period_po_do(a.do)
+    tochki = ekviv.vybor(a.tochek, a.seed) if period == "train4" else []     # wf: v5 — только якорь A_fix × 6 Sk
+    print(f"etalony: якорь A_fix × 6 Sk на {period} и {len(tochki)} точек (seed {a.seed}), процессов {a.procs}", flush=True)
+    rez, meta = ekviv.poschitat(tochki, a.procs, period)
     t5 = time.time() - t0
     if not a.bez_v6:
-        rez6, m6, kod6 = ekviv_v6.poschitat(None, set(), a.procs, a.tochek_v6)
+        rez6, m6, kod6 = ekviv_v6.poschitat(None, set(), a.procs, a.tochek_v6, period)
         ekviv_v6.dobavit(rez, meta, rez6, m6, kod6)
         print(f"etalony: v6 — записей {len(rez6)} (быстрый слой {sum(m.startswith('v6bystr') for m in rez6)}), "
               f"пропущено не-ok при наборе {sum(m6['v6_propusheno'].values())}; {time.time() - t0 - t5:.0f} с", flush=True)

@@ -25,10 +25,10 @@ def kvoty(n: int = N_V6) -> dict:
     return {s: n // len(sids) + (k < n % len(sids)) for k, s in enumerate(sids)}
 
 
-def rezhim(sid: str):
+def rezhim(sid: str, period: str = None):
     ps = _ps()
     fdr = ps.load_kub(sid, ps.R0._replace(setka="v6")).get("fdr")
-    return ps.Rezhim("v6", ps.PERIOD, "seed", False, fdr, "sobol", None, ((sid, "etalon-bez-zamorozki", ()),))
+    return ps.Rezhim("v6", period or ps.PERIOD, "seed", False, fdr, "sobol", None, ((sid, "etalon-bez-zamorozki", ()),))
 
 
 def _tochka(sr, sid, i, pt, rz, fast) -> tuple:
@@ -75,25 +75,25 @@ def tochka_yakorya(c: dict, sdvig: int = 0) -> dict:
     return None if q is None else {**c["v5"].get("yakorya_progon", {}), **q}
 
 
-def _yakor(sr, c, sid) -> dict:
+def _yakor(sr, c, sid, period: str) -> dict:
     """Первый сдвиг 0, 1, … , где точка совместима и оценщик дал ряд со статусом ok; иначе отказ (молчаливой подмены нет)."""
     for sd in range(8):
         pt = tochka_yakorya(c, sd)
         if pt is None:
             continue
-        r, p, t = sr.evr.evaluate_v2(pt, _ps().PERIOD)
+        r, p, t = sr.evr.evaluate_v2(pt, period)
         if p is not None and r.get("status", "ok") == "ok":
             return ekviv._zapis(r, p, t, sr.evr)
     raise RuntimeError(f"якорь v6 {sid}: ни один из 8 сдвигов середины сетки не дал ряда ok")
 
 
 def _zadacha(z: tuple) -> tuple:
-    """(sid, idx | None, bystr, kvota) -> (sid, {имя: запись}, kod, vhody, kub_sha, daty_sha, пропущено). idx None — набор по квоте."""
-    sid, idx, bystr, kvota = z
+    """(sid, idx | None, bystr, kvota, period) -> (sid, {имя: запись}, kod, vhody, kub_sha, daty_sha, пропущено). idx None — набор по квоте."""
+    sid, idx, bystr, kvota, period = z
     ps = _ps()
-    rz = rezhim(sid)
+    rz = rezhim(sid, period)
     sr, c, out = ps.sreda(sid, rz), ps.load_kub(sid, rz), {}
-    out[f"v6yakor__{sid}"] = _yakor(sr, c, sid)
+    out[f"v6yakor__{sid}"] = _yakor(sr, c, sid, period)
     tochki, plokho = _nabrat(sr, c, sid, rz, kvota) if idx is None else (_po_indeksam(sr, c, sid, rz, idx), 0)
     for i, pt, zap in tochki:
         out[f"v6tochka__{sid}__{i}"] = zap
@@ -103,10 +103,12 @@ def _zadacha(z: tuple) -> tuple:
     return sid, out, sr.kod, sr.vhody, mf["kub_sha"], mf["daty_sha"], plokho
 
 
-def poschitat(tochki, bystr: set, procs: int, n: int = N_V6) -> tuple:
-    """tochki None — набрать по квотам (сборка эталона); иначе [(sid, i)] из эталона (проверка). -> (rez, meta v6_*, kod)."""
-    ps, kv = _ps(), kvoty(n)
-    zad = [(s, None if tochki is None else [i for q, i in tochki if q == s], {i for q, i in bystr if q == s}, kv[s]) for s in ps.SIDS]
+def poschitat(tochki, bystr: set, procs: int, n: int = N_V6, period: str = None) -> tuple:
+    """tochki None — набрать по квотам (сборка эталона); иначе [(sid, i)] из эталона (проверка). -> (rez, meta v6_*, kod).
+    period: train4 (по умолчанию) или wf — тот же набор (200 точек по квотам), куб v6 объявляет оба периода."""
+    ps, kv, period = _ps(), kvoty(n), period or _ps().PERIOD
+    zad = [(s, None if tochki is None else [i for q, i in tochki if q == s], {i for q, i in bystr if q == s}, kv[s], period)
+           for s in ps.SIDS]
     if procs <= 1:
         it = map(_zadacha, zad)
     else:
