@@ -81,25 +81,25 @@ def _rows():
 
 
 def test_top10_po_msr_zapas_sharpe_pomechen_bez_vorot():
-    t = D.top10(_rows())
+    t = D.top10(_rows(), min_sdelok=0)
     # 99: msr не определён -> sharpe 9,5 (между msr 10 и 9, с пометкой); остальные по msr 14…6
     assert [r["klyuch_n"] for r in t] == [14, 13, 12, 11, 10, 99, 9, 8, 7, 6]
     assert [r["klyuch_n"] for r in t if r["pometka_sharpe"]] == [99]
     assert 94 not in [r["klyuch_n"] for r in t] and 98 not in [r["klyuch_n"] for r in t] and 97 not in [r["klyuch_n"] for r in t]
     # ворот нет: msr 3, sharpe -0,1 (пометка), msr -0,5 — все в списке
-    assert [(r["klyuch_n"], r["pometka_sharpe"]) for r in D.top10([r for r in _rows() if r["klyuch_n"] in (96, 95, 3)])] == [(3, False), (95, True), (96, False)]
+    assert [(r["klyuch_n"], r["pometka_sharpe"]) for r in D.top10([r for r in _rows() if r["klyuch_n"] in (96, 95, 3)], min_sdelok=0)] == [(3, False), (95, True), (96, False)]
 
 
 def test_mutaciya_ranzhirovanie_po_drugomu_polyu_lovitsya(monkeypatch):
-    ozhid = [r["klyuch_n"] for r in D.top10(_rows())]
+    ozhid = [r["klyuch_n"] for r in D.top10(_rows(), min_sdelok=0)]
     for pole in ("sharpe", "msr_ned"):
         monkeypatch.setitem(D.TOP10, "kluch", pole)
-        assert [r["klyuch_n"] for r in D.top10(_rows())] != ozhid, pole
+        assert [r["klyuch_n"] for r in D.top10(_rows(), min_sdelok=0)] != ozhid, pole
 
 
 def test_top10_tie_po_klyuchu():
     rows = [dict(klyuch_n=k, status="ok", rol="sobol", msr=1.0) for k in (5, 2, 9)]
-    assert [r["klyuch_n"] for r in D.top10(rows)] == [2, 5, 9]
+    assert [r["klyuch_n"] for r in D.top10(rows, min_sdelok=0)] == [2, 5, 9]
 
 
 def test_vse_sidy_v_csv():

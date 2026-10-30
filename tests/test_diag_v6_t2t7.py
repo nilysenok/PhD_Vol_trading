@@ -35,6 +35,33 @@ def _pul():
 
 
 NAN = float("nan")
+_TOP = T.top10_po_sk
+
+
+@pytest.fixture(autouse=True)
+def _bez_vorot(request, monkeypatch):
+    """Синтетика G3.1–G3.4 — без ворот (min_sdelok=0); ворота проверяют тесты с меткой `vorota`."""
+    if "vorota" not in request.node.name:
+        monkeypatch.setattr(T, "top10_po_sk", lambda pul, m=0: _TOP(pul, m))
+
+
+def _tochka(i, sdelok_god, **kw):
+    return dict(_r(i, "s1", float(i), 1.0, sdelok_god, OK), **kw)
+
+
+def test_vorota_29_ne_vhodit_30_vhodit():
+    """Сделок за окно = Σ sdelok_y (4 года): 29 → нет, 30 → да; i=1…3 дают 7,25·4 = 29 / 7,5·4 = 30."""
+    pul = {"S1": [_tochka(1, 7.25), _tochka(2, 7.5), _tochka(3, 20)]}
+    assert [r["sobol_i"] for r in T.top10_po_sk(pul)["S1"]] == [3, 2]
+    assert [r["sobol_i"] for r in T.top10_po_sk(pul, 0)["S1"]] == [3, 2, 1]
+    assert [r["sobol_i"] for r in P.top10(pul["S1"], min_sdelok=30)] == [3, 2]
+
+
+def test_mutaciya_vorota_po_prinyato_lovitsya(monkeypatch):
+    """№ 41: ворота по `prinyato` (принятые сигналы) вместо реальных сделок: точка с 29 сделками, но большим prinyato, прошла бы."""
+    pul = {"S1": [_tochka(1, 7.25, prinyato=500), _tochka(2, 7.5, prinyato=1)]}
+    monkeypatch.setattr(P, "sdelok_okno", lambda r: float(r.get("prinyato", 0)))
+    assert [r["sobol_i"] for r in T.top10_po_sk(pul)["S1"]] != [2]       # мутант пускает i=1 и не пускает i=2
 
 
 def _vse(t2):

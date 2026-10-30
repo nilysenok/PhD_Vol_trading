@@ -117,9 +117,14 @@ def sha_vhodov() -> str:
     return h.hexdigest()
 
 
-def top10(rows: list) -> list:
-    """Диагностический топ-10 (не отбор): status=ok, rol=sobol; ранг по `msr` (дневной), где он не определён — по `sharpe` (строка копируется
-    с пометкой `pometka_sharpe`); ворот нет; при равенстве — меньший klyuch_n."""
+def sdelok_okno(r: dict) -> float:
+    """Сделок за окно = Σ `sdelok_y` строки ledger (то же поле, что в таблице (2)); не `prinyato` (мутация № 41)."""
+    return float(sum((r.get("sdelok_y") or {}).values()))
+
+
+def top10(rows: list, min_sdelok: int = 30) -> list:
+    """Диагностический топ-10 (не отбор): status=ok, rol=sobol, сделок за окно ≥ `min_sdelok` (ворота, толкования [31.10 00:53]; 0 — без ворот);
+    ранг по `msr` (дневной), где он не определён — по `sharpe` (строка копируется с пометкой `pometka_sharpe`); при равенстве — меньший klyuch_n."""
     def znach(r):
         for k, pom in ((TOP10["kluch"], False), (TOP10["zapas"], True)):
             if r.get(k) is not None and math.isfinite(r[k]):
@@ -127,7 +132,7 @@ def top10(rows: list) -> list:
         return None
     out = []
     for r in rows:
-        z = znach(r) if r.get("status") == "ok" and r.get("rol") == "sobol" else None
+        z = znach(r) if r.get("status") == "ok" and r.get("rol") == "sobol" and sdelok_okno(r) >= min_sdelok else None
         if z:
             out.append((z[0], dict(r, pometka_sharpe=z[1])))
     out.sort(key=lambda t: (-t[0], t[1]["klyuch_n"]))
