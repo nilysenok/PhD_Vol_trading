@@ -13,7 +13,7 @@ PRAVILA = [
     ("data/events.csv", "csv", ("data_obyavleniya", "data_sobytiya"), (), "fastbt/sobytiya_pit.py (календарь событий PIT: объявление и событие)"),
     ("data/calendar/torgovye_dni_moex.csv","csv", ("date",), (), "торговый календарь MOEX"),
     ("fastbt/rates/key_rate_cbr_vladelec.csv", "csv", ("data_vstupleniya",), (), "ставка ЦБ владельца (дата вступления; объявление раньше входа)"),
-    *[(f"data/calendar/{n}.csv", "csv", KAL, (), f"календарь {n} (PIT: date и known_from; retrieved_at — дата выгрузки, не дата события: не очищается)")
+    *[(f"data/calendar/{n}.csv", "csv", KAL, ("retrieved_at",), f"календарь {n} (PIT: date и known_from)")
       for n in ("cbr", "expirations", "fomc", "imoex_rebal", "imoex_rebal_official", "cpi_us")],
     ("moex_discovery/data/external/macro/raw/key_rate_cbr.parquet", "pq", ("date",), (), "fastbt/msp.py rate_cbr (parquet ЦБ; до 2022 берётся ряд владельца)"),
     # справочные таблицы исследователя: fastbt читает их от корня КОДА (накладка sobrat_perenos.sh / razvernut.sh);
