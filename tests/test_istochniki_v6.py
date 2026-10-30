@@ -213,5 +213,5 @@ def test_konec_perioda_i_zamok(tmp_path, monkeypatch):
     with pytest.raises(period_v2.ZamokVladeltsa):
         iv.konec("wf")
     (tmp_path / "net.json").write_text("{}")
-    with pytest.raises(NotImplementedError, match="режут чтение"):
-        iv.konec("wf")                               # замок снят, но чтение ≥ 2022 молча не обрезается
+    assert iv.konec("wf") == pd.Timestamp("2026-03-01")      # с отметкой (wf-L1b): конец периода + 1 день, исключительно
+    assert iv.konec("train4") == pd.Timestamp("2022-01-01")  # dev-периоды — как было

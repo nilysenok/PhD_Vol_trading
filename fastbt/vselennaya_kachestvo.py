@@ -19,6 +19,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 from fastbt import daily_1850 as d18
 
@@ -39,10 +40,24 @@ def _okno(i: int) -> slice:
     return slice(i - WINDOW, i)
 
 
-def bars_per_day(tiker: str, main: Path | None = None) -> pd.Series:
-    """Число десятиминуток окна [09:50; 18:50) по дням (до 2020-01-01)."""
+def konec(period: str | None = None) -> pd.Timestamp:
+    """Граница чтения баров качества (исключительно). None и периоды ≤ 2021 — END (2020-01-01, как было); wf — конец периода + 1 день,
+    только при отметке снятого замка (period_v2.proverit_chtenie, иначе ZamokVladeltsa)."""
+    from fastbt import period_v2
+    if period is None or period_v2.PERIODY[period].konec.year < 2022:
+        return END
+    period_v2.proverit_chtenie(period, otmetka=period_v2.OTMETKA)
+    return period_v2.PERIODY[period].konec + pd.Timedelta(days=1)
+
+
+def bars_per_day(tiker: str, main: Path | None = None, period: str | None = None) -> pd.Series:
+    """Число десятиминуток окна [09:50; 18:50) по дням (до konec(period): 2020-01-01 или конец wf)."""
     p = (main or d18.default_main()) / "moex_discovery" / "data" / "raw" / "candles_10m" / f"{tiker}.parquet"
-    b = d18.read_bars(p, END)
+    end = konec(period)
+    if end == END:
+        b = d18.read_bars(p, END)
+    else:       # wf: zona.check закрыт на HARD 2025, отметка уже проверена в konec(); фильтр на чтении режет по концу периода
+        b = pq.read_table(p, filters=[("timestamp", "<", end.to_pydatetime())]).to_pandas()
     mod = b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute
     b = b[(mod >= d18.OPEN_MIN) & (mod < d18.CUT_MIN)]
     return b.groupby(b["timestamp"].dt.normalize()).size()
@@ -120,9 +135,9 @@ class Kachestvo:
         return pd.DataFrame(rows, columns=["tiker", "s_mesyaca", "po_mesyac", "mesyacev"])
 
 
-@lru_cache(maxsize=1)
-def default(main: Path | None = None) -> Kachestvo:
-    cols = {t: bars_per_day(t, main) for t in TICKERS}
+@lru_cache(maxsize=4)
+def default(main: Path | None = None, period: str | None = None) -> Kachestvo:
+    cols = {t: bars_per_day(t, main, period) for t in TICKERS}
     return Kachestvo(pd.DataFrame(cols).fillna(0).astype(int))
 
 
