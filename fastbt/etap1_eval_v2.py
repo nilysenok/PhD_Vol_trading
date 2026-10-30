@@ -238,6 +238,8 @@ class EvaluatorV2(Evaluator):
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
         period_v2.proverit_chtenie(period)                                      # wf до отметки владельца — отказ (Ж-136)
+        for nm in ("_sigs", "_pos"):                                            # кэш — только внутри точки: иначе рост ~1,8–15 МБ/точку
+            getattr(self, nm, {}).clear()
         t0, self.diag, self.zaem, self.poz = time.perf_counter(), None, None, None
         nov, vz = {k: pt.get(k, v) for k, v in NOVYE.items()}, dict(vozm or {})
         self._ctx, self._kray, comm0 = dict(nov=nov, vozm=vz, default=nov == NOVYE and not vz), False, self.comm

@@ -1,5 +1,5 @@
-"""Листы server-skripty (проверка цепочки X, 30.10): Д1 zabrat.sh берёт ledger 2.1 и 2.2 и файлы Морриса; Д2 pamyat.sh не ловит
-чекпоинты прошлых проходов; Д3 e1_sektor не выдаёт FutureWarning (reindex(fill_value) вместо fillna(False)), результат побайтно прежний.
+"""Листы server-skripty (проверка цепочки X, 30.10): Д1 zabrat.sh берёт ledger 2.1 и 2.2 и файлы Морриса; Д2 (снят 30.10: pamyat.sh
+больше не ждёт чекпоинт, замер периодический — tests/test_pamyat_sh.py); Д3 e1_sektor не выдаёт FutureWarning (reindex(fill_value) вместо fillna(False)), результат побайтно прежний.
 Мутации: условие только "2.1" — Д1 падает; ls любого checkpoint.json — Д2 падает; fillna(False) после reindex — Д3 падает."""
 import os
 import shutil
@@ -60,54 +60,6 @@ def test_d1_mutaciya_tolko_21_lovitsya(tmp_path):
     _server(src)
     assert _zabrat(mut, src, dst).returncode == 0
     assert not (dst / "ledger/train4_v6_s1/S1/p00/port/00000.npy").exists()     # так выглядел дефект: тест Д1 на этом упал бы
-
-
-def _zhdat(tmp: Path, pamyat: Path, pid_age: int) -> str:
-    """Старый checkpoint (mtime 100 с назад), pid-файл старта pid_age с назад; ждём 2 с. Вернёт вывод pamyat_sledit-ожидания."""
-    for f in ("obshchee.sh", "pamyat.sh"):
-        (tmp / f).write_text((SH / f).read_text() if f != "pamyat.sh" else pamyat.read_text())
-    (tmp / "VERSIYA").write_text("commit_short=abc\ntar_sha256=ff\nnumba_threads=1\nnumba_layer=workqueue\n")
-    (tmp / "logs").mkdir()
-    (tmp / "ledger/train4_s1/S1").mkdir(parents=True)
-    ck, pf = tmp / "ledger/train4_s1/S1/checkpoint.json", tmp / "logs/sobol_train4.pid"
-    ck.write_text("{}")
-    pf.write_text("1")
-    import time
-    now = time.time()
-    os.utime(ck, (now - 100, now - 100))
-    os.utime(pf, (now - pid_age, now - pid_age))
-    code = '. ./obshchee.sh; . ./pamyat.sh; pamyat_checkpoint_novyj train4 && echo NOVYJ || echo NET'
-    return subprocess.run(["bash", "-c", code], cwd=tmp, capture_output=True, text=True).stdout.strip()
-
-
-def test_d2_staryj_checkpoint_ignoriruetsya(tmp_path):
-    assert _zhdat(tmp_path, SH / "pamyat.sh", pid_age=10) == "NET"               # checkpoint старше старта
-
-
-def test_d2_novyj_checkpoint_schitaetsya(tmp_path):
-    assert _zhdat(tmp_path, SH / "pamyat.sh", pid_age=200) == "NOVYJ"            # checkpoint новее старта
-
-
-def test_d2_mutaciya_lyuboj_checkpoint_lovitsya(tmp_path):
-    mut = tmp_path / "pamyat_mut.sh"
-    mut.write_text((SH / "pamyat.sh").read_text().replace('[ ! -e "$pidf" ] || [ "$f" -nt "$pidf" ] && return 0', "return 0"))
-    assert mut.read_text() != (SH / "pamyat.sh").read_text()
-    d = tmp_path / "w"
-    d.mkdir()
-    assert _zhdat(d, mut, pid_age=10) == "NOVYJ"                                 # мутация принимает старый — тест выше упал бы
-
-
-def test_d2_pamyat_sledit_ne_zhdyot_stary_chekpoint_na_linux(tmp_path):
-    # ветка Linux: подставной free; наблюдатель с новым ожиданием не срабатывает на старый checkpoint за 2 с и уходит по таймауту
-    (tmp_path / "bin").mkdir()
-    fr = tmp_path / "bin/free"
-    fr.write_text('#!/bin/sh\necho "Mem: 100 0 0 0 0 100"\n')
-    fr.chmod(0o755)
-    out = _zhdat(tmp_path, SH / "pamyat.sh", pid_age=10)
-    assert out == "NET"
-    r = subprocess.run(["bash", "-c", ". ./obshchee.sh; . ./pamyat.sh; pamyat_svobodno"], cwd=tmp_path, capture_output=True, text=True,
-                       env={**os.environ, "PATH": f"{tmp_path}/bin:{os.environ['PATH']}"})
-    assert r.stdout.strip() == "100"
 
 
 def _ctx_i_daty():
