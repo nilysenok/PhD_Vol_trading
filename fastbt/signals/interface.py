@@ -122,7 +122,8 @@ def register(fam: Family) -> Family:
 
 
 _REGISTRY_V5: Dict[str, object] = {}   # сетка v5 (Ж-127): семьи регистрируются отдельно от v4
-_SETKI = {"v4": _REGISTRY, "v5": _REGISTRY_V5}
+_REGISTRY_V7: Dict[str, object] = {}   # сетка v7 (Ж-153): S8–S12 — фабрики `fabrika(ist7) -> fn` (eval_v7); S1–S6 — из v5; S7 нет
+_SETKI = {"v4": _REGISTRY, "v5": _REGISTRY_V5, "v7": _REGISTRY_V7}
 
 
 def register_family(sid: str, fn, setka: str = "v4"):
@@ -134,6 +135,10 @@ def register_family(sid: str, fn, setka: str = "v4"):
 
 
 def get_family(sid: str, setka: str = "v4"):
+    if setka == "v7":                       # S8–S12 регистрирует eval_v7; S1–S6 в v7 — семьи v5 (путь v6 побайтно); KeyError — S7 и прочее
+        import importlib
+        importlib.import_module("fastbt.eval_v7")
+        return _REGISTRY_V7[sid] if sid in _REGISTRY_V7 else _REGISTRY_V5[sid]
     if setka != "v4":
         if setka not in _SETKI:
             raise KeyError(f"setka: {setka!r}")
