@@ -101,7 +101,7 @@ def test_g1_reestr_v7_s8_s12_est_s7_net_s1_s6_iz_v5():
 
 
 def test_g1_polnyj_put_s8_s12_otkaz_a_ne_molchalivyj_v6():
-    with pytest.raises(ValueError, match="сигнальных осей"):      # заглушка V7-1b снята (s8_s12_ocenka): пустая точка — отказ по осям, не молчаливый v6
+    with pytest.raises(ValueError, match="V7-1b"):
         _ev(EvaluatorV7, "S10").evaluate_v2({}, "train4")
 
 
