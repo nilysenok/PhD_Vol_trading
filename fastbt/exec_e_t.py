@@ -13,6 +13,7 @@ import math
 
 import numpy as np
 
+from fastbt import exec_e_minuderzh as minuderzh
 from fastbt.exec_e2 import Run2
 from fastbt.exec_e_types import Day
 from fastbt.t_reshenie_v7 import AUKCION, _minuty
@@ -60,7 +61,11 @@ class RunT(Run2):
     def _scan(s, i, j, d, b0):
         """Утро дня: позиция с прошлых дней, сигнал в T противоположен ей — стоп и тейк только по барам до T, затем разворот
         в T: выход по cena_T (причина "razvorot", комиссия выхода) и вход в противоположную сторону по ней же (_decide)."""
-        t = s._tbar(i) if b0 == 0 and s.tr.entry_day < i and s.p.exit_signal and s.dir(i) == -s.tr.side else None
+        opp = b0 == 0 and s.tr.entry_day < i and s.p.exit_signal and s.dir(i) == -s.tr.side
+        if opp and minuderzh.rano(s, j):                    # V7-4: разворот раньше N-го дня откладывается на N-й
+            minuderzh.zapomnit_razvorot(s)
+            opp = False
+        t = s._tbar(i) if opp or (b0 == 0 and s.tr.entry_day < i and minuderzh.razvorot_otlozhen(s) and not minuderzh.rano(s, j)) else None
         if t is None:
             return super()._scan(i, j, d, b0)
         b, px = t
