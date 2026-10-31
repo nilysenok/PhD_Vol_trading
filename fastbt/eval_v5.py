@@ -88,7 +88,9 @@ def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, cena_T=
     a, b = (0, n) if win is None else win
     w = np.ones(n) if w is None else np.asarray(w, float)
     xk = {k: v for k, v in kw.items() if k in ("ed", "tejk_M", "urovni", "dates") and v is not None}
-    res = exec_e.run(t, days, sig, sg, p, close=kw.get("close"), div=kw.get("div"), nalog=kw.get("nalog"), rang=rang, cena_T=cena_T, **xk)
+    if cena_T is not None:       # без входа в T параметр не передаётся: подменённый быстрым слоем run его не знает (v6 побайтно)
+        xk["cena_T"] = cena_T
+    res = exec_e.run(t, days, sig, sg, p, close=kw.get("close"), div=kw.get("div"), nalog=kw.get("nalog"), rang=rang, **xk)
     ix = [i for i, d in enumerate(days) if not d.pusto]
     wr, sides, cnt, sh = np.zeros(n), np.zeros(b - a), np.zeros(b - a), np.zeros(n)
     for tr, r0, last_g, er in etap1_run._spans(res, ix, p, n):

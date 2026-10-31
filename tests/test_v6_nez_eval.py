@@ -278,7 +278,7 @@ def _pt5(sid):
 
 def _ev2(monkeypatch, sid, pt):
     cap = []
-    monkeypatch.setattr(eval_v6.EvaluatorV2, "evaluate_v2", lambda self, p, period: cap.append(p) or ("stub", p))
+    monkeypatch.setattr(eval_v6.EvaluatorV2, "evaluate_v2", lambda self, p, period, vozm=None: cap.append(p) or ("stub", p))
     e = object.__new__(EvaluatorV6)
     e.sid, e.ist = sid, IstochnikiV6()
     names = canon_v6.novye(canon_v6._kub(sid)).get("sigma_ist", {}).get("setka", [])
