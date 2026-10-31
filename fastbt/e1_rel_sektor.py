@@ -37,8 +37,9 @@ def sektor_pit(csv_path=SEKTORY_CSV) -> dict:
     df = pd.read_csv(csv_path, parse_dates=["дата_ребалансировки"])
     if str(csv_path) == str(SEKTORY_CSV) or Path(csv_path) == ROOT / SEKTORY_CSV:    # зона wf: + таблица 2022–2026
         from fastbt import zona
-        if zona.name() == "wf":
-            df = pd.concat([df, pd.read_csv(ROOT / sek.SEKTORY_PIT_2022, parse_dates=["дата_ребалансировки"])], ignore_index=True)
+        if zona.wf_like():
+            new = zona.obrezat(pd.read_csv(ROOT / sek.SEKTORY_PIT_2022, parse_dates=["дата_ребалансировки"]), "дата_ребалансировки")
+            df = pd.concat([df, new], ignore_index=True)
     df = df.sort_values("дата_ребалансировки", kind="stable")
     out: dict = {}
     for r in df.itertuples(index=False):

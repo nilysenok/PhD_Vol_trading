@@ -87,9 +87,10 @@ def kub_put7(sid: str) -> Path:
 
 
 def zona_ctx(period: str):
-    """polnaya, как wf, читает данные по 2026-02-28 — зона wf на время счёта (замок снят отметкой, иначе ZamokVladeltsa)."""
+    """wf — зона wf (данные по 2026-02-28); polnaya — своя зона polnaya: чтение строго < period_v2.chtenie_konec (до акта 2025-01-01).
+    Замок — отметка владельца, иначе ZamokVladeltsa."""
     from fastbt import zona
-    return zona.zone_ctx("wf") if period in ("wf", PERIOD) else contextlib.nullcontext()
+    return zona.zone_ctx(period) if period in ("wf", PERIOD) else contextlib.nullcontext()
 
 
 def rezhim7(seed: int, fdr, rol: str = "sobol", period: str = PERIOD) -> ps.Rezhim:
@@ -123,9 +124,9 @@ def sreda7(sid: str, rz: ps.Rezhim = ps.R0):
         sr = ps.fabrika(sid) if ps.fabrika else ps.fabrika_real(sid, rz)
         if rz.period != "train4":                          # train4 (сухой прогон до листа «зона») — разработочный, отметка не нужна
             period_v2.proverit_chtenie("wf")
-        verh = str(np.datetime64(period_v2.PERIODY[rz.period].konec.date()) + 1)
+        verh = str(period_v2.chtenie_konec(rz.period).date())          # train4/wf: konec + 1 день; polnaya: граница чтения до акта
         if sr.daty.size == 0 or sr.daty.max() >= np.datetime64(verh):
-            raise ValueError(f"{sid}: в рядах есть даты ≥ {verh} — отказ")
+            raise ValueError(f"{sid}: в рядах есть даты ≥ {verh} (максимум {sr.daty.max() if sr.daty.size else 'нет дат'}) — отказ")
         if getattr(sr.evr, "fdr", "нет атрибута fdr") != rz.fdr:
             raise ValueError(f"{sid}: fdr оценщика ≠ fdr куба {rz.fdr!r} — отказ")
         ps._W["sid"], ps._W["sreda"] = (sid, rz), sr
