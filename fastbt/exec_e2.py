@@ -14,6 +14,7 @@ import math
 import numpy as np
 
 from fastbt.exec_e_rules import limit_level, limit_mask
+from fastbt import exec_e_minuderzh as minuderzh
 from fastbt.exec_e_run import Run
 from fastbt.exec_e_types import Day
 
@@ -139,7 +140,7 @@ class Run2(Run):
         if pe:
             s.pend, reason = None, pe["reason"]
             cut = _vr().bar_at(d, pe["hhmm"])
-        elif s.p.t_vyhod in ("1500", "1700") and s.p.tau is not None and j > s.ej and j - s.ej >= s.p.tau:
+        elif s.p.t_vyhod in ("1500", "1700") and s.p.tau is not None and j > s.ej and j - s.ej >= s.p.tau and not minuderzh.rano(s, j):   # V7-4
             sdv, hh = _vr().vyhod_plan(s.p.t_vyhod, "vremya")
             if not sdv:
                 cut, reason = _vr().bar_at(d, hh), "vremya"
