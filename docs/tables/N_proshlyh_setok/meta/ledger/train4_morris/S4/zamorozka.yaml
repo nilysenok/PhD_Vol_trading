@@ -1,0 +1,375 @@
+v: 1
+data: '2026-10-30'
+vhody:
+  kub_sha: 67e0937e62a657c61ed3f0abcba44d45f02c99988551c0e01c8e3f9987ca0ea3
+  kod: 709b8a52604c153303ee4b271feedd8f775abf17
+  csv: ed1afef5492d4b7e9a7dc5a329f1d7a9f067b9110073c12290356503d376948d
+pravilo:
+  okna:
+  - <=2016
+  - <=2017
+  - <=2018
+  U95_lt: 0.05
+  n_akt_ge: 20
+osi:
+- asim
+- bezubytok
+- norm
+- pir
+- reentry
+- rel_signal
+- rezhim
+- sigma_ist
+- sob_do
+- sob_posle
+- sob_tip
+- stop_v_plyus
+- t_vyhod
+- time_decay
+- vn_faktor
+- vn_uslovie
+prichiny:
+  asim: U95 [0.01, 0.0071, 0.0052] < 0.05 в трёх окнах
+  bezubytok: U95 [0.0053, 0.0028, 0.0033] < 0.05 в трёх окнах
+  norm: U95 [0.0482, 0.0331, 0.0237] < 0.05 в трёх окнах
+  pir: U95 [0.0112, 0.0081, 0.0091] < 0.05 в трёх окнах
+  reentry: U95 [0.039, 0.0172, 0.0153] < 0.05 в трёх окнах
+  rel_signal: U95 [0.0, 0.0, 0.0] < 0.05 в трёх окнах
+  rezhim: U95 [0.0128, 0.0181, 0.0177] < 0.05 в трёх окнах
+  sigma_ist: U95 [0.0101, 0.0059, 0.0083] < 0.05 в трёх окнах
+  sob_do: все родители ['sob_tip'] заморожены
+  sob_posle: все родители ['sob_tip'] заморожены
+  sob_tip: U95 [0.0077, 0.0066, 0.0056] < 0.05 в трёх окнах
+  stop_v_plyus: U95 [0.0236, 0.0093, 0.0052] < 0.05 в трёх окнах
+  t_vyhod: U95 [0.0031, 0.0052, 0.0046] < 0.05 в трёх окнах
+  time_decay: U95 [0.0, 0.0, 0.0] < 0.05 в трёх окнах
+  vn_faktor: все родители ['vn_uslovie'] заморожены
+  vn_uslovie: U95 [0.0396, 0.0287, 0.0325] < 0.05 в трёх окнах
+statusy:
+  ok: 4148
+  ne_schitana: 84
+  none_kanon: 0
+  oshibka: 0
+nol_sdelok:
+  chislo: 2958
+  ok: 4148
+  dolya: 0.7131
+  bez_sdelok: 2850
+  ves0: 108
+baza_bez_sdelok:
+  chislo: 0
+  r: 100
+  dolya: 0.0
+  bez_sdelok: 0
+  ves0: 0
+osi_aktivnye:
+  period:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  mnozh:
+    n_akt:
+    - 27
+    - 27
+    - 27
+    pometka: null
+  adx_th:
+    n_akt:
+    - 35
+    - 35
+    - 35
+    pometka: null
+  atr_lo:
+    n_akt:
+    - 32
+    - 32
+    - 32
+    pometka: null
+  vol_th:
+    n_akt:
+    - 34
+    - 34
+    - 34
+    pometka: null
+  rsi_th:
+    n_akt:
+    - 34
+    - 34
+    - 34
+    pometka: null
+  mom_n:
+    n_akt:
+    - 25
+    - 25
+    - 25
+    pometka: null
+  dow:
+    n_akt:
+    - 36
+    - 36
+    - 36
+    pometka: null
+  k_e:
+    n_akt:
+    - 30
+    - 30
+    - 30
+    pometka: null
+  stop_nach:
+    n_akt:
+    - 26
+    - 26
+    - 26
+    pometka: null
+  tejk:
+    n_akt:
+    - 30
+    - 30
+    - 30
+    pometka: null
+  trail:
+    n_akt:
+    - 25
+    - 25
+    - 25
+    pometka: null
+  tau:
+    n_akt:
+    - 34
+    - 34
+    - 34
+    pometka: null
+  chast:
+    n_akt:
+    - 23
+    - 23
+    - 23
+    pometka: null
+  razmer_tip:
+    n_akt:
+    - 28
+    - 28
+    - 28
+    pometka: null
+  m_sily:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  rang_tip:
+    n_akt:
+    - 0
+    - 0
+    - 0
+    pometka: 'не оценена: нет сделок'
+  rel_signal:
+    n_akt:
+    - 30
+    - 30
+    - 30
+    pometka: null
+  dlit:
+    n_akt:
+    - 0
+    - 0
+    - 0
+    pometka: 'мёртвая: не оценена'
+  asim:
+    n_akt:
+    - 34
+    - 34
+    - 34
+    pometka: null
+  norm:
+    n_akt:
+    - 34
+    - 34
+    - 34
+    pometka: null
+  naklon:
+    n_akt:
+    - 33
+    - 33
+    - 33
+    pometka: null
+  sektor_trend:
+    n_akt:
+    - 33
+    - 33
+    - 33
+    pometka: null
+  shirina:
+    n_akt:
+    - 25
+    - 25
+    - 25
+    pometka: null
+  ma_n:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  porog_shiriny:
+    n_akt:
+    - 3
+    - 3
+    - 3
+    pometka: мало шагов
+  relf_napr:
+    n_akt:
+    - 35
+    - 35
+    - 35
+    pometka: null
+  relf_k:
+    n_akt:
+    - 9
+    - 9
+    - 9
+    pometka: мало шагов
+  relf_okno:
+    n_akt:
+    - 11
+    - 11
+    - 11
+    pometka: мало шагов
+  relf_bench:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  sob_tip:
+    n_akt:
+    - 25
+    - 25
+    - 25
+    pometka: null
+  sob_do:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  sob_posle:
+    n_akt:
+    - 6
+    - 6
+    - 6
+    pometka: мало шагов
+  post_shok:
+    n_akt:
+    - 31
+    - 31
+    - 31
+    pometka: null
+  szhatie:
+    n_akt:
+    - 26
+    - 26
+    - 26
+    pometka: null
+  rv_perevorot:
+    n_akt:
+    - 33
+    - 33
+    - 33
+    pometka: null
+  obyom_anom:
+    n_akt:
+    - 35
+    - 35
+    - 35
+    pometka: null
+  rezhim:
+    n_akt:
+    - 30
+    - 30
+    - 30
+    pometka: null
+  vn_uslovie:
+    n_akt:
+    - 35
+    - 35
+    - 35
+    pometka: null
+  vn_faktor:
+    n_akt:
+    - 6
+    - 6
+    - 6
+    pometka: мало шагов
+  sigma_ist:
+    n_akt:
+    - 29
+    - 29
+    - 29
+    pometka: null
+  t_vyhod:
+    n_akt:
+    - 30
+    - 30
+    - 30
+    pometka: null
+  time_decay:
+    n_akt:
+    - 22
+    - 22
+    - 22
+    pometka: null
+  pauza_porog:
+    n_akt:
+    - 33
+    - 33
+    - 33
+    pometka: null
+  pauza_okno:
+    n_akt:
+    - 6
+    - 6
+    - 6
+    pometka: мало шагов
+  bezubytok:
+    n_akt:
+    - 34
+    - 34
+    - 34
+    pometka: null
+  stop_v_plyus:
+    n_akt:
+    - 26
+    - 26
+    - 26
+    pometka: null
+  pir:
+    n_akt:
+    - 37
+    - 37
+    - 37
+    pometka: null
+  reentry:
+    n_akt:
+    - 25
+    - 25
+    - 25
+    pometka: null
+ne_ocenyeny_net_sdelok:
+- rang_tip
+mertvye_ne_ocenyeny:
+- dlit
+malo_shagov:
+- m_sily
+- ma_n
+- pauza_okno
+- period
+- porog_shiriny
+- relf_bench
+- relf_k
+- relf_okno
+- sob_do
+- sob_posle
+- vn_faktor

@@ -1,0 +1,1 @@
+OK versii: python 3.9.6 (x86_64), numba 0.60.0, llvmlite 0.43.0, numpy 2.0.2, pandas 2.3.3, pyarrow 21.0.0, scipy 1.13.1; пинов 11, все совпали

@@ -1,0 +1,469 @@
+v: 1
+data: '2026-10-30'
+vhody:
+  kub_sha: 64be8646701d0b2743c0315428fcfe0dbbf7702e69b823e1cd3234f4cc28fa5d
+  kod: 709b8a52604c153303ee4b271feedd8f775abf17
+  csv: f0dd4e3e607b8e0313e9a974eb871fa976a34e59e8d285370804b36add045d4d
+pravilo:
+  okna:
+  - <=2016
+  - <=2017
+  - <=2018
+  U95_lt: 0.05
+  n_akt_ge: 20
+osi: []
+prichiny: {}
+statusy:
+  ok: 4283
+  ne_schitana: 0
+  none_kanon: 0
+  oshibka: 0
+nol_sdelok:
+  chislo: 3656
+  ok: 4283
+  dolya: 0.8536
+  bez_sdelok: 3643
+  ves0: 13
+baza_bez_sdelok:
+  chislo: 10
+  r: 79
+  dolya: 0.1266
+  bez_sdelok: 10
+  ves0: 0
+osi_aktivnye:
+  vwap_window:
+    n_akt:
+    - 8
+    - 8
+    - 8
+    pometka: мало шагов
+  dev_mult:
+    n_akt:
+    - 15
+    - 15
+    - 15
+    pometka: мало шагов
+  dir_bias:
+    n_akt:
+    - 17
+    - 17
+    - 17
+    pometka: мало шагов
+  filter_set:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  adx_th:
+    n_akt:
+    - 11
+    - 11
+    - 11
+    pometka: мало шагов
+  atr_lo:
+    n_akt:
+    - 13
+    - 13
+    - 13
+    pometka: мало шагов
+  vol_th:
+    n_akt:
+    - 18
+    - 18
+    - 18
+    pometka: мало шагов
+  rsi_th:
+    n_akt:
+    - 19
+    - 19
+    - 19
+    pometka: мало шагов
+  mom_n:
+    n_akt:
+    - 20
+    - 20
+    - 20
+    pometka: null
+  dow:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  squeeze_pct:
+    n_akt:
+    - 10
+    - 10
+    - 10
+    pometka: мало шагов
+  k_e:
+    n_akt:
+    - 12
+    - 12
+    - 12
+    pometka: мало шагов
+  T:
+    n_akt:
+    - 9
+    - 9
+    - 9
+    pometka: мало шагов
+  reentry:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  stop_nach:
+    n_akt:
+    - 19
+    - 19
+    - 19
+    pometka: мало шагов
+  tejk:
+    n_akt:
+    - 16
+    - 16
+    - 16
+    pometka: мало шагов
+  trail:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  bezubytok:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  stop_v_plyus:
+    n_akt:
+    - 8
+    - 8
+    - 8
+    pometka: мало шагов
+  tau:
+    n_akt:
+    - 9
+    - 9
+    - 9
+    pometka: мало шагов
+  chast:
+    n_akt:
+    - 8
+    - 8
+    - 8
+    pometka: мало шагов
+  pir:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  smena:
+    n_akt:
+    - 12
+    - 12
+    - 12
+    pometka: мало шагов
+  razmer_tip:
+    n_akt:
+    - 12
+    - 12
+    - 12
+    pometka: мало шагов
+  m_sily:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  rang_tip:
+    n_akt:
+    - 0
+    - 0
+    - 0
+    pometka: 'не оценена: нет сделок'
+  rel_signal:
+    n_akt:
+    - 18
+    - 18
+    - 18
+    pometka: мало шагов
+  dlit:
+    n_akt:
+    - 17
+    - 17
+    - 17
+    pometka: мало шагов
+  asim:
+    n_akt:
+    - 15
+    - 15
+    - 15
+    pometka: мало шагов
+  norm:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  hurst_th:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  naklon:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  vol_regime_max:
+    n_akt:
+    - 15
+    - 15
+    - 15
+    pometka: мало шагов
+  tihiy_othod:
+    n_akt:
+    - 9
+    - 9
+    - 9
+    pometka: мало шагов
+  sektor_trend:
+    n_akt:
+    - 12
+    - 12
+    - 12
+    pometka: мало шагов
+  shirina:
+    n_akt:
+    - 14
+    - 14
+    - 14
+    pometka: мало шагов
+  ma_n:
+    n_akt:
+    - 4
+    - 4
+    - 4
+    pometka: мало шагов
+  porog_shiriny:
+    n_akt:
+    - 2
+    - 2
+    - 2
+    pometka: мало шагов
+  relf_napr:
+    n_akt:
+    - 13
+    - 13
+    - 13
+    pometka: мало шагов
+  relf_k:
+    n_akt:
+    - 2
+    - 2
+    - 2
+    pometka: мало шагов
+  relf_okno:
+    n_akt:
+    - 2
+    - 2
+    - 2
+    pometka: мало шагов
+  relf_bench:
+    n_akt:
+    - 1
+    - 1
+    - 1
+    pometka: мало шагов
+  sob_tip:
+    n_akt:
+    - 13
+    - 13
+    - 13
+    pometka: мало шагов
+  sob_do:
+    n_akt:
+    - 0
+    - 0
+    - 0
+    pometka: 'не оценена: нет сделок'
+  sob_posle:
+    n_akt:
+    - 2
+    - 2
+    - 2
+    pometka: мало шагов
+  post_shok:
+    n_akt:
+    - 10
+    - 10
+    - 10
+    pometka: мало шагов
+  rv_perevorot:
+    n_akt:
+    - 12
+    - 12
+    - 12
+    pometka: мало шагов
+  obyom_anom:
+    n_akt:
+    - 10
+    - 10
+    - 10
+    pometka: мало шагов
+  rezhim:
+    n_akt:
+    - 11
+    - 11
+    - 11
+    pometka: мало шагов
+  vn_uslovie:
+    n_akt:
+    - 11
+    - 11
+    - 11
+    pometka: мало шагов
+  vn_faktor:
+    n_akt:
+    - 2
+    - 2
+    - 2
+    pometka: мало шагов
+  sigma_ist:
+    n_akt:
+    - 8
+    - 8
+    - 8
+    pometka: мало шагов
+  ed_lim:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  zhizn:
+    n_akt:
+    - 15
+    - 15
+    - 15
+    pometka: мало шагов
+  lestnica:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  gap:
+    n_akt:
+    - 9
+    - 9
+    - 9
+    pometka: мало шагов
+  t_vyhod:
+    n_akt:
+    - 6
+    - 6
+    - 6
+    pometka: мало шагов
+  vyhod_lim:
+    n_akt:
+    - 5
+    - 5
+    - 5
+    pometka: мало шагов
+  f_neisp:
+    n_akt:
+    - 16
+    - 16
+    - 16
+    pometka: мало шагов
+  time_decay:
+    n_akt:
+    - 8
+    - 8
+    - 8
+    pometka: мало шагов
+  pauza_porog:
+    n_akt:
+    - 7
+    - 7
+    - 7
+    pometka: мало шагов
+  pauza_okno:
+    n_akt:
+    - 0
+    - 0
+    - 0
+    pometka: 'не оценена: нет сделок'
+ne_ocenyeny_net_sdelok:
+- pauza_okno
+- rang_tip
+- sob_do
+mertvye_ne_ocenyeny: []
+malo_shagov:
+- T
+- adx_th
+- asim
+- atr_lo
+- bezubytok
+- chast
+- dev_mult
+- dir_bias
+- dlit
+- dow
+- ed_lim
+- f_neisp
+- filter_set
+- gap
+- hurst_th
+- k_e
+- lestnica
+- m_sily
+- ma_n
+- naklon
+- norm
+- obyom_anom
+- pauza_porog
+- pir
+- porog_shiriny
+- post_shok
+- razmer_tip
+- reentry
+- rel_signal
+- relf_bench
+- relf_k
+- relf_napr
+- relf_okno
+- rezhim
+- rsi_th
+- rv_perevorot
+- sektor_trend
+- shirina
+- sigma_ist
+- smena
+- sob_posle
+- sob_tip
+- squeeze_pct
+- stop_nach
+- stop_v_plyus
+- t_vyhod
+- tau
+- tejk
+- tihiy_othod
+- time_decay
+- trail
+- vn_faktor
+- vn_uslovie
+- vol_regime_max
+- vol_th
+- vwap_window
+- vyhod_lim
+- zhizn

@@ -1,0 +1,93 @@
+   numba: NUMBA_NUM_THREADS=1 NUMBA_THREADING_LAYER=workqueue; режим numpy 1 
+2026-10-30 16:48:31  прогрев кэшей одним процессом: train4, v6, по точке на Sk, /root/perenos/cache/progrev_train4
+S1: точек 56, статусы {'ok': 56, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: ['k_e', 'bezubytok', 'rang_tip', 'sob_do', 'ed_lim', 'lestnica', 'vyhod_lim', 'time_decay']
+  не оценена: нет сделок: ['ma_window', 'dev_tip', 'adx_th', 'atr_lo', 'vol_th', 'rsi_th', 'squeeze_pct', 'reentry', 'stop_nach', 'trail', 'stop_v_plyus', 'tau', 'chast', 'pir', 'smena', 'm_sily', 'rel_signal', 'dlit', 'norm', 'hurst_th', 'vol_regime_max', 'tihiy_othod', 'sektor_trend', 'ma_n', 'porog_shiriny', 'relf_k', 'sob_tip', 'sob_posle', 'post_shok', 'vn_uslovie', 'vn_faktor', 'sigma_ist', 'zhizn', 't_vyhod', 'pauza_okno']
+  мало шагов: ['ma_tip', 'z_entry', 'z_exit', 'mom_n', 'dow', 'T', 'tejk', 'razmer_tip', 'asim', 'naklon', 'shirina', 'relf_napr', 'relf_okno', 'relf_bench', 'rv_perevorot', 'obyom_anom', 'rezhim', 'gap', 'f_neisp', 'pauza_porog']
+  nol_sdelok: {'chislo': 37, 'ok': 56, 'dolya': 0.6607, 'bez_sdelok': 37, 'ves0': 0}
+  baza_bez_sdelok: {'chislo': 0, 'r': 1, 'dolya': 0.0, 'bez_sdelok': 0, 'ves0': 0}
+ВНИМАНИЕ: S1: 37 из 56 точек ok без сделок во всех окнах Y (66% > 50%) — Y по Sk малоинформативен
+S2: точек 58, статусы {'ok': 58, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: ['bezubytok', 'rang_tip', 'relf_bench', 'vn_faktor', 'pauza_okno']
+  не оценена: нет сделок: ['bb_std', 'podtv', 'adx_th', 'atr_lo', 'rsi_th', 'mom_n', 'squeeze_pct', 'k_e', 'stop_nach', 'tejk', 'trail', 'chast', 'pir', 'razmer_tip', 'm_sily', 'rel_signal', 'asim', 'norm', 'hurst_th', 'naklon', 'vol_regime_max', 'sektor_trend', 'shirina', 'ma_n', 'porog_shiriny', 'relf_k', 'relf_okno', 'sob_tip', 'sob_do', 'sob_posle', 'rv_perevorot', 'obyom_anom', 'vn_uslovie', 'ed_lim', 'zhizn', 'lestnica', 'gap', 't_vyhod', 'time_decay', 'pauza_porog']
+  мало шагов: ['ma_tip', 'bb_window', 'vol_th', 'dow', 'T', 'reentry', 'stop_v_plyus', 'tau', 'smena', 'dlit', 'tihiy_othod', 'relf_napr', 'post_shok', 'rezhim', 'sigma_ist', 'vyhod_lim', 'f_neisp']
+  nol_sdelok: {'chislo': 41, 'ok': 58, 'dolya': 0.7069, 'bez_sdelok': 41, 'ves0': 0}
+  baza_bez_sdelok: {'chislo': 0, 'r': 1, 'dolya': 0.0, 'bez_sdelok': 0, 'ves0': 0}
+ВНИМАНИЕ: S2: 41 из 58 точек ok без сделок во всех окнах Y (71% > 50%) — Y по Sk малоинформативен
+S3: точек 42, статусы {'ok': 42, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: ['dlit', 'ma_n', 'relf_bench', 'sob_do', 'sob_posle', 'time_decay', 'pauza_okno']
+  не оценена: нет сделок: ['podtv', 'atr_lo', 'vol_th', 'rsi_th', 'mom_n', 'stop_nach', 'tejk', 'trail', 'tau', 'razmer_tip', 'rang_tip', 'naklon', 'sektor_trend', 'porog_shiriny', 'relf_k', 'relf_okno', 'sob_tip', 'post_shok', 'szhatie', 'rv_perevorot', 'obyom_anom', 'vn_uslovie', 'vn_faktor', 'sigma_ist', 't_vyhod', 'bezubytok', 'stop_v_plyus', 'pir', 'reentry']
+  мало шагов: ['okno', 'adx_th', 'dow', 'k_e', 'chast', 'm_sily', 'rel_signal', 'asim', 'shirina', 'relf_napr', 'rezhim', 'pauza_porog']
+  nol_sdelok: {'chislo': 30, 'ok': 42, 'dolya': 0.7143, 'bez_sdelok': 21, 'ves0': 9}
+  baza_bez_sdelok: {'chislo': 0, 'r': 1, 'dolya': 0.0, 'bez_sdelok': 0, 'ves0': 0}
+ВНИМАНИЕ: S3: 30 из 42 точек ok без сделок во всех окнах Y (71% > 50%) — Y по Sk малоинформативен
+S4: точек 41, статусы {'ok': 41, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: ['rang_tip', 'dlit', 'relf_k', 'relf_okno', 'relf_bench', 'sob_do', 'sob_posle', 'vn_faktor', 'time_decay']
+  не оценена: нет сделок: ['mnozh', 'adx_th', 'atr_lo', 'vol_th', 'rsi_th', 'mom_n', 'k_e', 'stop_nach', 'tejk', 'tau', 'razmer_tip', 'm_sily', 'asim', 'naklon', 'sektor_trend', 'shirina', 'ma_n', 'porog_shiriny', 'relf_napr', 'sob_tip', 'post_shok', 'rv_perevorot', 'vn_uslovie', 't_vyhod', 'pauza_okno', 'bezubytok', 'stop_v_plyus', 'pir', 'reentry']
+  мало шагов: ['period', 'dow', 'trail', 'chast', 'rel_signal', 'norm', 'szhatie', 'obyom_anom', 'rezhim', 'sigma_ist', 'pauza_porog']
+  nol_sdelok: {'chislo': 30, 'ok': 41, 'dolya': 0.7317, 'bez_sdelok': 30, 'ves0': 0}
+  baza_bez_sdelok: {'chislo': 0, 'r': 1, 'dolya': 0.0, 'bez_sdelok': 0, 'ves0': 0}
+ВНИМАНИЕ: S4: 30 из 41 точек ok без сделок во всех окнах Y (73% > 50%) — Y по Sk малоинформативен
+S5: точек 54, статусы {'ok': 54, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: ['bezubytok', 'rang_tip', 'ma_n', 'porog_shiriny', 'relf_k', 'relf_okno', 'relf_bench', 'vyhod_lim', 'time_decay', 'piv_buf']
+  не оценена: нет сделок: ['pivot_period', 'uroven', 'adx_th', 'atr_lo', 'vol_th', 'rsi_th', 'squeeze_pct', 'k_e', 'reentry', 'stop_nach', 'trail', 'stop_v_plyus', 'tau', 'chast', 'pir', 'smena', 'm_sily', 'rel_signal', 'dlit', 'hurst_th', 'tihiy_othod', 'sektor_trend', 'shirina', 'relf_napr', 'sob_do', 'sob_posle', 'post_shok', 'rv_perevorot', 'obyom_anom', 'vn_faktor', 'sigma_ist', 'ed_lim', 'lestnica', 'gap', 'f_neisp', 'pauza_okno']
+  мало шагов: ['pivot_type', 'atr_filtr', 'filter_set', 'mom_n', 'dow', 'T', 'tejk', 'razmer_tip', 'asim', 'naklon', 'vol_regime_max', 'sob_tip', 'rezhim', 'vn_uslovie', 'zhizn', 't_vyhod', 'pauza_porog']
+  nol_sdelok: {'chislo': 37, 'ok': 54, 'dolya': 0.6852, 'bez_sdelok': 37, 'ves0': 0}
+  baza_bez_sdelok: {'chislo': 0, 'r': 1, 'dolya': 0.0, 'bez_sdelok': 0, 'ves0': 0}
+ВНИМАНИЕ: S5: 37 из 54 точек ok без сделок во всех окнах Y (69% > 50%) — Y по Sk малоинформативен
+S6: точек 59, статусы {'ok': 59, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: ['rang_tip', 'relf_bench', 'vn_faktor', 'pauza_okno']
+  не оценена: нет сделок: ['vwap_window', 'dir_bias', 'filter_set', 'adx_th', 'atr_lo', 'rsi_th', 'mom_n', 'squeeze_pct', 'k_e', 'stop_nach', 'tejk', 'trail', 'bezubytok', 'chast', 'pir', 'razmer_tip', 'm_sily', 'rel_signal', 'asim', 'norm', 'hurst_th', 'naklon', 'vol_regime_max', 'sektor_trend', 'shirina', 'ma_n', 'porog_shiriny', 'relf_k', 'relf_okno', 'sob_tip', 'sob_do', 'sob_posle', 'rv_perevorot', 'obyom_anom', 'vn_uslovie', 'sigma_ist', 'ed_lim', 'zhizn', 'lestnica', 'gap', 't_vyhod', 'time_decay', 'pauza_porog']
+  мало шагов: ['dev_mult', 'vol_th', 'dow', 'T', 'reentry', 'stop_v_plyus', 'tau', 'smena', 'dlit', 'tihiy_othod', 'relf_napr', 'post_shok', 'rezhim', 'vyhod_lim', 'f_neisp']
+  nol_sdelok: {'chislo': 44, 'ok': 59, 'dolya': 0.7458, 'bez_sdelok': 41, 'ves0': 3}
+  baza_bez_sdelok: {'chislo': 0, 'r': 1, 'dolya': 0.0, 'bez_sdelok': 0, 'ves0': 0}
+ВНИМАНИЕ: S6: 44 из 59 точек ok без сделок во всех окнах Y (75% > 50%) — Y по Sk малоинформативен
+2026-10-30 16:56:35  прогрев кэшей: 484 с
+2026-10-30 16:56:35  progon_morris_v6: train4, ledger/train4_morris/<Sk>/zamorozka.yaml, процессов 120
+S1: точек 4387, статусы {'ok': 4387, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: []
+  не оценена: нет сделок: ['rang_tip', 'relf_okno']
+  мало шагов: ['ma_tip', 'ma_window', 'dev_tip', 'z_entry', 'z_exit', 'adx_th', 'atr_lo', 'vol_th', 'rsi_th', 'mom_n', 'dow', 'squeeze_pct', 'k_e', 'T', 'reentry', 'stop_nach', 'tejk', 'trail', 'bezubytok', 'stop_v_plyus', 'tau', 'chast', 'pir', 'smena', 'razmer_tip', 'm_sily', 'rel_signal', 'dlit', 'asim', 'norm', 'hurst_th', 'naklon', 'vol_regime_max', 'tihiy_othod', 'sektor_trend', 'shirina', 'ma_n', 'porog_shiriny', 'relf_napr', 'relf_k', 'relf_bench', 'sob_tip', 'sob_do', 'sob_posle', 'post_shok', 'rv_perevorot', 'obyom_anom', 'rezhim', 'vn_uslovie', 'vn_faktor', 'sigma_ist', 'ed_lim', 'zhizn', 'lestnica', 'gap', 't_vyhod', 'vyhod_lim', 'f_neisp', 'time_decay', 'pauza_porog', 'pauza_okno']
+  nol_sdelok: {'chislo': 3865, 'ok': 4387, 'dolya': 0.881, 'bez_sdelok': 3850, 'ves0': 15}
+  baza_bez_sdelok: {'chislo': 28, 'r': 78, 'dolya': 0.359, 'bez_sdelok': 27, 'ves0': 1}
+ВНИМАНИЕ: S1: 3865 из 4387 точек ok без сделок во всех окнах Y (88% > 50%) — Y по Sk малоинформативен
+ВНИМАНИЕ: S1: 28 из 78 баз траекторий без сделок — эффекты осей на этой траектории не измерены
+S2: точек 4358, статусы {'ok': 4358, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: []
+  не оценена: нет сделок: ['rang_tip', 'sob_do', 'sob_posle', 'vn_faktor', 'pauza_okno']
+  мало шагов: ['ma_tip', 'bb_window', 'bb_std', 'podtv', 'adx_th', 'atr_lo', 'vol_th', 'rsi_th', 'mom_n', 'dow', 'squeeze_pct', 'k_e', 'T', 'reentry', 'stop_nach', 'tejk', 'trail', 'bezubytok', 'stop_v_plyus', 'tau', 'chast', 'pir', 'smena', 'razmer_tip', 'm_sily', 'rel_signal', 'dlit', 'asim', 'norm', 'hurst_th', 'naklon', 'vol_regime_max', 'tihiy_othod', 'sektor_trend', 'shirina', 'ma_n', 'porog_shiriny', 'relf_napr', 'relf_k', 'relf_okno', 'relf_bench', 'sob_tip', 'post_shok', 'rv_perevorot', 'obyom_anom', 'rezhim', 'vn_uslovie', 'sigma_ist', 'ed_lim', 'zhizn', 'lestnica', 'gap', 't_vyhod', 'vyhod_lim', 'f_neisp', 'time_decay', 'pauza_porog']
+  nol_sdelok: {'chislo': 3958, 'ok': 4358, 'dolya': 0.9082, 'bez_sdelok': 3947, 'ves0': 11}
+  baza_bez_sdelok: {'chislo': 32, 'r': 79, 'dolya': 0.4051, 'bez_sdelok': 30, 'ves0': 2}
+ВНИМАНИЕ: S2: 3958 из 4358 точек ok без сделок во всех окнах Y (91% > 50%) — Y по Sk малоинформативен
+ВНИМАНИЕ: S2: 32 из 79 баз траекторий без сделок — эффекты осей на этой траектории не измерены
+S3: точек 4281, статусы {'ok': 4128, 'ne_schitana': 153, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 22: ['asim', 'bezubytok', 'pauza_okno', 'pauza_porog', 'pir', 'reentry', 'rel_signal', 'relf_bench', 'relf_k', 'relf_napr', 'relf_okno', 'rezhim', 'sektor_trend', 'sigma_ist', 'sob_do', 'sob_posle', 'sob_tip', 'stop_v_plyus', 't_vyhod', 'time_decay', 'vn_faktor', 'vn_uslovie']
+  мёртвая: не оценена: ['dlit']
+  не оценена: нет сделок: []
+  мало шагов: ['m_sily', 'rang_tip', 'ma_n', 'porog_shiriny', 'relf_k', 'relf_okno', 'relf_bench', 'sob_do', 'sob_posle', 'vn_faktor', 'pauza_okno']
+  nol_sdelok: {'chislo': 2823, 'ok': 4128, 'dolya': 0.6839, 'bez_sdelok': 2753, 'ves0': 70}
+  baza_bez_sdelok: {'chislo': 0, 'r': 102, 'dolya': 0.0, 'bez_sdelok': 0, 'ves0': 0}
+ВНИМАНИЕ: S3: 2823 из 4128 точек ok без сделок во всех окнах Y (68% > 50%) — Y по Sk малоинформативен
+S4: точек 4232, статусы {'ok': 4148, 'ne_schitana': 84, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 16: ['asim', 'bezubytok', 'norm', 'pir', 'reentry', 'rel_signal', 'rezhim', 'sigma_ist', 'sob_do', 'sob_posle', 'sob_tip', 'stop_v_plyus', 't_vyhod', 'time_decay', 'vn_faktor', 'vn_uslovie']
+  мёртвая: не оценена: ['dlit']
+  не оценена: нет сделок: ['rang_tip']
+  мало шагов: ['period', 'm_sily', 'ma_n', 'porog_shiriny', 'relf_k', 'relf_okno', 'relf_bench', 'sob_do', 'sob_posle', 'vn_faktor', 'pauza_okno']
+  nol_sdelok: {'chislo': 2958, 'ok': 4148, 'dolya': 0.7131, 'bez_sdelok': 2850, 'ves0': 108}
+  baza_bez_sdelok: {'chislo': 0, 'r': 100, 'dolya': 0.0, 'bez_sdelok': 0, 'ves0': 0}
+ВНИМАНИЕ: S4: 2958 из 4148 точек ok без сделок во всех окнах Y (71% > 50%) — Y по Sk малоинформативен
+S5: точек 4208, статусы {'ok': 4208, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 1: ['asim']
+  мёртвая: не оценена: []
+  не оценена: нет сделок: ['rang_tip', 'sob_posle', 'piv_buf']
+  мало шагов: ['pivot_type', 'pivot_period', 'uroven', 'atr_filtr', 'filter_set', 'adx_th', 'atr_lo', 'vol_th', 'rsi_th', 'mom_n', 'dow', 'squeeze_pct', 'k_e', 'T', 'reentry', 'stop_nach', 'tejk', 'trail', 'bezubytok', 'stop_v_plyus', 'tau', 'chast', 'pir', 'smena', 'razmer_tip', 'm_sily', 'rel_signal', 'dlit', 'hurst_th', 'naklon', 'vol_regime_max', 'tihiy_othod', 'sektor_trend', 'shirina', 'ma_n', 'porog_shiriny', 'relf_napr', 'relf_k', 'relf_okno', 'relf_bench', 'sob_tip', 'sob_do', 'post_shok', 'rv_perevorot', 'obyom_anom', 'rezhim', 'vn_uslovie', 'vn_faktor', 'sigma_ist', 'ed_lim', 'zhizn', 'lestnica', 'gap', 't_vyhod', 'vyhod_lim', 'f_neisp', 'time_decay', 'pauza_porog', 'pauza_okno']
+  nol_sdelok: {'chislo': 3684, 'ok': 4208, 'dolya': 0.8755, 'bez_sdelok': 3671, 'ves0': 13}
+  baza_bez_sdelok: {'chislo': 19, 'r': 78, 'dolya': 0.2436, 'bez_sdelok': 18, 'ves0': 1}
+ВНИМАНИЕ: S5: 3684 из 4208 точек ok без сделок во всех окнах Y (88% > 50%) — Y по Sk малоинформативен
+ВНИМАНИЕ: S5: 19 из 78 баз траекторий без сделок — эффекты осей на этой траектории не измерены
+S6: точек 4283, статусы {'ok': 4283, 'ne_schitana': 0, 'none_kanon': 0, 'oshibka': 0}, исключений 0, заморожено 0: []
+  мёртвая: не оценена: []
+  не оценена: нет сделок: ['rang_tip', 'sob_do', 'pauza_okno']
+  мало шагов: ['vwap_window', 'dev_mult', 'dir_bias', 'filter_set', 'adx_th', 'atr_lo', 'vol_th', 'rsi_th', 'dow', 'squeeze_pct', 'k_e', 'T', 'reentry', 'stop_nach', 'tejk', 'trail', 'bezubytok', 'stop_v_plyus', 'tau', 'chast', 'pir', 'smena', 'razmer_tip', 'm_sily', 'rel_signal', 'dlit', 'asim', 'norm', 'hurst_th', 'naklon', 'vol_regime_max', 'tihiy_othod', 'sektor_trend', 'shirina', 'ma_n', 'porog_shiriny', 'relf_napr', 'relf_k', 'relf_okno', 'relf_bench', 'sob_tip', 'sob_posle', 'post_shok', 'rv_perevorot', 'obyom_anom', 'rezhim', 'vn_uslovie', 'vn_faktor', 'sigma_ist', 'ed_lim', 'zhizn', 'lestnica', 'gap', 't_vyhod', 'vyhod_lim', 'f_neisp', 'time_decay', 'pauza_porog']
+  nol_sdelok: {'chislo': 3656, 'ok': 4283, 'dolya': 0.8536, 'bez_sdelok': 3643, 'ves0': 13}
+  baza_bez_sdelok: {'chislo': 10, 'r': 79, 'dolya': 0.1266, 'bez_sdelok': 10, 'ves0': 0}
+ВНИМАНИЕ: S6: 3656 из 4283 точек ok без сделок во всех окнах Y (85% > 50%) — Y по Sk малоинформативен
+ВНИМАНИЕ: S6: 10 из 79 баз траекторий без сделок — эффекты осей на этой траектории не измерены
+2026-10-30 17:21:52  progon_server: v6 train4 s1 (--seed 1  --zamorozka /root/perenos/ledger/train4_morris), ledger/train4_v6_s1/<Sk>/, процессов 120

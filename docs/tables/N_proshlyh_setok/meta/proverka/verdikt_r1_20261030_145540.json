@@ -1,0 +1,209 @@
+{
+ "rezhim": "1",
+ "dopusk": 1e-12,
+ "diskretnoe": [
+  "vhody: Мак {'S1': 'etap1_inputs_9f0d7e4157f69fe34925', 'S2': 'etap1_inputs_9f0d7e4157f69fe34925', 'S3': 'etap1_inputs_9f0d7e4157f69fe34925', 'S4': 'etap1_inputs_9f0d7e4157f69fe34925', 'S5': 'etap1_inputs_9f0d7e4157f69fe34925', 'S6': 'etap1_inputs_9f0d7e4157f69fe34925'}, здесь {'S1': 'etap1_inputs_50d9eec7b4135dba7369', 'S2': 'etap1_inputs_50d9eec7b4135dba7369', 'S3': 'etap1_inputs_50d9eec7b4135dba7369', 'S4': 'etap1_inputs_50d9eec7b4135dba7369', 'S5': 'etap1_inputs_50d9eec7b4135dba7369', 'S6': 'etap1_inputs_50d9eec7b4135dba7369'}",
+  "v6_vhody: Мак {'S1': '8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb', 'S2': '8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb', 'S3': '8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb', 'S4': '8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb', 'S5': '8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb', 'S6': '8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb'}, здесь {'S1': '59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631', 'S2': '59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631', 'S3': '59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631', 'S4': '59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631', 'S5': '59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631', 'S6': '59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631'}",
+  "tochka__S1__1287: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__194: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__2926: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__3054: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__3801: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__3927: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__4108: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__4342: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__4426: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__4445: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__4728: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__5214: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__5390: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__5412: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__5661: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__5964: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__6137: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'",
+  "tochka__S1__6937: поле строки ledger vhody: Мак 'etap1_inputs_9f0d7e4157f69fe34925', здесь 'etap1_inputs_50d9eec7b4135dba7369'"
+ ],
+ "nepreryvnoe_pervoe": null,
+ "nepreryvnoe_chislo": 0,
+ "max_yakor": 3.552713678800501e-15,
+ "max_tochki": 6.181721801112872e-13,
+ "etalon": {
+  "cpu": [
+   "ASIMD",
+   "ASIMDDP",
+   "ASIMDHP",
+   "FPHP",
+   "NEON",
+   "NEON_FP16",
+   "NEON_VFPV4"
+  ],
+  "daty": {
+   "S1": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S2": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S3": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S4": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S5": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S6": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce"
+  },
+  "kod": "9fa8084d59a87350e35511fa5b559ffebdcef3d8",
+  "kub": {
+   "S1": "bffc32c43948a9f67e8cf64ae31667a1483f60106b1aec348c58370222d0be6d",
+   "S2": "a76c77372fead7de2eb66602b64f7a1b46f5030b83c974af4a6c6f7ede27464d",
+   "S3": "dd51b16c7170ca638cd1b0e7001afc21055d9d89f6de86c8736c693c40d4bea1",
+   "S4": "764f4850fd538809d4f740fffbb54e38798c2a1cc1b73ff9c45d2a234171ef1b",
+   "S5": "a2f31eb1c014698e520d89f4657d887abe659f62d44e056c32f05173499a1619",
+   "S6": "cdcac6aa11404dc9c99023bcbc17c09c69ed13348b2b597546442ae66571d523"
+  },
+  "machine": "arm64",
+  "npy_disable": null,
+  "numba": "0.60.0",
+  "numba_layer": "workqueue",
+  "numba_threads": "1",
+  "numpy": "2.0.2",
+  "pandas": "2.3.3",
+  "python": "3.9.6",
+  "seed": 20261029,
+  "sozdan": "2026-10-30 15:27:37 MSK",
+  "system": "Darwin",
+  "tochek": 200,
+  "v6_daty": {
+   "S1": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S2": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S3": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S4": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S5": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S6": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce"
+  },
+  "v6_kub": {
+   "S1": "e1ff698bf24cd8dfb09a39a2bb34c812cc813bbd5af698af2135ce40c302e5c9",
+   "S2": "67454c03ec69ce98288d97df3515cea399e20bbc3f295869d7b6998bd263027f",
+   "S3": "e30070bee65d9da1555be242510c54122f331cd59e5c43ca2956d47b1d4dc630",
+   "S4": "774856c7906fc161fd5e2086bff2bcc8eec5b3fffc4f34297e08992e9b06dae4",
+   "S5": "18229573ec63395010340e11a8919b2882e2e64b78274070cee306e9ce418dda",
+   "S6": "92466c6f4828aa52d8ddb895901711e294f4a8360627e0c5191953a57295320f"
+  },
+  "v6_propusheno": {
+   "S1": 0,
+   "S2": 0,
+   "S3": 0,
+   "S4": 0,
+   "S5": 0,
+   "S6": 0
+  },
+  "v6_vhody": {
+   "S1": "8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb",
+   "S2": "8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb",
+   "S3": "8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb",
+   "S4": "8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb",
+   "S5": "8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb",
+   "S6": "8c494de64ea07625d91cd5893a49a5081282ba276fcaa4bbe6f5390f98c45efb"
+  },
+  "vhody": {
+   "S1": "etap1_inputs_9f0d7e4157f69fe34925",
+   "S2": "etap1_inputs_9f0d7e4157f69fe34925",
+   "S3": "etap1_inputs_9f0d7e4157f69fe34925",
+   "S4": "etap1_inputs_9f0d7e4157f69fe34925",
+   "S5": "etap1_inputs_9f0d7e4157f69fe34925",
+   "S6": "etap1_inputs_9f0d7e4157f69fe34925"
+  }
+ },
+ "zdes": {
+  "kod": "9fa8084d59a87350e35511fa5b559ffebdcef3d8",
+  "vhody": {
+   "S1": "etap1_inputs_50d9eec7b4135dba7369",
+   "S2": "etap1_inputs_50d9eec7b4135dba7369",
+   "S3": "etap1_inputs_50d9eec7b4135dba7369",
+   "S4": "etap1_inputs_50d9eec7b4135dba7369",
+   "S5": "etap1_inputs_50d9eec7b4135dba7369",
+   "S6": "etap1_inputs_50d9eec7b4135dba7369"
+  },
+  "kub": {
+   "S1": "bffc32c43948a9f67e8cf64ae31667a1483f60106b1aec348c58370222d0be6d",
+   "S2": "a76c77372fead7de2eb66602b64f7a1b46f5030b83c974af4a6c6f7ede27464d",
+   "S3": "dd51b16c7170ca638cd1b0e7001afc21055d9d89f6de86c8736c693c40d4bea1",
+   "S4": "764f4850fd538809d4f740fffbb54e38798c2a1cc1b73ff9c45d2a234171ef1b",
+   "S5": "a2f31eb1c014698e520d89f4657d887abe659f62d44e056c32f05173499a1619",
+   "S6": "cdcac6aa11404dc9c99023bcbc17c09c69ed13348b2b597546442ae66571d523"
+  },
+  "daty": {
+   "S1": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S2": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S3": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S4": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S5": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S6": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce"
+  },
+  "v6_vhody": {
+   "S1": "59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631",
+   "S2": "59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631",
+   "S3": "59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631",
+   "S4": "59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631",
+   "S5": "59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631",
+   "S6": "59f621533c508c79c80ada86dce179f501fcd492c173fdfaaadf598fc61a5631"
+  },
+  "v6_kub": {
+   "S1": "e1ff698bf24cd8dfb09a39a2bb34c812cc813bbd5af698af2135ce40c302e5c9",
+   "S2": "67454c03ec69ce98288d97df3515cea399e20bbc3f295869d7b6998bd263027f",
+   "S3": "e30070bee65d9da1555be242510c54122f331cd59e5c43ca2956d47b1d4dc630",
+   "S4": "774856c7906fc161fd5e2086bff2bcc8eec5b3fffc4f34297e08992e9b06dae4",
+   "S5": "18229573ec63395010340e11a8919b2882e2e64b78274070cee306e9ce418dda",
+   "S6": "92466c6f4828aa52d8ddb895901711e294f4a8360627e0c5191953a57295320f"
+  },
+  "v6_daty": {
+   "S1": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S2": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S3": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S4": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S5": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S6": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce"
+  },
+  "v6_propusheno": {
+   "S1": 0,
+   "S2": 0,
+   "S3": 0,
+   "S4": 0,
+   "S5": 0,
+   "S6": 0
+  },
+  "python": "3.9.6",
+  "machine": "x86_64",
+  "system": "Linux",
+  "numpy": "2.0.2",
+  "numba": "0.60.0",
+  "pandas": "2.3.3",
+  "numba_threads": "1",
+  "numba_layer": "workqueue",
+  "npy_disable": null,
+  "cpu": [
+   "AVX",
+   "AVX2",
+   "AVX512BITALG",
+   "AVX512BW",
+   "AVX512CD",
+   "AVX512DQ",
+   "AVX512F",
+   "AVX512IFMA",
+   "AVX512VBMI",
+   "AVX512VBMI2",
+   "AVX512VL",
+   "AVX512VNNI",
+   "AVX512VPOPCNTDQ",
+   "AVX512_CLX",
+   "AVX512_CNL",
+   "AVX512_ICL",
+   "AVX512_SKX",
+   "F16C",
+   "FMA3",
+   "MMX",
+   "POPCNT",
+   "SSE",
+   "SSE2",
+   "SSE3",
+   "SSE41",
+   "SSE42",
+   "SSSE3"
+  ]
+ },
+ "sekund": 227.2,
+ "vremya": "2026-10-30 14:55:40 UTC"
+}

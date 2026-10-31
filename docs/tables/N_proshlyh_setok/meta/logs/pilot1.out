@@ -1,0 +1,24 @@
+   numba: NUMBA_NUM_THREADS=1 NUMBA_THREADING_LAYER=workqueue; режим numpy 1 
+2026-10-31 08:02:58  1/3 отметка proverka, код
+2026-10-31 08:02:59  2/3 запуск polnaya: fastbt.progon_server, процессов 64, ledger/polnaya/, лог /root/perenos/logs/sobol_polnaya_20261031_080259.log
+  File "/root/.local/share/uv/python/cpython-3.9.6-linux-x86_64-gnu/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/root/perenos/kod/4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0/fastbt/progon_morris_v7.py", line 59, in <module>
+    sys.exit(main())
+  File "/root/perenos/kod/4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0/fastbt/progon_morris_v7.py", line 51, in main
+    i = pm.strategiya(sid, a, a.out, rz, a.r)
+  File "/root/perenos/kod/4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0/fastbt/progon_morris_v6.py", line 152, in strategiya
+    nom, por, pts = plan(sid, kub, ox, r, mnozh, seed)
+  File "/root/perenos/kod/4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0/fastbt/progon_morris_v6.py", line 47, in plan
+    ind, por = mv.traektorii_kanon(L, r, lambda idx: kanon(idx)[0], seed, mnozh, baza=baza)
+  File "/root/perenos/kod/4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0/fastbt/morris_v6.py", line 109, in traektorii_kanon
+    for _ in range(popytok if key(x) is None else 0):
+  File "/root/perenos/kod/4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0/fastbt/morris_v6.py", line 103, in key
+    kl[t] = klyuch(t)
+  File "/root/perenos/kod/4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0/fastbt/progon_morris_v6.py", line 47, in <lambda>
+    ind, por = mv.traektorii_kanon(L, r, lambda idx: kanon(idx)[0], seed, mnozh, baza=baza)
+  File "/root/perenos/kod/4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0/fastbt/progon_morris_v6.py", line 42, in kanon
+    c = canon_v6.canon_v6(sid, {n: g[i] for (n, g, _), i in zip(ox, idx)}, kub)
+AttributeError: module 'fastbt.canon_v7' has no attribute 'canon_v6'
+FAIL: прогрев упал (код 1) — пул не стартую, вывод выше
+FAIL: прогон polnaya упал на старте — лог выше

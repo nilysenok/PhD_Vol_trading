@@ -1,0 +1,192 @@
+{
+ "rezhim": "1",
+ "dopusk": 1e-12,
+ "diskretnoe": [],
+ "nepreryvnoe_pervoe": null,
+ "nepreryvnoe_chislo": 0,
+ "max_yakor": 1.554312234475219e-14,
+ "max_tochki": 2.8066438062523957e-13,
+ "etalon": {
+  "cpu": [
+   "ASIMD",
+   "ASIMDDP",
+   "ASIMDHP",
+   "FPHP",
+   "NEON",
+   "NEON_FP16",
+   "NEON_VFPV4"
+  ],
+  "dannye_sha": null,
+  "daty": {
+   "S1": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S2": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S3": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S4": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S5": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S6": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce"
+  },
+  "kod": "4eb822e95347468536785edcf3cffbf5f93f1916",
+  "kod_sha": null,
+  "kub": {
+   "S1": "bffc32c43948a9f67e8cf64ae31667a1483f60106b1aec348c58370222d0be6d",
+   "S2": "a76c77372fead7de2eb66602b64f7a1b46f5030b83c974af4a6c6f7ede27464d",
+   "S3": "dd51b16c7170ca638cd1b0e7001afc21055d9d89f6de86c8736c693c40d4bea1",
+   "S4": "764f4850fd538809d4f740fffbb54e38798c2a1cc1b73ff9c45d2a234171ef1b",
+   "S5": "a2f31eb1c014698e520d89f4657d887abe659f62d44e056c32f05173499a1619",
+   "S6": "cdcac6aa11404dc9c99023bcbc17c09c69ed13348b2b597546442ae66571d523"
+  },
+  "machine": "arm64",
+  "npy_disable": null,
+  "numba": "0.60.0",
+  "numba_layer": "workqueue",
+  "numba_threads": "1",
+  "numpy": "2.0.2",
+  "pandas": "2.3.3",
+  "python": "3.9.6",
+  "seed": 20261029,
+  "sozdan": "2026-10-30 18:12:25 MSK",
+  "system": "Darwin",
+  "tochek": 200,
+  "v6_daty": {
+   "S1": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S2": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S3": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S4": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S5": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S6": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce"
+  },
+  "v6_kub": {
+   "S1": "ebb925e7c757662b82d99d28ca9fe3ac2accc160e8004eeac04f3cb8ed252b73",
+   "S2": "a123b232e9201dea0c06854c65307c6eefa5c84df97b524b13751aa048b51953",
+   "S3": "2651d948256ebf22d340c2c46602d544ab42368be96700cbc6b0724ec79ac259",
+   "S4": "67e0937e62a657c61ed3f0abcba44d45f02c99988551c0e01c8e3f9987ca0ea3",
+   "S5": "8ad29c8f8d3fb80d1b731dc3fcbbaad925d1721d9a9fc1de8ab34c4cc7467abb",
+   "S6": "64be8646701d0b2743c0315428fcfe0dbbf7702e69b823e1cd3234f4cc28fa5d"
+  },
+  "v6_propusheno": {
+   "S1": 0,
+   "S2": 0,
+   "S3": 10,
+   "S4": 18,
+   "S5": 0,
+   "S6": 0
+  },
+  "v6_vhody": {
+   "S1": "27eac5615535dea71c7d8e3e5a22e8fbc6df07bb28de5c5edd2e6defaf81911c",
+   "S2": "27eac5615535dea71c7d8e3e5a22e8fbc6df07bb28de5c5edd2e6defaf81911c",
+   "S3": "27eac5615535dea71c7d8e3e5a22e8fbc6df07bb28de5c5edd2e6defaf81911c",
+   "S4": "27eac5615535dea71c7d8e3e5a22e8fbc6df07bb28de5c5edd2e6defaf81911c",
+   "S5": "27eac5615535dea71c7d8e3e5a22e8fbc6df07bb28de5c5edd2e6defaf81911c",
+   "S6": "27eac5615535dea71c7d8e3e5a22e8fbc6df07bb28de5c5edd2e6defaf81911c"
+  },
+  "vhody": {
+   "S1": "etap1_inputs_9b3d77a5a9287beb4a0e",
+   "S2": "etap1_inputs_9b3d77a5a9287beb4a0e",
+   "S3": "etap1_inputs_9b3d77a5a9287beb4a0e",
+   "S4": "etap1_inputs_9b3d77a5a9287beb4a0e",
+   "S5": "etap1_inputs_9b3d77a5a9287beb4a0e",
+   "S6": "etap1_inputs_9b3d77a5a9287beb4a0e"
+  }
+ },
+ "zdes": {
+  "kod": "4eb822e95347468536785edcf3cffbf5f93f1916",
+  "vhody": {
+   "S1": "etap1_inputs_e9a64d6563f1667e1b64",
+   "S2": "etap1_inputs_e9a64d6563f1667e1b64",
+   "S3": "etap1_inputs_e9a64d6563f1667e1b64",
+   "S4": "etap1_inputs_e9a64d6563f1667e1b64",
+   "S5": "etap1_inputs_e9a64d6563f1667e1b64",
+   "S6": "etap1_inputs_e9a64d6563f1667e1b64"
+  },
+  "kub": {
+   "S1": "bffc32c43948a9f67e8cf64ae31667a1483f60106b1aec348c58370222d0be6d",
+   "S2": "a76c77372fead7de2eb66602b64f7a1b46f5030b83c974af4a6c6f7ede27464d",
+   "S3": "dd51b16c7170ca638cd1b0e7001afc21055d9d89f6de86c8736c693c40d4bea1",
+   "S4": "764f4850fd538809d4f740fffbb54e38798c2a1cc1b73ff9c45d2a234171ef1b",
+   "S5": "a2f31eb1c014698e520d89f4657d887abe659f62d44e056c32f05173499a1619",
+   "S6": "cdcac6aa11404dc9c99023bcbc17c09c69ed13348b2b597546442ae66571d523"
+  },
+  "daty": {
+   "S1": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S2": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S3": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S4": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S5": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S6": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce"
+  },
+  "v6_vhody": {
+   "S1": "144dd7f2bb92a459e7c6dfcb57f410d280b8ced82df0dab608de09617ea4db10",
+   "S2": "144dd7f2bb92a459e7c6dfcb57f410d280b8ced82df0dab608de09617ea4db10",
+   "S3": "144dd7f2bb92a459e7c6dfcb57f410d280b8ced82df0dab608de09617ea4db10",
+   "S4": "144dd7f2bb92a459e7c6dfcb57f410d280b8ced82df0dab608de09617ea4db10",
+   "S5": "144dd7f2bb92a459e7c6dfcb57f410d280b8ced82df0dab608de09617ea4db10",
+   "S6": "144dd7f2bb92a459e7c6dfcb57f410d280b8ced82df0dab608de09617ea4db10"
+  },
+  "v6_kub": {
+   "S1": "ebb925e7c757662b82d99d28ca9fe3ac2accc160e8004eeac04f3cb8ed252b73",
+   "S2": "a123b232e9201dea0c06854c65307c6eefa5c84df97b524b13751aa048b51953",
+   "S3": "2651d948256ebf22d340c2c46602d544ab42368be96700cbc6b0724ec79ac259",
+   "S4": "67e0937e62a657c61ed3f0abcba44d45f02c99988551c0e01c8e3f9987ca0ea3",
+   "S5": "8ad29c8f8d3fb80d1b731dc3fcbbaad925d1721d9a9fc1de8ab34c4cc7467abb",
+   "S6": "64be8646701d0b2743c0315428fcfe0dbbf7702e69b823e1cd3234f4cc28fa5d"
+  },
+  "v6_daty": {
+   "S1": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S2": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S3": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S4": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S5": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce",
+   "S6": "3e22ee3c374c6e8f943a399c278fa800332075aab02e27b8e73a64e87aee5fce"
+  },
+  "v6_propusheno": {
+   "S1": 0,
+   "S2": 0,
+   "S3": 0,
+   "S4": 0,
+   "S5": 0,
+   "S6": 0
+  },
+  "python": "3.9.6",
+  "machine": "x86_64",
+  "system": "Linux",
+  "numpy": "2.0.2",
+  "numba": "0.60.0",
+  "pandas": "2.3.3",
+  "numba_threads": "1",
+  "numba_layer": "workqueue",
+  "npy_disable": null,
+  "cpu": [
+   "AVX",
+   "AVX2",
+   "AVX512BITALG",
+   "AVX512BW",
+   "AVX512CD",
+   "AVX512DQ",
+   "AVX512F",
+   "AVX512IFMA",
+   "AVX512VBMI",
+   "AVX512VBMI2",
+   "AVX512VL",
+   "AVX512VNNI",
+   "AVX512VPOPCNTDQ",
+   "AVX512_CLX",
+   "AVX512_CNL",
+   "AVX512_ICL",
+   "AVX512_SKX",
+   "F16C",
+   "FMA3",
+   "MMX",
+   "POPCNT",
+   "SSE",
+   "SSE2",
+   "SSE3",
+   "SSE41",
+   "SSE42",
+   "SSSE3"
+  ],
+  "kod_sha": "dcbe352b9e3ed04efbffcd2e412a269c9bae1c04fdea054a1eea1a76588840e2",
+  "dannye_sha": "8b81a3789c45ed0e4e5510eb371f6755c0f8afa4612d65ff3298f18183ddc54b"
+ },
+ "sekund": 224.7,
+ "vremya": "2026-10-30 15:22:11 UTC"
+}

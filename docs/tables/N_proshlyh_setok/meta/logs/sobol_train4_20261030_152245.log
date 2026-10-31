@@ -1,0 +1,23 @@
+   numba: NUMBA_NUM_THREADS=1 NUMBA_THREADING_LAYER=workqueue; режим numpy 1 
+2026-10-30 15:22:46  прогрев кэшей одним процессом: train4, v5, по точке на Sk, /root/perenos/cache/progrev_train4
+S1: посчитано 1, ошибок 0, чекпоинт 0, сбой None
+S2: посчитано 1, ошибок 0, чекпоинт 0, сбой None
+S3: посчитано 1, ошибок 0, чекпоинт 0, сбой None
+S4: посчитано 1, ошибок 0, чекпоинт 0, сбой None
+S5: посчитано 1, ошибок 0, чекпоинт 0, сбой None
+S6: посчитано 1, ошибок 0, чекпоинт 0, сбой None
+2026-10-30 15:23:43  прогрев кэшей: 57 с
+2026-10-30 15:23:43  progon_server: v5 train4 s1 (--seed 1 --n1 12000 ), ledger/train4_s1/<Sk>/, процессов 120
+S1: посчитано 5817, ошибок 0, чекпоинт 9999, сбой BrokenProcessPool: A process in the process pool was terminated abruptly while the future was running or pending.
+S2: посчитано 5816, ошибок 0, чекпоинт 9999, сбой BrokenProcessPool: A process in the process pool was terminated abruptly while the future was running or pending.
+S3: посчитано 5912, ошибок 0, чекпоинт 4999, сбой BrokenProcessPool: A process in the process pool was terminated abruptly while the future was running or pending.
+S4: посчитано 4188, ошибок 0, чекпоинт 4999, сбой BrokenProcessPool: A process in the process pool was terminated abruptly while the future was running or pending.
+S5: посчитано 2905, ошибок 0, чекпоинт 4999, сбой BrokenProcessPool: A process in the process pool was terminated abruptly while the future was running or pending.
+S6: посчитано 2907, ошибок 0, чекпоинт 4999, сбой BrokenProcessPool: A process in the process pool was terminated abruptly while the future was running or pending.
+ядро S1: 100.0 % (5817 из 5817) — train4_s1
+ядро S2: 100.0 % (5816 из 5816) — train4_s1
+ядро S3: 100.0 % (5912 из 5912) — train4_s1
+ядро S4: 100.0 % (4188 из 4188) — train4_s1
+ядро S5: 100.0 % (2905 из 2905) — train4_s1
+ядро S6: 100.0 % (2907 из 2907) — train4_s1
+FAIL: проход s1: progon_server вернул код 2 (ошибки точек — строки status = oshibka, причины выше) — цепочка остановлена

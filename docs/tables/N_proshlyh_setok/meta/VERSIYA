@@ -1,0 +1,10 @@
+commit=b1162cf67234590f849c1596dbd0cccef99dbabd
+commit_short=b1162cf67234
+tar=kod_b1162cf67234.tar.gz
+tar_sha256=4d3f3401e57910569fa3a49945c5c8e83b8f48ae7fbca14c92785d654595baf0
+kod_slit=1
+nakladka=^(data/calendar|fastbt/rates|docs/issledovaniya)/
+numba_threads=1
+numba_layer=workqueue
+sobran=2026-10-31 04:33:41 MSK
+perenos_do=
