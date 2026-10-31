@@ -81,8 +81,9 @@ def sha_istochnikov(b10: dict, panel: Panel, fon: dict, b10_real: dict | None = 
     return h.hexdigest()
 
 
-def sobrat(raw: dict, imoex: pd.Series, karta: pd.DataFrame, tikery, nachalo, konec, korp=korpsobytiya, mnozh=_mnozhitel, ryady_s=None) -> IstochnikiV7:
+def sobrat(raw: dict, imoex: pd.Series, karta: pd.DataFrame, tikery, nachalo, konec, korp=korpsobytiya, mnozh=_mnozhitel, ryady_s=None, ryady_e=None) -> IstochnikiV7:
     """raw {тикер: 10-минутки (timestamp, OHLCV)}, imoex — close 18:50 по дням, karta (ticker, indeks), [nachalo; konec) — окно чтения.
+    ryady_e — последняя дата рядов оценщика (после границы чтения — строки NaN).
     ryady_s — первая дата рядов оценщика: панель покрывает все её дни (до первой 10-минутки — строки NaN), иначе S8/S9 дают KeyError «дат вне панели»."""
     tk, nachalo, konec = list(tikery), pd.Timestamp(nachalo), pd.Timestamp(konec)
     cl, op, b10, b10r = {}, {}, {}, {}
@@ -98,7 +99,9 @@ def sobrat(raw: dict, imoex: pd.Series, karta: pd.DataFrame, tikery, nachalo, ko
     c = pd.DataFrame(cl)[tk]
     c = c[c.notna().sum(axis=1) >= min(MIN_TIK, len(tk))]
     if ryady_s is not None and pd.Timestamp(ryady_s) < c.index[0]:       # дни рядов оценщика до первой 10-минутки: строки NaN (сигнал в них — прогрев, ok = False)
-        c = c.reindex(pd.bdate_range(ryady_s, c.index[0] - pd.Timedelta(days=1)).append(c.index))
+        c = c.reindex(pd.date_range(ryady_s, c.index[0] - pd.Timedelta(days=1)).append(c.index))
+    if ryady_e is not None and pd.Timestamp(ryady_e) > c.index[-1]:     # дни рядов оценщика после границы чтения: строки NaN (сигнал 0, вход закрыт)
+        c = c.reindex(c.index.append(pd.date_range(c.index[-1] + pd.Timedelta(days=1), ryady_e)))      # все календарные дни: торгуются и субботы
     daty, im = pd.DatetimeIndex(c.index), imoex[imoex.index < konec].reindex(c.index)
     o = pd.DataFrame(op)[tk].reindex(c.index)
     metki = ks.sektor_na_d(karta.assign(s=pd.Timestamp("2000-01-01")), daty, tk)
@@ -119,14 +122,19 @@ def zagruzit(period: str, tikery, main: Path | None = None, fajly=None, *, dev: 
         period_v2.proverit_chtenie(POLNAYA, otmetka=period_v2.OTMETKA)
         end = period_v2.chtenie_konec(POLNAYA)
         f = fajly or iv6.Fajly(end, main, None)      # period=None: indeks() читает по f.end, а не по granitsa("wf")
-        p = POLNAYA
+        p, ryady_e = POLNAYA, period_v2.PERIODY["wf"].konec           # ряды оценщика идут до конца зоны wf; панель после границы чтения — NaN
     else:
         p = PERIOD_FAJL.get(period, period)
-        f = fajly or iv6.Fajly(iv6.konec(p), main, p)
+        ryady_e = iv6.konec(p) - pd.Timedelta(days=1)                 # последний день рядов оценщика (train4: dev-зона < 2022)
+        f = fajly or iv6.Fajly(period_v2.chtenie_konec(p) if period == "train4" else iv6.konec(p), main, p)    # train4: чтение < 2020-01-01
     raw = {t: f.akcii(t) for t in tikery}
     b = f.indeks("imoex")
     if b is None:
         raise FileNotFoundError("IMOEX: нет файла баров")
     im = d18.aggregate(b, "IMOEX").set_index("date")["close"].astype(float)
     karta = pd.read_csv(otn.KARTA_CSV, usecols=["ticker", "indeks"])
-    return sobrat(raw, im, karta, tikery, period_v2.PERIODY[p].progrev, f.end, ryady_s=period_v2.PERIODY["wf"].progrev)     # панель — с первой даты рядов оценщика
+    s = sobrat(raw, im, karta, tikery, period_v2.PERIODY[p].progrev, f.end,
+               ryady_s=period_v2.PERIODY["wf"].progrev, ryady_e=ryady_e)     # панель — на все дни рядов оценщика
+    for b in (*s.b10.values(), *(s.b10_real or {}).values()):
+        b.attrs["period"] = p                          # граница ленты S10–S12 — chtenie_konec(p), явно (impuls_v7.granitsa)
+    return s

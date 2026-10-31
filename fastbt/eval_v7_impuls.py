@@ -6,7 +6,7 @@ run_rows (eval_v5) cena_T не передавал; (3) у точек S8/S9 не�
 Решение: сигнальные оси точки снимаются ДО разбора и хранятся в `_sg`; на время расчёта sid оценщика = прокси S3 (категория тренд, общие оси
 выхода и риска — куб S3), в точку подставляются S3-заглушки сигнальных осей (семья S3 не вызывается — сигнал даёт `_signals5` по `_sg`).
 Вход — рынком (Params.k = None, vhod_tip = podtverzhdenie, без стоп-заявок и уровней): vhod = d1 и S8/S9 — по open 10:00 дня d+1
-(Params.vhod_open, Д2: не раньше d+1; без него k = None входит по close дня сигнала); vhod = T — Params.vhod_T + cena_T (close 10-мин бара [T−10; T), 31.10) из РЕАЛЬНОЙ ленты Ist7.b10_real
+(Params.vhod_open, Д2: не раньше d+1; без него k = None входит по close дня сигнала); vhod = T — Params.vhod_T + cena_T (open первого бара ≥ T; T = 18:40 без бара — close дня) из РЕАЛЬНОЙ ленты Ist7.b10_real
 (сигналы — по скорректированной b10, исполнение — по реальным ценам, #370), день без бара — NaN (сделки в этот день нет, Д4). cena_T идёт в run_rows явным параметром через `fdr_kw`
 (подмены eval_v5.run_rows нет — класс № 43). Выход — флаги SignalSet (close дня i+τ) через positions.
 ↺ S8/S9: stop_nach в кубе нет — берётся якорь S3 («sigma:2.0»), откат — убрать подстановку `STOP_S89`. ❓ для дирижёра.
@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from fastbt.canon_v5 import SIGNAL
-from fastbt.t_reshenie_v7 import _minuty
+from fastbt.t_reshenie_v7 import AUKCION, _minuty
 
 IMPULS, KROSS = ("S10", "S11", "S12"), ("S8", "S9")
 SIG_OSI = {s: ("tau", "vhod", "T") for s in IMPULS} | {s: ("porog", "bufer", "cap", "rebal") for s in KROSS}
@@ -44,14 +44,18 @@ def rasschepit(sid: str, pt: dict) -> tuple[dict, dict]:
 
 
 def cena_t(b10: pd.DataFrame, dates, T: str) -> np.ndarray:
-    """Цена входа в T по датам `dates`: close 10-мин бара [T−10; T) — последнего, закрывающегося не позже T (31.10, класс B; одно правило
-    для всех T, цена после T не используется); нет бара — NaN (без ffill, Д4). T — кратно 10 минутам (сетка 10-минуток)."""
+    """Цена входа в T по датам `dates` (Л6.3, Д2): open первого 10-мин бара, начинающегося в T или позже; для T ≥ 18:40, если такого бара
+    нет, — close дня основной сессии (последний бар дня, аукцион 18:50). Цена сигнала (close бара, закрывшегося в T) не используется.
+    Нет бара (T < 18:40) — NaN (без ffill, Д4)."""
     t = _minuty(T)
-    if t % STEP10 or t - STEP10 < SLOT0:
-        raise ValueError(f"T={T}: цена T берётся из 10-минуток — T кратно 10 минутам и не раньше 10:10")
-    b = b10[b10["slot"] == (t - STEP10 - SLOT0) // STEP10]
-    c = pd.Series(b["close"].to_numpy(float), index=pd.DatetimeIndex(b["date"]).normalize())
-    return c[~c.index.duplicated(keep="last")].reindex(pd.DatetimeIndex(dates).normalize()).to_numpy(float)
+    dd = pd.DatetimeIndex(b10["date"]).normalize()
+    po = (b10["slot"].to_numpy() >= -(-(t - SLOT0) // STEP10))
+    s = b10[po].assign(d=dd[po]).sort_values(["d", "slot"]).drop_duplicates("d", keep="first").set_index("d")["open"]
+    c = s.reindex(pd.DatetimeIndex(dates).normalize())
+    if t >= AUKCION:
+        z = b10.assign(d=dd).sort_values(["d", "slot"]).drop_duplicates("d", keep="last").set_index("d")["close"]
+        c = c.fillna(z.reindex(c.index))
+    return c.to_numpy(float)
 
 
 def tau_vyhoda(vhod: str, tau: int) -> int:

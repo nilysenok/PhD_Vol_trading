@@ -45,21 +45,31 @@ def test_b4_mutatsiya_ist7_ne_podayotsya_lovitsya(monkeypatch):
 def test_b4_zagruzit_train4_chitaet_do_2020_i_panel_s_nachala_ryadov(monkeypatch):
     """train4 читается только с dev=True (без него — отказ, как раньше); панель — с первой даты рядов оценщика (wf.progrev), не с progrev train4."""
     seen = {}
-    monkeypatch.setattr(E, "sobrat", lambda raw, im, karta, tikery, nachalo, konec, **kw: seen.update(nachalo=nachalo, konec=konec, **kw) or "ok")
+    res = types.SimpleNamespace(b10={"AAA": pd.DataFrame({"date": []})}, b10_real={"AAA": pd.DataFrame({"date": []})})
+    monkeypatch.setattr(E, "sobrat", lambda raw, im, karta, tikery, nachalo, konec, **kw: seen.update(nachalo=nachalo, konec=konec, **kw) or res)
     f = types.SimpleNamespace(end=pd.Timestamp("2020-01-01"), akcii=lambda t: None,
                               indeks=lambda n: pd.DataFrame({"timestamp": [pd.Timestamp("2016-01-04 10:00")], "open": [1.0], "high": [1.0],
                                                              "low": [1.0], "close": [1.0], "volume": [1]}))
     with pytest.raises(NotImplementedError):
         E.zagruzit("train4", ["AAA"], fajly=f)
-    assert E.zagruzit("train4", ["AAA"], fajly=f, dev=True) == "ok"
+    assert E.zagruzit("train4", ["AAA"], fajly=f, dev=True) is res
+    assert res.b10["AAA"].attrs["period"] == res.b10_real["AAA"].attrs["period"] == "train4"       # лента помечена периодом (граница S10–S12)
     assert seen["nachalo"] == period_v2.PERIODY["train4"].progrev and seen["konec"] == pd.Timestamp("2020-01-01")
     assert seen["ryady_s"] == period_v2.PERIODY["wf"].progrev                      # панель покрывает все дни рядов оценщика (с 2014-06)
 
 
-def _panel_dni(ryady_s):
+def _panel_dni(ryady_s, ryady_e=None):
     import test_eval_v7_ist as tv
-    s = E.sobrat(tv._raw(), tv._im(), tv.KARTA, tv.TK, "2018-01-01", "2019-01-01", korp=tv._korp0, mnozh=tv._mn1, ryady_s=ryady_s)
+    s = E.sobrat(tv._raw(), tv._im(), tv.KARTA, tv.TK, "2018-01-01", "2019-01-01", korp=tv._korp0, mnozh=tv._mn1, ryady_s=ryady_s, ryady_e=ryady_e)
     return s.panel
+
+
+def test_b4_panel_pokryvaet_dni_ryadov_posle_granicy_chteniya():
+    pn = _panel_dni(None, "2018-06-29")
+    daty = pd.DatetimeIndex(pn.daty)
+    d0 = pd.DatetimeIndex(_panel_dni(None).daty)[-1]
+    assert daty[-1] == pd.Timestamp("2018-06-29") > d0 and pn.c.loc[d0 + pd.Timedelta(days=1):].isna().all().all()
+    assert not pn.ok[daty > d0].any() and (daty == pd.Timestamp("2018-06-23")).any()          # суббота (торговая в 2021-02-20) в панели есть
 
 
 def test_b4_panel_pokryvaet_dni_ryadov_ocenshchika_do_pervoj_10minutki():
