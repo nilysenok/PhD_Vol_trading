@@ -50,7 +50,7 @@ class Zahvat:
         e._ed = lambda *a: None
         e._piv_kesh = {("T", ()): EXTRA}
         monkeypatch.setattr(piv6, "_extra", lambda evr, t: EXTRA)
-        monkeypatch.setattr(etap1_eval_v2.EvaluatorV2, "evaluate_v2", lambda s, pt, period: s._rows(pt, period, False))
+        monkeypatch.setattr(etap1_eval_v2.EvaluatorV2, "evaluate_v2", lambda s, pt, period, vozm=None: s._rows(pt, period, False))
         monkeypatch.setattr(eval_v5, "run_rows", lambda t, days, sig, sg, p, **kw: self.calls.append((p, kw)) or "rows")
         monkeypatch.setattr(eval_v5, "_one_bar", lambda c: Day(*(np.full(1, c),) * 4))
         self.e = e
