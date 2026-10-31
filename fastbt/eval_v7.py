@@ -21,6 +21,7 @@ import pandas as pd
 
 from fastbt import exec_e_minuderzh as minuderzh
 from fastbt.eval_v6 import EvaluatorV6
+from fastbt.eval_v7_impuls import SemyaMixin
 from fastbt.eval_v7_okup import OkupMixin
 from fastbt.eval_v7_otn import OtnMixin
 from fastbt.signals import v7_impuls, v7_kross
@@ -111,7 +112,7 @@ for _s in ("S8", "S9"):
     register_family(_s, _fabrika_sech(_s), "v7")
 
 
-class EvaluatorV7(OkupMixin, OtnMixin, EvaluatorV6):
+class EvaluatorV7(SemyaMixin, OkupMixin, OtnMixin, EvaluatorV6):
     min_uder = 0                                                    # V7-4: умолчание на уровне класса (объекты без __init__ в тестах)
 
     def __init__(self, sid, inp, base_p, commission: float = 0.0004, fdr=None, ist=None, rol: str | None = None, ist7: Ist7 | None = None, min_uderzhanie: int = 0):
@@ -120,7 +121,9 @@ class EvaluatorV7(OkupMixin, OtnMixin, EvaluatorV6):
         self.min_uder = minuderzh.dney(sid, min_uderzhanie)         # V7-4: константа куба, только контртренд; 0 — путь v6
 
     def _k7(self) -> tuple:
-        return ((("v7", self.sid, self.ist7.sha),) if self.sid in SEMYI_V7 else ()) + self._otn_key() + self._okup_key() + (((minuderzh.KLYUCH, self.min_uder),) if self.min_uder else ())
+        sem = self._sem or self.sid
+        sg = (("sg", tuple(sorted(self._sg.items()))),) if self._sg else ()
+        return ((("v7", sem, self.ist7.sha),) + sg if sem in SEMYI_V7 else ()) + self._otn_key() + self._okup_key() + (((minuderzh.KLYUCH, self.min_uder),) if self.min_uder else ())
 
     def _params(self, *a):
         p = super()._params(*a)
@@ -135,13 +138,13 @@ class EvaluatorV7(OkupMixin, OtnMixin, EvaluatorV6):
         self._fk = v
 
     def _signals5(self, sp: dict) -> dict:
-        if self.sid not in SEMYI_V7:
+        sem = self._sem or self.sid
+        if sem not in SEMYI_V7:
             return super()._signals5(sp)
         from fastbt.signals.interface import get_family
-        fam = get_family(self.sid, setka="v7")(self.ist7)
-        return {t: Unit(t, self.proxy, td, ind, fam(td, ind, [dict(sp)])) for t, (td, ind) in self.sk._td.items()}
+        fam, g = get_family(sem, setka="v7")(self.ist7), dict(self._sg if self._sg is not None else sp)
+        return {t: Unit(t, self.proxy, td, ind, fam(td, ind, [g])) for t, (td, ind) in self.sk._td.items()}
 
     def evaluate_v2(self, pt: dict, period: str, vozm: dict | None = None):
-        if self.sid in SEMYI_V7:
-            raise ValueError(f"{self.sid}: полный путь точки S8–S12 — после канона v7 (V7-1b) и оси k_okup (V7-3); здесь только сигнал")
-        return super().evaluate_v2(self._otn_razbor(pt), period, vozm)
+        pt = self._otn_razbor(pt)
+        return self._semya_v2(pt, period, vozm) if self.sid in SEMYI_V7 else super().evaluate_v2(pt, period, vozm)
