@@ -1,0 +1,28 @@
+# статус: разработка train4 2016–2019, потолок (in-sample), после аудита
+# вывод: (оговорки) числа, порогов нет
+# формат: "v": "1"
+sid,nazvanie,chislo,vsego,tekst
+S1,yadro_sloy_fast,144445,144446,slow: 1
+S1,brent_dni_v_okne,0,38,не задевает
+S1,brent_tochki,0,4827,"в топ-10 0 из 4827 в пуле; slow: топ-10 0, пул 0"
+S1,stop_reentry_tochki,0,0,"в топ-10 0 из 0 в пуле; slow: топ-10 0, пул 0"
+S2,yadro_sloy_fast,143282,143282,slow: 0
+S2,brent_dni_v_okne,0,38,не задевает
+S2,brent_tochki,0,4761,"в топ-10 0 из 4761 в пуле; slow: топ-10 0, пул 0"
+S2,stop_reentry_tochki,0,0,"в топ-10 0 из 0 в пуле; slow: топ-10 0, пул 0"
+S3,yadro_sloy_fast,275558,275558,slow: 0
+S3,brent_dni_v_okne,0,38,не задевает
+S3,brent_tochki,0,0,"в топ-10 0 из 0 в пуле; slow: топ-10 0, пул 0"
+S3,stop_reentry_tochki,0,0,"в топ-10 0 из 0 в пуле; slow: топ-10 0, пул 0"
+S4,yadro_sloy_fast,275587,275587,slow: 0
+S4,brent_dni_v_okne,0,38,не задевает
+S4,brent_tochki,0,0,"в топ-10 0 из 0 в пуле; slow: топ-10 0, пул 0"
+S4,stop_reentry_tochki,0,0,"в топ-10 0 из 0 в пуле; slow: топ-10 0, пул 0"
+S5,yadro_sloy_fast,151716,151717,slow: 1
+S5,brent_dni_v_okne,0,38,не задевает
+S5,brent_tochki,0,5102,"в топ-10 0 из 5102 в пуле; slow: топ-10 0, пул 0"
+S5,stop_reentry_tochki,0,0,"в топ-10 0 из 0 в пуле; slow: топ-10 0, пул 0"
+S6,yadro_sloy_fast,156039,156463,slow: 424
+S6,brent_dni_v_okne,0,38,не задевает
+S6,brent_tochki,0,5152,"в топ-10 0 из 5152 в пуле; slow: топ-10 0, пул 0"
+S6,stop_reentry_tochki,0,0,"в топ-10 0 из 0 в пуле; slow: топ-10 0, пул 0"
