@@ -109,6 +109,17 @@ def test_g1_s10_moment_T_17_00_vidit_bar_do_T_a_18_30_ne_vidit(monkeypatch):
     assert not any(sig(vhod="d1", T="17:00")), "решение в 18:30 бар 16:00–17:00 последним полным не считает"
 
 
+def test_g1_kanon_d1_bez_T_schitaetsya_i_T_ne_vliyaet(monkeypatch):
+    """canon_v7b убирает T при vhod = d1 — точка пилота без T должна считаться (раньше ValueError «нет осей ['T']»); результат тот же, что с любым T."""
+    from fastbt import canon_v7b as c7b
+    kub = c7b.load_kub("S10")
+    pt = c7b.canon_v7b("S10", {"tau": 3, "vhod": "d1", "T": "18:00", "k_okup": "net"}, kub)
+    assert "T" not in pt and "k_okup" not in pt
+    bez = _probe(monkeypatch, "S10", pt)
+    s_T = _probe(monkeypatch, "S10", dict(pt, T="18:40"))
+    assert [int(v) for v in bez["ss"].sig[0]] == [int(v) for v in s_T["ss"].sig[0]] and bez["ss"].sig[0].any()
+
+
 def test_g3_sdvig_ruda_lovitsya(monkeypatch):
     sdv = _b10({311: (42, 47, 110.0)})                                 # импульс, известный на день позже (M-d1)
     assert [i for i, v in enumerate(_probe(monkeypatch, "S10", dict(tau=2, vhod="T", T="18:00"), sdv)["ss"].sig[0]) if v] != [310]
