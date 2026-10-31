@@ -73,6 +73,7 @@ class Params:
     piv_buf: float = 0.0          # буфер стопа piv_sl next/half: расстояние ×(1 + piv_buf); 0 — без буфера
     piv_tp: str | None = None     # тейк: P (до пивота) | R (до следующего уровня |R1−S1|) | half (его половина)
     vwap_m: float | None = None   # множитель dev для piv_sl = vwap (v4 sl_dev 1,5…3)
+    min_uderzhanie: int = 0       # V7-4 (fastbt/exec_e_minuderzh.py): выход по signal/vremya раньше N-го дня от входа переносится на N-й (≤ 1 — выкл.); стоп/тейк — с 1-го дня
     vhod_T: str | None = None     # Л6.3 v7 (fastbt/exec_e_t.py): 'ЧЧ:ММ' — вход рынком в T того же дня по цене cena_T (run(cena_T=…)); None — выкл; быстрый слой не знает
 
 
