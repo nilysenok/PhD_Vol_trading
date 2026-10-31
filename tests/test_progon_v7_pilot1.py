@@ -149,7 +149,7 @@ def test_sempler_real_kub_5_tochek_proveryayutsya_i_determinirovany(sid):
     m.proverit(kub)
 
 
-@pytest.mark.parametrize("sid", SEMYI)
+@pytest.mark.parametrize("sid", [s for s in SEMYI if s != "S8"])      # S8/S9 — решётка, seed не действует (Ж-161; tests/test_reshetka_s8_s9.py)
 def test_mutatsiya_drugoj_seed_te_zhe_tochki_lovitsya(sid, monkeypatch):
     _, a = sem5(sid, 1)
     _, b = sem5(sid, 2)
