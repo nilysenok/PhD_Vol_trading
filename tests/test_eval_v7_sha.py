@@ -41,6 +41,33 @@ def test_sha_odinakov_v_raznyh_processah():
     assert a == b == c and len(a.split()) == 3 and all(len(x) == 64 for x in a.split())
 
 
+SKRIPT_OSI = """
+import numpy as np, pandas as pd
+from fastbt import eval_v7 as E
+from fastbt.eval_v7_otn import OtnIst
+im = pd.Series(1000.0 + np.arange(6), index=pd.bdate_range("2018-01-09", periods=6))
+karta = {"AAA": "MOEX" + "FN", "BBB": "MOEX" + "OG"}
+out = []
+for sid in ("S1", "S8"):
+    ev = object.__new__(E.EvaluatorV7)
+    ev.sid, ev._fk, ev.otn, ev._okup_k = sid, (), "sektor", 3
+    ev.ist7 = E.Ist7(otn=OtnIst(im, karta))
+    out.append(repr(ev._k7()))
+print("|".join(out))
+"""
+
+
+def test_klyuch_s_obeimi_osyami_odinakov_v_raznyh_processah():
+    """Точка с otnositelno=sektor и k_okup=3 (S1 и S8): `_k7` (v7 + otn + k_okup) совпадает в процессах с разным PYTHONHASHSEED."""
+    def run(seed):
+        env = {**os.environ, "PYTHONHASHSEED": seed, "PYTHONPATH": str(ROOT)}
+        r = subprocess.run([sys.executable, "-c", SKRIPT_OSI], cwd=ROOT, env=env, capture_output=True, text=True, timeout=120)
+        assert r.returncode == 0, r.stderr
+        return r.stdout.strip()
+    a, b = run("1"), run("2")
+    assert a == b and "k_okup" in a and "'otn'" in a
+
+
 D = pd.bdate_range("2018-01-09", periods=6)
 
 
