@@ -74,7 +74,7 @@ def test_sovpadenie_s_fazy_na_sinteticheskom_ryade(tmp_path):
     tab, _ = T.tablica(_bary(tmp_path, ryad), "2014-08-26", "2018-12-31")
     ref = fazy._priznaki(ryad)["trend"].reindex(ryad.index)
     oj = ref.map({"рост": "rost", "падение": "padenie", "боковик": "bokovik"}).fillna("net_ma")
-    assert list(tab["data"]) == list(ryad.index) and list(tab["rezhim"]) == list(oj)
+    assert list(tab["data"]) == list(ryad.index.strftime("%Y-%m-%d")) and list(tab["rezhim"]) == list(oj)
     assert {"rost", "padenie", "bokovik"} <= set(tab["rezhim"])        # синтетика содержит все три режима
 
 
@@ -131,8 +131,9 @@ def test_mutaciya_granitsa_snyata_lovitsya(tmp_path, zamok, monkeypatch):
     monkeypatch.setattr(zona, "end", lambda: D("2026-03-01"))
     with contextlib.suppress(Exception):           # после чтения ≥ 2025 aggregate просит календарь MOEX — для проверки чтения не важно
         _glavnaya(tmp_path, "2024-12-31")
+    assert READ, "слой ничего не прочитал — проверка слепа"
     with pytest.raises(AssertionError):
-        assert READ and max(READ) < D("2025-01-01")
+        assert max(READ) < D("2025-01-01")
 
 
 def test_shapka_hash_i_chislo_net_ma(tmp_path, zamok, capsys):
