@@ -31,6 +31,13 @@ SEMYI_V7 = ("S8", "S9", "S10", "S11", "S12")
 PROXY = {s: "S3" for s in SEMYI_V7}
 
 
+def _znacheniya(a) -> bytes:
+    """Байты значений массива (не адресов): dtype=object (метки секторов) — хэш содержимого, форма — в байтах (Д5, №7/38)."""
+    a = np.asarray(a)
+    body = pd.util.hash_array(a.ravel()).tobytes() if a.dtype == object else np.ascontiguousarray(a).tobytes()
+    return body + str(a.shape).encode()
+
+
 @dataclass
 class Ist7:
     """Источники семей v7: b10 {тикер: 10-минутки} — S10–S12; panel (v7_kross.Panel) — S8, S9."""
@@ -48,7 +55,7 @@ class Ist7:
             h.update(pd.util.hash_pandas_object(pn.c, index=True).to_numpy().tobytes())
             h.update(pd.util.hash_pandas_object(pn.imoex, index=True).to_numpy().tobytes())
             for a in (pn.metki, pn.sigma, pn.ok):
-                h.update(np.ascontiguousarray(a).tobytes())
+                h.update(_znacheniya(a))
         return h.hexdigest()
 
 
