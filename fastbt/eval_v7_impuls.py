@@ -51,6 +51,12 @@ def cena_t(b10: pd.DataFrame, dates, T: str) -> np.ndarray:
     return c[~c.index.duplicated(keep="last")].reindex(pd.DatetimeIndex(dates).normalize()).to_numpy(float)
 
 
+def tau_vyhoda(vhod: str, tau: int) -> int:
+    """Params.tau (временной стоп: выход close дня входа + tau) так, чтобы выход был ровно close d+τ дня сигнала d: vhod = d1 — вход d+1, значит τ−1; T — вход в день d, значит τ.
+    Нужен потому, что positions склеивает подряд идущие сделки одного знака (выход и повторный вход на соседних барах) в одну позицию — флаги exit_l/exit_s её не рвут."""
+    return tau - 1 if vhod == "d1" else tau
+
+
 class SemyaMixin:
     _sem = None          # реальный sid S8–S12 во время расчёта точки (self.sid = прокси S3)
     _sg = None           # сигнальные оси точки для семьи v7
@@ -72,6 +78,8 @@ class SemyaMixin:
         r.ext.pop("k_e", None)
         T = self._sg.get("T") if self._sem in IMPULS and self._sg.get("vhod") == "T" else None
         r.ext.update(k=None, vhod_T=T, vhod_open=T is None)        # d1 и сечение: open d+1 (Д2); T: цена T того же дня
+        if self._sem in IMPULS:
+            r.ext["tau"] = tau_vyhoda(self._sg["vhod"], self._sg["tau"])
         self._cena_T = T
         try:
             return super()._rows(pt, period, anchor)
