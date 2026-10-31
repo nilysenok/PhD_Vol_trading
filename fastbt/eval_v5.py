@@ -76,16 +76,19 @@ def rang_starta(sig, rg):
     return out
 
 
-def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, **kw):
-    """etap1_run.run_e1; при rang (тейк/безубыток от силы) — копия его сборки строк с rang в exec_e.run (run_e1 rang не
-    принимает, etap1_run.py вне владения Л9; равенство копии — tests/test_eval_v5.py::test_run_rows_rang_kopiya_run_e1)."""
-    if rang is None:
+def run_rows(t, days, sig, sg, p, rang=None, w=None, win=None, fdr=None, cena_T=None, **kw):
+    """etap1_run.run_e1; при rang (тейк/безубыток от силы) или cena_T (вход в T, v7) — копия его сборки строк с rang/cena_T в exec_e.run
+    (run_e1 их не принимает, etap1_run.py вне владения Л9; равенство копии — tests/test_eval_v5.py::test_run_rows_rang_kopiya_run_e1).
+    cena_T: массив по дням или вызываемая f(тикер, dates) → массив (явный параметр вместо подмены модуля, класс № 43)."""
+    if rang is None and cena_T is None:
         return etap1_run.run_e1(t, days, sig, sg, p, w=w, win=win, fdr=fdr, **kw)
+    if callable(cena_T):
+        cena_T = cena_T(t, kw.get("dates"))
     n = len(days)
     a, b = (0, n) if win is None else win
     w = np.ones(n) if w is None else np.asarray(w, float)
     xk = {k: v for k, v in kw.items() if k in ("ed", "tejk_M", "urovni", "dates") and v is not None}
-    res = exec_e.run(t, days, sig, sg, p, close=kw.get("close"), div=kw.get("div"), nalog=kw.get("nalog"), rang=rang, **xk)
+    res = exec_e.run(t, days, sig, sg, p, close=kw.get("close"), div=kw.get("div"), nalog=kw.get("nalog"), rang=rang, cena_T=cena_T, **xk)
     ix = [i for i, d in enumerate(days) if not d.pusto]
     wr, sides, cnt, sh = np.zeros(n), np.zeros(b - a), np.zeros(b - a), np.zeros(n)
     for tr, r0, last_g, er in etap1_run._spans(res, ix, p, n):
