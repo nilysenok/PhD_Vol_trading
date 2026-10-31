@@ -218,10 +218,13 @@ def test_cena_T_vhod_prohodit_a_mut_T_plus_10_i_open_dnya_lovyatsya():
         _run([0, 1, 1], days, p, cena=np.array([d.o[0] for d in days]))
 
 
-def test_1840_po_close_baru_1125():
+def test_1840_po_open_bara_1120_a_ne_close_1125():
+    """Л6.3 (решение дирижёра 31.10): бар 18:40 есть — вход по его open; close бара 18:45 (прежняя семантика) — ошибка."""
     days = _tri()
-    r = _run([0, 1, 1], days, Params(vhod_T="18:40"), cena=np.array([d.c[MODS.index(1125)] for d in days]))
-    assert r.trades[0].entry_bar == MODS.index(1125) and r.trades[0].entry_px == _o(1, 1125) + 0.25
+    r = _run([0, 1, 1], days, Params(vhod_T="18:40"), cena=_cena_open(days, 1120))
+    assert r.trades[0].entry_bar == MODS.index(1120) and r.trades[0].entry_px == _o(1, 1120)
+    mut = _run([0, 1, 1], days, Params(vhod_T="18:40"), cena=np.array([d.c[MODS.index(1125)] for d in days]))
+    assert mut.trades[0].entry_px == _o(1, 1125) + 0.25 != days[1].o[mut.trades[0].entry_bar]      # цена не open бара входа — мутация видна
 
 
 def test_mut_1840_po_open_cena_lovitsya(monkeypatch):
@@ -233,11 +236,17 @@ def test_mut_1840_po_open_cena_lovitsya(monkeypatch):
 
 
 def test_mut_bar_vhoda_1840_pervyj_bar_lovitsya(monkeypatch):
-    monkeypatch.setattr(exec_e_t, "AUKCION", -1)
-    d = _day(1)
-    assert exec_e_t.bar_vhoda(d, 1120) == MODS.index(1120) != MODS.index(1125)       # мутация: бар входа 18:40 — до цены close(18:50)
-    monkeypatch.undo()
-    assert exec_e_t.bar_vhoda(d, 1120) == MODS.index(1125)
+    def obrez(n):
+        d = _day(1)
+        return Day(d.o[:n], d.h[:n], d.l[:n], d.c[:n], False, np.array(MODS[:n]))
+    d, bez_1840, bez_12 = _day(1), obrez(MODS.index(1120)), obrez(10)           # баров ≥ 18:40 нет; баров ≥ 12:00 нет
+    assert exec_e_t.bar_vhoda(d, 1120) == MODS.index(1120)                  # бар есть — первый бар ≥ T (1120), не 1125
+    assert exec_e_t.bar_vhoda(bez_1840, 1120) == len(bez_1840.c) - 1        # бара нет — последний бар дня (close дня)
+    assert exec_e_t.bar_vhoda(bez_12, 720) is None                          # T < 18:40, бара ≥ T нет — None (Д4)
+    monkeypatch.setattr(exec_e_t, "AUKCION", 10 ** 6)                       # мутация: «18:40 без бара — нет сделки»
+    assert exec_e_t.bar_vhoda(bez_1840, 1120) is None
+    monkeypatch.setattr(exec_e_t, "AUKCION", -1)                            # мутация: любой T без бара берёт последний бар (подстановка)
+    assert exec_e_t.bar_vhoda(bez_12, 720) is not None
 
 
 # --- 6. быстрый слой ---
