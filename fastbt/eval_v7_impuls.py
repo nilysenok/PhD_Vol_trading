@@ -22,6 +22,7 @@ from fastbt.t_reshenie_v7 import AUKCION, _minuty
 IMPULS, KROSS = ("S10", "S11", "S12"), ("S8", "S9")
 SIG_OSI = {s: ("tau", "vhod", "T") for s in IMPULS} | {s: ("porog", "bufer", "cap", "rebal") for s in KROSS}
 STOP_S89 = "sigma:2.0"
+T_D1_UMOLCH = "17:00"        # T при vhod = d1 (свёрнута canon_v7b): на сигнал и вход не влияет (сигнал по 18:30, вход d+1)
 ZAGLUSHKA = {"okno": 20, "podtv": "none"}            # сигнальные оси S3: семья S3 не вызывается, нужны razbor и ключу
 SLOT0, STEP10 = 10 * 60, 10
 
@@ -29,6 +30,8 @@ SLOT0, STEP10 = 10 * 60, 10
 def rasschepit(sid: str, pt: dict) -> tuple[dict, dict]:
     """(точка без сигнальных осей семьи + заглушка S3, сигнальные оси для семьи v7). Не хватает оси или лишняя — ValueError."""
     osi = SIG_OSI[sid]
+    if sid in IMPULS and pt.get("vhod") == "d1" and "T" not in pt:
+        pt = {**pt, "T": T_D1_UMOLCH}          # canon_v7b сворачивает T при d1; при d1 T сигнал и вход не меняет, в ключ идёт константа
     if set(osi) - set(pt):
         raise ValueError(f"{sid}: в точке нет сигнальных осей {sorted(set(osi) - set(pt))}")
     sg = {k: pt[k] for k in osi}
