@@ -17,7 +17,8 @@ from fastbt.exec_e_zayavki import prodlit, reenter
 
 
 class Run(V6):
-    stale = frozenset()                             # Д5-2: шаги j после разрыва > Params.razryv дней (заполняет exec_e.run); пусто — прежнее поведение
+    mu = mu_raz = None                              # V7-4 (exec_e_minuderzh): отложенный выход (сделка, причина) / отложенный разворот в T (сделка)
+    stale = frozenset()                           # Д5-2: шаги j после разрыва > Params.razryv дней (заполняет exec_e.run); пусто — прежнее поведение
 
     def __init__(s, ticker, days, sig, sigma, p, close=None, div=None, nalog=1.0, tejk_M=None, atr=None, rang=None, us=None, ut=None):
         n = len(days)
@@ -260,11 +261,10 @@ class Run(V6):
             if s.tr is not None:
                 s._exit(i, j, nb - 1, close, s.xo["reason"])
             s.xo = None
-        if s.tr is not None and not minuderzh.rano(s, j):     # V7-4: min_uderzhanie — до N-го дня от входа signal/vremya не проверяются
-            if s.p.tau is not None and j - s.ej >= s.p.tau and j > s.ej:
-                s._leave(i, j, nb, close, "vremya")
-            elif s._sig_exit(i):
-                s._leave(i, j, nb, close, "signal")
+        if s.tr is not None:                        # V7-4: min_uderzhanie — до N-го дня выход откладывается (reshenie помнит), с N-го обязателен
+            why = minuderzh.reshenie(s, i, j, s.p.tau is not None and j - s.ej >= s.p.tau and j > s.ej)
+            if why:
+                s._leave(i, j, nb, close, why)
         if s.tr is not None:
             s.gross[i] += s.tr.side * s.w * math.log((close + s.dv) / s.ref)
             s.dv = 0.0

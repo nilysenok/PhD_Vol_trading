@@ -28,6 +28,10 @@ def _tr(r, k=0):
     return t.exit_day, t.exit_px, t.reason
 
 
+def _dni_stop():
+    return [_day(100.0), _day(101.0), _day(102.0, lo=90.0)] + [_day(100.0 + i) for i in range(3, 8)]
+
+
 # ---------- G2: перенос ----------
 def test_g2_signal_vernulsya_vyhod_vse_ravno_na_den_2():
     sig = [1, 0, 1, 1, 1, 1]
@@ -47,10 +51,9 @@ def test_g2_signal_na_dne_N_ne_nuzhen_pamyat_ne_dubliruet():
 
 
 def test_g2_stop_do_dnya_N_snimaet_otlozhennyj_vyhod_i_ne_techet_v_novuyu_poziciyu():
-    """Ранний сигнал (день 1) запомнен, но стоп дня 1 закрыл раньше. Новая позиция (вход день 2) отложенный выход не наследует."""
-    days = [_day(100.0), _day(101.0, lo=90.0)] + [_day(100.0 + i) for i in range(2, 7)]
-    r = _run([1, 0, 1, 1, 1, 1, 1], Params(b=2.0, min_uderzhanie=2), days)
-    assert _tr(r) == (1, 98.0, "stop")
+    """N = 3: ранний сигнал (день 1) запомнен, стоп дня 2 закрыл раньше. Новая позиция (вход день 2) отложенный выход не наследует."""
+    r = _run([1, 0, 1, 1, 1, 1, 1, 1], Params(b=2.0, min_uderzhanie=3), _dni_stop())
+    assert _tr(r) == (2, 98.0, "stop")
     assert len(r.trades) == 2 and r.trades[1].entry_day == 2 and r.trades[1].exit_day is None
 
 
@@ -69,8 +72,8 @@ def test_g3_mutatsiya_otlozhennyj_vyhod_zabyt_lovitsya(monkeypatch):
 
 
 def test_g3_mutatsiya_pamyat_ne_privyazana_k_sdelke_lovitsya(monkeypatch):
-    days = [_day(100.0), _day(101.0, lo=90.0)] + [_day(100.0 + i) for i in range(2, 7)]
-    p, sig = Params(b=2.0, min_uderzhanie=2), [1, 0, 1, 1, 1, 1, 1]
+    days = _dni_stop()
+    p, sig = Params(b=2.0, min_uderzhanie=3), [1, 0, 1, 1, 1, 1, 1, 1]
     assert _run(sig, p, days).trades[1].exit_day is None
     def glob(s, i, j, vrem):
         now = "vremya" if vrem else ("signal" if s._sig_exit(i) else None)
