@@ -51,8 +51,9 @@ def ocenshchik7(staryj, bez_osej=()):
             return staryj(sid, inp, rz)
         from fastbt import eval_v7_ist, etap1, istochniki_v6
         from fastbt.eval_v7 import PROXY, EvaluatorV7
+        from fastbt.eval_v7_otn import SEMYI_OTN
         tik = list(inp.sk.tickers)
-        kw = {"ist7": eval_v7_ist.zagruzit(rz.period, tik, dev=rz.period == "train4").ist7()} if sid in SEMEJSTVA_IST7 else {}     # S8–S12: источники v7
+        kw = {"ist7": eval_v7_ist.zagruzit(rz.period, tik, dev=rz.period == "train4").ist7()} if sid in SEMEJSTVA_IST7 + SEMYI_OTN else {}     # S8–S12: источники v7; S1–S4: IMOEX и карта секторов оси otnositelno
         return EvaluatorV7(sid, inp, etap1.base_point(PROXY.get(sid, sid)), ps.KOMISSIYA, fdr=rz.fdr, ist=istochniki_v6.zagruzit(rz.period, tik),
                            min_uderzhanie=min_uder(sid, bez_osej), **kw)
     return f
