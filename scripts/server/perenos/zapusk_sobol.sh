@@ -6,6 +6,8 @@
 #   ./zapusk_sobol.sh status <период>   — строки состояния и жив ли процесс
 # Куб v7 (V7-8b): PERENOS_KUB=v7 ./zapusk_sobol.sh polnaya — период polnaya (= границы и замок wf, процессов PERENOS_PROCS_WF), Моррис
 # fastbt.progon_morris_v7, проходы s1 s2 через fastbt.progon_v7 (ledger/polnaya_v7_<проход>/); v7 — только polnaya, polnaya — только v7.
+# Пилот-1 v7 (Ж-156, Ж-160 п. 3): PERENOS_KUB=v7 PERENOS_PILOT=1 ./zapusk_sobol.sh polnaya — fastbt.progon_v7 --pilot --n1 PERENOS_N1 (1000)
+# по семействам PERENOS_SEMEYSTVA (S1…S6), без Морриса; процессов PERENOS_PROCS_PILOT (64); ledger/polnaya_v7_pilot1/pilot_zamer.json.
 # Отказ без отметки proverka/OK от ЭТОГО кода, данных, эталона и режима numpy (./proverka_yakor.sh), при изменённом коде, при живом
 # прогоне. Режим numpy — переменная PERENOS_REZHIM=1|2 (выбор владельца после ./proverka_yakor.sh --rezhim2); NUMBA_* — как на Маке.
 # Процессов — 120, не больше ядра − 4 (Ж-137 п. 2; память проверяет pamyat.sh); PERENOS_PROCS — явно. Если fastbt.progon_server умеет куб v5 (в --help есть --k3; ветка
@@ -22,6 +24,11 @@ novyj_cli() {   # fastbt.progon_server с кубом v5 (ветка progon-serve
   [ -f "$KOD_DIR/fastbt/progon_server.py" ] && (cd "$KOD_DIR" && "$PY" -m fastbt.progon_server --help 2>&1 | grep -q -- '--k3')
 }
 
+SEM_PILOT=S1,S2,S3,S4,S5,S6
+procs_pilot() {   # пилот-1: PERENOS_PROCS_PILOT (умолчание 64: RSS ≈ 3,5 ГБ на процесс), но не больше ядра − 4 и не меньше 1
+  local n=${PERENOS_PROCS_PILOT:-64} lim=$(( $(yadra) - 4 ))
+  [ "$n" -le "$lim" ] 2>/dev/null || n=$lim; [ "$n" -ge 1 ] || n=1; echo "$n"
+}
 progrev() {   # $1 — период. Одна точка каждой Sk (v5: --n1 1, seed 1; v6/v7: Моррис --r 1) одним процессом в cache/progrev_<период>/ (не в ледгере)
   local pg="$P/cache/progrev_$1" t0 rc=0
   t0=$(date +%s); rm -rf "$pg"
@@ -43,6 +50,7 @@ dolya_yadra() {   # $1 — каталог прохода: доля точек, �
 if [ "${1:-}" = __ryad ]; then              # внутренний режим: сама цепочка под nohup
   per=$2; shift 2
   pk=$per; [ "$per" = polnaya ] && pk=wf       # polnaya (куб v7, 2014-06…2026-02-28) — по процессам и замку как wf (Ж-136)
+  [ "${PERENOS_PILOT:-}" != 1 ] || [ "${PERENOS_KUB:-v5}" = v7 ] || fail "PERENOS_PILOT=1 — только с PERENOS_KUB=v7"
   if [ "${PERENOS_KUB:-v5}" = v7 ] && ! novyj_cli; then fail "v7: в коде нет fastbt.progon_v7 / progon_morris_v7 (лист V7-8a не слит) — счёт не начинаю"; fi
   if novyj_cli; then
     # CLI progon_server под куб v5 (Л10, #608): --kub v5 --period train4|v2 --seed 1|2 | --k3 [--n1]; проходы подряд, свой каталог ledger
@@ -59,6 +67,14 @@ if [ "${1:-}" = __ryad ]; then              # внутренний режим: �
     # строкой «ядро» после каждого прохода и в svodka_ledger.py.
     fast=""; [ "${PERENOS_FAST:-1}" = 0 ] || fast="--fast"
     progrev "$per"      # до пула: один процесс, одна точка каждой Sk (bars5m, дисковый кэш, numba) — без гонок при fork 120 процессов
+    if [ "${PERENOS_PILOT:-}" = 1 ]; then      # пилот-1 (Ж-156, Ж-160 п. 3): 1 000 точек на семейство, без Морриса, ledger/polnaya_v7_pilot1/
+      od="$P/ledger/${per}_v7_pilot1"; np=$(procs_pilot)
+      say "пилот-1: progon_v7 --pilot $per, n1 ${PERENOS_N1:-1000}, семейства ${PERENOS_SEMEYSTVA:-$SEM_PILOT}, процессов $np, $od"
+      (cd "$KOD_DIR" && "$PY" -m fastbt.progon_v7 --kub v7 --period "$per" --pilot --n1 "${PERENOS_N1:-1000}" \
+        --semeystva "${PERENOS_SEMEYSTVA:-$SEM_PILOT}" --procs "$np" --out "$od" $fast) || fail "пилот-1 упал — вывод выше"
+      say "пилот-1 готов: замер $od/pilot_zamer.json; забрать: ./zabrat.sh --agregaty \$SRV:perenos <каталог на Маке>"
+      say "цепочка $per завершена"; exit 0
+    fi
     # v7 (V7-8b; Ж-155 п. 7, Ж-156): PERENOS_KUB=v7 — период polnaya, Моррис fastbt.progon_morris_v7, проходы fastbt.progon_v7 (s1 s2;
     # k3 v7 — ссылка на ledger v6, не пересчёт; spravka не нужна), N1 200 000 на стратегию (PERENOS_N1 — явно), каталоги ledger/polnaya_v7_<проход>.
     prohody="s1 s2 k3 spravka"; [ "$kub" = v7 ] && prohody="s1 s2"
@@ -148,6 +164,10 @@ if [ "$per" = wf ] || [ "$per" = polnaya ]; then     # Ж-136: единый walk
 fi
 pk=$per; [ "$per" = polnaya ] && pk=wf
 n=$(processov "$pk")
+if [ "${PERENOS_PILOT:-}" = 1 ]; then
+  [ "${PERENOS_KUB:-v5}" = v7 ] || fail "PERENOS_PILOT=1 — только с PERENOS_KUB=v7"
+  n=$(procs_pilot)
+fi
 proverit_summu "$per" "$n"          # train4 и v2 одновременно: сумма процессов ≤ ядра − 4 (по умолчанию каждая берёт половину)
 log="$P/logs/sobol_${per}_$(date +%Y%m%d_%H%M%S).log"
 say "2/3 запуск $per: $([ $server = 1 ] && echo fastbt.progon_server || echo 'fastbt.progon_sobol (замена)'), процессов $n, ledger/$per/, лог $log"
