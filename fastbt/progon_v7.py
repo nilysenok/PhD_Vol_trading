@@ -37,6 +37,25 @@ def fiksirovat(tf, osi):
     return lambda kub, n0, n1, rz: [(i, {**pt, **{o: (0 if o in NULI else "net") for o in osi if o in pt}}) for i, pt in tf(kub, n0, n1, rz)]
 
 
+def min_uder(sid: str, bez_osej=()) -> int:
+    """Константа `min_uderzhanie.dney` из kub_S{k}.yaml (нет в кубе — 0); `--bez-osej min_uderzhanie` — 0. Ж-153 §1.1: EvaluatorV7 сам обнуляет не-контртренд."""
+    import yaml
+    m = yaml.safe_load(kub_put7(sid).read_text(encoding="utf-8")).get("min_uderzhanie")
+    return 0 if "min_uderzhanie" in bez_osej or not m else int(m["dney"])
+
+
+def ocenshchik7(staryj, bez_osej=()):
+    """ps.ocenshchik для setka v7: EvaluatorV7 с рядами v6 и константой min_uderzhanie из куба (по умолчанию в классе 0 — константа иначе не доходит)."""
+    def f(sid, inp, rz):
+        if rz.setka != SETKA:
+            return staryj(sid, inp, rz)
+        from fastbt import etap1, istochniki_v6
+        from fastbt.eval_v7 import EvaluatorV7
+        return EvaluatorV7(sid, inp, etap1.base_point(sid), ps.KOMISSIYA, fdr=rz.fdr, ist=istochniki_v6.zagruzit(rz.period, list(inp.sk.tickers)),
+                           min_uderzhanie=min_uder(sid, bez_osej))
+    return f
+
+
 def kvantili(t) -> tuple:
     """(p50, p90) секунд на точку; пусто — (None, None)."""
     return (float(np.percentile(t, 50)), float(np.percentile(t, 90))) if len(t) else (None, None)
@@ -110,10 +129,12 @@ def podmeny(zam: dict, shag: int, tochki_fn=None, bez_osej=(), meta=None):
     ps.manifest = lambda sid, sr, c, ks, rz=ps.R0: ({**man(sid, sr, c, ks, rz), "setka_data": str(c.get("data")), "zamorozka_sha": zam.get(sid), **(meta or {})}
                                                     if rz.setka == SETKA else man(sid, sr, c, ks, rz))
     ps.sreda, srv.CHEKPOINT = (lambda sid, rz=ps.R0: sreda7(sid, rz) if rz.setka == SETKA else staryj[3](sid, rz)), shag
+    oc, ps.ocenshchik = ps.ocenshchik, ocenshchik7(ps.ocenshchik, bez_osej)
     try:
         yield
     finally:
         ps.kub_put, ps.tochki, ps.manifest, ps.sreda, srv.CHEKPOINT = staryj
+        ps.ocenshchik = oc
 
 
 def progon7(kubs: dict, out, procs: int, n: dict, seed: int = 1, prodolzhit=False, shag: int = SHAG, fast=False, kod_slit=False,

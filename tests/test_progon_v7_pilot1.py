@@ -102,6 +102,34 @@ def test_g4_zamer_p50_p90_rss_razmer(sred):
     assert z["ledger_gb_na_1000"] == z["ledger_bajt_na_1000"] / 1e9
 
 
+def sobrat_ocenshchik(monkeypatch, sid, bez=()):
+    """Вызов ps.ocenshchik внутри podmeny; EvaluatorV7 подменён регистратором kwargs, чтения данных нет."""
+    import types
+
+    import fastbt.eval_v7 as e7
+    import fastbt.etap1 as et
+    import fastbt.istochniki_v6 as i6
+    poluch = {}
+    monkeypatch.setattr(e7, "EvaluatorV7", lambda *a, **kw: poluch.update(kw) or poluch)
+    monkeypatch.setattr(et, "base_point", lambda s: {})
+    monkeypatch.setattr(i6, "zagruzit", lambda per, tik: "ist")
+    inp = types.SimpleNamespace(sk=types.SimpleNamespace(tickers=[]))
+    with p7.podmeny({}, 100, lambda *a: [], bez):
+        ps.ocenshchik(sid, inp, p7.rezhim7(1, None))
+    return poluch["min_uderzhanie"]
+
+
+def test_min_uderzhanie_iz_kuba_s1_dva_s3_nol(monkeypatch):
+    assert (p7.min_uder("S1"), p7.min_uder("S3")) == (2, 0)
+    assert sobrat_ocenshchik(monkeypatch, "S1") == 2 and sobrat_ocenshchik(monkeypatch, "S3") == 0
+    assert sobrat_ocenshchik(monkeypatch, "S1", ("min_uderzhanie",)) == 0            # --bez-osej снимает константу
+
+
+def test_mutatsiya_konstanta_ne_peredana_lovitsya(monkeypatch):
+    monkeypatch.setattr(p7, "min_uder", lambda sid, bez=(): 0)                        # подложено: константа не берётся из куба
+    assert sobrat_ocenshchik(monkeypatch, "S1") != 2
+
+
 def test_kvantili_chistaya_funkciya():
     assert p7.kvantili([1.0, 2.0, 3.0, 4.0, 5.0]) == (3.0, pytest.approx(4.6))
     assert p7.kvantili([]) == (None, None)
