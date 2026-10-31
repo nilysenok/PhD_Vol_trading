@@ -52,9 +52,9 @@ def test_g2_tau_1_vyhod_na_den_2_a_tau_3_ne_menyaetsya():
     assert _tr(_run(s, Params(tau=3, min_uderzhanie=2))) == (3, 103.0, "vremya")
 
 
-def test_g2_signal_vernulsya_na_den_2_pozitsiya_derzhitsya():
-    """Выбор реализации (❓ в PR): не выходим по сигналу раньше 2-го дня; на 2-й день сигнал смотрится заново."""
-    assert _run([1, 0, 1, 1, 1, 1], Params(min_uderzhanie=2)).trades[0].exit_day is None
+def test_g2_signal_vernulsya_na_den_2_vyhod_obyazatelen():
+    """Правило Ж-153 §1.1: ранний сигнал (день 1) переносится на день 2 и исполняется там обязательно, даже если сигнал вернулся."""
+    assert _tr(_run([1, 0, 1, 1, 1, 1], Params(min_uderzhanie=2))) == (2, 102.0, "signal")
     assert _tr(_run([1, 0, 1, 1, 1, 1], Params())) == (1, 101.0, "signal")
 
 
