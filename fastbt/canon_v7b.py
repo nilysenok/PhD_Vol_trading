@@ -7,6 +7,7 @@ S8, S9 (моментум / сила к сектору): полная решёт�
 """
 from __future__ import annotations
 
+import itertools
 from pathlib import Path
 
 import yaml
@@ -17,6 +18,7 @@ SIDS_B = ("S8", "S9", "S10", "S11", "S12")
 IMPULS = ("S10", "S11", "S12")
 NET, SIGNAL_IMP = c7.NET, ("tau", "vhod", "T")
 GOTOVY_B = c7.GOTOVY_V7
+RESHETKA = ("S8", "S9")      # полная решётка вместо Соболя (Ж-161 пп. 1–2)
 
 
 def load_kub(sid: str, root: Path = c7.KUB7) -> dict:
@@ -62,6 +64,18 @@ def proverit(kub: dict) -> None:
 def tochki_v7b(kub: dict, n0: int, n1: int, seed: str = "seed", gotovy=GOTOVY_B) -> tuple:
     """Точки S8–S12: тот же сэмплер, что у S1–S6 (canon_v7.tochki_v7), со своими проверкой, осями и каноном."""
     return c7.tochki_v7(kub, n0, n1, seed, gotovy, proverit, osi, canon_v7b)
+
+
+def reshetka(kub: dict, gotovy=GOTOVY_B) -> list:
+    """S8/S9: [(i, канон)] — все различные точки решётки осей куба ровно по разу, порядок по klyuch_n (i = позиция); не зависит от --n1 и seed."""
+    from fastbt.ledger_v2 import klyuch_n
+    proverit(kub)
+    ox, sid, uniq = osi(kub, gotovy), kub["sid"], {}
+    for vals in itertools.product(*(g for _, g, _ in ox)):
+        c = canon_v7b(sid, {n: v for (n, _, _), v in zip(ox, vals)}, kub)
+        if c is not None:
+            uniq[klyuch_n(sid, {"tochka": c})] = c
+    return list(enumerate(uniq[k] for k in sorted(uniq)))
 
 
 def canon_v7b(sid: str, pt: dict, kub: dict):

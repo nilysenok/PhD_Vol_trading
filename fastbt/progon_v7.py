@@ -81,6 +81,8 @@ def semya(sid: str):
 def tochki_semya(kub: dict, n0: int, n1: int, rz) -> list:
     """[(i, точка)] — единственный сэмплер Соболя v7 (canon_v7.tochki_v7; для S8–S12 через canon_v7b.tochki_v7b), оси v7 открыты (GOTOVY_V7)."""
     m = semya(kub["sid"])
+    if kub["sid"] in getattr(m, "RESHETKA", ()):          # S8/S9: вся решётка по разу, срез [n0, n1) для кусков
+        return [x for x in m.reshetka(kub, canon7().GOTOVY_V7) if n0 <= x[0] < n1]
     f = m.tochki_v7b if hasattr(m, "tochki_v7b") else m.tochki_v7
     return f(kub, n0, n1, rz.seed, canon7().GOTOVY_V7)[0]
 
@@ -117,7 +119,11 @@ def n_po_sid(kubs: dict, arg) -> dict:
     over = {} if not arg else {"*": int(arg)} if str(arg).isdigit() else {k: int(v) for k, v in (x.split("=") for x in arg.split(","))}
     if set(over) - set(kubs) - {"*"}:
         raise ValueError(f"--n1: стратегии {sorted(set(over) - set(kubs) - {'*'})} не в прогоне")
-    return {s: over.get(s, over.get("*", c["sobol"]["N"])) for s, (_, c) in kubs.items()}
+    n = {s: over.get(s, over.get("*", c["sobol"]["N"])) for s, (_, c) in kubs.items()}
+    for s, (_, c) in kubs.items():                       # S8/S9: фактическое число = вся решётка, не --n1 (Ж-161)
+        if s in getattr(semya(s), "RESHETKA", ()):
+            n[s] = len(semya(s).reshetka(c, canon7().GOTOVY_V7))
+    return n
 
 
 def fabrika7(sid: str, rz: ps.Rezhim):
