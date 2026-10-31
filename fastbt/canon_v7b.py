@@ -59,6 +59,11 @@ def proverit(kub: dict) -> None:
         raise ValueError(f"{sid}: k_okup — нужны {{net, 3}}, vykl net, p_vykl 0.5, zhdet")
 
 
+def tochki_v7b(kub: dict, n0: int, n1: int, seed: str = "seed", gotovy=GOTOVY_B) -> tuple:
+    """Точки S8–S12: тот же сэмплер, что у S1–S6 (canon_v7.tochki_v7), со своими проверкой, осями и каноном."""
+    return c7.tochki_v7(kub, n0, n1, seed, gotovy, proverit, osi, canon_v7b)
+
+
 def canon_v7b(sid: str, pt: dict, kub: dict):
     """Точка → канон (T при d1 и k_okup = net убраны; у импульса — правила тренда canon_v6 по общим осям S3) или None."""
     q = dict(pt)
