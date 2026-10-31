@@ -25,6 +25,21 @@ KUB7 = ps.ROOT / "fastbt/designs/v7/kub_{sid}.yaml"
 LEDGER7 = ps.ZAMER / "_ledger_v7"
 SEMEJSTVA = ("S1", "S2", "S3", "S4", "S5", "S6", "S8", "S9", "S10", "S11", "S12")      # S7 в v7 не входит (Ж-153 п. 2)
 CANON = "fastbt.canon_v7"
+PILOT1 = "пилот-1"
+NULI = ("min_uderzhanie", "min_hold")            # константы, у которых «выкл.» = 0; остальные оси — "net" (Ж-160 п. 3)
+
+
+def fiksirovat(tf, osi):
+    """Ось из --bez-osej подменяется на «выкл.» (0 / "net") в точке до оценки; ключ точки — по подменённой. Оси нет в точке — не добавляется."""
+    osi = tuple(osi)
+    if not osi:
+        return tf
+    return lambda kub, n0, n1, rz: [(i, {**pt, **{o: (0 if o in NULI else "net") for o in osi if o in pt}}) for i, pt in tf(kub, n0, n1, rz)]
+
+
+def kvantili(t) -> tuple:
+    """(p50, p90) секунд на точку; пусто — (None, None)."""
+    return (float(np.percentile(t, 50)), float(np.percentile(t, 90))) if len(t) else (None, None)
 
 
 def canon7():
@@ -85,13 +100,14 @@ def sreda7(sid: str, rz: ps.Rezhim = ps.R0):
 
 
 @contextlib.contextmanager
-def podmeny(zam: dict, shag: int, tochki_fn=None):
+def podmeny(zam: dict, shag: int, tochki_fn=None, bez_osej=(), meta=None):
     """На время прохода: путь куба, точки, manifest (+ setka_data, zamorozka_sha), среда, шаг чекпоинта. Дети (fork) наследуют; выход — всё назад."""
     staryj, man, kp = (ps.kub_put, ps.tochki, ps.manifest, ps.sreda, srv.CHEKPOINT), ps.manifest, ps.kub_put
     tf = tochki_fn or (lambda kub, n0, n1, rz: canon7().tochki_sobol(kub, n0, n1, rz.seed, zam.get(kub["sid"])))
+    tf = fiksirovat(tf, bez_osej)
     ps.kub_put = lambda sid, rz=ps.R0: kub_put7(sid) if rz.setka == SETKA else kp(sid, rz)
     ps.tochki = lambda kub, n0, n1, rz=ps.R0: tf(kub, n0, n1, rz) if rz.setka == SETKA else staryj[1](kub, n0, n1, rz)
-    ps.manifest = lambda sid, sr, c, ks, rz=ps.R0: ({**man(sid, sr, c, ks, rz), "setka_data": str(c.get("data")), "zamorozka_sha": zam.get(sid)}
+    ps.manifest = lambda sid, sr, c, ks, rz=ps.R0: ({**man(sid, sr, c, ks, rz), "setka_data": str(c.get("data")), "zamorozka_sha": zam.get(sid), **(meta or {})}
                                                     if rz.setka == SETKA else man(sid, sr, c, ks, rz))
     ps.sreda, srv.CHEKPOINT = (lambda sid, rz=ps.R0: sreda7(sid, rz) if rz.setka == SETKA else staryj[3](sid, rz)), shag
     try:
@@ -101,13 +117,13 @@ def podmeny(zam: dict, shag: int, tochki_fn=None):
 
 
 def progon7(kubs: dict, out, procs: int, n: dict, seed: int = 1, prodolzhit=False, shag: int = SHAG, fast=False, kod_slit=False,
-            zam=None, tochki_fn=None, rezhim=srv.REZHIM) -> dict:
+            zam=None, tochki_fn=None, rezhim=srv.REZHIM, bez_osej=(), meta=None) -> dict:
     """{sid: n, oshibok, sboy, posledniy_i, deti} — srv.progon на rz setka v7, rol sobol, ledger 2.2, чекпоинт каждые shag точек."""
     fdrs = {c.get("fdr") for _, c in kubs.values()}
     if len(fdrs) != 1:
         raise SystemExit(f"fdr в кубах разный: {fdrs}")
     rz = rezhim7(seed, fdrs.pop())
-    with podmeny(zam or {}, shag, tochki_fn):
+    with podmeny(zam or {}, shag, tochki_fn, bez_osej, meta):
         return srv.progon(kubs, out, procs, n, prodolzhit, kod_slit, fast, rezhim=rezhim, rz=rz, ledger=lm.V22)
 
 
@@ -125,18 +141,22 @@ def zamer_semejstva(root: Path, sid: str, n: int, sek: float) -> dict:
     except Exception:  # noqa: BLE001 — psutil не обязателен; пустое поле честнее выдуманного
         uss = None
     b = razmer(Path(root) / sid)
-    return dict(n=n, strok=len(t), sek_na_tochku_sredn=float(np.mean(t)) if t else None, sek_na_tochku_mediana=float(np.median(t)) if t else None,
+    p50, p90 = kvantili(t)
+    return dict(n=n, strok=len(t), sek_na_tochku_p50=p50, sek_na_tochku_p90=p90, sek_na_tochku_sredn=float(np.mean(t)) if t else None, sek_na_tochku_mediana=float(np.median(t)) if t else None,
                 sek_stenka_na_tochku=sek / max(n, 1), rss_pik_mb=round(mb, 1), uss_roditelya_mb=None if uss is None else round(uss, 1),
-                ledger_bajt=b, ledger_bajt_na_1000=int(b * 1000 / max(n, 1)))
+                ledger_bajt=b, ledger_bajt_na_1000=int(b * 1000 / max(n, 1)),
+                ledger_gb_na_1000=int(b * 1000 / max(n, 1)) / 1e9)
 
 
-def pilot(kubs: dict, out: Path, procs: int, n: dict, **kw) -> dict:
-    """Ж-156 п. 2а: каждое семейство отдельным проходом (замер по семействам) → <out>/pilot_zamer.json. RSS — накопленный максимум процессов."""
-    res = {}
+def pilot(kubs: dict, out: Path, procs: int, n: dict, bez_osej=(), semeystva=None, **kw) -> dict:
+    """Ж-156 п. 2а: каждое семейство отдельным проходом (замер по семействам) → <out>/pilot_zamer.json. RSS — накопленный максимум процессов.
+    Пилот-1 (Ж-160 п. 3): bez_osej фиксируются в «выкл.»; пометка pilot/osi_otsutstvuyut/semeystva — в замере и manifest каждого семейства."""
+    res, bez = {}, list(bez_osej)
+    pom = dict(pilot=PILOT1, osi_otsutstvuyut=bez, semeystva=list(semeystva or kubs))
     for s in kubs:
         t0 = time.perf_counter()
-        itog = progon7({s: kubs[s]}, out, procs, {s: n[s]}, **kw)
-        res[s] = {**zamer_semejstva(out, s, itog[s]["n"], time.perf_counter() - t0), "sboy": itog[s]["sboy"]}
+        itog = progon7({s: kubs[s]}, out, procs, {s: n[s]}, bez_osej=bez, meta=pom, **kw)
+        res[s] = {**zamer_semejstva(out, s, itog[s]["n"], time.perf_counter() - t0), "sboy": itog[s]["sboy"], **pom}
     Path(out).mkdir(parents=True, exist_ok=True)
     (Path(out) / ZAMER).write_text(json.dumps(res, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
     return res
@@ -156,13 +176,14 @@ def k3_ssylka(out: Path, v6_root: Path, sids) -> Path:
     return p
 
 
-def main(argv=None) -> int:
+def razbor(argv=None):
     ap = argparse.ArgumentParser(description="Соболь по кубу v7 (период polnaya, ledger 2.2, чекпоинт 10 000)")
     ap.add_argument("--kub", required=True, choices=[SETKA])
     ap.add_argument("--period", required=True, choices=[PERIOD])
     ap.add_argument("--seed", type=int, choices=[1, 2], default=1)
     ap.add_argument("--n1", help="N вместо куба — число для всех или S1=1000,S2=1000")
-    ap.add_argument("--strategii", default=",".join(SEMEJSTVA))
+    ap.add_argument("--strategii", "--semeystva", default=",".join(SEMEJSTVA), help="какие семейства считать (S1,S2,…)")
+    ap.add_argument("--bez-osej", default="", help="оси/константы в «выкл./net/0» (пилот-1): min_uderzhanie,k_okup,otnositelno")
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--procs", type=int, default=srv.procs_po_umolchaniyu())
     ap.add_argument("--chekpoint", type=int, default=SHAG, help="точек между чекпоинтами (v7: 10 000)")
@@ -172,8 +193,19 @@ def main(argv=None) -> int:
     ap.add_argument("--zamorozka", type=Path, help="каталог Морриса v7 (<Sk>/zamorozka.yaml)")
     ap.add_argument("--fast", action="store_true")
     ap.add_argument("--kod-slit", action="store_true")
-    a = ap.parse_args(argv)
-    sids = a.strategii.split(",")
+    return ap.parse_args(argv)
+
+
+def sids_iz(a) -> list:
+    sids = [x for x in a.strategii.split(",") if x]
+    if set(sids) - set(SEMEJSTVA):
+        raise SystemExit(f"семейства {sorted(set(sids) - set(SEMEJSTVA))} не в v7 ({','.join(SEMEJSTVA)}) — отказ")
+    return sids
+
+
+def main(argv=None) -> int:
+    a = razbor(argv)
+    sids = sids_iz(a)
     if a.k3_v6:
         print("к3 v7 = ссылка на v6:", k3_ssylka(a.out, a.k3_v6, sids))
         return 0
@@ -185,7 +217,7 @@ def main(argv=None) -> int:
         n = n_po_sid(kubs, a.n1)
         kw = dict(seed=a.seed, prodolzhit=a.prodolzhit, shag=a.chekpoint, fast=a.fast, kod_slit=a.kod_slit, zam=zam)
         if a.pilot:
-            print(json.dumps(pilot(kubs, a.out, a.procs, n, **kw), ensure_ascii=False, indent=1))
+            print(json.dumps(pilot(kubs, a.out, a.procs, n, bez_osej=[x for x in a.bez_osej.split(",") if x], semeystva=sids, **kw), ensure_ascii=False, indent=1))
             return 0
         itog = progon7(kubs, a.out, a.procs, n, **kw)
     for s, v in itog.items():

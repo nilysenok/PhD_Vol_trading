@@ -82,7 +82,7 @@ def test_g2_mutatsiya_os_ne_fiksiruetsya_lovitsya(sred, monkeypatch):
 def test_bez_osej_pusto_tochki_kak_v_v6(sred):
     out, _, ocen = pilot(sred)
     assert all(p["min_uderzhanie"] == 2 and p["k_okup"] == 3 for p in ocen)
-    assert "osi_otsutstvuyut" not in manifest(out) and "pilot" not in manifest(out)
+    assert manifest(out)["osi_otsutstvuyut"] == [] and manifest(out)["pilot"] == "пилот-1"
 
 
 def test_g3_semeystva_tolko_s1():
