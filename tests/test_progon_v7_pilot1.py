@@ -130,6 +130,35 @@ def test_mutatsiya_konstanta_ne_peredana_lovitsya(monkeypatch):
     assert sobrat_ocenshchik(monkeypatch, "S1") != 2
 
 
+SEMYI = ("S1", "S6", "S10", "S8")
+
+
+def sem5(sid, seed):
+    kub = p7.zagruzit_kubi([sid], 1)[sid][1]
+    return kub, p7.tochki_semya(kub, 0, 5, p7.rezhim7(seed, kub.get("fdr")))
+
+
+@pytest.mark.parametrize("sid", SEMYI)
+def test_sempler_real_kub_5_tochek_proveryayutsya_i_determinirovany(sid):
+    kub, t1 = sem5(sid, 1)
+    _, t1b = sem5(sid, 1)
+    assert 0 < len(t1) <= 5 and t1 == t1b
+    m = p7.semya(sid)
+    for _, pt in t1:
+        assert m.canon_v7b(sid, pt, kub) == pt if hasattr(m, "tochki_v7b") else m.canon_v7(sid, pt, kub) == pt   # уже канон
+    m.proverit(kub)
+
+
+@pytest.mark.parametrize("sid", SEMYI)
+def test_mutatsiya_drugoj_seed_te_zhe_tochki_lovitsya(sid, monkeypatch):
+    _, a = sem5(sid, 1)
+    _, b = sem5(sid, 2)
+    assert a != b                                                                       # seed действует
+    monkeypatch.setattr(p7, "rezhim7", lambda seed, fdr, rol="sobol": p7.ps.Rezhim("v7", "polnaya", "seed", False, fdr, rol))   # подложено: seed игнорируется
+    _, c = sem5(sid, 2)
+    assert c == a and c != b                                                             # мутация видна тем же тестом
+
+
 def test_kvantili_chistaya_funkciya():
     assert p7.kvantili([1.0, 2.0, 3.0, 4.0, 5.0]) == (3.0, pytest.approx(4.6))
     assert p7.kvantili([]) == (None, None)

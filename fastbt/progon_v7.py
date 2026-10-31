@@ -2,8 +2,7 @@
 Данных не читает. Что добавляет v7: setka v7 (ledger 2.2, manifest.setka = c["setka"] куба), период `polnaya` (прогрев 26.08.2014, оценка 2017–27.02.2026,
 зона данных wf), чекпоинт каждые SHAG = 10 000 точек (progon_server.CHEKPOINT = 5 000 — на время прохода подменяется, v5/v6 не затронуты),
 пилот `--n1 1000` по каждому семейству с замером в pilot_zamer.json, к3 v7 = ссылка на ledger v6 (k3_ssylka.json), не пересчёт.
-Куб и точки — fastbt.canon_v7 (лист V7-1b; контракт: load_kub(sid, каталог), proverit(kub), tochki_sobol(kub, n0, n1, seed, zam) → [(i, точка)]);
-пока модуля нет — отказ, не молчаливый счёт. Запуск: python3 -m fastbt.progon_v7 --kub v7 --period polnaya --seed 1 --n1 1000 --out <каталог> --pilot."""
+Куб и точки — fastbt.canon_v7 (S1–S6) и canon_v7b (S8–S12): load_kub, proverit, один сэмплер tochki_v7 (для S8–S12 через tochki_v7b). Запуск: python3 -m fastbt.progon_v7 --kub v7 --period polnaya --seed 1 --n1 1000 --out <каталог> --pilot."""
 from __future__ import annotations
 
 import argparse
@@ -70,6 +69,19 @@ def canon7():
         raise SystemExit(f"{CANON} (лист V7-1b) не слит — куб и точки v7 читать нечем — отказ") from e
 
 
+def semya(sid: str):
+    """Модуль канона семьи: S1–S6 — canon_v7, S8–S12 — canon_v7b (оба с load_kub, proverit)."""
+    cn = canon7()
+    return importlib.import_module(CANON + "b") if sid in importlib.import_module(CANON + "b").SIDS_B else cn
+
+
+def tochki_semya(kub: dict, n0: int, n1: int, rz) -> list:
+    """[(i, точка)] — единственный сэмплер Соболя v7 (canon_v7.tochki_v7; для S8–S12 через canon_v7b.tochki_v7b), оси v7 открыты (GOTOVY_V7)."""
+    m = semya(kub["sid"])
+    f = m.tochki_v7b if hasattr(m, "tochki_v7b") else m.tochki_v7
+    return f(kub, n0, n1, rz.seed, canon7().GOTOVY_V7)[0]
+
+
 def kub_put7(sid: str) -> Path:
     return KUB7.with_name(f"kub_{sid}.yaml")
 
@@ -80,13 +92,14 @@ def zona_ctx(period: str):
     return zona.zone_ctx("wf") if period in ("wf", PERIOD) else contextlib.nullcontext()
 
 
-def rezhim7(seed: int, fdr, rol: str = "sobol") -> ps.Rezhim:
-    return ps.Rezhim(SETKA, PERIOD, "seed2" if seed == 2 else "seed", False, fdr, rol)
+def rezhim7(seed: int, fdr, rol: str = "sobol", period: str = PERIOD) -> ps.Rezhim:
+    return ps.Rezhim(SETKA, period, "seed2" if seed == 2 else "seed", False, fdr, rol)
 
 
 def zagruzit_kubi(sids, seed: int) -> dict:
-    cn, kubs = canon7(), {}
+    kubs = {}
     for s in sids:
+        cn = semya(s)
         c = cn.load_kub(s, kub_put7(s).parent)
         cn.proverit(c)
         if c.get("setka") != SETKA:
@@ -108,7 +121,8 @@ def sreda7(sid: str, rz: ps.Rezhim = ps.R0):
     if ps._W.get("sid") != (sid, rz):
         ps._W.pop("sreda", None)
         sr = ps.fabrika(sid) if ps.fabrika else ps.fabrika_real(sid, rz)
-        period_v2.proverit_chtenie("wf")
+        if rz.period != "train4":                          # train4 (сухой прогон до листа «зона») — разработочный, отметка не нужна
+            period_v2.proverit_chtenie("wf")
         verh = str(np.datetime64(period_v2.PERIODY[rz.period].konec.date()) + 1)
         if sr.daty.size == 0 or sr.daty.max() >= np.datetime64(verh):
             raise ValueError(f"{sid}: в рядах есть даты ≥ {verh} — отказ")
@@ -122,7 +136,7 @@ def sreda7(sid: str, rz: ps.Rezhim = ps.R0):
 def podmeny(zam: dict, shag: int, tochki_fn=None, bez_osej=(), meta=None):
     """На время прохода: путь куба, точки, manifest (+ setka_data, zamorozka_sha), среда, шаг чекпоинта. Дети (fork) наследуют; выход — всё назад."""
     staryj, man, kp = (ps.kub_put, ps.tochki, ps.manifest, ps.sreda, srv.CHEKPOINT), ps.manifest, ps.kub_put
-    tf = tochki_fn or (lambda kub, n0, n1, rz: canon7().tochki_sobol(kub, n0, n1, rz.seed, zam.get(kub["sid"])))
+    tf = tochki_fn or tochki_semya                 # zam (заморозка Морриса) в сэмплер Соболя не входит — только в manifest
     tf = fiksirovat(tf, bez_osej)
     ps.kub_put = lambda sid, rz=ps.R0: kub_put7(sid) if rz.setka == SETKA else kp(sid, rz)
     ps.tochki = lambda kub, n0, n1, rz=ps.R0: tf(kub, n0, n1, rz) if rz.setka == SETKA else staryj[1](kub, n0, n1, rz)
@@ -138,12 +152,12 @@ def podmeny(zam: dict, shag: int, tochki_fn=None, bez_osej=(), meta=None):
 
 
 def progon7(kubs: dict, out, procs: int, n: dict, seed: int = 1, prodolzhit=False, shag: int = SHAG, fast=False, kod_slit=False,
-            zam=None, tochki_fn=None, rezhim=srv.REZHIM, bez_osej=(), meta=None) -> dict:
+            zam=None, tochki_fn=None, rezhim=srv.REZHIM, bez_osej=(), meta=None, period: str = PERIOD) -> dict:
     """{sid: n, oshibok, sboy, posledniy_i, deti} — srv.progon на rz setka v7, rol sobol, ledger 2.2, чекпоинт каждые shag точек."""
     fdrs = {c.get("fdr") for _, c in kubs.values()}
     if len(fdrs) != 1:
         raise SystemExit(f"fdr в кубах разный: {fdrs}")
-    rz = rezhim7(seed, fdrs.pop())
+    rz = rezhim7(seed, fdrs.pop(), period=period)
     with podmeny(zam or {}, shag, tochki_fn, bez_osej, meta):
         return srv.progon(kubs, out, procs, n, prodolzhit, kod_slit, fast, rezhim=rezhim, rz=rz, ledger=lm.V22)
 
@@ -200,7 +214,7 @@ def k3_ssylka(out: Path, v6_root: Path, sids) -> Path:
 def razbor(argv=None):
     ap = argparse.ArgumentParser(description="Соболь по кубу v7 (период polnaya, ledger 2.2, чекпоинт 10 000)")
     ap.add_argument("--kub", required=True, choices=[SETKA])
-    ap.add_argument("--period", required=True, choices=[PERIOD])
+    ap.add_argument("--period", required=True, choices=[PERIOD, "train4"], help="train4 — только сухой прогон до листа «зона»")
     ap.add_argument("--seed", type=int, choices=[1, 2], default=1)
     ap.add_argument("--n1", help="N вместо куба — число для всех или S1=1000,S2=1000")
     ap.add_argument("--strategii", "--semeystva", default=",".join(SEMEJSTVA), help="какие семейства считать (S1,S2,…)")
@@ -236,7 +250,7 @@ def main(argv=None) -> int:
     with zona_ctx(a.period):
         kubs = zagruzit_kubi(sids, a.seed)
         n = n_po_sid(kubs, a.n1)
-        kw = dict(seed=a.seed, prodolzhit=a.prodolzhit, shag=a.chekpoint, fast=a.fast, kod_slit=a.kod_slit, zam=zam)
+        kw = dict(seed=a.seed, prodolzhit=a.prodolzhit, shag=a.chekpoint, fast=a.fast, kod_slit=a.kod_slit, zam=zam, period=a.period)
         if a.pilot:
             print(json.dumps(pilot(kubs, a.out, a.procs, n, bez_osej=[x for x in a.bez_osej.split(",") if x], semeystva=sids, **kw), ensure_ascii=False, indent=1))
             return 0
