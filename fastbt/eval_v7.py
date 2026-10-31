@@ -45,12 +45,15 @@ class Ist7:
     b10: dict | None = None
     panel: object | None = None
     otn: object | None = None          # eval_v7_otn.OtnIst: IMOEX и карта секторов оси otnositelno (S1–S4); в sha не входит — ключ ("otn", …)
+    b10_real: dict | None = None       # те же 10-минутки без поправки на дивиденды: цена исполнения cena_T (#370); None — только синтетика
 
     @property
     def sha(self) -> str:
         h = hashlib.sha256()
         for t in sorted(self.b10 or {}):
             h.update(t.encode() + pd.util.hash_pandas_object(self.b10[t], index=True).to_numpy().tobytes())
+        for t in sorted(self.b10_real or {}):
+            h.update(b"real:" + t.encode() + pd.util.hash_pandas_object(self.b10_real[t], index=True).to_numpy().tobytes())
         pn = self.panel
         if pn is not None and hasattr(pn, "c"):
             h.update(pd.util.hash_pandas_object(pn.c, index=True).to_numpy().tobytes())

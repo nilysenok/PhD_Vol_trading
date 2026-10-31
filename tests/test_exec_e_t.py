@@ -1,7 +1,7 @@
 """Л6.3 куба v7 (Ж-146 п. 6, Ж-153 п. 1): вход в T того же дня в слое исполнения (fastbt/exec_e_t.py, Params.vhod_T).
 Синтетика с известным ответом, без сети. 5-минутки 09:50..18:55; 10-минутки строятся из них (open10 = o5(m), close10 = c5(m+5)).
 G1 выкл. = v6 побайтно; G2 вход в T по cena_T; G3 мутации «цена/бар после T»; G4 мутация «вход в баре сигнала вне T» (№ 55, Д2);
-G5 T = 18:40 — close бара 18:40; G6 нет бара T — нет сделки (без ffill, Д4); + быстрый слой отдаёт такие точки эталону.
+G5 T = 18:40 — open бара 18:40, без бара — close дня; G6 нет бара ≥ T — нет сделки (без ffill, Д4), бар T пропущен — open следующего; + быстрый слой отдаёт такие точки эталону.
 python3 -m pytest tests/test_exec_e_t.py -q"""
 import numpy as np
 import pandas as pd
@@ -108,23 +108,50 @@ def test_g4_mutaciya_vhod_v_bare_signala_vne_T_lovitsya(monkeypatch):
     assert not _ok(r, 720, _o(1, 720)) and r.trades[0].entry_px == _day(1).c[-1]
 
 
-def test_g5_18_40_close_bara_1840():
-    r = _run([0, 1, 1], T="18:40")
-    px = _o(1, 1125) + 0.25                                   # close 10-мин бара 18:40 = close 5-мин бара 18:45
-    assert _ok(r, 1125, px) and px != _o(1, 1120)
-    assert r.trades[0].entry_px == _cena("18:40")[1]
-    assert not _ok(_run([0, 1, 1], T="18:40", cena=_cena("18:30")), 1125, px)    # мутация: open вместо close / другой бар
+def _hvost(k, ot):
+    return _day(k, drop=tuple(m for m in MODS if m >= ot))
 
 
-def test_g6_net_bara_T_net_sdelki_bez_podstanovki():
-    cena = _cena("12:00", drop={1: (720,)})
+def test_g5_18_40_open_bara_1840():
+    """Л6.3, решение дирижёра 31.10: T = 18:40 при наличии бара 18:40 — его open (как у любого T), не close бара, закрывающегося в T."""
+    cena = np.array([_o(k, 1120) for k in range(3)])
+    r = _run([0, 1, 1], T="18:40", cena=cena)
+    assert _ok(r, 1120, _o(1, 1120)) and _o(1, 1120) != _o(1, 1125) + 0.25
+    mut = np.array([_o(k, 1115) + 0.25 for k in range(3)])    # мутация: close бара, закрывающегося в T (цена сигнала, Д2)
+    assert not _ok(_run([0, 1, 1], T="18:40", cena=mut), 1120, _o(1, 1120))
+    mut2 = np.array([_o(k, 1125) + 0.25 for k in range(3)])   # мутация: close бара 18:45 (прежняя семантика)
+    assert not _ok(_run([0, 1, 1], T="18:40", cena=mut2), 1120, _o(1, 1120))
+
+
+def test_g5_18_40_bez_bara_close_dnya_a_ne_net_sdelki(monkeypatch):
+    """Бара с началом ≥ 18:40 нет (как у AFLT): вход по close дня основной сессии (аукцион 18:50), на последнем баре дня; не «нет сделки»."""
+    days = [_hvost(k, 1120) for k in range(3)]
+    cena = np.array([d.c[-1] for d in days])
+    t = _run([0, 1, 1], T="18:40", days=days, cena=cena).trades[0]
+    assert t.entry_day == 1 and t.entry_bar == len(days[1].c) - 1 and t.entry_px == days[1].c[-1] == _o(1, 1115) + 0.25
+    monkeypatch.setattr(exec_e_t, "AUKCION", 10 ** 6)         # мутация: «18:40 без бара — нет сделки» (прежняя семантика)
+    assert exec_e_t.bar_vhoda(days[1], 1120) is None
+    assert _run([0, 1, 1], T="18:40", days=days, cena=cena).trades == []
+
+
+def test_g6_net_baru_vyshe_T_net_sdelki_bez_podstanovki():
+    """T < 18:40, день оборван до T (бара ≥ T нет вовсе): цены нет, сделки нет, ffill нет (Д4)."""
+    cena = _cena("12:00", drop={1: tuple(range(720, 1140, 10))})
     assert np.isnan(cena[1]) and np.isfinite(cena[[0, 2]]).all()
-    r = _run([0, 1, 1], cena=cena)
+    d5 = [_day(0), _hvost(1, 720), _day(2)]
+    r = _run([0, 1, 1], cena=cena, days=d5)
     assert r.trades[0].entry_day == 2 and len(r.trades) == 1                   # день 1 пропущен, ffill нет
     with pytest.raises(ValueError):                           # мутация ffill: «чужая» цена дня 0 вне бара T дня 1 — инвариант _v_bare её ловит
         _run([0, 1, 1], cena=pd.Series(cena).ffill().to_numpy())
-    d5 = [_day(0), _day(1, drop=(720,)), _day(2)]             # цена есть, а 5-мин бара T в данных нет — тоже без сделки
-    assert _run([0, 1, 1], days=d5).trades[0].entry_day == 2
+
+
+def test_g6_bar_T_propushen_vhod_po_open_pervogo_bara_posle_T():
+    """Бара ровно в T нет, но дальше есть: вход по open первого бара ≥ T (Л6.3), не по цене отсутствующего бара T."""
+    d5 = [_day(0), _day(1, drop=(720,)), _day(2)]
+    t = _run([0, 1, 1], days=d5, cena=np.array([_o(k, 725) for k in range(3)])).trades[0]
+    assert t.entry_day == 1 and t.entry_bar == d5[1].t.tolist().index(725) and t.entry_px == _o(1, 725) == d5[1].o[t.entry_bar]
+    mut = _run([0, 1, 1], days=d5, cena=np.array([_o(k, 720) for k in range(3)])).trades[0]      # мутация: цена пропущенного бара T
+    assert mut.entry_px != d5[1].o[mut.entry_bar]
 
 
 def _razvorot_ok(r):

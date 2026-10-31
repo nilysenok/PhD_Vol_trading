@@ -31,13 +31,16 @@ def _px(k, m):
     return 100.0 + k + (m - 590) / 1000.0
 
 
-def _b10():
-    rows = [(d, s, _px(k, 600 + 10 * s), _px(k, 610 + 10 * s)) for k, d in enumerate(DATES) for s in range(54)]
+GAP = 0.15        # close 10-мин бара ≠ open следующего: цена сигнала (close бара, закрывшегося в T) отличима от цены входа
+
+
+def _b10(skoro=1.0, do_slota=54):
+    rows = [(d, s, skoro * _px(k, 600 + 10 * s), skoro * (_px(k, 610 + 10 * s) + GAP)) for k, d in enumerate(DATES) for s in range(do_slota)]
     return pd.DataFrame(rows, columns=["date", "slot", "open", "close"])
 
 
-def _days():
-    return [Day(o := _px(k, MODS), o + 0.2, o - 0.2, o + 0.1, False, MODS) for k in range(NT)]
+def _days(do_bara=len(MODS)):
+    return [Day(o := _px(k, MODS[:do_bara]), o + 0.2, o - 0.2, o + 0.1, False, MODS[:do_bara]) for k in range(NT)]
 
 
 def _ryad(shift=0):
@@ -52,9 +55,9 @@ def _td(name="T"):
     return TickerData(name, DATES.to_numpy("datetime64[ns]"), x, x, x, x, np.ones(NT), np.zeros(NT))
 
 
-def _ev(sid="S10"):
+def _ev(sid="S10", ist7=None):
     e = object.__new__(EvaluatorV7)
-    e.sid, e.proxy, e.ist7, e._fk, e.v6, e.ist, e._rel, e._dan = sid, eval_v7.PROXY[sid], eval_v7.Ist7(b10={"T": _b10()}), (), {}, IstochnikiV6(), {}, {}
+    e.sid, e.proxy, e.ist7, e._fk, e.v6, e.ist, e._rel, e._dan = sid, eval_v7.PROXY[sid], ist7 or eval_v7.Ist7(b10={"T": _b10()}), (), {}, IstochnikiV6(), {}, {}
     td = _td()
     e.sk = SimpleNamespace(_td={"T": (td, compute_base(td.close, td.high, td.low, td.open, td.volume))}, tickers=["T"])
     e.r5, e._okup_k, e.fdr = None, None, None
@@ -69,8 +72,8 @@ def _fake(mp, shift=0, zapis=None, sig_fn=None):
     mp.setattr(v7_impuls.I, "sila_dnya", lambda b, sid, t_sig="18:30": f(b, sid, t_sig).abs() + 1.0)
 
 
-def _probe(mp, pt):
-    cap, ev = {}, _ev()
+def _probe(mp, pt, ist7=None):
+    cap, ev = {}, _ev(ist7=ist7)
 
     def evaluate(self, q, period, vozm=None):
         self.r5 = SimpleNamespace(nov={}, ext={}, sp=dict(q))
@@ -97,15 +100,15 @@ def _derzhanie(ss):
     return out
 
 
-def _trades(cap, cena=None):
+def _trades(cap, cena=None, days=None):
     sig = _derzhanie(cap["ss"]["T"].ss)
     p = replace(Params(comm=0.0, tau=3), **cap["ext"])
-    return exec_e.run("T", _days(), sig, np.full(NT, 0.01), p, cena_T=cap["cena"]("T", DATES) if cena is None else cena).trades
+    return exec_e.run("T", days or _days(), sig, np.full(NT, 0.01), p, cena_T=cap["cena"]("T", DATES) if cena is None else cena).trades
 
 
 def _cena_verna(cena, T):
-    """Независимо от оценщика: open 10-мин бара, начинающегося в T (18:40 — его close), цена единой формулы _px."""
-    ozhid = np.array([_px(k, MIN[T] + (10 if T == "18:40" else 0)) for k in range(NT)])
+    """Независимо от оценщика: open 10-мин бара, начинающегося в T (Л6.3, и для 18:40, пока бар есть), цена единой формулы _px."""
+    ozhid = np.array([_px(k, MIN[T]) for k in range(NT)])
     return bool(np.allclose(cena, ozhid, atol=1e-12, rtol=0))
 
 
@@ -120,7 +123,7 @@ def test_g1_vhod_T_chislo_znak_cena_T_vyhod_close(monkeypatch, T):
     tr = _trades(cap)
     assert [t.d_sig for t in tr] == [310, 330, 350] and [t.side for t in tr] == [1, -1, 1]       # ручной счёт: 3 сигнала, все взяты
     assert [t.entry_day for t in tr] == [310, 330, 350], "вход в T того же дня"
-    assert all(_days()[t.entry_day].t[t.entry_bar] == (1125 if T == "18:40" else MIN[T]) for t in tr)
+    assert all(_days()[t.entry_day].t[t.entry_bar] == MIN[T] for t in tr)
     assert all(t.entry_px == cap["cena"]("T", DATES)[t.entry_day] for t in tr)
     assert [t.exit_day for t in tr] == [313, 333, 353] and all(t.exit_px == _days()[t.exit_day].c[-1] for t in tr)
     assert [t.side * (t.exit_px - t.entry_px) > 0 for t in tr] == [True, False, True]
@@ -143,11 +146,38 @@ def test_g3_mutaciya_cena_posle_T_lovitsya(monkeypatch, T):
 
 
 @pytest.mark.parametrize("T", TS)
-def test_g3_mutaciya_vhod_v_T_po_close_lovitsya(monkeypatch, T):
+def test_g3_mutaciya_vhod_po_close_bara_zakryvayushchegosya_v_T_lovitsya(monkeypatch, T):
+    """Вход в T по close бара, закрывающегося в T (цена сигнала, Д2), вместо open бара, начинающегося в T."""
     _fake(monkeypatch)
-    monkeypatch.setattr(SI, "AUKCION", MIN[T] if T != "18:40" else 0)       # 17:00, 18:00 — по close; 18:40 — по open (правило наоборот)
+    orig = SI.cena_t
+    monkeypatch.setattr(SI, "cena_t", lambda b10, dates, t: orig(b10.assign(open=b10.groupby("date")["close"].shift(1).fillna(b10["open"])), dates, t))
     cap = _probe(monkeypatch, dict(tau=3, vhod="T", T=T))
     assert not _cena_verna(cap["cena"]("T", DATES), T)
+
+
+def test_g1_18_40_bez_bara_vhod_po_close_dnya_na_poslednem_bare(monkeypatch):
+    """Бара с началом ≥ 18:40 нет в данных: вход в тот же день по close дня основной сессии, на последнем 5-мин баре; сделок столько же."""
+    _fake(monkeypatch)
+    ist7 = eval_v7.Ist7(b10={"T": _b10(do_slota=52)})                          # 10-мин слоты до 18:30 включительно (слот 51)
+    days = _days(do_bara=MODS.tolist().index(1120))                            # 5-мин бары до 18:15 включительно
+    cap = _probe(monkeypatch, dict(tau=3, vhod="T", T="18:40"), ist7=ist7)
+    cena = cap["cena"]("T", DATES)
+    assert np.allclose(cena, [_px(k, 1120) + GAP for k in range(NT)], atol=1e-12, rtol=0)      # close слота 51 = close дня
+    tr = _trades(cap, days=days)
+    assert [t.entry_day for t in tr] == [310, 330, 350] and all(t.entry_bar == len(days[0].c) - 1 and t.entry_px == cena[t.entry_day] for t in tr)
+    monkeypatch.setattr(SI, "AUKCION", 10 ** 6)                                # мутация: «нет бара → нет сделки» (прежняя семантика)
+    cap2 = _probe(monkeypatch, dict(tau=3, vhod="T", T="18:40"), ist7=ist7)
+    assert np.isnan(cap2["cena"]("T", DATES)).all() and _trades(cap2, days=days) == []
+
+
+def test_g3_ispolnenie_po_realnoj_lente_a_ne_skorrektirovannoj(monkeypatch):
+    """Цена входа — из b10_real (без дивидендной поправки, #370), даже если скорректированная b10 отличается."""
+    _fake(monkeypatch)
+    ist7 = eval_v7.Ist7(b10={"T": _b10(skoro=0.9)}, b10_real={"T": _b10()})
+    cap = _probe(monkeypatch, dict(tau=3, vhod="T", T="17:00"), ist7=ist7)
+    assert _cena_verna(cap["cena"]("T", DATES), "17:00")
+    mut = eval_v7.Ist7(b10={"T": _b10(skoro=0.9)}, b10_real={"T": _b10(skoro=0.9)})      # мутация: исполнительная лента = скорректированная
+    assert not _cena_verna(_probe(monkeypatch, dict(tau=3, vhod="T", T="17:00"), ist7=mut)["cena"]("T", DATES), "17:00")
 
 
 def test_g3_mutaciya_vhod_po_close_dnya_lovitsya(monkeypatch):

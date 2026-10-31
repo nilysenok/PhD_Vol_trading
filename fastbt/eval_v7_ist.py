@@ -35,10 +35,11 @@ class IstochnikiV7:
     panel: Panel
     fon: dict
     sha: str = ""                  # Д5: хэш всех рядов; входит в ключ точки (как IstochnikiV6.sha)
+    b10_real: dict | None = None   # 10-минутки без поправки на дивиденды: цена исполнения cena_T (#370)
 
     def ist7(self) -> Ist7:
         from fastbt.eval_v7_otn import OtnIst
-        return Ist7(b10=self.b10, panel=self.panel, otn=OtnIst(imoex=self.panel.imoex.astype(float)))     # карта секторов проекта (karta=None)
+        return Ist7(b10=self.b10, panel=self.panel, otn=OtnIst(imoex=self.panel.imoex.astype(float)), b10_real=self.b10_real)     # карта секторов проекта (karta=None)
 
 
 def korr10(b: pd.DataFrame, f: pd.Series) -> pd.DataFrame:
@@ -61,12 +62,15 @@ def _h(h, x) -> None:
         h.update(str(a.shape).encode())
 
 
-def sha_istochnikov(b10: dict, panel: Panel, fon: dict) -> str:
-    """Д5: sha256 значений, индексов и имён всех рядов источников. Подмена любого значения меняет хэш."""
+def sha_istochnikov(b10: dict, panel: Panel, fon: dict, b10_real: dict | None = None) -> str:
+    """Д5: sha256 значений, индексов и имён всех рядов источников (в т.ч. реальных 10-минуток). Подмена любого значения меняет хэш."""
     h = hashlib.sha256()
     for t in sorted(b10):
         h.update(b"b10:" + t.encode())
         _h(h, b10[t])
+    for t in sorted(b10_real or {}):
+        h.update(b"real:" + t.encode())
+        _h(h, b10_real[t])
     h.update(b"panel:" + ",".join(panel.tikery).encode())
     for x in (panel.c, panel.imoex, panel.daty, panel.metki, panel.sigma, panel.ok):
         _h(h, x)
@@ -77,10 +81,12 @@ def sha_istochnikov(b10: dict, panel: Panel, fon: dict) -> str:
     return h.hexdigest()
 
 
-def sobrat(raw: dict, imoex: pd.Series, karta: pd.DataFrame, tikery, nachalo, konec, korp=korpsobytiya, mnozh=_mnozhitel) -> IstochnikiV7:
-    """raw {тикер: 10-минутки (timestamp, OHLCV)}, imoex — close 18:50 по дням, karta (ticker, indeks), [nachalo; konec) — окно чтения."""
+def sobrat(raw: dict, imoex: pd.Series, karta: pd.DataFrame, tikery, nachalo, konec, korp=korpsobytiya, mnozh=_mnozhitel, ryady_s=None, ryady_e=None) -> IstochnikiV7:
+    """raw {тикер: 10-минутки (timestamp, OHLCV)}, imoex — close 18:50 по дням, karta (ticker, indeks), [nachalo; konec) — окно чтения.
+    ryady_e — последняя дата рядов оценщика (после границы чтения — строки NaN).
+    ryady_s — первая дата рядов оценщика: панель покрывает все её дни (до первой 10-минутки — строки NaN), иначе S8/S9 дают KeyError «дат вне панели»."""
     tk, nachalo, konec = list(tikery), pd.Timestamp(nachalo), pd.Timestamp(konec)
-    cl, op, b10 = {}, {}, {}
+    cl, op, b10, b10r = {}, {}, {}, {}
     for t in tk:
         b = korp(raw[t][lambda x: (x["timestamp"] >= nachalo) & (x["timestamp"] < konec)], t)     # корпсобытия до агрегации
         dd = d18.aggregate(b, t).set_index("date")
@@ -89,8 +95,13 @@ def sobrat(raw: dict, imoex: pd.Series, karta: pd.DataFrame, tikery, nachalo, ko
         bo = b[b["timestamp"].dt.hour * 60 + b["timestamp"].dt.minute == d18.OPEN_MIN]
         op[t] = bo.groupby(bo["timestamp"].dt.normalize())["open"].first()
         b10[t] = bars_agg.prep_10m(korr10(b, f))
+        b10r[t] = bars_agg.prep_10m(b)                       # реальные цены (после корпсобытий, без дивидендной поправки) — для cena_T
     c = pd.DataFrame(cl)[tk]
     c = c[c.notna().sum(axis=1) >= min(MIN_TIK, len(tk))]
+    if ryady_s is not None and pd.Timestamp(ryady_s) < c.index[0]:       # дни рядов оценщика до первой 10-минутки: строки NaN (сигнал в них — прогрев, ok = False)
+        c = c.reindex(pd.date_range(ryady_s, c.index[0] - pd.Timedelta(days=1)).append(c.index))
+    if ryady_e is not None and pd.Timestamp(ryady_e) > c.index[-1]:     # дни рядов оценщика после границы чтения: строки NaN (сигнал 0, вход закрыт)
+        c = c.reindex(c.index.append(pd.date_range(c.index[-1] + pd.Timedelta(days=1), ryady_e)))      # все календарные дни: торгуются и субботы
     daty, im = pd.DatetimeIndex(c.index), imoex[imoex.index < konec].reindex(c.index)
     o = pd.DataFrame(op)[tk].reindex(c.index)
     metki = ks.sektor_na_d(karta.assign(s=pd.Timestamp("2000-01-01")), daty, tk)
@@ -98,26 +109,32 @@ def sobrat(raw: dict, imoex: pd.Series, karta: pd.DataFrame, tikery, nachalo, ko
     pn = Panel(daty=daty.values, tikery=tk, c=c, imoex=im, metki=metki, sigma=sigma,
                ok=o.notna().shift(-ks.LAG, fill_value=False).to_numpy())
     fon = {r: otn.fon_ryad(c, im, metki, r) for r in REZHIMY_OTN}
-    return IstochnikiV7(b10=b10, panel=pn, fon=fon, sha=sha_istochnikov(b10, pn, fon))
+    return IstochnikiV7(b10=b10, panel=pn, fon=fon, sha=sha_istochnikov(b10, pn, fon, b10r), b10_real=b10r)
 
 
-def zagruzit(period: str, tikery, main: Path | None = None, fajly=None) -> IstochnikiV7:
-    """Источники v7 из файлов (< конец + 1 день). period = polnaya | wf; замок wf — `proverit_chtenie`; иначе отказ."""
+def zagruzit(period: str, tikery, main: Path | None = None, fajly=None, *, dev: bool = False) -> IstochnikiV7:
+    """Источники v7 из файлов (< конец + 1 день). period = polnaya | wf; замок wf — `proverit_chtenie`; иначе отказ.
+    dev=True допускает train4 (сухой прогон progon_v7): граница чтения — iv6.konec (dev-зона < 2022). Панель — с START (первая дата рядов оценщика)."""
     from fastbt import istochniki_v6 as iv6
-    if period not in PERIOD_FAJL and period != "wf":
-        raise NotImplementedError(f"период {period!r}: источники v7 читаются только для polnaya (wf)")
+    if period not in PERIOD_FAJL and period != "wf" and not (dev and period == "train4"):
+        raise NotImplementedError(f"период {period!r}: источники v7 читаются только для polnaya (wf); train4 — с dev=True")
     if period == POLNAYA:              # до акта владельца (Ж-155) — строго < 2025-01-01 на чтении, а не по границам wf (2026-03-01)
         period_v2.proverit_chtenie(POLNAYA, otmetka=period_v2.OTMETKA)
         end = period_v2.chtenie_konec(POLNAYA)
         f = fajly or iv6.Fajly(end, main, None)      # period=None: indeks() читает по f.end, а не по granitsa("wf")
-        p = POLNAYA
+        p, ryady_e = POLNAYA, period_v2.PERIODY["wf"].konec           # ряды оценщика идут до конца зоны wf; панель после границы чтения — NaN
     else:
         p = PERIOD_FAJL.get(period, period)
-        f = fajly or iv6.Fajly(iv6.konec(p), main, p)
+        ryady_e = iv6.konec(p) - pd.Timedelta(days=1)                 # последний день рядов оценщика (train4: dev-зона < 2022)
+        f = fajly or iv6.Fajly(period_v2.chtenie_konec(p) if period == "train4" else iv6.konec(p), main, p)    # train4: чтение < 2020-01-01
     raw = {t: f.akcii(t) for t in tikery}
     b = f.indeks("imoex")
     if b is None:
         raise FileNotFoundError("IMOEX: нет файла баров")
     im = d18.aggregate(b, "IMOEX").set_index("date")["close"].astype(float)
     karta = pd.read_csv(otn.KARTA_CSV, usecols=["ticker", "indeks"])
-    return sobrat(raw, im, karta, tikery, period_v2.PERIODY[p].progrev, f.end)
+    s = sobrat(raw, im, karta, tikery, period_v2.PERIODY[p].progrev, f.end,
+               ryady_s=period_v2.PERIODY["wf"].progrev, ryady_e=ryady_e)     # панель — на все дни рядов оценщика
+    for b in (*s.b10.values(), *(s.b10_real or {}).values()):
+        b.attrs["period"] = p                          # граница ленты S10–S12 — chtenie_konec(p), явно (impuls_v7.granitsa)
+    return s

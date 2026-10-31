@@ -168,12 +168,31 @@ def _b10(dates, slot_open):
     return pd.DataFrame(rows, columns=["date", "slot", "open", "close"])
 
 
-def test_cena_t_open_bara_T_i_close_dlya_18_40_nan_bez_bara():
-    d = pd.bdate_range("2019-03-04", periods=3)
-    b = _b10(d[:2], {(17 * 60 - 600) // 10: 50.0, (18 * 60 + 40 - 600) // 10: 70.0})
-    c = SI.cena_t(b, d, "17:00")
-    assert c[0] == c[1] == 50.0 and np.isnan(c[2])
-    assert SI.cena_t(b, d, "18:40")[0] == 71.0
+S17, S1840, S1830 = (17 * 60 - 600) // 10, (18 * 60 + 40 - 600) // 10, (18 * 60 + 30 - 600) // 10
+
+
+def test_cena_t_open_pervogo_bara_ne_ranshe_T_i_close_dnya_dlya_18_40_bez_bara():
+    """Л6.3 (решение дирижёра 31.10): open первого бара ≥ T; T = 18:40 без бара — close дня; T < 18:40 без бара ≥ T — NaN (Д4)."""
+    d = pd.bdate_range("2019-03-04", periods=4)
+    b = pd.concat([_b10(d[:1], {S17: 50.0, S1840: 70.0}),            # день 0: есть бар T и бар 18:40
+                   _b10(d[1:2], {S17 + 3: 55.0, S1840: 70.0}),       # день 1: бара 17:00 нет, первый ≥ T — 17:30
+                   _b10(d[2:3], {S17 - 2: 40.0, S1830: 60.0})])      # день 2: баров ≥ 17:00 нет до 18:30 включительно; день 3 — лент нет
+    c17 = SI.cena_t(b, d, "17:00")
+    assert c17[0] == 50.0 and c17[1] == 55.0 and c17[2] == 60.0 and np.isnan(c17[3])        # день 2: 18:30 ≥ T, его open; нет ffill
+    c = SI.cena_t(b, d, "18:40")
+    assert c[0] == c[1] == 70.0                               # бар 18:40 есть — его open, не close (71.0)
+    assert c[2] == 61.0 and np.isnan(c[3])                    # бара ≥ 18:40 нет — close дня (последний бар 18:30)
+
+
+def test_cena_t_mutacii_close_bara_v_T_net_bara_net_sdelki_lovyatsya(monkeypatch):
+    d = pd.bdate_range("2019-03-04", periods=2)
+    b = pd.concat([_b10(d[:1], {S17 - 1: 40.0, S17: 50.0, S1840: 70.0}), _b10(d[1:2], {S1830: 60.0})])
+    orig, ok = SI.cena_t, SI.cena_t(b, d, "18:40").tolist()
+    assert ok == [70.0, 61.0]
+    sdvig = b.assign(open=b.groupby("date")["close"].shift(1).fillna(b["open"]))              # мутация: «open» = close бара, закрывающегося в T
+    assert orig(sdvig, d, "17:00")[0] == 41.0 != 50.0 and orig(sdvig, d, "18:40").tolist() != ok
+    monkeypatch.setattr(SI, "AUKCION", 10 ** 6)                # мутация: 18:40 без бара — NaN (прежнее «нет сделки»)
+    assert np.isnan(SI.cena_t(b, d, "18:40")[1])
 
 
 def test_run_rows_cena_T_yavnyj_parametr_ravno_exec_e():

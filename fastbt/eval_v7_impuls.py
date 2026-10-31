@@ -6,8 +6,8 @@ run_rows (eval_v5) cena_T не передавал; (3) у точек S8/S9 не�
 Решение: сигнальные оси точки снимаются ДО разбора и хранятся в `_sg`; на время расчёта sid оценщика = прокси S3 (категория тренд, общие оси
 выхода и риска — куб S3), в точку подставляются S3-заглушки сигнальных осей (семья S3 не вызывается — сигнал даёт `_signals5` по `_sg`).
 Вход — рынком (Params.k = None, vhod_tip = podtverzhdenie, без стоп-заявок и уровней): vhod = d1 и S8/S9 — по open 10:00 дня d+1
-(Params.vhod_open, Д2: не раньше d+1; без него k = None входит по close дня сигнала); vhod = T — Params.vhod_T + cena_T (open 10-мин бара T,
-18:40 — close) из Ist7.b10, день без бара T — NaN (сделки в этот день нет, Д4). cena_T идёт в run_rows явным параметром через `fdr_kw`
+(Params.vhod_open, Д2: не раньше d+1; без него k = None входит по close дня сигнала); vhod = T — Params.vhod_T + cena_T (open первого бара ≥ T; T = 18:40 без бара — close дня) из РЕАЛЬНОЙ ленты Ist7.b10_real
+(сигналы — по скорректированной b10, исполнение — по реальным ценам, #370), день без бара — NaN (сделки в этот день нет, Д4). cena_T идёт в run_rows явным параметром через `fdr_kw`
 (подмены eval_v5.run_rows нет — класс № 43). Выход — флаги SignalSet (close дня i+τ) через positions.
 ↺ S8/S9: stop_nach в кубе нет — берётся якорь S3 («sigma:2.0»), откат — убрать подстановку `STOP_S89`. ❓ для дирижёра.
 Ключ кэша (Д5): к ключу семьи добавляются сигнальные оси точки (`_sg`)."""
@@ -44,11 +44,18 @@ def rasschepit(sid: str, pt: dict) -> tuple[dict, dict]:
 
 
 def cena_t(b10: pd.DataFrame, dates, T: str) -> np.ndarray:
-    """Цена входа в T по датам `dates`: open 10-мин бара, начинающегося в T (18:40 — close); нет бара — NaN (без ffill, Д4)."""
+    """Цена входа в T по датам `dates` (Л6.3, Д2): open первого 10-мин бара, начинающегося в T или позже; для T ≥ 18:40, если такого бара
+    нет, — close дня основной сессии (последний бар дня, аукцион 18:50). Цена сигнала (close бара, закрывшегося в T) не используется.
+    Нет бара (T < 18:40) — NaN (без ffill, Д4)."""
     t = _minuty(T)
-    b = b10[b10["slot"] == (t - SLOT0) // STEP10]
-    c = pd.Series(b["close" if t == AUKCION else "open"].to_numpy(float), index=pd.DatetimeIndex(b["date"]).normalize())
-    return c[~c.index.duplicated(keep="last")].reindex(pd.DatetimeIndex(dates).normalize()).to_numpy(float)
+    dd = pd.DatetimeIndex(b10["date"]).normalize()
+    po = (b10["slot"].to_numpy() >= -(-(t - SLOT0) // STEP10))
+    s = b10[po].assign(d=dd[po]).sort_values(["d", "slot"]).drop_duplicates("d", keep="first").set_index("d")["open"]
+    c = s.reindex(pd.DatetimeIndex(dates).normalize())
+    if t >= AUKCION:
+        z = b10.assign(d=dd).sort_values(["d", "slot"]).drop_duplicates("d", keep="last").set_index("d")["close"]
+        c = c.fillna(z.reindex(c.index))
+    return c.to_numpy(float)
 
 
 def tau_vyhoda(vhod: str, tau: int) -> int:
@@ -90,4 +97,7 @@ class SemyaMixin:
         """kwargs run_rows: к прежним (fdr) добавляется cena_T(тикер, dates) только на время точки со входом в T."""
         kw = super().fdr_kw()
         T = self._cena_T
-        return kw if T is None else {**kw, "cena_T": lambda t, dates: cena_t(self.ist7.b10[t], dates, T)}
+        if T is None:
+            return kw
+        isp = self.ist7.b10_real if self.ist7.b10_real is not None else self.ist7.b10      # исполнение — реальные цены (#370); без b10_real — только синтетика
+        return {**kw, "cena_T": lambda t, dates: cena_t(isp[t], dates, T)}
