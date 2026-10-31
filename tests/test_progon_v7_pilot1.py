@@ -113,6 +113,8 @@ def sobrat_ocenshchik(monkeypatch, sid, bez=()):
     monkeypatch.setattr(e7, "EvaluatorV7", lambda *a, **kw: poluch.update(kw) or poluch)
     monkeypatch.setattr(et, "base_point", lambda s: {})
     monkeypatch.setattr(i6, "zagruzit", lambda per, tik: "ist")
+    import fastbt.eval_v7_ist as e7i
+    monkeypatch.setattr(e7i, "zagruzit", lambda *a, **kw: types.SimpleNamespace(ist7=lambda: "ist7"))      # S1–S4 теперь получают Ist7 (otnositelno)
     inp = types.SimpleNamespace(sk=types.SimpleNamespace(tickers=[]))
     with p7.podmeny({}, 100, lambda *a: [], bez):
         ps.ocenshchik(sid, inp, p7.rezhim7(1, None))
