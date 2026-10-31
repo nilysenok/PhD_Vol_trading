@@ -125,10 +125,11 @@ def tochka(ox: list, row) -> dict:
     return {n: g[c6._indeks(x, len(g), sp.get("p_vykl"))] for (n, g, sp), x in zip(ox, row)}
 
 
-def tochki_v7(kub: dict, n0: int, n1: int, seed: str = "seed", gotovy=c6.GOTOVY) -> tuple:
-    """([(i, канон)], {vybrosheno}): i-я точка Соболя куба v7 (scramble, kub.sobol[seed]) → канон v7."""
-    proverit(kub)
-    ox, s = osi(kub, gotovy), kub["sobol"]
+def tochki_v7(kub: dict, n0: int, n1: int, seed: str = "seed", gotovy=c6.GOTOVY, proverka=None, osi_fn=None, kanon=None) -> tuple:
+    """([(i, канон)], {vybrosheno}): i-я точка Соболя куба v7 (scramble, kub.sobol[seed]) → канон. Один сэмплер на все семьи v7:
+    S8–S12 (canon_v7b) подают свои проверку, оси и канон; по умолчанию — S1–S6."""
+    (proverka or proverit)(kub)
+    ox, s = (osi_fn or osi)(kub, gotovy), kub["sobol"]
     sob = qmc.Sobol(len(ox), scramble=s["scramble"], seed=s[seed])
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -137,7 +138,7 @@ def tochki_v7(kub: dict, n0: int, n1: int, seed: str = "seed", gotovy=c6.GOTOVY)
         u = sob.random(n1 - n0)
     out, vyb = [], 0
     for j, row in enumerate(u):
-        c = canon_v7(kub["sid"], tochka(ox, row), kub)
+        c = (kanon or canon_v7)(kub["sid"], tochka(ox, row), kub)
         if c is None:
             vyb += 1
         else:
