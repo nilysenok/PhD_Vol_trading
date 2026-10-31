@@ -1,16 +1,13 @@
 """Лист s8_s12_boj (31.10): боевой путь S8–S12 для пилота-2. Синтетика, без сети; реальный прогон драйвера — в конце (пропуск без данных).
 Б1 cena_T — из реальной ленты (не скорректированной на дивиденды); Б2 цена T = close последнего бара, закрывающегося ≤ T (17:00, 18:00, 18:40);
-Б3 граница ленты S10–S12 = period_v2.chtenie_konec(polnaya); Б4 ist7 доходит до EvaluatorV7 из progon_v7, панель — с начала рядов.
+Б3 граница ленты S10–S12 = period_v2.chtenie_konec(polnaya). Б4 и G6 (драйвер, панель) — в test_s8_s12_boj_2.py.
 Мутация = подмена функции/параметра, на которой проверка `_ok*` обязана упасть (AssertionError).
 python3 -m pytest tests/test_s8_s12_boj.py -q"""
-import types
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
 
-from fastbt import eval_v7, exec_e, exec_e_t, impuls_v7, period_v2
+from fastbt import exec_e, exec_e_t, impuls_v7, period_v2
 from fastbt import eval_v7_impuls as SI
 from fastbt import eval_v7_ist as E
 from fastbt.eval_v7 import EvaluatorV7, Ist7
@@ -160,59 +157,3 @@ def test_b3_mutatsiya_granitsa_snyata_lovitsya(monkeypatch):
         _ok_granitsa()
 
 
-# ---------------- Б4: ist7 в EvaluatorV7 из progon_v7 ----------------
-def _ocenshchik(monkeypatch, sid, period="polnaya"):
-    import fastbt.etap1 as et
-    import fastbt.istochniki_v6 as i6
-    import fastbt.progon_sobol as ps
-    import fastbt.progon_v7 as p7
-    got = {}
-    monkeypatch.setattr(eval_v7, "EvaluatorV7", lambda *a, **kw: got.update(kw) or got)
-    monkeypatch.setattr(et, "base_point", lambda s: {})
-    monkeypatch.setattr(i6, "zagruzit", lambda per, tik: "ist6")
-    monkeypatch.setattr(E, "zagruzit", lambda per, tik, **kw: types.SimpleNamespace(ist7=lambda: "ist7_" + per))
-    inp = types.SimpleNamespace(sk=types.SimpleNamespace(tickers=["AAA"]))
-    with p7.podmeny({}, 100, lambda *a: []):
-        ps.ocenshchik(sid, inp, p7.rezhim7(1, None, period=period))
-    return got
-
-
-@pytest.mark.parametrize("sid,est", [("S8", True), ("S9", True), ("S10", True), ("S11", True), ("S12", True), ("S1", False), ("S6", False)])
-def test_b4_ist7_podayotsya_tolko_semyam_v7(monkeypatch, sid, est):
-    kw = _ocenshchik(monkeypatch, sid, "train4")
-    assert (kw.get("ist7") == "ist7_train4") is est and (est or "ist7" not in kw)
-
-
-def test_b4_mutatsiya_ist7_ne_podayotsya_lovitsya(monkeypatch):
-    import fastbt.progon_v7 as p7
-    monkeypatch.setattr(p7, "SEMEJSTVA_IST7", ())
-    with pytest.raises(AssertionError):
-        test_b4_ist7_podayotsya_tolko_semyam_v7(monkeypatch, "S10", True)
-
-
-def test_b4_zagruzit_train4_chitaet_do_2020_i_panel_s_nachala_ryadov(monkeypatch):
-    """train4: источники v7 читаются (граница — zona.end, 2022 не нужен), панель строится с START (первая дата рядов оценщика), а не с progrev."""
-    seen = {}
-    monkeypatch.setattr(E, "sobrat", lambda raw, im, karta, tikery, nachalo, konec, **kw: seen.update(nachalo=nachalo, konec=konec) or "ok")
-    f = types.SimpleNamespace(end=pd.Timestamp("2020-01-01"), akcii=lambda t: None,
-                              indeks=lambda n: pd.DataFrame({"timestamp": [pd.Timestamp("2016-01-04 10:00")], "open": [1.0], "high": [1.0],
-                                                             "low": [1.0], "close": [1.0], "volume": [1]}))
-    assert E.zagruzit("train4", ["AAA"], fajly=f) == "ok"
-    assert seen["nachalo"] == period_v2.START and seen["konec"] == pd.Timestamp("2020-01-01")
-
-
-# ---------------- G6: реальный прогон драйвера (нужны данные основной копии; без них — пропуск) ----------------
-DANNYE = Path("/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/moex_discovery/data/raw/candles_10m/AFLT.parquet")
-
-
-@pytest.mark.skipif(not DANNYE.exists(), reason="нет candles_10m основной копии")
-def test_g6_progon_pilot_S8_S10_train4(tmp_path):
-    import json
-
-    import fastbt.progon_v7 as p7
-    rc = p7.main(["--kub", "v7", "--period", "train4", "--pilot", "--semeystva", "S8,S10", "--n1", "2", "--procs", "1", "--out", str(tmp_path)])
-    z = json.loads((tmp_path / p7.ZAMER).read_text(encoding="utf-8"))
-    assert rc == 0 and set(z) == {"S8", "S10"}
-    for s in z:
-        assert not z[s]["sboy"]
-        assert z[s]["strok"] == 2 and z[s]["sek_na_tochku_p50"] > 0

@@ -23,6 +23,7 @@ SETKA, PERIOD, SHAG, PILOT_N, ZAMER = "v7", "polnaya", 10_000, 1000, "pilot_zame
 KUB7 = ps.ROOT / "fastbt/designs/v7/kub_{sid}.yaml"
 LEDGER7 = ps.ZAMER / "_ledger_v7"
 SEMEJSTVA = ("S1", "S2", "S3", "S4", "S5", "S6", "S8", "S9", "S10", "S11", "S12")      # S7 в v7 не входит (Ж-153 п. 2)
+SEMEJSTVA_IST7 = ("S8", "S9", "S10", "S11", "S12")      # семьям нужны Ist7 (10-минутки, панель сечения); S1–S6 — ряды v6
 CANON = "fastbt.canon_v7"
 PILOT1 = "пилот-1"
 NULI = ("min_uderzhanie", "min_hold")            # константы, у которых «выкл.» = 0; остальные оси — "net" (Ж-160 п. 3)
@@ -48,10 +49,12 @@ def ocenshchik7(staryj, bez_osej=()):
     def f(sid, inp, rz):
         if rz.setka != SETKA:
             return staryj(sid, inp, rz)
-        from fastbt import etap1, istochniki_v6
-        from fastbt.eval_v7 import EvaluatorV7
-        return EvaluatorV7(sid, inp, etap1.base_point(sid), ps.KOMISSIYA, fdr=rz.fdr, ist=istochniki_v6.zagruzit(rz.period, list(inp.sk.tickers)),
-                           min_uderzhanie=min_uder(sid, bez_osej))
+        from fastbt import eval_v7_ist, etap1, istochniki_v6
+        from fastbt.eval_v7 import PROXY, EvaluatorV7
+        tik = list(inp.sk.tickers)
+        kw = {"ist7": eval_v7_ist.zagruzit(rz.period, tik, dev=rz.period == "train4").ist7()} if sid in SEMEJSTVA_IST7 else {}     # S8–S12: источники v7
+        return EvaluatorV7(sid, inp, etap1.base_point(PROXY.get(sid, sid)), ps.KOMISSIYA, fdr=rz.fdr, ist=istochniki_v6.zagruzit(rz.period, tik),
+                           min_uderzhanie=min_uder(sid, bez_osej), **kw)
     return f
 
 
@@ -116,11 +119,25 @@ def n_po_sid(kubs: dict, arg) -> dict:
     return {s: over.get(s, over.get("*", c["sobol"]["N"])) for s, (_, c) in kubs.items()}
 
 
+def fabrika7(sid: str, rz: ps.Rezhim):
+    """ps.fabrika_real для v7: входы (SkEvaluator, SIG_GRIDS) у S8–S12 строятся под прокси S3 — своих сигнальных сеток у семей v7 в sigprov нет;
+    оценщик — под настоящим sid. Вход в manifest ('vhody', Д5) для S8–S12 включает sha источников v7."""
+    from fastbt import cache, etap1
+    from fastbt.eval_v7 import PROXY
+    from fastbt.etap1_eval import years_of
+    inp = etap1.build_inputs(PROXY.get(sid, sid), period=rz.period)
+    evr = ps.ocenshchik(sid, inp, rz)
+    dt = evr._engine(rz.period)[0].dates
+    daty = dt[np.isin(dt.year, years_of(rz.period))].to_numpy().astype("datetime64[D]")
+    vh = inp.digest() if sid not in SEMEJSTVA_IST7 else f"{inp.digest()}:{evr.ist7.sha}"
+    return ps.Sreda(evr, cache.code_hash(), vh, daty, list(inp.sk.tickers))
+
+
 def sreda7(sid: str, rz: ps.Rezhim = ps.R0):
     """ps.sreda для polnaya: верхняя граница дат — конец периода + 1 (а не 2020, как у прежних), только с отметкой владельца."""
     if ps._W.get("sid") != (sid, rz):
         ps._W.pop("sreda", None)
-        sr = ps.fabrika(sid) if ps.fabrika else ps.fabrika_real(sid, rz)
+        sr = ps.fabrika(sid) if ps.fabrika else fabrika7(sid, rz)
         if rz.period != "train4":                          # train4 (сухой прогон до листа «зона») — разработочный, отметка не нужна
             period_v2.proverit_chtenie("wf")
         verh = str(np.datetime64(period_v2.PERIODY[rz.period].konec.date()) + 1)

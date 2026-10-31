@@ -4,19 +4,19 @@ S10 — пробой канала из KANAL полных 1ч-баров на п
 `golaya_tf_v5.impuls_signal`, при t_sig = 18:30 совпадает побайтно); S12 — согласие: S10 и S11 в один день в одну сторону.
 Бар полный, если он закончился ≤ t_sig (момент решения T): бар с концом позже t_sig в сигнал не входит, дни после d тоже.
 Вход — не раньше d+1 (Д2) или в T: это дело исполнителя (Л1.3), здесь только сигнал дня. Читает только переданную ленту;
-лента с днями ≥ 2020-01-01 отвергается. Движок не трогает. Статус: разработка, до аудита.
+лента с днями ≥ period_v2.chtenie_konec("polnaya") (2025-01-01 до акта) отвергается. Движок не трогает. Статус: разработка, до аудита.
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from fastbt import bars_agg as ba
+from fastbt import bars_agg as ba, period_v2
 
 KANAL = 20
 ATR_OKNO = 14      # баров того же ТФ для ATR силы пробоя (V7-5)
 TF = {"S10": "1h", "S11": "2h"}
-GRANITSA = pd.Timestamp("2020-01-01")
+GRANITSA = period_v2.chtenie_konec("polnaya")      # ≥ границы чтения периода polnaya (до акта владельца 2025-01-01) лента отвергается; одно определение
 
 
 def _minuty(t_sig: str) -> int:
@@ -88,7 +88,7 @@ def signal_dnya(b10: pd.DataFrame, sid: str, t_sig: str = "18:30") -> pd.Series:
         raise ValueError(f"sid {sid!r}: ожидается S10, S11 или S12")
     _minuty(t_sig)
     if len(b10) and pd.Timestamp(b10["date"].max()) >= GRANITSA:
-        raise ValueError("лента с днями ≥ 2020-01-01: чтение за границей разработки (2020) запрещено")
+        raise ValueError(f"лента с днями ≥ {GRANITSA:%Y-%m-%d}: чтение за границей чтения периода polnaya запрещено")
     if sid == "S12":
         return soglasie(proboj(b10, TF["S10"], t_sig), proboj(b10, TF["S11"], t_sig))
     return proboj(b10, TF[sid], t_sig)
