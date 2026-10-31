@@ -115,6 +115,9 @@ def build_inputs(sid: str, ev=None, end: pd.Timestamp = END_TRAIN, period: str =
     if period == "wf":                                      # walk-forward (Ж-136): до отметки владельца — отказ; конец — 2026-02-28
         period_v2.proverit_chtenie("wf")
         return _build(sid, ev, period_v2.PERIODY["wf"].konec + pd.Timedelta(days=1), period)
+    if period == "polnaya":                                 # пилот v7: до акта владельца окно кончается на границе чтения (< 2025-01-01), не на конце wf
+        period_v2.proverit_chtenie("polnaya")
+        return _build(sid, ev, period_v2.chtenie_konec("polnaya"), period)
     if end >= LIMIT or end > END_TRAIN:
         raise PermissionError("этап 1: только окна до 2019-12-31; validation открывает дирижёр")
     return _build(sid, ev, end, period)
@@ -125,7 +128,7 @@ def _build(sid: str, ev, end, period: str) -> E1Inputs:
     from fastbt import msp
     y0, y1 = PERIODS[period]
     start = {"train": START, "train4": START_V1, "v2": period_v2.START, "test1": START_Z2,
-             "wf": period_v2.PERIODY["wf"].progrev}[period]
+             "wf": period_v2.PERIODY["wf"].progrev, "polnaya": period_v2.PERIODY["polnaya"].progrev}[period]
     ev = ev or sk_evaluator(sid)
     if end is None:
         end = _konec_z2(ev)

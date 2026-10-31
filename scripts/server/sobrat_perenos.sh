@@ -31,7 +31,7 @@ say "коммит $FULL; каталог $OUT; рабочий каталог Ма
 
 say "1/6 tar кода (git archive $SHORT)"
 TAR="$OUT/kod_$SHORT.tar.gz"
-# БЕЛЫЙ список (в git есть файлы с данными 2022+): fastbt/**.py|yaml без tests/ и designs/; из designs/ — v5/, v6/, zh126/,
+# БЕЛЫЙ список (в git есть файлы с данными 2022+): fastbt/**.py|yaml без tests/ и designs/; из designs/ — v5/, v6/, zh126/, v7/ (kub_S*.yaml + SHA256SUMS: load_kub сверяет суммы),
 # progon/*.yaml (кубы замены progon_sobol) и sweep/*.yaml (базовая точка A_fix ekviv_20, сетки S{k}_setka_e1b — их читает
 # оценщик); scripts/server/*.py|sh; requirements.
 # Таблицы (csv/parquet) в tar не идут: справочные ≤ 2021 едут усечёнными копиями манифеста (накладка ниже).
@@ -39,7 +39,7 @@ git -C "$REPO" ls-tree -r --name-only "$FULL" -- fastbt scripts/server env/requi
   '^(fastbt/.*\.(py|yaml)|scripts/server/[^/]*\.(py|sh)|scripts/server/perenos/[^/]*\.sh|env/requirements_server\.txt)$' \
   | grep -v -E '^fastbt/(tests|designs)/' > "$TMP/belyj.txt" || true
 git -C "$REPO" ls-tree -r --name-only "$FULL" -- fastbt/designs | grep -E \
-  '^fastbt/designs/((v5|v6|zh126)/.*\.(py|yaml)|(progon|sweep)/[^/]*\.yaml)$' >> "$TMP/belyj.txt" || true
+  '^fastbt/designs/((v5|v6|zh126)/.*\.(py|yaml)|v7/(kub_S[0-9]+\.yaml|SHA256SUMS)|(progon|sweep)/[^/]*\.yaml)$' >> "$TMP/belyj.txt" || true
 git -C "$REPO" show "$FULL:scripts/server/tar_iskluchit_2022plus.txt" > "$TMP/iskl.txt" || fail "нет scripts/server/tar_iskluchit_2022plus.txt в коммите"
 plohie=$(grep -v '^#' "$TMP/iskl.txt" | grep -Fx -f - "$TMP/belyj.txt" || true)
 [ -z "$plohie" ] || fail "в белый список попали пути из tar_iskluchit_2022plus.txt: $(echo "$plohie" | head -3 | tr '\n' ' ')"
@@ -82,10 +82,11 @@ cp "$K/env/requirements_server.txt" "$OUT/"
 python3 "$K/scripts/server/versii.py" "$OUT/requirements_server.txt" || fail "пины requirements_server.txt ≠ версиям пакетов на Маке"
 grep -q '^numba==' "$OUT/requirements_server.txt" && grep -q '^llvmlite==' "$OUT/requirements_server.txt" || fail "в пинах нет numba/llvmlite"
 chmod +x "$OUT"/*.sh
-for d in progon v5 v6; do
+for d in progon v5 v6 v7; do
   ls "$K/fastbt/designs/$d/"*.yaml >/dev/null 2>&1 || continue
   mkdir -p "$OUT/kuby/$d"
   cp "$K/fastbt/designs/$d/"*.yaml "$OUT/kuby/$d/"
+  [ ! -f "$K/fastbt/designs/$d/SHA256SUMS" ] || cp "$K/fastbt/designs/$d/SHA256SUMS" "$OUT/kuby/$d/"
 done
 slit=0
 git -C "$REPO" merge-base --is-ancestor "$FULL" origin/kanon-v22-pereschet 2>/dev/null && slit=1

@@ -30,6 +30,7 @@ TABLE_2015 = _DOCS / "2026-10-28_dividendy_2015_2016.csv"
 SVOD = _DOCS / "div_sverka_svod.csv"
 SVOD_OT ="2022-01-01"      # до этой даты — прежние таблицы (побайтно прежнее поведение на train4)
 WF_KALENDAR_DO = "2026-02-20"   # в зоне wf календарь баров обязан дойти сюда (последний торговый день периода 27.02); короче — отказ
+KAL_ZAPAS = 12                  # polnaya: календарь баров обязан дойти до границы чтения − 12 суток (последний торговый день 2024 — 30.12)
 RULE = "last_cum=T+2bars:all-years"   # Д5: правило даты входит в ключ кэша
 # MOEX: расчёты по акциям T+1 с 31.07.2023 (источник уточняет исследователь отдельно; PR #535 — режим NET).
 T1_OT = "2023-07-31"
@@ -41,7 +42,7 @@ def _svod_on() -> bool:
     """Свод Д8 подключён автоматически в зоне wf; нет файла свода — FileNotFoundError, нет колонки godna_korr — ValueError.
     Прочие зоны (dev, test1) — прежнее поведение."""
     from fastbt import zona                              # noqa: PLC0415
-    if zona.name() != "wf":
+    if not zona.wf_like():
         return False
     if not Path(SVOD).exists():
         raise FileNotFoundError(f"свод Д8 не найден: {SVOD}")
@@ -82,14 +83,16 @@ def _calendar() -> np.ndarray:
     """Торговые дни: объединение дат дневных баров 17 тикеров (ряд 18:50, 2014-06…2021-12)."""
     from fastbt import zona                                                       # noqa: PLC0415
     from fastbt.daily_1850 import out_path                                        # noqa: PLC0415
-    d = pd.read_parquet(zona.path("daily", out_path()), columns=["date"])
+    d = pd.read_parquet(zona.path("daily", out_path()), columns=["date"],
+                        filters=[("date", "<", zona.end())] if zona.name() == "polnaya" else None)   # polnaya: < границы на чтении
     cal = np.sort(pd.to_datetime(d["date"]).dt.normalize().unique().astype("datetime64[ns]"))
-    if zona.name() == "wf":
-        cal = cal[cal < np.datetime64(zona.END_WF)]       # бары ≥ 2026-03-01 в календарь wf не входят
+    if zona.wf_like():
+        cal = cal[cal < np.datetime64(zona.end())]        # бары ≥ границы зоны (wf 2026-03-01; polnaya 2025-01-01) в календарь не входят
     if len(cal) == 0:
         raise FileNotFoundError(f"зона {zona.name()}: дневной ряд пуст — календаря торгов нет")
-    if zona.name() == "wf" and cal[-1] < np.datetime64(WF_KALENDAR_DO):
-        raise FileNotFoundError(f"зона wf: дневной ряд кончается {str(cal[-1])[:10]}, нужен ряд wf до {WF_KALENDAR_DO} "
+    kal_do = WF_KALENDAR_DO if zona.name() == "wf" else str((zona.end() - pd.Timedelta(days=KAL_ZAPAS)).date()) if zona.wf_like() else None
+    if kal_do and cal[-1] < np.datetime64(kal_do):
+        raise FileNotFoundError(f"зона {zona.name()}: дневной ряд кончается {str(cal[-1])[:10]}, нужен ряд до {kal_do} "
                                 f"(daily_1850 --wf после докачки); календарь ≤ 2021 для wf не подставляется")
     return cal
 

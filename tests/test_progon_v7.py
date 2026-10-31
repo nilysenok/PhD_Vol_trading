@@ -170,12 +170,13 @@ def test_sreda_polnaya_otkaz_dat_posle_konca(sred, tmp_path, monkeypatch):
     assert "2026-02-28" in itog[SID]["sboy"]
 
 
-def test_zona_polnaya_eto_wf(monkeypatch):
+def test_zona_polnaya_svoya_zona(monkeypatch):
+    """polnaya — своя зона (граница чтения до акта 2025-01-01), а не wf (2026-03-01): дефект #912, tests/test_zona_polnaya.py."""
     zv = []
     from fastbt import zona
     monkeypatch.setattr(zona, "zone_ctx", lambda z: zv.append(z) or contextlib.nullcontext())
-    p7.zona_ctx("polnaya"), p7.zona_ctx("train4")
-    assert zv == ["wf"]
+    p7.zona_ctx("polnaya"), p7.zona_ctx("wf"), p7.zona_ctx("train4")
+    assert zv == ["polnaya", "wf"]
 
 
 # ---- пилот, к3, Моррис ----
