@@ -122,6 +122,8 @@ def _l_sostav(tp, mp):
     pd.DataFrame({"date_eff": ["2022-03-18", "2024-12-20", "2025-03-21"], "known_from": ["2022-03-18", "2024-12-20", "2025-03-21"],
                   "tickers": "SBER GAZP"}).to_csv(p, index=False)
     mp.setattr(vs, "SOSTAV_2022", p)
+    READ.append(D("2024-12-30"))                  # состав на последний день до границы читается
+    assert vs.sostav(D("2024-12-30")) == frozenset({"SBER", "GAZP"})
     try:
         vs.sostav(D("2025-06-02"))
     except ValueError:
@@ -151,7 +153,7 @@ def test_polnaya_chtenie_do_akta(layer, tmp_path, monkeypatch):
     _progon(layer, tmp_path, monkeypatch)
 
 
-@pytest.mark.parametrize("layer", SLOI, ids=IDS)
+@pytest.mark.parametrize("layer", SLOI[:-1], ids=IDS[:-1])      # periods — константа импорта, не слой чтения: свой тест ниже
 def test_mutaciya_granitsa_wf_u_sloya_lovitsya(layer, tmp_path, monkeypatch):
     wf = period_v2.PERIODY["wf"].konec + pd.Timedelta(days=1)
     monkeypatch.setattr(zona, "end", lambda: wf)
