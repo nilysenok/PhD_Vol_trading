@@ -31,6 +31,9 @@ def _otkryto(y: int) -> None:
         period_v2.proverit_chtenie("wf", otmetka=period_v2.OTMETKA)
     except period_v2.ZamokVladeltsa as e:
         raise ValueError(f"данные >= 2022 не читаются (нет отметки снятого замка): {y}") from e
+    from fastbt import zona
+    if zona.name() == "polnaya" and pd.Timestamp(year=y, month=1, day=1) >= zona.end():   # до акта: год границы чтения закрыт
+        raise ValueError(f"год {y}: не раньше границы чтения polnaya {zona.end().date()}")
     if y > period_v2.PERIODY["wf"].konec.year:
         raise ValueError(f"год {y}: позже конца периода wf")
 
@@ -59,9 +62,9 @@ def _sostav_table(path: str, col: str = "date_eff") -> tuple[tuple[pd.Timestamp,
 
 
 def zona_wf() -> bool:
-    """Таблица 2022+ подключается только в зоне wf; в dev/test1 состав после 2021 не из неё (прежнее поведение)."""
+    """Таблица 2022+ подключается только в зоне wf (и polnaya, с обрезкой по границе чтения); в dev/test1 — прежнее поведение."""
     from fastbt import zona
-    return zona.name() == "wf"
+    return zona.wf_like()
 
 
 def _vidno_s(date_eff: pd.Timestamp, known_from) -> pd.Timestamp:
@@ -70,10 +73,14 @@ def _vidno_s(date_eff: pd.Timestamp, known_from) -> pd.Timestamp:
 
 
 @lru_cache(maxsize=None)
-def _sostav_wf(old: str, new: str) -> tuple[tuple[pd.Timestamp, frozenset], ...]:
-    """Прежняя таблица как есть + строки новой с date_eff позже последней прежней (2021-12-17 дублируется — берётся прежняя)."""
+def _sostav_wf(old: str, new: str, zona_polnaya: bool = False) -> tuple[tuple[pd.Timestamp, frozenset], ...]:
+    """Прежняя таблица как есть + строки новой с date_eff позже последней прежней (2021-12-17 дублируется — берётся прежняя).
+    zona_polnaya (в ключе кэша): строки с date_eff ≥ границы чтения (до акта 2025-01-01) отброшены."""
     rows = list(_sostav_table(old, SOSTAV_COL))
     t = pd.read_csv(new, usecols=[SOSTAV_COL, "known_from", "tickers"], parse_dates=[SOSTAV_COL, "known_from"])
+    if zona_polnaya:
+        from fastbt import zona
+        t = zona.obrezat(t, SOSTAV_COL)
     for a, k, b in zip(t[SOSTAV_COL], t["known_from"], t["tickers"]):
         if a > rows[-1][0]:
             rows.append((_vidno_s(a, k), frozenset(str(b).split())))
@@ -87,11 +94,12 @@ def sostav_dates(sostav_path: Path | str = SOSTAV) -> list[pd.Timestamp]:
 
 def sostav(d, sostav_path: Path | str = SOSTAV) -> frozenset:
     """Состав IMOEX на d по date_eff; до первой записи — пустой."""
+    from fastbt import zona as _zona
     _year(d)
     ts = pd.Timestamp(d)
     cur: frozenset = frozenset()
     last = None
-    rows = (_sostav_wf(str(sostav_path), str(SOSTAV_2022)) if ts.year > LAST_YEAR and zona_wf() and str(sostav_path) == str(SOSTAV)
+    rows = (_sostav_wf(str(sostav_path), str(SOSTAV_2022), _zona.name() == "polnaya") if ts.year > LAST_YEAR and zona_wf() and str(sostav_path) == str(SOSTAV)
             else _sostav_table(str(sostav_path), SOSTAV_COL))
     for de, tk in rows:
         if de <= ts:
@@ -136,7 +144,7 @@ def digest(sostav_path: Path | str = SOSTAV, root: Path | str = DATA_ROOT) -> st
     """SHA-256 файла состава и всех файлов оборота (по имени, сортировка)."""
     h = hashlib.sha256()
     from fastbt import zona
-    extra = [SOSTAV_2022] if zona.name() == "wf" and str(sostav_path) == str(SOSTAV) else []   # dev: хэш прежний
+    extra = [SOSTAV_2022] if zona.wf_like() and str(sostav_path) == str(SOSTAV) else []   # dev: хэш прежний
     for p in [Path(sostav_path), *extra, *sorted((Path(root) / "daily_value").glob("*.csv"))]:
         h.update(p.name.encode())
         h.update(p.read_bytes())

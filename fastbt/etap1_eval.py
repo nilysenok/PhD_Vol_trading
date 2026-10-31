@@ -12,7 +12,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from fastbt import cache, metriki_e as me, rezhim_e1
+from fastbt import cache, metriki_e as me, period_v2, rezhim_e1
 from fastbt.data import year_bounds
 from fastbt.etap1_data import _one_bar, align_b, gate_trades
 from fastbt.etap1_run import run_e1
@@ -31,8 +31,9 @@ RM_OFF = {"S1": dict(sl_mult=OFF, tp_mult=OFF, max_hold=FAR, breakeven_trigger=N
           "S3": dict(initial_sl_mult=OFF, trail_atr_mult=OFF, breakeven_thresh=None, cooldown_bars=0), "S5": _ATR}
 RM_OFF.update(S2=RM_OFF["S1"], S4=RM_OFF["S3"], S6=_ATR)
 PERIODS = {"train": (2018, 2019), "ctrl2019": (2019, 2019), "tune2018": (2018, 2018), "train4": (2016, 2019), "v2": (2015, 2019),
-           "test1": (2022, 2024), "wf": (2015, 2026)}
-HONEST = {"train": "net", "ctrl2019": "kontrol", "tune2018": "net", "train4": "net", "v2": "net", "test1": "net", "wf": "net"}   # train4 — В1, 2015 — прогрев; test1 — реверс р.1
+           "test1": (2022, 2024), "wf": (2015, 2026),
+           "polnaya": (period_v2.PERIODY["polnaya"].y0, period_v2.chtenie_konec("polnaya").year - 1)}   # 2017 … последний полный год до границы чтения (до акта 2024)
+HONEST = {"train": "net", "ctrl2019": "kontrol", "tune2018": "net", "train4": "net", "v2": "net", "test1": "net", "wf": "net", "polnaya": "net"}   # train4 — В1, 2015 — прогрев; test1 — реверс р.1
 
 
 def years_of(period: str) -> tuple:

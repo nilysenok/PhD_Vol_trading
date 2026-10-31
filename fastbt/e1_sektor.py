@@ -48,7 +48,7 @@ def load_indexes(names, main=None, end: pd.Timestamp | None = None) -> dict:
     import pyarrow.parquet as pq
 
     from fastbt import zona
-    lim = zona.end() if zona.name() == "wf" else END
+    lim = zona.end() if zona.wf_like() else END
     end = lim if end is None else end
     if end > lim:
         raise PermissionError("e1_sektor: даты ≥ 2022 не читаются")
@@ -71,10 +71,11 @@ def proverit_sektory_wf(csv_path, root: Path | None = None) -> None:
     """Зона wf: статическая карта тикер→индекс (2018–2021) переносится на 2022–2026 только если новая таблица состава
     подтверждает её на всех датах (тикер на всех датах в том же индексе) и покрывает конец периода; иначе ValueError (Д4)."""
     from fastbt import zona
-    if zona.name() != "wf":
+    if not zona.wf_like():
         return
     new = pd.read_csv((root or Path(__file__).resolve().parent.parent) / SEKTORY_PIT_2022, parse_dates=["дата_ребалансировки"])
-    if new["дата_ребалансировки"].max() + pd.Timedelta(days=PIT_STALE_DAYS) < zona.END_WF - pd.Timedelta(days=1):
+    new = zona.obrezat(new, "дата_ребалансировки")            # polnaya: ребалансировки ≥ границы чтения не читаются
+    if new["дата_ребалансировки"].max() + pd.Timedelta(days=PIT_STALE_DAYS) < zona.end() - pd.Timedelta(days=1):
         raise ValueError("сектора: таблица состава 2022–2026 не доходит до конца периода wf (Д4)")
     ind = new.groupby("тикер")["индекс"].agg(set)
     for r in pd.read_csv(csv_path).itertuples():

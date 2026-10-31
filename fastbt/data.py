@@ -45,6 +45,10 @@ def _read_cut(p: Path, period: str | None = None) -> pd.DataFrame:
         from fastbt import period_v2
         period_v2.proverit_chtenie("wf", otmetka=period_v2.OTMETKA)
         return pd.read_parquet(p, filters=[("date", "<", period_v2.PERIODY["wf"].konec + pd.Timedelta(days=1))])
+    if period == "polnaya" or zona.name() == "polnaya":      # до акта владельца: строго < chtenie_konec (2025-01-01), не конец wf
+        from fastbt import period_v2
+        period_v2.proverit_chtenie("polnaya", otmetka=period_v2.OTMETKA)
+        return pd.read_parquet(p, filters=[("date", "<", period_v2.chtenie_konec("polnaya"))])
     if zona.name() == "dev":
         return pd.read_parquet(p)
     d = pd.read_parquet(p, filters=[("date", "<", zona.end())])
@@ -55,7 +59,8 @@ def _read_cut(p: Path, period: str | None = None) -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def daily_df() -> pd.DataFrame:
-    d = pd.read_parquet(zona.path("daily", OHLCV))      # зона Z2: FASTBT_Z2_DAILY; умолчание — как было
+    # зона Z2: FASTBT_Z2_DAILY; умолчание — как было; polnaya: файл wf до 2026-02, читается только < границы (фильтр на чтении)
+    d = pd.read_parquet(zona.path("daily", OHLCV), filters=[("date", "<", zona.end())] if zona.name() == "polnaya" else None)
     d["date"] = pd.to_datetime(d["date"])
     zona.check(d["date"].max(), "дневной ряд")
     return d
