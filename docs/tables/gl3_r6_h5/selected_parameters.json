@@ -1,0 +1,1250 @@
+{
+  "G1v3_standard_lgb_2019.json": {
+    "year": 2019,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 2,
+    "params": {
+      "num_leaves": 58,
+      "learning_rate": 0.042484433685853404,
+      "bagging_fraction": 0.6521211214797689,
+      "feature_fraction": 0.7148538589793427,
+      "min_data_in_leaf": 23,
+      "reg_alpha": 0.014618962793704969,
+      "reg_lambda": 0.280163515871626
+    },
+    "trees": 61,
+    "qlike": 0.2682921782040952,
+    "pruned": false
+  },
+  "G1v3_standard_xgb_2017.json": {
+    "year": 2017,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 21,
+    "params": {
+      "max_depth": 6,
+      "learning_rate": 0.06572701387435148,
+      "subsample": 0.94748180313056,
+      "colsample_bytree": 0.5370197262532346,
+      "min_child_weight": 2,
+      "reg_alpha": 0.08606362226285391,
+      "reg_lambda": 2.849078288948435
+    },
+    "trees": 1,
+    "qlike": 0.14128512376781882,
+    "pruned": false
+  },
+  "G1v3_regularized_xgb_2021.json": {
+    "year": 2021,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 6,
+    "params": {
+      "max_depth": 3,
+      "learning_rate": 0.16839076979463405,
+      "subsample": 0.6293899908000085,
+      "colsample_bytree": 0.7975133706123891,
+      "min_child_weight": 12,
+      "reg_alpha": 0.12030178871154672,
+      "reg_lambda": 0.6150368094192704
+    },
+    "trees": 9,
+    "qlike": 0.3192883292304697,
+    "pruned": false
+  },
+  "G1_regularized_lgb_2019.json": {
+    "year": 2019,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 29,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.17170797257669532,
+      "bagging_fraction": 0.898676767240744,
+      "feature_fraction": 0.7675107065963295,
+      "min_data_in_leaf": 32,
+      "reg_alpha": 1.5816617823631811,
+      "reg_lambda": 0.20105990725588277,
+      "max_depth": 4
+    },
+    "trees": 1,
+    "qlike": 0.2751656165095651,
+    "pruned": false
+  },
+  "G1_regularized_xgb_2017.json": {
+    "year": 2017,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 22,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.15183310536660183,
+      "subsample": 0.7331156403897161,
+      "colsample_bytree": 0.9463286411726317,
+      "min_child_weight": 100,
+      "reg_alpha": 2.9710367033299123,
+      "reg_lambda": 0.00471336708195794
+    },
+    "trees": 1,
+    "qlike": 0.1408111527062094,
+    "pruned": false
+  },
+  "G1_standard_lgb_2018.json": {
+    "year": 2018,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 27,
+    "params": {
+      "num_leaves": 232,
+      "learning_rate": 0.10281534775087434,
+      "bagging_fraction": 0.834950211267194,
+      "feature_fraction": 0.45881253652454607,
+      "min_data_in_leaf": 71,
+      "reg_alpha": 0.06993700387973727,
+      "reg_lambda": 0.3435990625742629
+    },
+    "trees": 40,
+    "qlike": 0.1293291789304299,
+    "pruned": false
+  },
+  "G1_standard_xgb_2016.json": {
+    "year": 2016,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 28,
+    "params": {
+      "max_depth": 3,
+      "learning_rate": 0.08122987355647762,
+      "subsample": 0.952000880328064,
+      "colsample_bytree": 0.6526391459703668,
+      "min_child_weight": 67,
+      "reg_alpha": 0.06581635715908656,
+      "reg_lambda": 1.0798540149637663
+    },
+    "trees": 2,
+    "qlike": 0.13655273331014856,
+    "pruned": false
+  },
+  "G1_regularized_xgb_2021.json": {
+    "year": 2021,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 12,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.12556864066024478,
+      "subsample": 0.9689478251869064,
+      "colsample_bytree": 0.4130907527316971,
+      "min_child_weight": 8,
+      "reg_alpha": 0.6342360039727676,
+      "reg_lambda": 0.04717842268398906
+    },
+    "trees": 3,
+    "qlike": 0.31219548154707205,
+    "pruned": false
+  },
+  "G1v3_regularized_lgb_2019.json": {
+    "year": 2019,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 23,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.08027605586029468,
+      "bagging_fraction": 0.9925392521602586,
+      "feature_fraction": 0.9313731055523625,
+      "min_data_in_leaf": 124,
+      "reg_alpha": 0.056916605523841014,
+      "reg_lambda": 4.868921226488776,
+      "max_depth": 4
+    },
+    "trees": 1,
+    "qlike": 0.278099996679478,
+    "pruned": false
+  },
+  "G1v3_regularized_xgb_2017.json": {
+    "year": 2017,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 23,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.09521180946859563,
+      "subsample": 0.9471293327755551,
+      "colsample_bytree": 0.7655591028022135,
+      "min_child_weight": 8,
+      "reg_alpha": 0.018959140692027837,
+      "reg_lambda": 12.4345394756009
+    },
+    "trees": 1,
+    "qlike": 0.14247593632088823,
+    "pruned": false
+  },
+  "G1_standard_xgb_2020.json": {
+    "year": 2020,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 29,
+    "params": {
+      "max_depth": 5,
+      "learning_rate": 0.07873510289767671,
+      "subsample": 0.6855501397806998,
+      "colsample_bytree": 0.7681920221017327,
+      "min_child_weight": 1,
+      "reg_alpha": 3.589647443874769,
+      "reg_lambda": 0.0026646001098583594
+    },
+    "trees": 5,
+    "qlike": 0.1651517237606222,
+    "pruned": false
+  },
+  "G1v3_standard_xgb_2021.json": {
+    "year": 2021,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 5,
+    "params": {
+      "max_depth": 11,
+      "learning_rate": 0.053468155416899,
+      "subsample": 0.5488360570031919,
+      "colsample_bytree": 0.8105398159072942,
+      "min_child_weight": 5,
+      "reg_alpha": 0.003077180271250686,
+      "reg_lambda": 0.09565499215943825
+    },
+    "trees": 3,
+    "qlike": 0.31304120805189767,
+    "pruned": false
+  },
+  "G1v3_standard_xgb_2020.json": {
+    "year": 2020,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 26,
+    "params": {
+      "max_depth": 10,
+      "learning_rate": 0.08941539856366178,
+      "subsample": 0.6438894263944563,
+      "colsample_bytree": 0.998481897088584,
+      "min_child_weight": 2,
+      "reg_alpha": 0.18833955528100058,
+      "reg_lambda": 0.003060151623210512
+    },
+    "trees": 1,
+    "qlike": 0.1656461144790117,
+    "pruned": false
+  },
+  "G1_standard_xgb_2021.json": {
+    "year": 2021,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 23,
+    "params": {
+      "max_depth": 11,
+      "learning_rate": 0.0781266275754738,
+      "subsample": 0.8078413513558337,
+      "colsample_bytree": 0.40901272697541236,
+      "min_child_weight": 8,
+      "reg_alpha": 0.004367940693549594,
+      "reg_lambda": 0.01026346050995526
+    },
+    "trees": 2,
+    "qlike": 0.2941638803942063,
+    "pruned": false
+  },
+  "G1v3_regularized_xgb_2016.json": {
+    "year": 2016,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 11,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.09854081941245102,
+      "subsample": 0.8025934246224489,
+      "colsample_bytree": 0.410199956564461,
+      "min_child_weight": 52,
+      "reg_alpha": 7.646702703040713,
+      "reg_lambda": 0.04177825277417289
+    },
+    "trees": 2,
+    "qlike": 0.13684833948095004,
+    "pruned": false
+  },
+  "G1v3_regularized_lgb_2018.json": {
+    "year": 2018,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 4,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.0327636407868471,
+      "bagging_fraction": 0.8037724259507192,
+      "feature_fraction": 0.502314474212375,
+      "min_data_in_leaf": 24,
+      "reg_alpha": 6.24513957474307,
+      "reg_lambda": 29.14661494996417,
+      "max_depth": 4
+    },
+    "trees": 40,
+    "qlike": 0.1342577118472426,
+    "pruned": false
+  },
+  "G1_regularized_xgb_2020.json": {
+    "year": 2020,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 1,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.0938393881004349,
+      "subsample": 0.8540362888980227,
+      "colsample_bytree": 0.41235069657748147,
+      "min_child_weight": 344,
+      "reg_alpha": 2.136832907235876,
+      "reg_lambda": 0.028275899802498422
+    },
+    "trees": 67,
+    "qlike": 0.1711154406967016,
+    "pruned": false
+  },
+  "G1_standard_xgb_2017.json": {
+    "year": 2017,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 29,
+    "params": {
+      "max_depth": 12,
+      "learning_rate": 0.11467984124607186,
+      "subsample": 0.9572890129742573,
+      "colsample_bytree": 0.6866006592769583,
+      "min_child_weight": 22,
+      "reg_alpha": 3.0881642987221505,
+      "reg_lambda": 0.0019390003423840195
+    },
+    "trees": 2,
+    "qlike": 0.14242551015767613,
+    "pruned": false
+  },
+  "G1_standard_lgb_2019.json": {
+    "year": 2019,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 29,
+    "params": {
+      "num_leaves": 104,
+      "learning_rate": 0.17170797257669532,
+      "bagging_fraction": 0.8649343854617156,
+      "feature_fraction": 0.8235445992826576,
+      "min_data_in_leaf": 60,
+      "reg_alpha": 1.5401136206254078,
+      "reg_lambda": 1.554552881582235
+    },
+    "trees": 1,
+    "qlike": 0.2683109274891426,
+    "pruned": false
+  },
+  "G1_regularized_xgb_2016.json": {
+    "year": 2016,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 11,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.09854081941245102,
+      "subsample": 0.8025934246224489,
+      "colsample_bytree": 0.410199956564461,
+      "min_child_weight": 52,
+      "reg_alpha": 7.646702703040713,
+      "reg_lambda": 0.04177825277417289
+    },
+    "trees": 2,
+    "qlike": 0.13721350425848847,
+    "pruned": false
+  },
+  "G1_regularized_lgb_2018.json": {
+    "year": 2018,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 16,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.03754599989957485,
+      "bagging_fraction": 0.5556136229657006,
+      "feature_fraction": 0.8549341702078443,
+      "min_data_in_leaf": 140,
+      "reg_alpha": 0.001044303619363316,
+      "reg_lambda": 10.10219864025338,
+      "max_depth": 4
+    },
+    "trees": 51,
+    "qlike": 0.1337636118187662,
+    "pruned": false
+  },
+  "G1v3_regularized_xgb_2020.json": {
+    "year": 2020,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 21,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.189413800088767,
+      "subsample": 0.8832500999572328,
+      "colsample_bytree": 0.9277596857673887,
+      "min_child_weight": 100,
+      "reg_alpha": 0.29411287611871284,
+      "reg_lambda": 0.22855000446292256
+    },
+    "trees": 18,
+    "qlike": 0.16824129789624723,
+    "pruned": false
+  },
+  "G1v3_standard_xgb_2016.json": {
+    "year": 2016,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 28,
+    "params": {
+      "max_depth": 3,
+      "learning_rate": 0.08122987355647762,
+      "subsample": 0.952000880328064,
+      "colsample_bytree": 0.6526391459703668,
+      "min_child_weight": 67,
+      "reg_alpha": 0.06581635715908656,
+      "reg_lambda": 1.0798540149637663
+    },
+    "trees": 2,
+    "qlike": 0.13653209387226795,
+    "pruned": false
+  },
+  "G1v3_standard_lgb_2018.json": {
+    "year": 2018,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 26,
+    "params": {
+      "num_leaves": 90,
+      "learning_rate": 0.059920954236794,
+      "bagging_fraction": 0.8333903639577285,
+      "feature_fraction": 0.5842588393925381,
+      "min_data_in_leaf": 77,
+      "reg_alpha": 0.09007043995825319,
+      "reg_lambda": 0.004543333427377928
+    },
+    "trees": 36,
+    "qlike": 0.13005369112319629,
+    "pruned": false
+  },
+  "G1v2_standard_xgb_2016.json": {
+    "year": 2016,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 28,
+    "params": {
+      "max_depth": 3,
+      "learning_rate": 0.08122987355647762,
+      "subsample": 0.952000880328064,
+      "colsample_bytree": 0.6526391459703668,
+      "min_child_weight": 67,
+      "reg_alpha": 0.06581635715908656,
+      "reg_lambda": 1.0798540149637663
+    },
+    "trees": 2,
+    "qlike": 0.1365320524555472,
+    "pruned": false
+  },
+  "G1v2_standard_lgb_2018.json": {
+    "year": 2018,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 26,
+    "params": {
+      "num_leaves": 90,
+      "learning_rate": 0.059920954236794,
+      "bagging_fraction": 0.8333903639577285,
+      "feature_fraction": 0.5842588393925381,
+      "min_data_in_leaf": 77,
+      "reg_alpha": 0.09007043995825319,
+      "reg_lambda": 0.004543333427377928
+    },
+    "trees": 36,
+    "qlike": 0.13005359889915188,
+    "pruned": false
+  },
+  "G1v3_final_fixed_ticker_xgb_2019.json": {
+    "params": {
+      "max_depth": 12,
+      "learning_rate": 0.1481636346942567,
+      "subsample": 0.7261631564388042,
+      "colsample_bytree": 0.6309694611006726,
+      "min_child_weight": 1,
+      "reg_alpha": 0.0010328167998016,
+      "reg_lambda": 0.0032456172067591
+    },
+    "trees": 2,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v3_final_fixed_ticker_lgb_2017.json": {
+    "params": {
+      "num_leaves": 66,
+      "learning_rate": 0.0762408003072369,
+      "bagging_fraction": 0.5475538189131187,
+      "feature_fraction": 0.5790243476859142,
+      "min_data_in_leaf": 190,
+      "reg_alpha": 0.0104152157949701,
+      "reg_lambda": 1.1454317414615187
+    },
+    "trees": 1,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v2_standard_xgb_2020.json": {
+    "year": 2020,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 26,
+    "params": {
+      "max_depth": 10,
+      "learning_rate": 0.08941539856366178,
+      "subsample": 0.6438894263944563,
+      "colsample_bytree": 0.998481897088584,
+      "min_child_weight": 2,
+      "reg_alpha": 0.18833955528100058,
+      "reg_lambda": 0.003060151623210512
+    },
+    "trees": 1,
+    "qlike": 0.1656459401019891,
+    "pruned": false
+  },
+  "G1v3_final_fixed_ticker_lgb_2021.json": {
+    "params": {
+      "num_leaves": 66,
+      "learning_rate": 0.0762408003072369,
+      "bagging_fraction": 0.5475538189131187,
+      "feature_fraction": 0.5790243476859142,
+      "min_data_in_leaf": 190,
+      "reg_alpha": 0.0104152157949701,
+      "reg_lambda": 1.1454317414615187
+    },
+    "trees": 4,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v3_final_fixed_ticker_lgb_2020.json": {
+    "params": {
+      "num_leaves": 66,
+      "learning_rate": 0.0762408003072369,
+      "bagging_fraction": 0.5475538189131187,
+      "feature_fraction": 0.5790243476859142,
+      "min_data_in_leaf": 190,
+      "reg_alpha": 0.0104152157949701,
+      "reg_lambda": 1.1454317414615187
+    },
+    "trees": 2,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v2_standard_xgb_2021.json": {
+    "year": 2021,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 5,
+    "params": {
+      "max_depth": 11,
+      "learning_rate": 0.053468155416899,
+      "subsample": 0.5488360570031919,
+      "colsample_bytree": 0.8105398159072942,
+      "min_child_weight": 5,
+      "reg_alpha": 0.003077180271250686,
+      "reg_lambda": 0.09565499215943825
+    },
+    "trees": 3,
+    "qlike": 0.313041193622463,
+    "pruned": false
+  },
+  "G1v3_final_fixed_ticker_lgb_2016.json": {
+    "params": {
+      "num_leaves": 66,
+      "learning_rate": 0.0762408003072369,
+      "bagging_fraction": 0.5475538189131187,
+      "feature_fraction": 0.5790243476859142,
+      "min_data_in_leaf": 190,
+      "reg_alpha": 0.0104152157949701,
+      "reg_lambda": 1.1454317414615187
+    },
+    "trees": 2,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v3_final_fixed_ticker_xgb_2018.json": {
+    "params": {
+      "max_depth": 12,
+      "learning_rate": 0.1481636346942567,
+      "subsample": 0.7261631564388042,
+      "colsample_bytree": 0.6309694611006726,
+      "min_child_weight": 1,
+      "reg_alpha": 0.0010328167998016,
+      "reg_lambda": 0.0032456172067591
+    },
+    "trees": 1,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v2_standard_lgb_2019.json": {
+    "year": 2019,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 2,
+    "params": {
+      "num_leaves": 58,
+      "learning_rate": 0.042484433685853404,
+      "bagging_fraction": 0.6521211214797689,
+      "feature_fraction": 0.7148538589793427,
+      "min_data_in_leaf": 23,
+      "reg_alpha": 0.014618962793704969,
+      "reg_lambda": 0.280163515871626
+    },
+    "trees": 61,
+    "qlike": 0.2682921089009205,
+    "pruned": false
+  },
+  "G1v2_standard_xgb_2017.json": {
+    "year": 2017,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 21,
+    "params": {
+      "max_depth": 6,
+      "learning_rate": 0.06572701387435148,
+      "subsample": 0.94748180313056,
+      "colsample_bytree": 0.5370197262532346,
+      "min_child_weight": 2,
+      "reg_alpha": 0.08606362226285391,
+      "reg_lambda": 2.849078288948435
+    },
+    "trees": 1,
+    "qlike": 0.1412850469520641,
+    "pruned": false
+  },
+  "G1v3_final_fixed_ticker_xgb_2021.json": {
+    "params": {
+      "max_depth": 12,
+      "learning_rate": 0.1481636346942567,
+      "subsample": 0.7261631564388042,
+      "colsample_bytree": 0.6309694611006726,
+      "min_child_weight": 1,
+      "reg_alpha": 0.0010328167998016,
+      "reg_lambda": 0.0032456172067591
+    },
+    "trees": 1,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v2_standard_lgb_2020.json": {
+    "year": 2020,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 6,
+    "params": {
+      "num_leaves": 23,
+      "learning_rate": 0.16839076979463405,
+      "bagging_fraction": 0.6293899908000085,
+      "feature_fraction": 0.7975133706123891,
+      "min_data_in_leaf": 15,
+      "reg_alpha": 0.12030178871154672,
+      "reg_lambda": 0.1537592023548176
+    },
+    "trees": 7,
+    "qlike": 0.1675992709988497,
+    "pruned": false
+  },
+  "G1v3_final_fixed_ticker_lgb_2019.json": {
+    "params": {
+      "num_leaves": 66,
+      "learning_rate": 0.0762408003072369,
+      "bagging_fraction": 0.5475538189131187,
+      "feature_fraction": 0.5790243476859142,
+      "min_data_in_leaf": 190,
+      "reg_alpha": 0.0104152157949701,
+      "reg_lambda": 1.1454317414615187
+    },
+    "trees": 16,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v3_final_fixed_ticker_xgb_2017.json": {
+    "params": {
+      "max_depth": 12,
+      "learning_rate": 0.1481636346942567,
+      "subsample": 0.7261631564388042,
+      "colsample_bytree": 0.6309694611006726,
+      "min_child_weight": 1,
+      "reg_alpha": 0.0010328167998016,
+      "reg_lambda": 0.0032456172067591
+    },
+    "trees": 1,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v2_standard_lgb_2016.json": {
+    "year": 2016,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 29,
+    "params": {
+      "num_leaves": 108,
+      "learning_rate": 0.057416634673953956,
+      "bagging_fraction": 0.8740002669762909,
+      "feature_fraction": 0.8416232853307231,
+      "min_data_in_leaf": 8,
+      "reg_alpha": 0.0029952047464939817,
+      "reg_lambda": 0.05767344855922659
+    },
+    "trees": 2,
+    "qlike": 0.13895348575457225,
+    "pruned": false
+  },
+  "G1v2_standard_xgb_2018.json": {
+    "year": 2018,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 1,
+    "params": {
+      "max_depth": 11,
+      "learning_rate": 0.0938393881004349,
+      "subsample": 0.8540362888980227,
+      "colsample_bytree": 0.41235069657748147,
+      "min_child_weight": 86,
+      "reg_alpha": 2.136832907235876,
+      "reg_lambda": 0.0070689749506246055
+    },
+    "trees": 8,
+    "qlike": 0.13516762493066214,
+    "pruned": false
+  },
+  "G1v2_standard_xgb_2019.json": {
+    "year": 2019,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 25,
+    "params": {
+      "max_depth": 11,
+      "learning_rate": 0.07201989518356974,
+      "subsample": 0.922136199791833,
+      "colsample_bytree": 0.47243413574915805,
+      "min_child_weight": 20,
+      "reg_alpha": 1.3139534460603224,
+      "reg_lambda": 0.003254167405348175
+    },
+    "trees": 7,
+    "qlike": 0.268153235762953,
+    "pruned": false
+  },
+  "G1v2_standard_lgb_2017.json": {
+    "year": 2017,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 28,
+    "params": {
+      "num_leaves": 88,
+      "learning_rate": 0.03545566505201789,
+      "bagging_fraction": 0.8187525294291718,
+      "feature_fraction": 0.6595131359291949,
+      "min_data_in_leaf": 31,
+      "reg_alpha": 0.022391493883532006,
+      "reg_lambda": 3.415769500964431
+    },
+    "trees": 13,
+    "qlike": 0.1390861628597022,
+    "pruned": false
+  },
+  "G1v3_final_fixed_ticker_xgb_2016.json": {
+    "params": {
+      "max_depth": 12,
+      "learning_rate": 0.1481636346942567,
+      "subsample": 0.7261631564388042,
+      "colsample_bytree": 0.6309694611006726,
+      "min_child_weight": 1,
+      "reg_alpha": 0.0010328167998016,
+      "reg_lambda": 0.0032456172067591
+    },
+    "trees": 1,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v3_final_fixed_ticker_lgb_2018.json": {
+    "params": {
+      "num_leaves": 66,
+      "learning_rate": 0.0762408003072369,
+      "bagging_fraction": 0.5475538189131187,
+      "feature_fraction": 0.5790243476859142,
+      "min_data_in_leaf": 190,
+      "reg_alpha": 0.0104152157949701,
+      "reg_lambda": 1.1454317414615187
+    },
+    "trees": 30,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v2_standard_lgb_2021.json": {
+    "year": 2021,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 18,
+    "params": {
+      "num_leaves": 252,
+      "learning_rate": 0.03056154523772065,
+      "bagging_fraction": 0.7389128700194534,
+      "feature_fraction": 0.9326646825016854,
+      "min_data_in_leaf": 70,
+      "reg_alpha": 1.6547369828759386,
+      "reg_lambda": 0.004556805067838421
+    },
+    "trees": 1,
+    "qlike": 0.31498869418474024,
+    "pruned": false
+  },
+  "G1v3_final_fixed_ticker_xgb_2020.json": {
+    "params": {
+      "max_depth": 12,
+      "learning_rate": 0.1481636346942567,
+      "subsample": 0.7261631564388042,
+      "colsample_bytree": 0.6309694611006726,
+      "min_child_weight": 1,
+      "reg_alpha": 0.0010328167998016,
+      "reg_lambda": 0.0032456172067591
+    },
+    "trees": 1,
+    "source": "shared warmup2016 D12 parameters, no ticker tuning"
+  },
+  "G1v3_standard_lgb_2021.json": {
+    "year": 2021,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 18,
+    "params": {
+      "num_leaves": 252,
+      "learning_rate": 0.03056154523772065,
+      "bagging_fraction": 0.7389128700194534,
+      "feature_fraction": 0.9326646825016854,
+      "min_data_in_leaf": 70,
+      "reg_alpha": 1.6547369828759386,
+      "reg_lambda": 0.004556805067838421
+    },
+    "trees": 1,
+    "qlike": 0.31498872066604516,
+    "pruned": false
+  },
+  "G1_standard_lgb_2020.json": {
+    "year": 2020,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 27,
+    "params": {
+      "num_leaves": 50,
+      "learning_rate": 0.06284921425137614,
+      "bagging_fraction": 0.6708057504920107,
+      "feature_fraction": 0.5431559189044352,
+      "min_data_in_leaf": 67,
+      "reg_alpha": 0.0021423233356875787,
+      "reg_lambda": 0.3435990625742629
+    },
+    "trees": 37,
+    "qlike": 0.16807913731252955,
+    "pruned": false
+  },
+  "G1_regularized_lgb_2021.json": {
+    "year": 2021,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 13,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.031162962758332555,
+      "bagging_fraction": 0.7390561223002559,
+      "feature_fraction": 0.4970416619720574,
+      "min_data_in_leaf": 44,
+      "reg_alpha": 0.047557823993727315,
+      "reg_lambda": 38.559031612638066,
+      "max_depth": 4
+    },
+    "trees": 1,
+    "qlike": 0.31357157562201016,
+    "pruned": false
+  },
+  "G1v3_regularized_xgb_2019.json": {
+    "year": 2019,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 24,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.09999048415306461,
+      "subsample": 0.7765620621622494,
+      "colsample_bytree": 0.6821676238468513,
+      "min_child_weight": 28,
+      "reg_alpha": 0.15795613030385788,
+      "reg_lambda": 0.9925806611545022
+    },
+    "trees": 7,
+    "qlike": 0.2801508141115682,
+    "pruned": false
+  },
+  "G1v3_regularized_lgb_2017.json": {
+    "year": 2017,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 16,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.06679841557698181,
+      "bagging_fraction": 0.8122362660317526,
+      "feature_fraction": 0.806413816800776,
+      "min_data_in_leaf": 116,
+      "reg_alpha": 1.508625542422029,
+      "reg_lambda": 1.692477759238726,
+      "max_depth": 4
+    },
+    "trees": 9,
+    "qlike": 0.14091050221109952,
+    "pruned": false
+  },
+  "G1_standard_xgb_2018.json": {
+    "year": 2018,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 12,
+    "params": {
+      "max_depth": 6,
+      "learning_rate": 0.07975708787940783,
+      "subsample": 0.9969541289159777,
+      "colsample_bytree": 0.9993464132435927,
+      "min_child_weight": 82,
+      "reg_alpha": 0.6652294380495303,
+      "reg_lambda": 1.8712852567821345
+    },
+    "trees": 8,
+    "qlike": 0.13470537625227624,
+    "pruned": false
+  },
+  "G1_standard_lgb_2016.json": {
+    "year": 2016,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 28,
+    "params": {
+      "num_leaves": 79,
+      "learning_rate": 0.061629899961692935,
+      "bagging_fraction": 0.8805896704005702,
+      "feature_fraction": 0.8333659610186326,
+      "min_data_in_leaf": 39,
+      "reg_alpha": 0.006455247165259004,
+      "reg_lambda": 3.415769500964431
+    },
+    "trees": 2,
+    "qlike": 0.13891770306893947,
+    "pruned": false
+  },
+  "G1v3_regularized_lgb_2021.json": {
+    "year": 2021,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 21,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.03536656193094104,
+      "bagging_fraction": 0.5755282752049952,
+      "feature_fraction": 0.8026684114492202,
+      "min_data_in_leaf": 72,
+      "reg_alpha": 0.7725654385220335,
+      "reg_lambda": 9.321140875587682,
+      "max_depth": 4
+    },
+    "trees": 1,
+    "qlike": 0.3146512644217327,
+    "pruned": false
+  },
+  "G1_regularized_xgb_2019.json": {
+    "year": 2019,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 23,
+    "params": {
+      "max_depth": 3,
+      "learning_rate": 0.15718997395485315,
+      "subsample": 0.7060327861662566,
+      "colsample_bytree": 0.83823950616874,
+      "min_child_weight": 8,
+      "reg_alpha": 0.0324218970964545,
+      "reg_lambda": 0.03234093705640875
+    },
+    "trees": 30,
+    "qlike": 0.2719704111834134,
+    "pruned": false
+  },
+  "G1_regularized_lgb_2017.json": {
+    "year": 2017,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 2,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.042484433685853404,
+      "bagging_fraction": 0.6521211214797689,
+      "feature_fraction": 0.7148538589793427,
+      "min_data_in_leaf": 92,
+      "reg_alpha": 0.014618962793704969,
+      "reg_lambda": 1.120654063486504,
+      "max_depth": 4
+    },
+    "trees": 9,
+    "qlike": 0.14114127210545835,
+    "pruned": false
+  },
+  "G1v3_standard_xgb_2019.json": {
+    "year": 2019,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 25,
+    "params": {
+      "max_depth": 11,
+      "learning_rate": 0.07201989518356974,
+      "subsample": 0.922136199791833,
+      "colsample_bytree": 0.47243413574915805,
+      "min_child_weight": 20,
+      "reg_alpha": 1.3139534460603224,
+      "reg_lambda": 0.003254167405348175
+    },
+    "trees": 7,
+    "qlike": 0.2681532951330556,
+    "pruned": false
+  },
+  "G1v3_standard_lgb_2017.json": {
+    "year": 2017,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 28,
+    "params": {
+      "num_leaves": 88,
+      "learning_rate": 0.03545566505201789,
+      "bagging_fraction": 0.8187525294291718,
+      "feature_fraction": 0.6595131359291949,
+      "min_data_in_leaf": 31,
+      "reg_alpha": 0.022391493883532006,
+      "reg_lambda": 3.415769500964431
+    },
+    "trees": 13,
+    "qlike": 0.13908623122719604,
+    "pruned": false
+  },
+  "G1v3_standard_lgb_2016.json": {
+    "year": 2016,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 29,
+    "params": {
+      "num_leaves": 108,
+      "learning_rate": 0.057416634673953956,
+      "bagging_fraction": 0.8740002669762909,
+      "feature_fraction": 0.8416232853307231,
+      "min_data_in_leaf": 8,
+      "reg_alpha": 0.0029952047464939817,
+      "reg_lambda": 0.05767344855922659
+    },
+    "trees": 2,
+    "qlike": 0.13895353364149612,
+    "pruned": false
+  },
+  "G1v3_standard_xgb_2018.json": {
+    "year": 2018,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 1,
+    "params": {
+      "max_depth": 11,
+      "learning_rate": 0.0938393881004349,
+      "subsample": 0.8540362888980227,
+      "colsample_bytree": 0.41235069657748147,
+      "min_child_weight": 86,
+      "reg_alpha": 2.136832907235876,
+      "reg_lambda": 0.0070689749506246055
+    },
+    "trees": 8,
+    "qlike": 0.13516770585204754,
+    "pruned": false
+  },
+  "G1_regularized_lgb_2016.json": {
+    "year": 2016,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 12,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.0628499839254703,
+      "bagging_fraction": 0.7135561528166658,
+      "feature_fraction": 0.5867107482320875,
+      "min_data_in_leaf": 312,
+      "reg_alpha": 0.0010416854322138208,
+      "reg_lambda": 0.1685711997330211,
+      "max_depth": 4
+    },
+    "trees": 2,
+    "qlike": 0.1392158049762733,
+    "pruned": false
+  },
+  "G1_regularized_xgb_2018.json": {
+    "year": 2018,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 19,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.040048719952631165,
+      "subsample": 0.5921677238432766,
+      "colsample_bytree": 0.7525520347624732,
+      "min_child_weight": 156,
+      "reg_alpha": 0.006743624279162542,
+      "reg_lambda": 0.18381177529492299
+    },
+    "trees": 37,
+    "qlike": 0.1329107002683541,
+    "pruned": false
+  },
+  "G1v3_regularized_lgb_2020.json": {
+    "year": 2020,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 14,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.1329211265966463,
+      "bagging_fraction": 0.7190650837455673,
+      "feature_fraction": 0.856893024713563,
+      "min_data_in_leaf": 52,
+      "reg_alpha": 0.45042834710787033,
+      "reg_lambda": 0.488409874146259,
+      "max_depth": 4
+    },
+    "trees": 9,
+    "qlike": 0.16866659669130482,
+    "pruned": false
+  },
+  "G1_standard_lgb_2017.json": {
+    "year": 2017,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 21,
+    "params": {
+      "num_leaves": 245,
+      "learning_rate": 0.07384260257951679,
+      "bagging_fraction": 0.9475964070976887,
+      "feature_fraction": 0.9012406642284734,
+      "min_data_in_leaf": 5,
+      "reg_alpha": 0.0011194988999715346,
+      "reg_lambda": 0.04016658883118539
+    },
+    "trees": 4,
+    "qlike": 0.1401652816219426,
+    "pruned": false
+  },
+  "G1_standard_xgb_2019.json": {
+    "year": 2019,
+    "variant": "standard",
+    "lib": "xgb",
+    "trial": 0,
+    "params": {
+      "max_depth": 6,
+      "learning_rate": 0.18214744423753768,
+      "subsample": 0.8659969709057025,
+      "colsample_bytree": 0.759195090518222,
+      "min_child_weight": 1,
+      "reg_alpha": 0.004207053950287938,
+      "reg_lambda": 0.0017073967431528124
+    },
+    "trees": 6,
+    "qlike": 0.2603967573055476,
+    "pruned": false
+  },
+  "G1v3_regularized_lgb_2016.json": {
+    "year": 2016,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 25,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.04700164414117041,
+      "bagging_fraction": 0.7214862721735635,
+      "feature_fraction": 0.4606176405703248,
+      "min_data_in_leaf": 428,
+      "reg_alpha": 0.010872885737645253,
+      "reg_lambda": 0.014314872561185205,
+      "max_depth": 4
+    },
+    "trees": 2,
+    "qlike": 0.1391480229030581,
+    "pruned": false
+  },
+  "G1v3_regularized_xgb_2018.json": {
+    "year": 2018,
+    "variant": "regularized",
+    "lib": "xgb",
+    "trial": 15,
+    "params": {
+      "max_depth": 4,
+      "learning_rate": 0.03075726225362329,
+      "subsample": 0.8030364186273422,
+      "colsample_bytree": 0.8848396206682987,
+      "min_child_weight": 132,
+      "reg_alpha": 0.7244203362536744,
+      "reg_lambda": 0.06475892216672327
+    },
+    "trees": 44,
+    "qlike": 0.13369106549781018,
+    "pruned": false
+  },
+  "G1_regularized_lgb_2020.json": {
+    "year": 2020,
+    "variant": "regularized",
+    "lib": "lgb",
+    "trial": 17,
+    "params": {
+      "num_leaves": 16,
+      "learning_rate": 0.11917216797376053,
+      "bagging_fraction": 0.5849889094488906,
+      "feature_fraction": 0.6796221336715232,
+      "min_data_in_leaf": 320,
+      "reg_alpha": 0.03238978396815416,
+      "reg_lambda": 0.011861582269029542,
+      "max_depth": 4
+    },
+    "trees": 19,
+    "qlike": 0.1699646824556379,
+    "pruned": false
+  },
+  "G1_standard_lgb_2021.json": {
+    "year": 2021,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 16,
+    "params": {
+      "num_leaves": 125,
+      "learning_rate": 0.12249307123754173,
+      "bagging_fraction": 0.7261631564388042,
+      "feature_fraction": 0.897784246822062,
+      "min_data_in_leaf": 41,
+      "reg_alpha": 0.001032816799801658,
+      "reg_lambda": 0.03510633338590318
+    },
+    "trees": 1,
+    "qlike": 0.3152696511549202,
+    "pruned": false
+  },
+  "G1v3_standard_lgb_2020.json": {
+    "year": 2020,
+    "variant": "standard",
+    "lib": "lgb",
+    "trial": 6,
+    "params": {
+      "num_leaves": 23,
+      "learning_rate": 0.16839076979463405,
+      "bagging_fraction": 0.6293899908000085,
+      "feature_fraction": 0.7975133706123891,
+      "min_data_in_leaf": 15,
+      "reg_alpha": 0.12030178871154672,
+      "reg_lambda": 0.1537592023548176
+    },
+    "trees": 7,
+    "qlike": 0.16759945159020856,
+    "pruned": false
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "control_read": false,
+  "all_fit_horizons": [
+    5
+  ],
+  "fits_checked": 2623,
+  "predictions_audited": 21,
+  "all_maturity_valid": true,
+  "feature_mutations": [
+    {
+      "feature": "_scale",
+      "forward_day_caught": true
+    },
+    {
+      "feature": "_ln_rv_w",
+      "forward_day_caught": true
+    },
+    {
+      "feature": "_ln_close_RVI",
+      "forward_day_caught": true
+    },
+    {
+      "feature": "_ln_rq",
+      "forward_day_caught": true
+    },
+    {
+      "feature": "_state",
+      "forward_day_caught": true
+    },
+    {
+      "feature": "_stress",
+      "forward_day_caught": true
+    }
+  ],
+  "prefix_checks": true,
+  "models_serialized": 0,
+  "ticker_id_check": "static known key, stable category codes; row-key shift detected, same-ticker temporal shift is an identity, not future information"
+}
