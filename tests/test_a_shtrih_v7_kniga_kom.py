@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from fastbt import a_shtrih_v7_kniga as K
-from tests.test_a_shtrih_v7_kniga import _mk, _run
+from test_a_shtrih_v7_kniga import _mk, _run
 
 KOM = 0.0004   # литерал: независимая сверка
 

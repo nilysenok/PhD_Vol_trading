@@ -6,8 +6,8 @@ import pytest
 
 from fastbt import kniga_msp as km
 from fastbt import msp_v5
-from tests.test_kniga_msp_komissiya_mnozh import C
-from tests.test_msp_v5 import _run
+from test_kniga_msp_komissiya_mnozh import C
+from test_msp_v5 import _run
 
 T = 200                                                      # > OKNO_BETA + прогрев: хедж живой
 IDX = pd.bdate_range("2016-01-04", periods=T)

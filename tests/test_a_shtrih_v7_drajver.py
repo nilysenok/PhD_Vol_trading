@@ -13,7 +13,7 @@ import pytest
 
 from fastbt import a_shtrih_v7_kniga as K
 from fastbt import progon_urovni as pu
-from tests.test_a_shtrih_v7_kniga import _mk
+from test_a_shtrih_v7_kniga import _mk
 
 _p = Path(__file__).resolve().parents[1] / "scripts" / "analysis" / "a_shtrih_v7.py"
 _s = importlib.util.spec_from_file_location("a_shtrih_v7_drajver", _p)

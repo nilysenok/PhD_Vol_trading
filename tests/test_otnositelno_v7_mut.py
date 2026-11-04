@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from fastbt import otnositelno_v7 as ot
-from tests.test_otnositelno_v7 import C, IM, METKI, T, mk_td
+from test_otnositelno_v7 import C, IM, METKI, T, mk_td
 
 M3 = np.array([["X", "X", "X", ""]] * T, dtype=object)        # A,B,C — один сектор, D — без
 

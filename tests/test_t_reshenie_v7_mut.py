@@ -9,7 +9,7 @@ import pytest
 
 from fastbt import daily_1850 as D
 from fastbt import t_reshenie_v7 as R
-from tests.test_t_reshenie_v7 import DAYS, TS, _px, bars
+from test_t_reshenie_v7 import DAYS, TS, _px, bars
 
 MAIN = Path("/Users/nilysenok/Desktop/Старое/PhD_Vol_trading")
 SBER = MAIN / "moex_discovery" / "data" / "raw" / "candles_10m" / "SBER.parquet"
