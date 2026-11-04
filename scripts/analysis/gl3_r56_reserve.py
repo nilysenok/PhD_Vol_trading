@@ -97,7 +97,7 @@ def reserve_raw(e,h,spec,mode,measure,seed):
             vt=tr&np.isfinite(mean_oof)
             if vt.sum()<300:
                 # Warmup variance uses a chronologically held-out past tail, not in-sample errors.
-                dates=sorted(b.loc[tr,'date'].unique());edge=dates[max(1,len(dates)-126)]
+                dates=sorted(b.loc[tr,'date'].unique());edge=dates[max(100,len(dates)-252)]
                 train=tr&(b[f'_end{h}']<edge).values;vt=tr&(b.date>=edge).values
                 inner=base+e.boost(h,mode,measure,cut,seed,'lgb',x,target,train,w,tag='R4_warmmean_')
                 vv=(logy-inner)**2

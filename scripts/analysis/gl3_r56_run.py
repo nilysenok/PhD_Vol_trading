@@ -93,10 +93,10 @@ class Study:
         for mode in ('quarterly','monthly','half1','half2','rolling3'):
             k=self.add(h,'K12_'+mode,self.choose(pre,lambda r:{**r,'mode':mode}));k12.append(k);candidates.append(k)
             self.add(h,'HAR_b_adapt_'+mode,{'core':'HAR','mode':mode},eligible=False)
-        k13=self.add(h,'K13',self.choose(pre+k12,lambda r:{**r,'measure':'alt'}));candidates.append(k13)
-        self.add(h,'HAR_b_K13',{'core':'HAR','measure':'alt'},eligible=False)
+        k13=self.add(h,'K13',self.choose([k for k in pre if k!=fin]+k12,lambda r:{**r,'measure':'alt'}));candidates.append(k13)
+        self.add(h,'HAR_b_K13',{year:{'core':'HAR','measure':'alt','mode':r.get('mode','annual')} for year,r in self.rec[k13].items()},eligible=False)
         k14=self.add(h,'K14',self.choose(candidates,lambda r:{**r,'bagging':True}));candidates.append(k14)
-        self.choices[f'r5_h{h}']=self.best(candidates);self.save()
+        self.choices[f'r5_h{h}']=min(candidates,key=lambda k:(self.row(k)['mean_QLIKE'],k));self.save()
         return candidates,k12,lib9
 
     def r6(self,h,k12,lib9):
@@ -112,7 +112,7 @@ class Study:
             modes[year]['k10']=next((self.rec[k][year] for k in self.rec if k==f'h{h}:K10'),None)
         stack=self.add(h,'R1',modes,stage='6');pool.append(stack)
         r6=self.add(h,'R6',self.choose(pool,lambda r:{**r,'measure':'alt'}),stage='6');pool.append(r6)
-        self.choices[f'r6_h{h}']=self.best(pool);self.save();return pool
+        self.choices[f'r6_h{h}']=min(pool,key=lambda k:(self.row(k)['mean_QLIKE'],k));self.save();return pool
 
     def run(self):
         r5={};metadata={}
@@ -122,7 +122,7 @@ class Study:
         for h in (1,5,22):
             keys=r5[h]+(self.r6(h,*metadata[h]) if reserve else [])
             passed=[k for k in keys if self.row(k)['admitted']]
-            self.choices[f'winner_h{h}']=self.best(passed) if passed else None
+            self.choices[f'winner_h{h}']=min(passed,key=lambda k:(self.row(k)['mean_QLIKE'],k)) if passed else None
         self.status='ready_for_owner_yes' if any(self.choices[f'winner_h{h}'] for h in (1,5,22)) else 'closed_without_opening'
         self.save()
 

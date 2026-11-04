@@ -25,6 +25,21 @@ def disk_guard(stage):
     if free<20*1024**3:raise RuntimeError('DISK_STOP: less than20GiB free; owner notification required')
 
 
+def load_fit_events():
+    events=[]
+    compressed=TAB/'fit_ledger.csv.gz'
+    if compressed.exists():
+        q=pd.read_csv(compressed);q['detail']=q['detail'].map(json.loads)
+        events+=q.to_dict('records')
+    path=TAB/'fit_events.jsonl'
+    if path.exists():events+=[json.loads(x) for x in path.read_text().splitlines()]
+    unique={}
+    for r in events:
+        key=tuple(r[c] for c in ('time_utc','component','phase','h','cutoff'))
+        unique[key]=r
+    return list(unique.values())
+
+
 def safe_csv(path,columns,step=1):
     meta=pd.read_csv(path,usecols=['step'])
     keep=set(meta.index[meta.step==step])

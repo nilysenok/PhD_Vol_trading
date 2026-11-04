@@ -1,0 +1,4 @@
+h,recipe_json,alias
+22,"{""bias"": ""conditional"", ""core"": ""FIN""}",10 deterministic seeds and their geometric mean equal one predictor
+22,"{""core"": ""FIN"", ""mode"": ""monthly""}",10 deterministic seeds and their geometric mean equal one predictor
+22,"{""core"": ""FIN"", ""mode"": ""rolling3""}",10 deterministic seeds and their geometric mean equal one predictor

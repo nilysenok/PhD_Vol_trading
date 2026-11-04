@@ -3,7 +3,7 @@
 import json
 import numpy as np
 import pandas as pd
-from gl3_r56_data import Data,TAB,OUT,periods,mask_train
+from gl3_r56_data import Data,TAB,OUT,periods,mask_train,load_fit_events
 
 
 def derived(b,measure):
@@ -48,7 +48,7 @@ def feature_checks(d):
 
 def main():
     d=Data();rows=feature_checks(d)
-    events=[json.loads(x) for x in (TAB/'fit_events.jsonl').read_text().splitlines()]
+    events=load_fit_events()
     for r in events:
         assert pd.Timestamp(r['max_target_end'])<pd.Timestamp(r['cutoff'])
         assert pd.Timestamp(r['cutoff'])<pd.Timestamp('2022-01-01')

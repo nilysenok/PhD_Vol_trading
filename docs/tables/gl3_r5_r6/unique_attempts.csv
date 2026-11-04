@@ -1,0 +1,124 @@
+h,recipe_json,seed_or_ensemble
+1,"{""bagging"": true, ""core"": ""FIN"", ""mode"": ""monthly""}",ensemble10
+1,"{""bias"": ""conditional"", ""c"": 0.75, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+1,"{""bias"": ""conditional"", ""c"": 0.75, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+1,"{""bias"": ""conditional"", ""c"": 0.75, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+1,"{""bias"": ""conditional"", ""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+1,"{""bias"": ""conditional"", ""core"": ""FIN""}",42
+1,"{""bias"": ""none"", ""c"": 0.75, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",42
+1,"{""bias"": ""none"", ""c"": 0.75, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+1,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+1,"{""c"": 0.25, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+1,"{""c"": 0.25, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+1,"{""c"": 0.25, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+1,"{""c"": 0.25, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+1,"{""c"": 0.5, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+1,"{""c"": 0.5, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+1,"{""c"": 0.5, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+1,"{""c"": 0.5, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+1,"{""c"": 0.75, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+1,"{""c"": 0.75, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+1,"{""c"": 0.75, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+1,"{""c"": 0.75, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+1,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+1,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""linear""}",42
+1,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+1,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+1,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+1,"{""core"": ""FIN"", ""measure"": ""alt"", ""mode"": ""monthly""}",42
+1,"{""core"": ""FIN"", ""mode"": ""half1""}",42
+1,"{""core"": ""FIN"", ""mode"": ""half2""}",42
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",42
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",43
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",44
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",45
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",46
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",47
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",48
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",49
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",50
+1,"{""core"": ""FIN"", ""mode"": ""monthly""}",51
+1,"{""core"": ""FIN"", ""mode"": ""quarterly""}",42
+1,"{""core"": ""FIN"", ""mode"": ""rolling3""}",42
+22,"{""bias"": ""conditional"", ""core"": ""FIN"", ""measure"": ""alt""}",42
+22,"{""bias"": ""conditional"", ""core"": ""FIN"", ""mode"": ""half1""}",42
+22,"{""bias"": ""conditional"", ""core"": ""FIN"", ""mode"": ""half2""}",42
+22,"{""bias"": ""conditional"", ""core"": ""FIN"", ""mode"": ""monthly""}",42
+22,"{""bias"": ""conditional"", ""core"": ""FIN"", ""mode"": ""quarterly""}",42
+22,"{""bias"": ""conditional"", ""core"": ""FIN"", ""mode"": ""rolling3""}",42
+22,"{""bias"": ""conditional"", ""core"": ""FIN""}",42
+22,"{""core"": ""FIN"", ""measure"": ""alt"", ""mode"": ""monthly""}",42
+22,"{""core"": ""FIN"", ""measure"": ""alt"", ""mode"": ""rolling3""}",42
+22,"{""core"": ""FIN"", ""mode"": ""half1""}",42
+22,"{""core"": ""FIN"", ""mode"": ""half2""}",42
+22,"{""core"": ""FIN"", ""mode"": ""monthly""}",42
+22,"{""core"": ""FIN"", ""mode"": ""quarterly""}",42
+22,"{""core"": ""FIN"", ""mode"": ""rolling3""}",42
+5,"{""bagging"": true, ""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",ensemble10
+5,"{""bagging"": true, ""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",ensemble10
+5,"{""bagging"": true, ""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",ensemble10
+5,"{""bias"": ""conditional"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",42
+5,"{""bias"": ""conditional"", ""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+5,"{""bias"": ""conditional"", ""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+5,"{""bias"": ""conditional"", ""core"": ""FIN""}",42
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""measure"": ""alt"", ""style"": ""a""}",42
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""mode"": ""half1"", ""style"": ""a""}",42
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""mode"": ""half2"", ""style"": ""a""}",42
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""mode"": ""monthly"", ""style"": ""a""}",42
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""mode"": ""quarterly"", ""style"": ""a""}",42
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""mode"": ""rolling3"", ""style"": ""a""}",42
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",42
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",43
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",44
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",45
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",46
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",47
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",48
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",49
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",50
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""a""}",51
+5,"{""bias"": ""none"", ""c"": 1.0, ""core"": ""K10"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+5,"{""c"": 0.25, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+5,"{""c"": 0.25, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+5,"{""c"": 0.25, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+5,"{""c"": 0.5, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+5,"{""c"": 0.5, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+5,"{""c"": 0.5, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+5,"{""c"": 0.75, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+5,"{""c"": 0.75, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+5,"{""c"": 0.75, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""measure"": ""alt"", ""style"": ""a""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""mode"": ""half1"", ""style"": ""a""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""mode"": ""half2"", ""style"": ""a""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""mode"": ""monthly"", ""style"": ""a""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""mode"": ""quarterly"", ""style"": ""a""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""mode"": ""rolling3"", ""style"": ""a""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",43
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",44
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",45
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",46
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",47
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",48
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",49
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",50
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""a""}",51
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""linear""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""lgb"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""measure"": ""alt"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""mode"": ""half1"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""mode"": ""half2"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""mode"": ""monthly"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""mode"": ""quarterly"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""mode"": ""rolling3"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""a""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",42
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",43
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",44
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",45
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",46
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",47
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",48
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",49
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",50
+5,"{""c"": 1.0, ""core"": ""K9"", ""lib"": ""xgb"", ""style"": ""mono""}",51

@@ -81,3 +81,26 @@ def test_chained_loyo_selection_uses_same_outer_fold_not_diagonal_rows():
     s.e=SimpleNamespace(predict=predict);s.d=SimpleNamespace(score=score)
     assert s.best(['h1:A','h1:B'],held=2017)=='h1:B'
     assert all(r['outer_held']==2017 for r in calls)
+
+
+@pytest.mark.parametrize('free,stops',[(19*1024**3,True),(21*1024**3,False)])
+def test_disk_stop_at_twenty_gib(monkeypatch,tmp_path,free,stops):
+    from types import SimpleNamespace
+    import gl3_r56_data as data
+    monkeypatch.setattr(data,'TAB',tmp_path)
+    monkeypatch.setattr(data.shutil,'disk_usage',lambda p:SimpleNamespace(free=free))
+    monkeypatch.setattr(data.subprocess,'run',lambda *a,**k:SimpleNamespace(stdout='df fixture\n'))
+    if stops:
+        with pytest.raises(RuntimeError,match='DISK_STOP'):data.disk_guard('fixture')
+    else:data.disk_guard('fixture')
+
+
+def test_fit_ledger_deduplicates_archive_and_live_log(monkeypatch,tmp_path):
+    import json
+    import gl3_r56_data as data
+    monkeypatch.setattr(data,'TAB',tmp_path)
+    a=dict(time_utc='2026-11-04T00:00:00Z',component='synthetic',phase='fit',h=1,cutoff='2017-01-01',detail={})
+    b={**a,'time_utc':'2026-11-04T00:01:00Z'}
+    pd.DataFrame([{**a,'detail':'{}'}]).to_csv(tmp_path/'fit_ledger.csv.gz',index=False)
+    (tmp_path/'fit_events.jsonl').write_text(json.dumps(a)+'\n'+json.dumps(b)+'\n')
+    assert len(data.load_fit_events())==2

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Fresh estimators, chronological refits, OOS variance calibration. DEV only."""
 import os
+import fcntl
 for k in ('OMP_NUM_THREADS','MKL_NUM_THREADS','OPENBLAS_NUM_THREADS','VECLIB_MAXIMUM_THREADS'):
     os.environ[k]='2'
 
@@ -230,6 +231,12 @@ class Engine:
         return pred.astype(float)
 
     def raw(self,h,spec,mode='annual',measure='original',seed=42):
+        lockkey=hashlib.sha256(stable([h,spec,mode,measure,seed]).encode()).hexdigest()[:18]
+        with (OUT/'cache'/f'{lockkey}.lock').open('a') as lock:
+            fcntl.flock(lock,fcntl.LOCK_EX)
+            return self._raw(h,spec,mode,measure,seed)
+
+    def _raw(self,h,spec,mode='annual',measure='original',seed=42):
         spec={k:v for k,v in spec.items() if k in ('core','lib','style','c','normalize','k9','k10')}
         core=spec['core'];c=float(spec.get('c',1.))
         if core=='K9' and c!=1:
@@ -253,8 +260,11 @@ class Engine:
         elif core=='FIN' and h==22:r=self.har_series(h,mode,measure)
         else:
             b=self.data.frames[measure];r=np.full(len(b),np.nan)
+            partial=path.with_name(path.stem+'_partial.parquet')
+            if partial.exists():r=pd.read_parquet(partial,columns=['raw'])['raw'].values
             for cut,end in periods(mode):
                 va=((b.date>=cut)&(b.date<end)).values
+                if np.isfinite(r[va]).all():continue
                 normalized=core=='PANEL'
                 _,y,tr,w=self.context(h,mode,measure,cut,normalized)
                 x,names,base=self.features(h,mode,measure,cut,normalized,normalized)
@@ -281,8 +291,12 @@ class Engine:
                     else:raise ValueError(core)
                 if normalized:pred+=np.log(b['_scale'].values)
                 r[va]=pred[va]
+                checkpoint=self.data.a[['date','ticker']].copy();checkpoint['raw']=r.astype(np.float32)
+                temporary=partial.with_suffix('.tmp');checkpoint.to_parquet(temporary,index=False);temporary.replace(partial)
         r=r.astype(np.float32)
         z=self.data.a[['date','ticker']].copy();z['raw']=r;z.to_parquet(path,index=False)
+        partial=path.with_name(path.stem+'_partial.parquet')
+        if partial.exists():partial.unlink()
         self.rawcache[key]=r
         return r
 

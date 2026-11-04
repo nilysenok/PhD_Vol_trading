@@ -1,6 +1,13 @@
 {
-  "status": "running",
-  "choices": {},
+  "status": "ready_for_owner_yes",
+  "choices": {
+    "r5_h1": "h1:K12_monthly",
+    "r5_h5": "h5:K9_lgb_a",
+    "r5_h22": "h22:K11_FIN",
+    "winner_h1": null,
+    "winner_h5": "h5:K9_lgb_shrink0.75",
+    "winner_h22": "h22:K11_FIN"
+  },
   "recipes": {
     "h1:FIN_fresh": {
       "2017": {
@@ -869,27 +876,1541 @@
     "h1:HAR_b_K13": {
       "2017": {
         "core": "HAR",
-        "measure": "alt"
+        "measure": "alt",
+        "mode": "monthly"
       },
       "2018": {
         "core": "HAR",
-        "measure": "alt"
+        "measure": "alt",
+        "mode": "monthly"
       },
       "2019": {
         "core": "HAR",
-        "measure": "alt"
+        "measure": "alt",
+        "mode": "monthly"
       },
       "2020": {
         "core": "HAR",
-        "measure": "alt"
+        "measure": "alt",
+        "mode": "monthly"
       },
       "2021": {
         "core": "HAR",
-        "measure": "alt"
+        "measure": "alt",
+        "mode": "monthly"
       },
       "all": {
         "core": "HAR",
+        "measure": "alt",
+        "mode": "monthly"
+      }
+    },
+    "h1:K14": {
+      "2017": {
+        "core": "FIN",
+        "mode": "monthly",
+        "bagging": true
+      },
+      "2018": {
+        "core": "FIN",
+        "mode": "monthly",
+        "bagging": true
+      },
+      "2019": {
+        "core": "FIN",
+        "mode": "monthly",
+        "bagging": true
+      },
+      "2020": {
+        "core": "FIN",
+        "mode": "monthly",
+        "bagging": true
+      },
+      "2021": {
+        "core": "FIN",
+        "mode": "monthly",
+        "bagging": true
+      },
+      "all": {
+        "core": "FIN",
+        "mode": "monthly",
+        "bagging": true
+      }
+    },
+    "h5:FIN_fresh": {
+      "2017": {
+        "core": "FIN"
+      },
+      "2018": {
+        "core": "FIN"
+      },
+      "2019": {
+        "core": "FIN"
+      },
+      "2020": {
+        "core": "FIN"
+      },
+      "2021": {
+        "core": "FIN"
+      },
+      "all": {
+        "core": "FIN"
+      }
+    },
+    "h5:HAR_b_fresh": {
+      "2017": {
+        "core": "HAR"
+      },
+      "2018": {
+        "core": "HAR"
+      },
+      "2019": {
+        "core": "HAR"
+      },
+      "2020": {
+        "core": "HAR"
+      },
+      "2021": {
+        "core": "HAR"
+      },
+      "all": {
+        "core": "HAR"
+      }
+    },
+    "h5:K9_lgb_a": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0
+      }
+    },
+    "h5:K9_lgb_mono": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "mono",
+        "c": 1.0
+      }
+    },
+    "h5:K9_lgb_linear": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "linear",
+        "c": 1.0
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "linear",
+        "c": 1.0
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "linear",
+        "c": 1.0
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "linear",
+        "c": 1.0
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "linear",
+        "c": 1.0
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "linear",
+        "c": 1.0
+      }
+    },
+    "h5:K9_lgb_shrink0.25": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.25
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.25
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.25
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.25
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.25
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.25
+      }
+    },
+    "h5:K9_lgb_shrink0.5": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.5
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.5
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.5
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.5
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.5
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.5
+      }
+    },
+    "h5:K9_lgb_shrink0.75": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.75
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.75
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.75
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.75
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.75
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.75
+      }
+    },
+    "h5:K9_xgb_a": {
+      "2017": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 1.0
+      },
+      "all": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 1.0
+      }
+    },
+    "h5:K9_xgb_mono": {
+      "2017": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0
+      },
+      "all": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0
+      }
+    },
+    "h5:K9_xgb_shrink0.25": {
+      "2017": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.25
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.25
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.25
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 0.25
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.25
+      },
+      "all": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.25
+      }
+    },
+    "h5:K9_xgb_shrink0.5": {
+      "2017": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.5
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.5
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.5
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 0.5
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.5
+      },
+      "all": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.5
+      }
+    },
+    "h5:K9_xgb_shrink0.75": {
+      "2017": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.75
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.75
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.75
+      },
+      "2020": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "a",
+        "c": 0.75
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.75
+      },
+      "all": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 0.75
+      }
+    },
+    "h5:K10": {
+      "2017": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none"
+      },
+      "2018": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none"
+      },
+      "2019": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "mono",
+        "c": 1.0,
+        "bias": "none"
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none"
+      },
+      "2021": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none"
+      },
+      "all": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none"
+      }
+    },
+    "h5:K11_FIN": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "2018": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "2019": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "2020": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "2021": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "all": {
+        "core": "FIN",
+        "bias": "conditional"
+      }
+    },
+    "h5:K11_K9_K10": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "conditional"
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "conditional"
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0,
+        "bias": "conditional"
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "conditional"
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "conditional"
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "conditional"
+      }
+    },
+    "h5:K12_quarterly": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "quarterly"
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "quarterly"
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0,
+        "mode": "quarterly"
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none",
+        "mode": "quarterly"
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "quarterly"
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "quarterly"
+      }
+    },
+    "h5:HAR_b_adapt_quarterly": {
+      "2017": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "quarterly"
+      }
+    },
+    "h5:K12_monthly": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "monthly"
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "monthly"
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0,
+        "mode": "monthly"
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none",
+        "mode": "monthly"
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "monthly"
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "monthly"
+      }
+    },
+    "h5:HAR_b_adapt_monthly": {
+      "2017": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "monthly"
+      }
+    },
+    "h5:K12_half1": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "half1"
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "half1"
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0,
+        "mode": "half1"
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none",
+        "mode": "half1"
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "half1"
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "half1"
+      }
+    },
+    "h5:HAR_b_adapt_half1": {
+      "2017": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "half1"
+      }
+    },
+    "h5:K12_half2": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "half2"
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "half2"
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0,
+        "mode": "half2"
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none",
+        "mode": "half2"
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "half2"
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "half2"
+      }
+    },
+    "h5:HAR_b_adapt_half2": {
+      "2017": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "half2"
+      }
+    },
+    "h5:K12_rolling3": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "rolling3"
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "rolling3"
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0,
+        "mode": "rolling3"
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none",
+        "mode": "rolling3"
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "rolling3"
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "mode": "rolling3"
+      }
+    },
+    "h5:HAR_b_adapt_rolling3": {
+      "2017": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "rolling3"
+      }
+    },
+    "h5:K13": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
         "measure": "alt"
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "measure": "alt"
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0,
+        "measure": "alt"
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none",
+        "measure": "alt"
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "measure": "alt"
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "measure": "alt"
+      }
+    },
+    "h5:HAR_b_K13": {
+      "2017": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      },
+      "2018": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      },
+      "2019": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      },
+      "2020": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      },
+      "2021": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      },
+      "all": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      }
+    },
+    "h5:K14": {
+      "2017": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bagging": true
+      },
+      "2018": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bagging": true
+      },
+      "2019": {
+        "core": "K9",
+        "lib": "xgb",
+        "style": "mono",
+        "c": 1.0,
+        "bagging": true
+      },
+      "2020": {
+        "core": "K10",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bias": "none",
+        "bagging": true
+      },
+      "2021": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bagging": true
+      },
+      "all": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 1.0,
+        "bagging": true
+      }
+    },
+    "h22:FIN_fresh": {
+      "2017": {
+        "core": "FIN"
+      },
+      "2018": {
+        "core": "FIN"
+      },
+      "2019": {
+        "core": "FIN"
+      },
+      "2020": {
+        "core": "FIN"
+      },
+      "2021": {
+        "core": "FIN"
+      },
+      "all": {
+        "core": "FIN"
+      }
+    },
+    "h22:HAR_b_fresh": {
+      "2017": {
+        "core": "HAR"
+      },
+      "2018": {
+        "core": "HAR"
+      },
+      "2019": {
+        "core": "HAR"
+      },
+      "2020": {
+        "core": "HAR"
+      },
+      "2021": {
+        "core": "HAR"
+      },
+      "all": {
+        "core": "HAR"
+      }
+    },
+    "h22:K11_FIN": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "2018": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "2019": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "2020": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "2021": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "all": {
+        "core": "FIN",
+        "bias": "conditional"
+      }
+    },
+    "h22:K12_quarterly": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional",
+        "mode": "quarterly"
+      },
+      "2018": {
+        "core": "FIN",
+        "mode": "quarterly"
+      },
+      "2019": {
+        "core": "FIN",
+        "mode": "quarterly"
+      },
+      "2020": {
+        "core": "FIN",
+        "mode": "quarterly"
+      },
+      "2021": {
+        "core": "FIN",
+        "mode": "quarterly"
+      },
+      "all": {
+        "core": "FIN",
+        "mode": "quarterly"
+      }
+    },
+    "h22:HAR_b_adapt_quarterly": {
+      "2017": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "quarterly"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "quarterly"
+      }
+    },
+    "h22:K12_monthly": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional",
+        "mode": "monthly"
+      },
+      "2018": {
+        "core": "FIN",
+        "mode": "monthly"
+      },
+      "2019": {
+        "core": "FIN",
+        "mode": "monthly"
+      },
+      "2020": {
+        "core": "FIN",
+        "mode": "monthly"
+      },
+      "2021": {
+        "core": "FIN",
+        "mode": "monthly"
+      },
+      "all": {
+        "core": "FIN",
+        "mode": "monthly"
+      }
+    },
+    "h22:HAR_b_adapt_monthly": {
+      "2017": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "monthly"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "monthly"
+      }
+    },
+    "h22:K12_half1": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional",
+        "mode": "half1"
+      },
+      "2018": {
+        "core": "FIN",
+        "mode": "half1"
+      },
+      "2019": {
+        "core": "FIN",
+        "mode": "half1"
+      },
+      "2020": {
+        "core": "FIN",
+        "mode": "half1"
+      },
+      "2021": {
+        "core": "FIN",
+        "mode": "half1"
+      },
+      "all": {
+        "core": "FIN",
+        "mode": "half1"
+      }
+    },
+    "h22:HAR_b_adapt_half1": {
+      "2017": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "half1"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "half1"
+      }
+    },
+    "h22:K12_half2": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional",
+        "mode": "half2"
+      },
+      "2018": {
+        "core": "FIN",
+        "mode": "half2"
+      },
+      "2019": {
+        "core": "FIN",
+        "mode": "half2"
+      },
+      "2020": {
+        "core": "FIN",
+        "mode": "half2"
+      },
+      "2021": {
+        "core": "FIN",
+        "mode": "half2"
+      },
+      "all": {
+        "core": "FIN",
+        "mode": "half2"
+      }
+    },
+    "h22:HAR_b_adapt_half2": {
+      "2017": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "half2"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "half2"
+      }
+    },
+    "h22:K12_rolling3": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional",
+        "mode": "rolling3"
+      },
+      "2018": {
+        "core": "FIN",
+        "mode": "rolling3"
+      },
+      "2019": {
+        "core": "FIN",
+        "mode": "rolling3"
+      },
+      "2020": {
+        "core": "FIN",
+        "mode": "rolling3"
+      },
+      "2021": {
+        "core": "FIN",
+        "mode": "rolling3"
+      },
+      "all": {
+        "core": "FIN",
+        "mode": "rolling3"
+      }
+    },
+    "h22:HAR_b_adapt_rolling3": {
+      "2017": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "2018": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "2019": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "2020": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "2021": {
+        "core": "HAR",
+        "mode": "rolling3"
+      },
+      "all": {
+        "core": "HAR",
+        "mode": "rolling3"
+      }
+    },
+    "h22:K13": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional",
+        "measure": "alt"
+      },
+      "2018": {
+        "core": "FIN",
+        "mode": "monthly",
+        "measure": "alt"
+      },
+      "2019": {
+        "core": "FIN",
+        "bias": "conditional",
+        "measure": "alt"
+      },
+      "2020": {
+        "core": "FIN",
+        "mode": "rolling3",
+        "measure": "alt"
+      },
+      "2021": {
+        "core": "FIN",
+        "bias": "conditional",
+        "measure": "alt"
+      },
+      "all": {
+        "core": "FIN",
+        "bias": "conditional",
+        "measure": "alt"
+      }
+    },
+    "h22:HAR_b_K13": {
+      "2017": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      },
+      "2018": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "monthly"
+      },
+      "2019": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      },
+      "2020": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "rolling3"
+      },
+      "2021": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      },
+      "all": {
+        "core": "HAR",
+        "measure": "alt",
+        "mode": "annual"
+      }
+    },
+    "h22:K14": {
+      "2017": {
+        "core": "FIN",
+        "bias": "conditional",
+        "bagging": true
+      },
+      "2018": {
+        "core": "FIN",
+        "mode": "monthly",
+        "bagging": true
+      },
+      "2019": {
+        "core": "FIN",
+        "bias": "conditional",
+        "bagging": true
+      },
+      "2020": {
+        "core": "FIN",
+        "mode": "rolling3",
+        "bagging": true
+      },
+      "2021": {
+        "core": "FIN",
+        "bias": "conditional",
+        "bagging": true
+      },
+      "all": {
+        "core": "FIN",
+        "bias": "conditional",
+        "bagging": true
       }
     }
   },

@@ -212,10 +212,15 @@
       "n_differences": 1394
     }
   ],
-  "fit_records_checked": 114,
+  "fit_records_checked": 12243,
   "all_fit_maturity_valid": true,
   "modes": [
-    "annual"
+    "annual",
+    "half1",
+    "half2",
+    "monthly",
+    "quarterly",
+    "rolling3"
   ],
   "feature_names": "derived only; existing v3 families retain earlier audit, not retested as new",
   "reserve_state": "not_run"
