@@ -1,0 +1,222 @@
+{
+  "control_read": false,
+  "feature_mutations": [
+    {
+      "measure": "original",
+      "feature": "rv_d",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32426
+    },
+    {
+      "measure": "original",
+      "feature": "rv_w",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32426
+    },
+    {
+      "measure": "original",
+      "feature": "rv_m",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32425
+    },
+    {
+      "measure": "original",
+      "feature": "_RV66",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32423
+    },
+    {
+      "measure": "original",
+      "feature": "_RV132",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32410
+    },
+    {
+      "measure": "original",
+      "feature": "_scale",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 28140
+    },
+    {
+      "measure": "original",
+      "feature": "_ln_rq",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32426
+    },
+    {
+      "measure": "original",
+      "feature": "_ln_close_RVI",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 31355
+    },
+    {
+      "measure": "original",
+      "feature": "_ln_rv_w",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32422
+    },
+    {
+      "measure": "original",
+      "feature": "_HARQ",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32426
+    },
+    {
+      "measure": "original",
+      "feature": "_LHAR1",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 24291
+    },
+    {
+      "measure": "original",
+      "feature": "_LHAR5",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 19354
+    },
+    {
+      "measure": "original",
+      "feature": "_LHAR22",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 16731
+    },
+    {
+      "measure": "original",
+      "feature": "_state",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 1766
+    },
+    {
+      "measure": "original",
+      "feature": "_stress",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 1394
+    },
+    {
+      "measure": "alt",
+      "feature": "rv_d",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32426
+    },
+    {
+      "measure": "alt",
+      "feature": "rv_w",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32425
+    },
+    {
+      "measure": "alt",
+      "feature": "rv_m",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32422
+    },
+    {
+      "measure": "alt",
+      "feature": "_RV66",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32421
+    },
+    {
+      "measure": "alt",
+      "feature": "_RV132",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32417
+    },
+    {
+      "measure": "alt",
+      "feature": "_scale",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 28152
+    },
+    {
+      "measure": "alt",
+      "feature": "_ln_rq",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32426
+    },
+    {
+      "measure": "alt",
+      "feature": "_ln_close_RVI",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 31355
+    },
+    {
+      "measure": "alt",
+      "feature": "_ln_rv_w",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32423
+    },
+    {
+      "measure": "alt",
+      "feature": "_HARQ",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 32426
+    },
+    {
+      "measure": "alt",
+      "feature": "_LHAR1",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 24291
+    },
+    {
+      "measure": "alt",
+      "feature": "_LHAR5",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 19354
+    },
+    {
+      "measure": "alt",
+      "feature": "_LHAR22",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 16731
+    },
+    {
+      "measure": "alt",
+      "feature": "_state",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 1766
+    },
+    {
+      "measure": "alt",
+      "feature": "_stress",
+      "prefix_invariant": true,
+      "forward_day_caught": true,
+      "n_differences": 1394
+    }
+  ],
+  "fit_records_checked": 114,
+  "all_fit_maturity_valid": true,
+  "modes": [
+    "annual"
+  ],
+  "feature_names": "derived only; existing v3 families retain earlier audit, not retested as new",
+  "reserve_state": "not_run"
+}

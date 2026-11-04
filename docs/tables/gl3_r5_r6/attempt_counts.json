@@ -1,0 +1,10 @@
+{
+  "evaluated_rows": 28,
+  "candidate_rows": 20,
+  "actual_fit_calls": 4398,
+  "inner_ES_fits": 1832,
+  "full_ML_refits": 1831,
+  "analytic_or_meta_fits": 735,
+  "round3_unique_variants": 15,
+  "round4_unique_variants": 134
+}
