@@ -4,6 +4,8 @@ mod download;
 mod ext;
 mod fetch;
 mod idxcmp;
+mod index10;
+mod index10_days;
 mod indices;
 mod model;
 mod parse;
@@ -53,6 +55,18 @@ enum Cmd {
         from: String,
         #[arg(long, default_value = "2026-02-27")]
         till: String,
+    },
+    /// Ж-201: 10-мин свечи индекса IMOEX -> {out}/index_10m/IMOEX.parquet + MANIFEST.json
+    IndexBars {
+        #[arg(long, default_value = "2014-06-01")]
+        from: String,
+        #[arg(long, default_value = "2026-02-27")]
+        till: String,
+    },
+    /// Ж-201: сводка по дням IMOEX/SBER/index_d в csv для скрипта сверки (чтение parquet)
+    IndexDays {
+        #[arg(long, default_value = "docs/tables/imoex_10m")]
+        dest: PathBuf,
     },
     /// Г2: бар к бару с хранимыми, пересчёт нет
     Verify,
@@ -114,6 +128,8 @@ async fn main() -> Result<()> {
             let t = if tickers.is_empty() { self::tickers() } else { tickers };
             download::run(&t, &cli.out, &from, &till).await
         }
+        Cmd::IndexBars { from, till } => index10::run(&cli.out, &from, &till).await,
+        Cmd::IndexDays { dest } => index10_days::run(&cli.out, &dest),
         Cmd::Verify => verify::run(&cli.out, &stored::Stored::new(&cli.stored_root), &tickers()),
         Cmd::Rv => rvcmp::run(&cli.out, &stored::Stored::new(&cli.stored_root), &tickers()),
         Cmd::IndexCheck => idxcmp::run(&cli.out, &stored::Stored::new(&cli.stored_root), std::path::Path::new(".")),
