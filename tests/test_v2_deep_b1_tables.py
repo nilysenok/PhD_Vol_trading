@@ -1,4 +1,6 @@
 """B1-8 (Ж-204): таблицы B1 — колонки, пересчёт QLIKE из прогнозов, правило «перспективно», реестр trials. Без выходов счёта тесты пропускаются."""
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,8 +16,15 @@ TABS = {d: common.REP / f for d, f in configs.TABLE.items()}
 pytestmark = pytest.mark.skipif(not all(p.exists() for p in TABS.values()), reason="счёт B1 не выполнен")
 
 
+def b1_ids():
+    """Строки B1 = контроли + row_id из реестра B1 (OPTUNA_TRIALS_B1.csv); строки C в этих таблицах проверяет tests/test_v2_deep_c_tables.py."""
+    reg = pd.read_csv(tables.REG_B1, dtype=str)
+    return set(tables.CONTROLS) | {json.loads(x)["row_id"] for x in reg["конфигурация"]}
+
+
 def load(dirn):
-    return common.read_comment_csv(TABS[dirn])
+    df = common.read_comment_csv(TABS[dirn])
+    return df[df.row_id.isin(b1_ids())].reset_index(drop=True)
 
 
 def fc(rid):
@@ -27,7 +36,7 @@ def test_columns_controls_and_rows(dirn):
     df = load(dirn)
     assert set(NEED) <= set(df.columns)
     want = {"ctrl_b2", "ctrl_harj", "ctrl_b1"} | {r["row_id"] for r in configs.trials() if r["direction"] == dirn}
-    assert set(df.row_id) == want
+    assert set(df.row_id) == want and df.row_id.is_unique
 
 
 def test_controls_values_and_grid():
