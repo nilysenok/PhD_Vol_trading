@@ -1,0 +1,121 @@
+{
+  "gates": {
+    "1": {
+      "run_K9_K10": true,
+      "stress_conditions": [
+        true,
+        true
+      ],
+      "rule": "Mean RV/p_final>1 and greater than HAR-J(b) on BOTH mandatory dev stress subsets; numerical tolerance1e-12."
+    },
+    "5": {
+      "run_K9_K10": true,
+      "stress_conditions": [
+        true,
+        true
+      ],
+      "rule": "Mean RV/p_final>1 and greater than HAR-J(b) on BOTH mandatory dev stress subsets; numerical tolerance1e-12."
+    },
+    "22": {
+      "run_K9_K10": false,
+      "stress_conditions": [
+        false,
+        false
+      ],
+      "rule": "Mean RV/p_final>1 and greater than HAR-J(b) on BOTH mandatory dev stress subsets; numerical tolerance1e-12."
+    }
+  },
+  "control_read": false,
+  "new_fits": 0,
+  "reads": [
+    {
+      "path": "data/regen/features_pit_v3.parquet",
+      "columns": [
+        "date",
+        "ticker",
+        "rv",
+        "close_RVI"
+      ],
+      "n": 32426,
+      "last": "2021-12-30 00:00:00",
+      "values_sha256": "412d5f88a4ccf6ebe6216bb66f688d1d0b6fa75941bc51b9d3c6b6dacca4cfbe"
+    },
+    {
+      "path": "data/regen/features_pit_v3.parquet",
+      "columns": [
+        "date",
+        "ticker",
+        "rv_target_h1"
+      ],
+      "n": 32409,
+      "last": "2021-12-29 00:00:00",
+      "values_sha256": "527ede8363003e4a91648ee6f37c6e65b7381c82efecd849b88a944b2cd3a10b"
+    },
+    {
+      "path": "data/regen/gl3_r3/dev/predictions_h1.parquet",
+      "columns": [
+        "date",
+        "ticker",
+        "year",
+        "rv_actual",
+        "rv_pred",
+        "har_corr"
+      ],
+      "n": 21454,
+      "last": "2021-12-29 00:00:00",
+      "values_sha256": "93679192c50d0c72c7d23aeea3db819db7edac5f1fa9ec1c40149a4d5f0ab774"
+    },
+    {
+      "path": "data/regen/features_pit_v3.parquet",
+      "columns": [
+        "date",
+        "ticker",
+        "rv_target_mean_h5"
+      ],
+      "n": 32341,
+      "last": "2021-12-23 00:00:00",
+      "values_sha256": "c64a01ac31291a2859a61bcba1e68ef629ae73b3d6237c56beb315b554ca8b3e"
+    },
+    {
+      "path": "data/regen/gl3_r3/dev/predictions_h5.parquet",
+      "columns": [
+        "date",
+        "ticker",
+        "year",
+        "rv_actual",
+        "rv_pred",
+        "har_corr"
+      ],
+      "n": 21386,
+      "last": "2021-12-23 00:00:00",
+      "values_sha256": "f37fdad8b599c39557b8be9676770e305180edf60f79eda29bea48eaabc592b7"
+    },
+    {
+      "path": "data/regen/features_pit_v3.parquet",
+      "columns": [
+        "date",
+        "ticker",
+        "rv_target_mean_h22"
+      ],
+      "n": 32052,
+      "last": "2021-11-30 00:00:00",
+      "values_sha256": "2156d0e07b8715920d53089e95fab94cfad83d6d52ab7409b2f0066493b93d6f"
+    },
+    {
+      "path": "data/regen/gl3_r3/dev/predictions_h22.parquet",
+      "columns": [
+        "date",
+        "ticker",
+        "year",
+        "rv_actual",
+        "rv_pred",
+        "har_corr"
+      ],
+      "n": 21097,
+      "last": "2021-11-30 00:00:00",
+      "values_sha256": "dc4925d05a41a55a9aeb15761f47847a5a9c799c9374ab3223a94ebf7b3935cb"
+    }
+  ],
+  "near_max_definition": "abs(prediction/max_training_target-1)<=.01",
+  "regime_definition": "RV_d/RV_w is additionally tested as a ratio, as well as RV_d and RV_w individually; d0 windows include known dayd."
+}

@@ -1,0 +1,18 @@
+{
+  "status": "ready_for_owner_yes",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "control_opened": false,
+  "files": {
+    "scripts/analysis/gl3_r56_cleanup.py": "77fd83d25ba0ba20237f030616c69398c7d8293ce2464bc79730132c665d7638",
+    "scripts/analysis/gl3_r56_data.py": "50b348f437ee936eb6896dd81e71a78ca88e4a4ab4f852f258a54070a4086985",
+    "scripts/analysis/gl3_r56_diagnostics.py": "9c7b4c19f17c9c0432d9c3b772b36de6c6dc74d4c90bd7d6a2218481c347d729",
+    "scripts/analysis/gl3_r56_engine.py": "ee21a3e73669f0ac002f74f188ca6928bdcac2240f0f376bce6bc5d3c1bb7fa6",
+    "scripts/analysis/gl3_r56_freeze.py": "130be2159275458a8cb70eaaf7484302bbdee052129aa79e9c58193c3c8ca26c",
+    "scripts/analysis/gl3_r56_measure.py": "763a35714642e74324064c3ede5dd133b4ea789c3a3407a2e55beab60bf20412",
+    "scripts/analysis/gl3_r56_prefill.py": "700a9b3db7ef6106298467db9df292810692e4d25af79243cec607ebc302f3e6",
+    "scripts/analysis/gl3_r56_report.py": "ec26a942ba9dcaa32cbe56324502dadbe7436f6e64697727a19e32205a823533",
+    "scripts/analysis/gl3_r56_reserve.py": "399daddd86fee79ce23d866414f5b5200919bb42dc979a7d58d5e71450dba5f4",
+    "scripts/analysis/gl3_r56_run.py": "2b9108fb65f9aca19991780ce56a9ea8e4cd0380ceba9bd94cd602ae16f494d8",
+    "scripts/analysis/gl3_r56_validate.py": "5081526e36d390e2aef3b80f2936e8bce52783dee56a8b89bd4bcdcb4f4ac05f"
+  }
+}

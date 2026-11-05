@@ -1,0 +1,66 @@
+{
+  "status": "ready_for_owner_yes",
+  "control_read": false,
+  "opening_count_before": 2,
+  "opening_count_after": 2,
+  "nominees": [
+    {
+      "h": 1,
+      "candidate": null,
+      "incumbent_QLIKE": 0.27579630465775584,
+      "reason": "No admitted candidate"
+    },
+    {
+      "h": 5,
+      "candidate": "K9_lgb_shrink0.75",
+      "recipe": {
+        "core": "K9",
+        "lib": "lgb",
+        "style": "a",
+        "c": 0.75
+      },
+      "dev_QLIKE": 0.2115944997666136,
+      "incumbent_QLIKE": 0.20996539211548085,
+      "gain_to_incumbent_pct": -0.7758934149665775,
+      "better_years": 3,
+      "stress2020": 0.3317200723007788,
+      "stressRVI": 0.2654916593568687,
+      "incumbent_stress2020": 0.3422957876979035,
+      "incumbent_stressRVI": 0.27283282804966247,
+      "predictions": "data/regen/gl3_r5_r6/winner_h5_dev.parquet",
+      "predictions_sha256": "7e3fed5b9ffe6da7e03dd7f66293e8e710daedea913961a7ea1565fa93178433",
+      "full_recipe_identical_across_outer_folds": true
+    },
+    {
+      "h": 22,
+      "candidate": "K11_FIN",
+      "recipe": {
+        "core": "FIN",
+        "bias": "conditional"
+      },
+      "dev_QLIKE": 0.2113356087859842,
+      "incumbent_QLIKE": 0.21112818498052288,
+      "gain_to_incumbent_pct": -0.09824543581449241,
+      "better_years": 3,
+      "stress2020": 0.2347705366579465,
+      "stressRVI": 0.3911990101486918,
+      "incumbent_stress2020": 0.23626579517072885,
+      "incumbent_stressRVI": 0.39142290835231536,
+      "predictions": "data/regen/gl3_r5_r6/winner_h22_dev.parquet",
+      "predictions_sha256": "f12164ad24ad02ce779b682c22ee248938f71bebc58068a76faaa27765693365",
+      "full_recipe_identical_across_outer_folds": true
+    }
+  ],
+  "reserve6_run": false,
+  "dev_table_sha256": "af7aa416a5c9bd0ad991ba6a3a48b5cce607078a4806dc20e531ac8e69acd48f",
+  "selection_sha256": "24af9e930e62b3d04a3f4416367d23a545246a39e2d9623b0949a95c2d402d69",
+  "versions": {
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "scipy": "1.13.1",
+    "scikit-learn": "1.6.1",
+    "lightgbm": "4.6.0",
+    "xgboost": "2.1.4",
+    "torch": "2.8.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "control_read": false,
+  "deleted_only_own_intermediates": true,
+  "freed_bytes": 32040714,
+  "retained": "74 named candidate/reference forecast parquet files + winner raw/corrected forecasts; metadata/tables/fit audit ledger",
+  "saved_model_objects": 0,
+  "regenerate_measure": "python3 scripts/analysis/gl3_r56_measure.py before re-running Data",
+  "cached_forecast_banks_removed": 139
+}
