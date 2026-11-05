@@ -102,5 +102,9 @@
 ### Команды
 `python3 models_v2/run_pb.py` (~5 мин, 6 процессов); `python3 -m pytest tests/test_v2_*.py -q` → 155 passed, 20 xfailed.
 
+## Статус после этапа 3–4 (замена автора, 05.11.2026)
+Сделано: `models_v2/run_p3.py`, `run_p4.py`, `run_imp3.py`, `s3/chain.py`, `s3/leak3.py`; тесты `tests/test_v2_hyb_{tables,chain,designs}.py` (+ строки Г1 в `test_v2_hyb_leak.py`); таблицы `p3_*`, `p4_all.csv` (145 моделей × 17 срезов), `p4_dm.csv`; отчёт: разделы «п. 3», «п. 4», «Итог»; EVIDENCE G21–G31, GB2, GB3, GB5, GB6 заполнены. `pytest tests/test_v2_*.py` → 226 passed, 23 xfailed.
+Открыто: шапки `pb_*.csv` несут старый sha s3 — перезапуск `run_pb.py` (дирижёр); красные (i) у Г3, g4_hard, g4_logit; ↺ в GATES (Г1 = xgb Б-1; p4 = 145; определения утечек Г3–Г5; full Г5 изменён после просмотра) не были закоммичены до счёта. Не коммичено.
+
 ## Не читать
 `.env`; всё под `test_locked/`; `data/fastbt/s9/rvi_1850_test.parquet` и любые `*_test.*`; любые файлы `data/` кроме `data/iss_check/bars_10m_full/SBER.parquet` и `data/fastbt/s9/rvi_1850.parquet` (RVI ≥ 2022 — не читать); прогнозы и таблицы глав 3–4.

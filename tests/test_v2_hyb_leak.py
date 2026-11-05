@@ -16,7 +16,8 @@ from models_v2.s3 import gen, pb, resid  # noqa: E402
 
 D0 = 820
 ROWS = {r.name: r for r in pb.rows()}
-NAMES = ["b1_xgb_c100", "b2_252_lgbm", "b4_m_xgb", "b3_har_lgbm", "b5_lgbm_mono"]
+NAMES = ["b1_xgb_c100", "b2_252_lgbm", "b4_m_xgb", "b3_har_lgbm", "b5_lgbm_mono",
+         "b1_xgb_c050", "b1_xgb_c075", "b1_xgb_c100_nobias"]  # три последние — строки Г1 этапа 3 (g1_c050, g1_c075, g1_c100_nobias)
 
 
 def damage(bars, d, mode):
@@ -56,7 +57,7 @@ def forecast(bars, name, day, shift=False):
     D, off = pb.build_designs(F)
     r = ROWS[name]
     res = gen.run_design(D[r.design], pb.spec_of(r.lib, r.mono), 3, 0.5, d_idx, [d_idx])
-    return float(off[r.design][d_idx] + r.c * res["f"][0] + res["s2_es"] / 2)
+    return float(off[r.design][d_idx] + r.c * res["f"][0] + (res["s2_es"] / 2 if r.bias else 0.0))
 
 
 @pytest.fixture(scope="module")

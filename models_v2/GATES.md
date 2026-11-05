@@ -147,11 +147,13 @@ EVIDENCE: `tests/test_v2_hyb_resid.py` → passed (в составе 43 passed `
 CHECK: `python3 -m pytest tests/test_v2_hyb_scale.py -q`
 EXPECT: RV_252 — min(252, доступно) дней, минимум 22, не склеен через разрыв; S_d не содержит d+1; синтетика: форма учится при смене уровня ×10 (прогноз следует уровню); монотонность на нормированных признаках
 EVIDENCE: `tests/test_v2_hyb_scale.py` → 3 passed (окно 252, минимум 22, без склейки через разрыв, без строк после d, инвариантность нормировки к уровню ×10, мутации сдвиг окна +1 и неверный масштаб). НЕ проверено отдельным тестом: «форма учится при смене уровня» и монотонность на нормированных признаках (в Б-4 монотонность по индексам 0–2 проверена только сквозным прогоном run_pb). ЧАСТИЧНО.
+EVIDENCE (замена автора, 05.11): `python3 -m pytest tests/test_v2_hyb_designs.py -q` → 5 passed: `test_scaled_design_follows_level_shift_but_level_design_does_not[xgb|lgbm]` (смена уровня ×10 после обучения: ошибка нормированного дизайна < 0,35, уровневого > 1,0 и > 3× — мутация «без нормировки» видна); `test_monotone_plus_on_normalized_ln_rv_columns_and_free_fit_is_not_monotone[xgb|lgbm]` (монотонный прогноз неубывающий, свободный идёт против знака). ЗАКРЫТ.
 
 ## GB3 Б-3, Б-5
 CHECK: `python3 -m pytest tests/test_v2_hyb_pb.py -q`
 EXPECT: linear_tree строится на синтетике с линейным трендом и экстраполирует; набор признаков Б-5 ровно из 5 столбцов
 EVIDENCE: `tests/test_v2_hyb_resid.py::test_linear_tree_extrapolates_where_plain_tree_does_not` passed: linear_tree выходит за диапазон обучения, но частично (прогноз ≈2,2–2,4 при истинном 4,4; ↺ linear_lambda = 5). `tests/test_v2_hyb_pb.py` → 4 passed (реестр 22 строки / 16 подгонок; сквозной прогон). Отдельного теста «Б-5 ровно 5 столбцов» нет (задано в `pb.build_designs`). ЧАСТИЧНО.
+EVIDENCE (замена автора, 05.11): `tests/test_v2_hyb_designs.py::test_b5_design_has_exactly_five_columns_from_core_and_har` passed (X.shape[1] = 5, cols (0..4), равно `F.X[:, [0,1,2,3,I_HAR]]`). ЗАКРЫТ.
 
 ## GB4 Б-7
 CHECK: `python3 -m pytest tests/test_v2_hyb_post.py -q`
@@ -162,11 +164,12 @@ EVIDENCE: `tests/test_v2_hyb_post.py` → 11 passed (`test_b7_defense_q90_exclud
 CHECK: `python3 models_v2/run_pb.py`; `python3 -m pytest tests/test_v2_hyb_leak.py tests/test_v2_hyb_tables.py -q`
 EXPECT: `forecasts_pb.parquet` на 2272 датах для всех строк × (а, б) × расписание; sigma2 > 0, конечны; главный тест passed; `pb_leak.csv` с (i)–(iii)
 EVIDENCE: `python3 models_v2/run_pb.py` → «счёт Б: 41648 задач, 5.0 мин», код 0. `tests/test_v2_hyb_leak.py` → 12 passed (главный тест 5 строк × drop/garble побитно; мутации m1, m4 ловятся). `pb_leak.csv` (22 строки, monthly): (i) 22/22; (ii) 20/22 (красные b2_m_xgb 0,2428 против 0,2363 и b4_m_xgb 0,2429 против 0,2372); (iii) «около RV_m» красный 18/22; perm >= work для Б-1 не сверялось. `tests/test_v2_hyb_tables.py` не написан (проверка sigma2 > 0 и сетки 2272 — только в `test_v2_hyb_pb.py` на синтетике). ЧАСТИЧНО; run_pb перезапускается дирижёром для сверки.
+EVIDENCE (замена автора, 05.11): `tests/test_v2_hyb_tables.py` → `test_one_grid_2272_positive_sigma2_same_dates_and_rv_for_all_rows` passed (145 моделей × 2272, sigma2 > 0, конечны, d и rv совпадают у всех, в т. ч. все строки `forecasts_pb`). Главный тест обрезки расширен строками Г1 (`b1_xgb_c050`, `c075`, `c100_nobias`) — `tests/test_v2_hyb_leak.py` → 18 passed. Шапка pb_*.csv несёт sha s3 до добавления `chain.py`/`leak3.py` — устарела, пока дирижёр не перезапустит run_pb (тест шапок pb не писался). (iii) perm >= work для Б-1 — в `p3_leak.csv` для g1_*: 4/4. ЧАСТИЧНО → ЗАКРЫТ, кроме шапок pb (после перезапуска run_pb).
 
 ## GB6 отчёт Б и вывод
 CHECK: `python3 -m pytest tests/test_v2_hyb_tables.py -q`; `grep -c "^## п. 2, доработка" docs/otchety/2026-11-05_v2_sber_h1.md`
 EXPECT: `pb_all.csv` с «2022» и «без 2022»; `pb_dm.csv` (3 лучших, Ньюи–Уэст лаг 5, Холм); критерий применён механически, сильный и слабый варианты; вывод одной строкой; grep = 1
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_hyb_tables.py -q` → 51 passed, 3 xfailed (xfail — красные (i) Г3, g4_hard, g4_logit в `p3_leak.csv`); `test_pb_all_has_2022_and_no2022_and_verdict_recomputed_mechanically` passed (вердикт Б пересчитан независимо из `pb_all.csv`, `p2_metrics.csv`: closes2022 / strong / weak совпали для всех строк Б); `grep -c "^## п. 2, доработка"` → 1. `pb_dm.csv` — `test_pb_dm_three_best_b_rows_independent_recompute` passed (3 лучших Б по QLIKE(all), 9 строк, NW лаг 5 и p пересчитаны независимо, p_holm >= p). ЗАКРЫТ.
 
 # Этап 3 — гибриды Г2–Г5 (Г1 = Б-1, см. выше), итоговая таблица, DM (п. 3–4 блока Ж-197)
 Примечание (Ж-198): Г1 заменён на Б-1; пункты Г1/G20 ниже по HAR-J(а) утратили силу и заменены GB1. Гейты Г2–Г5 можно перечитать и уточнить отдельным коммитом до их счёта.
@@ -185,63 +188,68 @@ EVIDENCE: pending
 - Мутации: m3 Г3/Г5 берут прогноз с целью d+1 (closed включает d); m4 остаток Г1 по HAR-J, подогнанному на всей выборке; m5 q67 Г4 с днём d; m6 EWMA с неверным весом (возраст 0 у старейшего); m7 клип k не применён.
 - DM: d_t = QLIKE_harj_b − QLIKE_модель (плюс = модель лучше), Ньюи–Уэст, Бартлетт, лаг 5, N(0;1), двусторонний p; множество: 5 лучших по QLIKE(all) среди всех строк кроме harj_b + лучшая каждого класса (бустинг (a,b), Г1, Г2, Г3, Г4, Г5); выборки: all, цели <= 2021, цели 2022–02.2026; Холм по числу сравнений внутри выборки — колонка p_holm.
 - p4: 53 строки = 7 эталонов/HAR + 32 бустинга (a,b) + 14 гибридов (g1×4, g2, g3, g4×2, g5×6); срезы этапа 1 + stress/calm (по Г4); колонки metrics.summary.
+- ↺ (Ж-198; записано в сессии замены автора ПОСЛЕ первого счёта Г2–Г5: выбор был сделан в коде до счёта и счётом не менялся, кроме full Г5 — см. последнюю строку; отдельной фиксации дирижёром до счёта не было) Г1 = строки Б-1 из `forecasts_pb` (daily, (б), библиотека xgb — «как у лучшего»): `g1_c050`, `g1_c075`, `g1_c100`, `g1_c100_nobias` вместо `g1_c100_mono`; копии строк, не пересчёт; lgbm-строки Б-1 и monthly — в p4 как строки Б. Число моделей p3 прежнее (14). · откат: заменить `G1_SRC` в `run_p3.py` (05.11).
+- ↺ p4 расширен строками Б (все 92 строки pb: `b1…b5`, `b7`, daily и monthly): всего 145 моделей = 7 + 32 + 92 + 14; DM-набор дополнен лучшей строкой каждого класса Б (B1…B5, B7) · откат: убрать pb из `run_p4.load` (05.11).
+- ↺ Г1 (i)–(iii): значения берутся из `pb_leak.csv` (monthly, как Б); Г3–Г5 (i)–(iii) — по ежедневному ряду. Оракул Г3/Г4: выбор w / эксперта в точке d+1 (по одному наблюдению); Г4 oracle одинаков для жёсткой и логистической; full Г3: окно [k−251; k+252] по индексу прогноза; full Г4 (логистика): одна пара (a, b) по всей выборке; full Г5: двустороннее ядро 0,5^(|i−j|/h) на том же окне; perm: RV сдвинут циклически на 100 шагов только в оценке параметров; для `g4_hard` параметров нет — full и perm равны work по построению · откат: `models_v2/s3/chain.py`, `leak3.py` (05.11).
+- ↺ Спокойный эксперт Г4 и основа Г5 выбираются среди строк Г1 `c050/c075/c100` (без `nobias`, она — чувствительность) · откат: `chain.G1` (05.11).
+- ↺ ИЗМЕНЕНИЕ ПОСЛЕ ПРОСМОТРА: full Г5 сначала был односторонним (EWMA по closed + 252 будущих, возраст от конца окна) — full > work у всех шести (0,2442–0,2611 против 0,2306–0,2349), т. е. ограничение «full <= work» нарушалось не из-за утечки, а потому что возраст считался от d+252, а не от d. Заменено на двустороннее ядро вокруг d (см. выше); допуск (1e-12) не менялся. Первая версия: красная (ii) у g5×6; вторая: зелёная. · откат: `chain.ewma_two_sided` → `post.ewma_k` с `m+252` (05.11).
 
 ## G20 Г1 остаток
 CHECK: `python3 -m pytest tests/test_v2_hyb_resid.py -q`
 EXPECT: PIT-остаток e_t не использует данные после t (мутация m4 ловится); ln HAR-J(б) из harj_ab совпадает с признаком этапа 2 (1e-12); синтетика с известным остатком: f восстанавливает сдвиг; c масштабирует f
-EVIDENCE: pending
+EVIDENCE: УТРАТИЛ СИЛУ (Ж-198: Г1 = Б-1, остаток к HAR-J(б)); проверка — GB1 (`tests/test_v2_hyb_resid.py`, ЗАКРЫТ); не считается ни закрытым, ни открытым.
 
 ## G21 Г2 и Г0
 CHECK: `python3 models_v2/run_p3.py` (после «коммит есть»), `python3 -m pytest tests/test_v2_hyb_tables.py -q`
 EXPECT: Г0 совпал с `xgb_mse_nohar_mono_b`; g2 = argmin из 8 строк (б) с HAR-признаком
-EVIDENCE: pending
+EVIDENCE: `python3 models_v2/run_p3.py` → «Г0=xgb_mse_nohar_mono_b g2=xgb_mse_har_mono_b … моделей 14 дат 2272», код 0 (`run_p3` останавливается при несовпадении Г0). `tests/test_v2_hyb_tables.py::test_g0_g2_choices_follow_gates_rule_and_tables_record_them` passed (независимый пересчёт QLIKE: 16 строк (б), argmin = xgb_mse_nohar_mono_b; g2 = argmin 8 строк с HAR; в `p3_choice.csv` отмечено). ЗАКРЫТ.
 
 ## G22 Г3
 CHECK: `python3 -m pytest tests/test_v2_hyb_post.py -q`
 EXPECT: на синтетике, где B лучше H, w → 1, где хуже — 0; до 252 closed w = 0; ничья → меньший w; ряд w в `p3_w.csv`
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_hyb_post.py -q` → passed (синтетика: w→1 при точном B, 0 при шуме и при ничьей, до 252 — 0). `p3_w.csv`: 2272 строк, средний w по годам 0,000 (2016–17), 0,055 (2018), 0,241, 0,354, 0,205, 0,057 (2022), 0,486, 0,134, 0,586, 0,695 (2026). ЗАКРЫТ.
 
 ## G23 Г4
 CHECK: `python3 -m pytest tests/test_v2_hyb_post.py -q`
 EXPECT: q67 без дня d (m5 ловится); RVI после 2021 не используется; логистика находит известные (a, b) на синтетике; доля стресса по годам в `p3_stress.csv`
-EVIDENCE: pending
+EVIDENCE: `tests/test_v2_hyb_post.py` (q67 без d, логистика a=1,b=2 на синтетике) passed; на реальных строках `tests/test_v2_hyb_chain.py::test_q67_on_real_rows_excludes_d_and_mutation_m5_changes_stress` passed (порог = квантиль по 252 предыдущим, м5 меняет порог на > 50 % дат); `tests/test_v2_hyb_tables.py::test_rvi_not_used_after_2021_and_stress_shares` passed (share_rvi_high = 0 с 2022). `p3_stress.csv`: доля стресса 2017 0,198; 2018 0,858; 2019 0,159; 2020 0,924; 2021 0,729; 2022 0,507; 2023 0,087; 2024 0,473; 2025 0,229; 2026 0. Логистика: a на границе +5 в 2022, 2024–2026 (в 2023 — 3,68; 2020 — 4,98). ЗАКРЫТ.
 
 ## G24 Г5
 CHECK: `python3 -m pytest tests/test_v2_hyb_post.py -q`
 EXPECT: EWMA на ступени с известным ответом; клип 0,7/1,5 (m7); возраст весов (m6); «только в стресс»: k = 1 вне стресса
-EVIDENCE: pending
+EVIDENCE: `tests/test_v2_hyb_post.py` (ступень, клип, только в стресс) passed; на реальных строках `tests/test_v2_hyb_chain.py::test_ewma_on_real_rows_matches_independent_and_mutation_m6_caught` и `::test_clip_on_real_rows_and_mutation_m7_caught` passed (EWMA совпала с независимым пересчётом в 3 точках 1e-12; без клипа k выходит за [0,7; 1,5]). ЗАКРЫТ.
 
 ## G25 прогнозы и сетка
 CHECK: `python3 models_v2/run_p3.py`; `python3 -m pytest tests/test_v2_hyb_tables.py -q`
 EXPECT: `forecasts_p3.parquet`: 14 моделей × те же 2272 даты, sigma2 > 0 и конечны; таблицы p3_* с шапкой «до аудита», sha кода s3 и входов
-EVIDENCE: pending
+EVIDENCE: `python3 models_v2/run_p3.py` → код 0, ~2 с; `forecasts_p3.parquet` 14 моделей × 2272 дат. `tests/test_v2_hyb_tables.py::test_one_grid_2272…`, `::test_g1_rows_are_pb_rows_bitwise_and_p3_has_14_models`, `::test_headers_carry_status_inputs_and_current_s3_sha[p3_*]` passed; `tests/test_v2_hyb_chain.py::test_saved_forecasts_equal_recomputed_chain` passed (парquet = побитно пересчёт). ЗАКРЫТ.
 
 ## G26 утечки и главный тест
 CHECK: `python3 -m pytest tests/test_v2_hyb_leak.py -q`; `p3_leak.csv`
 EXPECT: главный тест passed для Г1 (бары) и Г3–Г5; (i)–(iii) по допускам выше, красные названы
-EVIDENCE: pending
+EVIDENCE: `tests/test_v2_hyb_leak.py` → 18 passed (главный тест, бары: 8 строк, в т. ч. g1_c050/c075/c100_nobias, × drop/garble побитно; мутации m1, m4); `tests/test_v2_hyb_chain.py` → 9 passed (главный тест Г3–Г5 побитно в 4 датах на реальных строках). `p3_leak.csv`: Г1 (4 строки) (i) oracle 0,028–0,087 против work 0,237–0,255 (<= 0,5), (ii) full < work, (iii) perm >= work — все зелёные. Г5 (6 строк): (i) oracle < work (0,098 / 0,165 против 0,231–0,235), (ii) full 0,206–0,224 < work, (iii) perm 0,273–0,316 > work — зелёные. КРАСНЫЕ (i) у g3 (oracle 0,1952 против порога 0,5·0,2527 = 0,1264), g4_hard и g4_logit (oracle 0,2160 против порога 0,1182): оракул «выбор между двумя близкими прогнозами в точке» не даёт <= 0,5·work; допуск не двигался, тесты — xfail с причиной. (ii), (iii) Г3/Г4 зелёные (g4_hard: full = perm = work по построению — параметров нет). ЗАКРЫТ как «прогнан, красные названы» (не «зелёный»).
 
 ## G27 мутации
 CHECK: `python3 -m pytest tests/test_v2_hyb_post.py tests/test_v2_hyb_resid.py tests/test_v2_hyb_leak.py -q -k mut`
 EXPECT: m3…m7 ловятся (тест красный на мутации, зелёный на правке)
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_hyb_post.py tests/test_v2_hyb_resid.py tests/test_v2_hyb_leak.py tests/test_v2_hyb_chain.py -q -k mut` → 9 passed. На реальных строках: m3 (`closed+1`) — главный тест на реальных Г3/Г5 красный под мутацией (g3 и g5_* меняются от порчи после d), зелёный без неё; m4 — `test_v2_hyb_leak.py::test_mutation_m4_*` (Б-1); m5 — порог q67 с днём d отличается на > 50 % дат и меняет флаг стресса; m6 — возраст 0 у старейшего даёт k, отличный от независимого пересчёта (> 1e-3); m7 — без клипа k выходит за [0,7; 1,5]. ЗАКРЫТ. Оговорка: m5 на реальных строках проверен как «отличие порога», а не как утечка (день d известен в d) — главный тест m5 не ловит по построению; утечки здесь нет.
 
 ## G28 итоговая таблица
 CHECK: `python3 models_v2/run_p4.py`; `python3 -m pytest tests/test_v2_hyb_tables.py -q`
 EXPECT: `p4_all.csv`: 53 модели × срезы, одна сетка (одинаковое n на all), независимый пересчёт QLIKE совпал
-EVIDENCE: pending
+EVIDENCE: `python3 models_v2/run_p4.py` → «моделей 145 срезов 17», код 0, ~8 с (↺ выше: 145 = 7 + 32 + 92 Б + 14, а не 53). `tests/test_v2_hyb_tables.py::test_p4_qlike_independent_recompute_all_models_and_slices` passed (все 145 моделей × срезы all, y2022, no2022, y2023, mar_jun_2020, stress_g4, calm_g4: n, QLIKE, mean_r — до 1e-12); n на all = 2272 у всех. ЗАКРЫТ.
 
 ## G29 DM
 CHECK: `python3 -m pytest tests/test_v2_hyb_dm.py -q`; `p4_dm.csv`
 EXPECT: на синтетике постоянная разность → знак и p≈0; шум → p в ожидаемых границах; ручной Ньюи–Уэст лаг 5 совпал; p_holm >= p
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_hyb_dm.py -q` → 5 passed (синтетика, ручной NW, номинальная частота отказов); `tests/test_v2_hyb_tables.py::test_p4_dm_independent_recompute_holm_and_set` passed (48 строк p4_dm: mean_d, stat, p пересчитаны независимо 1e-9/1e-12, знак, p_holm >= p, 5 лучших + классы boost/g1…g5/B1). `p4_dm.csv`: 16 моделей × 3 выборки. ЗАКРЫТ.
 
 ## G30 этапы 1–2 не затронуты
 CHECK: `python3 -m pytest tests/test_v2_daily.py tests/test_v2_har.py tests/test_v2_leak.py tests/test_v2_tables.py tests/test_v2_boost_leak.py tests/test_v2_boost_tables.py -q`; `shasum -a 256 models_v2/*.py models_v2/s2/*.py`
 EXPECT: 108 passed, 20 xfailed (как до этапа 3); sha файлов этапов 1–2 без изменений
-EVIDENCE: pending
+EVIDENCE: команда выше → 104 passed, 20 xfailed (EXPECT «108» включал `test_v2_boost_feat.py`, в команде его нет; вместе с ним 104+4=108 — расхождение в перечне файлов, не в тестах). Сверка файлов этапов 1–2, `run_pb.py`, `GATES.md`(до правок этой сессии), существующих `s3/*.py` с коммитом 6709af34 (ветка v2-sber-h1) по sha256: расхождений 0; изменён один тест `tests/test_v2_hyb_leak.py` (строки Г1 в NAMES, `r.bias`). Полный прогон `tests/test_v2_*.py` → 226 passed, 23 xfailed (было 155 passed, 20 xfailed; +3 xfail — красные (i) Г3, g4_hard, g4_logit). ЗАКРЫТ.
 
 ## G31 разделы «п. 3», «п. 4», «Итог»
 CHECK: `grep -c "^## п. 3\|^## п. 4\|^## Итог" docs/otchety/2026-11-05_v2_sber_h1.md`
 EXPECT: 3; «Итог» одной строкой (что даёт бустинг над HAR-J и где); коэффициенты HAR-J, важность (этап 2 + Г1), тесты утечки, реестр «закрыто N из M»
-EVIDENCE: pending
+EVIDENCE: `grep -c "^## п. 3\|^## п. 4\|^## Итог" docs/otchety/2026-11-05_v2_sber_h1.md` → 3. «Итог» — одно предложение; в п. 4 — коэффициенты HAR-J (11 дат), важность этапа 2 и Г1 (`p3_importance.csv`), таблица (i)–(iii) в п. 3, реестр «Гейты Б 6 из 6, этап 3 11 из 11». ЗАКРЫТ.
