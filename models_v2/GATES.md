@@ -55,3 +55,68 @@ EVIDENCE: `tests/test_v2_daily.py tests/test_v2_har.py` → 19 passed (посл�
 CHECK: `grep -c "^## п. 1" docs/otchety/2026-11-05_v2_sber_h1.md`
 EXPECT: 1; в разделе — сделано/не сделано/проверено/отступления/решения, реестр «закрыто N из M», числа из файлов
 EVIDENCE: grep -c → 1. ЗАКРЫТ (отчёт — «передача»: G7 не закрыт).
+
+---
+# Этап 2 (п. 2 блока): XGBoost и LightGBM. Гейты написаны до кода (05.11.2026)
+Запуск: `python3 models_v2/run_p2.py` (подбор → счёт → таблицы). Тесты: `python3 -m pytest tests/test_v2_boost*.py -q`. Процессов <= 6, `nthread=1` в каждом.
+
+## Объявлено до подбора и счёта
+- Строки: {xgb, lgbm} × {mse, hub} × {nohar, har} × {free, mono} = 16; для каждой (а) exp(f), (б) exp(f+s²/2) (основная), чувствительность (btr) — s² по остаткам обучения. Имя: `<lib>_<loss>_<nohar|har>_<free|mono>_<a|b|btr>`.
+- Признаки (все в %², только день d и раньше): ln RV_d, ln RV_w, ln RV_m, ln(1+J), ln BV, ln RV первого часа (бары 10:00–10:50), ln RV последнего часа (17:50–18:40), Σr²·1[r>0], Σr²·1[r<0], ночной гэп²/RV_m, день недели; с HAR — ещё ln σ̂² HAR-J(б) (PIT: OLS этапа 1 на данных <= t, мин. 252 пары). Пол для логарифма часового RV: 1e-6.
+- Моно (+): ln RV_d, ln RV_w, ln RV_m.
+- Ранняя остановка: последние 252 пары окна, эмбарго 1 пара (пара на стыке выбрасывается), терпение 100, потолок 2000 деревьев; метрика остановки: rmse/l2 для mse, mphe/huber для hub.
+- Гиперпараметры: lr 0.03, min_child_weight=min_data_in_leaf=50, subsample 0.8 (bagging_freq=1), L2=5, seed 42, deterministic. LightGBM: max_depth=d, num_leaves=2^d. Hub: xgb huber_slope=δ, lgbm alpha=δ.
+- **Сетка подбора (до подбора):** глубина ∈ {3, 4}; δ Хьюбера ∈ {0.5, 1.0} (в единицах ln RV; остатки HAR ~0.5). Для mse — только глубина. Всего 2 либ × (2 + 4) = 12 запусков. Критерий — QLIKE (б) на целях 2016 года; обучение — пары с целью <= 2015-12-31, один раз, без переобучения. Подбор на варианте nohar/free; параметры того же (lib, loss) переносятся на har и mono (у har до середины 2015 нет признака). Ничья — меньшая глубина, затем меньшее δ. После подбора заморожено.
+- Переобучение — первый годный день месяца, обучение на парах t+1 <= этого дня; прогноз на d использует модель последнего переобучения <= d. Ежедневное — не делается (замер времени в отчёте).
+- Допуски утечек (как этап 1, не двигаются): (i) QLIKE_oracle <= 0.5·QLIKE_work; (ii) QLIKE_full <= QLIKE_work + 1e-12; (iii) для (б) |QLIKE_perm/QLIKE_RV_m − 1| <= 0.30. Строки, где объявленный допуск не выполнен, фиксируются в отчёте красными, допуск не двигается.
+- Главный тест: прогноз на d (модель + признаки) побитно одинаков при порче/обрезке данных после 18:50 d, несколько дат, детерминизм (два запуска побитно). Мутации: признак +1 день; HAR-признак из подгонки на всей выборке (Б2); блок остановки без эмбарго (структурный тест).
+
+## G10 признаки
+CHECK: `python3 -m pytest tests/test_v2_boost_feat.py -q`
+EXPECT: passed: ручные RV часов/полудисперсии/гэп²/RV_m, NaN гэпа после разрыва, день недели, нет дальнейших данных
+EVIDENCE: pending
+
+## G11 HAR-признак PIT
+CHECK: `python3 -m pytest tests/test_v2_boost_feat.py -q`
+EXPECT: passed: признак в строке t побитно равен ln прогноза HAR-J(б) этапа 1 из данных <= t; до 252 пар — NaN; мутация «подгонка на всей выборке» ловится
+EVIDENCE: pending
+
+## G12 подбор
+CHECK: `python3 models_v2/run_p2.py` затем `python3 -m pytest tests/test_v2_boost_tables.py -q`
+EXPECT: `docs/tables/v2_sber_h1/p2_tuning.csv`: 12 строк по заявленной сетке, выбор по правилу; в `forecasts_p2` одни и те же параметры во всех месяцах
+EVIDENCE: pending
+
+## G13 прогнозы и общая сетка
+CHECK: `python3 -m pytest tests/test_v2_boost_tables.py -q`
+EXPECT: `forecasts_p2.parquet`: 16 строк × (a,b,btr) = 48 моделей, у каждой те же 2272 даты d, что у `forecasts_p1`; все sigma2 > 0 и конечны
+EVIDENCE: pending
+
+## G14 метрики
+CHECK: `python3 -m pytest tests/test_v2_boost_tables.py -q`
+EXPECT: `p2_metrics.csv` (модуль metrics.py этапа 1, срезы О7) + строка harj_b для сравнения; независимый пересчёт QLIKE совпадает
+EVIDENCE: pending
+
+## G15 важность
+CHECK: `python3 -m pytest tests/test_v2_boost_tables.py -q`
+EXPECT: `p2_importance.csv`: 16 строк × признаки, gain нормирован (сумма по строке = 1), среднее по переобучениям
+EVIDENCE: pending
+
+## G16 утечки
+CHECK: `python3 -m pytest tests/test_v2_boost_tables.py -q` (читает `p2_leak.csv`)
+EXPECT: для 16 строк (б): work/oracle/full/perm; (i) выполнено; (ii),(iii) — по объявленным допускам, красные названы в отчёте
+EVIDENCE: pending
+
+## G17 главный тест и мутации
+CHECK: `python3 -m pytest tests/test_v2_boost_leak.py -q`
+EXPECT: passed: побитная инвариантность на нескольких датах (реальные и синтетика), детерминизм, мутации (+1 день; HAR на всей выборке; без эмбарго) ловятся
+EVIDENCE: pending
+
+## G18 этап 1 не затронут
+CHECK: `python3 -m pytest tests/test_v2_daily.py tests/test_v2_har.py tests/test_v2_leak.py tests/test_v2_tables.py -q`; `shasum -a 256 models_v2/{daily,har,metrics,leak,prov,arch_check}.py data/regen/v2_sber_h1/forecasts_p1.parquet`
+EXPECT: 44 passed, 4 xfailed; префиксы sha256 до этапа 2: daily e421ca15, har cf6da1f8, metrics fddfd122, leak a6750244, prov 9b576e69, arch_check b59f8e8d, forecasts_p1 4a0109a6 (код этапа 2 лежит в подпакете `models_v2/s2/`, чтобы не менять хэш кода этапа 1 в шапках его таблиц)
+EVIDENCE: pending
+
+## G19 раздел «п. 2» отчёта
+CHECK: `grep -c "^## п. 2" docs/otchety/2026-11-05_v2_sber_h1.md`
+EXPECT: 1; реестр «закрыто N из M»; замер времени ежедневного переобучения; умолчания Б1–Б9
+EVIDENCE: pending
