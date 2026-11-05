@@ -87,3 +87,31 @@ EVIDENCE: `wc -l`: максимум 145 (`models_v2/s4/diag.py`, `models_v2/run_
 ## F13 отчёт и реестр
 CHECK: ручной (отчёт — текст): `docs/otchety/2026-11-05_v2_sber_h1_fix.md` существует, содержит разделы «Д-а», «Д-б», «И1–И6», «критерий», «DM», «утечки», «отступления», «реестр гейтов»; числа перемерены из файлов; незакрытое названо.
 EVIDENCE: `docs/otchety/2026-11-05_v2_sber_h1_fix.md` написан 05.11; все числа перемерены из `docs/tables/v2_sber_h1/fix_*.csv`; реестр «закрыто 13 из 13» (F0–F12 + F13) с оговорками: F1/F2 без `test_v2_fix_diag.py`, M9/M10 слабо, (ii) красное у fx_i6_pure. ЗАКРЫТ.
+
+## ↺ Ж-203 (05.11.2026): замечания проверяющего Ж-200 — тесты и шапки (шаг 1 задания `2026-11-05_v2_sber_h1_tests_2302.md`)
+Числа не менялись: parquet побитно те же, `diff` таблиц без строк `#` пуст.
+
+### A1 матрицы финальной модели
+CHECK: `python3 -m pytest tests/test_v2_fix_audit_train.py -q -k "final"`
+EXPECT: перехват `xgb.train`: в финальной матрице есть пара t+1 = d, нет t+1 > d, все T пар окна; мутации «без последних 252» и «окно до d+1» падают.
+EVIDENCE: 3 теста passed; мутации M1 (fit.py X[idx]→X[tr]) — упали 4 теста, окно T+1 (runner.pairs_upto) — упали 14. ЗАКРЫТ.
+
+### A2 веса доходят до обучения и блока остановки
+CHECK: `python3 -m pytest tests/test_v2_fix_audit_train.py -q -k "weights"`
+EXPECT: веса в предварительной, ES и финальной матрицах = fit.weights(.., T)[t]; при wflag=False весов нет; то же для фолда LOYO.
+EVIDENCE: 3 passed; мутации w=None (block_fit) → упал weights_reach_prelim…; w=None (fold_score) → упал weights_reach_loyo_fold_fit; ES без весов → упали оба. ЗАКРЫТ.
+
+### A3 выбор года Y не видит целей >= 01.01.Y
+CHECK: `python3 -m pytest tests/test_v2_fix_audit_train.py -q -k "loyo or choose or cut_row"`
+EXPECT: оценки run_loyo / choose / choose_i6 побитно совпадают, если подменить y, X, RV в строках с датой цели >= 01.01.Y; порча прошлого (2016) оценки меняет (контроль).
+EVIDENCE: 4 passed; мутации cut_row(Y+1), cut_row без −1, fold T_cut+1, окно T+1 — упали 3–4 теста каждая. ЗАКРЫТ.
+
+### A4 шапки с sha IMOEX
+CHECK: `python3 -m pytest tests/test_v2_fix_audit_imoex.py -q -k "restamp or imoex_sha"`; `diff` таблиц без `#` до/после
+EXPECT: fix_criterion/metrics/dm/i6_choice/i2_choice_hard несут `imoex=cadc3e41cda11533`; данные не изменились.
+EVIDENCE: 3 passed; мутация imoex_sha()="" → упал тест шапок; diff данных пуст, parquet sha те же. ЗАКРЫТ (fix_i2_choice_hard.csv добавлен к четырём из задания: тоже строки с IMOEX).
+
+### A5 IMOEX в утечках
+CHECK: `python3 -m pytest tests/test_v2_fix_audit_imoex.py -q`
+EXPECT: прогноз на d побитно одинаков при порче баров (бумаги и IMOEX) после 18:50 d для 4 форм × веса; контроль не пустой; сдвиг признаков IMOEX на +1 день ловится.
+EVIDENCE: 15 passed; мутация imoex_d+1 (mkt.py) → упали test_imoex_columns_are_not_vacuous и test_imoex_rows_invariant…. Честно: на реальных целях деревья не используют столбцы IMOEX (8 вариантов инвариантности проходят и при мутации), поэтому мутацию ловят тесты с целью, зависящей от imoex_d, и строковый тест mkt. ЗАКРЫТ.
