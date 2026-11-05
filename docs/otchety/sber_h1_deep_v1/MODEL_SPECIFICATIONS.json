@@ -1,0 +1,557 @@
+{
+ "status": "разработка, до аудита; оценка 2017–02.2026, не независимый OOS",
+ "features": {
+  "base_b2": [
+   {
+    "name": "ln_rv",
+    "definition": "ln RV_d (%²) минус ln RV_m"
+   },
+   {
+    "name": "ln_rv_w",
+    "definition": "ln средней RV за 5 дней минус ln RV_m"
+   },
+   {
+    "name": "ln_rv_m",
+    "definition": "ln RV_m (средняя за 22 дня) минус ln RV_m = 0 (константа в форме 'm')"
+   },
+   {
+    "name": "ln1p_j",
+    "definition": "ln(1 + J_d/RV_m), J = max(RV−BV, 0) в %²"
+   },
+   {
+    "name": "ln_bv",
+    "definition": "ln BV_d минус ln RV_m"
+   },
+   {
+    "name": "ln_rv_h1",
+    "definition": "ln RV первого часа (бары до 10:50, пол 1e-6) минус ln RV_m"
+   },
+   {
+    "name": "ln_rv_h2",
+    "definition": "ln RV последнего часа (бары с 17:50, пол 1e-6) минус ln RV_m"
+   },
+   {
+    "name": "rs_plus",
+    "definition": "ln(max(RS+, 1e-6)) минус ln RV_m, RS+ — сумма r² баров с r>0"
+   },
+   {
+    "name": "rs_minus",
+    "definition": "ln(max(RS−, 1e-6)) минус ln RV_m, RS− — сумма r² баров с r<0"
+   },
+   {
+    "name": "gap_rel",
+    "definition": "(100·ln(open_1/close_пред))² / RV_m — ночной гэп"
+   },
+   {
+    "name": "dow",
+    "definition": "день недели 0..4"
+   },
+   {
+    "name": "proxy_d",
+    "definition": "ln RV равновзвешенного портфеля 17 бумаг (10-мин доходности, среднее по бумагам) минус ln RV_m"
+   },
+   {
+    "name": "proxy_w",
+    "definition": "то же, среднее за 5 дней, минус ln RV_m"
+   },
+   {
+    "name": "proxy_m",
+    "definition": "то же, среднее за 22 дня, минус ln RV_m"
+   },
+   {
+    "name": "avg_d",
+    "definition": "среднее по 17 бумагам ln RV_d, минус ln RV_m"
+   },
+   {
+    "name": "avg_w",
+    "definition": "то же по RV_w, минус ln RV_m"
+   },
+   {
+    "name": "avg_m",
+    "definition": "то же по RV_m, минус ln RV_m"
+   },
+   {
+    "name": "gap_med",
+    "definition": "медиана по 17 бумагам gap_rel"
+   },
+   {
+    "name": "jump_share",
+    "definition": "доля 17 бумаг со скачком Хуанга–Таучена (z > Φ⁻¹(0,99)) в день d"
+   },
+   {
+    "name": "rel_d",
+    "definition": "ln RV_d SBER − proxy_d (до вычитания ln S)"
+   },
+   {
+    "name": "rel_w",
+    "definition": "ln RV_w SBER − proxy_w"
+   },
+   {
+    "name": "rel_m",
+    "definition": "ln RV_m SBER − proxy_m"
+   },
+   {
+    "name": "imoex_d",
+    "definition": "ln RV_d IMOEX (10-мин бары, ISS) минус ln RV_m SBER"
+   },
+   {
+    "name": "imoex_w",
+    "definition": "то же по RV_w"
+   },
+   {
+    "name": "imoex_m",
+    "definition": "то же по RV_m"
+   },
+   {
+    "name": "relx_d",
+    "definition": "ln RV_d SBER − ln RV_d IMOEX"
+   },
+   {
+    "name": "relx_w",
+    "definition": "ln RV_w SBER − ln RV_w IMOEX"
+   },
+   {
+    "name": "relx_m",
+    "definition": "ln RV_m SBER − ln RV_m IMOEX"
+   }
+  ],
+  "group_definitions": {
+   "F3": "**F3 асимметрия (8):** RS± — уровни %²; ret1=100·ln(close_d/close_{d−1}) (close последнего бара основной сессии): `f3_rs_ratio`=ln max(RS−,1e-6)−ln max(RS+,1e-6); `f3_rs_ratio5` — то же по суммам за 5 дней; `f3_ret1`=ret1; `f3_neg1`=min(ret1,0); `f3_cumneg5`, `f3_cumneg22` = Σ min(ret1,0) за 5/22 дня; `f3_cum5`=Σ ret1 за 5 дней; `f3_lev63`=корреляция за 63 дня между ret1_t и (ln RV_t−ln RV_{t−1}) (≥ 40 конечных пар).",
+   "F4": "**F4 структура, только дешёвые оценки (8):** n — число баров дня; `f4_rq`=ln RQ−2lnS, RQ=(n/3)Σ(100r)⁴; `f4_rq_rel`=ln RQ−2 ln RV; `f4_medrv`=ln MedRV−lnS, MedRV=π/(6−4√3+π)·n/(n−2)·Σ_{i=2}^{n−1} med(|r_{i−1}|,|r_i|,|r_{i+1}|)²·1e4; `f4_park`=ln(Σ_бары (ln h/l)²/(4 ln 2)·1e4)−lnS; `f4_range`=2 ln(100·ln(H_d/L_d))−lnS (H, L — максимум high и минимум low основной сессии); `f4_vov`=std(ddof=1) за 22 дня от ln RV_t−ln RV_{t−1}; `f4_hhi`=Σ_k (RV_k/RV)², k — часовые корзины begin 10…18; `f4_hhi_chg`=f4_hhi−среднее f4_hhi за 22 дня до d. Realized Kernel — не считается (информационная ценность сверх RQ/MedRV/Parkinson не обоснована заранее; отступление фиксируется)."
+  }
+ },
+ "sha": {
+  "code_c": "acf045517ecdcad3",
+  "code_d": "cb748245cadc653b",
+  "code_b2": "91db0d49f6024ddc",
+  "world_key_b2": "e4c10872ec2317d1",
+  "fix_forecasts_c.parquet": "f8aa717368218de45a92f18f0da15c525b5c8933cfba6d7241b24f1bffa33ec7",
+  "forecasts_p1.parquet": "8ecc06f2989031703171f284c1f20017dc1c46899827ed6adb45e9a2e7bc94df",
+  "vcs": "рабочая копия без коммита результатов D; коммитит дирижёр"
+ },
+ "variants": [
+  {
+   "row_id": "c2_h3_roll_f4",
+   "target": "y = ln RV_{t+1} − ln RV_m (RV_m — средняя за 22 дня); σ̂² = exp(ln RV_m + f + s²_es/2), s²_es — средний квадрат остатка на блоке ранней остановки",
+   "boosters": {
+    "f4": {
+     "design": "f4",
+     "added_columns": [
+      "f4_rq_rel",
+      "f4_park",
+      "f4_range",
+      "f4_vov",
+      "f4_hhi"
+     ],
+     "library": "xgb",
+     "window_pairs": "expanding",
+     "half_life_days": null,
+     "seed": 42,
+     "hp_by_year_of_forecast_date": {
+      "2017": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 2.0,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2018": {
+       "depth": 3.0,
+       "min_child": 30.0,
+       "l2": 30.0,
+       "lr": 0.02,
+       "subsample": 0.6,
+       "colsample": 0.5,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 300
+      },
+      "2019": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 2.0,
+       "lr": 0.1,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2020": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2021": {
+       "depth": 3.0,
+       "min_child": 30.0,
+       "l2": 30.0,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 0.5,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 300
+      },
+      "2022": {
+       "depth": 2.0,
+       "min_child": 30.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2023": {
+       "depth": 2.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2024": {
+       "depth": 5.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2025": {
+       "depth": 5.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2026": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      }
+     },
+     "hp_source": "И2 по годам (цели < 01.01.Y)"
+    }
+   },
+   "fit": {
+    "early_stopping_block_pairs": 252,
+    "embargo": 1,
+    "patience": 100,
+    "max_trees_cap": 3000,
+    "refit": "каждый день сетки; пары с t+1 <= d; признаки на d — данные <= 18:50"
+   },
+   "rule": "см. models_v2/s5/c/mix.py::build('c2_h3_roll_f4'); веса H3 — models_v2/s5/b1/rules.py::h3_weights"
+  },
+  {
+   "row_id": "c1_opt",
+   "target": "y = ln RV_{t+1} − ln RV_m (RV_m — средняя за 22 дня); σ̂² = exp(ln RV_m + f + s²_es/2), s²_es — средний квадрат остатка на блоке ранней остановки",
+   "boosters": {
+    "opt": {
+     "design": "f4",
+     "added_columns": [
+      "f4_rq_rel",
+      "f4_park",
+      "f4_range",
+      "f4_vov",
+      "f4_hhi"
+     ],
+     "library": "xgb",
+     "window_pairs": "expanding",
+     "half_life_days": null,
+     "seed": 42,
+     "hp_by_year_of_forecast_date": {
+      "2017": {
+       "depth": 2.0,
+       "min_child": 41.5115455291,
+       "l2": 11.1118179718,
+       "lr": 0.0239949313,
+       "subsample": 0.9357516117,
+       "colsample": 0.5250901456,
+       "gamma": 0.0199857238,
+       "alpha": 0.2113484633,
+       "max_trees": 300
+      },
+      "2018": {
+       "depth": 2.0,
+       "min_child": 36.9780380022,
+       "l2": 9.5010326989,
+       "lr": 0.0203600104,
+       "subsample": 0.9312404496,
+       "colsample": 0.5679511351,
+       "gamma": 0.0196727805,
+       "alpha": 0.5082595278,
+       "max_trees": 300
+      },
+      "2019": {
+       "depth": 3.0,
+       "min_child": 22.4167521108,
+       "l2": 34.2909987527,
+       "lr": 0.0700449288,
+       "subsample": 0.8982147015,
+       "colsample": 0.8436432455,
+       "gamma": 0.0360636304,
+       "alpha": 3.163322341,
+       "max_trees": 300
+      },
+      "2020": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2021": {
+       "depth": 2.0,
+       "min_child": 70.1371540138,
+       "l2": 3.3416341947,
+       "lr": 0.0397787804,
+       "subsample": 0.720269132,
+       "colsample": 0.7194046796,
+       "gamma": 0.0258676283,
+       "alpha": 4.8519346781,
+       "max_trees": 300
+      },
+      "2022": {
+       "depth": 2.0,
+       "min_child": 30.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2023": {
+       "depth": 2.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2024": {
+       "depth": 5.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2025": {
+       "depth": 3.0,
+       "min_child": 20.0074103573,
+       "l2": 18.1824474989,
+       "lr": 0.0623528663,
+       "subsample": 0.8876679502,
+       "colsample": 0.9942725608,
+       "gamma": 0.0236357003,
+       "alpha": 3.6989781966,
+       "max_trees": 300
+      },
+      "2026": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      }
+     },
+     "hp_source": "C1: TPE+И2 по годам (C_CHOICE.csv)"
+    }
+   },
+   "fit": {
+    "early_stopping_block_pairs": 252,
+    "embargo": 1,
+    "patience": 100,
+    "max_trees_cap": 3000,
+    "refit": "каждый день сетки; пары с t+1 <= d; признаки на d — данные <= 18:50"
+   }
+  },
+  {
+   "row_id": "c2_h3_roll_opt",
+   "target": "y = ln RV_{t+1} − ln RV_m (RV_m — средняя за 22 дня); σ̂² = exp(ln RV_m + f + s²_es/2), s²_es — средний квадрат остатка на блоке ранней остановки",
+   "boosters": {
+    "opt": {
+     "design": "f4",
+     "added_columns": [
+      "f4_rq_rel",
+      "f4_park",
+      "f4_range",
+      "f4_vov",
+      "f4_hhi"
+     ],
+     "library": "xgb",
+     "window_pairs": "expanding",
+     "half_life_days": null,
+     "seed": 42,
+     "hp_by_year_of_forecast_date": {
+      "2017": {
+       "depth": 2.0,
+       "min_child": 41.5115455291,
+       "l2": 11.1118179718,
+       "lr": 0.0239949313,
+       "subsample": 0.9357516117,
+       "colsample": 0.5250901456,
+       "gamma": 0.0199857238,
+       "alpha": 0.2113484633,
+       "max_trees": 300
+      },
+      "2018": {
+       "depth": 2.0,
+       "min_child": 36.9780380022,
+       "l2": 9.5010326989,
+       "lr": 0.0203600104,
+       "subsample": 0.9312404496,
+       "colsample": 0.5679511351,
+       "gamma": 0.0196727805,
+       "alpha": 0.5082595278,
+       "max_trees": 300
+      },
+      "2019": {
+       "depth": 3.0,
+       "min_child": 22.4167521108,
+       "l2": 34.2909987527,
+       "lr": 0.0700449288,
+       "subsample": 0.8982147015,
+       "colsample": 0.8436432455,
+       "gamma": 0.0360636304,
+       "alpha": 3.163322341,
+       "max_trees": 300
+      },
+      "2020": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2021": {
+       "depth": 2.0,
+       "min_child": 70.1371540138,
+       "l2": 3.3416341947,
+       "lr": 0.0397787804,
+       "subsample": 0.720269132,
+       "colsample": 0.7194046796,
+       "gamma": 0.0258676283,
+       "alpha": 4.8519346781,
+       "max_trees": 300
+      },
+      "2022": {
+       "depth": 2.0,
+       "min_child": 30.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2023": {
+       "depth": 2.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2024": {
+       "depth": 5.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2025": {
+       "depth": 3.0,
+       "min_child": 20.0074103573,
+       "l2": 18.1824474989,
+       "lr": 0.0623528663,
+       "subsample": 0.8876679502,
+       "colsample": 0.9942725608,
+       "gamma": 0.0236357003,
+       "alpha": 3.6989781966,
+       "max_trees": 300
+      },
+      "2026": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      }
+     },
+     "hp_source": "C1: TPE+И2 по годам (C_CHOICE.csv)"
+    }
+   },
+   "fit": {
+    "early_stopping_block_pairs": 252,
+    "embargo": 1,
+    "patience": 100,
+    "max_trees_cap": 3000,
+    "refit": "каждый день сетки; пары с t+1 <= d; признаки на d — данные <= 18:50"
+   },
+   "rule": "см. models_v2/s5/c/mix.py::build('c2_h3_roll_opt'); веса H3 — models_v2/s5/b1/rules.py::h3_weights"
+  }
+ ],
+ "note_if_empty": ""
+}

@@ -1,0 +1,23 @@
+# разработка; волна D Ж-204; до аудита; оценка 2017–02.2026 (2022+ — просмотр контроля гл. 3 по SBER, не независимый OOS); код d sha=cb748245cadc653b; соседи: бустеры C (C_PLATEAU), top2 (D), правило ансамбля (D)
+unit,kind,axis,dir,crit,d_b2,better_b2,plateau_ok,share_better_b2
+f4,booster_C,min_child,1.0,0.1564954192688792,-0.0078809748822387,True,True,
+f4,booster_C,l2,1.0,0.1542036450459822,-0.0101727491051356,True,True,
+f4,booster_C,subsample,-1.0,0.154526601086768,-0.0098497930643498,True,True,
+f4,booster_C,subsample,1.0,0.1552923395075144,-0.0090840546436034,True,True,
+f4,booster_C,colsample,-1.0,0.1541640889108997,-0.0102123052402181,True,True,
+f4,booster_C,gamma,1.0,0.1545883410454744,-0.0097880531056434,True,True,
+f4,booster_C,alpha,1.0,0.1555348329215702,-0.0088415612295476,True,True,
+opt,booster_C,min_child,1.0,0.1564430213905205,-0.0079333727605973,True,True,
+opt,booster_C,subsample,-1.0,0.1529537385202004,-0.0114226556309174,True,True,
+opt,booster_C,colsample,-1.0,0.1522840597429498,-0.012092334408168,True,True,
+opt,booster_C,gamma,1.0,0.1523237872833828,-0.012052606867735,True,True,
+top2,booster_D,min_child,1.0,0.15425898829797197,-0.010117405853145939,True,True,
+top2,booster_D,l2,1.0,0.15524124901921324,-0.009135145131904665,True,True,
+top2,booster_D,subsample,-1.0,0.15351712363304698,-0.010859270518070924,True,True,
+top2,booster_D,subsample,1.0,0.1536119447841952,-0.010764449366922696,True,True,
+top2,booster_D,colsample,-1.0,0.15457030616827044,-0.009806087982847461,True,True,
+top2,booster_D,gamma,1.0,0.15470188697278006,-0.009674507178337843,True,True,
+top2,booster_D,alpha,1.0,0.15391757953814594,-0.010458814612971962,True,True,
+e3_roll,ensemble_rule,win,126.0,0.17586686277285332,-0.016114466092006507,True,True,1.0
+e3_roll,ensemble_rule,win,504.0,0.1779720466467641,-0.01400928221809572,True,True,1.0
+e3_roll,ensemble_rule,step,0.05,0.1767438386916252,-0.015237490173234641,True,True,1.0

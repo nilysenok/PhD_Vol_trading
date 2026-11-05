@@ -1,0 +1,3 @@
+# разработка; волна A Ж-204; до аудита; оценка 2017–02.2026 (2022+ — просмотр контроля гл. 3 по SBER); правило эпсилон (диагностика, PIT)
+n,rule,min_rv_target,min_s2_b2,min_s2_harj,eps_min,eps_max,n_rv_below_eps,n_s2_b2_below_eps,n_s2_harj_below_eps,rv_all_positive,pilot_floor_applied
+2271,eps_d = 0.1 * min(дневная RV по строкам <= d),0.07043604749757423,0.2393011628295779,0.17133317993724775,0.007043604749757424,0.035138504657183954,0,0,0,True,False
