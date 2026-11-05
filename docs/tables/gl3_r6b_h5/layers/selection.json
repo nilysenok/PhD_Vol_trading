@@ -1,0 +1,104 @@
+{
+ "picks": {
+  "calm_G9": {
+   "2017": "calm_G3_annual",
+   "2018": "calm_G3_annual",
+   "2019": "calm_G3_annual",
+   "2020": "calm_G3_quarterly",
+   "2021": "calm_G3_annual"
+  },
+  "Г9": {
+   "2017": "Г9_logistic",
+   "2018": "Г9_logistic",
+   "2019": "Г9_logistic",
+   "2020": "Г9_logistic",
+   "2021": "Г9_logistic"
+  },
+  "Г10_FIN_LOYO": {
+   "2017": "Г10_FIN_w0.25",
+   "2018": "Г10_FIN_w0.25",
+   "2019": "Г10_FIN_w0.25",
+   "2020": "Г10_FIN_w0.5",
+   "2021": "Г10_FIN_w0.25"
+  },
+  "Г10_BEST_LOYO": {
+   "2017": "Г10_BEST_w0.25",
+   "2018": "Г10_BEST_w0.25",
+   "2019": "Г10_BEST_w0.25",
+   "2020": "Г10_BEST_w0.5",
+   "2021": "Г10_BEST_w0.25"
+  },
+  "Г12": {
+   "2017": "Г12_logistic",
+   "2018": "Г12_logistic",
+   "2019": "Г12_logistic",
+   "2020": "Г12_logistic",
+   "2021": "Г12_logistic"
+  },
+  "Г14_FIN_LOYO": {
+   "2017": "Г14_FIN_hl120_w0.5",
+   "2018": "Г14_FIN_hl120_w0.5",
+   "2019": "Г14_FIN_hl120_w0.5",
+   "2020": "Г14_FIN_hl120_w0.5",
+   "2021": "Г14_FIN_hl120_w0.5"
+  }
+ },
+ "best_pit_pick": {
+  "2017": "G2_logistic",
+  "2018": "G3_annual",
+  "2019": "G2_logistic",
+  "2020": "G3_quarterly",
+  "2021": "G3_annual"
+ },
+ "best_pit_recorded_in_pit_G7a_BEST": {
+  "2017": [
+   "G2_logistic"
+  ],
+  "2018": [
+   "G3_annual"
+  ],
+  "2019": [
+   "G2_logistic"
+  ],
+  "2020": [
+   "G3_quarterly"
+  ],
+  "2021": [
+   "G3_annual"
+  ]
+ },
+ "fallbacks": [
+  {
+   "component": "G9",
+   "h": 5,
+   "cutoff": "2017-01-01 00:00:00",
+   "n": 0,
+   "max_target_end": null,
+   "phase": "fallback_hard",
+   "detail": {
+    "reason": "n<100"
+   }
+  },
+  {
+   "component": "G11",
+   "h": 5,
+   "cutoff": "2017-01-01 00:00:00",
+   "n": 0,
+   "max_target_end": null,
+   "phase": "fallback_no_history",
+   "detail": {}
+  },
+  {
+   "component": "G12",
+   "h": 5,
+   "cutoff": "2017-01-01 00:00:00",
+   "n": 0,
+   "max_target_end": null,
+   "phase": "fallback_hard",
+   "detail": {
+    "reason": "n<100"
+   }
+  }
+ ],
+ "control_read": false
+}

@@ -1,0 +1,9 @@
+2026-11-05 09:28:08.573451+00:00 load
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  931M    0%   /
+2026-11-05 09:28:08.599281+00:00 load h5 DEV only
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  931M    0%   /
+2026-11-05 09:28:09.067744+00:00 layers
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  931M    0%   /
