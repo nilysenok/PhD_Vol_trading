@@ -1,0 +1,1 @@
+{"params": {"num_leaves": 66, "learning_rate": 0.0762408003072369, "bagging_fraction": 0.5475538189131187, "feature_fraction": 0.5790243476859142, "min_data_in_leaf": 190, "reg_alpha": 0.0104152157949701, "reg_lambda": 1.1454317414615187}, "trees": 5, "source": "shared warmup2016 D12 parameters, no ticker tuning"}

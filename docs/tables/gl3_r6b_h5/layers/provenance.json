@@ -1,0 +1,11 @@
+{
+ "sha256": {
+  "data/regen/gl3_r3/dev/predictions_h5.parquet": "3eb3822fc5c36bce83cea360ae32b09b488e6335f9da428da29dd05920f38707",
+  "data/regen/gl3_r6b_h5/pit/candidates/pit_G3_annual.parquet": "5e23b717adc3b85d46ab25017825be03b667cacf799d00370eb88d382343feef",
+  "data/regen/gl3_r6b_h5/pit/candidates/pit_G3_quarterly.parquet": "2e933487509d2aa34fd2e889207712d05f020d2cf4f8845ec4d3efaef6631c52",
+  "data/regen/gl3_r6b_h5/pit/candidates/pit_G7a_BEST.parquet": "5117e27f05c8962fd1731caa56df34815d3ad3bb711d16d5d82f4344add14c08",
+  "scripts/analysis/gl3_r6h5_data.py": "b4ff178a4fe12dddb08c58a9357f7860d34a233b08fcf2b3a02b8f352d2ee06a",
+  "scripts/analysis/gl3_r6b_common.py": "e17e408bff8c13762ff98fb9aa71782a6348fb98f35111fede97fdb546fba6d2"
+ },
+ "control_read": false
+}

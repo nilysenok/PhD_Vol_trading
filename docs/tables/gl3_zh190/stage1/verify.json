@@ -1,0 +1,63 @@
+{
+ "G3": {
+  "events": 14621,
+  "bad": 0,
+  "horizons": [
+   1,
+   5,
+   22
+  ],
+  "ok": true
+ },
+ "G4": {
+  "max_abs_diff": 2.220446049250313e-16,
+  "values_compared": 300,
+  "ok": true
+ },
+ "G5": {
+  "rows": {
+   "screen": 60,
+   "stage1": 21,
+   "iter3": 6,
+   "iter4": 3,
+   "bstar": 3
+  },
+  "want": {
+   "screen": 60,
+   "stage1": 21,
+   "iter3": 6,
+   "iter4": 3,
+   "bstar": 3
+  },
+  "ok": true
+ },
+ "matrices": {
+  "1": {
+   "rows": 32426,
+   "features": 250,
+   "same_names_as_json": true,
+   "all_float32": true,
+   "last_date": "2021-12-30",
+   "no_model_outputs": true,
+   "ok": true
+  },
+  "5": {
+   "rows": 32426,
+   "features": 309,
+   "same_names_as_json": true,
+   "all_float32": true,
+   "last_date": "2021-12-30",
+   "no_model_outputs": true,
+   "ok": true
+  },
+  "22": {
+   "rows": 32426,
+   "features": 8,
+   "same_names_as_json": true,
+   "all_float32": true,
+   "last_date": "2021-12-30",
+   "no_model_outputs": true,
+   "ok": true
+  }
+ }
+}

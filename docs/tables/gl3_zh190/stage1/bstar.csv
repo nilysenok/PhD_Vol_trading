@@ -1,0 +1,4 @@
+h,stage,config,mean_QLIKE
+1,stage1,ticker-huber4,0.2858402565918786
+5,stage1,cat-qlike,0.2125760666930189
+22,iter4,cat-huber1-bag10,0.2036453084503453

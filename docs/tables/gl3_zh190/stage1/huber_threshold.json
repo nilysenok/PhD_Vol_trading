@@ -1,0 +1,11 @@
+{
+ "written_before_counting": true,
+ "lightgbm_alpha_default": 0.9,
+ "thresholds": {
+  "huber1": 0.9,
+  "huber2": 1.8,
+  "huber4": 3.6
+ },
+ "source": "l2_lib.py:651 (LightGBM objective huber, no alpha) and fin5params.lgbm (no alpha key): the final uses the LightGBM default",
+ "qlike": "B.qlike_grad (K10): grad = 1 - exp(y-f), hess = exp(y-f), no exp(s2/2) correction"
+}
