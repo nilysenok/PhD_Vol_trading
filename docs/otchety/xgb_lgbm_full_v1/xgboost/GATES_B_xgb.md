@@ -21,49 +21,49 @@
 ### B1 — перенос Ж-204 без пересчёта
 CHECK: `python3 -m pytest tests/test_v2_xl_xgb_transfer.py -q`
 EXPECT: passed. `FEATURE_SETS.csv` и `OBJECTIVE_RESULTS.csv` содержат строки Ж-204 с `transferred=true`, trial_id из реестров Ж-204, числа равны исходным CSV (сверка по trial_id); колонка `status`; мутации: подмена trial_id, число из другой строки, `transferred=false` на переносе — тест падает.
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `pytest tests/test_v2_xl_xgb_transfer.py -q` -> 9 passed, rc 0. Перенесено 8 строк OBJECTIVE_RESULTS и 17 FEATURE_SETS с transferred=true. ЗАКРЫТ.
 
 ### B2 — воспроизводство опорной строки (P4)
 CHECK: `python3 models_v2/s6/xgb/runx.py --stage control`
 EXPECT: «B2: OK», побитное равенство σ̂² ctrl_f4 и `fc_b2_f4.parquet` на 3 датах; `crit_mean` ctrl_f4 в 1e-9 от 0,1546074…; `crit_pen` Б-2 и ctrl_f4 записаны в `CONTROL_B.json`.
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `runx.py --stage control` (выполнена ранее в этой передаче) -> «B2: OK»; CONTROL_B.json: 2018-06-01 / 2022-06-01 / 2025-06-02 bitwise=true, full_grid_max_rel_diff=0.0, crit_mean ctrl_f4 = 0.1546074143317876 = st_b2_f4.json; crit_pen Б-2 = 0.21473, ctrl_f4 = 0.20114. ЗАКРЫТ.
 
 ### B3 — численная проверка кастомного QLIKE (P5)
 CHECK: `python3 -m pytest tests/test_v2_xl_xgb_stab.py -q` и `python3 models_v2/s6/xgb/runx.py --stage stab`
 EXPECT: passed; `STABILITY_QLIKE.csv` (фиксированные даты × {qlike, gamma}: k, σ̂², |Δ ln|, конечность); (а) относительная ошибка g/h ≤ 1e-6; мутации: знак g, h без y, пол гессиана 1e-16 → 1.0 — ловятся.
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `pytest tests/test_v2_xl_xgb_stab.py -q` -> 8 passed; `runx.py --stage stab` -> fd_error = 1.898e-07 (допуск 1e-06), 12 дат × {qlike, gamma} все конечны; STABILITY_QLIKE_PAIRS.csv: |Δ ln σ̂²| между QLIKE и gamma ≤ 5,8e-08, Δk = 0 на всех 12 датах (потери эквивалентны при log-link, как и ожидалось). ЗАКРЫТ.
 
 ### B4 — главный тест обрезки на каждой новой строке
 CHECK: `python3 -m pytest tests/test_v2_xl_xgb_leak.py -q`
 EXPECT: passed. Для каждого типа новой строки (gamma, qlike, l2+γ, qlike+γ, +F2, три абляции, условные) прогноз на d побитно не меняется при порче/обрезке баров после 18:50 дня d (синтетика); мутации: признаки +1 день (№ 1), пары с t+1 = d+1, веса γ по RV_w с днём d — ловятся.
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `pytest tests/test_v2_xl_xgb_leak.py -q` -> 15 passed, rc 0. ЗАКРЫТ.
 
 ### B5 — внутренний критерий (P1)
 CHECK: `python3 -m pytest tests/test_v2_xl_xgb_crit.py -q`
 EXPECT: passed. `crit_pen` на известном ответе (фолды с заданными q) = ручной расчёт; штраф за худший ПРОШЛЫЙ год: фолд y ≥ Y не входит; мутации: mean вместо max, 0,25→1, фолды года Y в pen_Y, перепутанный знак — ловятся.
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `pytest tests/test_v2_xl_xgb_crit.py -q` -> 7 passed, rc 0. ЗАКРЫТ.
 
 ### B6 — конфигурации, дубли, реестр, бюджет
 CHECK: `python3 -m pytest tests/test_v2_xl_xgb_cfg.py -q`
 EXPECT: passed. 9 объявленных + ≤ 2 условных; trial_id уникальны и детерминированы; конфигурация, совпадающая с Ж-204 (Б-2+F4, Б-2+F4+F1), не получает нового trial_id и не увеличивает счётчик; `OPTUNA_TRIALS.csv` только дописывается (повторный запуск не дублирует), `CHECKPOINT.json` `used.obj_feat` = число новых строк реестра. Мутации: дубль учтён как trial, повторная запись удваивает.
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `pytest tests/test_v2_xl_xgb_cfg.py -q` -> 6 passed; все 55 тестов `tests/test_v2_xl_xgb_*.py` -> 55 passed. ЗАКРЫТ.
 
 ### B7 — счёт: ряды прогнозов новых trials
 CHECK: `python3 models_v2/s6/xgb/runx.py --stage trials` (затем `--stage cond`)
 EXPECT: для каждой объявленной конфигурации `fc_<id>.parquet` (2271 дата, σ̂² > 0 и конечна, сетка = Б-2), `loyo_<id>.parquet`, запись в `OPTUNA_TRIALS.csv`; `CHECKPOINT.json` `used.obj_feat` = 9 (+ условные). Условные запущены или не запущены строго по правилу (причина — в `COND_DECISION.json`).
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `--stage trials` выполнена ранее; `--stage cond` -> rc 0, COND_DECISION.json: best_obj=null, f4_f2_beats=false, run_cond_obj=false, run_f1_f2=false (ни один объектив и ни `f4_f2` не бьют ctrl_f4 по crit_pen; условные НЕ запущены строго по правилу). CHECKPOINT.json used.obj_feat = 9; OPTUNA_TRIALS.csv = 9 строк. Ряды прогнозов: raw_<id>.parquet и loyo_<id>.parquet по 9 trials + ctrl_f4, по 2271 строке, unstable=0 у всех (σ̂² конечны, > 0, отношение к ctrl_f4 в [0,1; 10]). ОТСТУПЛЕНИЕ: имя файла `raw_<id>.parquet` (кэш calcx), а не `fc_<id>.parquet` из EXPECT; содержание то же. ЗАКРЫТ с отступлением по имени.
 
 ### B8 — таблицы
 CHECK: `python3 models_v2/s6/xgb/runx.py --stage tables`
 EXPECT: `OBJECTIVE_RESULTS.csv` (перенос + X3/X4/X5), `FEATURE_SETS.csv` (перенос + F4+F2, абляции, условные), колонки: id, trial_id, transferred, objective, features, crit_mean, crit_pen, perspective, beats_f4_ref, unstable, qlike по периодам, без 24.02.2022, без 2022, mean_r, d/DM/p к HAR-J(б), к Б-2, к ctrl_f4, status; шапка со статусом; ни одна строка не получает результат другой.
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `runx.py --stage tables` -> «B8: OBJECTIVE_RESULTS 14 строк, FEATURE_SETS 22 строк; дубли id/trial_id: нет», rc 0. ЗАКРЫТ.
 
 ### B9 — гигиена
 CHECK: `python3 models_v2/s6/xgb/runx.py --stage check`
 EXPECT: «B9: нарушений 0»: файлы `models_v2/s6/xgb/*.py` ≤ 200 строк, функции ≤ 40 (иначе пометка `# xtask: длинная`); нет `_test.`, `test_locked`, `.env` в коде; `git status --short models_v2` вне `s6/` и вне чужих изменений — без новых строк от этой работы; прежние файлы `data/regen/v2_sber_h1*` и `docs/otchety/sber_h1_deep_v1` не новее коммита GATES (пересчёт командой).
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `runx.py --stage check` -> «B9: нарушений 0 {}», rc 0. ЗАКРЫТ.
 
 ### B10 — отчёт
 CHECK: ручной (выражен частично командой `runx.py --stage tables`): ответ ≤ 500 слов; числа из CSV; отрицательные результаты сохранены; перенесённое отделено от нового.
 EXPECT: реестр «закрыто N из 10»; ABANDON-гейтов нет либо названы первой строкой.
-EVIDENCE: pending
+EVIDENCE (06.11.2026): `xgboost/README_B.md` написан; числа из OBJECTIVE_RESULTS.csv / FEATURE_SETS.csv; перенесённое отделено от нового; отрицательные результаты сохранены. Реестр: закрыто 10 из 10 (B7 — с отступлением по имени файла); ABANDON нет. Ручной гейт: проверка ответа ≤ 500 слов — за дирижёром.
