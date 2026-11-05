@@ -1,0 +1,1 @@
+{"params": {"max_depth": 12, "learning_rate": 0.1481636346942567, "subsample": 0.7261631564388042, "colsample_bytree": 0.6309694611006726, "min_child_weight": 1, "reg_alpha": 0.0010328167998016, "reg_lambda": 0.0032456172067591}, "trees": 1, "source": "shared warmup2016 D12 parameters, no ticker tuning"}

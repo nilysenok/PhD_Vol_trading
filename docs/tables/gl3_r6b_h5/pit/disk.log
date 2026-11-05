@@ -1,0 +1,198 @@
+2026-11-05 09:12:50.947360+00:00 load h5 DEV only
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.440854+00:00 fresh h5 annual 2016-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.444711+00:00 fit (5, 'annual', 'original', '2016-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.458019+00:00 fresh h5 annual 2017-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.461952+00:00 fit (5, 'annual', 'original', '2017-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.471306+00:00 fresh h5 annual 2018-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.475254+00:00 fit (5, 'annual', 'original', '2018-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.483850+00:00 fresh h5 annual 2019-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.487834+00:00 fit (5, 'annual', 'original', '2019-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.496267+00:00 fresh h5 annual 2020-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.499829+00:00 fit (5, 'annual', 'original', '2020-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.509334+00:00 fresh h5 annual 2021-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.512998+00:00 fit (5, 'annual', 'original', '2021-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.531374+00:00 fresh h5 annual 2016-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.534984+00:00 fit (5, 'annual', 'original', '2016-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.580211+00:00 fresh h5 annual 2016-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.584776+00:00 fit (5, 'annual', 'original', '2016-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.594144+00:00 fresh h5 annual 2016-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.598623+00:00 fit (5, 'annual', 'original', '2016-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.607812+00:00 fresh h5 annual 2016-01-01 00:00:00
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.612522+00:00 fit (5, 'annual', 'original', '2016-01-01 00:00:00')
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.981324+00:00 start
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:51.987220+00:00 pass archive
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.135680+00:00 candidate {"core":"G2","expert":"K9","gate":"hard"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.149570+00:00 candidate {"core":"G2","expert":"HXP","gate":"hard"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.163362+00:00 candidate {"core":"G2","expert":"HAR","gate":"hard"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.177576+00:00 candidate {"core":"G2","expert":"K10","gate":"hard"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.289481+00:00 candidate {"core":"G2","expert":"K9","gate":"logistic"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.361699+00:00 candidate {"core":"G2","expert":"HXP","gate":"logistic"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.424537+00:00 candidate {"core":"G2","expert":"HAR","gate":"logistic"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.498175+00:00 candidate {"core":"G2","expert":"K10","gate":"logistic"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.809513+00:00 candidate {"core":"G5","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.822073+00:00 candidate {"core":"G5","parent":{"core":"G3","mode":"quarterly"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.846318+00:00 candidate {"core":"G6","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.865872+00:00 candidate {"core":"G6","parent":{"core":"G3","mode":"quarterly"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.898999+00:00 candidate {"core":"G7","kind":"s2","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.923396+00:00 candidate {"core":"G7","kind":"s2","parent":{"core":"G6","parent":{"core":"G3","mode":"quarterly"}}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:12:52.961138+00:00 build HAR-X+
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:25.447159+00:00 build FIN_PIT
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:25.469935+00:00 G1 final_fixed 42 2016
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:26.484009+00:00 G1 final_fixed 42 2017
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:29.096907+00:00 G1 final_fixed 42 2018
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:32.791862+00:00 G1 final_fixed 42 2019
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:37.183643+00:00 G1 final_fixed 42 2020
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:42.224507+00:00 G1 final_fixed 42 2021
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:47.455731+00:00 pass pit
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:47.594800+00:00 candidate {"core":"G2","expert":"HXP","gate":"hard"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:47.710755+00:00 candidate {"core":"G2","expert":"HXP","gate":"logistic"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:47.973787+00:00 candidate {"core":"G5","parent":{"core":"G2","expert":"HXP","gate":"logistic"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:47.987126+00:00 candidate {"core":"G5","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.000138+00:00 candidate {"core":"G5","parent":{"core":"G3","mode":"quarterly"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.025224+00:00 candidate {"core":"G6","parent":{"core":"G2","expert":"HXP","gate":"logistic"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.047395+00:00 candidate {"core":"G6","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.069609+00:00 candidate {"core":"G6","parent":{"core":"G3","mode":"quarterly"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.102324+00:00 candidate {"core":"G7","kind":"s2","parent":{"core":"G2","expert":"HXP","gate":"logistic"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.127298+00:00 candidate {"core":"G7","kind":"s2","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.151483+00:00 candidate {"core":"G7","kind":"s2","parent":{"core":"G3","mode":"quarterly"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.187244+00:00 pass pit_iter
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.323427+00:00 candidate {"core":"G2","expert":"HXP","gate":"hard"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.435740+00:00 candidate {"core":"G2","expert":"HXP","gate":"logistic"}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.727382+00:00 candidate {"core":"G5","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.741602+00:00 candidate {"core":"G5","parent":{"core":"G3","mode":"quarterly"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.765859+00:00 candidate {"core":"G6","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.788431+00:00 candidate {"core":"G6","parent":{"core":"G3","mode":"quarterly"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.822593+00:00 candidate {"core":"G7","kind":"s2","parent":{"core":"G3","mode":"annual"}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /
+2026-11-05 09:15:48.847767+00:00 candidate {"core":"G7","kind":"s2","parent":{"core":"G6","parent":{"core":"G3","mode":"quarterly"}}}
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    89Gi    13%    484k  932M    0%   /

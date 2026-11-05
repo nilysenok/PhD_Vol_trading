@@ -1,0 +1,66 @@
+{
+  "hxp_chosen": [
+    {
+      "year": 2016,
+      "alpha": 0.3,
+      "l1": 0.5,
+      "inner_mse": 0.29671792900623817,
+      "n": 6586
+    },
+    {
+      "year": 2017,
+      "alpha": 0.0,
+      "l1": 1.0,
+      "inner_mse": 0.24272391606528546,
+      "n": 10870
+    },
+    {
+      "year": 2018,
+      "alpha": 0.0,
+      "l1": 1.0,
+      "inner_mse": 0.24782350473902348,
+      "n": 15154
+    },
+    {
+      "year": 2019,
+      "alpha": 0.003,
+      "l1": 0.1,
+      "inner_mse": 0.3574166323560315,
+      "n": 19472
+    },
+    {
+      "year": 2020,
+      "alpha": 0.0,
+      "l1": 1.0,
+      "inner_mse": 0.3079197378888166,
+      "n": 23756
+    },
+    {
+      "year": 2021,
+      "alpha": 0.01,
+      "l1": 0.1,
+      "inner_mse": 0.3718762886812183,
+      "n": 28006
+    }
+  ],
+  "n_events": 506,
+  "events_by_component": {
+    "PIT_HAR-X+|inner_grid": 270,
+    "G3_positive_ridge|fit": 84,
+    "conditional_variance|fit": 35,
+    "G7_s2|fit": 35,
+    "G2_logistic|fit": 30,
+    "G1_HuberHAR|fit": 12,
+    "HAR|fit": 7,
+    "PIT_HAR-X+|refit": 6,
+    "G1_lgb|trial_ES": 6,
+    "G1_lgb|refit": 6,
+    "G1_xgb|trial_ES": 6,
+    "G1_xgb|refit": 6,
+    "HUBER|fit": 1,
+    "K10_lgb|inner_ES": 1,
+    "K10_lgb|refit": 1
+  },
+  "control_read": false,
+  "control_ok": true
+}
