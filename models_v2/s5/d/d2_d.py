@@ -89,7 +89,7 @@ def fin_table(C, best, sig, flags, mcs_in, ctx) -> pd.DataFrame:
             x = dict(rows[r])
         fl = flags["flags"][r]
         rec.append({**{k: x[k] for k in ("row_id", "q_int_kind", "q_int", "q_int_b2", "perspective", "qlike_all", "qlike_2017_2021", "qlike_2022", "qlike_2023_2025",
-                                         "qlike_2026", "qlike_no_240222", "d_harj_no_240222")}, "seed_ok": fl["seed_ok"], "n_seed_ok": fl["n_ok"], "plateau_ok": fl["plateau_ok"],
+                                         "qlike_2026", "qlike_no_240222", "d_harj_no_240222")}, "seed_ok": fl["seed_ok"], "n_seed_ok": fl["n_ok"], "plateau_ok": fl["plateau_ok"], "plateau_status": fl.get("plateau_status", "ok" if fl["plateau_ok"] else "нет"),
                     "mcs_in": bool(mcs_in.get(r, False)), "eval_selected": r in select_d.EVAL_SELECTED})
     return pd.DataFrame(rec)
 

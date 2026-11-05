@@ -19,14 +19,18 @@ def ar1(n, rho, seed):
 def test_blocks_are_contiguous_circular_and_seeded():
     idx = stats_d.block_idx(N, B_=200)
     assert idx.shape == (200, N) and np.array_equal(idx, stats_d.block_idx(N, B_=200))
+    assert stats_d.BLOCK >= 2     # при BLOCK = 1 смежность не проверяема (пустая проверка)
     runs = idx[:, :stats_d.BLOCK * 5].reshape(200, 5, stats_d.BLOCK)
-    assert (np.diff(runs, axis=2) % N == 1).all()   # внутри блока даты смежны (по кругу)
+    dif = np.diff(runs, axis=2)
+    assert dif.size == 200 * 5 * (stats_d.BLOCK - 1) > 0 and (dif % N == 1).all()   # внутри блока даты смежны (по кругу)
+    starts = runs[:, :, 0].ravel()
+    assert len(np.unique(starts)) > 100 and not (np.diff(runs[:, :, 0], axis=1) % N == stats_d.BLOCK).all()   # старты блоков случайны, а не подряд
 
 
 def test_md2_shuffled_dates_break_blocks_and_underestimate_variance():
     ok, bad = stats_d.block_idx(N, B_=400), stats_d.block_idx(N, B_=400, shuffle_dates=True)
     runs = bad[:, :stats_d.BLOCK * 5].reshape(400, 5, stats_d.BLOCK)
-    assert not (np.diff(runs, axis=2) % N == 1).all()   # мутант ловится структурным свойством
+    assert np.diff(runs, axis=2).size > 0 and not (np.diff(runs, axis=2) % N == 1).all()   # мутант ловится структурным свойством
     x = ar1(N, 0.8, 3)
     # перемешанные даты разрушают зависимость: дисперсия среднего занижена (на ряду с автокорреляцией)
     assert stats_d.boot_means(x, ok).std() > 1.5 * stats_d.boot_means(x, bad).std()

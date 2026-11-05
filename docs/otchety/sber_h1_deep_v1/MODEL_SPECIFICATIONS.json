@@ -131,154 +131,6 @@
  },
  "variants": [
   {
-   "row_id": "e3_roll",
-   "target": "y = ln RV_{t+1} − ln RV_m (RV_m — средняя за 22 дня); σ̂² = exp(ln RV_m + f + s²_es/2), s²_es — средний квадрат остатка на блоке ранней остановки",
-   "boosters": {
-    "L": {
-     "design": "f4",
-     "added_columns": [
-      "f4_rq_rel",
-      "f4_park",
-      "f4_range",
-      "f4_vov",
-      "f4_hhi"
-     ],
-     "library": "lgbm",
-     "window_pairs": "expanding",
-     "half_life_days": null,
-     "seed": 42,
-     "hp_by_year_of_forecast_date": {
-      "2017": {
-       "depth": 3.0,
-       "min_child": 10.0,
-       "l2": 2.0,
-       "lr": 0.05,
-       "subsample": 0.8,
-       "colsample": 1.0,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 3000
-      },
-      "2018": {
-       "depth": 3.0,
-       "min_child": 30.0,
-       "l2": 30.0,
-       "lr": 0.02,
-       "subsample": 0.6,
-       "colsample": 0.5,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 300
-      },
-      "2019": {
-       "depth": 3.0,
-       "min_child": 10.0,
-       "l2": 2.0,
-       "lr": 0.1,
-       "subsample": 0.8,
-       "colsample": 1.0,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 3000
-      },
-      "2020": {
-       "depth": 3.0,
-       "min_child": 10.0,
-       "l2": 0.5,
-       "lr": 0.05,
-       "subsample": 0.8,
-       "colsample": 1.0,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 3000
-      },
-      "2021": {
-       "depth": 3.0,
-       "min_child": 30.0,
-       "l2": 30.0,
-       "lr": 0.05,
-       "subsample": 0.8,
-       "colsample": 0.5,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 300
-      },
-      "2022": {
-       "depth": 2.0,
-       "min_child": 30.0,
-       "l2": 0.5,
-       "lr": 0.05,
-       "subsample": 0.8,
-       "colsample": 1.0,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 3000
-      },
-      "2023": {
-       "depth": 2.0,
-       "min_child": 10.0,
-       "l2": 0.5,
-       "lr": 0.05,
-       "subsample": 0.8,
-       "colsample": 1.0,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 3000
-      },
-      "2024": {
-       "depth": 5.0,
-       "min_child": 10.0,
-       "l2": 0.5,
-       "lr": 0.05,
-       "subsample": 0.8,
-       "colsample": 1.0,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 3000
-      },
-      "2025": {
-       "depth": 5.0,
-       "min_child": 10.0,
-       "l2": 0.5,
-       "lr": 0.05,
-       "subsample": 0.8,
-       "colsample": 1.0,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 3000
-      },
-      "2026": {
-       "depth": 3.0,
-       "min_child": 10.0,
-       "l2": 0.5,
-       "lr": 0.05,
-       "subsample": 0.8,
-       "colsample": 1.0,
-       "gamma": 0.0,
-       "alpha": 0.0,
-       "max_trees": 3000
-      }
-     },
-     "hp_source": "И2 по годам (цели < 01.01.Y)"
-    }
-   },
-   "fit": {
-    "early_stopping_block_pairs": 252,
-    "embargo": 1,
-    "patience": 100,
-    "max_trees_cap": 3000,
-    "refit": "каждый день сетки; пары с t+1 <= d; признаки на d — данные <= 18:50"
-   },
-   "ensemble": {
-    "members": [
-     "H",
-     "L"
-    ],
-    "rule": "roll",
-    "weights": "симплекс шаг 0,1; потери по закрытым прогнозам (target_date <= d); до 252 закрытых — равные"
-   }
-  },
-  {
    "row_id": "c2_h3_roll_f4",
    "target": "y = ln RV_{t+1} − ln RV_m (RV_m — средняя за 22 дня); σ̂² = exp(ln RV_m + f + s²_es/2), s²_es — средний квадрат остатка на блоке ранней остановки",
    "boosters": {
@@ -558,6 +410,147 @@
     "max_trees_cap": 3000,
     "refit": "каждый день сетки; пары с t+1 <= d; признаки на d — данные <= 18:50"
    }
+  },
+  {
+   "row_id": "c2_h3_roll_opt",
+   "target": "y = ln RV_{t+1} − ln RV_m (RV_m — средняя за 22 дня); σ̂² = exp(ln RV_m + f + s²_es/2), s²_es — средний квадрат остатка на блоке ранней остановки",
+   "boosters": {
+    "opt": {
+     "design": "f4",
+     "added_columns": [
+      "f4_rq_rel",
+      "f4_park",
+      "f4_range",
+      "f4_vov",
+      "f4_hhi"
+     ],
+     "library": "xgb",
+     "window_pairs": "expanding",
+     "half_life_days": null,
+     "seed": 42,
+     "hp_by_year_of_forecast_date": {
+      "2017": {
+       "depth": 2.0,
+       "min_child": 41.5115455291,
+       "l2": 11.1118179718,
+       "lr": 0.0239949313,
+       "subsample": 0.9357516117,
+       "colsample": 0.5250901456,
+       "gamma": 0.0199857238,
+       "alpha": 0.2113484633,
+       "max_trees": 300
+      },
+      "2018": {
+       "depth": 2.0,
+       "min_child": 36.9780380022,
+       "l2": 9.5010326989,
+       "lr": 0.0203600104,
+       "subsample": 0.9312404496,
+       "colsample": 0.5679511351,
+       "gamma": 0.0196727805,
+       "alpha": 0.5082595278,
+       "max_trees": 300
+      },
+      "2019": {
+       "depth": 3.0,
+       "min_child": 22.4167521108,
+       "l2": 34.2909987527,
+       "lr": 0.0700449288,
+       "subsample": 0.8982147015,
+       "colsample": 0.8436432455,
+       "gamma": 0.0360636304,
+       "alpha": 3.163322341,
+       "max_trees": 300
+      },
+      "2020": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2021": {
+       "depth": 2.0,
+       "min_child": 70.1371540138,
+       "l2": 3.3416341947,
+       "lr": 0.0397787804,
+       "subsample": 0.720269132,
+       "colsample": 0.7194046796,
+       "gamma": 0.0258676283,
+       "alpha": 4.8519346781,
+       "max_trees": 300
+      },
+      "2022": {
+       "depth": 2.0,
+       "min_child": 30.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2023": {
+       "depth": 2.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2024": {
+       "depth": 5.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      },
+      "2025": {
+       "depth": 3.0,
+       "min_child": 20.0074103573,
+       "l2": 18.1824474989,
+       "lr": 0.0623528663,
+       "subsample": 0.8876679502,
+       "colsample": 0.9942725608,
+       "gamma": 0.0236357003,
+       "alpha": 3.6989781966,
+       "max_trees": 300
+      },
+      "2026": {
+       "depth": 3.0,
+       "min_child": 10.0,
+       "l2": 0.5,
+       "lr": 0.05,
+       "subsample": 0.8,
+       "colsample": 1.0,
+       "gamma": 0.0,
+       "alpha": 0.0,
+       "max_trees": 3000
+      }
+     },
+     "hp_source": "C1: TPE+И2 по годам (C_CHOICE.csv)"
+    }
+   },
+   "fit": {
+    "early_stopping_block_pairs": 252,
+    "embargo": 1,
+    "patience": 100,
+    "max_trees_cap": 3000,
+    "refit": "каждый день сетки; пары с t+1 <= d; признаки на d — данные <= 18:50"
+   },
+   "rule": "см. models_v2/s5/c/mix.py::build('c2_h3_roll_opt'); веса H3 — models_v2/s5/b1/rules.py::h3_weights"
   }
  ],
  "note_if_empty": ""
