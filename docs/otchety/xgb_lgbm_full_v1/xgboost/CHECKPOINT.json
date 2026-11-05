@@ -1,0 +1,15 @@
+{
+ "algorithm": "xgboost",
+ "limits": {
+  "obj_feat": 45,
+  "hp": 55,
+  "temporal_regime": 60,
+  "ens_hybrid": 40
+ },
+ "used": {
+  "obj_feat": 0,
+  "hp": 0,
+  "temporal_regime": 0,
+  "ens_hybrid": 0
+ }
+}
