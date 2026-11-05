@@ -1,0 +1,94 @@
+{
+ "fin_pit_lgb_leg_saved": false,
+ "note": "FIN_PIT.parquet is the mean of the LGB and XGB level forecasts; the LGB leg alone is not stored, so the K9/K10 panel recipe is the reference",
+ "huber1_not_in_k9_k10": true,
+ "mse": [
+  {
+   "cutoff": "2016-01-01",
+   "reference": "K9 (Engine.boost, lgb, style a)",
+   "max_rel_diff": 0.0,
+   "rows": 4284,
+   "trees": 1
+  },
+  {
+   "cutoff": "2017-01-01",
+   "reference": "K9 (Engine.boost, lgb, style a)",
+   "max_rel_diff": 0.0,
+   "rows": 4284,
+   "trees": 3
+  },
+  {
+   "cutoff": "2018-01-01",
+   "reference": "K9 (Engine.boost, lgb, style a)",
+   "max_rel_diff": 0.0,
+   "rows": 4318,
+   "trees": 2
+  },
+  {
+   "cutoff": "2019-01-01",
+   "reference": "K9 (Engine.boost, lgb, style a)",
+   "max_rel_diff": 0.0,
+   "rows": 4284,
+   "trees": 70
+  },
+  {
+   "cutoff": "2020-01-01",
+   "reference": "K9 (Engine.boost, lgb, style a)",
+   "max_rel_diff": 0.0,
+   "rows": 4250,
+   "trees": 10
+  },
+  {
+   "cutoff": "2021-01-01",
+   "reference": "K9 (Engine.boost, lgb, style a)",
+   "max_rel_diff": 0.0,
+   "rows": 4335,
+   "trees": 2
+  }
+ ],
+ "qlike": [
+  {
+   "cutoff": "2016-01-01",
+   "reference": "K10 (Engine.boost, qlike, c=1)",
+   "max_rel_diff": 0.0,
+   "rows": 4284,
+   "trees": 5
+  },
+  {
+   "cutoff": "2017-01-01",
+   "reference": "K10 (Engine.boost, qlike, c=1)",
+   "max_rel_diff": 0.0,
+   "rows": 4284,
+   "trees": 19
+  },
+  {
+   "cutoff": "2018-01-01",
+   "reference": "K10 (Engine.boost, qlike, c=1)",
+   "max_rel_diff": 0.0,
+   "rows": 4318,
+   "trees": 1
+  },
+  {
+   "cutoff": "2019-01-01",
+   "reference": "K10 (Engine.boost, qlike, c=1)",
+   "max_rel_diff": 0.0,
+   "rows": 4284,
+   "trees": 71
+  },
+  {
+   "cutoff": "2020-01-01",
+   "reference": "K10 (Engine.boost, qlike, c=1)",
+   "max_rel_diff": 0.0,
+   "rows": 4250,
+   "trees": 89
+  },
+  {
+   "cutoff": "2021-01-01",
+   "reference": "K10 (Engine.boost, qlike, c=1)",
+   "max_rel_diff": 0.0,
+   "rows": 4335,
+   "trees": 1
+  }
+ ],
+ "ok": true
+}
