@@ -86,7 +86,7 @@ def block(sber: pd.DataFrame, sber_ln: np.ndarray, seg: np.ndarray, dates, paper
         out["rel_" + nm] = sber_ln[:, k] - out["proxy_" + nm].to_numpy()
     meta = {"imoex_from": None}
     if imoex is not None:
-        idly, _ = daily.build_daily(imoex)
+        idly, _ = daily.build_daily(imoex, index_days=None)   # IMOEX сам задаёт календарь
         ix = idly["rv"].reindex(dates).to_numpy(float)
         w = idly["rv_w"].reindex(dates).to_numpy(float)
         m = idly["rv_m"].reindex(dates).to_numpy(float)

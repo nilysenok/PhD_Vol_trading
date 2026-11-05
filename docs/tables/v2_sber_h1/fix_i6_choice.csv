@@ -1,4 +1,4 @@
-# разработка; до аудита; оценка 2017–02.2026 по Ж-200 (2022+ — просмотр контроля гл. 3 по SBER); код models_v2/s4 sha256[:16]=853186f75fffcc48, этап 1 sha256[:16]=2f4cc2a09babf6b8; sha входов: bars=b451cb48473ac15c rvi=b0bd82829ca006fa papers16=4be6d5266ec93363 imoex=cadc3e41cda11533 И6: LOYO при гиперпараметрах года из И2 (сетка 132); признаки база/рынок(IMOEX+прокси)
+# разработка; до аудита; оценка 2017–02.2026 по Ж-200 (2022+ — просмотр контроля гл. 3 по SBER); код models_v2/s4 sha256[:16]=844affc23e08aca0, этап 1 sha256[:16]=8c490b890a735585; sha входов: bars=b451cb48473ac15c rvi=b0bd82829ca006fa papers16=4be6d5266ec93363 imoex=cadc3e41cda11533 И6: LOYO при гиперпараметрах года из И2 (сетка 132); признаки база/рынок(IMOEX+прокси)
 Y,family,form,feat,w,score,chosen
 2017,pure,m,base,False,0.11413358186560461,False
 2017,pure,m,base,True,0.10929732167633309,False
@@ -32,15 +32,15 @@ Y,family,form,feat,w,score,chosen
 2018,resid,resid,base,True,0.10177896982861272,False
 2018,resid,resid,mkx,False,0.10185449911862299,False
 2018,resid,resid,mkx,True,0.10114382126024106,True
-2019,pure,level,base,False,0.15299270489929861,False
 2019,pure,level,base,True,0.15601911634451346,False
+2019,pure,level,base,False,0.15299270489929861,False
 2019,pure,m,base,True,0.1572555061592076,False
 2019,pure,m,base,False,0.15056836203507468,True
 2019,pure,level,mkx,False,0.15873569070611118,False
 2019,pure,level,mkx,True,0.16540792676863417,False
 2019,pure,delta,base,False,0.15461804817415437,False
-2019,pure,m,mkx,False,0.1681234966631951,False
 2019,pure,m,mkx,True,0.16918666382886177,False
+2019,pure,m,mkx,False,0.1681234966631951,False
 2019,pure,delta,base,True,0.15417509158557738,False
 2019,pure,delta,mkx,True,0.16621278233590883,False
 2019,pure,delta,mkx,False,0.16813882336693586,False
@@ -67,9 +67,9 @@ Y,family,form,feat,w,score,chosen
 2021,pure,level,base,False,0.14504080394520114,True
 2021,pure,level,base,True,0.15785804883026885,False
 2021,pure,level,mkx,False,0.15056432512581389,False
+2021,pure,level,mkx,True,0.1615713131920011,False
 2021,pure,m,base,False,0.14943030283200756,False
 2021,pure,m,base,True,0.15200004820203591,False
-2021,pure,level,mkx,True,0.1615713131920011,False
 2021,pure,m,mkx,False,0.15369996957512064,False
 2021,pure,m,mkx,True,0.1554520356479758,False
 2021,pure,delta,base,False,0.14662331173779128,False

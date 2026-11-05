@@ -47,7 +47,7 @@ def test_forecasts_one_grid_positive_no_gap_pairs():
             continue
         fc = pd.read_parquet(f)
         n = fc.groupby("model").size()
-        assert n.nunique() == 1 and n.iloc[0] == 2272 and (fc.sigma2 > 0).all() and np.isfinite(fc.sigma2).all()
+        assert n.nunique() == 1 and n.iloc[0] == 2271 and (fc.sigma2 > 0).all() and np.isfinite(fc.sigma2).all()
         for _, g in fc.groupby("model"):
             assert set(pd.to_datetime(g["d"])) == grid
             assert not ((pd.to_datetime(g["d"]) <= "2022-02-25") & (pd.to_datetime(g["target_date"]) >= "2022-03-24")).any()

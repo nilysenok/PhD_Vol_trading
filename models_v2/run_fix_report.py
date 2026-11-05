@@ -37,7 +37,7 @@ def load():
     for c in ("d", "target_date"):
         fc[c] = fc[c].astype("datetime64[ns]")
     n = fc.groupby("model").size()
-    assert n.nunique() == 1 and n.iloc[0] == 2272 and (fc.sigma2 > 0).all(), n.value_counts()
+    assert n.nunique() == 1 and n.iloc[0] == 2271 and (fc.sigma2 > 0).all(), n.value_counts()
     return fc.sort_values(["model", "d"]).reset_index(drop=True), leak.reset_index(drop=True)
 
 

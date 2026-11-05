@@ -38,7 +38,7 @@ def load() -> pd.DataFrame:
     for c in ("d", "target_date"):
         fc[c] = fc[c].astype("datetime64[ns]")
     n = fc.groupby("model").size()
-    assert n.nunique() == 1 and n.iloc[0] == 2272, n.value_counts()
+    assert n.nunique() == 1 and n.iloc[0] == 2271, n.value_counts()   # ↺ 05.11: сетка 2271 (без d=23.02.2026, было 2272)
     assert (fc["sigma2"] > 0).all() and np.isfinite(fc["sigma2"]).all()
     return fc.sort_values(["model", "d"]).reset_index(drop=True)
 

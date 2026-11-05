@@ -49,7 +49,7 @@ def test_forecasts_48_models_one_grid_as_stage1(fc):
     d1 = set(p1[p1.model == "rw"]["d"])
     assert fc["model"].nunique() == 48 and set(fc.model) == {"%s_%s" % (s, k) for s in SPECS for k in ("a", "b", "btr")}
     for _, g in fc.groupby("model"):
-        assert set(g["d"]) == d1 and len(g) == 2272
+        assert set(g["d"]) == d1 and len(g) == 2271
     assert np.isfinite(fc.sigma2).all() and (fc.sigma2 > 0).all()
     b = fc[fc.model == "xgb_mse_nohar_free_b"].set_index("d")["sigma2"]
     a = fc[fc.model == "xgb_mse_nohar_free_a"].set_index("d")["sigma2"]
@@ -60,10 +60,10 @@ def test_forecasts_48_models_one_grid_as_stage1(fc):
 
 def test_retrain_daily_trees_bounded_and_monthly_sensitivity_exists():
     r = pd.read_parquet(OUT / "retrain_p2.parquet")
-    assert (r.groupby("model").size() == 2272).all()  # ежедневное переобучение: по модели на каждую дату сетки
+    assert (r.groupby("model").size() == 2271).all()  # ежедневное переобучение: по модели на каждую дату сетки
     assert (r.n_trees <= boost.MAX_TREES).all() and (r.s2_es > 0).all() and (r.n_train >= boost.MIN_TRAIN).all()
     mm = csv("p2_metrics_monthly.csv")
-    assert mm.model.nunique() == 49 and (mm[mm["slice"] == "all"].n == 2272).all()
+    assert mm.model.nunique() == 49 and (mm[mm["slice"] == "all"].n == 2271).all()
 
 
 def test_metrics_match_independent_recompute(fc):
@@ -72,9 +72,9 @@ def test_metrics_match_independent_recompute(fc):
     for model, g in fc.groupby("model"):
         r = g["rv"] / g["sigma2"]
         row = m[(m.model == model) & (m["slice"] == "all")].iloc[0]
-        assert row.n == 2272 and np.isclose(row.qlike, (r - np.log(r) - 1).mean(), rtol=1e-12)
+        assert row.n == 2271 and np.isclose(row.qlike, (r - np.log(r) - 1).mean(), rtol=1e-12)
         assert np.isclose(row.mean_r, r.mean(), rtol=1e-12)
-    assert abs(m[(m.model == "harj_b_p1") & (m["slice"] == "all")].qlike.iloc[0] - 0.2348) < 5e-5
+    assert abs(m[(m.model == "harj_b_p1") & (m["slice"] == "all")].qlike.iloc[0] - 0.2337) < 5e-5   # было 0,2348 до исключения 23.02.2026
 
 
 def test_importance_normalised_and_columns():
@@ -116,8 +116,8 @@ def test_iii_permuted_near_rv_m(m):
 
 
 def test_stage1_files_untouched():
-    want = {"daily.py": "e421ca15", "har.py": "cf6da1f8", "metrics.py": "fddfd122", "leak.py": "a6750244",
+    want = {"daily.py": "d69c6b0f",   # ↺ 05.11: правило nonworking_2025 (было e421ca15); forecasts_p1 было 4a0109a6 "har.py": "cf6da1f8", "metrics.py": "fddfd122", "leak.py": "a6750244",
             "arch_check.py": "b59f8e8d"}
     for n, h in want.items():
         assert prov.sha_file(prov.ROOT / "models_v2" / n).startswith(h), n
-    assert prov.sha_file(OUT / "forecasts_p1.parquet").startswith("4a0109a6")
+    assert prov.sha_file(OUT / "forecasts_p1.parquet").startswith("8ecc06f2")

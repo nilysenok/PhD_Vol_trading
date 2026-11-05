@@ -4,6 +4,8 @@ RV в десятичных долях (не в %^2). Только основна
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -56,10 +58,25 @@ def add_windows(d: pd.DataFrame) -> pd.DataFrame:
     return d
 
 
-def build_daily(bars: pd.DataFrame):
+IMOEX_PATH = Path(__file__).resolve().parents[1] / "data/iss_check/index_10m/IMOEX.parquet"
+_IDAYS: set | None = None
+
+
+def index_session_days() -> set:
+    """Даты, в которые у IMOEX есть хотя бы один бар основной сессии (кэш на процесс)."""
+    global _IDAYS
+    if _IDAYS is None:
+        im = main_session(pd.read_parquet(IMOEX_PATH, columns=["begin"]))
+        _IDAYS = set(im["begin"].dt.normalize())
+    return _IDAYS
+
+
+def build_daily(bars: pd.DataFrame, index_days="auto"):
     """bars (begin, open, close, …) -> (daily, excluded).
 
     daily: индекс date; n_bars, rv, bv, j, seg, rv_w, rv_m. excluded: date, n_bars_main, reason.
+    index_days: даты работы IMOEX; с 01.03.2025 день без сессии IMOEX исключается (nonworking_2025, ↺ 05.11).
+    "auto" — из файла IMOEX (читается, только если в барах есть даты с 01.03.2025); None — правило выключено (для самого IMOEX).
     """
     all_days = bars["begin"].dt.normalize()
     main = main_session(bars)
@@ -75,7 +92,11 @@ def build_daily(bars: pd.DataFrame):
     ex["n_bars_main"] = ex["date"].map(n).fillna(0).astype(int)
     ex["reason"] = ""
     ex.loc[ex["n_bars_main"] < MIN_BARS, "reason"] = "bars<30"
-    ex.loc[(ex["date"].dt.dayofweek >= 5) & (ex["date"] >= WEEKEND_FROM), "reason"] = "weekend_2025"
+    late = ex["date"] >= WEEKEND_FROM
+    if index_days is not None and late.any():
+        idays = index_session_days() if isinstance(index_days, str) else set(index_days)
+        ex.loc[late & ~ex["date"].isin(idays), "reason"] = "nonworking_2025"
+    ex.loc[(ex["date"].dt.dayofweek >= 5) & late, "reason"] = "weekend_2025"
     ex.loc[ex["date"].between(*GAP), "reason"] = "stop_2022"
     d = d.join(ex.set_index("date")["reason"], how="left")
     bad = d["reason"].ne("") | ~(d["rv"] > 0)

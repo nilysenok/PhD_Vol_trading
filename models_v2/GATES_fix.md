@@ -115,3 +115,8 @@ EVIDENCE: 3 passed; мутация imoex_sha()="" → упал тест шапо
 CHECK: `python3 -m pytest tests/test_v2_fix_audit_imoex.py -q`
 EXPECT: прогноз на d побитно одинаков при порче баров (бумаги и IMOEX) после 18:50 d для 4 форм × веса; контроль не пустой; сдвиг признаков IMOEX на +1 день ловится.
 EVIDENCE: 15 passed; мутация imoex_d+1 (mkt.py) → упали test_imoex_columns_are_not_vacuous и test_imoex_rows_invariant…. Честно: на реальных целях деревья не используют столбцы IMOEX (8 вариантов инвариантности проходят и при мутации), поэтому мутацию ловят тесты с целью, зависящей от imoex_d, и строковый тест mkt. ЗАКРЫТ.
+
+### A6 исключение 23.02.2026 и пересчёт цепочки (шаг 2)
+CHECK: `python3 -m pytest tests/test_v2_daily_2302.py -q`; `python3 -m pytest tests/test_v2_*.py -q`; `data/regen/v2_sber_h1/arhiv_do_2302/manifest.sha256`; `docs/tables/v2_sber_h1/izmeneniya_2302.csv`
+EXPECT: 2026-02-23 не в ряду (причина `nonworking_2025`, исключено 81); мутация «только Сб/Вс» падает; цепочка p1→p2→pb→p3→imp3→p4→fix diag/a/c→report пересчитана; старое сохранено с sha; таблица до/после.
+EVIDENCE: test_v2_daily_2302.py 5 passed (до правки 5 failed); мутация if False → 3 теста упали; полный `tests/test_v2_*.py` 308 passed, 23 xfailed; сетка 2271 (не 2270: исключён только d = 23.02, начало 20.02 остаётся с целью 24.02); QLIKE до/после меняется только в 2026; флаги критериев без изменений (fix_criterion 14 строк, pb_verdict 48). ↺ ожидалось 2270 — получено 2271. ЗАКРЫТ.

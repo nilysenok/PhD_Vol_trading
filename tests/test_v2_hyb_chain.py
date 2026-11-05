@@ -119,5 +119,5 @@ def test_clip_on_real_rows_and_mutation_m7_caught(real, base):
     assert ratio.min() >= 0.7 - 1e-12 and ratio.max() <= 1.5 + 1e-12 and ratio.max() > 1.0 and ratio.min() < 1.0
     r = a["rv"] / s2
     no_clip = np.array([((0.5 ** ((a["m"][j] - 1 - np.arange(a["m"][j])) / 10.0)) * r[:a["m"][j]]).sum()
-                        / (0.5 ** ((a["m"][j] - 1 - np.arange(a["m"][j])) / 10.0)).sum() if a["m"][j] else 1.0 for j in range(2272)])
+                        / (0.5 ** ((a["m"][j] - 1 - np.arange(a["m"][j])) / 10.0)).sum() if a["m"][j] else 1.0 for j in range(len(r))])
     assert (no_clip < 0.7).any() or (no_clip > 1.5).any()  # м7: без клипа k выходит за границы на реальных строках

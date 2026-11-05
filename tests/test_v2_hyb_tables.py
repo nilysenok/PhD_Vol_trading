@@ -33,7 +33,7 @@ def fc():
 
 def test_one_grid_2272_positive_sigma2_same_dates_and_rv_for_all_rows(fc):
     h = fc[fc.model == "harj_b"]
-    assert fc.model.nunique() == 145 and (fc.groupby("model").size() == 2272).all()
+    assert fc.model.nunique() == 145 and (fc.groupby("model").size() == 2271).all()
     for n, f in fc.groupby("model"):
         assert (f["d"].values == h["d"].values).all() and (f["rv"].values == h["rv"].values).all(), n
     assert (fc["sigma2"] > 0).all() and np.isfinite(fc["sigma2"]).all()
@@ -52,7 +52,7 @@ def test_p4_qlike_independent_recompute_all_models_and_slices(fc):
             row = t.loc[(n, sl)]
             assert row["n"] == m.sum() and abs(row["qlike"] - own_q(f["rv"][m], f["sigma2"][m])) < 1e-12, (n, sl)
             assert abs(row["mean_r"] - (f["rv"][m] / f["sigma2"][m]).mean()) < 1e-12
-    assert (t.xs("all", level="slice")["n"] == 2272).all()
+    assert (t.xs("all", level="slice")["n"] == 2271).all()
 
 
 def test_p4_covers_stress_calm_and_years():
@@ -85,7 +85,7 @@ def test_g1_rows_are_pb_rows_bitwise_and_p3_has_14_models():
 def test_rvi_not_used_after_2021_and_stress_shares():
     s = rd("p3_stress.csv")
     assert (s[s.year >= 2022]["share_rvi_high"] == 0).all() and (s["share_stress"].between(0, 1)).all()
-    assert s["n"].sum() == 2272
+    assert s["n"].sum() == 2271
 
 
 @pytest.mark.parametrize("name", ["p3_choice.csv", "p3_w.csv", "p3_stress.csv", "p3_leak.csv", "p4_all.csv", "p4_dm.csv"])
