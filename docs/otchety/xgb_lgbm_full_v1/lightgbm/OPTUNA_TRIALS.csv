@@ -36,3 +36,21 @@ bd76ece8ce03,B,obj_feat,A_no_semivar_F_top3|ln|обратная абляция: 
 1457c26eb565,B,obj_feat,A_minus_F4_F_top3|ln|F_top3 без группы F4,crit_pen=0.214956;crit_mean=0.159347,42,131.2
 851d362dc535,B,obj_feat,A_minus_F3_F_top3|ln|F_top3 без группы F3,crit_pen=0.211524;crit_mean=0.157827,42,116.9
 fe86952c7ef4,B,obj_feat,A_minus_F5_F_top3|ln|F_top3 без группы F5,crit_pen=0.210106;crit_mean=0.156015,42,119.4
+a79fc5259c48,C,hp,"C1_num_leaves_lo|C-L1 ось num_leaves, lo-точка вокруг базы C0_inh_F4",crit_pen=0.197594;crit_mean=0.153260,42,47.7
+90043883d697,C,hp,"C1_num_leaves_hi|C-L1 ось num_leaves, hi-точка вокруг базы C0_inh_F4",crit_pen=0.198213;crit_mean=0.153933,42,56.2
+4f2be60cf125,C,hp,"C1_max_depth_lo|C-L1 ось max_depth, lo-точка вокруг базы C0_inh_F4",crit_pen=0.196045;crit_mean=0.152500,42,35.0
+a38fe2d80f58,C,hp,"C1_max_depth_hi|C-L1 ось max_depth, hi-точка вокруг базы C0_inh_F4",crit_pen=0.196606;crit_mean=0.152926,42,56.2
+5b41b4f7b164,C,hp,"C1_min_data_lo|C-L1 ось min_data, lo-точка вокруг базы C0_inh_F4",crit_pen=0.198109;crit_mean=0.153319,42,46.2
+97bd5cbf7fc2,C,hp,"C1_min_data_hi|C-L1 ось min_data, hi-точка вокруг базы C0_inh_F4",crit_pen=0.199507;crit_mean=0.153437,42,39.7
+4d815bc2be54,C,hp,"C1_lr_lo|C-L1 ось lr, lo-точка вокруг базы C0_inh_F4",crit_pen=0.195120;crit_mean=0.152018,42,61.3
+244acc24aec9,C,hp,"C1_lr_hi|C-L1 ось lr, hi-точка вокруг базы C0_inh_F4",crit_pen=0.196420;crit_mean=0.153362,42,31.4
+0cfc13729e97,C,hp,"C1_ff_lo|C-L1 ось ff, lo-точка вокруг базы C0_inh_F4",crit_pen=0.200144;crit_mean=0.153882,42,40.9
+18bbac706e7a,C,hp,"C1_ff_hi|C-L1 ось ff, hi-точка вокруг базы C0_inh_F4",crit_pen=0.194568;crit_mean=0.152187,42,52.1
+2dbd3703fd71,C,hp,"C1_bag_lo|C-L1 ось bag, lo-точка вокруг базы C0_inh_F4",crit_pen=0.200292;crit_mean=0.153931,42,41.9
+c170b04d9379,C,hp,"C1_bag_hi|C-L1 ось bag, hi-точка вокруг базы C0_inh_F4",crit_pen=0.198905;crit_mean=0.153451,42,41.7
+981f5b04c229,C,hp,"C1_l1_lo|C-L1 ось l1, lo-точка вокруг базы C0_inh_F4",crit_pen=0.196579;crit_mean=0.152703,42,59.6
+6f39fa7874fd,C,hp,"C1_l1_hi|C-L1 ось l1, hi-точка вокруг базы C0_inh_F4",crit_pen=0.207079;crit_mean=0.156422,42,64.3
+49e9951df2ff,C,hp,"C1_l2_lo|C-L1 ось l2, lo-точка вокруг базы C0_inh_F4",crit_pen=0.193467;crit_mean=0.151365,42,50.8
+ffc43a955d19,C,hp,"C1_l2_hi|C-L1 ось l2, hi-точка вокруг базы C0_inh_F4",crit_pen=0.196561;crit_mean=0.152470,42,52.4
+5d3e111f5113,C,hp,"C1_gain_lo|C-L1 ось gain, lo-точка вокруг базы C0_inh_F4",crit_pen=0.196903;crit_mean=0.152464,42,30.4
+a32ada88b5cc,C,hp,"C1_gain_hi|C-L1 ось gain, hi-точка вокруг базы C0_inh_F4",crit_pen=0.217191;crit_mean=0.163635,42,18.9

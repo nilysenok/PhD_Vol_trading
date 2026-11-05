@@ -65,4 +65,9 @@ EVIDENCE: pending
 - C1: `pytest tests/test_v2_xl_lgbmc_{hp,rules,leak}.py tests/test_v2_xl_lgbm_limits.py -q` -> 23 passed, rc 0 (до начала L1).
 - C2: `runlc.py --stage l0` rc 0 (повтор после правки c_hp: ключи кэша обновлены); `C_L0.csv` 6 строк данных; `C_BASE.json` name `C0_inh_F4`; OPTUNA_TRIALS без изменений (37 строк). Закрыт. Результат — в разделе «Результат C-L0».
 - C7 (частично): sha BASELINE.json `62160acadb0e`, fc_lgbm_b2 `7cf07022ce1b` — не изменились.
-- C3…C6, C8: pending (счёт после «коммит есть»).
+- C3: `--stage l1` rc 0; 18 trials hp; C_L1_AXES.csv 9 строк; эффекта нет ни у одной оси (лучшая l2 lo Δ −0,00093 > −0,001). Закрыт.
+- C4: `--stage l2` rc 0 -> ABANDON (`C_L2_ABANDON.md`): по правилу RC3 осей с эффектом нет. Закрыт как ABANDON (не пропуск, а ветвь правила).
+- C5: `--stage nbr` rc 0; C_SEEDS_NEIGHBORS.csv 27 строк (лучшие 2: C1_l2_lo, C0_inh_F4; по 4 seed и 8 соседей; C_annual_pick). Закрыт.
+- C6: `--stage leaves` rc 0; 27 строк; дат 228 (в RC5 написано 227 — опечатка в правиле, счёт 228).
+- C7: sha BASELINE/fc_lgbm_b2 прежние; CHECKPOINT used_stream_c.hp = 18 (≤ 40), used.hp = 33 (≤ 55). `find tests` показывает чужие `test_s6v9i_*` (не мои, моё владение — test_v2_xl_*); `find models_v2` вне s6/lgbm и s6/xgb пуст. Закрыт.
+- C8: ответ дирижёру. Закрыто 8 из 8 (C4 как ABANDON по правилу).

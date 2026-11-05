@@ -8,7 +8,7 @@
  },
  "used": {
   "obj_feat": 22,
-  "hp": 15,
+  "hp": 33,
   "temporal_regime": 0,
   "ens_hybrid": 0
  },
@@ -16,5 +16,11 @@
   "obj_feat": 45,
   "hp_lb0": 15
  },
- "updated": "2026-11-06 01:27"
+ "updated": "2026-11-06 02:18",
+ "used_stream_c": {
+  "hp": 18
+ },
+ "limits_stream_c": {
+  "hp": 40
+ }
 }
