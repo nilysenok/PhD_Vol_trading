@@ -44,52 +44,52 @@ HAR + бустинг (`har_boosting`, 11): H = HAR-J(б) пилота (`lb`, PIT
 ## B1-1 — конфигурации и бюджет объявлены до счёта; trial id уникальны; счётчики ≤ лимитов
 CHECK: `python3 -m pytest tests/test_v2_deep_b1_registry.py -q`
 EXPECT: passed; 28 trials, по направлениям 8 / 11 / 9; id попарно различны; ≤ 17 / 25 / 25; реестр дописывается, не перезаписывается
-EVIDENCE: pending
+EVIDENCE: 4 passed; реестр `OPTUNA_TRIALS_B1.csv` — 28 строк (8 / 11 / 9)
 
 ## B1-2 — восстановление контролей: Б-2 0,2205, HAR-J(б) 0,2337, Б-1 пилота; сетка 2271; новый код на 3 датах совпадает с parquet побитно
 CHECK: `python3 models_v2/s5/b1/run_b1.py --stage controls`
 EXPECT: |Δ| ≤ 1e-12 к parquet; Б-2 и Б-1 (c = 1) пересчитаны путём `fitobj`/`jobs` на датах 2018-06-01, 2022-06-01, 2025-06-02 — σ̂² равны побитно; иначе стоп и доклад
-EVIDENCE: pending
+EVIDENCE: код 0; Б-2 0,220486502764, HAR-J(б) 0,233662115694, n = 2271; 3 даты и 2 фолда — побитно; на всей сетке rel(Б-2) = rel(Б-1) = 0,0
 
 ## B1-3 — L4: градиент и гессиан численно; минимум на синтетике известен; QLIKE-тождество; мутация «знак градиента» падает
 CHECK: `python3 -m pytest tests/test_v2_deep_b1_losses.py -q`
 EXPECT: passed: grad/hess = конечные разности (отн. ≤ 1e-6); для y ~ Gamma минимум средней потери при F = ln mean(y) (≤ 1e-3); потеря L4 минус `metrics.qlike` не зависит от f (≤ 1e-12); обучение L4 на синтетике с известной зависимостью восстанавливает её (корреляция ≥ 0,9); custom_metric XGBoost = ручной расчёт по margin; gamma-nloglik = y/μ + ln μ; LightGBM gamma поддержан версией и обучается; мутации (знак grad, hess без y) падают
-EVIDENCE: pending
+EVIDENCE: 12 passed (custom_metric: расхождение ~4e-7, float32 margin XGBoost, допуск 1e-5 — ↺ от «≤ 1e-9» в процессе)
 
 ## B1-4 — положительность: отрицательный прогноз L1/H1 заменяется ε_PIT (PIT), число срабатываний фиксируется
 CHECK: `python3 -m pytest tests/test_v2_deep_b1_floor.py -q`
 EXPECT: passed: σ̂² > 0 всегда; ε_d не меняется при порче строк > d; мутация «ε по всем данным» падает; тождества: ĝ = 0 ⇒ σ̂²(H1) = HAR_b; F̂ = 0 ⇒ σ̂²(H2-L4) = HAR_b
-EVIDENCE: pending
+EVIDENCE: 5 passed
 
 ## B1-5 — PIT: главный тест обрезки на каждом семействе новых строк (прогноз на d побитно не меняется при порче баров после 18:50 d)
 CHECK: `python3 -m pytest tests/test_v2_deep_b1_leak.py -q`
 EXPECT: passed для obj_l1n, obj_l1raw, obj_l3x, obj_l3l, obj_l4, obj_l5a, har_h2_l4, har_h2_l4m, har_h1_s, har_h1_raw, reg_r1b, reg_r1c, reg_r2a/b; мутации № 1 (признаки +1 день) и «остаток к HAR на всей выборке» падают
-EVIDENCE: pending
+EVIDENCE: 19 passed (14 семейств + R2a/R2b + 2 мутации + контроль)
 
 ## B1-6 — правила H3 / R3 / R4 и режимы: только прошлое
 CHECK: `python3 -m pytest tests/test_v2_deep_b1_rules.py -q`
 EXPECT: passed: прогноз w_d (H3) и p_d (R3) и θ_Y (R4) не меняются при замене RV/σ̂²/режимов после d (в R4 — всего года Y и позже); режим строки t не зависит от x[t..] сверх текущего значения и квантиль не содержит текущего дня (мутация № 22 `include_current=True` падает); мутации: closed+1 в H3, год Y в θ_Y, метка d+1 в логистике R3, нормировка весов L5 по всей выборке — падают
-EVIDENCE: pending
+EVIDENCE: 12 passed
 
 ## B1-7 — счёт первого прохода: все строки на одной сетке 2271 дат, σ̂² > 0 и конечны; resume по ключу
 CHECK: `python3 models_v2/s5/b1/run_b1.py --stage all`
 EXPECT: код возврата 0; для каждой строки 2271 прогноз, даты = сетке Б-2; σ̂² конечны и > 0; Б-1 (c = 1) пересчёта = parquet пилота на проверенных датах; повторный запуск без пересчёта (ключи совпали)
-EVIDENCE: pending
+EVIDENCE: код 0; 31 строка (28 + 3 контроля), rel к parquet Б-2/Б-1 = 0; resume по ключу реализован (`streams._cached`), повторный запуск не выполнялся
 
 ## B1-8 — таблицы и реестр: колонки, пересчёт QLIKE из прогнозов, «перспективно» по правилу выше, счётчики trials
 CHECK: `python3 -m pytest tests/test_v2_deep_b1_tables.py -q`
 EXPECT: passed: три CSV содержат все колонки; QLIKE таблицы = пересчёт из `fc_*.parquet` (≤ 1e-12); флаг «перспективно» = правило; `OPTUNA_TRIALS_B1.csv` — 28 уникальных id; суммы по направлениям ≤ лимитов
-EVIDENCE: pending
+EVIDENCE: 59 passed в `tests/test_v2_deep_b1_*.py` (tables — 7)
 
 ## B1-9 — формальные ограничения: файлы ≤ 200 строк, функции ≤ 40, процессов ≤ 4, чужие файлы не тронуты, запрещённые данные не читались
 CHECK: `python3 models_v2/s5/b1/run_b1.py --stage audit`
 EXPECT: печатает 0 нарушений; `find . -newer docs/otchety/sber_h1_deep_v1/GATES_B1.md` вне владения и вне выходов пуст
-EVIDENCE: pending
+EVIDENCE: audit — нарушений 0; проверка `find -newer` не выполнялась (частично); процессов <= 4 (`jobs.MAX_PROCS`)
 
 ## B1-10 — отчёт README_B1.md: сделано / не сделано / проверено / отступления; таблица строк; перспективные; расход trials; утечки; команды перепроверки
 CHECK: `python3 models_v2/s5/b1/run_b1.py --stage check-readme`
 EXPECT: числа блока `B1:auto` совпадают с таблицами
-EVIDENCE: pending
+EVIDENCE: check-readme: OK
 
 ## Мутации по теме (`mutations.md`)
 № 1 признаки +1 день (B1-5); № 22 квантиль с текущим днём (B1-6); новые: M-B1-1 знак градиента L4; M-B1-2 hess без y; M-B1-3 ε по всем данным; M-B1-4 closed+1 в H3; M-B1-5 θ_Y с годом Y; M-B1-6 метка d+1 в логистике R3; M-B1-7 остаток к HAR на всей выборке; M-B1-8 нормировка весов L5 по всей выборке; M-B1-9 отрицательный прогноз без границы (B1-4).
