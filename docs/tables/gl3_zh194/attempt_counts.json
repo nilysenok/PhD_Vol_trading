@@ -1,0 +1,46 @@
+{
+ "fits_by_h": {
+  "5": {
+   "fit": 166,
+   "inner_ES": 60,
+   "refit": 60
+  },
+  "22": {
+   "fit": 50,
+   "inner_ES": 300,
+   "refit": 300
+  }
+ },
+ "ledger_events": 936,
+ "by_component": {
+  "A2_22_A2_logit": 25,
+  "A2_G1c100_A2_logit": 25,
+  "A2_HARi_A2_logit": 25,
+  "G6_ols": 50,
+  "HAR": 16,
+  "a_A2_logit": 25,
+  "b_A2_logit": 25,
+  "b_mix_A2_logit": 25,
+  "zh190_cat_huber1": 600,
+  "zh190_cat_qlike": 120
+ },
+ "rows_by_h": {
+  "5": 30,
+  "22": 21
+ },
+ "series_by_h": {
+  "5": 27,
+  "22": 18
+ },
+ "cells": {
+  "5": 90,
+  "22": 60
+ },
+ "seeds": [
+  42,
+  43,
+  44,
+  45,
+  46
+ ]
+}

@@ -1,0 +1,27 @@
+{
+ "G2": {
+  "events": 13871,
+  "bad": 0,
+  "horizons": [
+   1
+  ],
+  "ok": true
+ },
+ "G3": {
+  "max_abs_diff": 2.220446049250313e-16,
+  "values_compared": 380,
+  "series": 38,
+  "ok": true
+ },
+ "reproduction": {
+  "max_abs_dlog_cat": 0.0,
+  "bstar_rows": 25755,
+  "max_abs_dlog_bstar": 0.0,
+  "ok": true
+ },
+ "G4": {
+  "rows": 38,
+  "missing": [],
+  "ok": true
+ }
+}
