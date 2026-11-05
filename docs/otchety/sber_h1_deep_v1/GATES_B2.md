@@ -41,49 +41,49 @@ e_s = ln RV_{s+1} − lb_s, lb — PIT ln σ̂²_HAR-J(б) строки s (`resi
 ## G1 — контроль Б-2 воспроизведён кодом B2 на всех 2271 датах
 CHECK: `python3 models_v2/s5/b2/run_b2.py --stage control`
 EXPECT: |σ̂²_B2 / σ̂²_parquet − 1| ≤ 1e-9 на каждой из 2271 даты; QLIKE 0,2205 (0,220486502764 ± 1e-12), HAR-J(б) 0,2337; иначе код возврата 1, стоп и доклад
-EVIDENCE: pending
+EVIDENCE: код возврата 0; «G1: max rel 0.000e+00, QLIKE BASE 0.220486502764, HAR-J(б) 0.233662115694» (лог `data/regen/v2_sber_h1_deep_v1/b2/log_control.txt`); побитное совпадение на 2271 дате
 
 ## G2 — определения F1–F6 в коде равны §1 (число и имена столбцов, значения на синтетике с известным ответом)
 CHECK: `python3 -m pytest tests/test_v2_deep_b2_feat.py -q`
 EXPECT: passed: имена и число столбцов (9/8/8/8/8/10); значения F1–F6 на детерминированных барах совпадают с независимой прямой формулой (≤ 1e-12); окна не склеивают сегменты; NaN там, где окно неполное
-EVIDENCE: pending
+EVIDENCE: `test_v2_deep_b2_feat.py` — 6 passed (F4 RQ/MedRV/Parkinson/диапазон/HHI, F5 corr, F3 ret1, F1/F6 против прямых формул ≤ 1e-10…1e-12; сегмент 2022 не склеен)
 
 ## G3 — PIT: признак строки d побитно не зависит от баров после 18:50 d (по каждой группе, синтетика и реальные бары 2019); мутация «день d+1» ловится в каждой группе
 CHECK: `python3 -m pytest tests/test_v2_deep_b2_pit.py -q`
 EXPECT: passed: порча баров SBER и IMOEX после d не меняет строку d F1–F6 ни в одном бите; мутант (признак группы взят с днём d+1) даёт иное значение — тест падает на мутанте (6 групп, №1)
-EVIDENCE: pending
+EVIDENCE: `test_v2_deep_b2_pit.py` — 13 passed (6 групп × инвариантность строк ≤ d и неинвариантность строк > d; 6 мутантов d+1 ловятся; реальные бары: таблица по барам, обрезанным в 18:50 дня 03.06.2019, равна таблице по барам до 2020-01-01 на строках ≤ d)
 
 ## G4 — правило дополнительной информации и таблица INFO_CHECK_B2
 CHECK: `python3 -m pytest tests/test_v2_deep_b2_info.py -q` и `python3 models_v2/s5/b2/run_b2.py --stage info`
 EXPECT: passed (порог 0,95 строго «>», только строки ≤ 2016, исключение дубликата, группа без столбцов не тратит trial; порча данных после 2016 не меняет результат; мутант «все строки» ловится); `INFO_CHECK_B2.csv` создан, каждый кандидат — принят/исключён с корреляцией
-EVIDENCE: pending
+EVIDENCE: `test_v2_deep_b2_info.py` — 5 passed; `INFO_CHECK_B2.csv`: принято 48 из 51 (исключены `f4_rq` 0,951, `f4_medrv` 0,970, `f4_hhi_chg` 0,975; `f6_since` — константа в окне ≤ 2016, принят по правилу)
 
 ## G5 — окна, веса, частота, CUSUM: определения и мутации
 CHECK: `python3 -m pytest tests/test_v2_deep_b2_win.py -q`
 EXPECT: passed: rolling берёт ровно N последних пар с t+1 ≤ T (N+1, будущая пара — ловятся); веса убывают с возрастом (инверсия ловится); недельные/месячные блоки: модель блока обучена на T = первая дата блока, прогноз первой даты не меняется при порче баров после неё (мутант T = последняя дата блока ловится); CUSUM: сдвиг среднего +3σ даёт срабатывание ≤ 10 строк, до сдвига нет; стандартизация по всей выборке и использование e_{d+1} ловятся; перезапуск не даёт окна короче 252 пар
-EVIDENCE: pending
+EVIDENCE: `test_v2_deep_b2_win.py` — 11 passed (rolling ровно N и t+1 ≤ T; N+1 и будущая пара ловятся; веса; блоки w/m: T = первая дата, прогноз первой даты инвариантен к порче, мутант T = последняя дата ловится; CUSUM: срабатывание в 250–259 при сдвиге +3σ, ничего до сдвига (seed 1); мутанты «вся выборка» и e_{d+1} ловятся)
 
 ## G6 — главный тест обрезки на каждой новой модельной строке и LOYO без утечки
 CHECK: `python3 -m pytest tests/test_v2_deep_b2_leak.py -q`
 EXPECT: passed: для каждой конфигурации §3 (6 групп, 4 абляции, комбо, rolling×4, weekly, monthly, exp×2, cusum×2) прогноз на d побитно одинаков при порче данных после 18:50 d (синтетика); мутант «признаки +1 день» ловится (№1); LOYO-фолд не содержит пар года y и пар с t+1 > cut (№15; мутант cut+1 ловится); оговорка №22: порогов по цели нет — аналог (процентильный ранг f6_pct с d+1) ловится в G3
-EVIDENCE: pending
+EVIDENCE: `test_v2_deep_b2_leak.py` — 24 passed (21 конфигурация побитно; мутант «признаки +1 день» ловится; фолд LOYO без года y и без t+1 > cut, мутант cut+1 ловится; `loyo.fold` = `runner.fold_score` для простой конфигурации)
 
 ## G7 — таблицы абляций: 12 trials по правилу §3, колонки §5, реестр
 CHECK: `python3 models_v2/s5/b2/run_b2.py --stage ablate` и `python3 -m pytest tests/test_v2_deep_b2_tables.py -q`
 EXPECT: passed; FEATURE_ABLATIONS.csv — строки BASE + не более 12, 2271 дата у каждой, QLIKE пересчитан из parquet прогнозов ≤ 1e-12, перспективность по §5 (тест на синтетике: мутант «с 24.02.2022» ловится); OPTUNA_TRIALS_B2.csv — уникальные trial_id; trials ≤ 22
-EVIDENCE: pending
+EVIDENCE: `run_b2 --stage ablate` код 0 (18 мин); `test_v2_deep_b2_tables.py` — 6 passed; `verify_b2.py`: QLIKE всех строк = пересчёт из `fc_*.parquet` (расхождений 0, ≤ 1e-12), сетка 2271, FEATURE_ABLATIONS = BASE + 12; trials признаков 12, id уникальны
 
 ## G8 — окна и частота: 10 trials, таблица доступности по годам
 CHECK: `python3 models_v2/s5/b2/run_b2.py --stage window`
 EXPECT: WINDOW_RESEARCH.csv — BASE + 10 строк (колонки §5), доступность rolling по годам (число пар, доля дат с полным окном); trials окон ≤ 17; суммарные trials B2 ≤ 22 + 17
-EVIDENCE: pending
+EVIDENCE: `run_b2 --stage window` код 0 (6 мин); WINDOW_RESEARCH.csv = BASE + 10; trials окон 10; всего B2 22; `WINDOW_AVAILABILITY.csv` (756 неполон на 50 % дат 2017; 1008 — 0 % в 2017, 50 % в 2018); `CUSUM_DIAG_B2.csv`
 
 ## G9 — SHAP/gain диагностика
 CHECK: `python3 models_v2/s5/b2/run_b2.py --stage shap`
 EXPECT: FEATURE_IMPORTANCE.csv — Б-2 и протестированные группы × 10 лет × признаки, mean|SHAP| и gain; пометка «диагностика, не доказательство»
-EVIDENCE: pending
+EVIDENCE: `run_b2 --stage shap` код 0 (35 с); FEATURE_IMPORTANCE.csv 3350 строк (BASE + 6 групп + top2/top3 × 10 лет), пометка в шапке
 
 ## G10 — гигиена
 CHECK: `wc -l models_v2/s5/b2/*.py tests/test_v2_deep_b2_*.py` ; `git status --short -- models_v2 | grep -v 's5/b2'` ; `python3 -m pytest tests/test_v2_deep_b2_*.py -q`
 EXPECT: файлы ≤ 200 строк; вне владения изменений нет; все тесты проходят; процессов ≤ 4
-EVIDENCE: pending
+EVIDENCE: `pytest tests/test_v2_deep_b2_*.py` — 65 passed; максимум 131 строка в файле (engine.py); `models_v2/` вне `s5/b2/`, `s5/b1/` не менялся (find -newer GATES_B2.md пуст; в tests изменены чужие `test_s6sb_*`); пул ≤ 4 процессов
