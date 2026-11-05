@@ -4,7 +4,7 @@
   "A": "done",
   "B": "done",
   "C": "done",
-  "D": "pending"
+  "D": "done"
  },
  "trials_limit": {
   "objectives_target": 35,
@@ -21,7 +21,7 @@
   "har_boosting": 20,
   "rolling_recency": 10,
   "regime_aware": 15,
-  "ensemble_calibration": 0
+  "ensemble_calibration": 16
  },
  "cache_key_wave_a": "58e1adc4fc31a2fc"
 }

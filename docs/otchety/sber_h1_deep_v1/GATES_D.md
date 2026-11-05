@@ -56,54 +56,54 @@ EVIDENCE: 517 passed, 23 xfailed, 0 failed (3 мин 28 с); 209 passed (1 ми�
 ## G1 — контроли и эталон воспроизведены
 CHECK: `python3 models_v2/s5/d/run_d.py --stage control`
 EXPECT: Б-2 0,220486502764, HAR-J(б) 0,233662115694 (≤ 1e-12), `b2_f4` побитно к кэшу B2, 2271 дата, RV > 0; иначе код 1
-EVIDENCE: pending
+EVIDENCE: код 0 (14 с). «G1: Б-2 0.220486502764 HAR-J(б) 0.233662115694; побитно к кэшу B2: {'f4': True, 'top2': True}; пересборка C к C_ALL: c2_h3_roll_f4 2.8e-17, c2_h3_roll_opt 0, c3_f3calm_rv 0, c3_f3calm_g4 0, c1_opt 8.3e-17» (лог `data/regen/v2_sber_h1_deep_v1/d/log_control.txt`; assert 2271 дат и RV > 0 в коде)
 
 ## G2 — LGBM и окна/веса: код и инварианты
 CHECK: `python3 -m pytest tests/test_v2_deep_d_fit.py -q`
 EXPECT: passed; детерминизм, seed действует, ES только по блоку, σ̂² > 0, окно 1008 ≤ 1008 пар, half-life 504 (MD10)
-EVIDENCE: pending
+EVIDENCE: `6 passed` (0,88 с), 05.11
 
 ## G3 — правила ансамблей: PIT, симплекс, E2 ≡ C, режимы, inv, средние
 CHECK: `python3 -m pytest tests/test_v2_deep_d_ens.py -q`
 EXPECT: passed; MD1, MD4, MD5, MD6, MD15
-EVIDENCE: pending
+EVIDENCE: `10 passed` (0,45 с), 05.11
 
 ## G4 — главный тест обрезки на каждой новой модельной строке
 CHECK: `python3 -m pytest tests/test_v2_deep_d_leak.py -q`
 EXPECT: passed: прогноз на d побитно одинаков при порче данных после 18:50 d для LGBM, rolling 1008, весов 2 года и ансамблей; мутант «+1 день» ловится (MD7)
-EVIDENCE: pending
+EVIDENCE: `7 passed` (5,85 с), 05.11
 
 ## G5 — статистика: MCS, бутстрап, Холм, DM по периодам, LOYO, дециль, тройка
 CHECK: `python3 -m pytest tests/test_v2_deep_d_stats.py tests/test_v2_deep_d_select.py -q`
 EXPECT: passed; известный ответ MCS/бутстрапа на синтетике; MD2, MD3, MD8, MD11–MD14
-EVIDENCE: pending
+EVIDENCE: `16 passed` (0,58 с), 05.11
 
 ## G6 — компоненты посчитаны
 CHECK: `python3 models_v2/s5/d/run_d.py --stage comp`
 EXPECT: 3 parquet в `data/regen/v2_sber_h1_deep_v1/d/`, 2271 дата, σ̂² > 0, QLIKE пересчитан из parquet ≤ 1e-12
-EVIDENCE: pending
+EVIDENCE: код 0 (2 мин 14 с, 6 процессов). `G6 d_lgbm_f4 QLIKE 0.211671, деревьев 112.5; d_xgb_f4_r1008 0.223491 (96.0); d_xgb_f4_hl504 0.217751 (117.7)`; assert 2271 строк, σ̂² > 0 и конечны; QLIKE считается из прочитанного parquet (`stage_comp`); эти же числа в `ENSEMBLE_RESULTS.csv` (0,2117 / 0,2235 / 0,2178). Лог `log_comp.txt`
 
 ## G7 — D1: 16 trials + 10 контролей, лучший ансамбль
 CHECK: `python3 models_v2/s5/d/run_d.py --stage d1`; `python3 -m pytest tests/test_v2_deep_d_tables.py -q`
 EXPECT: `ENSEMBLE_RESULTS.csv` 26 строк + ссылки E2; `OPTUNA_TRIALS_D.csv` 16 уникальных id; бюджет ≤ 25; лучший ансамбль и `Q_wf_dev`-выбор названы
-EVIDENCE: pending
+EVIDENCE: `run_d.py --stage d1` код 0 (20 с): «G7: лучший по Q_wf: e3_roll; по Q_wf_dev: e6_rv». `ENSEMBLE_RESULTS.csv`: 26 строк D (3 компонента + 13 ансамблей + 10 контролей) + 2 строки E2 (ссылка на C_ALL) = 28; `OPTUNA_TRIALS_D.csv`: 16 уникальных id, бюджет 16 ≤ 25. `pytest tests/test_v2_deep_d_tables.py` — `7 passed`
 
 ## G8 — устойчивость
 CHECK: `python3 models_v2/s5/d/run_d.py --stage robust`
 EXPECT: `D_SEEDS.csv`, `D_PLATEAU.csv`, `D_WINDOW.csv`; флаги выданы без правки порогов
-EVIDENCE: pending
+EVIDENCE: код 0 (15 мин 30 с). Все 7 строк (6 финалистов + справочная `c3_f3calm_g4`): seed-ok 5/5, plateau-ok True (соседи top2 7/7 лучше Б-2; правило `e3_roll`: окна 126/504 и шаг 0,05 — 3/3 лучше Б-2). Совпадение с `C_SEEDS.csv` на общих строках — max |Δ| 8,3e-17 (engine_d ≡ engine_c). Окно 1008 хуже expanding у всех (+0,0097…+0,0124). Пороги не менялись. Лог `log_robust.txt`
 
 ## G9 — D2: статистические тесты
 CHECK: `python3 models_v2/s5/d/run_d.py --stage d2`
 EXPECT: `STATISTICAL_TESTS.csv` (DM × 5 периодов × 2 базы, MCS, бутстрап, Холм N = 106 и 116), `D_TOP20.csv`, `D_LOYO.csv`, `D_LOWRV.csv`
-EVIDENCE: pending
+EVIDENCE: код 0 (15 с). `STATISTICAL_TESTS.csv` 96 строк (DM 5 периодов × 2 базы × 6, бутстрап 12, MCS 3×8) с `p_holm_N106` и `p_holm_N116`; `D_TOP20.csv`, `D_LOYO.csv` (60 строк), `D_LOWRV.csv` (n = 393), `D_REGIMES.csv`. «G9: тройка ['e3_roll', 'c2_h3_roll_f4', 'c1_opt']»; MCS 90 % (весь период): все 8 моделей в множестве, p = 0,19. Лог `log_d2.txt`
 
 ## G10 — итог: реестр, чекпойнт, отчёты
 CHECK: `python3 models_v2/s5/d/run_d.py --stage report`
 EXPECT: `OPTUNA_TRIALS.csv` = 90 + 16 = 106 строк, id уникальны, B/C без изменений; `CHECKPOINT.json` ensemble_calibration 16, общий 106 ≤ 240; FINAL_RANKING, MODEL_SPECIFICATIONS, REPRODUCTION, FINAL.md, README.md, PNG кумулятивных разностей
-EVIDENCE: pending
+EVIDENCE: код 0. `OPTUNA_TRIALS.csv` 106 строк (107 строк с заголовком), id уникальны, B/C не менялись; `CHECKPOINT.json`: ensemble_calibration 16, всего 106 ≤ 240, волна D = done. Созданы `FINAL_RANKING.csv`, `MODEL_SPECIFICATIONS.json` (тройка), `REPRODUCTION.md`, `SBER_H1_BOOSTING_DEEP_IMPROVEMENT_FINAL.md`, блок D в `README.md`, `D_cum_vs_harj.png`, `D_cum_vs_b2.png`, `D_CUMDIFF.csv`. Лог `log_report.txt`
 
 ## G11 — гигиена
 CHECK: `wc -l models_v2/s5/d/*.py tests/test_v2_deep_d_*.py`; `python3 -m pytest tests/test_v2_*.py -q`
 EXPECT: файлы ≤ 200 строк, функции ≤ 40; 0 failed; вне владения нет изменений (`models_v2/` вне `s5/d` — mtime старше начала волны)
-EVIDENCE: pending
+EVIDENCE: `pytest tests/test_v2_*.py` — 563 passed, 23 xfailed, 0 failed (3 мин 26 с); `pytest tests/test_v2_deep_*` — 255 passed. Файлы ≤ 200 строк (макс. 130, всего 1762 строки в d + тестах D); функции ≤ 40, кроме `doc_txt.write_final` (44, помечена «xtask: длинная — шаблон текста»). `find models_v2 -newer state/v2_sber_h1_deep_d.md` вне `s5/d` — пусто.
