@@ -20,95 +20,95 @@
 ## A1 — контроли восстановлены из артефактов: Б-2 = 0,2205, HAR-J(б) = 0,2337, сетка 2271 дат одна
 CHECK: `python3 models_v2/s5/run_a.py --stage a1`
 EXPECT: QLIKE(fx_b2_g132_b) и QLIKE(harj_b) пересчитаны `models_v2.metrics.qlike` из parquet; |Δ| ≤ 1e-12 к `fix_metrics.csv` (строка `fx_b2_g132_b,all`) и `p1_metrics.csv` (`harj_b,all`); округление до 4 знаков = 0,2205 / 0,2337; n = 2271; даты d и target_date обеих моделей совпадают поэлементно; иначе код возврата 1 и стоп с докладом
-EVIDENCE: pending
+EVIDENCE: код возврата 0; b2 = 0,22048650276427248, harj = 0,23366211569377798, n = 2271; |Δ| к таблицам 8,3e-17 (обе); округл. 0,2205 / 0,2337; сетка сверена в `common.controls()` (иначе ValueError)
 
 ## A2 — воспроизведение Б-2 и HAR-J(б) заново на 3 датах (2018, 2022, 2025) совпадает с parquet
 CHECK: `python3 models_v2/s5/run_a.py --stage a2`
 EXPECT: σ̂² Б-2 (s4: `design.make(form 'm', IMOEX+прокси)` → `fit_i1` с HP года из `fix_i2_choice_g132.csv`, окно t+1 ≤ d) на каждой из 3 дат: относительная разность к `fix_forecasts_c.parquet` ≤ 1e-9; HAR-J(б): `har.forecast_at` ≤ 1e-12; иначе код возврата 1 и стоп с докладом (в manifest — поле `reproduced: false`)
-EVIDENCE: pending
+EVIDENCE: код возврата 0 (в составе `--stage all`); `REPRODUCTION_A2.json`: reproduced = true; даты 2018-06-01, 2022-06-01, 2025-06-02; rel_b2 = 0,0 и rel_harj = 0,0 на всех трёх (побитно)
 
 ## A3 — `BASELINE_MANIFEST.json` полон: Б-2 и HAR-J(б) (цель, признаки, HP по годам, расписание, ES, s², sha)
 CHECK: `python3 -m pytest tests/test_v2_deep_a_manifest.py -q`
 EXPECT: passed; в манифесте: форма цели (ln RV − ln RV_m, S=RV_m), полный список 28 признаков Б-2 с определениями (11 базовых + 11 прокси/17 бумаг + 6 IMOEX; строки = столбцы `design.make`), HP 2017…2026 равны строкам `chosen=True` в `fix_i2_choice_g132.csv`, расписание (ежедневное переобучение, LOYO по целям < 01.01.Y), ранняя остановка (ES 252 пары, эмбарго 1, терпение 100, потолок 3000, финал на всех парах с n* деревьями), s² (s2_es блока остановки; σ̂² = exp(off + f + s²/2)), sha256 файлов кода (`models_v2/**/*.py`, из которых строится Б-2) и входов (SBER bars, 16 бумаг, IMOEX, RVI, прогнозные parquet); тест пересчитывает sha и сверяет
-EVIDENCE: pending
+EVIDENCE: 3 passed (код возврата 0)
 
 ## A4 — QLIKE модуля = формула владельца ln f + y/f с точностью до функции y (Д7)
 CHECK: `python3 -m pytest tests/test_v2_deep_a_qlike.py -q`
 EXPECT: passed: (i) на случайных (y, f) > 0 разности потерь `metrics.qlike(y,f1) − metrics.qlike(y,f2)` и `(ln f1 + y/f1) − (ln f2 + y/f2)` равны ≤ 1e-12; (ii) мутация «прогноз σ вместо σ²» (f → √f) или «y/f наоборот» — тест падает; (iii) на реальных контролях средняя разность Б-2 − HAR-J по обеим формулам равна ≤ 1e-12
-EVIDENCE: pending
+EVIDENCE: 4 passed (код возврата 0)
 
 ## A5 — правило эпсилон: RV > 0 на всей сетке, граница не срабатывает (или названо, где срабатывает)
 CHECK: `python3 models_v2/s5/run_a.py --stage a5` и `python3 -m pytest tests/test_v2_deep_a_eps.py -q`
 EXPECT: правило ε_d = 0,1 · min(дневная RV по строкам ≤ d), только прошлое; таблица `EPS_CHECK.csv`: min RV цели, min σ̂² обеих моделей, число строк с RV_{d+1} < ε_d и с σ̂² < ε_d (ожидание 0; если не 0 — перечень дат в файле и доклад); тест: порча значений RV после d не меняет ε_d (мутация «min по всем данным» падает)
-EVIDENCE: pending
+EVIDENCE: `EPS_CHECK.csv`: min RV цели 0,070436, min σ̂² Б-2 0,239301, HAR-J(б) 0,171333, ε_d ∈ [0,007044; 0,035139], срабатываний 0 / 0 / 0; 3 passed
 
 ## A6 — `PREDICTIONS.parquet`: единая таблица, 2271 строка, потери пересчитываются
 CHECK: `python3 -m pytest tests/test_v2_deep_a_pred.py -q`
 EXPECT: passed: колонки d, target_date, rv, s2_b2, s2_harj, err_ln_b2, err_ln_harj, err_lvl_b2, err_lvl_harj, qlike_b2, qlike_harj, dloss (=b2−harj), sign_b2, sign_harj, rv_d, rv_w, rv_m, режимы (tercile_w, quintile_w, stress_g4, mar_jun_2020, y2022), 28 колонок `f_*` признаков Б-2; даты возрастают, уникальны, равны сетке A1; qlike_* пересчитаны из rv и s2 ≤ 1e-12; mean(dloss) = QLIKE(Б-2) − QLIKE(HAR-J) ≤ 1e-12; признаки равны `design.make` на строке d
-EVIDENCE: pending
+EVIDENCE: 3 passed; таблица 2271 × 51; 11 базовых признаков сверены побитно с независимой сборкой `ft.build` + `scale.normalize` (17 рыночных — из кэша `features_b2.parquet` с ключом входов и кода, побитная проверка PIT на `mkt.block` — A7)
 
 ## A7 — PIT: режимы, группы «по известной RV», калибровка и признаки не используют данные после d (главный тест обрезки + мутации № 1, 22)
 CHECK: `python3 -m pytest tests/test_v2_deep_a_pit.py -q`
 EXPECT: passed: (i) порча/обрезка баров после 18:50 d (реальные бары, дата d в 2019) не меняет строку d признаков побитно (`ft.build` и `mkt.block`); (ii) порча RV после d не меняет квинтили/терцили/группы/событие скачка/ε/сдвиг масштаба на d; (iii) мутации — квантиль с текущим днём, группы по RV_{d+1}, сдвиг масштаба с парой d, признаки +1 день — каждая ловится (тест падает на мутанте)
-EVIDENCE: pending
+EVIDENCE: 7 passed (код возврата 0); порча — масштабирование цен всех баров дат > 03.06.2019 в ×1,37
 
 ## A8 — `ERROR_DIAGNOSTICS.csv` и `ANNUAL_MODEL_COMPARISON.csv`: полный набор метрик
 CHECK: `python3 -m pytest tests/test_v2_deep_a_stats.py -q` и `python3 models_v2/s5/run_a.py --stage a8`
 EXPECT: passed (синтетика с известным ответом: идеальный прогноз → MZ α=0, β=1, R²=1, bias 0; константа в k раз → bias ln k, β≠1; перепутанный знак ошибки → доля «Б-2 лучше» меняется на 1−доля; пустой срез — явная ошибка, не NaN); таблицы по годам, кварталам, скользящим 252 дням: QLIKE, RMSE и MAE (ln и уровень), R² MZ (ln и уровень), bias (ln, mean r), корреляция, калибровка RV~σ̂² (α, β), частота |ln RV − ln σ̂²| > 1 и QLIKE > 1, доля дней Б-2 лучше HAR; QLIKE по срезу = среднее qlike_* из PREDICTIONS ≤ 1e-12; срезы 2017–2021 / 2022 / 2023–2025 / 2026 / весь — по дате цели
-EVIDENCE: pending
+EVIDENCE: 7 passed; `run_a --stage a8` (в составе `all`) создал ERROR_DIAGNOSTICS.csv (периоды, 10 лет, кварталы), ANNUAL_MODEL_COMPARISON.csv (10 строк), ROLLING_252.csv (2020 окон); тест сверяет QLIKE срезов с PREDICTIONS ≤ 1e-12 и сумму n по годам = 2271
 
 ## A9 — накопленная разность потерь Б-2 − HAR-J(б): таблица и PNG
 CHECK: `python3 -m pytest tests/test_v2_deep_a_cum.py -q` и `python3 models_v2/s5/run_a.py --stage a9`
 EXPECT: passed; `CUMULATIVE_LOSS_DIFF.csv` + `cum_loss_diff.png` существуют; последнее значение = n · (QLIKE_Б-2 − QLIKE_HAR-J) ≤ 1e-9; мутация «знак перепутан» ловится; файл PNG > 5 КБ
-EVIDENCE: pending
+EVIDENCE: 3 passed; PNG 49 186 байт, просмотрен (ступень в феврале 2022, итог ≈ −30)
 
 ## A10 — анализ по величине RV: 5 групп по факту (пометка «объяснительно») и 5 групп по RV, известной на d (PIT); скачки и возврат
 CHECK: `python3 -m pytest tests/test_v2_deep_a_groups.py -q` и `python3 models_v2/s5/run_a.py --stage a10`
 EXPECT: passed; границы групп (рёбра квантилей 0 / 0,2 / 0,4 / 0,8 / 0,95 / 1: очень низкая, низкая, средняя, высокая, экстремальная); `RV_GROUPS_FACT.csv` (квантили всей выборки; колонка note = «объяснительно, не PIT») и `RV_GROUPS_PIT.csv` (пороги по 252 предыдущим дням RV_d без d); в каждой группе n, QLIKE и mean r обеих моделей, bias ln, доля недооценки (σ̂² < RV), доля Б-2 лучше; события скачка: J/RV_d выше 0,9-квантиля 252 предыдущих значений, деклъстеризация 5 дней; `JUMP_EVENTS.csv` — средние траектории ±5 дней (ln RV цели, ln σ̂² обеих, QLIKE) и n событий; сумма n групп = 2271
-EVIDENCE: pending
+EVIDENCE: 4 passed; суммы n по группам = 2271 в обеих таблицах; события: jump 168–170 на смещение, rv_change 180–181; пороги PIT — `pit.q_prior_nan` (↺ см. README, отступление 1)
 
 ## A11 — `REGIME_DIAGNOSTICS.csv`: режимы только по прошлому
 CHECK: `python3 -m pytest tests/test_v2_deep_a_regimes.py -q` и `python3 models_v2/s5/run_a.py --stage a11`
 EXPECT: passed; режимы: квинтили RV_w по 252 предыдущим дням (без d), стресс Г4 из `stress_p3.parquet`, март–июнь 2020, 2022; матрица переходов квинтилей (d−1 → d) и QLIKE/mean r/доля Б-2 лучше по режимам и переходам; сумма n по квинтилям = число дат с определённым порогом
-EVIDENCE: pending
+EVIDENCE: 3 passed; сумма n по квинтилям = 2271 = число непустых `quintile_w`; направления переходов — 2270
 
 ## A12 — проверка гипотез (а)–(е): `HYPOTHESES_A.csv`, одна строка на гипотезу, число и вывод по правилам выше
 CHECK: `python3 -m pytest tests/test_v2_deep_a_hyp.py -q` и `python3 models_v2/s5/run_a.py --stage a12`
 EXPECT: passed; ровно 6 строк (a…e + «ж» — отношение ошибки блока остановки к обучению как справка, без вывода); колонки: id, диагностика, число, порог подтверждения, порог отказа, вывод ∈ {подтверждена, отвергнута, не различима}; вывод вычисляется кодом по правилам этого файла (тест на синтетике: монотонная связь → подтверждена, ρ≈0 → не различима, обратная → отвергнута); топ-20 дней перечислены в `TOP20_DAYS.csv` (дата, потеря обеих, разность, режим)
-EVIDENCE: pending
+EVIDENCE: 5 passed; 6 строк: а подтверждена (ρ = −0,75), б отвергнута (KS p = 8e-32, ρ = +0,10), в отвергнута (−0,034), г отвергнута (ρ = −0,05), д отвергнута (доля 0,26; знак S не меняется), е подтверждена (ρ = −0,70); «ж» вынесена в колонку `es_over_train` файла `HYPOTHESIS_YEARS.csv` (↺ README, отступление 2)
 
 ## A13 — функция потерь Б-2 и QLIKE-оптимальный сдвиг масштаба (PIT, расширяющееся окно) — диагностика, не trial
 CHECK: `python3 -m pytest tests/test_v2_deep_a_loss.py -q` и `python3 models_v2/s5/run_a.py --stage a13`
 EXPECT: passed; `LOSS_CHECK.csv`: обучающая цель ln RV − ln RV_m, MSE (reg:squarederror), поправка s²/2 в σ̂²; c_d = ln mean(y/f) по закрытым целям (target_date ≤ d, не менее 252, до этого c = 0); σ̂²·exp(c_d) для Б-2 и HAR-J(б); QLIKE до/после по срезам; тест: c_d закрытой формулой минимизирует QLIKE на синтетике (численный минимум совпадает ≤ 1e-6), добавление пары d в окно (мутация) ловится; в таблице пометка «диагностика, не trial бюджета»
-EVIDENCE: pending
+EVIDENCE: 4 passed; Б-2 raw 0,2205 → со сдвигом 0,2209, HAR-J(б) 0,2337 → 0,2341 (все 2271); пометка в колонке note
 
 ## A14 — README.md (раздел «Волна A»): числа берутся из файлов, вывод для волны B с числами
 CHECK: `python3 models_v2/s5/run_a.py --stage check-readme`
 EXPECT: сгенерированные блоки README (между маркерами `<!-- A:auto -->`) равны перегенерации из CSV побайтно; разделы: сделано / не сделано / проверено / отступления; «почему 2017–2021» (6 строк гипотез); рекомендации для волны B; код возврата 0
-EVIDENCE: pending
+EVIDENCE: «README авто-блоки совпадают с перегенерацией: True», код возврата 0; разделы «Волна A» (сделано / не сделано / проверено / отступления), «Почему 2017–2021», «Рекомендации для волны B» — есть; числа прозы сверены вручную с таблицами (РУЧНАЯ сверка прозы — проверка кодом невозможна)
 
 ## A15 — реестр trials и контрольная точка: 0 потраченных trials
 CHECK: `python3 -m pytest tests/test_v2_deep_a_registry.py -q`
 EXPECT: passed; `OPTUNA_TRIALS.csv` содержит только шапку (trial_id, волна, направление, конфигурация, метрика_внутр_валидации, метрики_описания, время, seed, повторный_seed); `CHECKPOINT.json`: счётчики по 6 направлениям (35/45/50/35/50/25 — лимиты) все 0 использовано, волна A = done, ключ кэша = sha входов+кода
-EVIDENCE: pending
+EVIDENCE: 2 passed
 
 ## A16 — запреты: старый код не импортирован, запрещённые файлы не читаются, прочее не тронуто
 CHECK: `python3 -m pytest tests/test_v2_deep_a_scope.py -q` и `python3 models_v2/run_fix.py --check-untouched`
 EXPECT: passed: импорты `models_v2/s5/*.py` и `tests/test_v2_deep_a_*.py` — только stdlib, numpy, pandas, scipy, matplotlib, xgboost и `models_v2.*`; в исходниках нет строк `test_locked`, `_test.`, `.env`, `rvi_1850_test`; пути данных только из списка задания; `--check-untouched` печатает «нетронутость: OK»; `git status --short models_v2 data` не показывает правок вне `models_v2/s5/` и `data/regen/v2_sber_h1_deep_v1/`
-EVIDENCE: pending
+EVIDENCE: scope-тест: 3 passed. `--check-untouched`: НЕ ПРОШЁЛ — «ИЗМЕНЕНЫ [forecasts_p1/p2/pb.parquet, retrain_p2.parquet, models_v2/daily.py]»: охранный `fix_untouched.json` от 17:55, файлы пересчитаны 19:04–19:28 (Ж-203), до волны A; в `git status` каталоги `models_v2/` и `data/regen/v2_sber_h1/` не отслеживаются (`??`), так что сравнение с git невозможно. ЗАМЕНА проверки: `find models_v2 data/regen/v2_sber_h1 docs/tables/v2_sber_h1 -newer GATES_A.md -type f` вне `s5/` → 0 файлов (красное названо красным, замена — отступление 3 README)
 
 ## A17 — размеры и сборка: файлы ≤ 200 строк, функции ≤ 40, весь набор тестов v2 не ухудшен
 CHECK: `python3 models_v2/s5/run_a.py --stage size` и `python3 -m pytest tests/test_v2_*.py -q`
 EXPECT: ни один файл `models_v2/s5/*.py`, `tests/test_v2_deep_*.py` > 200 строк; функции > 40 строк помечены `# xtask: длинная — почему`; pytest: 0 failed, passed не меньше числа до правки (замеряется командой до первого коммита кода и записывается сюда), xfailed не больше прежнего
-EVIDENCE: pending
+EVIDENCE: `--stage size` → «size/scope: OK» (макс. файл 137 строк, функций > 40 строк нет); до волны A: 308 passed, 23 xfailed; после: 359 passed, 23 xfailed, 0 failed (308 + 51 новых)
 
 ## A18 — мутации волны A ловятся (перечень в README, раздел «Проверено»)
 CHECK: `python3 -m pytest tests/test_v2_deep_a_*.py -q -k mut`
 EXPECT: passed, не менее 8 тестов-мутаций: № 1 (признаки/σ̂² +1 день), № 22 (квантиль/RV с текущим днём), знак разности потерь, σ вместо σ², ε по всем данным, сдвиг масштаба с парой d, группы по RV цели, доля «лучше» без ничьих; каждая даёт отличие результата от эталона > допуска
-EVIDENCE: pending
+EVIDENCE: 16 passed, 35 deselected (код возврата 0)
 
 ## ABANDON (только с причиной; гейт не удалять и не переписывать)
 (нет)
 
 ## Реестр
-закрыто 0 из 18; ABANDON: 0; pending: 18
+закрыто 17 из 18; A16 — красный (исходная команда `--check-untouched` не прошла по причине устаревшего охранного файла; заменена проверкой find, не равнозначной по строгости — решает дирижёр); ABANDON: 0; pending: 0

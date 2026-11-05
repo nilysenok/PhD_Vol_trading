@@ -1,0 +1,361 @@
+{
+ "b2": {
+  "name": "fx_b2_g132_b",
+  "forecast_file": "data/regen/v2_sber_h1/fix_forecasts_c.parquet",
+  "target": "y_t = ln RV_{t+1} − ln RV_m,t (форма 'm', S = RV_m, 22 дня); σ̂² = exp(ln RV_m + f + s²/2)",
+  "features": [
+   {
+    "name": "ln_rv",
+    "definition": "ln RV_d (%²) минус ln RV_m"
+   },
+   {
+    "name": "ln_rv_w",
+    "definition": "ln средней RV за 5 дней минус ln RV_m"
+   },
+   {
+    "name": "ln_rv_m",
+    "definition": "ln RV_m (средняя за 22 дня) минус ln RV_m = 0 (константа в форме 'm')"
+   },
+   {
+    "name": "ln1p_j",
+    "definition": "ln(1 + J_d/RV_m), J = max(RV−BV, 0) в %²"
+   },
+   {
+    "name": "ln_bv",
+    "definition": "ln BV_d минус ln RV_m"
+   },
+   {
+    "name": "ln_rv_h1",
+    "definition": "ln RV первого часа (бары до 10:50, пол 1e-6) минус ln RV_m"
+   },
+   {
+    "name": "ln_rv_h2",
+    "definition": "ln RV последнего часа (бары с 17:50, пол 1e-6) минус ln RV_m"
+   },
+   {
+    "name": "rs_plus",
+    "definition": "ln(max(RS+, 1e-6)) минус ln RV_m, RS+ — сумма r² баров с r>0"
+   },
+   {
+    "name": "rs_minus",
+    "definition": "ln(max(RS−, 1e-6)) минус ln RV_m, RS− — сумма r² баров с r<0"
+   },
+   {
+    "name": "gap_rel",
+    "definition": "(100·ln(open_1/close_пред))² / RV_m — ночной гэп"
+   },
+   {
+    "name": "dow",
+    "definition": "день недели 0..4"
+   },
+   {
+    "name": "proxy_d",
+    "definition": "ln RV равновзвешенного портфеля 17 бумаг (10-мин доходности, среднее по бумагам) минус ln RV_m"
+   },
+   {
+    "name": "proxy_w",
+    "definition": "то же, среднее за 5 дней, минус ln RV_m"
+   },
+   {
+    "name": "proxy_m",
+    "definition": "то же, среднее за 22 дня, минус ln RV_m"
+   },
+   {
+    "name": "avg_d",
+    "definition": "среднее по 17 бумагам ln RV_d, минус ln RV_m"
+   },
+   {
+    "name": "avg_w",
+    "definition": "то же по RV_w, минус ln RV_m"
+   },
+   {
+    "name": "avg_m",
+    "definition": "то же по RV_m, минус ln RV_m"
+   },
+   {
+    "name": "gap_med",
+    "definition": "медиана по 17 бумагам gap_rel"
+   },
+   {
+    "name": "jump_share",
+    "definition": "доля 17 бумаг со скачком Хуанга–Таучена (z > Φ⁻¹(0,99)) в день d"
+   },
+   {
+    "name": "rel_d",
+    "definition": "ln RV_d SBER − proxy_d (до вычитания ln S)"
+   },
+   {
+    "name": "rel_w",
+    "definition": "ln RV_w SBER − proxy_w"
+   },
+   {
+    "name": "rel_m",
+    "definition": "ln RV_m SBER − proxy_m"
+   },
+   {
+    "name": "imoex_d",
+    "definition": "ln RV_d IMOEX (10-мин бары, ISS) минус ln RV_m SBER"
+   },
+   {
+    "name": "imoex_w",
+    "definition": "то же по RV_w"
+   },
+   {
+    "name": "imoex_m",
+    "definition": "то же по RV_m"
+   },
+   {
+    "name": "relx_d",
+    "definition": "ln RV_d SBER − ln RV_d IMOEX"
+   },
+   {
+    "name": "relx_w",
+    "definition": "ln RV_w SBER − ln RV_w IMOEX"
+   },
+   {
+    "name": "relx_m",
+    "definition": "ln RV_m SBER − ln RV_m IMOEX"
+   }
+  ],
+  "n_features": 28,
+  "library": "xgboost reg:squarederror, tree_method=hist, nthread=1, seed=42, base_score=взвешенное среднее цели",
+  "hyperparameters_by_year": {
+   "2017": {
+    "depth": 3,
+    "min_child_weight": 10.0,
+    "reg_lambda": 2.0,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "max_trees": 3000
+   },
+   "2018": {
+    "depth": 3,
+    "min_child_weight": 30.0,
+    "reg_lambda": 30.0,
+    "eta": 0.02,
+    "subsample": 0.6,
+    "colsample_bytree": 0.5,
+    "max_trees": 300
+   },
+   "2019": {
+    "depth": 3,
+    "min_child_weight": 10.0,
+    "reg_lambda": 2.0,
+    "eta": 0.1,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "max_trees": 3000
+   },
+   "2020": {
+    "depth": 3,
+    "min_child_weight": 10.0,
+    "reg_lambda": 0.5,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "max_trees": 3000
+   },
+   "2021": {
+    "depth": 3,
+    "min_child_weight": 30.0,
+    "reg_lambda": 30.0,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.5,
+    "max_trees": 300
+   },
+   "2022": {
+    "depth": 2,
+    "min_child_weight": 30.0,
+    "reg_lambda": 0.5,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "max_trees": 3000
+   },
+   "2023": {
+    "depth": 2,
+    "min_child_weight": 10.0,
+    "reg_lambda": 0.5,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "max_trees": 3000
+   },
+   "2024": {
+    "depth": 5,
+    "min_child_weight": 10.0,
+    "reg_lambda": 0.5,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "max_trees": 3000
+   },
+   "2025": {
+    "depth": 5,
+    "min_child_weight": 10.0,
+    "reg_lambda": 0.5,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "max_trees": 3000
+   },
+   "2026": {
+    "depth": 3,
+    "min_child_weight": 10.0,
+    "reg_lambda": 0.5,
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "max_trees": 3000
+   }
+  },
+  "hp_selection": "LOYO по годам цели < 01.01.Y (y∈[2015,Y−1]), QLIKE(б), сетка 132 точек, выбор на конфигурации level_base (HP затем применены к форме 'm' с IMOEX)",
+  "schedule": "переобучение ежедневно, окно расширяющееся (пары t+1 ≤ d, один сегмент, без склейки через остановку 2022)",
+  "early_stopping": "ES-блок — последние 252 пары, эмбарго 1, терпение 100, потолок 3000 деревьев; финальная модель на всех парах окна с n* деревьями (И1)",
+  "s2": "s² = среднее квадрата остатка предварительной модели на ES-блоке; в σ̂² входит как s²/2",
+  "grid": "2271 дат d (общая для всех моделей), цель — следующий годный день",
+  "mkt_columns": {
+   "base": [
+    "proxy_d",
+    "proxy_w",
+    "proxy_m",
+    "avg_d",
+    "avg_w",
+    "avg_m",
+    "gap_med",
+    "jump_share",
+    "rel_d",
+    "rel_w",
+    "rel_m"
+   ],
+   "imoex": [
+    "imoex_d",
+    "imoex_w",
+    "imoex_m",
+    "relx_d",
+    "relx_w",
+    "relx_m"
+   ]
+  }
+ },
+ "harj_b": {
+  "name": "harj_b",
+  "forecast_file": "data/regen/v2_sber_h1/forecasts_p1.parquet",
+  "target": "ln RV_{t+1}",
+  "features": [
+   {
+    "name": "ln_rv",
+    "definition": "ln RV_d"
+   },
+   {
+    "name": "ln_rv_w",
+    "definition": "ln средней RV за 5 дней"
+   },
+   {
+    "name": "ln_rv_m",
+    "definition": "ln средней RV за 22 дня"
+   },
+   {
+    "name": "ln1p_j",
+    "definition": "ln(1+J_d), J в %²"
+   }
+  ],
+  "method": "OLS с константой на расширяющемся окне (пары t+1 ≤ d, один сегмент); σ̂² = exp(f + s²/2), s² = SSR/(n−k)",
+  "grid": "2271 дат"
+ },
+ "qlike_recomputed": {
+  "b2": 0.22048650276427248,
+  "harj": 0.23366211569377798,
+  "n": 2271,
+  "ref_b2_table": 0.2204865027642724,
+  "ref_harj_table": 0.2336621156937779,
+  "diff_b2": 8.326672684688674e-17,
+  "diff_harj": 8.326672684688674e-17
+ },
+ "sha_code": {
+  "models_v2/daily.py": "d69c6b0f74a5cfdebe9cfdc22f90c14bab5940a3fdafd22f65cf76664a6fe01c",
+  "models_v2/har.py": "cf6da1f83d991bc7a77b89217c35a368bf528fb9e78c9ba42964b2d34aea32be",
+  "models_v2/metrics.py": "fddfd122415e8353b033fc7cfc35b62fc88e328dd89089d9dcfaa71f42f8d7c2",
+  "models_v2/prov.py": "c7cb16e6655cad168766f83d27d68c4cf319feba12128af0301cd5dc0ef0e89d",
+  "models_v2/s2/features.py": "2ccb660ec6e3cfafb4ae14c6f0c6ecf547c764e7232ca51177f09e5f56782618",
+  "models_v2/s3/scale.py": "a6f6fa25bdd0d7e3ce92aa202b5a1f69e905f09f16d7667f18b55bfe62454734",
+  "models_v2/s3/resid.py": "d0c18c03ded6025af40a8d6eb144d6f67935f9798599710367ece953bf946501",
+  "models_v2/s3/post.py": "29beb711437d20507ad7b10babfd730c2068076f08e46c1c518a041cb86df08b",
+  "models_v2/s4/design.py": "9fa514bbf438835b9479702de38c56fd8f4976890ea57228487564eb0026c38f",
+  "models_v2/s4/fit.py": "984ca879f4b16cc180c36d253cadec47dab1eb0395021f0e4824d54218f90143",
+  "models_v2/s4/mkt.py": "7938e41e92fdf06ab1653075157c0d9cbf98c580f9052125b2baca2e26e84eed",
+  "models_v2/s4/rows.py": "0fee5f7f581475f6ec1073349f185f51107b03827c92672fb306e42e78f4cf2f",
+  "models_v2/s4/runner.py": "13a88182e95818622b9af1344cafe2e90fddd4f1270b92cf060a2d63c982e42d",
+  "models_v2/s4/select.py": "7f33e95054d01f26a9ed909e1e56e0f1c459bfa1ac0d1092441235fc5d338d92",
+  "models_v2/run_fix.py": "b5d768cc91afd2beceb5e778f2dc7a4746f2ab83c1700f5cd365e9a33ae0f908"
+ },
+ "sha_inputs": {
+  "sber_bars": "b451cb48473ac15c246e5d2df0dae64704dff718039e7f34ca0a05ab47d76b9f",
+  "imoex_bars": "cadc3e41cda115331db482c89b64e3cd27b0f392072114a0affb8389267be935",
+  "rvi_1850": "b0bd82829ca006fa2d473b01497e8a0ea374980db76b91d0b64e652bff5c85c8",
+  "papers16": {
+   "AFLT": "beb1b23feed761b65679c6bc21371472d5bf228b5fc0a00f94b501d638afeb5a",
+   "ALRS": "6a1954b5de238304a7c47f2d4faa1490b65f0ea87758584c69c994d66a38a162",
+   "HYDR": "ea956d5360a6841cf27c4398e22d72a770c38afb1abd21a5fbf843a7c3331566",
+   "IRAO": "caca555be22bf34fd5965383e99520ef7828772ebf3870b05b3a288445fc012e",
+   "LKOH": "6995daf9220f07c23d09c61ed658eac7af7f2d92f8a4192f94288ad58771667d",
+   "LSRG": "87059ca179242d37a7f5bf19428b8b3046ba1c3f86131b0e1d8f886d876623d0",
+   "MGNT": "ac456554ead4ed1c025b5d22892f97f7071c9ab6fdcaab386bb1dcae567e592b",
+   "MOEX": "896a3103dd7c203ca6a5cb38209b5df6b60e00c7f1fd82cb86f71d123733d2c9",
+   "MTLR": "e60214432d7fc452dc219f1a2422a626d466bcdf73104d4234c2b9cdfad9bbd6",
+   "MTSS": "72269c31f4a9b15774c5d5b95ff0a53c023d50756c7c7a6c69ec40e396369a1d",
+   "NVTK": "f00b73fec22d7fc48f11937f3a8a05b097ff43fe5801f7deb11f521916b356d0",
+   "OGKB": "980badf59480ade7298ee9da49708af075437fc6d93c84900deb4ea994ef9b48",
+   "PHOR": "b430547c1681cbc71cc9002b8bc09e6422b40548817530e90b285979507ca925",
+   "RTKM": "983ba969119932c5e6d1591bde75590f76b813ef7ef2d5fa4bd561de1cc27039",
+   "TATN": "fddab76960db6593c9af5e0357e72499ccb90cd553b0c0a13b4b411ffddf36fe",
+   "VTBR": "44fabdf7627147234eb1c3475edf6a8276ea2604ca99422178168041fd1dd9e3"
+  }
+ },
+ "sha_forecasts": {
+  "fix_forecasts_c.parquet": "f8aa717368218de45a92f18f0da15c525b5c8933cfba6d7241b24f1bffa33ec7",
+  "forecasts_p1.parquet": "8ecc06f2989031703171f284c1f20017dc1c46899827ed6adb45e9a2e7bc94df",
+  "daily_p1.parquet": "5b904119fdae85dae0257314a3f55e4ffebaa4ba50f1e3c5031c3004ac7b195b",
+  "stress_p3.parquet": "1d9dc87249729c5514fd0924eb3f3362b346d7c911b0d2f1645025adbdc4879b"
+ },
+ "reproduction": {
+  "tol_b2_rel": 1e-09,
+  "tol_harj_rel": 1e-12,
+  "dates": [
+   {
+    "d": "2018-06-01",
+    "s2_b2_refit": 1.156503276864333,
+    "s2_b2_parquet": 1.156503276864333,
+    "rel_b2": 0.0,
+    "s2_harj_refit": 1.2861822654486044,
+    "s2_harj_parquet": 1.2861822654486044,
+    "rel_harj": 0.0,
+    "trees": 300
+   },
+   {
+    "d": "2022-06-01",
+    "s2_b2_refit": 4.841983989004742,
+    "s2_b2_parquet": 4.841983989004742,
+    "rel_b2": 0.0,
+    "s2_harj_refit": 3.929122543633054,
+    "s2_harj_parquet": 3.929122543633054,
+    "rel_harj": 0.0,
+    "trees": 181
+   },
+   {
+    "d": "2025-06-02",
+    "s2_b2_refit": 1.640043818879868,
+    "s2_b2_parquet": 1.640043818879868,
+    "rel_b2": 0.0,
+    "s2_harj_refit": 1.5420844597832233,
+    "s2_harj_parquet": 1.5420844597832233,
+    "rel_harj": 0.0,
+    "trees": 30
+   }
+  ],
+  "reproduced": true
+ },
+ "reproduced": true
+}
