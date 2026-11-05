@@ -1,0 +1,31 @@
+{
+ "G2": {
+  "events": 984,
+  "bad": 0,
+  "horizons": [
+   1,
+   5,
+   22
+  ],
+  "ok": true
+ },
+ "G3": {
+  "max_abs_diff": 2.220446049250313e-16,
+  "values_compared": 780,
+  "ok": true
+ },
+ "hari": {
+  "max_rel_diff": 0.0,
+  "ok": true
+ },
+ "G4": {
+  "rows": {
+   "1": 26,
+   "5": 26,
+   "22": 26
+  },
+  "expected_rows_each": 26,
+  "ok": true,
+  "selection_keys": true
+ }
+}

@@ -1,0 +1,46 @@
+{
+ "fits_by_h": {
+  "1": {
+   "fit": 100,
+   "inner_ES": 216,
+   "refit": 216
+  },
+  "5": {
+   "fit": 100,
+   "inner_ES": 6,
+   "refit": 6
+  },
+  "22": {
+   "fit": 100,
+   "inner_ES": 120,
+   "refit": 120
+  }
+ },
+ "ledger_events": 984,
+ "by_component": {
+  "A1_pool": 15,
+  "A1_ticker": 255,
+  "A2_logit": 30,
+  "zh190_cat_huber1": 120,
+  "zh190_cat_qlike": 132,
+  "zh190_panel_huber4": 12,
+  "zh190_panel_qlike": 12,
+  "zh190_ticker_huber4": 204,
+  "zh190_ticker_qlike": 204
+ },
+ "rows_by_h": {
+  "1": 26,
+  "5": 26,
+  "22": 26
+ },
+ "series_by_h": {
+  "1": 23,
+  "5": 23,
+  "22": 23
+ },
+ "cells_fit_jobs": {
+  "1": 12,
+  "5": 6,
+  "22": 12
+ }
+}

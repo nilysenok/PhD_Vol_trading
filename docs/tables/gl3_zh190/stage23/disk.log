@@ -1,0 +1,3 @@
+2026-11-05 10:55:23.967908+00:00 fit jobs 30
+Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on
+/dev/disk3s1s1   460Gi    13Gi    88Gi    13%    484k  928M    0%   /
