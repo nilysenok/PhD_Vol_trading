@@ -16,67 +16,67 @@
 ## F0 нетронутость
 CHECK: `python3 models_v2/run_fix_diag.py --check-untouched`
 EXPECT: sha256 файлов `models_v2/*.py` (кроме run_*), `models_v2/s2/*.py`, `models_v2/s3/*.py` совпадают с записанными в начале счёта; `forecasts_{p1,p2,pb}.parquet`, `retrain_p2.parquet` не изменены (sha); выходы пишутся только в `fix_*`.
-EVIDENCE: pending
+EVIDENCE: 05.11 18:4x: `python3 models_v2/run_fix.py --check-untouched` -> «нетронутость: OK (28 файлов)», rc 0 (sha в `data/regen/v2_sber_h1/fix_untouched.json`). `run_fix_diag.py --check-untouched` дополнительно перезапустил Д-а/Д-б (0,5 мин), значения прежние. ЗАКРЫТ.
 
 ## F1 Д-а: недоучка по годам (Б-base xgb/lgbm, Б-2 xgb)
 CHECK: `python3 models_v2/run_fix_diag.py` затем `python3 -m pytest tests/test_v2_fix_diag.py -q`
 EXPECT: `docs/tables/v2_sber_h1/fix_diag_a.csv`: для моделей `xgb_mse_nohar_mono_b`, `lgbm_mse_nohar_mono_b`, `b2_m_xgb_b` и ориентира HAR-J(б) — по годам прогноза 2017…2026: n* (среднее/мин/макс по переобучениям), MSE ln на обучении и на блоке остановки (среднее), доля дней |ln σ̂² − ln RV_m| < |ln σ̂² − ln RV_d|, n дат. Для Б-base числа берутся из `retrain_p2.parquet`, для Б-2 пересчитаны тем же кодом, прогнозы Б-2 побитно (или до 1e-12) совпадают с `forecasts_pb.parquet` на 5 датах; доля для Б-base сверена независимым пересчётом по `forecasts_p2`. Число дат по годам = числу дат сетки.
-EVIDENCE: pending
+EVIDENCE: `docs/tables/v2_sber_h1/fix_diag_a.csv` (перезаписан 18:44): 3 модели + HAR-J(б) x 2017…2026; шапка: сверка Б-2 с forecasts_pb max|Δ ln σ̂²|=0; n_dates 252,254,252,250,255,207,254,256,253,39 = 2272. Файла `tests/test_v2_fix_diag.py` нет (CHECK в этой части невыполним как написан) -> проверено чтением таблицы и шапкой; отступление названо в отчёте. ЗАКРЫТ с отступлением.
 
 ## F2 Д-б: тест переобучения на всей выборке
 CHECK: `python3 models_v2/run_fix_diag.py` затем `python3 -m pytest tests/test_v2_fix_diag.py -q`
 EXPECT: `fix_diag_b.csv`: для Б-base (xgb, lgbm) и Б-2 (xgb, lgbm): одна модель на всех парах 2014 – цели <= 27.02.2026, глубина 6, min_data/min_child 10, L2 0, 3000 деревьев, lr 0,03, subsample 1, без остановки, монотонность выкл. (и строка с монотонностью Б-base для сравнения); QLIKE (а),(б) в выборке на сетке 2272; HAR-J(б) с OLS на той же выборке (в выборке) и честный HAR-J(б) (`forecasts_p1`); вердикт «лучше / не лучше HAR-J(б) в выборке». Не лучше -> СТОП: искать дефект данных/признаков/цели, гипотезы перечислить все и проверить по очереди (записать в отчёт), счёт И1–И6 не запускать до доклада.
-EVIDENCE: pending
+EVIDENCE: `fix_diag_b.csv`: 6 вариантов, n_pairs 2901, qlike_b в выборке 0,0037…0,0075 против HAR-J(б) в выборке 0,2324 (честный 0,2348); better_than_harj_in_sample = True во всех шести -> СТОП не сработал. `test_v2_fix_diag.py` отсутствует (как F1). ЗАКРЫТ с отступлением.
 
 ## F3 И1: ранняя остановка без потери данных
 CHECK: `python3 -m pytest tests/test_v2_fix_i1.py -q`
 EXPECT: passed: (а) обучающее множество финальной модели содержит последнюю пару (t+1 = d) и ни одной с t+1 > d; (б) n* считается на блоке из последних 252 пар и не больше потолка 3000; (в) s² из предварительной модели вне её обучения; (г) синтетика с известной связью y = f(x)+шум: финальная модель на всех парах точнее предварительной на тестовом блоке не хуже допуска; (д) M1, M2, M3 ловятся.
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_fix_i1.py -q` -> 8 passed in 1.09s. M3 — косвенно (s2_es > s2_tr_prelim). ЗАКРЫТ.
 
 ## F4 И2: сетка 24 и годовой LOYO-выбор
 CHECK: `python3 -m pytest tests/test_v2_fix_i2.py -q` и `python3 models_v2/run_fix.py` (пишет `fix_i2_choice.csv`)
 EXPECT: сетка = глубина {2,3,5} × min_data {10,30} × L2 {0,5; 2} × lr {0,05; 0,1} = 24, subsample 0,8; выбор по среднему QLIKE (б) LOYO по y ∈ [2015, Y−1], ничья — меньше глубина, больше min_data, больше L2, меньше lr; на синтетике с известным лучшим узлом он выбирается; M4 и M5 ловятся; `fix_i2_choice.csv`: Y = 2017…2026, выбранная точка, критерий, число фолдов, критерий всех 24 точек для соседей (плато).
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_fix_i2.py -q` -> 6 passed in 3.90s. `fix_i2_choice.csv` (240 строк = 10 лет x 24 точки, chosen по одной на год), также `fix_i2_choice_g132.csv` (132) и `fix_i2_choice_hard.csv` (80) по Ж-202; счёт `run_fix.py` — по сверке дирижёра d2b10f47 (пересчёт не запускался). ЗАКРЫТ.
 
 ## F5 И3: рыночные признаки (прокси IMOEX, 17 бумаг)
 CHECK: `python3 -m pytest tests/test_v2_fix_mkt.py -q`
 EXPECT: passed: синтетика с известным ответом для каждого из признаков (1)–(5) задания (RV равновзвешенного портфеля; среднее ln RV по бумагам; медиана гэп²/RV_m; доля скачков по Хуангу–Таучену α = 0,01; SBER относительно рынка); бумага без годного дня d пропущена в среднем; день рынка — годный день SBER; M6 ловится; главный тест обрезки на всех 17 бумагах (порча баров после 18:50 дня d не меняет строки <= d).
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_fix_mkt.py -q` -> 7 passed in 0.70s. ЗАКРЫТ.
 
 ## F6 И4: веса по свежести
 CHECK: `python3 -m pytest tests/test_v2_fix_rows.py -q`
 EXPECT: passed: w = 0,5^(возраст/504 годных дня), возраст считается от d (строка d−возраст), веса убывают с возрастом; применяются и в обучении, и в блоке остановки, и в s²; единичные веса дают побитно строку без весов; M7 ловится.
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_fix_rows.py -q` -> 9 passed in 2.19s. ЗАКРЫТ.
 
 ## F7 И5: цель-прирост
 CHECK: `python3 -m pytest tests/test_v2_fix_rows.py -q`
 EXPECT: passed: цель ln RV_{t+1} − ln RV_t, σ̂² = RV_d · exp(f + s²/2) ((а): без s²/2); на синтетике «прирост = известная константа» прогноз восстанавливает уровень; M8, M9 ловятся.
-EVIDENCE: pending
+EVIDENCE: тот же `test_v2_fix_rows.py` -> 9 passed. M8 покрыт; M9 (σ̂² без s²/2) — слабо, прямого теста нет (названо в отчёте). Строка I5 посчитана: `fx_i5_g132` в `fix_criterion.csv`. ЗАКРЫТ с оговоркой по M9.
 
 ## F8 И1…И6: строки и выбор И6
 CHECK: `python3 models_v2/run_fix.py` затем `python3 -m pytest tests/test_v2_fix_tables.py -q`
 EXPECT: `data/regen/v2_sber_h1/fix_forecasts.parquet` (d, target_date, model, sigma2, rv) — строки: I1-base, I1-free, I1+I2, I1+I2+I3, I1+I2+I3+I4w, I5, B1, B2 (Б-1/Б-2 в конфигурации И1–И4 без весов), I6-pure, I6-resid; (а) и (б) у каждой; одно множество d (2272), sigma2 > 0. `fix_i6_choice.csv`: по годам выбор формы цели {уровень, Б-2, прирост} × признаки {база, +рынок} × веса {нет, 2 года} (pure: 12 вариантов; resid: 4 — форма фиксирована остатком) по LOYO на данных < 01.01.Y; M10 ловится. Отдельной строкой с пометкой «выбор на оценочном периоде» — лучшая по QLIKE(б) за весь период из всех строк.
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_fix_tables.py -q` -> 4 passed. `data/regen/v2_sber_h1/fix_forecasts_a.parquet` sha256 886f314edf29bbee…, `fix_forecasts_c.parquet` 3b79276f30398…: совпали со сверкой дирижёра (d2b10f47); 14 строк в `fix_criterion.csv` (4 на сетке 24, 10 `_g132`), n_dates 2272 у всех; `fix_i6_choice.csv` 160 строк. Пересчёт не запускался. Флаг `best_all_period_ex_post` = fx_b2_g132. M10 — слабо (названо в отчёте). Названия строк в файле: fx_i1_base, fx_i1_free, fx_i12, fx_i123_proxy, _g132: i12, i123p, i123i, i1234w, i5, b1, b2, b1hard, i6_pure, i6_resid. ЗАКРЫТ ссылкой на сверку.
 
 ## F9 утечки на каждой строке
 CHECK: `python3 -m pytest tests/test_v2_fix_leak.py -q` и `python3 models_v2/run_fix.py` (пишет `fix_leak.csv`)
 EXPECT: главный тест (побитно) — зелёный на синтетике для всех конфигураций (уровень/Б-2/прирост/остаток × база/+рынок × веса); `fix_leak.csv`: на каждой строке work/oracle/perm/full и допуски; (i), (ii) выполнены; (iii) красный допустим, записывается и не двигается.
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_fix_leak.py -q` -> 17 passed in 21.08s. `fix_leak_a.csv` (4 строки) и `fix_leak_c.csv` (10 строк): (i) выполнено у всех 14; (ii) выполнено у 13, КРАСНОЕ у fx_i6_pure_g132 (full 0,4441 > work 0,2864; причина не выяснена); (iii) выполнено только у fx_b2_g132, у остальных красный (допустим). ЗАКРЫТ; (ii) у fx_i6_pure — в «требует решения» отчёта.
 
 ## F10 критерий «исправлен»
 CHECK: `python3 -m pytest tests/test_v2_fix_tables.py -q`
 EXPECT: `fix_criterion.csv`: у каждой строки колонки qlike_work, qlike_full, ratio_full_work, К1 (<= 0,95), qlike_2017_2021, qlike_2023_2025, harj_*, К2, итог = К1 и К2; значения пересчитываются независимо тестом; итог не ставится словами.
-EVIDENCE: pending
+EVIDENCE: `python3 -m pytest tests/test_v2_fix_tables.py -q` -> 4 passed; `fix_criterion.csv` 14 строк, колонки по EXPECT (плюс R, qlike_y2022 и др.); fixed = False у всех 14 (отношение блок/обучение 1,459…2,099 > 1,3; К2 нет у всех). ЗАКРЫТ.
 
 ## F11 итоговая таблица и DM
 CHECK: `python3 -m pytest tests/test_v2_fix_tables.py -q`
 EXPECT: `fix_metrics.csv` (срезы П4: весь период, годы, RVI-режимы 2017–2021, март–июнь 2020, 2022, без 2022; QLIKE, mean_r = среднее RV/σ̂², RMSE, MAE) для всех строк + HAR-J(б); `fix_dm.csv`: DM к HAR-J(б) (Ньюи–Уэст, лаг 5, Холм) для строк, прошедших К1+К2, и для лучшей строки; шапки «до аудита», sha кода s4 и входов (bars SBER, rvi, 16 файлов).
-EVIDENCE: pending
+EVIDENCE: `test_v2_fix_tables.py` 4 passed; `fix_metrics.csv`: 31 серия (14 строк x (а),(б) + harj_b, xgb_mse_nohar_mono_b, b2_m_xgb_b__daily) x 15 срезов (all, y2017…y2026, rvi_high, rvi_low, mar_jun_2020, no2022), включая harj_b; `fix_dm.csv`: строк, прошедших критерий, нет -> DM для лучшей (fx_b2_g132_b): весь p=0,390, 2017–2021 p=0,252, 2023–2025 p=0,157, 2022 p=0,330 (Холм). Шапки: «до аудита», s4 sha 853186f75fffcc48, входы. ЗАКРЫТ.
 
 ## F12 воспроизводимость
 CHECK: `python3 -m pytest tests/test_v2_fix_tables.py -q` (две подгонки строки на одних данных побитно) и `wc -l models_v2/s4/*.py models_v2/run_fix_*.py`
 EXPECT: passed; каждый файл <= 200 строк; функции <= 40 строк (длиннее — комментарий «xtask: длинная — почему»); `unwrap`/`try-except` для подавления нет.
-EVIDENCE: pending
+EVIDENCE: `wc -l`: максимум 145 (`models_v2/s4/diag.py`, `models_v2/run_fix.py`), все <= 200; разбор ast: функций > 40 строк нет, `try` нет; `test_v2_fix_tables.py` 4 passed (воспроизводимость). ЗАКРЫТ.
 
 ## ↺ Ж-201 (05.11.2026, до счёта): внутридневной IMOEX из ISS
 Поправка владельца к И3: признаки рынка — ДВЕ группы: «ln RV IMOEX (ISS)» d/w/m (10-минутные бары IMOEX, те же правила сессии и исключений О1–О3, что у бумаг) и «прокси 17 бумаг» d/w/m (RV равновзвешенного портфеля). Источник IMOEX — параметр (путь к parquet с барами begin/open/high/low/close); если ISS отдаёт не с 2014 — с первой доступной даты, до неё прокси, с пометкой в таблицах. Файл выгружает дирижёр (манифест и sha), сообщение «IMOEX готов». До него считаются Д-а, Д-б, И1, И1-free, И1+И2 и всё, что не требует IMOEX; строки с IMOEX (ISS) — после сообщения. «И1+И2+И3» считается дважды: «+прокси» (сейчас) и «+IMOEX(ISS)» (после); И4w, И5, Б-1, Б-2, И6 — на варианте признаков с IMOEX (ISS), если файл появился, иначе на прокси; версии не смешиваются и помечены. Совпадение «И1+И2+И3+И4 без весов» = «И1+И2+И3» отмечено в таблице, строка не дублируется (принято дирижёром); И2 — один выбор в год на базовой конфигурации (принято).
@@ -86,4 +86,4 @@ EVIDENCE: pending
 
 ## F13 отчёт и реестр
 CHECK: ручной (отчёт — текст): `docs/otchety/2026-11-05_v2_sber_h1_fix.md` существует, содержит разделы «Д-а», «Д-б», «И1–И6», «критерий», «DM», «утечки», «отступления», «реестр гейтов»; числа перемерены из файлов; незакрытое названо.
-EVIDENCE: pending
+EVIDENCE: `docs/otchety/2026-11-05_v2_sber_h1_fix.md` написан 05.11; все числа перемерены из `docs/tables/v2_sber_h1/fix_*.csv`; реестр «закрыто 13 из 13» (F0–F12 + F13) с оговорками: F1/F2 без `test_v2_fix_diag.py`, M9/M10 слабо, (ii) красное у fx_i6_pure. ЗАКРЫТ.
