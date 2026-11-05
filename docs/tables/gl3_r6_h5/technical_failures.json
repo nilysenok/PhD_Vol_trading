@@ -1,0 +1,26 @@
+[
+  {
+    "id": "interrupted_g1_v2",
+    "kind": "KeyboardInterrupt during G1 trial fit",
+    "completed_fit": false,
+    "optuna_trial": true,
+    "original_timestamp": null,
+    "provenance": "Observed successful SIGINT of process53241; completed ledger has standard360 + regularized12 v2 trials. Interrupted call did not reach post-fit record(). No metric retained. Exact interrupted parameters not logged."
+  },
+  {
+    "id": "ridge_fit_then_nan_prediction",
+    "kind": "Ridge fit completed; predict failed on missing end2021 inputs",
+    "completed_fit": true,
+    "optuna_trial": false,
+    "original_timestamp": null,
+    "provenance": "Observed G3 annual traceback: .fit() completed before model.predict(x[va]) rejected NaNs. Post-predict record() was not reached. Same chronological mask excludes unavailable target labels."
+  },
+  {
+    "id": "categorical_int_parameter_failure",
+    "kind": "LightGBM rejected num_leaves66.0 before training",
+    "completed_fit": false,
+    "optuna_trial": false,
+    "original_timestamp": null,
+    "provenance": "Observed G7c_FIN traceback: num_leaves must be int. No trained model or metric produced; fixed by explicit int conversion."
+  }
+]

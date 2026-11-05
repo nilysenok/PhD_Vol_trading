@@ -1,0 +1,877 @@
+{
+  "status": "dev_complete_no_control_opening",
+  "recipes": {
+    "G1_standard": {
+      "2017": {
+        "core": "G1",
+        "variant": "standard"
+      },
+      "2018": {
+        "core": "G1",
+        "variant": "standard"
+      },
+      "2019": {
+        "core": "G1",
+        "variant": "standard"
+      },
+      "2020": {
+        "core": "G1",
+        "variant": "standard"
+      },
+      "2021": {
+        "core": "G1",
+        "variant": "standard"
+      },
+      "all": {
+        "core": "G1",
+        "variant": "standard"
+      }
+    },
+    "G1_regularized": {
+      "2017": {
+        "core": "G1",
+        "variant": "regularized"
+      },
+      "2018": {
+        "core": "G1",
+        "variant": "regularized"
+      },
+      "2019": {
+        "core": "G1",
+        "variant": "regularized"
+      },
+      "2020": {
+        "core": "G1",
+        "variant": "regularized"
+      },
+      "2021": {
+        "core": "G1",
+        "variant": "regularized"
+      },
+      "all": {
+        "core": "G1",
+        "variant": "regularized"
+      }
+    },
+    "G2_hard": {
+      "2017": {
+        "core": "G2",
+        "gate": "hard",
+        "expert": "K9"
+      },
+      "2018": {
+        "core": "G2",
+        "gate": "hard",
+        "expert": "HXP"
+      },
+      "2019": {
+        "core": "G2",
+        "gate": "hard",
+        "expert": "HAR"
+      },
+      "2020": {
+        "core": "G2",
+        "gate": "hard",
+        "expert": "K10"
+      },
+      "2021": {
+        "core": "G2",
+        "gate": "hard",
+        "expert": "K9"
+      },
+      "all": {
+        "core": "G2",
+        "gate": "hard",
+        "expert": "HXP"
+      }
+    },
+    "G2_logistic": {
+      "2017": {
+        "core": "G2",
+        "gate": "logistic",
+        "expert": "K9"
+      },
+      "2018": {
+        "core": "G2",
+        "gate": "logistic",
+        "expert": "HXP"
+      },
+      "2019": {
+        "core": "G2",
+        "gate": "logistic",
+        "expert": "HAR"
+      },
+      "2020": {
+        "core": "G2",
+        "gate": "logistic",
+        "expert": "K10"
+      },
+      "2021": {
+        "core": "G2",
+        "gate": "logistic",
+        "expert": "K9"
+      },
+      "all": {
+        "core": "G2",
+        "gate": "logistic",
+        "expert": "HXP"
+      }
+    },
+    "G3_annual": {
+      "2017": {
+        "core": "G3",
+        "mode": "annual"
+      },
+      "2018": {
+        "core": "G3",
+        "mode": "annual"
+      },
+      "2019": {
+        "core": "G3",
+        "mode": "annual"
+      },
+      "2020": {
+        "core": "G3",
+        "mode": "annual"
+      },
+      "2021": {
+        "core": "G3",
+        "mode": "annual"
+      },
+      "all": {
+        "core": "G3",
+        "mode": "annual"
+      }
+    },
+    "G3_quarterly": {
+      "2017": {
+        "core": "G3",
+        "mode": "quarterly"
+      },
+      "2018": {
+        "core": "G3",
+        "mode": "quarterly"
+      },
+      "2019": {
+        "core": "G3",
+        "mode": "quarterly"
+      },
+      "2020": {
+        "core": "G3",
+        "mode": "quarterly"
+      },
+      "2021": {
+        "core": "G3",
+        "mode": "quarterly"
+      },
+      "all": {
+        "core": "G3",
+        "mode": "quarterly"
+      }
+    },
+    "G4": {
+      "2017": {
+        "core": "G4"
+      },
+      "2018": {
+        "core": "G4"
+      },
+      "2019": {
+        "core": "G4"
+      },
+      "2020": {
+        "core": "G4"
+      },
+      "2021": {
+        "core": "G4"
+      },
+      "all": {
+        "core": "G4"
+      }
+    },
+    "G5": {
+      "2017": {
+        "core": "G5",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2018": {
+        "core": "G5",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2019": {
+        "core": "G5",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2020": {
+        "core": "G5",
+        "parent": {
+          "core": "G3",
+          "mode": "quarterly"
+        }
+      },
+      "2021": {
+        "core": "G5",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "all": {
+        "core": "G5",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      }
+    },
+    "G6": {
+      "2017": {
+        "core": "G6",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2018": {
+        "core": "G6",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2019": {
+        "core": "G6",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2020": {
+        "core": "G6",
+        "parent": {
+          "core": "G3",
+          "mode": "quarterly"
+        }
+      },
+      "2021": {
+        "core": "G6",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "all": {
+        "core": "G6",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      }
+    },
+    "G7a_FIN": {
+      "2017": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      }
+    },
+    "G7b_FIN_w0.25": {
+      "2017": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      }
+    },
+    "G7b_FIN_w0.5": {
+      "2017": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      }
+    },
+    "G7b_FIN_w0.75": {
+      "2017": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      }
+    },
+    "G7b_FIN_LOYO": {
+      "2017": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "FIXED_FIN"
+        }
+      }
+    },
+    "G7c_FIN": {
+      "2017": {
+        "core": "G1",
+        "variant": "final_fixed_ticker"
+      },
+      "2018": {
+        "core": "G1",
+        "variant": "final_fixed_ticker"
+      },
+      "2019": {
+        "core": "G1",
+        "variant": "final_fixed_ticker"
+      },
+      "2020": {
+        "core": "G1",
+        "variant": "final_fixed_ticker"
+      },
+      "2021": {
+        "core": "G1",
+        "variant": "final_fixed_ticker"
+      },
+      "all": {
+        "core": "G1",
+        "variant": "final_fixed_ticker"
+      }
+    },
+    "G7a_BEST": {
+      "2017": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "G6",
+          "parent": {
+            "core": "G3",
+            "mode": "quarterly"
+          }
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "s2",
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      }
+    },
+    "G7b_BEST_w0.25": {
+      "2017": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "G6",
+          "parent": {
+            "core": "G3",
+            "mode": "quarterly"
+          }
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.25,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      }
+    },
+    "G7b_BEST_w0.5": {
+      "2017": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "G6",
+          "parent": {
+            "core": "G3",
+            "mode": "quarterly"
+          }
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      }
+    },
+    "G7b_BEST_w0.75": {
+      "2017": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G6",
+          "parent": {
+            "core": "G3",
+            "mode": "quarterly"
+          }
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      }
+    },
+    "G7b_BEST_LOYO": {
+      "2017": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2018": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2019": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.5,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "2020": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G6",
+          "parent": {
+            "core": "G3",
+            "mode": "quarterly"
+          }
+        }
+      },
+      "2021": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      },
+      "all": {
+        "core": "G7",
+        "kind": "qlike",
+        "w": 0.75,
+        "parent": {
+          "core": "G3",
+          "mode": "annual"
+        }
+      }
+    },
+    "G7c_BEST": {
+      "2017": {
+        "core": "G3",
+        "mode": "annual",
+        "cat_inputs": true
+      },
+      "2018": {
+        "core": "G3",
+        "mode": "annual",
+        "cat_inputs": true
+      },
+      "2019": {
+        "core": "G3",
+        "mode": "annual",
+        "cat_inputs": true
+      },
+      "2020": {
+        "core": "G6",
+        "parent": {
+          "core": "G3",
+          "mode": "quarterly",
+          "cat_inputs": true
+        }
+      },
+      "2021": {
+        "core": "G3",
+        "mode": "annual",
+        "cat_inputs": true
+      },
+      "all": {
+        "core": "G3",
+        "mode": "annual",
+        "cat_inputs": true
+      }
+    }
+  },
+  "winner": null,
+  "control_read": false
+}

@@ -1,0 +1,22 @@
+{
+  "status": "closed_without_winner",
+  "control_read": false,
+  "control_opened": false,
+  "opening_count_before": 2,
+  "opening_count_after": 2,
+  "winner": null,
+  "reason": "No candidate satisfies3years + bothstress + meanbetter",
+  "dev_table_sha256": "b3319d5f459c929417c916ea1a0488b4178d049abab9b4750469e3ac1ffa5014",
+  "benchmark_QLIKE": 0.20996539211548085,
+  "hypothesis_origin": "control GW in round3",
+  "old_final_unchanged": true,
+  "versions": {
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "scipy": "1.13.1",
+    "scikit-learn": "1.6.1",
+    "optuna": "4.7.0",
+    "lightgbm": "4.6.0",
+    "xgboost": "2.1.4"
+  }
+}

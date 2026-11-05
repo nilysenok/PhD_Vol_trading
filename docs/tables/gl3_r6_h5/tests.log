@@ -1,0 +1,26 @@
+.............                                                            [100%]
+=============================== warnings summary ===============================
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:64
+  /Users/nilysenok/Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
+
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:85
+  /Users/nilysenok/Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:89
+  /Users/nilysenok/Library/Python/3.9/lib/python/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+13 passed, 13 warnings in 1.11s
