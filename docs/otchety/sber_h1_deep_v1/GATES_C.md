@@ -59,44 +59,55 @@ MC1 (№ 15): LOYO-фолд с окном, заходящим за cut(Y) (cut+1
 ## G1 — контроли и эталон B воспроизведены
 CHECK: `python3 models_v2/s5/c/run_c.py --stage control`
 EXPECT: Б-2 0,220486502764, HAR-J(б) 0,233662115694 (≤ 1e-12); `b2_f4` кодом C побитно равен кэшу B2 на 2271 дате; RV > 0, сетка 2271; иначе код 1
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 
 ## G2 — `fitx` ≡ `fit_i1` при gamma = alpha = 0, seed 42; оси gamma/alpha/seed действуют
 CHECK: `python3 -m pytest tests/test_v2_deep_c_fitx.py -q`
 EXPECT: passed; побитное равенство прогнозов, k, s²_es; мутанты MC4 ловятся
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 
 ## G3 — Optuna: границы, сэмплер, J, PIT-выбор, бюджет
 CHECK: `python3 -m pytest tests/test_v2_deep_c_tpe.py -q`
 EXPECT: passed; пространство = §2; J не зависит от целей ≥ 01.01.2021 (MC3); выбор HP_Y не зависит от score_{Y'≥Y} (MC2); MC1; детерминизм (два прогона одинаково); ≤ 22 TPE trials; счётчик бюджета и MC15
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 
 ## G4 — C1 посчитан: TPE 22 + 3 отдельных trials, `c1_opt`
 CHECK: `python3 models_v2/s5/c/run_c.py --stage tpe` и `--stage c1`
 EXPECT: `C_TPE.csv` 22 строки, `C_CHOICE.csv` 10 лет; FEATURE_ABLATIONS +4; реестр +25; QLIKE каждой строки пересчитан из parquet (≤ 1e-12); перспективность по §2
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 
 ## G5 — C2 и C3: правила, главный тест обрезки, мутации
 CHECK: `python3 -m pytest tests/test_v2_deep_c_mix.py tests/test_v2_deep_c_regime.py -q`; затем `--stage c2`, `--stage c3`
 EXPECT: passed (MC8–MC12); HAR_BOOSTING +9, REGIME_MODEL +6; реестр +15; DM/Холм по семейству 40 (MC13)
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 
 ## G6 — главный тест обрезки на каждой новой модельной строке и LOYO без утечки
 CHECK: `python3 -m pytest tests/test_v2_deep_c_leak.py -q`
 EXPECT: passed: прогноз на d побитно одинаков при порче данных после 18:50 d для `c1_opt` (HP с gamma/alpha/colsample < 1, seed 43), `c1_f4_*`, H2-L4 C-строки и смесей/переключателей (синтетика); MC5, MC1; № 1, № 15, № 22 (MC10) ловятся
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 
 ## G7 — устойчивость: 5 seeds и соседи ±1 шаг
 CHECK: `python3 -m pytest tests/test_v2_deep_c_robust.py -q`; `python3 models_v2/s5/c/run_c.py --stage robust`
 EXPECT: passed (MC6, MC7, MC14); `C_SEEDS.csv` по 5 seeds для каждой из лучших 3 строк; `C_PLATEAU.csv`; флаги seed-ok / plateau-ok выданы без правки порогов
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 
 ## G8 — реестр и контрольная точка
 CHECK: `python3 models_v2/s5/c/run_c.py --stage report` и `python3 -m pytest tests/test_v2_deep_c_registry.py -q`
 EXPECT: `OPTUNA_TRIALS.csv` = 28 + 22 + 40 строк, `trial_id` уникальны, B-строки не изменены (sha значений), `CHECKPOINT.json`: features 37, har 20, regime 15 (≤ 45/50/50), общий ≤ 240
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 
 ## G9 — отчёт и гигиена
 CHECK: `wc -l models_v2/s5/c/*.py tests/test_v2_deep_c_*.py`; `git status --short -- models_v2 | grep -v 's5/c'`; `python3 -m pytest tests/test_v2_deep_c_*.py -q`
 EXPECT: файлы ≤ 200 строк; вне владения изменений нет; тесты проходят; README_C.md: сделано / не сделано / проверено / отступления / выводы; числа из таблиц; потолки названы потолками
-EVIDENCE: pending
+EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
+
+## Итог EVIDENCE G1–G9 (реестр: закрыто 8 из 9, G7 — частично)
+- G1: `run_c.py --stage control`, код 0: «Б-2 0.220486502764 HAR-J(б) 0.233662115694; побитно к кэшу B2: {'f4': True, 'top2': True}».
+- G2: `pytest tests/test_v2_deep_c_fitx.py` — 2 passed (побитное равенство с `fit_i1`; gamma/alpha/seed действуют).
+- G3: `pytest tests/test_v2_deep_c_tpe.py` — 5 passed (границы, детерминизм, J до Y ≤ 2019 при порче целей ≥ 2019, мутанты MC1/MC3, выбор HP_Y, бюджет MC15).
+- G4: `--stage tpe`, `--stage c1`: `C_TPE.csv` 22 строки, `C_CHOICE.csv` 10 лет; FEATURE_ABLATIONS +4; реестр +25 (22 TPE + 3), `c1_opt` не trial.
+- G5: `pytest tests/test_v2_deep_c_mix.py` — 6 passed (включая тест подключения H3 с мутантом `td = d`, пробел вердикта B); `--stage c2`, `--stage c3`: HAR_BOOSTING +9, REGIME_MODEL +6, реестр +15. Холм N = 90 (↺ дирижёра) вместо 40, N = 40 справочно.
+- G6: `pytest tests/test_v2_deep_c_leak.py` — 6 passed (5 бустеров C побитно + мутант «признаки +1 день»); mutants № 15, 22 — в tpe/mix.
+- G7: `pytest tests/test_v2_deep_c_robust.py` — 5 passed; `--stage robust`: `C_SEEDS.csv` (3 строки × 5 seeds), `C_PLATEAU.csv` (f4: 7 соседей, opt: 4). **Частично:** описание соседей depth/min_child/lr на 2271 датах не сделано (оси недопустимы), seeds/соседи только для лучших 3 по внутреннему критерию.
+- G8: `OPTUNA_TRIALS.csv` 90 строк (28 + 22 + 40), дублей trial_id 0; `CHECKPOINT.json`: features 37, har 20, regime 15, objectives 8, rolling 10, итого 90 ≤ 240.
+- G9: `pytest tests/test_v2_deep_c_*.py` — 24 passed; файлы ≤ 124 строк; `models_v2/` вне `s5/c/` не менялся (весь `models_v2/` untracked в этой ветке — сравнение по mtime не делалось ❓).

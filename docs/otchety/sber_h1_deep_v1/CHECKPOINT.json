@@ -2,8 +2,8 @@
  "program": "Ж-204 SBER h=1 deep",
  "waves": {
   "A": "done",
-  "B": "pending",
-  "C": "pending",
+  "B": "done",
+  "C": "done",
   "D": "pending"
  },
  "trials_limit": {
@@ -16,11 +16,11 @@
  },
  "trials_limit_total": 240,
  "trials_used": {
-  "objectives_target": 0,
-  "feature_engineering": 0,
-  "har_boosting": 0,
-  "rolling_recency": 0,
-  "regime_aware": 0,
+  "objectives_target": 8,
+  "feature_engineering": 37,
+  "har_boosting": 20,
+  "rolling_recency": 10,
+  "regime_aware": 15,
   "ensemble_calibration": 0
  },
  "cache_key_wave_a": "58e1adc4fc31a2fc"
