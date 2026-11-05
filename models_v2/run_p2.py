@@ -124,7 +124,7 @@ def write_side_tables(F, ser, log, imp, params, names, ref, fc):
     p1 = pd.read_parquet(OUT / "forecasts_p1.parquet")
     r = p1[p1.model == "rv_m"]
     lkd = pd.DataFrame(lk).assign(qlike_rv_m=metrics.summary(r["rv"], r["sigma2"])["qlike"])
-    prov2.write_csv(lkd, TAB / "p2_leak.csv", "(б); work/oracle/perm — ежемесячно, full — одна модель на всей выборке")
+    prov2.write_csv(lkd, TAB / "p2_leak.csv", "(б); work/oracle/perm — ежедневное переобучение, full — одна модель на всей выборке")
     g = log.groupby("model").agg(n_retrain=("T", "size"), mean_trees=("n_trees", "mean"), mean_sec=("sec", "mean"),
                                  n_no_split=("no_split", "sum"), min_n_train=("n_train", "min"))
     g["daily_est_min_6proc"] = g["mean_sec"] * len(ref) / 6 / 60

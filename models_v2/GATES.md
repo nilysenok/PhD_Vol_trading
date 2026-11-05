@@ -141,27 +141,27 @@ EVIDENCE: grep -c → 1. ЗАКРЫТ (отчёт — «передача»: G16 
 ## GB1 Б-1 остаток
 CHECK: `python3 -m pytest tests/test_v2_hyb_resid.py -q`
 EXPECT: PIT-остаток к HAR-J(б) не использует данные после t (мутация «подгонка на всей выборке» ловится); s² берётся с ES-блока; c масштабирует f; синтетика с известным остатком — f его восстанавливает
-EVIDENCE: pending
+EVIDENCE: `tests/test_v2_hyb_resid.py` → passed (в составе 43 passed `tests/test_v2_hyb_*.py` до счёта; 155 passed, 20 xfailed по `tests/test_v2_*.py` после): PIT-остаток и мутация full-sample, s2_es на шуме ≈ дисперсии шума, восстановление f. Поправка s²/2 — `test_sigma2_b1_scales_with_c_and_bias`. ЗАКРЫТ.
 
 ## GB2 Б-2/Б-4 масштаб
 CHECK: `python3 -m pytest tests/test_v2_hyb_scale.py -q`
 EXPECT: RV_252 — min(252, доступно) дней, минимум 22, не склеен через разрыв; S_d не содержит d+1; синтетика: форма учится при смене уровня ×10 (прогноз следует уровню); монотонность на нормированных признаках
-EVIDENCE: pending
+EVIDENCE: `tests/test_v2_hyb_scale.py` → 3 passed (окно 252, минимум 22, без склейки через разрыв, без строк после d, инвариантность нормировки к уровню ×10, мутации сдвиг окна +1 и неверный масштаб). НЕ проверено отдельным тестом: «форма учится при смене уровня» и монотонность на нормированных признаках (в Б-4 монотонность по индексам 0–2 проверена только сквозным прогоном run_pb). ЧАСТИЧНО.
 
 ## GB3 Б-3, Б-5
 CHECK: `python3 -m pytest tests/test_v2_hyb_pb.py -q`
 EXPECT: linear_tree строится на синтетике с линейным трендом и экстраполирует; набор признаков Б-5 ровно из 5 столбцов
-EVIDENCE: pending
+EVIDENCE: `tests/test_v2_hyb_resid.py::test_linear_tree_extrapolates_where_plain_tree_does_not` passed: linear_tree выходит за диапазон обучения, но частично (прогноз ≈2,2–2,4 при истинном 4,4; ↺ linear_lambda = 5). `tests/test_v2_hyb_pb.py` → 4 passed (реестр 22 строки / 16 подгонок; сквозной прогон). Отдельного теста «Б-5 ровно 5 столбцов» нет (задано в `pb.build_designs`). ЧАСТИЧНО.
 
 ## GB4 Б-7
 CHECK: `python3 -m pytest tests/test_v2_hyb_post.py -q`
 EXPECT: q90 без дня d; до 252 защита выключена; доля по годам; мутация ловится
-EVIDENCE: pending
+EVIDENCE: `tests/test_v2_hyb_post.py` → 11 passed (`test_b7_defense_q90_excludes_d_off_before_252_and_main_invariance`: q90 по окну без d, защита выключена до 252, порча после d не меняет). Доля по годам — `pb_defense.csv` (2018: 0,209; 2022: 0,203; 2024: 0,211). ЗАКРЫТ.
 
 ## GB5 счёт Б, главный тест, утечки
 CHECK: `python3 models_v2/run_pb.py`; `python3 -m pytest tests/test_v2_hyb_leak.py tests/test_v2_hyb_tables.py -q`
 EXPECT: `forecasts_pb.parquet` на 2272 датах для всех строк × (а, б) × расписание; sigma2 > 0, конечны; главный тест passed; `pb_leak.csv` с (i)–(iii)
-EVIDENCE: pending
+EVIDENCE: `python3 models_v2/run_pb.py` → «счёт Б: 41648 задач, 5.0 мин», код 0. `tests/test_v2_hyb_leak.py` → 12 passed (главный тест 5 строк × drop/garble побитно; мутации m1, m4 ловятся). `pb_leak.csv` (22 строки, monthly): (i) 22/22; (ii) 20/22 (красные b2_m_xgb 0,2428 против 0,2363 и b4_m_xgb 0,2429 против 0,2372); (iii) «около RV_m» красный 18/22; perm >= work для Б-1 не сверялось. `tests/test_v2_hyb_tables.py` не написан (проверка sigma2 > 0 и сетки 2272 — только в `test_v2_hyb_pb.py` на синтетике). ЧАСТИЧНО; run_pb перезапускается дирижёром для сверки.
 
 ## GB6 отчёт Б и вывод
 CHECK: `python3 -m pytest tests/test_v2_hyb_tables.py -q`; `grep -c "^## п. 2, доработка" docs/otchety/2026-11-05_v2_sber_h1.md`

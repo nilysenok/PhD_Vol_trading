@@ -71,11 +71,36 @@
 3. Код и тесты в `models_v2/s2/` (или `s3/`); Г1 — лучший бустинг на остатке HAR-J(б); учесть невозможность экстраполяции деревьев.
 4. Итоговая таблица п. 4 (все строки × весь период, годы, режимы: QLIKE + RV/σ̂²), DM к HAR-J(б) для лучших, тесты утечки, коэффициенты HAR-J, важность, вывод одной строкой; отчёт — раздел «п. 3–4».
 
-## Этап 3 (агент 2, 05.11.2026): состояние
-- Готово без реальных данных: `models_v2/s3/{post,resid,scale,gen,pb,dm,pool3,prov3}.py`, `models_v2/run_pb.py`; тесты `tests/test_v2_hyb_{post,resid,scale,leak,pb,dm}.py` — 43 passed.
-- Ждёт: сообщения «перезапуск этапа 2 сверен» → `python3 models_v2/run_pb.py` (читает p2_tuning, forecasts_p2, forecasts_p2_monthly, p2_metrics) → pb_*.csv → ответ с таблицей Б и выводом по критерию GB.
-- Потом: Г2–Г5 (run_p3/run_p4, гейты G20–G31 в GATES.md; G20 заменён GB1), отчёт «п. 2, доработка», «п. 3», «п. 4», «Итог».
-- Не написано: `tests/test_v2_hyb_tables.py` (читает выходы), `run_p3.py`, `run_p4.py`, отчёт.
+## Передача 2 — этап 3 (Б-1…Б-7 сделано, Г2–Г5 нет), kodir, 05.11.2026 ~21:00 (по `date` Мака)
+Причина: порог 300k (≈255k на момент передачи) и незакрытые гейты. Задание: `docs/zadaniya/2026-11-05_v2_sber_h1_etap3.md` (раздел «Ж-198» + Г2–Г6, П4–П6); блок Ж-198 — `docs/resheniya/resheniya.md`. Владение — как в задании этапа 3 (+ `tests/test_v2_boost_es.py`).
+
+### Сделано
+- Код `models_v2/s3/`: `post.py` (Г3 `g3_weights`, Г4 `q_prior/q67_prior/stress/g4_hard/g4_logit`, Г5 `ewma_k/g5`, Б-7 `b7_defense/b7_sigma2`; `closed_count`: closed = target_date <= d), `dm.py` (`nw_variance`, `dm`, `holm`; n < 2 → NaN), `gen.py` (`Design`, `run_design`, linear_tree), `resid.py` (`harj_ab`, `target_minus`, `sigma2_b1`), `scale.py` (RV_252, нормировка), `pb.py` (реестр 22 строки Б, `frame`, `verdict`, `extra_slices`), `pool3.py`, `prov3.py` (шапка s3). `models_v2/run_pb.py` — счёт Б.
+- Тесты: `tests/test_v2_hyb_{post,resid,scale,leak,pb,dm}.py` (43) + `tests/test_v2_boost_es.py` (4); весь `tests/test_v2_*.py` → 155 passed, 20 xfailed. Г3–Г5 в `post.py` проверены на синтетике (главный тест, мутации m3, m5, m6, m7), но НЕ запускались на реальных данных.
+- Счёт Б выполнен (41 648 задач, 5,0 мин); таблицы `docs/tables/v2_sber_h1/pb_{all,verdict,dm,defense,leak}.csv`, `data/regen/v2_sber_h1/forecasts_pb.parquet`; отчёт — раздел «п. 2, доработка (Ж-198)» в `docs/otchety/2026-11-05_v2_sber_h1.md` с таблицей и выводом. EVIDENCE у GB1–GB5 заполнены (GB2, GB3, GB5 — «частично»). Дирижёр перезапускает run_pb для сверки: числа ниже сверить с новым выходом.
+- Ключевые числа Б (QLIKE (б), весь период): HAR-J(б) 0,2348; лучшая Б — `b2_m_xgb_b__monthly` 0,2363 (выбрана по оценочному периоду, не «чистая»); b1_xgb_c075 monthly 0,2369; Б-7 поверх лучшей этапа 2 — 0,2417. Критерий GB: закрывает 2022 — 21 из 48 строк; без потери — 0 из 48. DM: нигде нет значимого выигрыша.
+- ↺ (до счёта, в GATES): linear_lambda = 5; утечки (i)–(iii) и full только при monthly. Шапка `p2_leak.csv` и `run_p2.py:127` исправлены на «ежедневное переобучение».
+
+### Незакрытые гейты
+- GB6 (pending: нет `tests/test_v2_hyb_tables.py`); GB2, GB3, GB5 — «частично» (нет отдельных тестов «форма при смене уровня», «Б-5 из 5 столбцов», таблиц-тестов).
+- G20 заменён GB1. G21–G31 — pending (Г2–Г5, p3/p4, DM-таблица, отчёт). G30: sha этапов 1–2 не сверялись.
+
+### Что делать дальше
+1. Сверить G21: Г0 = argmin QLIKE(all) среди 16 строк (б) этапа 2 = `xgb_mse_nohar_mono_b` (0,3193 daily); не совпало — стоп. Г1 = Б-1 (в p3 брать `b1_*` из `forecasts_pb`, не пересчитывать). «Спокойный эксперт» Г4 и основа Г5 выбираются среди Г1–Г3 / Г1–Г4 по QLIKE(all) — на оценочном периоде (пометка в таблицах); учесть, что лучшая Б (`b2_m_xgb_b__monthly`) выбрана так же.
+2. Написать `models_v2/run_p3.py` (g1 из pb, g2, g3, g4_hard/logit, g5×6 → `forecasts_p3.parquet` 14 моделей, `p3_w.csv`, `p3_stress.csv`, `p3_leak.csv`) и `run_p4.py` (`p4_all.csv` 53 строки + stress/calm, `p4_dm.csv`) на функциях `post.py`/`dm.py`; шапки — `prov3.write_csv`. Согласовать с дирижёром: GATES Г2–Г5 (G20–G31) переписать под Б-1 вместо Г1 отдельным коммитом ДО счёта.
+3. `tests/test_v2_hyb_tables.py` (сетка 2272, sigma2 > 0, пересчёт QLIKE, шапки, критерий вердикта), мутации Г3/Г5, leak (i)–(iii) для Г3–Г5 по GATES.
+4. Разделы отчёта «п. 3», «п. 4», «Итог»; закрыть EVIDENCE; снять ↺.
+
+### Ловушки
+- `closed_count(d, td)` = searchsorted(td, d, 'right'): прогноз k в closed не входит; `m+1` — мутация m3.
+- Ничья Г3: разница QLIKE <= 1e-12 → меньший w (`TIE`); логистика Г4 — не меньше 30 конечных z (`MIN_Z`), иначе жёсткая смесь.
+- `run_pb` читает p2-файлы (p2_tuning chosen, forecasts_p2*, p2_metrics); модели в имени несут расписание: `<строка>_<a|b>__daily|monthly`; Б-7 — `b7_p2best_b__*`, `b7_best_b1_b5[...]`.
+- Синтетические бары: первые 21 строка дневного ряда выпадает (индекс строки ≠ индекс календарного дня) — искать d через `searchsorted(F.dates, ...)`.
+- Допуск (iii) «около RV_m» красный почти везде — не двигать. Accelerate: `(A*beta).sum`, не `@`. Хуки: heredoc/`python3 -c`/`nohup ... &` запрещены, фон — `run_in_background`, скрипты файлами; хук после правки гоняет pytest по файлу.
+- Хэш кода этапа 1 не менять: новый код только в `models_v2/s3/` и `run_*`.
+
+### Команды
+`python3 models_v2/run_pb.py` (~5 мин, 6 процессов); `python3 -m pytest tests/test_v2_*.py -q` → 155 passed, 20 xfailed.
 
 ## Не читать
 `.env`; всё под `test_locked/`; `data/fastbt/s9/rvi_1850_test.parquet` и любые `*_test.*`; любые файлы `data/` кроме `data/iss_check/bars_10m_full/SBER.parquet` и `data/fastbt/s9/rvi_1850.parquet` (RVI ≥ 2022 — не читать); прогнозы и таблицы глав 3–4.
