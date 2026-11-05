@@ -1,1 +1,38 @@
 trial_id,wave,direction,config,metric_inner,seed,time
+2970fbbbec64,B,hp,LB0 точка 0: nl7_md30_l230_lr0.02_ff0.5_bag1_dp-1,crit_pen=0.228071;crit_mean=0.169696,42,0.0
+5ce6798bff16,B,hp,LB0 точка 1: nl7_md30_l230_lr0.02_ff0.8_bag0.8_dp-1,crit_pen=0.228210;crit_mean=0.168897,42,0.0
+7f66299b7bdf,B,hp,LB0 точка 2: nl7_md30_l230_lr0.02_ff0.8_bag1_dp-1,crit_pen=0.229483;crit_mean=0.170086,42,0.0
+4c0870974608,B,hp,LB0 точка 3: nl7_md100_l230_lr0.02_ff0.8_bag0.8_dp-1,crit_pen=0.239653;crit_mean=0.175882,42,0.0
+5052e1e67112,B,hp,LB0 точка 4: nl15_md30_l230_lr0.02_ff0.5_bag1_dp-1,crit_pen=0.228866;crit_mean=0.170138,42,0.0
+4066c732c45d,B,hp,LB0 точка 5: nl15_md100_l210_lr0.05_ff0.8_bag1_dp-1,crit_pen=0.236775;crit_mean=0.175572,42,0.0
+0cbb9a684662,B,hp,LB0 точка 6: nl15_md200_l210_lr0.05_ff0.5_bag1_dp-1,crit_pen=0.246656;crit_mean=0.181976,42,0.0
+b5f181205597,B,hp,LB0 точка 7: nl31_md30_l22_lr0.02_ff0.5_bag1_dp-1,crit_pen=0.226460;crit_mean=0.169707,42,0.0
+dff48cf2a520,B,hp,LB0 точка 8: nl31_md30_l210_lr0.02_ff0.8_bag0.8_dp-1,crit_pen=0.226797;crit_mean=0.169243,42,0.0
+d96ad4a7e815,B,hp,LB0 точка 9: nl31_md30_l210_lr0.05_ff0.5_bag1_dp-1,crit_pen=0.225161;crit_mean=0.169482,42,0.0
+e1130225169d,B,hp,LB0 точка 10: nl31_md30_l230_lr0.02_ff0.8_bag1_dp-1,crit_pen=0.234995;crit_mean=0.172291,42,0.0
+56b93ab8aac3,B,hp,LB0 точка 11: nl31_md100_l210_lr0.02_ff0.5_bag1_dp-1,crit_pen=0.239164;crit_mean=0.175910,42,0.0
+fc8e287a55a9,B,hp,LB0 точка 12: nl31_md200_l210_lr0.05_ff0.5_bag1_dp-1,crit_pen=0.246656;crit_mean=0.181976,42,0.0
+00d3596d8099,B,hp,LB0 точка 13: nl31_md200_l210_lr0.05_ff0.8_bag1_dp-1,crit_pen=0.248094;crit_mean=0.182521,42,0.0
+9a3fbb656c97,B,hp,LB0 точка 14: nl31_md200_l230_lr0.05_ff0.5_bag1_dp-1,crit_pen=0.247704;crit_mean=0.182246,42,0.0
+2cbba0c80912,B,obj_feat,"L1_level|lvl|L1 regression L2 по уровню RV/S, σ̂²=max(S·f, ε)",crit_pen=0.492120;crit_mean=0.326907,42,52.5
+2d83a4a4b355,B,obj_feat,L3_gamma|gamma|L3 gamma (log-link),crit_pen=0.223451;crit_mean=0.166685,42,72.9
+700840ee5869,B,obj_feat,"L4_qlike|qlike|L4 custom QLIKE, F=ln σ̂²",crit_pen=0.224420;crit_mean=0.166999,42,74.2
+9b9a3496c73d,B,obj_feat,"L5a_rvw05|ln|L5 L2 по ln-цели с весами RV_w^-0,5",crit_pen=0.234214;crit_mean=0.171517,42,82.6
+b129f1adc985,B,obj_feat,"L5b_rvw10|ln|L5 то же, RV_w^-1",crit_pen=0.245048;crit_mean=0.176204,42,77.9
+193f8e64ad2a,B,obj_feat,"L5t_decay504|ln|L5 веса по возрасту, полураспад 504 строки",crit_pen=0.235483;crit_mean=0.173440,42,85.6
+c63c39ec73de,B,obj_feat,F_F1|ln|OWN + группа F1 (9 столбцов),crit_pen=0.222669;crit_mean=0.167059,42,100.6
+812fd9fcb759,B,obj_feat,F_F2|ln|OWN + группа F2 (8 столбцов),crit_pen=0.220732;crit_mean=0.166506,42,93.3
+2cfe0c18b100,B,obj_feat,F_F3|ln|OWN + группа F3 (8 столбцов),crit_pen=0.216680;crit_mean=0.160488,42,127.9
+fdd5df7217c4,B,obj_feat,F_F4|ln|OWN + группа F4 (5 столбцов),crit_pen=0.211243;crit_mean=0.158522,42,88.6
+0621b4e34a3b,B,obj_feat,F_F5|ln|OWN + группа F5 (8 столбцов),crit_pen=0.219422;crit_mean=0.163512,42,102.9
+deef989b3770,B,obj_feat,F_F6|ln|OWN + группа F6 (10 столбцов),crit_pen=0.226676;crit_mean=0.169325,42,107.1
+664957883afa,B,obj_feat,F_top2|ln|OWN + группы F4+F3 (13 столбцов),crit_pen=0.210106;crit_mean=0.156015,42,120.2
+4e59bd043732,B,obj_feat,F_top3|ln|OWN + группы F4+F3+F5 (21 столбцов),crit_pen=0.207852;crit_mean=0.155129,42,149.4
+94c39a583244,B,obj_feat,F_all|ln|OWN + группы F1+F2+F3+F4+F5+F6 (48 столбцов),crit_pen=0.211676;crit_mean=0.155923,42,239.2
+69edd272472e,B,obj_feat,A_no_imoex_F_top3|ln|обратная абляция: no_imoex из F_top3,crit_pen=0.210528;crit_mean=0.155788,42,130.9
+8f809364e249,B,obj_feat,A_no_market_F_top3|ln|обратная абляция: no_market из F_top3,crit_pen=0.211280;crit_mean=0.156864,42,106.4
+bd76ece8ce03,B,obj_feat,A_no_semivar_F_top3|ln|обратная абляция: no_semivar из F_top3,crit_pen=0.209479;crit_mean=0.155703,42,142.1
+8aa4caa81a39,B,obj_feat,A_no_gap_F_top3|ln|обратная абляция: no_gap из F_top3,crit_pen=0.209799;crit_mean=0.155783,42,146.0
+1457c26eb565,B,obj_feat,A_minus_F4_F_top3|ln|F_top3 без группы F4,crit_pen=0.214956;crit_mean=0.159347,42,131.2
+851d362dc535,B,obj_feat,A_minus_F3_F_top3|ln|F_top3 без группы F3,crit_pen=0.211524;crit_mean=0.157827,42,116.9
+fe86952c7ef4,B,obj_feat,A_minus_F5_F_top3|ln|F_top3 без группы F5,crit_pen=0.210106;crit_mean=0.156015,42,119.4

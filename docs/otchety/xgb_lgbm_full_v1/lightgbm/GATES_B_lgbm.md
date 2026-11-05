@@ -81,3 +81,13 @@ EVIDENCE: pending
 | M9 | ln-путь расходится с `lgbfit` (наследованные HP) | `...::test_ln_kind_equals_inherited_lgbfit_bitwise` |
 | M10 | ключ веса (RV_w) использует строки после d | `test_v2_xl_lgbm_grid.py::test_weights_rvw_ignore_future_rows` |
 | M11 | дубль trial считается дважды / бюджет превышен | `...::test_register_dedupes_and_checkpoint_limits` |
+
+## EVIDENCE (06.11.2026 ~01:35; заменяет `pending` выше, исходные строки не удалялись)
+- B1–B4: `pytest tests/test_v2_xl_lgbm_*.py -q` -> 30 passed, rc 0.
+- B5: `run_b.py --stage lb0` rc 0; 975 фолдов; LB0_GRID 15, LB0_SELECTION 10; fc 2271; inherited vs сохранённый fc_lgbm_b2 max отн. разность 0; QLIKE inherited 0,2223; crit_pen own из сетки = из st (0,219138); +15 hp. Закрыт. Находка: crit_pen own 0,2191 ХУЖЕ inherited 0,2131 (QLIKE 0,2270 против 0,2223) — 15 случайных точек не дали baseline лучше наследованного.
+- B6: loss rc 0; 7 строк; +6 obj_feat; нечисловых ES-прогнозов 0, ε-срабатываний 0. Закрыт.
+- B7: feat1/feat2/abl rc 0; 7/4/8 строк; n_calm + n_stress = 2271 везде. Закрыт с ↺: `A_minus_F5_F_top3` по столбцам равна `F_top2`, но trial_id включает имя — посчитана отдельным trial (obj_feat 22, а не 21).
+- B8: arch rc 0; 10 строк, ARCH_LEAVES 36; контроли в реестр не попали. Закрыт.
+- B9: CHECKPOINT used hp 15, obj_feat 22 (<= 45); trial_id уникальны (37 строк). Закрыт.
+- B10: sha BASELINE.json 62160acadb0e, fc_lgbm_b2 7cf07022ce1b не изменились; `find models_v2 -newer` вне s6/lgbm и s6/xgb пуст. Закрыт.
+- B11: ответ дирижёру. Закрыто 11 из 11. Не перепроверялась обрезка признаков F1–F6 на уровне баров: они читаются из кэша B2 Ж-204.

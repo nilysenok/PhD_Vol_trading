@@ -7,9 +7,14 @@
   "ens_hybrid": 40
  },
  "used": {
-  "obj_feat": 0,
-  "hp": 0,
+  "obj_feat": 22,
+  "hp": 15,
   "temporal_regime": 0,
   "ens_hybrid": 0
- }
+ },
+ "limits_stream_b": {
+  "obj_feat": 45,
+  "hp_lb0": 15
+ },
+ "updated": "2026-11-06 01:27"
 }
