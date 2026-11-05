@@ -26,8 +26,8 @@ def code_sha() -> str:
     return h.hexdigest()[:16]
 
 
-def header(extra: str = "") -> str:
-    return ("# разработка; оценка 2017–02.2026 по Ж-197 (2022+ — просмотр контроля гл. 3 по SBER); "
+def header(extra: str = "", status: str = "после аудита этапа 1 проверяющим") -> str:
+    return ("# разработка; %s; оценка 2017–02.2026 по Ж-197 (2022+ — просмотр контроля гл. 3 по SBER); " % status +
             "код models_v2 sha256[:16]=%s; sha входов: bars=%s rvi=%s %s\n"
             % (code_sha(), sha_file(BARS)[:16], sha_file(RVI)[:16], extra))
 

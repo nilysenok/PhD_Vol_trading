@@ -97,10 +97,18 @@ def test_windows_do_not_cross_the_stop():
 
 
 def test_mutation_glued_windows_is_caught():
-    d = daily.add_windows(_series())
-    glued = daily._window_mean(d["rv"].to_numpy(), daily.W_WEEK)  # мутация: склейка через разрыв
-    first_post = np.flatnonzero(d["seg"].to_numpy() == 1)[0]
-    assert np.isnan(d["rv_w"].iloc[first_post]) and not np.isnan(glued[first_post])
+    s = _series()
+    good = daily.add_windows(s)
+    first_post = np.flatnonzero(good["seg"].to_numpy() == 1)[0]
+    assert np.isnan(good["rv_w"].iloc[first_post])
+    saved = daily.GAP
+    try:  # настоящая мутация производственной функции: разрыв «не виден», сегмент один (склейка)
+        daily.GAP = (saved[0], pd.Timestamp("2100-01-01"))
+        glued = daily.add_windows(s)
+    finally:
+        daily.GAP = saved
+    assert (glued["seg"] == 0).all() and not np.isnan(glued["rv_w"].iloc[first_post])
+    assert not good["rv_w"].equals(glued["rv_w"])  # тест остановки обязан падать на этой мутации
 
 
 def test_windows_include_day_d_and_exact_mean():

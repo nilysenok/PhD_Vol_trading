@@ -64,7 +64,7 @@ def synth_bars(n_days=150, seed=3):
     lvl = np.exp(np.cumsum(rng.normal(0, 0.1, n_days)) * 0.3)
     frames, c0 = [], 100.0
     for k, day in enumerate(days):
-        for start, m in (("10:00", 53), ("19:05", 4)):
+        for start, m in (("10:00", 53), ("18:50", 4)):  # вечерние бары начинаются ровно с 18:50
             t0 = pd.Timestamp(str(day.date()) + " " + start)
             r = rng.normal(0, 0.001 * lvl[k], m)
             close = c0 * np.exp(np.cumsum(r))
@@ -82,6 +82,23 @@ def test_synthetic_production_passes_and_mutants_caught():
     assert invariant(bars, d, prod)
     assert not invariant(bars, d, m1_shift_plus_one)
     assert not invariant(bars, d, m2_pair_with_target)
+
+
+def test_bar_exactly_1850_is_outside_and_window_mutation_caught():
+    bars, days = synth_bars()
+    d = days[100]
+    b = bars.copy()
+    m = b["begin"] == pd.Timestamp(str(d.date()) + " 18:50")
+    assert m.sum() == 1
+    for c in ("open", "high", "low", "close"):
+        b.loc[m, c] = 777.0  # порча единственного бара с begin 18:50
+    assert run(b, d, prod) == run(bars, d, prod)
+    saved = daily.T_TO
+    try:  # мутация: окно сессии до 18:50 включительно
+        daily.T_TO = "18:50"
+        assert run(b, d, prod) != run(bars, d, prod)
+    finally:
+        daily.T_TO = saved
 
 
 @pytest.mark.parametrize("d", ["2017-06-15", "2020-04-02", "2021-12-28", "2022-06-01", "2025-12-10"])

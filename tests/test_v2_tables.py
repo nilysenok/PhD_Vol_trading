@@ -27,7 +27,8 @@ def fc():
 def test_headers_carry_current_code_sha():
     for n in ("p1_metrics.csv", "p1_coef.csv", "p1_arch_check.csv", "p1_leak.csv", "p1_excluded_days.csv"):
         h = (TAB / n).read_text(encoding="utf-8").splitlines()[0]
-        assert h.startswith("# разработка; оценка 2017–02.2026 по Ж-197") and prov.code_sha() in h, n
+        assert h.startswith("# разработка; после аудита этапа 1 проверяющим; оценка 2017–02.2026 по Ж-197")
+        assert prov.code_sha() in h, n
         assert prov.sha_file(prov.BARS)[:16] in h and prov.sha_file(prov.RVI)[:16] in h
 
 
