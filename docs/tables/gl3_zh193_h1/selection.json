@@ -1,0 +1,50 @@
+{
+ "cat_deviation": "stage 1 passed no cat row at h=1 (screen_h1.csv: cat-huber1 best of cat, rank 9, only 2019-2020 cells); cat-huber1 recomputed on all 6 cutoffs by the stage-1 module",
+ "Bcomb_items": {
+  "b1": null,
+  "b2": "B2_lt",
+  "b3": null,
+  "b4": null
+ },
+ "Bss": "B6",
+ "Bss_stress_filter_nonempty": true,
+ "Bss_members": [
+  "m_tk",
+  "m_cat",
+  "m_cont"
+ ],
+ "G1_pick": {
+  "2017": "c75",
+  "2018": "c50",
+  "2019": "c100",
+  "2020": "c100",
+  "2021": "c75",
+  "2016": "c75"
+ },
+ "G4_pick": {
+  "2017": "G4_logit",
+  "2018": "G4_logit",
+  "2019": "G4_logit",
+  "2020": "G4_logit",
+  "2021": "G4_logit",
+  "2016": "G4_logit"
+ },
+ "base_G5": "G3",
+ "G5_pick": {
+  "2017": "hl60_w50",
+  "2018": "hl20_w50",
+  "2019": "hl60_w50",
+  "2020": "hl60_w50",
+  "2021": "hl60_w50",
+  "2016": "hl60_w50"
+ },
+ "base_G6": "G3",
+ "G7_of": "G3",
+ "seeds": [
+  42,
+  43,
+  44,
+  45,
+  46
+ ]
+}
