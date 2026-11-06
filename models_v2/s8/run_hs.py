@@ -42,7 +42,25 @@ def st_q8(_a=None) -> int:
     return 0
 
 
-STAGES = {"ctrl": hs_ctrl.stage, "table": st_table, "diag": st_diag, "q8": st_q8}
+def st_ledger(_a=None) -> int:
+    from models_v2.s8 import hs_ledger
+    hs_ledger.init()
+    ck = hs_ledger.write_check(hs_ledger.load())
+    print("ledger: 521 строка побайтно; used", ck["used"], "total", ck["used_total"], "N_final", ck["N_final"], flush=True)
+    return 0
+
+
+def _lazy(mod: str, fn: str):
+    def run(a=None) -> int:
+        import importlib
+        return getattr(importlib.import_module("models_v2.s8." + mod), fn)(a)
+    return run
+
+
+STAGES = {"ctrl": hs_ctrl.stage, "table": st_table, "diag": st_diag, "q8": st_q8, "ledger": st_ledger,
+          "base": _lazy("hs_bstage", "stage_base"), "b": _lazy("hs_bstage", "stage_b"), "c": _lazy("hs_cstage", "stage_c"),
+          "d": _lazy("hs_dstage", "stage_d"), "e": _lazy("hs_estage", "stage_e"), "f": _lazy("hs_fstage", "stage_f"),
+          "g": _lazy("hs_gstage", "stage_g"), "final": _lazy("hs_final", "stage_final")}
 
 
 def main() -> int:

@@ -1,0 +1,118 @@
+{
+ "controls": [
+  {
+   "name": "LF_own",
+   "note": "LGBM на базе Б-2+F4 с собственным годовым LOYO-выбором HP (6 точек): контроль эффекта выбора HP, не trial"
+  }
+ ],
+ "decisions": {
+  "har_features_min": {
+   "continue": false,
+   "best": "B_xgb_Bf",
+   "d_crit": 0.0006212444106397375,
+   "years_better": 6,
+   "rule": "d_crit <= -0.0005 и лет лучше контроля >= 6 из 10"
+  },
+  "har_features": {
+   "continue": false,
+   "best": "B_xgb_Bf",
+   "d_crit": 0.0006212444106397375,
+   "years_better": 6,
+   "rule": "d_crit <= -0.0005 и лет лучше контроля >= 6 из 10",
+   "stop": true,
+   "unused_trials": 8,
+   "reason": "HS11: правило продолжения не выполнено"
+  },
+  "residual_qlike_min": {
+   "continue": false,
+   "best": "C_lgbm_Ca",
+   "vs_bestB": false,
+   "vs_HAR": true,
+   "d_crit_bestB": 0.00835073711770834,
+   "d_crit_HAR": -0.012049735957704644,
+   "rule": "побить лучшую B своей модели и HAR-J: d_crit <= -0.0005 и лет лучше >= 6 из 10"
+  },
+  "residual_qlike": {
+   "continue": false,
+   "best": "C_lgbm_Ca",
+   "vs_bestB": false,
+   "vs_HAR": true,
+   "d_crit_bestB": 0.00835073711770834,
+   "d_crit_HAR": -0.012049735957704644,
+   "rule": "побить лучшую B своей модели и HAR-J: d_crit <= -0.0005 и лет лучше >= 6 из 10",
+   "stop": true,
+   "unused_trials": 8,
+   "reason": "HS11: правило продолжения не выполнено"
+  },
+  "component_D0": {
+   "informative": [
+    [
+     "d",
+     0.01139
+    ],
+    [
+     "w",
+     0.005032
+    ],
+    [
+     "J",
+     0.003179
+    ]
+   ],
+   "rule": "crit_wf(drop-k) − crit_wf(full) >= +0.0005"
+  },
+  "conditional": {
+   "stop": true,
+   "reason": "нет g для коррекции: правило продолжения C (HS11) не выполнено, Cs не строилась",
+   "unused_trials": 8
+  },
+  "component": {
+   "nonlinear_beats_linear": [
+    "Dn_J"
+   ],
+   "n_trials": 10,
+   "conclusion": "нелинейность на: ['Dn_J']",
+   "unused_trials": 2
+  },
+  "moe_min": {
+   "continue": false,
+   "best": "F1",
+   "d_crit": 0.001254785434402883,
+   "years_better": 2,
+   "rule": "d_crit <= -0.0005 и лет лучше контроля >= 6 из 10",
+   "third_expert": false,
+   "control": "S* = XJ"
+  },
+  "moe": {
+   "stop": true,
+   "ran": [
+    "F1",
+    "F2"
+   ],
+   "two_components": true,
+   "unused_trials": 4,
+   "reason": "HS11/HS9"
+  }
+ },
+ "limits": {
+  "har_features": 12,
+  "residual_qlike": 12,
+  "component": 12,
+  "conditional": 8,
+  "moe": 6
+ },
+ "limit_total": 50,
+ "used": {
+  "har_features": 4,
+  "residual_qlike": 4,
+  "component": 10,
+  "conditional": 0,
+  "moe": 2
+ },
+ "used_total": 20,
+ "N_prior": 521,
+ "N_final": 541,
+ "updated": "2026-11-06 10:09",
+ "N_declared_before_stage_g": 541,
+ "N_for_corrections": 541
+}

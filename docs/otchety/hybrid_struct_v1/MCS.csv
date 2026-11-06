@@ -1,0 +1,11 @@
+# HISTORICAL WALK-FORWARD 2017–02.2026 (2271 дата, просмотрено; не независимый OOS); DEVELOPMENT; Ж-212; первая цифра — потолок; G: Model Confidence Set 90 % (бутстрап блок 20, 5000, seed 42) по QLIKE 10 моделей
+model,p_mcs,in_mcs_90
+HAR-J,0.3588,True
+XGBoost,0.3588,True
+LightGBM,0.3588,True
+B-XGB:B_xgb_Bf,0.3588,True
+B-LGBM:B_lgbm_Bf,0.3588,True
+C-XGB:C_xgb_Ca,0.058,False
+C-LGBM:C_lgbm_Ca,0.0966,False
+D:Dx_J,0.3588,True
+F:F1,0.3588,True
