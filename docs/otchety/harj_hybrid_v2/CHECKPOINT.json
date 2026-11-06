@@ -1,0 +1,40 @@
+{
+ "controls": [
+  {
+   "name": "A0",
+   "note": "HAR-J(б), воспроизведена побитно (harj_qlike/A0_SPEC.md); не trial"
+  },
+  {
+   "name": "XJ/LF/A1_roll_126",
+   "note": "замороженные контроли 0,2113 / 0,2117 / 0,2081; не trials"
+  },
+  {
+   "name": "Ж-212 D0_full/D0_drop_a",
+   "note": "QLIKE-HAR с логарифмической связью — ссылки на Ж-212 (ключи в GATES_V2 V5), не trials Ж-214"
+  }
+ ],
+ "decisions": {},
+ "limits": {
+  "qlike_harj": 8,
+  "harq_j": 12,
+  "decomposition": 16,
+  "seasonality": 8,
+  "structural_ml": 16,
+  "market": 10,
+  "reconciliation": 10
+ },
+ "limit_total": 80,
+ "used": {
+  "qlike_harj": 0,
+  "harq_j": 0,
+  "decomposition": 0,
+  "seasonality": 0,
+  "structural_ml": 0,
+  "market": 0,
+  "reconciliation": 0
+ },
+ "used_total": 0,
+ "N_prior": 541,
+ "N_final": 541,
+ "updated": "2026-11-06 17:51"
+}
