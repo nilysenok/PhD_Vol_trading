@@ -1,0 +1,10 @@
+{
+ "best_a": "A1_roll_126",
+ "crit_wf_best_a": 0.21468535939431777,
+ "best_b": "B2q",
+ "crit_wf_best_b": 0.23206568514104006,
+ "threshold": 0.0005,
+ "b_beats_a_by_more_than_threshold": false,
+ "launched": false,
+ "reason": "условие входа (B лучше A более чем на 0,0005 по crit_wf И ACCEPT R8 (1)–(4)): не выполнено (часть 1)"
+}

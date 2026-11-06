@@ -1,0 +1,18 @@
+{
+ "algorithm": "xgb_lgbm_ensemble",
+ "limits": {
+  "ens_hybrid": 40,
+  "EA": 22,
+  "EB": 9,
+  "EC": 5,
+  "EL4": 4
+ },
+ "used": {
+  "ens_hybrid": 35,
+  "EA": 22,
+  "EB": 8,
+  "EC": 5,
+  "EL4": 0
+ },
+ "updated": "2026-11-06 04:24"
+}

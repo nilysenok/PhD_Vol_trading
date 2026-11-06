@@ -1,0 +1,32 @@
+{
+ "algorithm": "lightgbm",
+ "limits": {
+  "obj_feat": 45,
+  "hp": 55,
+  "temporal_regime": 60,
+  "ens_hybrid": 40
+ },
+ "used": {
+  "obj_feat": 22,
+  "hp": 33,
+  "temporal_regime": 17,
+  "ens_hybrid": 0
+ },
+ "limits_stream_b": {
+  "obj_feat": 45,
+  "hp_lb0": 15
+ },
+ "updated": "2026-11-06 03:31",
+ "used_stream_c": {
+  "hp": 18
+ },
+ "limits_stream_c": {
+  "hp": 40
+ },
+ "used_stream_d": {
+  "temporal_regime": 17
+ },
+ "limits_stream_d": {
+  "temporal_regime": 30
+ }
+}

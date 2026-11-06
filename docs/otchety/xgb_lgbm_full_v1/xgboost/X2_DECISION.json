@@ -1,0 +1,31 @@
+{
+ "deltas_min_crit_pen_by_axis": {
+  "max_depth": 0.0022339119784335615,
+  "min_child_weight": 0.0011138493399946159,
+  "learning_rate": -0.0019795350583253213,
+  "subsample": -0.0007109210174199021,
+  "colsample_bytree": -0.0025877634085246515,
+  "reg_alpha": -0.00022143202365518255,
+  "reg_lambda": -0.0008485192166818589,
+  "gamma": -3.3695730881522223e-05,
+  "max_delta_step": 0.012937197484730517
+ },
+ "effect_axes": [
+  "colsample_bytree",
+  "learning_rate",
+  "reg_lambda",
+  "subsample"
+ ],
+ "cap": 4,
+ "status": "DEVELOPMENT",
+ "decision": "RUN",
+ "best_trial_id": "f4e8e88d8a05",
+ "best_moves": {
+  "colsample_bytree": -1.5093,
+  "learning_rate": -0.9508,
+  "reg_lambda": 0.1489,
+  "subsample": 1.2752
+ },
+ "best_J": 0.1468544880610769,
+ "n_unique_trials": 20
+}
