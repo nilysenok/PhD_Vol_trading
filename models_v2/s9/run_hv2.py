@@ -1,5 +1,5 @@
 """Ж-214, лист 1: стадии `ctrl` (контроли + A0), `m10` (таблица M10-величин + тождества + расписание), `diagv` (этап V), `ledger` (реестр 541 + CHECKPOINT).
-Запуск: python3 -W ignore -m models_v2.s9.run_hv2 --stage ctrl|m10|diagv|ledger  (по одной, run_in_background). Считать направления (лист 2+) здесь нельзя."""
+Запуск: python3 -W ignore -m models_v2.s9.run_hv2 --stage ctrl|m10|diagv|ledger  (по одной, run_in_background). Лист 2 (после «коммит есть»): стадии `q` (V5), `h` (V6) — hv2_qstage / hv2_hstage."""
 from __future__ import annotations
 
 import argparse
@@ -98,5 +98,9 @@ def stage_ledger() -> int:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["ctrl", "m10", "diagv", "ledger", "info"])
-    raise SystemExit({"ctrl": stage_ctrl, "m10": stage_m10, "diagv": stage_diagv, "ledger": stage_ledger, "info": stage_info}[ap.parse_args().stage]())
+    ap.add_argument("--stage", required=True, choices=["ctrl", "m10", "diagv", "ledger", "info", "q", "h", "h2"])
+    st = ap.parse_args().stage
+    if st in ("q", "h", "h2"):   # лист 2 (после «коммит есть»): V5 / V6 / остаток V6
+        from models_v2.s9 import hv2_hstage, hv2_hstage2, hv2_qstage
+        raise SystemExit({"q": hv2_qstage.stage_q, "h": hv2_hstage.stage_h, "h2": hv2_hstage2.stage_h2}[st]())
+    raise SystemExit({"ctrl": stage_ctrl, "m10": stage_m10, "diagv": stage_diagv, "ledger": stage_ledger, "info": stage_info}[st]())
