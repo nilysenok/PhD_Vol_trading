@@ -351,6 +351,88 @@
     "Z7",
     "Z8"
    ]
+  },
+  "V7_rest_T": {
+   "scheme_T_all": {
+    "best": "P2",
+    "controls": {
+     "A0": {
+      "d_crit": -0.02462995662080139,
+      "years_better": 6,
+      "ok": true
+     }
+    },
+    "continue": true,
+    "early_stop": false,
+    "any_d_crit_negative": {
+     "A0": true
+    },
+    "spent": 10,
+    "limit": 16,
+    "unused_trials": 6,
+    "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0"
+   },
+   "each": {
+    "T2": {
+     "d_crit_A0": -0.008068009962261952,
+     "years_better_A0": 7,
+     "d_crit_T3": 0.002470037199111208,
+     "d_qlike_no_240222_A0": -0.0031198634461598327
+    },
+    "T4": {
+     "d_crit_A0": -0.01834343466311919,
+     "years_better_A0": 3,
+     "d_crit_T3": -0.007805387501746031,
+     "d_qlike_no_240222_A0": 0.0064425596364138
+    },
+    "P1": {
+     "d_crit_A0": -0.004659517571484584,
+     "years_better_A0": 6,
+     "d_crit_T3": 0.005878529589888576,
+     "d_qlike_no_240222_A0": 0.00195790760402827
+    },
+    "P2": {
+     "d_crit_A0": -0.02462995662080139,
+     "years_better_A0": 6,
+     "d_crit_T3": -0.014091909459428231,
+     "d_qlike_no_240222_A0": 0.00015087393657007257
+    }
+   },
+   "configs": [
+    "T2",
+    "T4",
+    "P1",
+    "P2"
+   ],
+   "unused_trials": 6,
+   "not_run": [
+    "P3",
+    "P4",
+    "S2",
+    "S4",
+    "J2",
+    "J4"
+   ],
+   "note": "S, J не прошли V13 (V7) — их остаток не считается; R2T не пересчитывается"
+  },
+  "V8_rest": {
+   "rows": {
+    "Z3": {
+     "d_crit_A0": -0.018593520185842982,
+     "years_better_A0": 3,
+     "d_qlike_no_240222_A0": -0.0021777797652118656
+    },
+    "Z7": {
+     "d_crit_A0": -0.021309272576845867,
+     "years_better_A0": 6,
+     "d_qlike_no_240222_A0": -0.0036663424719607374
+    }
+   },
+   "unused_trials": 1,
+   "not_run": [
+    "Z8"
+   ],
+   "Z6": "посчитана в sea (профиль Z2); не пересчитывается"
   }
  },
  "limits": {
@@ -366,14 +448,14 @@
  "used": {
   "qlike_harj": 4,
   "harq_j": 11,
-  "decomposition": 6,
-  "seasonality": 5,
+  "decomposition": 10,
+  "seasonality": 7,
   "structural_ml": 0,
   "market": 0,
   "reconciliation": 1
  },
- "used_total": 27,
+ "used_total": 33,
  "N_prior": 541,
- "N_final": 568,
- "updated": "2026-11-06 18:23"
+ "N_final": 574,
+ "updated": "2026-11-06 18:30"
 }

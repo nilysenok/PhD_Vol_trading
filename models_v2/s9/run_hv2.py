@@ -98,7 +98,7 @@ def stage_ledger() -> int:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["ctrl", "m10", "diagv", "ledger", "info", "q", "h", "h2", "dec", "rec", "sea"])
+    ap.add_argument("--stage", required=True, choices=["ctrl", "m10", "diagv", "ledger", "info", "q", "h", "h2", "dec", "rec", "sea", "dec2", "sea2"])
     st = ap.parse_args().stage
     if st in ("q", "h", "h2"):   # лист 2 (после «коммит есть»): V5 / V6 / остаток V6
         from models_v2.s9 import hv2_hstage, hv2_hstage2, hv2_qstage
@@ -106,4 +106,7 @@ if __name__ == "__main__":
     if st in ("dec", "rec", "sea"):   # лист 3 (после «коммит есть» на уточнения): V7 / V11 / V8
         from models_v2.s9 import hv2_decstage, hv2_recstage, hv2_seastage
         raise SystemExit({"dec": hv2_decstage.stage_dec, "rec": hv2_recstage.stage_rec, "sea": hv2_seastage.stage_sea}[st]())
+    if st in ("dec2", "sea2"):   # остаток листа 3 (У22, У23): схема T и Z3/Z7
+        from models_v2.s9 import hv2_dec2stage, hv2_sea2
+        raise SystemExit({"dec2": hv2_dec2stage.stage_dec2, "sea2": hv2_sea2.stage_sea2}[st]())
     raise SystemExit({"ctrl": stage_ctrl, "m10": stage_m10, "diagv": stage_diagv, "ledger": stage_ledger, "info": stage_info}[st]())

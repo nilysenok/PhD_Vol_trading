@@ -12,7 +12,7 @@ IMOEX = ROOT / "data/iss_check/index_10m/IMOEX.parquet"
 COMP = ROOT / "data/regen/xgb_lgbm_full_v1/e/components.parquet"
 M10 = OUT / "m10_daily.parquet"
 
-STATUS = "HISTORICAL WALK-FORWARD 2017–02.2026 (2271 дата, просмотрено; не независимый OOS); DEVELOPMENT; Ж-214; первая цифра — потолок"
+STATUS = "HISTORICAL WALK-FORWARD 2017–02.2026 (2271 дата, просмотрено; не независимый OOS); DEVELOPMENT; Ж-214; первая цифра — потолок; «лет лучше» = число лет цели 2017–2026 (10; 2026 неполный, 38 дат) со средним QLIKE строки < контроля, год по target_date"
 FEB24 = "2022-02-24"
 TOL_ID = 1e-12   # допуск тождеств разложений: |Σ частей − RV| / RV (суммы в разном порядке, double)
 
