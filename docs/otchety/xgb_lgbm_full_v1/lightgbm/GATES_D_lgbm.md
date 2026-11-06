@@ -48,6 +48,17 @@ EVIDENCE: pending
 CHECK: ручной гейт: ≤ 500 слов, цифры перемерены из CSV/JSON; окна (спокойно/стресс), частота и вердикт порога, режимные строки, 2022, расход trials; потолки помечены.
 EVIDENCE: pending
 
+## EVIDENCE (06.11.2026; заменяет pending выше, исходные строки не удалялись)
+- D2 win: rc 0; 7 конфигураций + контроль D_w0 (паритет с C0_inh_F4 побитно); D_PAIRS_BY_YEAR.csv, D_WINDOWS_CALM_STRESS.csv; +7 temporal.
+- D3 pick: rc 0; D_pick_window crit_pen 0,193443; +1.
+- D4 freq: rc 0; D_FREQUENCY.csv 4 строки, вердикт RD2 daily; +3.
+- D5 r1: rc 0; 4 конфигурации; +4 regime.
+- D6 r4: rc 0; R4a 0,214861, R4b 0,191349; +2 regime.
+- D7 report: rc 0; TEMPORAL_VALIDATION.csv (19 строк), REGIME_PERFORMANCE_D.csv, README_D.md; CHECKPOINT used.temporal_regime 17 (<= 30), hp 33, obj_feat 22.
+- D8: sha BASELINE.json 62160acadb0e, fc_lgbm_b2 7cf07022ce1b; XGB-каталоги не тронуты.
+- D1 повтор: 20 passed.
+- D9: ответ дирижёру. Закрыто 9 из 9; слабое место: метрика задержки реакции не различает модели.
+
 ## Мутации -> тест
 | № | мутация | тест |
 |---|---|---|

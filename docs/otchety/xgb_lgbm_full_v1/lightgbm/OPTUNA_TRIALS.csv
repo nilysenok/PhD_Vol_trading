@@ -54,3 +54,20 @@ c170b04d9379,C,hp,"C1_bag_hi|C-L1 ось bag, hi-точка вокруг баз�
 ffc43a955d19,C,hp,"C1_l2_hi|C-L1 ось l2, hi-точка вокруг базы C0_inh_F4",crit_pen=0.196561;crit_mean=0.152470,42,52.4
 5d3e111f5113,C,hp,"C1_gain_lo|C-L1 ось gain, lo-точка вокруг базы C0_inh_F4",crit_pen=0.196903;crit_mean=0.152464,42,30.4
 a32ada88b5cc,C,hp,"C1_gain_hi|C-L1 ось gain, hi-точка вокруг базы C0_inh_F4",crit_pen=0.217191;crit_mean=0.163635,42,18.9
+989406576ff5,D,temporal,D_w252|D1: rolling 252 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),crit_pen=0.264075;crit_mean=0.192313,42,8.7
+ace2747485fd,D,temporal,D_w504|D1: rolling 504 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),crit_pen=0.232275;crit_mean=0.170845,42,13.7
+ac58e34b792b,D,temporal,D_w756|D1: rolling 756 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),crit_pen=0.231230;crit_mean=0.166882,42,22.9
+487bcd345e9f,D,temporal,D_w1008|D1: rolling 1008 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),crit_pen=0.214131;crit_mean=0.160263,42,31.1
+e72f2319109a,D,temporal,D_w1260|D1: rolling 1260 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),crit_pen=0.212202;crit_mean=0.159513,42,35.2
+d9c60ffcc880,D,temporal,"D_dec756|D1: экспоненциальные веса, полураспад 756 строк; база C0_inh_F4 (HP И2 + Б-2 + F4)",crit_pen=0.204592;crit_mean=0.156211,42,43.5
+d74ecf5efb7a,D,temporal,"D_dec1260|D1: экспоненциальные веса, полураспад 1260 строк; база C0_inh_F4 (HP И2 + Б-2 + F4)",crit_pen=0.201133;crit_mean=0.154788,42,48.5
+751763ae62c8,D,temporal,"D_pick_window|D1 окно по прошлому: для года Y окно из 8 с min pen_Y (цели < 01.01.Y); потолок: min по кандидатам, выбор и оценка на тех же фолдах",crit_pen=0.193443;crit_mean=nan,42,0.0
+7aba089cd19e,D,temporal,D_w0_wk|D2 частота w на окне D_w0; фолды LOYO скопированы с ежедневной,crit_pen=0.194400;crit_mean=0.152062,42,8.9
+d53d3d9ed0c2,D,temporal,D_w0_mo|D2 частота m на окне D_w0; фолды LOYO скопированы с ежедневной,crit_pen=0.194400;crit_mean=0.152062,42,2.4
+a649bc19d8e9,D,temporal,D_w0_adapt|D2 частота adapt на окне D_w0; фолды LOYO скопированы с ежедневной,crit_pen=0.194400;crit_mean=0.152062,42,4.8
+cc713a327c46,D,regime,"R1a_stress|R1 режимные признаки в модель: stress (только данные <= t); база C0_inh_F4, расширяющееся окно, ежедневно",crit_pen=0.193434;crit_mean=0.151771,42,44.4
+dc0a3b5f9b83,D,regime,"R1b_quintile|R1 режимные признаки в модель: q5 (только данные <= t); база C0_inh_F4, расширяющееся окно, ежедневно",crit_pen=0.193714;crit_mean=0.151756,42,51.3
+1d83af21f466,D,regime,"R1c_transition|R1 режимные признаки в модель: trans (только данные <= t); база C0_inh_F4, расширяющееся окно, ежедневно",crit_pen=0.193550;crit_mean=0.151885,42,47.9
+dc16fcce75a7,D,regime,"R1d_all|R1 режимные признаки в модель: stress+q5+trans (только данные <= t); база C0_inh_F4, расширяющееся окно, ежедневно",crit_pen=0.195741;crit_mean=0.152507,42,48.2
+5bbf8c02f2ac,D,regime,"D_R4a_switch|R4a: стресс Г4 -> rolling 1008, спокойно -> расширяющееся (правило блока, фиксировано до счёта)",crit_pen=0.214861;crit_mean=0.160406,42,0.0
+8ee31ef17166,D,regime,D_R4b_switch_pick|R4b: окно по режиму выбирается по году Y из 8 по средним фолдовым QLIKE режима (цели < 01.01.Y); потолок,crit_pen=0.191349;crit_mean=0.150275,42,0.0
