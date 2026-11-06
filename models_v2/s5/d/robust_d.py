@@ -82,16 +82,26 @@ def ens_neighbors(best: str, ctx: dict, M: dict, q_b2: float) -> pd.DataFrame:
     return pd.DataFrame(rec)
 
 
-def plateau_flags(pl: pd.DataFrame, rid: str, best: str, share_ens: float) -> bool:
-    """plateau-ok строки: все её XGB-бустеры (f4/opt/top2) plateau-ok по C/D; для ансамбля — ещё доля соседей правила лучше Б-2 >= 0,75."""
+NOT_CHECKED = "не проверено"
+
+
+def plateau_status(pl: pd.DataFrame, rid: str, best: str, share_ens: float) -> str:
+    """'ok' / 'нет' / 'не проверено'. plateau-ok строки: все её XGB-бустеры (f4/opt/top2) plateau-ok по C/D; для ансамбля — ещё доля соседей правила
+    лучше Б-2 >= 0,75. Пустое множество проверяемых бустеров (нет XGB-членов; соседи HP для LGBM не считались) — «не проверено», не «ok»."""
     ok = pl[pl["kind"].str.startswith("booster")].groupby("unit")["plateau_ok"].first().to_dict()
     if rid == best:
         need = ["f4"] if any(m in ("X", "Xr", "Xh") for m in ens.SPEC[rid][0]) else []   # Xr/Xh/L наследуют HP XGB-И2 (↺ в GATES_D)
-        if not (share_ens >= PLATEAU_OK):
-            return False
     else:
         need = [k for k in needs(rid, best) if k in ("f4", "opt", "top2")]
-    return bool(all(ok.get(b, False) for b in need))
+    if not need:
+        return NOT_CHECKED
+    if rid == best and not (share_ens >= PLATEAU_OK):
+        return "нет"
+    return "ok" if all(ok.get(b, False) for b in need) else "нет"
+
+
+def plateau_flags(pl: pd.DataFrame, rid: str, best: str, share_ens: float) -> bool:
+    return plateau_status(pl, rid, best, share_ens) == "ok"
 
 
 def plateau_table(C, best, ctx, M) -> tuple:
@@ -124,7 +134,8 @@ def run(C) -> None:
     ctx_d.write(sd, common.REP / "D_SEEDS.csv", "5 seeds 42–46 финалистов и справочной c3_f3calm_g4; seed-ok: >= 4 из 5")
     ctx_d.write(pl, common.REP / "D_PLATEAU.csv", "соседи: бустеры C (C_PLATEAU), top2 (D), правило ансамбля (D)")
     ctx_d.write(wn, common.REP / "D_WINDOW.csv", "чувствительность к окну: expanding против rolling 1008 (диагностика, не trials)")
-    fl = {r: {"seed_ok": bool(sd[sd.row_id == r]["seed_ok"].iloc[0]), "n_ok": int(sd[sd.row_id == r]["n_ok"].iloc[0]), "plateau_ok": plateau_flags(pl, r, best, share)}
+    fl = {r: {"seed_ok": bool(sd[sd.row_id == r]["seed_ok"].iloc[0]), "n_ok": int(sd[sd.row_id == r]["n_ok"].iloc[0]), "plateau_ok": plateau_flags(pl, r, best, share),
+                "plateau_status": plateau_status(pl, r, best, share)}
           for r in rids}
     ctx_d.save_json("flags.json", {"flags": fl, "c_seeds_max_dev": dev, "ens_share": share})
     print("G8: флаги", fl, "| отклонение от C_SEEDS (общие строки) %.3e" % dev)

@@ -44,7 +44,7 @@ def t3(sig, rv, td, best, fl, mc) -> str:
     q = lambda k: float(metrics.qlike(rv, sig[k]).mean())   # noqa: E731
     ctl = ctx_d.load_json("rows.json", {})
     mean_best = min((r for r in ctl if r.startswith("mean_")), key=lambda r: ctl[r]["qlike_all"])
-    tg = lambda k: "seed-ok %s, plateau-ok %s" % (fl[k]["seed_ok"], fl[k]["plateau_ok"])   # noqa: E731
+    tg = lambda k: "seed-ok %s, plateau-ok %s" % (fl[k]["seed_ok"], fl[k].get("plateau_status", fl[k]["plateau_ok"]))   # noqa: E731
     steps = [("HAR-J(б) → Б-2", "HARJ", "B2", ""), ("Б-2 → Б-2 + F4 (`b2_f4`)", "B2", "b2_f4", tg("b2_f4")),
              ("`b2_f4` → Optuna HP (`c1_opt`)", "b2_f4", "c1_opt", tg("c1_opt")),
              ("`b2_f4` → смесь с HAR-J(б) (`c2_h3_roll_f4`)", "b2_f4", "c2_h3_roll_f4", tg("c2_h3_roll_f4")),
@@ -75,7 +75,7 @@ def t5(sig, rv, td, rk, st, fl) -> str:
         wy = max(dq, key=dq.get)
         dmr = st[(st.test == "DM") & (st.row_id == k) & (st.base == "Б-2") & (st.period == "весь период")]
         dm_txt = "p=%s; Холм N=106: %s" % (f(float(dmr["p"].iloc[0]), 3), f(float(dmr["p_holm_N106"].iloc[0]), 3)) if len(dmr) else "не считался (справочная строка)"
-        sens = "seeds: ст.откл. %s, %d/5 ok; соседи: %s; окно 1008: %s" % (f(sd.loc[k, "std"], 4), fl[k]["n_ok"], "ok" if fl[k]["plateau_ok"] else "нет", f(wn.loc[k, "d_roll_minus_exp"], sign=True))
+        sens = "seeds: ст.откл. %s, %d/5 ok; соседи: %s; окно 1008: %s" % (f(sd.loc[k, "std"], 4), fl[k]["n_ok"], fl[k].get("plateau_status", "ok" if fl[k]["plateau_ok"] else "нет"), f(wn.loc[k, "d_roll_minus_exp"], sign=True))
         rows.append((k, "%d из 10 (к Б-2); %d из 10 (к HAR-J(б))" % (years_win(rv, sig[k], sig["B2"], td), years_win(rv, sig[k], sig["HARJ"], td)),
                      "%d (Δ к Б-2 %s)" % (wy, f(dq[wy], sign=True)), sens, dm_txt))
     return md(("Модель", "Годы с выигрышем", "Худший год", "Чувствительность к параметрам", "DM к Б-2"), rows)

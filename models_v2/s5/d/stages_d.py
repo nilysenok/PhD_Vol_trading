@@ -83,6 +83,11 @@ def make_row(C, rid, fc, cfg, extra, trial=True, secs=0.0):
     return r
 
 
+def pick_best(df: pd.DataFrame) -> tuple:
+    """(лучший по внутреннему критерию q_int, лучший по q_wf_dev); не по описанию qlike_all (MD11)."""
+    return select_d.best_ensemble(df, "q_int"), select_d.best_ensemble(df, "q_wf_dev")
+
+
 def stage_d1(C, p):
     S, ctrl = Src(C, p), C["ctrl"]
     ctx = mix.context(C["w"].F, C["w"].grid, ctrl)
@@ -98,7 +103,7 @@ def stage_d1(C, p):
                  trial=rid in ens.TRIALS)
     rows = ctx_d.load_json("rows.json", {})
     df = pd.DataFrame(rows.values())
-    best, best_dev = select_d.best_ensemble(df, "q_int"), select_d.best_ensemble(df, "q_wf_dev")
+    best, best_dev = pick_best(df)
     ctx_d.save_json("best.json", {"best": best, "best_dev": best_dev, "differs": best != best_dev})
     print("G7: лучший по Q_wf: %s; по Q_wf_dev: %s" % (best, best_dev))
     write_ensemble_tables(df)

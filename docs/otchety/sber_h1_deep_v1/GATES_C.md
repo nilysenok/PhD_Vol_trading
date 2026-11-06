@@ -111,3 +111,5 @@ EVIDENCE: см. «Итог EVIDENCE G1–G9» в конце файла
 - G7: `pytest tests/test_v2_deep_c_robust.py` — 5 passed; `--stage robust`: `C_SEEDS.csv` (3 строки × 5 seeds), `C_PLATEAU.csv` (f4: 7 соседей, opt: 4). **Частично:** описание соседей depth/min_child/lr на 2271 датах не сделано (оси недопустимы), seeds/соседи только для лучших 3 по внутреннему критерию.
 - G8: `OPTUNA_TRIALS.csv` 90 строк (28 + 22 + 40), дублей trial_id 0; `CHECKPOINT.json`: features 37, har 20, regime 15, objectives 8, rolling 10, итого 90 ≤ 240.
 - G9: `pytest tests/test_v2_deep_c_*.py` — 24 passed; файлы ≤ 124 строк; `models_v2/` вне `s5/c/` не менялся (весь `models_v2/` untracked в этой ветке — сравнение по mtime не делалось ❓).
+
+ABANDON: G7 (частично) — описание соседей по depth/min_child/lr на 2271 датах не сделано: для этих осей нет допустимых соседних точек на выбранной сетке HP (границы Optuna-пространства), а досчёт вне пространства означал бы новые trials сверх бюджета; seeds и соседи посчитаны только для лучших 3 строк. Вынесено в отчёт первой строкой (06.11.2026, по замечанию проверяющего волны D).

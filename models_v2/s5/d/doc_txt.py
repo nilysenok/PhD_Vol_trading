@@ -8,12 +8,13 @@ import numpy as np
 import pandas as pd
 
 from models_v2.s5 import common
-from models_v2.s5.d import ctx_d, robust_d, tab_d
+from models_v2.s5.d import ctx_d, robust_d, select_d, tab_d
 
 REP = common.REP
 B2_Q = 0.220486502764   # Б-2, контроль (G1 проверяет равенство ≤ 1e-12)
 FINAL, MARK = REP / "SBER_H1_BOOSTING_DEEP_IMPROVEMENT_FINAL.md", ("<!-- D:auto -->", "<!-- /D:auto -->")
-ALPHA_CONV = 0.05   # ↺ объявлено при написании кода до просмотра D2: «убедительно» = p Холма (N=106) < 0,05 к Б-2 и по DM (весь период), и по бутстрапу
+ALPHA_CONV = 0.05   # ↺ порог введён агентом ПОСЛЕ просмотра результатов D2 (не объявлен в GATES_D); показан справочно: p Холма (N=106) < 0,05 к Б-2 и по DM (весь период), и по бутстрапу
+THRESHOLD_NOTE = "↺ порог введён агентом ПОСЛЕ просмотра результатов D2 (не объявлен в GATES_D); показан справочно"
 
 
 def f(x, n: int = 4, sign: bool = False) -> str:
@@ -25,13 +26,16 @@ def verdict(top: dict, rk: pd.DataFrame) -> tuple:
     if not top["top3"]:
         return "Б-2 остаётся действующим контролем: ни одна строка не прошла правило D3 (perspective, seed-ok, plateau-ok, MCS).", False
     rows = [rk[rk.row_id == t].iloc[0] for t in top["top3"]]
-    pas = [bool(r["p_holm_N106_dm_b2"] < ALPHA_CONV and r["p_holm_N106_boot_b2"] < ALPHA_CONV) for r in rows]
-    s = "Лучшая устойчивая по порядку D3 — `%s` (QLIKE %s против %s у Б-2). p Холма (N=106) к Б-2 [DM / бутстрап]: %s. " % (
-        rows[0]["row_id"], f(rows[0]["qlike_all"]), f(B2_Q), "; ".join("`%s` %s / %s" % (r["row_id"], f(r["p_holm_N106_dm_b2"], 3), f(r["p_holm_N106_boot_b2"], 3)) for r in rows))
-    ok = pas[0]
-    return s + ("Улучшение убедительно по объявленному порогу (p < 0,05 по обоим тестам) для первой строки тройки." if ok else
-                "Первая строка тройки НЕ проходит объявленный порог (p < 0,05 по DM и бутстрапу): по правилу Б-2 остаётся контролем; порог проходят: %s." %
-                (", ".join("`%s`" % r["row_id"] for r, p in zip(rows, pas) if p) or "никто")), ok
+    ps = lambda r: "`%s` %s / %s%s" % (r["row_id"], f(r["p_holm_N106_dm_b2"], 3), f(r["p_holm_N106_boot_b2"], 3), " (потолок: выбор на оценочном периоде)" if r["row_id"] in select_d.EVAL_SELECTED else "")   # noqa: E731
+    both = [r for _, r in rk.iterrows() if r["p_holm_N106_dm_b2"] < ALPHA_CONV and r["p_holm_N106_boot_b2"] < ALPHA_CONV]
+    boot_only = [r for _, r in rk.iterrows() if r["p_holm_N106_boot_b2"] < ALPHA_CONV <= r["p_holm_N106_dm_b2"]]
+    ok = rows[0]["row_id"] in {r["row_id"] for r in both}
+    s = ("(а) По GATES_D (порога «убедительно» там нет): тройка и флаги как есть; лучшая устойчивая по порядку D3 — `%s` (QLIKE %s против %s у Б-2). "
+         "p Холма (N=106) к Б-2 [DM / бутстрап]: %s. "
+         "(б) %s: p Холма (N=106) < 0,05 к Б-2 по DM и бутстрапу — проходят %s; только по бутстрапу — %s. Первая строка тройки порог %s. " % (
+             rows[0]["row_id"], f(rows[0]["qlike_all"]), f(B2_Q), "; ".join(ps(r) for r in rows), THRESHOLD_NOTE,
+             ", ".join(ps(r) for r in both) or "никто", ", ".join(ps(r) for r in boot_only) or "никто", "проходит" if ok else "не проходит"))
+    return s, ok
 
 
 def diag_text(rids) -> str:
@@ -90,7 +94,7 @@ def write_final(C, best, top, flags, rk, st, tabs, counts) -> None:
 Полные таблицы: `STATISTICAL_TESTS.csv` (DM × 5 периодов × 2 базы, MCS, бутстрап, Холм N=106/116), `D_SEEDS.csv`, `D_PLATEAU.csv`, `D_WINDOW.csv`, `ENSEMBLE_RESULTS.csv`, `FINAL_RANKING.csv`, `MODEL_SPECIFICATIONS.json`. Счётчики trials: {"; ".join("%s %d" % kv for kv in sorted(counts.items()))} (всего {sum(counts.values())} из 240); D = 16 из 25.
 
 ## 9. Оговорки
-1. 2017–02.2026 уже многократно просматривалось: это проверка исторической устойчивости, не новый OOS. 2. Лучший ансамбль выбран среди 13 по `Q_wf` на оценочном периоде — его 2017–2026 потолок; честная половина — выбор по `Q_wf_dev` и его результат на 2022–2026. 3. Для LGBM соседи HP не считались (HP наследуются от XGB-И2); охват — seeds. 4. Порог «убедительно» (p < 0,05 по DM и бутстрапу после Холма, к первой строке тройки) объявлен при написании кода D2 до просмотра его результатов. 5. Холм: семейства по 6 финалистов, недостающие до N — p = 1; подпериодные p сырые. 6. Торговые стратегии не пересчитывались.
+1. 2017–02.2026 уже многократно просматривалось: это проверка исторической устойчивости, не новый OOS. 2. Лучший ансамбль выбран среди 13 по `Q_wf` на оценочном периоде — его 2017–2026 потолок; честная половина — выбор по `Q_wf_dev` и его результат на 2022–2026. 3. Для LGBM соседи HP не считались (HP наследуются от XGB-И2); охват — seeds. 4. Порог «убедительно» (p < 0,05 по DM и бутстрапу после Холма, к первой строке тройки) — ↺ введён агентом ПОСЛЕ просмотра результатов D2 (не объявлен в GATES_D); показан справочно, рядом с чтением по GATES_D без порога. Plateau-ok у ансамбля без XGB-членов (`e3_roll`: HAR + LGBM) — «не проверено» (соседи HP для LGBM не считались), в тройку такая строка не допускается. 5. Холм: семейства по 6 финалистов, недостающие до N — p = 1; подпериодные p сырые. 6. Торговые стратегии не пересчитывались.
 """
     FINAL.write_text(body, encoding="utf-8")
 
@@ -120,7 +124,7 @@ def write_readme(best: str, top: dict, rk: pd.DataFrame, counts: dict) -> None:
 ## Волна D и итог программы (Ж-204)
 **Итог.** {v} Тройка: {", ".join("`%s`" % r for r in top["top3"]) or "пусто"}. Лучший ансамбль D1 по `Q_wf`: `{best}`. Trials: {sum(counts.values())} из 240 (D: {len(tab_d.D_TRIALS)} из 25); Холм N={tab_d.FAMILY} (справочно {tab_d.FAMILY_REF}).
 **Файлы D.** `SBER_H1_BOOSTING_DEEP_IMPROVEMENT_FINAL.md`, `FINAL_RANKING.csv`, `STATISTICAL_TESTS.csv`, `ENSEMBLE_RESULTS.csv`, `MODEL_SPECIFICATIONS.json`, `REPRODUCTION.md`, `D_SEEDS.csv`, `D_PLATEAU.csv`, `D_WINDOW.csv`, `D_TOP20.csv`, `D_LOYO.csv`, `D_LOWRV.csv`, `D_REGIMES.csv`, `D_CUMDIFF.csv`, `D_cum_vs_{{harj,b2}}.png`, `OPTUNA_TRIALS_D.csv`, `GATES_D.md` (EVIDENCE).
-**↺ (до просмотра D2).** Порог «убедительно» — p Холма (N=106) < 0,05 к Б-2 по DM (весь период) и бутстрапу, применяется к первой строке тройки (порядок D3); остальные строки тройки показаны фактом; режимы таблицы 4 — квинтили RV_w по 252 предыдущим (низкая 0–1, средняя 2, высокая 3–4) и стресс Г4; RMSE/MAE/R² в таблице 1 — по логарифмам.
+**↺ порог введён агентом ПОСЛЕ просмотра результатов D2 (не объявлен в GATES_D); показан справочно.** Порог «убедительно» — p Холма (N=106) < 0,05 к Б-2 по DM (весь период) и бутстрапу, применяется к первой строке тройки (порядок D3); остальные строки тройки показаны фактом; режимы таблицы 4 — квинтили RV_w по 252 предыдущим (низкая 0–1, средняя 2, высокая 3–4) и стресс Г4; RMSE/MAE/R² в таблице 1 — по логарифмам.
 {MARK[1]}"""
     p = REP / "README.md"
     txt = p.read_text(encoding="utf-8")
