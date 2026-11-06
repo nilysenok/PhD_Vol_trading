@@ -1,0 +1,154 @@
+{
+ "status": "DEVELOPMENT + HISTORICAL WALK-FORWARD (2017–02.2026, просмотрено; не независимый OOS); INDEPENDENT FUTURE TEST не выполнялся, нет данных после 27.02.2026",
+ "expanding window, daily retrain": true,
+ "features": "Б-2 (28) + F4 (5) = 33",
+ "seeds": [
+  42,
+  43,
+  44,
+  45,
+  46
+ ],
+ "date": "2026-11-06",
+ "model": "x2_best_j",
+ "trial_id": "f4e8e88d8a05",
+ "objective": "reg:squarederror, цель ln RV_{t+1} − ln RV_m; σ̂² = exp(off + f + s²/2)",
+ "moves_vs_I2": {
+  "colsample_bytree": -1.5093,
+  "learning_rate": -0.9508,
+  "reg_lambda": 0.1489,
+  "subsample": 1.2752
+ },
+ "hp_by_year": {
+  "2017": {
+   "depth": 3,
+   "min_child": 10.0,
+   "l2": 2.3554470753000656,
+   "lr": 0.03400497306843497,
+   "subsample": 0.92752,
+   "colsample": 0.69814,
+   "max_trees": 3000,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2018": {
+   "depth": 3,
+   "min_child": 30.0,
+   "l2": 35.331706129500986,
+   "lr": 0.013601989227373988,
+   "subsample": 0.72752,
+   "colsample": 0.3,
+   "max_trees": 300,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2019": {
+   "depth": 3,
+   "min_child": 10.0,
+   "l2": 2.3554470753000656,
+   "lr": 0.06800994613686993,
+   "subsample": 0.92752,
+   "colsample": 0.69814,
+   "max_trees": 3000,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2020": {
+   "depth": 3,
+   "min_child": 10.0,
+   "l2": 0.5888617688250164,
+   "lr": 0.03400497306843497,
+   "subsample": 0.92752,
+   "colsample": 0.69814,
+   "max_trees": 3000,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2021": {
+   "depth": 3,
+   "min_child": 30.0,
+   "l2": 35.331706129500986,
+   "lr": 0.03400497306843497,
+   "subsample": 0.92752,
+   "colsample": 0.3,
+   "max_trees": 300,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2022": {
+   "depth": 2,
+   "min_child": 30.0,
+   "l2": 0.5888617688250164,
+   "lr": 0.03400497306843497,
+   "subsample": 0.92752,
+   "colsample": 0.69814,
+   "max_trees": 3000,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2023": {
+   "depth": 2,
+   "min_child": 10.0,
+   "l2": 0.5888617688250164,
+   "lr": 0.03400497306843497,
+   "subsample": 0.92752,
+   "colsample": 0.69814,
+   "max_trees": 3000,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2024": {
+   "depth": 5,
+   "min_child": 10.0,
+   "l2": 0.5888617688250164,
+   "lr": 0.03400497306843497,
+   "subsample": 0.92752,
+   "colsample": 0.69814,
+   "max_trees": 3000,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2025": {
+   "depth": 5,
+   "min_child": 10.0,
+   "l2": 0.5888617688250164,
+   "lr": 0.03400497306843497,
+   "subsample": 0.92752,
+   "colsample": 0.69814,
+   "max_trees": 3000,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  },
+  "2026": {
+   "depth": 3,
+   "min_child": 10.0,
+   "l2": 0.5888617688250164,
+   "lr": 0.03400497306843497,
+   "subsample": 0.92752,
+   "colsample": 0.69814,
+   "max_trees": 3000,
+   "gamma": 0.0,
+   "alpha": 0.0,
+   "mds": 0.0
+  }
+ },
+ "note": "ПОТОЛОК: оси подобраны по LOYO-годам 2017–2021 (кандидат видел их); чистая справочная — ctrl_f4",
+ "control": "ctrl_f4",
+ "seeds_qlike": {
+  "qlike_s42": 0.2112954854670456,
+  "qlike_s43": 0.2108641074385108,
+  "qlike_s44": 0.2118219345863921,
+  "qlike_s45": 0.2100635070912148,
+  "qlike_s46": 0.2132658754881255,
+  "qlike_sd": 0.0011962968421536
+ }
+}

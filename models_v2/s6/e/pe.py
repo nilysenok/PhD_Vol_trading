@@ -17,7 +17,8 @@ HYB = {"H1": REP / "har_xgboost", "H2": REP / "har_lightgbm", "H3": REP / "har_x
 TRIALS = ENS / "OPTUNA_TRIALS.csv"
 CHECK = ENS / "CHECKPOINT.json"
 COLS = ("trial_id", "wave", "direction", "config", "metric_inner", "seed", "time")
-LIMITS = {"ens_hybrid": 40, "E1": 15, "E2": 25}
+LIMITS = {"ens_hybrid": 40, "EA": 22, "EB": 9, "EC": 5, "EL4": 4}   # R6: A 22 + B <= 9 + C 5 + резерв уровня 4 (4) = 40
+WAVES = ("EA", "EB", "EC", "EL4")
 STATUS = paths6.STATUS + "; DEVELOPMENT (выбор по внутреннему критерию crit_wf); p — сырые, множественный поиск учтён только где указан Холм (потолок)"
 
 
@@ -44,17 +45,16 @@ def load_trials() -> pd.DataFrame:
 
 
 def register(rows: list) -> int:
-    """Дописать trials (дубль trial_id — не новый trial). Лимиты: E1 <= 15, E2 <= 25, всего <= 40. Возврат — число строк реестра."""
+    """Дописать trials (дубль trial_id — не новый trial). Лимиты: EA <= 22, EB <= 9, EC <= 5, EL4 <= 4, всего <= 40. Возврат — число строк реестра."""
     t = load_trials()
     new = [r for r in rows if r["trial_id"] not in set(t["trial_id"])]
     t = pd.concat([t, pd.DataFrame(new, columns=list(COLS))], ignore_index=True) if new else t
-    n = {w: int((t["wave"] == w).sum()) for w in ("E1", "E2")}
-    if n["E1"] > LIMITS["E1"] or n["E2"] > LIMITS["E2"] or len(t) > LIMITS["ens_hybrid"] or t["trial_id"].duplicated().any():
-        raise ValueError("бюджет волны E превышен или дубль trial_id: %s" % n)
+    n = {w: int((t["wave"] == w).sum()) for w in WAVES}
+    if any(n[w] > LIMITS[w] for w in WAVES) or len(t) > LIMITS["ens_hybrid"] or t["trial_id"].duplicated().any() or (~t["wave"].isin(WAVES)).any():
+        raise ValueError("бюджет волны E превышен, дубль trial_id или чужая волна: %s" % n)
     ENS.mkdir(parents=True, exist_ok=True)
     t.to_csv(TRIALS, index=False, lineterminator="\n")
-    CHECK.write_text(json.dumps({"algorithm": "xgb_lgbm_ensemble", "limits": {"ens_hybrid": 40, "E1": 15, "E2": 25},
-                                 "used": {"ens_hybrid": len(t), "E1": n["E1"], "E2": n["E2"]}, "updated": time.strftime("%Y-%m-%d %H:%M")},
+    CHECK.write_text(json.dumps({"algorithm": "xgb_lgbm_ensemble", "limits": LIMITS, "used": {"ens_hybrid": len(t), **n}, "updated": time.strftime("%Y-%m-%d %H:%M")},
                                 ensure_ascii=False, indent=1))
     return len(t)
 

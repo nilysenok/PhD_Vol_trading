@@ -1,0 +1,35 @@
+{
+ "status": "DEVELOPMENT + HISTORICAL WALK-FORWARD (2017–02.2026, просмотрено; не независимый OOS); INDEPENDENT FUTURE TEST не выполнялся, нет данных после 27.02.2026",
+ "expanding window, daily retrain": true,
+ "features": "Б-2 (28) + F4 (5) = 33",
+ "seeds": [
+  42,
+  43,
+  44,
+  45,
+  46
+ ],
+ "date": "2026-11-06",
+ "model": "C0_inh_F4",
+ "objective": "regression L2, ln-цель; наследованные HP годового выбора И2 (из сетки 132 XGBoost)",
+ "hp_by_year": {
+  "2017": "nl8_md10_l22_lr0.05_ff1_bag0.8_dp3",
+  "2018": "nl8_md30_l230_lr0.02_ff0.5_bag0.6_dp3",
+  "2019": "nl8_md10_l22_lr0.1_ff1_bag0.8_dp3",
+  "2020": "nl8_md10_l20.5_lr0.05_ff1_bag0.8_dp3",
+  "2021": "nl8_md30_l230_lr0.05_ff0.5_bag0.8_dp3",
+  "2022": "nl4_md30_l20.5_lr0.05_ff1_bag0.8_dp2",
+  "2023": "nl4_md10_l20.5_lr0.05_ff1_bag0.8_dp2",
+  "2024": "nl32_md10_l20.5_lr0.05_ff1_bag0.8_dp5",
+  "2025": "nl32_md10_l20.5_lr0.05_ff1_bag0.8_dp5",
+  "2026": "nl8_md10_l20.5_lr0.05_ff1_bag0.8_dp3"
+ },
+ "seeds_qlike": {
+  "qlike_s42": 0.2116713835922136,
+  "qlike_s43": 0.2117581979177981,
+  "qlike_s44": 0.2114829665783347,
+  "qlike_s45": 0.2102642956075362,
+  "qlike_s46": 0.2114016577072644,
+  "qlike_sd": 0.0006048002267657
+ }
+}

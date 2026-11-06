@@ -1,4 +1,4 @@
-"""Правила весов ансамблей и гибридов (волна E, GATES_E R3–R5). Вес на дате d — функция закрытых прогнозов (target_date <= d) и RV до d.
+"""Правила весов ансамблей и гибридов (волна E, GATES_E R3, R6). Вес на дате d — функция закрытых прогнозов (target_date <= d) и RV до d.
 S — (n, K) σ̂² членов на сетке; m[k] — число закрытых прогнозов на k (`ens.closed`); extra — мутация «закрыто + extra» (должна краснить тесты)."""
 from __future__ import annotations
 
@@ -8,27 +8,43 @@ from scipy.optimize import minimize
 from models_v2 import metrics
 from models_v2.s5.d import ens
 
-MIN_CLOSED, WIN, CUT = ens.MIN_CLOSED, ens.WIN, np.datetime64("2018-12-31")
+MIN_CLOSED, WIN = ens.MIN_CLOSED, ens.WIN
 SIMPLE = ("mean_lvl", "mean_log", "median")
+S_GRID = (0.0, 0.25, 0.5, 0.75, 1.0)
 
 
 def w_equal(S: np.ndarray) -> np.ndarray:
     return np.full(S.shape, 1.0 / S.shape[1])
 
 
-def n_cut(td: np.ndarray, cut=CUT) -> int:
-    """Число прогнозов с target_date <= cut (первые n_cut: сетка отсортирована)."""
-    return int((np.asarray(td).astype("datetime64[D]") <= cut).sum())
-
-
-def w_fixed(rv, S, m, c: int, step: float = 0.1) -> np.ndarray:
-    """fixed_2018: оптимум симплекса по первым c прогнозам (цели <= 31.12.2018), затем фиксирован; на k, где закрыто < c, — равные веса."""
+def w_fixed_loyo(rv, S, td, d, step: float = 0.1, extra_year: int = 0, min_n: int = 60) -> np.ndarray:
+    """fixed_loyo: на дате d года Y вес = оптимум симплекса по прогнозам с target < 01.01.Y, фиксирован в течение года Y. Если таких < min_n (2017) — равные.
+    extra_year — мутация «target < 01.01.(Y+extra_year)»: вес года Y видит прогнозы самого года Y."""
     out = w_equal(S)
-    if c < 1 or c > len(rv):
-        return out
     G = ens.simplex(S.shape[1], step)
-    wf = ens.pick(ens.cum_qlike(rv, S, G)[c - 1], G)
-    out[m >= c] = wf
+    C = ens.cum_qlike(rv, S, G)
+    td = np.asarray(td).astype("datetime64[D]")
+    yr = np.asarray(d).astype("datetime64[Y]").astype(int) + 1970
+    for Y in np.unique(yr):
+        c = int((td < np.datetime64("%d-01-01" % (Y + extra_year))).sum())
+        if c >= min_n:
+            out[yr == Y] = ens.pick(C[c - 1], G)
+    return out
+
+
+def w_shrink(rv, S, m, win: int = 252, sel: int = 126, grid=S_GRID, extra_sel: int = 0) -> np.ndarray:
+    """shrink_252: w = (1−s)·w_roll + s·w_eq; s — минимум среднего QLIKE этих же правил на последних sel закрытых датах j < m[k] (вес даты j посчитан на j).
+    До sel закрытых — s = 1 (равные веса). extra_sel — мутация: окно выбора s захватывает extra_sel ещё не закрытых дат."""
+    n = S.shape[0]
+    wr, we = ens.w_window(rv, S, m, win), w_equal(S)
+    Q = np.column_stack([metrics.qlike(rv, np.einsum("nk,nk->n", (1 - s) * wr + s * we, S)) for s in grid])
+    cq = np.vstack([np.zeros((1, len(grid))), np.cumsum(Q, axis=0)])
+    out = we.copy()
+    for k in range(n):
+        mk = min(int(m[k]) + extra_sel, n)
+        if mk >= sel:
+            s = grid[int(np.argmin(cq[mk] - cq[mk - sel]))]
+            out[k] = (1 - s) * wr[k] + s * we[k]
     return out
 
 
@@ -80,21 +96,60 @@ def w_stack(rv, S, m, refit: int = 21) -> np.ndarray:
     return out
 
 
-def weights(rule: str, S, ctx: dict, extra: int = 0, c: int | None = None) -> np.ndarray:
-    """Веса (n, K) правила rule. extra — мутация MD1 (закрыто + extra). c — число прогнозов до 31.12.2018 (для fixed_2018)."""
+def w_group(rv, S, m, grp, step: float = 0.1, min_group: int = 60) -> np.ndarray:
+    """C2/C3: веса по закрытым прогнозам той же группы (grp на d: 0…ng−1, −1 — нет); меньше min_group закрытых в группе или группа −1 — веса exp (все закрытые); до 252 — равные."""
+    n, K = S.shape
+    G = ens.simplex(K, step)
+    Q = metrics.qlike(rv[:, None], np.einsum("nk,pk->np", S, G))
+    out = ens.w_window(rv, S, m, 0, step)
+    for g in sorted(set(np.asarray(grp).tolist()) - {-1}):
+        mem = grp == g
+        Cg, cnt = np.cumsum(Q * mem[:, None], axis=0), np.cumsum(mem)
+        for k in np.flatnonzero(mem):
+            if m[k] >= MIN_CLOSED and cnt[m[k] - 1] >= min_group:
+                out[k] = ens.pick(Cg[m[k] - 1], G)
+    return out
+
+
+def w_switch(rv, S, m, win: int = 63) -> np.ndarray:
+    """C6: S = (HAR, ML). ML, если сумма потерь HAR за последние win закрытых больше суммы потерь ML (гистерезис 0), иначе HAR; до win закрытых — HAR."""
+    cq = np.vstack([np.zeros((1, 2)), np.cumsum(metrics.qlike(rv[:, None], S), axis=0)])
+    out = np.tile([1.0, 0.0], (S.shape[0], 1))
+    for k in range(S.shape[0]):
+        if m[k] >= win:
+            d = (cq[m[k]] - cq[m[k] - win])
+            out[k] = [0.0, 1.0] if d[0] > d[1] else [1.0, 0.0]
+    return out
+
+
+def c_shrink(rv, h, sb, m, win: int = 252) -> np.ndarray:
+    """C5: c_t = clip((f − 0,5)/0,5, 0, 1), f — доля последних win закрытых дней, где QLIKE гибрида sb лучше QLIKE HAR h; до win закрытых c = 0,5."""
+    imp = (metrics.qlike(rv, sb) < metrics.qlike(rv, h)).astype(float)
+    cs = np.concatenate([[0.0], np.cumsum(imp)])
+    c = np.full(len(rv), 0.5)
+    for k in range(len(rv)):
+        if m[k] >= win:
+            c[k] = np.clip((cs[m[k]] - cs[m[k] - win]) / win - 0.5, 0.0, 0.5) / 0.5
+    return c
+
+
+def weights(rule: str, S, ctx: dict, extra: int = 0, extra_year: int = 0) -> np.ndarray:
+    """Веса (n, K) правила rule. extra — мутация «закрыто + extra»; extra_year — мутация fixed_loyo («target < 01.01.Y+1»)."""
     rv, m = ctx["rv"], ens.closed(ctx, extra)
     if rule in ("fix", "mean_lvl"):
         return w_equal(S)
-    if rule == "fixed_2018":
-        return w_fixed(rv, S, m, n_cut(ctx["td"]) if c is None else c)
+    if rule == "fixed_loyo":
+        return w_fixed_loyo(rv, S, ctx["td"], ctx["d"], extra_year=extra_year)
     if rule == "inv_qlike_252":
         return ens.w_inverse(rv, S, m, 252)
     if rule == "inv_rmse_252":
         return w_inv_rmse(rv, S, m, 252)
-    if rule.startswith("dyn_") or rule == "roll_252":
-        return ens.w_window(rv, S, m, int(rule.split("_")[1]))
+    if rule == "shrink_252":
+        return w_shrink(rv, S, m, 252, extra_sel=extra)
     if rule == "roll_252_con":
         return w_roll_con(rv, S, m, 252)
+    if rule.startswith("dyn_") or rule.startswith("roll_"):
+        return ens.w_window(rv, S, m, int(rule.split("_")[1]))
     if rule == "stack_nnls":
         return w_stack(rv, S, m)
     if rule == "reg_g4":
@@ -102,7 +157,7 @@ def weights(rule: str, S, ctx: dict, extra: int = 0, c: int | None = None) -> np
     raise KeyError(rule)
 
 
-def sigma2(rule: str, S, ctx: dict, extra: int = 0, c: int | None = None) -> np.ndarray:
+def sigma2(rule: str, S, ctx: dict, extra: int = 0, extra_year: int = 0) -> np.ndarray:
     """σ̂² правила rule над членами S; простые правила (контроли) не требуют ctx."""
     if rule == "mean_lvl":
         return S.mean(axis=1)
@@ -110,7 +165,7 @@ def sigma2(rule: str, S, ctx: dict, extra: int = 0, c: int | None = None) -> np.
         return np.exp(np.log(S).mean(axis=1))
     if rule == "median":
         return np.median(S, axis=1)
-    return np.einsum("nk,nk->n", weights(rule, S, ctx, extra, c), S)
+    return np.einsum("nk,nk->n", weights(rule, S, ctx, extra, extra_year), S)
 
 
 def qlike_mean(rv, s2) -> float:

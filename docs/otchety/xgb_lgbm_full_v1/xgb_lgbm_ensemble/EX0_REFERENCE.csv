@@ -1,0 +1,11 @@
+# HISTORICAL WALK-FORWARD (2017–02.2026, уже просмотрено; не независимый OOS); DEVELOPMENT (выбор по внутреннему критерию crit_wf); p — сырые, множественный поиск учтён только где указан Холм (потолок); волна E Ж-206; EX0: ориентиры, пересчёт из сохранённых рядов; расхождения — по колонке ok
+id,name,expected,recomputed,abs_diff,tol,ok,paths,sha256,n
+HAR,HAR-J(б),0.2337,0.23366211569377798,3.7884306222008e-05,5e-05,True,data/regen/v2_sber_h1/forecasts_p1.parquet,8ecc06f298903170,2271
+XJ,x2_best_j (XGB final),0.211295,0.21129548546704566,4.854670456466703e-07,5e-05,True,data/regen/xgb_lgbm_full_v1/xgboost/c/raw_f4e8e88d8a05_s42.parquet,f9e58f1916dbb80d,2271
+XF,ctrl_f4 (XGB F4),0.212538,0.21253782942424637,1.7057575363299549e-07,5e-05,True,data/regen/xgb_lgbm_full_v1/xgboost/c/raw_655fdf55d34e_s42.parquet,68d5aaecdffadd23,2271
+LF,C0_inh_F4 (LGBM F4),0.2117,0.21167138359221363,2.8616407786369313e-05,0.0005,True,data/regen/xgb_lgbm_full_v1/lightgbm/c/fc_C0_inh_F4.parquet,e6780f0c57fb2b51,2271
+B2X,Б-2 (baseline XGB),0.2205,0.22048650276427248,1.3497235727522039e-05,0.0005,True,data/regen/v2_sber_h1/fix_forecasts_c.parquet,f8aa717368218de4,2271
+B2L,LGBM-аналог Б-2,0.2223,0.22233796195274597,3.7961952745968475e-05,0.0005,True,data/regen/xgb_lgbm_full_v1/lightgbm/fc_lgbm_b2.parquet,7cf07022ce1b0256,2271
+c2_h3_roll_f4,"HAR+XGB F4, roll252 (c2_h3_roll_f4)",0.2098,0.20975024929137212,4.97507086278659e-05,5e-05,True,,,2271
+corr_qlike_XF_LF,корреляция дневных потерь QLIKE XGB F4 / LGBM F4 (как в отчётах Ж-206 C/D),0.998,0.9980189035101155,1.8903510115464428e-05,0.005,True,,,2271
+corr_lnerr_XF_LF,"корреляция ln-ошибок XGB F4 / LGBM F4 (ориентир «0,998» относился к потерям, не к ln-ошибкам; сравнение — справочное)",0.998,0.9923245555078833,0.005675444492116655,1.0,True,,,2271

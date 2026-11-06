@@ -6,8 +6,9 @@ import pytest
 from models_v2.s5.d import ens, stats_d
 from models_v2.s6.e import crit_e, pe, rules
 
-N = 640
-RULES = ("fixed_2018", "inv_qlike_252", "inv_rmse_252", "dyn_63", "dyn_126", "dyn_252", "stack_nnls", "roll_252_con", "reg_g4", "roll_252")
+N = 1000
+RULES = ("fixed_loyo", "inv_qlike_252", "inv_rmse_252", "shrink_252", "dyn_63", "dyn_126", "dyn_252", "stack_nnls", "roll_252_con", "reg_g4", "roll_252",
+         "roll_126", "roll_504")
 
 
 def synth(seed=3, k=2):
@@ -37,7 +38,7 @@ def test_weight_ignores_unclosed_future(rule, K):
     assert a.tobytes() == b.tobytes()
 
 
-@pytest.mark.parametrize("rule", [r for r in RULES if r != "fixed_2018"])
+@pytest.mark.parametrize("rule", [r for r in RULES if r != "fixed_loyo"])
 def test_mutation_closed_plus_one_is_caught(rule):
     ctx, S = synth()
     k0 = 441                            # кратно 21: переоценка stack_nnls
@@ -47,13 +48,49 @@ def test_mutation_closed_plus_one_is_caught(rule):
     assert rules.weights(rule, S, ctx, extra=1)[k0].tobytes() != rules.weights(rule, S2, c2, extra=1)[k0].tobytes()
 
 
-def test_mutation_closed_plus_one_fixed_2018_switches_one_day_early():
+def test_mutation_fixed_loyo_year_plus_one_is_caught():
+    """Мутация «target < 01.01.Y+1»: вес года Y видит прогнозы года Y — порча внутри года Y меняет вес этого года."""
     ctx, S = synth()
-    S[:, 1] *= np.exp(np.linspace(0, 1, N))       # чтобы оптимум не был (0,5; 0,5)
-    c = rules.n_cut(ctx["td"], np.datetime64("2017-12-31"))
-    k = int(np.flatnonzero(ens.closed(ctx) == c - 1)[0])
-    honest, mutant = rules.weights("fixed_2018", S, ctx, c=c)[k], rules.weights("fixed_2018", S, ctx, extra=1, c=c)[k]
-    assert honest.tolist() == [0.5, 0.5] and mutant.tolist() != [0.5, 0.5]
+    y = pd.Series(ctx["d"]).dt.year.to_numpy()
+    kk = int(np.flatnonzero(y == 2019)[0]) + 40      # внутри 2019: вес 2019 фиксирован по целям < 01.01.2019; порча с kk его не меняет
+    c2, S2 = perturb(ctx, S, kk)
+    S2[kk:, 0] *= 20.0
+    S2[kk:, 1] *= 0.05
+    for ey, same in ((0, True), (1, False)):          # мутация extra_year=1 (до 01.01.2020) видит прогнозы самого 2019 года
+        a, b = rules.weights("fixed_loyo", S, ctx, extra_year=ey)[kk], rules.weights("fixed_loyo", S2, c2, extra_year=ey)[kk]
+        assert (a.tobytes() == b.tobytes()) is same, (ey, a, b)
+
+
+def test_fixed_loyo_equal_in_first_year_and_constant_within_year():
+    ctx, S = synth()
+    w = rules.weights("fixed_loyo", S, ctx)
+    y = pd.Series(ctx["d"]).dt.year.to_numpy()
+    assert (w[y == 2017] == 0.5).all()
+    for Y in (2018, 2019):
+        assert (w[y == Y] == w[y == Y][0]).all()
+
+
+def test_shrink_s_chosen_only_from_closed_and_mutation_caught():
+    ctx, S = synth()
+    ctx2, S2 = perturb(ctx, S, 460)
+    k0 = 460
+    assert rules.weights("shrink_252", S, ctx)[k0].tobytes() == rules.weights("shrink_252", S2, ctx2)[k0].tobytes()
+    assert rules.w_shrink(ctx["rv"], S, ens.closed(ctx), extra_sel=0).shape == S.shape
+    S3 = S.copy()
+    S3[k0:k0 + 3, 0] *= 1e6
+    m, rows = ens.closed(ctx), slice(k0 - 6, k0 + 1)
+    assert rules.w_shrink(ctx["rv"], S3, m)[rows].tobytes() == rules.w_shrink(ctx["rv"], S, m)[rows].tobytes()
+    assert rules.w_shrink(ctx["rv"], S3, m, extra_sel=6)[rows].tobytes() != rules.w_shrink(ctx["rv"], S, m, extra_sel=6)[rows].tobytes()
+
+
+def test_shrink_extremes_are_roll_and_equal():
+    ctx, S = synth()
+    m = ens.closed(ctx)
+    r, e = ens.w_window(ctx["rv"], S, m, 252), rules.w_equal(S)
+    w0 = rules.w_shrink(ctx["rv"], S, m, grid=(0.0,))
+    w1 = rules.w_shrink(ctx["rv"], S, m, grid=(1.0,))
+    k = int(np.flatnonzero(m >= 252 + 126)[0])
+    assert np.allclose(w0[k], r[k]) and np.allclose(w1, e)
 
 
 def test_weights_nonnegative_and_simplex_sums():
@@ -70,18 +107,16 @@ def test_median_of_two_equals_mean_exactly():
     assert rules.sigma2("median", S, {}).tobytes() == rules.sigma2("mean_lvl", S, {}).tobytes()
 
 
-def test_fixed_2018_not_whole_sample_and_mutation_visible():
+def test_fixed_loyo_not_whole_sample():
     ctx, S = synth()
-    c = rules.n_cut(ctx["td"], np.datetime64("2018-06-30"))
-    w = rules.w_fixed(ctx["rv"], S, ens.closed(ctx), c)
-    c2, S2 = perturb(ctx, S, c)         # порча после границы не меняет фиксированный вес
-    S2[c:, 0] *= 50.0
-    assert w[-1].tobytes() == rules.w_fixed(c2["rv"], S2, ens.closed(c2), c)[-1].tobytes()
+    c2, S2 = perturb(ctx, S, 430)
+    S2[430:, 0] *= 50.0
+    y = pd.Series(ctx["d"]).dt.year.to_numpy()
+    sel = (y == 2018) & (np.arange(N) <= 430)
+    assert rules.weights("fixed_loyo", S, ctx)[sel].tobytes() == rules.weights("fixed_loyo", S2, c2)[sel].tobytes()
     G = ens.simplex(2)
     whole = ens.pick(ens.cum_qlike(ctx["rv"], S, G)[-1], G)          # мутация: оптимум по всей выборке — зависит от порчи после границы
-    whole2 = ens.pick(ens.cum_qlike(c2["rv"], S2, G)[-1], G)
-    assert not np.array_equal(whole, whole2)
-    assert rules.w_fixed(ctx["rv"], S, ens.closed(ctx), len(S) + 5)[-1].tolist() == [0.5, 0.5]   # c > n: фиксации ещё нет
+    assert not np.array_equal(whole, ens.pick(ens.cum_qlike(c2["rv"], S2, G)[-1], G))
 
 
 def test_known_answer_exact_member_wins():
@@ -131,10 +166,15 @@ def test_register_limits_and_duplicate(tmp_path, monkeypatch):
     monkeypatch.setattr(pe, "ENS", tmp_path)
     monkeypatch.setattr(pe, "TRIALS", tmp_path / "OPTUNA_TRIALS.csv")
     monkeypatch.setattr(pe, "CHECK", tmp_path / "CHECKPOINT.json")
-    t = [pe.trial({"i": i}, "E1", "ensemble", "m") for i in range(15)]
-    assert pe.register(t) == 15 and pe.register(t) == 15          # дубль — не новый trial
+    t = [pe.trial({"i": i}, "EA", "ensemble", "m") for i in range(22)]
+    assert pe.register(t) == 22 and pe.register(t) == 22          # дубль — не новый trial
     with pytest.raises(ValueError):
-        pe.register([pe.trial({"i": 99}, "E1", "ensemble", "m")])  # 16-й trial E1
+        pe.register([pe.trial({"i": 99}, "EA", "ensemble", "m")])  # 23-й trial типа A
+    with pytest.raises(ValueError):
+        pe.register([pe.trial({"i": 98}, "E1", "ensemble", "m")])  # чужая волна
+    assert pe.register([pe.trial({"i": 100 + j}, "EB", "residual", "m") for j in range(9)]) == 31
+    with pytest.raises(ValueError):
+        pe.register([pe.trial({"i": 200}, "EB", "residual", "m")])  # 10-й trial типа B
 
 
 def _acc(**kw):
@@ -156,3 +196,29 @@ def test_accept_boundaries():
     assert _acc(q17=0.1600 * 1.0099)["accept"] is True
     assert _acc(sn=None)["accept"] is False                                     # seed не проверены
     assert _acc(sn=[0.3], sb=[0.2])["accept"] is False
+
+
+def test_c_rules_ignore_unclosed_future_and_mutation_caught():
+    ctx, S = synth()
+    k0 = 441
+    c2, S2 = perturb(ctx, S, k0)
+    S2[k0, 0] *= 1e30
+    m, m1 = ens.closed(ctx), ens.closed(ctx, 1)
+    g = np.random.default_rng(9).integers(0, 3, N)
+    funcs = {"group": lambda r, s, mm: rules.w_group(r, s, mm, g), "switch": lambda r, s, mm: rules.w_switch(r, s, mm),
+             "shrink_c": lambda r, s, mm: rules.c_shrink(r, s[:, 1], s[:, 0], mm)}
+    for nm, f in funcs.items():
+        assert f(ctx["rv"], S, m)[:k0 + 1].tobytes() == f(c2["rv"], S2, m)[:k0 + 1].tobytes(), nm            # будущее не видно
+        assert f(ctx["rv"], S, m1)[k0].tobytes() != f(c2["rv"], S2, m1)[k0].tobytes(), nm                    # мутация «закрыто+1» видна
+
+
+def test_switch_known_answer_and_c_shrink_bounds():
+    ctx, S = synth()
+    S = np.column_stack([ctx["rv"] * 3.0, ctx["rv"] * 1.05])         # HAR плох, ML хорош
+    m = ens.closed(ctx)
+    w = rules.w_switch(ctx["rv"], S, m)
+    assert (w[200:] == [0.0, 1.0]).all() and (w[:50] == [1.0, 0.0]).all()
+    c = rules.c_shrink(ctx["rv"], S[:, 0], S[:, 1], m)
+    assert (c[300:] == 1.0).all() and (c[:100] == 0.5).all() and ((c >= 0) & (c <= 1)).all()
+    c0 = rules.c_shrink(ctx["rv"], S[:, 1], S[:, 0], m)              # коррекция всегда хуже HAR -> c = 0
+    assert (c0[300:] == 0.0).all()
