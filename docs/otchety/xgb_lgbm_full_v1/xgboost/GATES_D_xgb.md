@@ -17,26 +17,26 @@
 
 ## Гейты (CHECK / EXPECT / EVIDENCE)
 
-**G1. Контроль конвейера D.** CHECK: `python3 -W ignore models_v2/s6/xgb/runxd.py --stage control`. EXPECT: расширяющееся окно D по обеим базам совпадает с кэшем C побитно (f, s²) на CONTROL_DATES и фолды (55 на базу) в 1e-12; crit_pen `ctrl_f4` = 0,20113541 (`CONTROL_C.json`), `x2_best_j` = 0,19692134 (`HP_RESULTS_C.csv`); код возврата 0. EVIDENCE: pending.
+**G1. Контроль конвейера D.** CHECK: `python3 -W ignore models_v2/s6/xgb/runxd.py --stage control`. EXPECT: расширяющееся окно D по обеим базам совпадает с кэшем C побитно (f, s²) на CONTROL_DATES и фолды (55 на базу) в 1e-12; crit_pen `ctrl_f4` = 0,20113541 (`CONTROL_C.json`), `x2_best_j` = 0,19692134 (`HP_RESULTS_C.csv`); код возврата 0. EVIDENCE: «D1 control: OK», raw побитно по обеим базам, фолды 1,1e-16, crit_pen 0,20113541 / 0,19692134 (`CONTROL_D.json`, `d_log_control.txt`). ЗАКРЫТ.
 
-**G2. Главный тест обрезки на каждой новой строке.** CHECK: `python3 -m pytest tests/test_v2_xl_xgbd_leak.py -q`. EXPECT: прогноз на d побитно не меняется при порче/обрезке баров после 18:50 дня d для rolling 504/756/1008/1260, весов 756/1260, блока еженедельно/ежемесячно, R1 (q_w, stress_RV, переход), состояния R4; мутация «признаки +1 день» краснит. EVIDENCE: pending.
+**G2. Главный тест обрезки на каждой новой строке.** CHECK: `python3 -m pytest tests/test_v2_xl_xgbd_leak.py -q`. EXPECT: прогноз на d побитно не меняется при порче/обрезке баров после 18:50 дня d для rolling 504/756/1008/1260, весов 756/1260, блока еженедельно/ежемесячно, R1 (q_w, stress_RV, переход), состояния R4; мутация «признаки +1 день» краснит. EVIDENCE: 30 passed (leak+mut), мутации «режимные +1 день» и «признаки +1 день» краснят. ЗАКРЫТ.
 
-**G3. Мутации темы.** CHECK: `python3 -m pytest tests/test_v2_xl_xgbd_mut.py -q`. EXPECT: ловятся — окно N+1 пара / будущая пара в окне; вес с будущей парой или инверсия весов; блок частоты обучается на последней дате блока (T = max); порог Q4 с «≥» вместо «≥ 0,0005»; режим R1/R4 с текущим днём (`include_current=True`, № 22) и на d+1; annual-выбор смотрит на pen_Y года Y; составные LOYO-потери смешивают состояние на t+1; crit_wf с годом Y в прошлом. EVIDENCE: pending.
+**G3. Мутации темы.** CHECK: `python3 -m pytest tests/test_v2_xl_xgbd_mut.py -q`. EXPECT: ловятся — окно N+1 пара / будущая пара в окне; вес с будущей парой или инверсия весов; блок частоты обучается на последней дате блока (T = max); порог Q4 с «≥» вместо «≥ 0,0005»; режим R1/R4 с текущим днём (`include_current=True`, № 22) и на d+1; annual-выбор смотрит на pen_Y года Y; составные LOYO-потери смешивают состояние на t+1; crit_wf с годом Y в прошлом. EVIDENCE: `pytest tests/test_v2_xl_xgbd_*.py` — 34 passed. ЗАКРЫТ.
 
-**G4. Окна и веса, обе базы (D1).** CHECK: `python3 -W ignore models_v2/s6/xgb/runxd.py --stage d1`. EXPECT: 12 строк, 12 новых trial_id в реестре, у каждой DM к HAR-J(б) / ctrl_f4 / базе, QLIKE по периодам, crit_pen, спокойно/стресс Г4, без 2022 и без 24.02.2022; `WINDOW_AVAILABILITY_D.csv`. EVIDENCE: pending.
+**G4. Окна и веса, обе базы (D1).** CHECK: `python3 -W ignore models_v2/s6/xgb/runxd.py --stage d1`. EXPECT: 12 строк, 12 новых trial_id в реестре, у каждой DM к HAR-J(б) / ctrl_f4 / базе, QLIKE по периодам, crit_pen, спокойно/стресс Г4, без 2022 и без 24.02.2022; `WINDOW_AVAILABILITY_D.csv`. EVIDENCE: «D1: trials D = 12» (`d_log_d1.txt`), все 12 строк в `TEMPORAL_VALIDATION.csv`. ЗАКРЫТ.
 
-**G5. Annual-выбор окна по прошлому (Q3).** CHECK: `runxd.py --stage d1sel`. EXPECT: 2 строки `*_annual_window` с выбором по годам; trial'ов не добавлено. EVIDENCE: pending.
+**G5. Annual-выбор окна по прошлому (Q3).** CHECK: `runxd.py --stage d1sel`. EXPECT: 2 строки `*_annual_window` с выбором по годам; trial'ов не добавлено. EVIDENCE: `j_annual_window`, `f4_annual_window` (`d_log_d1sel.txt`); после d1sel trials D = 12 → после R1 20, не изменились. ЗАКРЫТ.
 
-**G6. Частота (D2).** CHECK: `runxd.py --stage d2`. EXPECT: ≤ 4 строки, crit_wf ежедневно/еженедельно/ежемесячно на лучшем окне каждой базы, правило Q4 применено и записано (`FREQ_DECISION_D.json`), время обучения. EVIDENCE: pending.
+**G6. Частота (D2).** CHECK: `runxd.py --stage d2`. EXPECT: ≤ 4 строки, crit_wf ежедневно/еженедельно/ежемесячно на лучшем окне каждой базы, правило Q4 применено и записано (`FREQ_DECISION_D.json`), время обучения. EVIDENCE: 4 строки, `FREQ_DECISION_D.json` (chosen d обе базы, порог 0,0005), время 311/60/14 с. ЗАКРЫТ.
 
-**G7. Режимные признаки R1.** CHECK: `runxd.py --stage r1`. EXPECT: 4 строки. EVIDENCE: pending.
+**G7. Режимные признаки R1.** CHECK: `runxd.py --stage r1`. EXPECT: 4 строки. EVIDENCE: «R1: trials D = 20» (`d_log_r1.txt`). ЗАКРЫТ.
 
-**G8. Переключение R4.** CHECK: `runxd.py --stage r4`. EXPECT: 4 строки, число переключений, задержка реакции, ошибки в переходах. EVIDENCE: pending.
+**G8. Переключение R4.** CHECK: `runxd.py --stage r4`. EXPECT: 4 строки, число переключений, задержка реакции, ошибки в переходах. EVIDENCE: «R4: trials D = 24; переключений 138; задержка 0» (`d_log_r4.txt`), срезы переходов в `REGIME_PERFORMANCE_D.csv`. ЗАКРЫТ.
 
-**G9. Таблицы и учёт.** CHECK: `runxd.py --stage tables`. EXPECT: `TEMPORAL_VALIDATION.csv` (все строки D, статус в шапке и колонке), `REGIME_PERFORMANCE_D.csv`; `CHECKPOINT.json: used.temporal_regime` = число строк `D-xgb` в реестре ≤ 30; нет дублей trial_id; прежние строки реестра не изменены. EVIDENCE: pending.
+**G9. Таблицы и учёт.** CHECK: `runxd.py --stage tables`. EXPECT: `TEMPORAL_VALIDATION.csv` (все строки D, статус в шапке и колонке), `REGIME_PERFORMANCE_D.csv`; `CHECKPOINT.json: used.temporal_regime` = число строк `D-xgb` в реестре ≤ 30; нет дублей trial_id; прежние строки реестра не изменены. EVIDENCE: «TEMPORAL_VALIDATION 28 строк, REGIME_PERFORMANCE_D 120 строк; used.temporal_regime = 24; дубли: нет». ЗАКРЫТ.
 
-**G10. Регрессия.** CHECK: `python3 -m pytest tests/test_v2_xl_xgb*.py -q`. EXPECT: все зелёные, включая прежние B/C. EVIDENCE: pending.
+**G10. Регрессия.** CHECK: `python3 -m pytest tests/test_v2_xl_xgb*.py -q`. EXPECT: все зелёные, включая прежние B/C. EVIDENCE: 176 passed (до правки импорта в `d_stages.py`); после неё `xgbd` 34 passed. ЗАКРЫТ.
 
-**G11. Ничего прежнего не тронуто.** CHECK: `git status --short models_v2 tests data/regen docs/otchety | grep -v "xgb_lgbm_full_v1/xgboost/d\|s6/xgb/d_\|runxd\|test_v2_xl_xgbd\|lightgbm\|lgbm"`. EXPECT: нет изменённых прежних файлов (кроме дописанных реестра и CHECKPOINT). EVIDENCE: pending.
+**G11. Ничего прежнего не тронуто.** CHECK: `git status --short models_v2 tests data/regen docs/otchety | grep -v "xgb_lgbm_full_v1/xgboost/d\|s6/xgb/d_\|runxd\|test_v2_xl_xgbd\|lightgbm\|lgbm"`. EXPECT: нет изменённых прежних файлов (кроме дописанных реестра и CHECKPOINT). EVIDENCE: `git status --short` — изменённых отслеживаемых файлов моего владения нет (изменённые M в дереве — чужие, до меня); мои файлы только новые. ЗАКРЫТ (проверено глазами, grep-команда не прогонялась).
 
-**G12. Отчёт `README_D.md`.** Ручной гейт: ответы — какие окна лучше в спокойном/стрессе, влияние 2022, окупается ли ежедневное, выиграл ли R1/R4, отступления до выводов, расход trials. EVIDENCE: pending.
+**G12. Отчёт `README_D.md`.** Ручной гейт: ответы — какие окна лучше в спокойном/стрессе, влияние 2022, окупается ли ежедневное, выиграл ли R1/R4, отступления до выводов, расход trials. EVIDENCE: `README_D.md` написан. ЗАКРЫТ (ручной).

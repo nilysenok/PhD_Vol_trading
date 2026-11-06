@@ -1,0 +1,18 @@
+{
+ "x2_best_j": {
+  "raw_bitwise_all_grid": true,
+  "folds_max_abs_diff": 1.1102230246251565e-16,
+  "crit_pen": 0.19692134465327366,
+  "crit_pen_ref": 0.19692134465327366,
+  "trial_id_c": "f4e8e88d8a05",
+  "secs": 83.54427909851074
+ },
+ "ctrl_f4": {
+  "raw_bitwise_all_grid": true,
+  "folds_max_abs_diff": 1.1102230246251565e-16,
+  "crit_pen": 0.20113541384226136,
+  "crit_pen_ref": 0.20113541384226136,
+  "trial_id_c": "655fdf55d34e",
+  "secs": 83.3564920425415
+ }
+}
