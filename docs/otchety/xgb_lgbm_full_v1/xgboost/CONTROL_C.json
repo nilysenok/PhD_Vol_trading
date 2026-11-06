@@ -1,0 +1,15 @@
+{
+ "ctrl_f4": {
+  "bitwise_raw_and_folds": true,
+  "crit_pen": 0.20113541384226136,
+  "trial_id_c": "655fdf55d34e",
+  "secs": 78.68829393386841
+ },
+ "x3_gamma_f4": {
+  "bitwise_raw_and_folds": true,
+  "crit_pen": 0.21567365344660402,
+  "trial_id_c": "4848e67e3294",
+  "secs": 71.51906895637512
+ },
+ "crit_pen_ctrl_f4_B": 0.20113541384226136
+}

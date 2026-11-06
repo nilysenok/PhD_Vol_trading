@@ -77,6 +77,9 @@ CHECK: `python3 -W ignore models_v2/s6/xgb/runxc.py --stage tables` и `python3 
 EXPECT: `HP_RESULTS_C.csv` (все строки C + опоры, колонка status, crit_pen, DM к HAR-J(б)/ctrl_f4 с пометкой «сырые»), `README_C.md`, `CHECKPOINT.json` `used.hp` = число строк C-реестра ≤ 55; все тесты C passed.
 EVIDENCE: pending
 
+### Итог EVIDENCE (06.11.2026; строки pending ниже и выше заменены этим списком)
+C1 control: «C1: OK», побитно, crit_pen 0.20113541384226136. C2 fit, C3 leak, C4 space, C5 sel: `pytest tests/test_v2_xl_xgbc_*.py` -> 87 passed. C6 x1: 18 строк, реестр 18. C7 x2: RUN, 20 trials (X2_DECISION.json). C8 x3: 4 строки, проигрыш 2017–21 не снят. C9 seeds: HP_SEEDS_C.csv, HP_NEIGHBORS_C.csv, trials не выросли (42). C10 tables: «HP_AXES_C 18, HP_RESULTS_C 26, used.hp = 42, дубли нет»; README_C.md. C11 `runx.py --stage check`: «B9: нарушений 0». Закрыто 11 из 11.
+
 ### C11 — гигиена
 CHECK: `python3 -W ignore models_v2/s6/xgb/runx.py --stage check`
 EXPECT: «B9: нарушений 0» (размеры файлов ≤ 200, функций ≤ 40, запрещённых обращений нет, прежнее не тронуто).
