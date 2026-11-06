@@ -49,7 +49,7 @@ def config(fin: pd.DataFrame, rk: pd.DataFrame, lv: pd.DataFrame, n: int) -> dic
     def one(step, model):
         v = lv.set_index("model").loc["%s:%s" % (step, model)]
         return {"step": step, "model": model, "registry": FP.registry_spec(model), "level": v["verdict"], "ceiling": FS.CEIL}
-    top = [one(r["step"], r["model"]) for _, r in rk.head(TOP_N).iterrows()]
+    top = [one(r["step"], r["model"]) for _, r in rk.head(TOP_N).iterrows() if not r["excluded_reason"]]      # исключённые (R2T: V11) не входят; третья позиция — решение владельца
     return {"program": "Ж-214 HAR-J Hybrid V2, SBER h=1", "status": "DEVELOPMENT; " + FS.CEIL, "N_holm": n, "selection_rule": "минимум crit_wf среди кандидатов ступени (V12, У30)",
             "rating_rule": "шесть правил " + ",".join(FL.RATING) + "; ранг: число выполненных, затем ΔQLIKE без 24.02.2022 (У31)", "top3": top,
             "finalists": [one(r["step"], r["model"]) for _, r in fin.iterrows()], "controls": {"A0": "HAR-J(б)", "S_star": "XJ", "LF": "LGBM"},
@@ -90,7 +90,7 @@ def stage_final() -> int:
     w(ref, "REFERENCE_ROBUST_EX_2402.csv", "справочно, вне семейства: выбраны после просмотра")
     w(rt, "REFERENCE_TESTS.csv", "справочно: тесты A/B/C для справочных строк, без Холма")
     (P.REP / "FINAL_V2_CONFIG.json").write_text(json.dumps(config(fin, rk, lv, n), ensure_ascii=False, indent=1, default=float))
-    L.write_check(L.load(), decisions={**json.loads(L.CHECK.read_text()).get("decisions", {}), "final": {"finalists": {r["step"]: r["model"] for _, r in fin.iterrows()}, "top3": list(rk.head(TOP_N)["model"]), "N": n}})
+    L.write_check(L.load(), decisions={**json.loads(L.CHECK.read_text()).get("decisions", {}), "final": {"finalists": {r["step"]: r["model"] for _, r in fin.iterrows()}, "top3": list(rk.head(TOP_N).query("excluded_reason == ''")["model"]), "N": n}})
     print(lv[["model", "qlike_all", "crit_wf", "L1", "L2", "L3", "verdict"]].round(5).to_string(index=False))
     print(rk.round(5).to_string(index=False))
     return 0

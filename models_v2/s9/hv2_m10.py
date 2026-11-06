@@ -54,8 +54,8 @@ def decomposition(d: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def build(bars: pd.DataFrame, part_fn=S.part_by_clock) -> pd.DataFrame:
-    """bars SBER -> таблица дня на канонических датах (daily.build_daily)."""
+def build(bars: pd.DataFrame, part_fn=S.part_by_clock, rq_lag: int = 0) -> pd.DataFrame:
+    """bars SBER -> таблица дня на канонических датах (daily.build_daily). rq_lag — только для тестов-мутаций (RQ дня d+rq_lag); боевое значение 0."""
     d, _ = D.build_daily(bars)
     r = bar_returns(bars)
     sched = S.day_schedule(D.main_session(bars))
@@ -66,8 +66,9 @@ def build(bars: pd.DataFrame, part_fn=S.part_by_clock) -> pd.DataFrame:
     out = out.join(decomposition(d).drop(columns=["bv", "j"]))
     out["bv"], out["j"] = d["bv"], d["j"]
     out = out.join(a.drop(columns=["rv", "n_ret"]))
-    out["rq"] = a["rq"]
-    out["rv_se"] = np.sqrt(2.0 * a["rq"] / d["n_bars"])
+    rq = a["rq"].shift(-rq_lag) if rq_lag else a["rq"]
+    out["rq"] = rq
+    out["rv_se"] = np.sqrt(2.0 * rq / d["n_bars"])
     out["rv_rel"] = out["rv_se"] / d["rv"]
     out["rv_sum_bars"] = a["rv"]
     out["regime_last_min"] = sched["regime"].reindex(d.index)

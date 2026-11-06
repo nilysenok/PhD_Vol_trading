@@ -31,25 +31,6 @@
    "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
   },
   {
-   "step": "Л9",
-   "model": "R2T",
-   "registry": {
-    "key": "Ж-214:reconciliation:2ac73ec369e5",
-    "direction": "reconciliation",
-    "base_cfg": "T3",
-    "controls": [
-     "A0",
-     "SUM"
-    ],
-    "kind": "geo_blend",
-    "name": "R2T",
-    "scheme": "T",
-    "spec": "f_д^(1−w)·f_Σ^w, w по закрытым (>=252), компоненты пропорционально"
-   },
-   "level": "L1 только сырой",
-   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
-  },
-  {
    "step": "V8",
    "model": "Z7",
    "registry": {

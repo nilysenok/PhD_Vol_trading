@@ -532,7 +532,6 @@
    },
    "top3": [
     "E8",
-    "R2T",
     "Z7"
    ],
    "N": 585
@@ -560,7 +559,7 @@
  "used_total": 44,
  "N_prior": 541,
  "N_final": 585,
- "updated": "2026-11-06 19:07",
+ "updated": "2026-11-06 19:19",
  "N_declared_before_final": 585,
  "N_for_corrections": 585
 }

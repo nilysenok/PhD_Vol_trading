@@ -12,6 +12,7 @@ from models_v2.s9 import hv2_fpick as FP, hv2_fstats as FS
 OWN = {"Л4": "T3", "Л8": "E1", "Л9": "T3"}      # ступень на ступень: Л4 = T3 + QLIKE-подгонка, Л8 против Mb (V10), Л9 против простой суммы T3 (V11); Л3 — лучшая из Л1/Л2
 PER = (("2017_2021", 2017, 2021), ("2019_2021", 2019, 2021), ("2022", 2022, 2022), ("2023_2025", 2023, 2025), ("2026", 2026, 2026))
 STATUS = "потолок; HISTORICAL WALK-FORWARD, не OOS"
+EXCLUDED = {"R2T": "V11"}      # схема отклонена правилом V11 (хуже простой суммы T3) и п. 19 блока Ж-214: в тройку архитектур не входит
 RATING = ("c1_dcrit", "c2_years", "c3_ex_240222", "c4_sign_2of3", "c5_holm_A", "c6_wo_top5")
 
 
@@ -65,6 +66,7 @@ def rating(lad: pd.DataFrame, t: pd.DataFrame, fin: pd.DataFrame) -> pd.DataFram
                     "p_raw_A": a.loc["all", "p_raw"], "p_holm_A": a.loc["all", "p_holm"]})
     o = pd.DataFrame(out).sort_values(["passed", "d_qlike_no_240222_A0"], ascending=[False, True]).reset_index(drop=True)
     o["rank"] = np.arange(1, len(o) + 1)
+    o["excluded_reason"] = o["model"].map(EXCLUDED).fillna("")
     return o
 
 
