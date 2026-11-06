@@ -14,6 +14,17 @@ SLICES = {"all": None, "no_240222": "no_240222", "P1_2017_2021": (2017, 2021), "
           "early_2017_2018": (2017, 2018), "late_2019_2026": (2019, 2026), "G_2019_2021": (2019, 2021)}
 
 
+CEILING = "потолок: выбор по crit_wf на всей истории"
+POSTSEL = "постселекционно: финалист выбран по crit_wf на всей истории, p не поправлены на этот выбор (HF10)"
+
+
+def ceiling_note(model: str) -> str:
+    """Пометка финалиста: выбран по min crit_wf на всей истории (потолок); H3/H4 — ещё и набор признаков по EX1. Опоры (HAR-J, XGBoost, LightGBM) — пусто."""
+    if ":" not in model:
+        return ""
+    return CEILING + (" + признаки по EX1" if model.split(":")[0][:2] in ("H3", "H4") else "")
+
+
 def mask_of(df, key):
     if key == "all":
         return np.ones(len(df), bool)

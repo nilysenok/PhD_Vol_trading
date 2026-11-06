@@ -106,6 +106,7 @@ def stage(_a=None) -> int:
     for lab in [k for k in series if ":" in k]:
         rows += V.tests_rows(df, lab, series[lab], n_final)
     t = V.add_holm(pd.DataFrame(rows), n_final)
+    t["post_selection"] = V.POSTSEL
     D.write(t, "STATISTICAL_TESTS.csv", "A/B/C: DM (НW лаг 5, двусторонний p) и блочный бутстрап (20, 5000, seed 42); Холм с N=%d по семейству (финалист × A/B/C, вся история); постселекционно" % n_final)
     sk, cs = C.star(df)
     crit = {"HAR": C.crit_e.cw(D.qs(df, series["HAR-J"]), df["target_date"]), sk: cs[sk]}
@@ -114,7 +115,7 @@ def stage(_a=None) -> int:
     for lab in [k for k in series if ":" in k]:
         crit[lab], qall[lab] = C.crit_e.cw(D.qs(df, series[lab]), df["target_date"]), float(D.qs(df, series[lab]).mean())
         lv[lab] = V.levels(t, lab, crit, qall, sk)
-    L1 = pd.DataFrame([{"model": k, **v} for k, v in lv.items()])
+    L1 = pd.DataFrame([{"model": k, **v, "ceiling_note": V.ceiling_note(k)} for k, v in lv.items()])
     D.write(L1, "LEVELS.csv", "HF11: уровень 1 / уровень 2 по каждому финалисту; star = %s" % sk)
     tr = trunc_summary()
     print("FINAL: N=%d; финалисты %s" % (n_final, fin), flush=True)

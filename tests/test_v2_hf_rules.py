@@ -70,6 +70,30 @@ def test_wf_select_ignores_unclosed_future_and_mutation_caught():
     assert not (j1[:k0 + 1] == j2[:k0 + 1]).all()
 
 
+def _select_with_row_spoiled(rv, har, g, m, cfgs, j, factor):
+    rv2 = rv.copy()
+    rv2[j] *= factor
+    return R.wf_select(rv2, har, g, m, cfgs)[1]
+
+
+def test_wf_select_exact_shift_one_row_after_date_caught():
+    """Выбор на дату d_k не зависит от потерь строк с target_date > d_k — ровно со сдвигом +1 (строка m[k] — первая незакрытая)."""
+    d, td, rv, har, g = synth()
+    cfgs, m = R.cfg_grid(), R.closed_of(rv, d, td)
+    _, base = R.wf_select(rv, har, g, m, cfgs)
+    _, base_mut = R.wf_select(rv, har, g, m + 1, cfgs)                      # мутация строки 41: C[m+1]
+    changed_by_mut = 0
+    for j in range(300, 800, 37):
+        later = np.flatnonzero(m <= j)                                      # даты, для которых строка j ещё не закрыта (td_j > d_k)
+        assert later.size and (td[j] > d[later]).all()
+        for factor in (1e6, 1e-6):
+            ok = _select_with_row_spoiled(rv, har, g, m, cfgs, j, factor)
+            assert (ok[later] == base[later]).all(), (j, factor)
+            bad = _select_with_row_spoiled(rv, har, g, m + 1, cfgs, j, factor)
+            changed_by_mut += int((bad[later] != base_mut[later]).any())
+    assert changed_by_mut > 0                                               # на мутации «закрыто+1» тест обязан краснеть
+
+
 def test_wf_default_is_har_before_min_closed():
     d, td, rv, har, g = synth()
     s2, idx = R.wf_select(rv, har, g, R.closed_of(rv, d, td), R.cfg_grid())

@@ -4,32 +4,32 @@
 
 ## 1. Таблица п. 17 (SBER h=1)
 
-| Модель | QLIKE | crit_wf | DM против HAR (Δ; p сырой) | DM против XGB (Δ; p сырой) | Годы с выигрышем (из 10) против HAR | против XGB | Статус |
-|---|---|---|---|---|---|---|---|
-| HAR-J | 0.2337 | 0.2468 | — | +0.0224; p=0.157 | — | 2 | опора |
-| XGBoost | 0.2113 | 0.2229 | -0.0224; p=0.157 | — | 8 | — | опора |
-| LightGBM | 0.2117 | 0.2236 | -0.0220; p=0.169 | +0.0004; p=0.774 | 8 | 5 | опора |
-| HAR + XGBoost [A1_roll_126] | 0.2081 | 0.2147 | -0.0255; p=0.096 | -0.0032; p=0.302 | 9 | 4 | уровень 1 не достигнут; не принят |
-| HAR + LightGBM [A2_roll_252] | 0.2095 | 0.2173 | -0.0242; p=0.117 | -0.0018; p=0.502 | 9 | 4 | уровень 1 не достигнут; не принят |
-| Residual XGBoost [xgb_abl_S34_noF3] | 0.2210 | 0.2279 | -0.0127; p=0.283 | +0.0097; p=0.082 | 6 | 3 | уровень 1 не достигнут; не принят |
-| Residual XGBoost (причинное правило wf) [R23_wf_xgb] | 0.2242 | 0.2329 | -0.0095; p=0.326 | +0.0129; p=0.058 | 4 | 3 | уровень 1 не достигнут; не принят |
-| Residual LightGBM [lgbm_abl_S34_noF3] | 0.2193 | 0.2275 | -0.0144; p=0.247 | +0.0080; p=0.112 | 7 | 3 | уровень 1 не достигнут; не принят |
-| Residual LightGBM (причинное правило wf) [lgbm_R23wf_on_abl_S34_noF3] | 0.2228 | 0.2326 | -0.0109; p=0.241 | +0.0115; p=0.119 | 7 | 3 | уровень 1 не достигнут; не принят |
-| Adaptive Hybrid (режимы отклонены: C6/C5 Ж-210) [C6] | 0.2119 | 0.2197 | -0.0218; p=0.163 | +0.0006; p=0.766 | 6 | 3 | уровень 1 не достигнут; не принят |
-| HAR + XGBoost + LightGBM [A4_roll_252] | 0.2088 | 0.2162 | -0.0248; p=0.107 | -0.0025; p=0.316 | 9 | 4 | уровень 1 не достигнут; не принят |
+| Модель | QLIKE | crit_wf | DM против HAR (Δ; p сырой) | DM против XGB (Δ; p сырой) | Годы с выигрышем (из 10) против HAR | против XGB | Статус | Пометка |
+|---|---|---|---|---|---|---|---|---|
+| HAR-J | 0.2337 | 0.2468 | — | +0.0224; p=0.157 | — | 2 | опора |  |
+| XGBoost | 0.2113 | 0.2229 | -0.0224; p=0.157 | — | 8 | — | опора |  |
+| LightGBM | 0.2117 | 0.2236 | -0.0220; p=0.169 | +0.0004; p=0.774 | 8 | 5 | опора |  |
+| HAR + XGBoost [A1_roll_126] | 0.2081 | 0.2147 | -0.0255; p=0.096 | -0.0032; p=0.302 | 9 | 4 | уровень 1 не достигнут; не принят | потолок: выбор по crit_wf на всей истории |
+| HAR + LightGBM [A2_roll_252] | 0.2095 | 0.2173 | -0.0242; p=0.117 | -0.0018; p=0.502 | 9 | 4 | уровень 1 не достигнут; не принят | потолок: выбор по crit_wf на всей истории |
+| Residual XGBoost [xgb_abl_S34_noF3] | 0.2210 | 0.2279 | -0.0127; p=0.283 | +0.0097; p=0.082 | 6 | 3 | уровень 1 не достигнут; не принят | потолок: выбор по crit_wf на всей истории + признаки по EX1 |
+| Residual XGBoost (причинное правило wf) [R23_wf_xgb] | 0.2242 | 0.2329 | -0.0095; p=0.326 | +0.0129; p=0.058 | 4 | 3 | уровень 1 не достигнут; не принят | потолок: выбор по crit_wf на всей истории + признаки по EX1 |
+| Residual LightGBM [lgbm_abl_S34_noF3] | 0.2193 | 0.2275 | -0.0144; p=0.247 | +0.0080; p=0.112 | 7 | 3 | уровень 1 не достигнут; не принят | потолок: выбор по crit_wf на всей истории + признаки по EX1 |
+| Residual LightGBM (причинное правило wf) [lgbm_R23wf_on_abl_S34_noF3] | 0.2228 | 0.2326 | -0.0109; p=0.241 | +0.0115; p=0.119 | 7 | 3 | уровень 1 не достигнут; не принят | потолок: выбор по crit_wf на всей истории + признаки по EX1 |
+| Adaptive Hybrid (режимы отклонены: C6/C5 Ж-210) [C6] | 0.2119 | 0.2197 | -0.0218; p=0.163 | +0.0006; p=0.766 | 6 | 3 | уровень 1 не достигнут; не принят | потолок: выбор по crit_wf на всей истории |
+| HAR + XGBoost + LightGBM [A4_roll_252] | 0.2088 | 0.2162 | -0.0248; p=0.107 | -0.0025; p=0.316 | 9 | 4 | уровень 1 не достигнут; не принят | потолок: выбор по crit_wf на всей истории |
 
 ## 2. Уровни успеха (HF11)
 
-| model | L1_a | L1_b | L1_c | L1_d | L2_b | L2_c | L2_d | L2_e | verdict |
-|---|---|---|---|---|---|---|---|---|---|
-| H1: A1_roll_126 | True | True | False | False | True | False | False | True | нет |
-| H2: A2_roll_252 | True | True | False | False | True | False | False | True | нет |
-| H3: xgb_abl_S34_noF3 | True | True | False | False | False | False | False | False | нет |
-| H3_wf: R23_wf_xgb | True | False | False | False | False | False | False | False | нет |
-| H4: lgbm_abl_S34_noF3 | True | True | False | False | False | False | False | False | нет |
-| H4_wf: lgbm_R23wf_on_abl_S34_noF3 | True | True | False | False | False | False | False | False | нет |
-| H5: C6 | True | True | False | False | False | False | False | False | нет |
-| H7: A4_roll_252 | True | True | False | False | True | False | False | True | нет |
+| model | L1_a | L1_b | L1_c | L1_d | L2_b | L2_c | L2_d | L2_e | verdict | ceiling_note |
+|---|---|---|---|---|---|---|---|---|---|---|
+| H1: A1_roll_126 | True | True | False | False | True | False | False | True | нет | потолок: выбор по crit_wf на всей истории |
+| H2: A2_roll_252 | True | True | False | False | True | False | False | True | нет | потолок: выбор по crit_wf на всей истории |
+| H3: xgb_abl_S34_noF3 | True | True | False | False | False | False | False | False | нет | потолок: выбор по crit_wf на всей истории + признаки по EX1 |
+| H3_wf: R23_wf_xgb | True | False | False | False | False | False | False | False | нет | потолок: выбор по crit_wf на всей истории + признаки по EX1 |
+| H4: lgbm_abl_S34_noF3 | True | True | False | False | False | False | False | False | нет | потолок: выбор по crit_wf на всей истории + признаки по EX1 |
+| H4_wf: lgbm_R23wf_on_abl_S34_noF3 | True | True | False | False | False | False | False | False | нет | потолок: выбор по crit_wf на всей истории + признаки по EX1 |
+| H5: C6 | True | True | False | False | False | False | False | False | нет | потолок: выбор по crit_wf на всей истории |
+| H7: A4_roll_252 | True | True | False | False | True | False | False | True | нет | потолок: выбор по crit_wf на всей истории |
 
 S* = XJ. L1 — над HAR-J (QLIKE, crit_wf, 2 из 3 периодов, DM+бутстрап, Холм с N=521); L2 — плюс над лучшим бустингом и не только 2017–2018.
 

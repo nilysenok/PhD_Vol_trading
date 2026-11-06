@@ -46,6 +46,7 @@ def table17(df, series, fin, t, L1) -> pd.DataFrame:
         for col, ref in (("Годы с выигрышем (из 10) против HAR", "HAR-J"), ("против XGB", "XGBoost")):
             r[col] = "—" if name == ref else C.years_won(df, series[name], series[ref])
         r["Статус"] = "опора" if name in ("HAR-J", "XGBoost", "LightGBM") else STATUS_TXT[L1.set_index("model").loc[name, "verdict"]]
+        r["Пометка"] = V.ceiling_note(name)
         rows.append(r)
     return pd.DataFrame(rows)
 
@@ -64,7 +65,7 @@ def write_all(df, series, fin, t, L1, cmp_, ann, tr, n_final, sk) -> None:
     yearly = pd.read_csv(L.REP / "YEARLY_STRUCTURE.csv", comment="#")
     cp = L.load()
     used = L.used(cp)
-    lvl = L1[["model", "L1_a", "L1_b", "L1_c", "L1_d", "L2_b", "L2_c", "L2_d", "L2_e", "verdict"]]
+    lvl = L1[["model", "L1_a", "L1_b", "L1_c", "L1_d", "L2_b", "L2_c", "L2_d", "L2_e", "verdict", "ceiling_note"]]
     tp = t[(t["period"] == "all") & (t["model"].isin(L1["model"]))][["model", "test", "delta", "p_raw", "boot_lo95", "boot_hi95", "p_holm"]]
     text = ["# Гибрид HAR-J + XGBoost / LightGBM — SBER h=1 (Ж-211)\n", "Статус: " + D.STATUS + "\n", "## 1. Таблица п. 17 (SBER h=1)\n", md(t17),
             "## 2. Уровни успеха (HF11)\n", md(lvl), "S* = %s. L1 — над HAR-J (QLIKE, crit_wf, 2 из 3 периодов, DM+бутстрап, Холм с N=%d); L2 — плюс над лучшим бустингом и не только 2017–2018.\n" % (sk, n_final),

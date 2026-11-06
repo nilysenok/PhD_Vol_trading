@@ -1,10 +1,10 @@
 # HISTORICAL WALK-FORWARD 2017–02.2026 (2271 дата, просмотрено; не независимый OOS); DEVELOPMENT; Ж-211; первая цифра — потолок; HF11: уровень 1 / уровень 2 по каждому финалисту; star = XJ
-model,L1_a,L1_b,L1_c,L1_d,L1,L2_b,L2_c,L2_d,L2_e,L2,verdict
-H1: A1_roll_126,True,True,False,False,False,True,False,False,True,False,нет
-H2: A2_roll_252,True,True,False,False,False,True,False,False,True,False,нет
-H3: xgb_abl_S34_noF3,True,True,False,False,False,False,False,False,False,False,нет
-H3_wf: R23_wf_xgb,True,False,False,False,False,False,False,False,False,False,нет
-H4: lgbm_abl_S34_noF3,True,True,False,False,False,False,False,False,False,False,нет
-H4_wf: lgbm_R23wf_on_abl_S34_noF3,True,True,False,False,False,False,False,False,False,False,нет
-H5: C6,True,True,False,False,False,False,False,False,False,False,нет
-H7: A4_roll_252,True,True,False,False,False,True,False,False,True,False,нет
+model,L1_a,L1_b,L1_c,L1_d,L1,L2_b,L2_c,L2_d,L2_e,L2,verdict,ceiling_note
+H1: A1_roll_126,True,True,False,False,False,True,False,False,True,False,нет,потолок: выбор по crit_wf на всей истории
+H2: A2_roll_252,True,True,False,False,False,True,False,False,True,False,нет,потолок: выбор по crit_wf на всей истории
+H3: xgb_abl_S34_noF3,True,True,False,False,False,False,False,False,False,False,нет,потолок: выбор по crit_wf на всей истории + признаки по EX1
+H3_wf: R23_wf_xgb,True,False,False,False,False,False,False,False,False,False,нет,потолок: выбор по crit_wf на всей истории + признаки по EX1
+H4: lgbm_abl_S34_noF3,True,True,False,False,False,False,False,False,False,False,нет,потолок: выбор по crit_wf на всей истории + признаки по EX1
+H4_wf: lgbm_R23wf_on_abl_S34_noF3,True,True,False,False,False,False,False,False,False,False,нет,потолок: выбор по crit_wf на всей истории + признаки по EX1
+H5: C6,True,True,False,False,False,False,False,False,False,False,нет,потолок: выбор по crit_wf на всей истории
+H7: A4_roll_252,True,True,False,False,False,True,False,False,True,False,нет,потолок: выбор по crit_wf на всей истории
