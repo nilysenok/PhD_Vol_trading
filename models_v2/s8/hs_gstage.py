@@ -133,11 +133,23 @@ def tests_and_levels(df, S: dict, N: int) -> tuple:
     return t, pd.DataFrame(lv)
 
 
+def comparisons_note(S: dict) -> str:
+    """Шапка FORECAST_COMPARISONS: фактическое число моделей и не запускавшиеся направления."""
+    miss = "; E не запускалась (HS8/HS11)" if not any(k.startswith("E:") for k in S) else ""
+    return "G: %d моделей п. 9 на единых 2271 датах%s; HISTORICAL WALK-FORWARD, не OOS; финалисты направлений — потолок (выбор по crit_wf на всей истории)" % (len(S), miss)
+
+
+def write_comparisons(_a=None) -> int:
+    df, S = hs_store.frozen(), collect()
+    P.write_csv(metric_rows(df, S), "FORECAST_COMPARISONS.csv", comparisons_note(S))
+    return 0
+
+
 def stage_g(_a=None) -> int:
     N = L.n_final()
     L.write_check(L.load(), N_declared_before_stage_g=N, N_for_corrections=N)
     df, S = hs_store.frozen(), collect()
-    P.write_csv(metric_rows(df, S), "FORECAST_COMPARISONS.csv", "G: 10 моделей п. 9 на единых 2271 датах; HISTORICAL WALK-FORWARD, не OOS; финалисты направлений — потолок (выбор по crit_wf на всей истории)")
+    P.write_csv(metric_rows(df, S), "FORECAST_COMPARISONS.csv", comparisons_note(S))
     P.write_csv(annual_rows(df, S), "ANNUAL_PERFORMANCE.csv", "G: QLIKE по годам и Δ к HAR-J / XGB / LGBM (минус — модель лучше)")
     P.write_csv(regime_rows(df, S), "REGIME_PERFORMANCE.csv", "G: QLIKE по режимам (терцили RV_w SBER и IMOEX — по прошлому, RVI, стресс Г4)")
     top, corr = errors_and_corr(df, S)
@@ -150,6 +162,6 @@ def stage_g(_a=None) -> int:
     P.write_csv(lv, "LEVELS.csv", "G: уровни 1–3 по HS11; уровень 4 — не проверялся; ACCEPTED не присваивается")
     Lm = np.column_stack([np.asarray(metrics.qlike(df["rv"].to_numpy(float), v), float) for v in S.values()])
     mc = stats_d.mcs(Lm, stats_d.block_idx(len(Lm)))
-    P.write_csv(pd.DataFrame({"model": list(S), "p_mcs": mc["p"], "in_mcs_90": mc["in"]}), "MCS.csv", "G: Model Confidence Set 90 % (бутстрап блок 20, 5000, seed 42) по QLIKE 10 моделей")
+    P.write_csv(pd.DataFrame({"model": list(S), "p_mcs": mc["p"], "in_mcs_90": mc["in"]}), "MCS.csv", "G: Model Confidence Set 90 % (бутстрап блок 20, 5000, seed 42) по QLIKE %d моделей" % len(S))
     print(lv[["model", "qlike_all", "crit_wf", "L1_a", "L1_b", "L1_c", "L1_d", "L2_b", "L2_c", "L3", "verdict"]].round(5).to_string(index=False), flush=True)
     return 0

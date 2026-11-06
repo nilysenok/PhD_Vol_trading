@@ -60,7 +60,7 @@ def _lazy(mod: str, fn: str):
 STAGES = {"ctrl": hs_ctrl.stage, "table": st_table, "diag": st_diag, "q8": st_q8, "ledger": st_ledger,
           "base": _lazy("hs_bstage", "stage_base"), "b": _lazy("hs_bstage", "stage_b"), "c": _lazy("hs_cstage", "stage_c"),
           "d": _lazy("hs_dstage", "stage_d"), "e": _lazy("hs_estage", "stage_e"), "f": _lazy("hs_fstage", "stage_f"),
-          "g": _lazy("hs_gstage", "stage_g"), "final": _lazy("hs_final", "stage_final")}
+          "g": _lazy("hs_gstage", "stage_g"), "gcmp": _lazy("hs_gstage", "write_comparisons"), "final": _lazy("hs_final", "stage_final")}
 
 
 def main() -> int:
