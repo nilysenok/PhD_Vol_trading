@@ -1,0 +1,347 @@
+{
+ "program": "Ж-214 HAR-J Hybrid V2, SBER h=1",
+ "status": "DEVELOPMENT; потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся",
+ "N_holm": 585,
+ "selection_rule": "минимум crit_wf среди кандидатов ступени (V12, У30)",
+ "rating_rule": "шесть правил c1_dcrit,c2_years,c3_ex_240222,c4_sign_2of3,c5_holm_A,c6_wo_top5; ранг: число выполненных, затем ΔQLIKE без 24.02.2022 (У31)",
+ "top3": [
+  {
+   "step": "Л8",
+   "model": "E8",
+   "registry": {
+    "key": "Ж-214:market:8a01cfd1056f",
+    "direction": "market",
+    "blocks": [
+     "semicov",
+     "idio"
+    ],
+    "controls": [
+     "Mb (E1)",
+     "A0",
+     "XJ",
+     "LF"
+    ],
+    "kind": "a0_new_only",
+    "name": "E8",
+    "spec": "log-OLS A0-спецификации + без Mb + блоки semicov,idio",
+    "use_mb": false,
+    "win": 22
+   },
+   "level": "L1 только сырой",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л9",
+   "model": "R2T",
+   "registry": {
+    "key": "Ж-214:reconciliation:2ac73ec369e5",
+    "direction": "reconciliation",
+    "base_cfg": "T3",
+    "controls": [
+     "A0",
+     "SUM"
+    ],
+    "kind": "geo_blend",
+    "name": "R2T",
+    "scheme": "T",
+    "spec": "f_д^(1−w)·f_Σ^w, w по закрытым (>=252), компоненты пропорционально"
+   },
+   "level": "L1 только сырой",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "V8",
+   "model": "Z7",
+   "registry": {
+    "key": "Ж-214:seasonality:be9580dadcb1",
+    "direction": "seasonality",
+    "change_type": "input_measurement",
+    "controls": [
+     "A0 (каноническая RV)"
+    ],
+    "kind": "sa_roll500_input",
+    "name": "Z7",
+    "spec": "то же, профиль — последние 500 дней (сосед Z2)"
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  }
+ ],
+ "finalists": [
+  {
+   "step": "Л1",
+   "model": "Q2",
+   "registry": {
+    "key": "Ж-214:qlike_harj:46f70bbdf296",
+    "direction": "qlike_harj",
+    "controls": [
+     "A0",
+     "D0_drop_a"
+    ],
+    "kind": "lin_qlike_nojump",
+    "name": "Q2",
+    "spec": "Q1 при βJ≡0",
+    "отличие_от": "Ж-212:component:311098faa001"
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л2",
+   "model": "H2",
+   "registry": {
+    "key": "Ж-214:harq_j:33f5a7a8c079",
+    "direction": "harq_j",
+    "controls": [
+     "A0",
+     "best_Q"
+    ],
+    "kind": "harq_ln_dJ",
+    "name": "H2",
+    "spec": {
+     "q": "rq",
+     "react": [
+      "J"
+     ]
+    }
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л3",
+   "model": "H8",
+   "registry": {
+    "key": "Ж-214:harq_j:4bb685ea97c0",
+    "direction": "harq_j",
+    "controls": [
+     "A0",
+     "best_Q"
+    ],
+    "kind": "qlike_harq_dJ",
+    "name": "H8",
+    "spec": {
+     "q": "rq",
+     "qlike": true,
+     "react": [
+      "J"
+     ]
+    }
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л4",
+   "model": "P2",
+   "registry": {
+    "key": "Ж-214:decomposition:df3b7e66964e",
+    "direction": "decomposition",
+    "controls": [
+     "A0 (прямой D1)"
+    ],
+    "kind": "tod_edges_qlike",
+    "name": "P2",
+    "scheme": "T",
+    "spec": "признаки T3, QLIKE-подгонка (плато T3)"
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л5",
+   "model": "J1",
+   "registry": {
+    "key": "Ж-214:decomposition:25e9c9317f90",
+    "direction": "decomposition",
+    "controls": [
+     "A0 (прямой D1)"
+    ],
+    "kind": "cj_own",
+    "name": "J1",
+    "scheme": "J",
+    "spec": "C=RV−J: log-HAR по C + ln(1+J); J: ln(1+J) по своим d,w,m, Ĵ=max(expm1(f+s²/2),0); σ²=Ĉ+Ĵ"
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л6",
+   "model": "N1x_A0",
+   "registry": {
+    "key": "Ж-214:structural_ml:e23f88336a1b",
+    "direction": "structural_ml",
+    "base": "A0 (HAR-J(б), PIT)",
+    "controls": [
+     "XJ",
+     "A0",
+     "LF",
+     "Ж-212 Ca/Cc",
+     "A1_roll_126"
+    ],
+    "features": "ядро (4 HAR-признака + ln база) + группы MS (У24)",
+    "groups": [
+     "Q",
+     "S",
+     "T",
+     "M"
+    ],
+    "hp": {
+     "colsample": 0.8,
+     "l2": 10.0,
+     "lr": 0.03,
+     "mcw": 50,
+     "subsample": 0.8,
+     "trees": 150
+    },
+    "kind": "N1",
+    "lambda_rule": "λ_wf по закрытым (>= 252), до этого 0 ≡ база",
+    "lambdas": [
+     0.0,
+     0.25,
+     0.5,
+     0.75,
+     1.0
+    ],
+    "lib": "XGB",
+    "mu": 0.0,
+    "name": "N1x_A0",
+    "parent": null,
+    "отличие_от": "Ж-212:residual_qlike:03e5db5914cc",
+    "отличие_также_от": "Ж-212:residual_qlike:e93f2dc703c2"
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л7",
+   "model": "N1l_A0",
+   "registry": {
+    "key": "Ж-214:structural_ml:5fe87cca6151",
+    "direction": "structural_ml",
+    "base": "A0 (HAR-J(б), PIT)",
+    "controls": [
+     "XJ",
+     "A0",
+     "LF",
+     "Ж-212 Ca/Cc",
+     "A1_roll_126"
+    ],
+    "features": "ядро (4 HAR-признака + ln база) + группы MS (У24)",
+    "groups": [
+     "Q",
+     "S",
+     "T",
+     "M"
+    ],
+    "hp": {
+     "colsample": 0.8,
+     "l2": 10.0,
+     "lr": 0.03,
+     "mcw": 50,
+     "subsample": 0.8,
+     "trees": 150
+    },
+    "kind": "N1",
+    "lambda_rule": "λ_wf по закрытым (>= 252), до этого 0 ≡ база",
+    "lambdas": [
+     0.0,
+     0.25,
+     0.5,
+     0.75,
+     1.0
+    ],
+    "lib": "LGBM",
+    "mu": 0.0,
+    "name": "N1l_A0",
+    "parent": null,
+    "отличие_от": "Ж-212:residual_qlike:875dea70f204",
+    "отличие_также_от": "Ж-212:residual_qlike:9d20f6cba167"
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л8",
+   "model": "E8",
+   "registry": {
+    "key": "Ж-214:market:8a01cfd1056f",
+    "direction": "market",
+    "blocks": [
+     "semicov",
+     "idio"
+    ],
+    "controls": [
+     "Mb (E1)",
+     "A0",
+     "XJ",
+     "LF"
+    ],
+    "kind": "a0_new_only",
+    "name": "E8",
+    "spec": "log-OLS A0-спецификации + без Mb + блоки semicov,idio",
+    "use_mb": false,
+    "win": 22
+   },
+   "level": "L1 только сырой",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "Л9",
+   "model": "R2T",
+   "registry": {
+    "key": "Ж-214:reconciliation:2ac73ec369e5",
+    "direction": "reconciliation",
+    "base_cfg": "T3",
+    "controls": [
+     "A0",
+     "SUM"
+    ],
+    "kind": "geo_blend",
+    "name": "R2T",
+    "scheme": "T",
+    "spec": "f_д^(1−w)·f_Σ^w, w по закрытым (>=252), компоненты пропорционально"
+   },
+   "level": "L1 только сырой",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  },
+  {
+   "step": "V8",
+   "model": "Z7",
+   "registry": {
+    "key": "Ж-214:seasonality:be9580dadcb1",
+    "direction": "seasonality",
+    "change_type": "input_measurement",
+    "controls": [
+     "A0 (каноническая RV)"
+    ],
+    "kind": "sa_roll500_input",
+    "name": "Z7",
+    "spec": "то же, профиль — последние 500 дней (сосед Z2)"
+   },
+   "level": "нет",
+   "ceiling": "потолок: финалист выбран по crit_wf на всей истории (2017–02.2026 просмотрена); HISTORICAL WALK-FORWARD, не OOS; уровень 4 (другие акции) не проверялся"
+  }
+ ],
+ "controls": {
+  "A0": "HAR-J(б)",
+  "S_star": "XJ",
+  "LF": "LGBM"
+ },
+ "transfer": "не запускался; предложение — в HARJ_HYBRID_V2_FINAL_RESEARCH.md; архитектура фиксирована этим файлом; панель — отдельный этап вне 80",
+ "hashes": {
+  "components": "0b18be29aff34f8ee3888033a0efef69c1a142e0a13b681ac76d896b3d9ef2fc",
+  "m10_daily": "3373172e162ffeb62bd383ba6db04927daf851ec8bcc71242ae6e2ad84107522",
+  "ALL_TRIALS": "5fd7ce0bd5b287ef49a3ab896ce3643d59508dd8b191da8016fb974c64650bf3",
+  "DEC2_series.parquet": "a88a01b85e81d7d8c2589c476dc8ad066a354f28a2c31e8b28758066940c40a2",
+  "DEC_series.parquet": "f7075b46266d1f61fcf808529c9b21acc074bdcfe556c34ee1094cf6fa9eb0ce",
+  "H2_series.parquet": "ec09f1a618d4f47217f5264f5bba089fb25457267f4bbee57a5fea29bc8d36bc",
+  "H_series.parquet": "070d925c3b9471257f99d63d2c665c58b4432643325dc06c1d4352c4dcc7d65e",
+  "MKT_series.parquet": "698fc35d67ba05a1efe54fc3c02f4805cb119d9b83f4882f5cb465b26f09b793",
+  "ML_series.parquet": "82b63ca6904757c4128cb7879b2aac67175b3ba90985981c20fbec8ab74327c9",
+  "Q_series.parquet": "73d6f74e340a204fac2396d3c51e0236dea273d1385f11a2d1c22ea1e8c8b12c",
+  "REC_series.parquet": "e57df2b60b30830782f65bc5f1601f7867360422340b8f390c55ea43ccc0cafe",
+  "SEA2_series.parquet": "c0d627f83db94361b7161d5042bb6318a653697e2b14244916256a40d236b755",
+  "SEA_series.parquet": "c83e4d2fe1ae5bede8fd9b763b10bdd777768e243f3a43b48568f60e19d409ff"
+ }
+}

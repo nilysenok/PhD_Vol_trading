@@ -98,8 +98,11 @@ def stage_ledger() -> int:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["ctrl", "m10", "diagv", "ledger", "info", "q", "h", "h2", "dec", "rec", "sea", "dec2", "sea2", "ml", "mkt"])
+    ap.add_argument("--stage", required=True, choices=["ctrl", "m10", "diagv", "ledger", "info", "q", "h", "h2", "dec", "rec", "sea", "dec2", "sea2", "ml", "mkt", "final"])
     st = ap.parse_args().stage
+    if st == "final":   # лист 5 (У30–У32): статистика, лестница, итоговая таблица п. 29
+        from models_v2.s9 import hv2_fstage
+        raise SystemExit(hv2_fstage.stage_final())
     if st in ("ml", "mkt"):   # лист 4 (после «коммит есть» на уточнения У24–У29): V9 / V10
         from models_v2.s9 import hv2_mktstage, hv2_mlstage
         raise SystemExit({"ml": hv2_mlstage.stage_ml, "mkt": hv2_mktstage.stage_mkt}[st]())

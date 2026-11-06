@@ -1,0 +1,15 @@
+# HISTORICAL WALK-FORWARD 2017–02.2026 (2271 дата, просмотрено; не независимый OOS); DEVELOPMENT; Ж-214; первая цифра — потолок; «лет лучше» = число лет цели 2017–2026 (10; 2026 неполный, 38 дат) со средним QLIKE строки < контроля, год по target_date; MCS 90 %, блок 20, 5000, seed 42: вся история и без 24.02.2022
+model,p_mcs,in_mcs_90,p_mcs_no_240222,in_mcs_90_no_240222
+HAR-J,0.456,True,0.103,True
+XGBoost,0.456,True,0.103,True
+LightGBM,0.456,True,0.103,True
+Л1:Q2,0.456,True,0.103,True
+Л2:H2,0.456,True,0.103,True
+Л3:H8,0.456,True,0.07,False
+Л4:P2,0.456,True,0.103,True
+Л5:J1,0.0528,False,0.0914,False
+Л6:N1x_A0,0.456,True,0.103,True
+Л7:N1l_A0,0.456,True,0.103,True
+Л8:E8,0.456,True,0.103,True
+Л9:R2T,0.456,True,0.103,True
+V8:Z7,0.456,True,0.103,True
