@@ -1,0 +1,32 @@
+{
+ "star": "XJ",
+ "N_prior": 477,
+ "N_final": 521,
+ "finalists": {
+  "H1": "A1_roll_126",
+  "H2": "A2_roll_252",
+  "H3": "xgb_abl_S34_noF3",
+  "H3_wf": "R23_wf_xgb",
+  "H4": "lgbm_abl_S34_noF3",
+  "H4_wf": "lgbm_R23wf_on_abl_S34_noF3",
+  "H5": "C6",
+  "H7": "A4_roll_252"
+ },
+ "levels": {
+  "H1: A1_roll_126": "нет",
+  "H2: A2_roll_252": "нет",
+  "H3: xgb_abl_S34_noF3": "нет",
+  "H3_wf: R23_wf_xgb": "нет",
+  "H4: lgbm_abl_S34_noF3": "нет",
+  "H4_wf: lgbm_R23wf_on_abl_S34_noF3": "нет",
+  "H5: C6": "нет",
+  "H7: A4_roll_252": "нет"
+ },
+ "truncation": {
+  "RESIDUAL_XGBOOST.csv:trunc_max_diff": 0.0,
+  "RESIDUAL_LIGHTGBM.csv:trunc_max_diff": 0.0,
+  "DYNAMIC_WEIGHTS.csv:trunc_max_diff": 0.0,
+  "FEATURE_SELECTION.csv:trunc_max_diff": 0.0,
+  "FEATURE_SELECTION.csv:leak_max_diff": 0.0
+ }
+}

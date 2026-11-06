@@ -1,4 +1,4 @@
-# Ж-211 SBER h=1 (hybrid_final) — kodir, 06.11.2026. Статус: ПАУЗА до «коммит есть» (GATES_HF готов). Не коммитить. Процессов <= 6; python -c/heredoc/& запрещены (скрипт-файлы, run_in_background, `python3 -W ignore -m models_v2.s7.run_hf --stage X`).
+# Ж-211 SBER h=1 (hybrid_final) — kodir, 06.11.2026. Статус: ВЫПОЛНЕНО, все стадии прошли, EVIDENCE в GATES_HF.md заполнен (12/12), не закоммичено; ниже — старая передача (история). Не коммитить. Процессов <= 6; python -c/heredoc/& запрещены (скрипт-файлы, run_in_background, `python3 -W ignore -m models_v2.s7.run_hf --stage X`).
 
 ## Сделано (до «коммит есть» разрешено: реестр и диагностика I без обучения)
 - `docs/otchety/hybrid_final_v1/GATES_HF.md` — HF1–HF12 (сетки c, λ; правила выбора; тест взаимодействия; уровни 1/2; N), гейты G0–G11. EVIDENCE: все pending (G0 и G3 выполнены стадиями, но EVIDENCE заполнить после коммита).

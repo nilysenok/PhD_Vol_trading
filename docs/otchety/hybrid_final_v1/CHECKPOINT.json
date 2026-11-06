@@ -13,13 +13,13 @@
  },
  "limit_total": 60,
  "used": {
-  "residual_xgb": 0,
-  "residual_lgbm": 0,
-  "bounded": 0,
-  "dyn_weights": 0,
+  "residual_xgb": 12,
+  "residual_lgbm": 12,
+  "bounded": 10,
+  "dyn_weights": 10,
   "regime": 0
  },
- "used_total": 0,
- "N_final": 477,
- "updated": "2026-11-06 05:48"
+ "used_total": 44,
+ "N_final": 521,
+ "updated": "2026-11-06 06:02"
 }
