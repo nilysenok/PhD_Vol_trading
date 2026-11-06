@@ -1,0 +1,565 @@
+{
+ "controls": [
+  {
+   "name": "A0",
+   "note": "HAR-J(б), воспроизведена побитно (harj_qlike/A0_SPEC.md); не trial"
+  },
+  {
+   "name": "XJ/LF/A1_roll_126",
+   "note": "замороженные контроли 0,2113 / 0,2117 / 0,2081; не trials"
+  },
+  {
+   "name": "Ж-212 D0_full/D0_drop_a",
+   "note": "QLIKE-HAR с логарифмической связью — ссылки на Ж-212 (ключи в GATES_V2 V5), не trials Ж-214"
+  }
+ ],
+ "decisions": {
+  "V5": {
+   "best": "Q2",
+   "controls": {
+    "A0": {
+     "d_crit": -0.024932378356537888,
+     "years_better": 4,
+     "ok": false
+    },
+    "D0_drop_a": {
+     "d_crit": -0.01259917659201426,
+     "years_better": 7,
+     "ok": true
+    }
+   },
+   "continue": false,
+   "early_stop": false,
+   "any_d_crit_negative": {
+    "A0": true,
+    "D0_drop_a": true
+   },
+   "spent": 4,
+   "limit": 8,
+   "unused_trials": 4,
+   "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0",
+   "minimal_set": [
+    "Q1",
+    "Q2",
+    "Q4",
+    "Q5"
+   ],
+   "best_Q_by_crit_wf": "Q2",
+   "h_inf_equals_D0_drop_a_max_rel": 2.4135000664671225e-08,
+   "B_star_for_V9": null
+  },
+  "V6": {
+   "L2_H1_H4_vs_A0": {
+    "best": "H1",
+    "controls": {
+     "A0": {
+      "d_crit": -0.018828098027244944,
+      "years_better": 8,
+      "ok": true
+     }
+    },
+    "continue": true,
+    "early_stop": false,
+    "any_d_crit_negative": {
+     "A0": true
+    },
+    "spent": 3,
+    "limit": 12,
+    "unused_trials": 9,
+    "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0"
+   },
+   "L3_H7": {
+    "best": "H7",
+    "controls": {
+     "bestQ": {
+      "d_crit": -0.0038426824150068484,
+      "years_better": 4,
+      "ok": false
+     },
+     "A0": {
+      "d_crit": -0.028775060771544736,
+      "years_better": 2,
+      "ok": false
+     }
+    },
+    "continue": false,
+    "early_stop": false,
+    "any_d_crit_negative": {
+     "bestQ": true,
+     "A0": true
+    },
+    "spent": 3,
+    "limit": 12,
+    "unused_trials": 9,
+    "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0"
+   },
+   "best_Q_control": "Q2",
+   "minimal_set": [
+    "H1",
+    "H4",
+    "H7"
+   ],
+   "continue": true,
+   "passed_V13": [
+    "H1"
+   ],
+   "unused_trials": 9
+  },
+  "V6_rest": {
+   "plateau_parent": "H2",
+   "neighbors": {
+    "H10": {
+     "q": "rq",
+     "react": "('J',)",
+     "qwin": "504"
+    },
+    "H11": {
+     "q": "rq",
+     "react": "('J',)",
+     "qwin": "1008"
+    }
+   },
+   "V13_each": {
+    "H2": {
+     "A0": {
+      "d_crit": -0.026972920556445096,
+      "years_better": 6,
+      "ok": true
+     }
+    },
+    "H3": {
+     "A0": {
+      "d_crit": -0.02207648411947835,
+      "years_better": 6,
+      "ok": true
+     }
+    },
+    "H5": {
+     "A0": {
+      "d_crit": 0.01585891020885341,
+      "years_better": 3,
+      "ok": false
+     }
+    },
+    "H6": {
+     "A0": {
+      "d_crit": -0.02274031230105214,
+      "years_better": 4,
+      "ok": false
+     }
+    },
+    "H8": {
+     "bestQ": {
+      "d_crit": -0.00630695162752859,
+      "years_better": 6,
+      "ok": true
+     },
+     "A0": {
+      "d_crit": -0.031239329984066477,
+      "years_better": 2,
+      "ok": false
+     }
+    },
+    "H9": {
+     "bestQ": {
+      "d_crit": -0.005471007059495603,
+      "years_better": 4,
+      "ok": false
+     },
+     "A0": {
+      "d_crit": -0.03040338541603349,
+      "years_better": 5,
+      "ok": false
+     }
+    },
+    "H10": {
+     "A0": {
+      "d_crit": -0.018642974603491597,
+      "years_better": 6,
+      "ok": true
+     }
+    },
+    "H11": {
+     "A0": {
+      "d_crit": -0.023914810519472418,
+      "years_better": 6,
+      "ok": true
+     }
+    }
+   },
+   "passed_V13": [
+    "H2",
+    "H3",
+    "H10",
+    "H11"
+   ],
+   "unused_trials": 1,
+   "B_star_V9": "H2",
+   "crit_passed": {
+    "H2": 0.21986929549404283,
+    "H3": 0.22476573193100957,
+    "H10": 0.22819924144699633,
+    "H11": 0.2229274055310155,
+    "H1": 0.22801411802324298
+   }
+  },
+  "V7": {
+   "by_scheme": {
+    "S": {
+     "best": "S1",
+     "controls": {
+      "A0": {
+       "d_crit": -0.003423499036093819,
+       "years_better": 3,
+       "ok": false
+      }
+     },
+     "continue": false,
+     "early_stop": false,
+     "any_d_crit_negative": {
+      "A0": true
+     },
+     "spent": 6,
+     "limit": 16,
+     "unused_trials": 10,
+     "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0"
+    },
+    "J": {
+     "best": "J1",
+     "controls": {
+      "A0": {
+       "d_crit": -0.012966480960065474,
+       "years_better": 3,
+       "ok": false
+      }
+     },
+     "continue": false,
+     "early_stop": false,
+     "any_d_crit_negative": {
+      "A0": true
+     },
+     "spent": 6,
+     "limit": 16,
+     "unused_trials": 10,
+     "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0"
+    },
+    "T": {
+     "best": "T3",
+     "controls": {
+      "A0": {
+       "d_crit": -0.01053804716137316,
+       "years_better": 6,
+       "ok": true
+      }
+     },
+     "continue": true,
+     "early_stop": false,
+     "any_d_crit_negative": {
+      "A0": true
+     },
+     "spent": 6,
+     "limit": 16,
+     "unused_trials": 10,
+     "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0"
+    }
+   },
+   "passed_V13": [
+    "T"
+   ],
+   "J3": {
+    "auc_all": 0.5112368757322018,
+    "brier_skill_all": -0.007828998761501227,
+    "years_auc_gt_half": 3,
+    "years_skill_pos": 3,
+    "informative": false,
+    "trunc_max_diff": 0.0
+   },
+   "minimal_set": [
+    "S1",
+    "S3",
+    "J1",
+    "J3",
+    "T1",
+    "T3"
+   ],
+   "unused_trials": 10,
+   "not_run": [
+    "S2",
+    "S4",
+    "J2",
+    "J4",
+    "T2",
+    "T4",
+    "плато"
+   ]
+  },
+  "V11": {
+   "by_scheme": {
+    "T": {
+     "cfg": "T3",
+     "v13": {
+      "A0": {
+       "d_crit": -0.0032115457216115584,
+       "years_better": 6,
+       "ok": true
+      },
+      "SUM": {
+       "d_crit": 0.007326501439761601,
+       "years_better": 4,
+       "ok": false
+      }
+     },
+     "continue": false,
+     "rejected": true
+    }
+   },
+   "skipped": {
+    "S": "схема не прошла V13 (V7)",
+    "J": "схема не прошла V13 (V7)"
+   },
+   "trials_used": 1,
+   "R3x": "не запускалось (резерв, только если R2x лучше суммы и прямого)",
+   "rule": "отклонить схему, не превосходящую сумму и прямой прогноз"
+  },
+  "V8": {
+   "best": "Z2",
+   "controls": {
+    "A0": {
+     "d_crit": -0.02096378557595921,
+     "years_better": 6,
+     "ok": true
+    }
+   },
+   "continue": true,
+   "early_stop": false,
+   "any_d_crit_negative": {
+    "A0": true
+   },
+   "spent": 4,
+   "limit": 8,
+   "unused_trials": 4,
+   "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0",
+   "minimal_set": [
+    "Z1",
+    "Z2",
+    "Z4",
+    "Z5"
+   ],
+   "Z6": "{\"profile\": \"Z2\", \"crit_wf\": 0.23038132155806978, \"d_crit_A0\": -0.016460894492418138}",
+   "not_run": [
+    "Z3",
+    "Z7",
+    "Z8"
+   ]
+  },
+  "V7_rest_T": {
+   "scheme_T_all": {
+    "best": "P2",
+    "controls": {
+     "A0": {
+      "d_crit": -0.02462995662080139,
+      "years_better": 6,
+      "ok": true
+     }
+    },
+    "continue": true,
+    "early_stop": false,
+    "any_d_crit_negative": {
+     "A0": true
+    },
+    "spent": 10,
+    "limit": 16,
+    "unused_trials": 6,
+    "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0"
+   },
+   "each": {
+    "T2": {
+     "d_crit_A0": -0.008068009962261952,
+     "years_better_A0": 7,
+     "d_crit_T3": 0.002470037199111208,
+     "d_qlike_no_240222_A0": -0.0031198634461598327
+    },
+    "T4": {
+     "d_crit_A0": -0.01834343466311919,
+     "years_better_A0": 3,
+     "d_crit_T3": -0.007805387501746031,
+     "d_qlike_no_240222_A0": 0.0064425596364138
+    },
+    "P1": {
+     "d_crit_A0": -0.004659517571484584,
+     "years_better_A0": 6,
+     "d_crit_T3": 0.005878529589888576,
+     "d_qlike_no_240222_A0": 0.00195790760402827
+    },
+    "P2": {
+     "d_crit_A0": -0.02462995662080139,
+     "years_better_A0": 6,
+     "d_crit_T3": -0.014091909459428231,
+     "d_qlike_no_240222_A0": 0.00015087393657007257
+    }
+   },
+   "configs": [
+    "T2",
+    "T4",
+    "P1",
+    "P2"
+   ],
+   "unused_trials": 6,
+   "not_run": [
+    "P3",
+    "P4",
+    "S2",
+    "S4",
+    "J2",
+    "J4"
+   ],
+   "note": "S, J не прошли V13 (V7) — их остаток не считается; R2T не пересчитывается"
+  },
+  "V8_rest": {
+   "rows": {
+    "Z3": {
+     "d_crit_A0": -0.018593520185842982,
+     "years_better_A0": 3,
+     "d_qlike_no_240222_A0": -0.0021777797652118656
+    },
+    "Z7": {
+     "d_crit_A0": -0.021309272576845867,
+     "years_better_A0": 6,
+     "d_qlike_no_240222_A0": -0.0036663424719607374
+    }
+   },
+   "unused_trials": 1,
+   "not_run": [
+    "Z8"
+   ],
+   "Z6": "посчитана в sea (профиль Z2); не пересчитывается"
+  },
+  "V9": {
+   "best": "N1x_A0",
+   "controls": {
+    "A0": {
+     "d_crit": 0.0026258150017265947,
+     "years_better": 6,
+     "ok": false
+    },
+    "XJ": {
+     "d_crit": 0.026540739996387258,
+     "years_better": 2,
+     "ok": false
+    }
+   },
+   "continue": false,
+   "early_stop": false,
+   "any_d_crit_negative": {
+    "A0": false,
+    "XJ": false
+   },
+   "spent": 2,
+   "limit": 16,
+   "unused_trials": 14,
+   "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0",
+   "per_library": {
+    "N1x_A0": {
+     "own_control": "XJ",
+     "d_crit": 0.026540739996387258,
+     "years_better": 2,
+     "d_crit_A0": 0.0026258150017265947,
+     "d_crit_XJ": 0.026540739996387258
+    },
+    "N1l_A0": {
+     "own_control": "LF",
+     "d_crit": 0.026758376550253815,
+     "years_better": 2,
+     "d_crit_A0": 0.003479303870335154,
+     "d_crit_XJ": 0.027394228864995818
+    }
+   },
+   "stop": true,
+   "ran": [
+    "N1x_A0",
+    "N1l_A0"
+   ],
+   "N2_scheme": "T3 (V7 passed T)",
+   "B_star": "H2"
+  },
+  "V10": {
+   "best": "E3",
+   "controls": {
+    "Mb": {
+     "d_crit": -0.00503414426430443,
+     "years_better": 6,
+     "ok": true
+    }
+   },
+   "continue": true,
+   "early_stop": false,
+   "any_d_crit_negative": {
+    "Mb": true
+   },
+   "spent": 4,
+   "limit": 10,
+   "unused_trials": 1,
+   "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0",
+   "ran": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9"
+   ],
+   "informative_blocks": [
+    "E2",
+    "E3",
+    "E7"
+   ]
+  },
+  "final": {
+   "finalists": {
+    "Л1": "Q2",
+    "Л2": "H2",
+    "Л3": "H8",
+    "Л4": "P2",
+    "Л5": "J1",
+    "Л6": "N1x_A0",
+    "Л7": "N1l_A0",
+    "Л8": "E8",
+    "Л9": "R2T",
+    "V8": "Z7"
+   },
+   "top3": [
+    "E8",
+    "Z7"
+   ],
+   "N": 585
+  }
+ },
+ "limits": {
+  "qlike_harj": 8,
+  "harq_j": 12,
+  "decomposition": 16,
+  "seasonality": 8,
+  "structural_ml": 16,
+  "market": 10,
+  "reconciliation": 10
+ },
+ "limit_total": 80,
+ "used": {
+  "qlike_harj": 4,
+  "harq_j": 11,
+  "decomposition": 10,
+  "seasonality": 7,
+  "structural_ml": 2,
+  "market": 9,
+  "reconciliation": 1
+ },
+ "used_total": 44,
+ "N_prior": 541,
+ "N_final": 585,
+ "updated": "2026-11-06 19:19",
+ "N_declared_before_final": 585,
+ "N_for_corrections": 585
+}

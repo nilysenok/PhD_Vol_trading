@@ -1,0 +1,25 @@
+{
+ "first_row_index": 650,
+ "first_date": "2014-06-02",
+ "n_pairs_first": 629,
+ "n_pairs_last": 2899,
+ "rows_seg0": 1952,
+ "rows_seg1": 992,
+ "beta_last": {
+  "b0": -0.01810590320656513,
+  "b_d": 0.4518122918036771,
+  "b_w": 0.2766507560349911,
+  "b_m": 0.18467418597011107,
+  "b_J": -0.008598996214079143
+ },
+ "s2_last": 0.3253924552355622,
+ "same_grid": true,
+ "n": 2271,
+ "max_rel_rv": 0.0,
+ "max_rel_har": 0.0,
+ "qlike_har_comp": 0.23366211569377798,
+ "qlike_har_rebuilt": 0.23366211569377798,
+ "qlike_variant_a": 0.24943742479113995,
+ "components_sha256": "0b18be29aff34f8ee3888033a0efef69c1a142e0a13b681ac76d896b3d9ef2fc",
+ "a0_beta_sha256": "bbd12d8abf77887545d8267d9a20ad5f92d0a51ad43c6120f43b16b0b88f752b"
+}
