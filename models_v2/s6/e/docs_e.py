@@ -42,7 +42,34 @@ def table21(df, tests, sd) -> pd.DataFrame:
     return pd.DataFrame(out, index=idx).reset_index().rename(columns={"index": "Показатель"})
 
 
-def hybrids_md(sel: pd.DataFrame, ar: pd.DataFrame, t11_md: str, fin: dict, df) -> str:
+EXTRA_ZH204 = 106      # справочно: поиски Ж-204 (по Ж-204 D): N = N_Ж-206 + 106
+
+
+def holm_md(tests: pd.DataFrame, extra: int = EXTRA_ZH204) -> str:
+    """Оговорка о Холме и справочная таблица с N + extra из сохранённых сырых p (без пересчёта моделей)."""
+    from models_v2.s5.d import stats_d
+    p = tests[tests["period"] == "вся история"].reset_index(drop=True)
+    n0 = pe.n_trials()
+    p["h2"] = stats_d.holm_n(p["p_raw"].to_numpy(float), n0 + extra)
+    rows = ["| %s к %s | %.6f | %.4f | %.4f |" % (r.candidate, r.reference, r.p_raw, r.p_holm, r.h2) for r in p.itertuples() if r.candidate in ("XJ", "XF", "LF") and r.reference in ("B2X", "B2L")]
+    return ("## Статистика: оговорка о Холме\nN = %d (уникальные trials Ж-206) **не учитывает поиски Ж-204** (сетка И2 из 132 точек, Optuna 22 и др.); поправка занижена, p Холма — оценка снизу (потолок). "
+            "Справочно, как в Ж-204 D: N = %d + %d = %d (из сохранённых сырых p, %d первичных сравнений «вся история», без пересчёта моделей).\n\n"
+            "| Кандидат к baseline | p сырой | p Холма, N = %d | p Холма, N = %d (справочно) |\n|---|---|---|---|\n%s\n" % (n0, n0, extra, n0 + extra, len(p), n0, n0 + extra, "\n".join(rows)))
+
+
+def rmse_md(df, ids=("B1q", "B2q")) -> str:
+    """Что даёт RMSE уровня у residual-моделей: доля одного дня в SSE, прогноз, факт, g = ln(σ̂²/HAR), RMSE без этого дня."""
+    rv, out = df["rv"].to_numpy(float), []
+    for c in ids:
+        e = (df[c].to_numpy(float) - rv) ** 2
+        i = int(np.argmax(e))
+        out.append("%s: RMSE %.1f; один прогноз от %s (цель %s, RV %.1f) даёт %.1f %% SSE, прогноз %.0f, g = ln(%s/HAR) = %+.2f; без него RMSE %.1f" % (
+            c, np.sqrt(e.mean()), str(df["d"].iloc[i])[:10], str(df["target_date"].iloc[i])[:10], rv[i], 100 * e[i] / e.sum(), df[c].iloc[i], c,
+            np.log(df[c].iloc[i] / df["HAR"].iloc[i]), np.sqrt(np.delete(e, i).mean())))
+    return "**RMSE уровня у residual-моделей.** " + "; ".join(out) + ". У g нет верхней границы. Это отрицательный результат модели (необрезанная поправка в стрессовый день), не ошибка расчёта; QLIKE устойчив — один день весит в нём мало.\n"
+
+
+def hybrids_md(sel: pd.DataFrame, ar: pd.DataFrame, t11_md: str, fin: dict, df, tests=None) -> str:
     sha = {p.name: paths6.sha_file(p)[:16] for p in (comp.FILE, ser.file("a"), ser.file("b"), ser.file("c"), pe.OUT / "seeds_e.parquet") if p.exists()}
     ab = pd.concat([pe.read(d / "RESIDUAL_RESULTS.csv") for d in (pe.REP / "har_xgboost", pe.REP / "har_lightgbm")])
     bd = pd.read_csv(pe.ENS / "HYBRID_BREAKDOWN.csv", comment="#")
@@ -61,8 +88,8 @@ def hybrids_md(sel: pd.DataFrame, ar: pd.DataFrame, t11_md: str, fin: dict, df) 
         "## Итоговая таблица (п. 11 Ж-210)", t11_md, "## Выбор A–F (R9)", f(sel), "", "## ACCEPT/REJECT (R8)", f(ar[["id", "role", "reference", "c1_crit", "c2_2017_2021", "c3_years", "years_won", "c4_seeds", "verdict", "p_holm"]]), "",
         "## Веса по датам", "`har_xgboost/WEIGHTS_BY_DATE.csv`, `har_lightgbm/…`, `har_xgb_lgbm/…`, `xgb_lgbm_ensemble/WEIGHTS_BY_DATE.csv`, `xgb_lgbm_ensemble/ADAPTIVE_WEIGHTS_BY_DATE.csv`.", "",
         "## Результаты по годам и режимам", f(bd[bd["id"].isin(list(fin) + ["HAR", "XJ", "LF"])][cols]), "",
-        "## Абляции и диагностика B", f(ab[["id", "qlike_all", "crit_wf", "added_value_vs_best_component"]]), "Диагностика «не воспроизводит ли бустинг HAR»: `har_*/RESIDUAL_DIAGNOSTICS.csv`.", "",
-        "## Контроль утечек", "Тесты: `tests/test_v2_xl_e_rules.py` (будущее не меняет вес; мутации «закрыто+1», «Y+1», «s по будущему», «Холм без N»), `tests/test_v2_xl_e_bfit.py` (градиент/гессиан = конечным разностям и встроенному gamma; будущие цели не меняют прогноз на d), `tests/test_v2_hyb_resid.py` (lb PIT).", "",
+        "## Абляции и диагностика B", f(ab[["id", "qlike_all", "crit_wf", "added_value_vs_best_component"]]), "Диагностика «не воспроизводит ли бустинг HAR»: `har_*/RESIDUAL_DIAGNOSTICS.csv`.", "", rmse_md(df), holm_md(tests) if tests is not None else "",
+        "## Контроль утечек", "Тесты: `tests/test_v2_xl_e_rules.py` (будущее не меняет вес; мутации «закрыто+1», «Y+1», «s по будущему», «Холм без N»), `tests/test_v2_xl_e_bfit.py` (градиент/гессиан = конечным разностям и встроенному gamma; будущие цели не меняют прогноз на d), `tests/test_v2_hyb_resid.py` (lb PIT), `tests/test_v2_xl_e_holm_pit.py` (Холм с N = 182 из реестров; offset `lb` = ln `s2_harj` до 1e-12), `tests/test_v2_xl_e_status.py` (статус гибрида без допуска R9 ≠ ACCEPT).", "",
         "## Вычислительная стоимость", "Правила A, C — секунды; B (2271 ежедневное переобучение, 4 процесса): `har_*/RESIDUAL_RESULTS.csv`, колонка secs в кэше `b_*.parquet`.", "",
         "## Журнал испытаний и конфигурации", "`xgb_lgbm_ensemble/OPTUNA_TRIALS.csv` (trial_id = хэш конфигурации), `CHECKPOINT.json`; прогнозы — `data/regen/xgb_lgbm_full_v1/e/series_{a,b,c}.parquet`, `seeds_e.parquet`.", ""])
 

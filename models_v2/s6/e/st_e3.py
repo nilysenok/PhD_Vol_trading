@@ -52,6 +52,17 @@ def compare(df, cand, ref, mk, idx) -> list:
     return rows
 
 
+def holm_primary(t: pd.DataFrame) -> pd.DataFrame:
+    """Холм по первичным сравнениям (период «вся история») с N = число уникальных trials Ж-206 (не меньше числа сравнений)."""
+    prim = t[(t["period"] == "вся история")].index
+    N = max(pe.n_trials(), len(prim))
+    t = t.copy()
+    t.loc[prim, "p_holm"] = stats_d.holm_n(t.loc[prim, "p_raw"].to_numpy(), N)
+    t["n_hypotheses_holm"], t["status"], t["note"] = N, pe.STATUS, NOTE
+    t["significant_holm_0.05"] = t["p_holm"] < 0.05
+    return t
+
+
 def stage(_a=None) -> int:
     df = ser.load()
     cands = candidates(df)
@@ -66,12 +77,9 @@ def stage(_a=None) -> int:
         for r in dict.fromkeys(x for x in refs if x and x != c):
             for row in compare(df, c, r, mk, idx):
                 rows.append({**row, "reference_role": "лучший собственный компонент" if r == best_component(df, members) and members else "baseline/HAR"})
-    t = pd.DataFrame(rows)
+    t = holm_primary(pd.DataFrame(rows))
     prim = t[(t["period"] == "вся история")].index
-    N = max(pe.n_trials(), len(prim))
-    t.loc[prim, "p_holm"] = stats_d.holm_n(t.loc[prim, "p_raw"].to_numpy(), N)
-    t["n_hypotheses_holm"], t["status"], t["note"] = N, pe.STATUS, NOTE
-    t["significant_holm_0.05"] = t["p_holm"] < 0.05
+    N = int(t["n_hypotheses_holm"].iloc[0])
     ids = list(dict.fromkeys(list(cands) + ["B2X", "B2L", "HAR"]))
     L = np.column_stack([ser.qloss(df, k) for k in ids])
     mcs = stats_d.mcs(L, idx)

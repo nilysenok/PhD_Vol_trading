@@ -49,6 +49,23 @@ def reconstruct_ok(df, cdf, ctx, n, fin, W, ter, chg) -> tuple:
     return bool(s.tobytes() == df[n].to_numpy(float).tobytes()), float(np.max(np.abs(s / df[n].to_numpy(float) - 1)))
 
 
+NOT_ADMITTED = "R8 пройдено; не допущен (R9, критерий C)"
+
+
+def relabel_not_admitted(ar: pd.DataFrame, sel: pd.DataFrame) -> pd.DataFrame:
+    """Гибрид с ACCEPT по R8, но admitted = False по R9, получает статус NOT_ADMITTED (колонки verdict, verdict_full); колонка accept (R8) не меняется."""
+    adm = sel.set_index("id")["admitted"].to_dict()
+    ar = ar.copy()
+    m = (ar["role"] == "гибрид") & ar["accept"].astype(bool) & ar["id"].map(lambda i: i in adm and not adm[i])
+    ar.loc[m, ["verdict", "verdict_full"]] = NOT_ADMITTED
+    return ar
+
+
+def _reuse_f(n: str):
+    old = pe.read(pe.ENS / "HYBRID_SELECTION.csv").set_index("id")
+    return bool(old.loc[n, "F_reconstruct_bitwise"]), float(old.loc[n, "F_max_rel"])
+
+
 def stage(_a=None) -> int:
     from models_v2.s6.e import resid
     df, cdf = ser.load(), comp.load()
@@ -75,7 +92,6 @@ def stage(_a=None) -> int:
                      "verdict_full": r["verdict"] + (" (потолок: x2_best_j видел 2017–2021; разность на 2022–2026 в колонке dq_2022_2026_vs_ref)" if n == "XJ" else "")})
     ar = pd.DataFrame(rows)
     ar["status"], ar["note"] = pe.STATUS, st_e3.NOTE
-    pe.write(ar, pe.ENS / "ACCEPT_REJECT.csv", "R8: ACCEPT = пункты (1)–(4); (5) — отдельной колонкой")
     sel = []
     for n in [x for x in cands if x in fin]:
         fam, members = cands[n]
@@ -86,7 +102,7 @@ def stage(_a=None) -> int:
         stab = {lab: float(q[mk[k]].mean() / qb[mk[k]].mean()) for k, lab in (("p2017_2021", "2017_2021"), ("y2022", "2022"), ("p2023_2025", "2023_2025"), ("y2026", "2026"))}
         nm = mk["no_240222"]
         dm = evalrows.vs(rv, df[a["reference"]].to_numpy(float), df[n].to_numpy(float), nm)
-        F, maxrel = reconstruct_ok(df, cdf, ctx, n, fin, W, ter, chg)
+        F, maxrel = _reuse_f(n) if getattr(_a, "reuse_f", False) and fin[n][0] == "B" else reconstruct_ok(df, cdf, ctx, n, fin, W, ter, chg)
         simple = [c for c in df.columns if c.startswith("ctl_") and c.endswith("_mean_lvl")]
         sref = min(simple, key=lambda c: (ser.crit(df, c), c))
         ds = evalrows.vs(rv, df[sref].to_numpy(float), df[n].to_numpy(float), mk["all"])
@@ -98,6 +114,8 @@ def stage(_a=None) -> int:
         row["admitted"] = bool(row["accept_R8"] and row["B_ok"] and row["C_ok"] and row["F_reconstruct_bitwise"])
         sel.append(row)
     s = pd.DataFrame(sel)
+    ar = relabel_not_admitted(ar, s)
+    pe.write(ar, pe.ENS / "ACCEPT_REJECT.csv", "R8: ACCEPT = пункты (1)–(4); (5) — отдельной колонкой; гибрид без допуска R9 — «%s»" % NOT_ADMITTED)
     best = s[s["admitted"]]["crit_wf"].min() if s["admitted"].any() else np.nan
     s["within_0.0005_of_best"] = s["admitted"] & (s["crit_wf"] <= best + 0.0005)
     s = s.sort_values(["admitted", "within_0.0005_of_best", "crit_wf"], ascending=[False, False, True])

@@ -73,16 +73,16 @@ def stage(_a=None) -> int:
         pe.write(sub, REP / d / "STATISTICAL_TESTS.csv", "E3 (%s): DM, бутстрап, Холм (N), периоды" % d)
         if d != "xgb_lgbm_ensemble":
             shutil.copy(pe.CHECK, REP / d / "CHECKPOINT_E.json")
-    pe.write(tests, REP / "STATISTICAL_TESTS.csv", "E3: все сравнения волны E")
+    pe.write(tests, REP / "STATISTICAL_TESTS.csv", "E3: все сравнения волны E; оговорка: N = %d — только trials Ж-206, поиски Ж-204 (И2 132 точки, Optuna 22 и др.) не учтены, p Холма занижены; справочно N = %d — см. HYBRIDS.md" % (pe.n_trials(), pe.n_trials() + docs_e.EXTRA_ZH204))
     pe.write(sel, REP / "HYBRID_SELECTION.csv", "R9: выбор гибридов")
     pd.DataFrame(docs_e.table21(df, tests, sd)).to_csv(pe.ENS / "TABLE21.csv", index=False)
-    (REP / "HYBRIDS.md").write_text(docs_e.hybrids_md(sel, ar, md(t11), fin, df))
+    (REP / "HYBRIDS.md").write_text(docs_e.hybrids_md(sel, ar, md(t11), fin, df, tests))
     (REP / "REPRODUCTION.md").write_text(docs_e.repro_md())
     conc = (REP / "CONCLUSIONS_E.md").read_text() if (REP / "CONCLUSIONS_E.md").exists() else "(выводы автора: CONCLUSIONS_E.md не найден)\n"
     t21 = pd.read_csv(pe.ENS / "TABLE21.csv") if (pe.ENS / "TABLE21.csv").exists() else pd.DataFrame()
     FINAL.write_text("# XGBoost и LightGBM: полная доработка, SBER h=1 — итог волны E\n\nСтатус: %s. Первая цифра — потолок. Все p — после выбора на тех же данных.\n\n## Таблица п. 21 (XGBoost против LightGBM)\n\n%s\n## Таблица п. 33\n\n%s\n"
-                     "## Гибриды (таблица п. 11 Ж-210)\n\n%s\nACCEPT/REJECT — `xgb_lgbm_ensemble/ACCEPT_REJECT.csv`, выбор A–F — `HYBRID_SELECTION.csv`. Подробности — `HYBRIDS.md`.\n\n%s\n" %
-                     (STATUS["hist"], md(t21) if len(t21) else "(TABLE21.csv отсутствует)", md(t33), md(t11), conc))
+                     "## Гибриды (таблица п. 11 Ж-210)\n\n%s\nACCEPT/REJECT — `xgb_lgbm_ensemble/ACCEPT_REJECT.csv`, выбор A–F — `HYBRID_SELECTION.csv`. Подробности — `HYBRIDS.md`.\n\n%s\n%s\n" %
+                     (STATUS["hist"], md(t21) if len(t21) else "(TABLE21.csv отсутствует)", md(t33), md(t11), docs_e.holm_md(tests), conc))
     paths6.dump_json({"n_trials": int(pe.n_trials()), "t11": t11["QLIKE"].round(6).tolist()}, pe.ENS / "E5_SUMMARY.json")
     print("G11 e5: FINAL записан;", "таблица п. 33 — %d строк, п. 11 — %d строк" % (len(t33), len(t11)), flush=True)
     return 0

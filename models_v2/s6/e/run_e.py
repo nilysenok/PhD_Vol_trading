@@ -13,6 +13,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", choices=sorted(STAGES), required=True)
     ap.add_argument("--only", default="", help="стадия b: список рядов через запятую (кэшируются)")
+    ap.add_argument("--reuse-f", action="store_true", help="стадия e4: для B не переобучать, взять F из прежнего HYBRID_SELECTION.csv (только пересборка таблиц)")
     a = ap.parse_args()
     return importlib.import_module("models_v2.s6.e." + STAGES[a.stage]).stage(a)
 
