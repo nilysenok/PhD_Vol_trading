@@ -433,6 +433,89 @@
     "Z8"
    ],
    "Z6": "посчитана в sea (профиль Z2); не пересчитывается"
+  },
+  "V9": {
+   "best": "N1x_A0",
+   "controls": {
+    "A0": {
+     "d_crit": 0.0026258150017265947,
+     "years_better": 6,
+     "ok": false
+    },
+    "XJ": {
+     "d_crit": 0.026540739996387258,
+     "years_better": 2,
+     "ok": false
+    }
+   },
+   "continue": false,
+   "early_stop": false,
+   "any_d_crit_negative": {
+    "A0": false,
+    "XJ": false
+   },
+   "spent": 2,
+   "limit": 16,
+   "unused_trials": 14,
+   "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0",
+   "per_library": {
+    "N1x_A0": {
+     "own_control": "XJ",
+     "d_crit": 0.026540739996387258,
+     "years_better": 2,
+     "d_crit_A0": 0.0026258150017265947,
+     "d_crit_XJ": 0.026540739996387258
+    },
+    "N1l_A0": {
+     "own_control": "LF",
+     "d_crit": 0.026758376550253815,
+     "years_better": 2,
+     "d_crit_A0": 0.003479303870335154,
+     "d_crit_XJ": 0.027394228864995818
+    }
+   },
+   "stop": true,
+   "ran": [
+    "N1x_A0",
+    "N1l_A0"
+   ],
+   "N2_scheme": "T3 (V7 passed T)",
+   "B_star": "H2"
+  },
+  "V10": {
+   "best": "E3",
+   "controls": {
+    "Mb": {
+     "d_crit": -0.00503414426430443,
+     "years_better": 6,
+     "ok": true
+    }
+   },
+   "continue": true,
+   "early_stop": false,
+   "any_d_crit_negative": {
+    "Mb": true
+   },
+   "spent": 4,
+   "limit": 10,
+   "unused_trials": 1,
+   "rule": "лучшая crit_wf лучше каждого контроля: Δcrit_wf <= −0,0005 и лет лучше >= 6 из 10; досрочно — половина бюджета без Δ<0",
+   "ran": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9"
+   ],
+   "informative_blocks": [
+    "E2",
+    "E3",
+    "E7"
+   ]
   }
  },
  "limits": {
@@ -450,12 +533,12 @@
   "harq_j": 11,
   "decomposition": 10,
   "seasonality": 7,
-  "structural_ml": 0,
-  "market": 0,
+  "structural_ml": 2,
+  "market": 9,
   "reconciliation": 1
  },
- "used_total": 33,
+ "used_total": 44,
  "N_prior": 541,
- "N_final": 574,
- "updated": "2026-11-06 18:30"
+ "N_final": 585,
+ "updated": "2026-11-06 18:55"
 }
