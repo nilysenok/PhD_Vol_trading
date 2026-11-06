@@ -1,0 +1,25 @@
+{
+ "n_zh204": 106,
+ "n_zh206_210": 182,
+ "n_pilot": 189,
+ "N_prior": 477,
+ "N_ref_288": 288,
+ "limits": {
+  "residual_xgb": 15,
+  "residual_lgbm": 15,
+  "bounded": 10,
+  "dyn_weights": 10,
+  "regime": 10
+ },
+ "limit_total": 60,
+ "used": {
+  "residual_xgb": 0,
+  "residual_lgbm": 0,
+  "bounded": 0,
+  "dyn_weights": 0,
+  "regime": 0
+ },
+ "used_total": 0,
+ "N_final": 477,
+ "updated": "2026-11-06 05:48"
+}
