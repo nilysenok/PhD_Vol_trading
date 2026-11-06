@@ -84,11 +84,42 @@ def test_lgb_forecast_grid_and_sigma():
         paths6.sigma_frame(fc.iloc[:-1])
 
 
-def test_optuna_trials_empty_and_checkpoint_zero():
+def _category(wave: str, direction: str) -> str:
+    """Реестр -> счётчик CHECKPOINT: волна D — temporal_regime, E — ens_hybrid, hp / hyperparameters — hp, остальное — obj_feat."""
+    if wave.startswith("D"):
+        return "temporal_regime"
+    if wave.startswith("E"):
+        return "ens_hybrid"
+    return "hp" if direction in ("hp", "hyperparameters") else "obj_feat"
+
+
+def _used_from_registry(t) -> dict:
+    out = {"obj_feat": 0, "hp": 0, "temporal_regime": 0, "ens_hybrid": 0}
+    for w, d in zip(t["wave"].astype(str), t["direction"].astype(str)):
+        out[_category(w, d)] += 1
+    return out
+
+
+def test_registry_unique_ids_limits_and_checkpoint_agree():
+    import pandas as pd
     for alg in ("xgboost", "lightgbm"):
-        lines = (paths6.REP / alg / "OPTUNA_TRIALS.csv").read_text().splitlines()
-        assert len(lines) == 1 and lines[0].startswith("trial_id")
-        assert not any(load_ck(alg)["used"].values())
+        t = pd.read_csv(paths6.REP / alg / "OPTUNA_TRIALS.csv")
+        ck = load_ck(alg)
+        assert list(t.columns[:1]) == ["trial_id"]
+        assert not t["trial_id"].duplicated().any()
+        used = _used_from_registry(t)
+        assert used == ck["used"], (alg, used, ck["used"])
+        assert all(ck["used"][k] <= ck["limits"][k] for k in ck["limits"])
+
+
+def test_registry_checkpoint_mutations_caught():
+    import pandas as pd
+    t = pd.read_csv(paths6.REP / "xgboost" / "OPTUNA_TRIALS.csv")
+    ck = load_ck("xgboost")["used"]
+    dup = pd.concat([t, t.iloc[:1]])
+    assert dup["trial_id"].duplicated().any()                       # мутация: дубль trial_id виден
+    assert _used_from_registry(pd.concat([t, t.iloc[:1]])) != ck    # мутация: лишняя строка расходится с CHECKPOINT
+    assert _used_from_registry(t.assign(wave="B-xgb", direction="objective")) != ck   # перепутанная волна расходится
 
 
 def load_ck(alg):
