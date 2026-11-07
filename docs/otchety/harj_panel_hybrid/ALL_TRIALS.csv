@@ -1,0 +1,606 @@
+key,program,source,direction,config,kind
+Ж-204:90a6f716373ba33b,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,objectives_target,"{""c"": 1.0, ""desc"": ""L1 MSE по уровню RV/RV_m"", ""direction"": ""objectives_target"", ""kind"": ""stream"", ""row_id"": ""obj_l1n"", ""stream"": ""obj_l1n"", ""trial"": true}",trial
+Ж-204:2a1d555c6d54f5ca,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,objectives_target,"{""c"": 1.0, ""desc"": ""L1 MSE по уровню RV (%²) без нормировки"", ""direction"": ""objectives_target"", ""kind"": ""stream"", ""row_id"": ""obj_l1raw"", ""stream"": ""obj_l1raw"", ",trial
+Ж-204:f54243bd44bcec36,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,objectives_target,"{""c"": 1.0, ""desc"": ""L3 XGBoost reg:gamma"", ""direction"": ""objectives_target"", ""kind"": ""stream"", ""row_id"": ""obj_l3x"", ""stream"": ""obj_l3x"", ""trial"": true}",trial
+Ж-204:1f41dfd78f9944a3,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,objectives_target,"{""c"": 1.0, ""desc"": ""L3 LightGBM gamma"", ""direction"": ""objectives_target"", ""kind"": ""stream"", ""row_id"": ""obj_l3l"", ""stream"": ""obj_l3l"", ""trial"": true}",trial
+Ж-204:f5895eca4b529cc4,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,objectives_target,"{""c"": 1.0, ""desc"": ""L4 прямой QLIKE (F = ln σ̂², grad/hess)"", ""direction"": ""objectives_target"", ""kind"": ""stream"", ""row_id"": ""obj_l4"", ""stream"": ""obj_l4"", ""trial",trial
+Ж-204:2b5089391b8f04aa,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,objectives_target,"{""c"": 1.0, ""desc"": ""L5 L2 с весами RV_w^−0,5"", ""direction"": ""objectives_target"", ""kind"": ""stream"", ""row_id"": ""obj_l5a"", ""stream"": ""obj_l5a"", ""trial"": true}",trial
+Ж-204:b9e25eac38258689,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,objectives_target,"{""c"": 1.0, ""desc"": ""L5 L2 с весами RV_w^−1"", ""direction"": ""objectives_target"", ""kind"": ""stream"", ""row_id"": ""obj_l5b"", ""stream"": ""obj_l5b"", ""trial"": true}",trial
+Ж-204:a3cf5759e6679466,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,objectives_target,"{""c"": 1.0, ""desc"": ""L5 L4 с весами RV_w^−0,5"", ""direction"": ""objectives_target"", ""kind"": ""stream"", ""row_id"": ""obj_l5c"", ""stream"": ""obj_l5c"", ""trial"": true}",trial
+Ж-204:a986eb05f241d2e9,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""c"": 0.75, ""desc"": ""H2-L2, σ̂² = exp(lb + 0,75 f + s²/2)"", ""direction"": ""har_boosting"", ""kind"": ""stream"", ""row_id"": ""har_h2_l2_c075"", ""stream"": ""ctrl_b1"", ""tri",trial
+Ж-204:0123f0f3d57fe38f,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""c"": 0.5, ""desc"": ""H2-L2, c = 0,5"", ""direction"": ""har_boosting"", ""kind"": ""stream"", ""row_id"": ""har_h2_l2_c05"", ""stream"": ""ctrl_b1"", ""trial"": true}",trial
+Ж-204:acd832df8c96fa27,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""c"": 1.0, ""desc"": ""H2-L4 (остаток к HAR, QLIKE), c = 1"", ""direction"": ""har_boosting"", ""kind"": ""stream"", ""row_id"": ""har_h2_l4_c1"", ""stream"": ""har_h2_l4"", ""trial",trial
+Ж-204:f14bdc11e221a8c9,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""c"": 0.5, ""desc"": ""H2-L4, c = 0,5"", ""direction"": ""har_boosting"", ""kind"": ""stream"", ""row_id"": ""har_h2_l4_c05"", ""stream"": ""har_h2_l4"", ""trial"": true}",trial
+Ж-204:16bfec6c11e0f984,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""c"": 1.0, ""desc"": ""H2-L4 на нормированных признаках Б-2"", ""direction"": ""har_boosting"", ""kind"": ""stream"", ""row_id"": ""har_h2_l4m_c1"", ""stream"": ""har_h2_l4m"", ""tr",trial
+Ж-204:97aff9ad34b5d2cf,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""c"": 1.0, ""desc"": ""H1 аддитивный, остаток к HAR (отн.), σ̂² = max(HAR(1+ĝ), ε)"", ""direction"": ""har_boosting"", ""kind"": ""stream"", ""row_id"": ""har_h1_s"", ""stream"":",trial
+Ж-204:7baa1230509b7097,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""c"": 1.0, ""desc"": ""H1 аддитивный сырой, σ̂² = max(HAR + ĝ, ε)"", ""direction"": ""har_boosting"", ""kind"": ""stream"", ""row_id"": ""har_h1_raw"", ""stream"": ""har_h1_raw"", ",trial
+Ж-204:20bde72d9db5ceef,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""desc"": ""H3 постоянный w = 0,5"", ""direction"": ""har_boosting"", ""h3"": ""w05"", ""kind"": ""h3"", ""row_id"": ""har_h3_w05"", ""trial"": true}",trial
+Ж-204:5e895b9114139c88,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""desc"": ""H3 w по всем закрытым (расширяющееся)"", ""direction"": ""har_boosting"", ""h3"": ""exp"", ""kind"": ""h3"", ""row_id"": ""har_h3_exp"", ""trial"": true}",trial
+Ж-204:d0485f0448320519,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""desc"": ""H3 w по последним 252 закрытым"", ""direction"": ""har_boosting"", ""h3"": ""roll"", ""kind"": ""h3"", ""row_id"": ""har_h3_roll252"", ""trial"": true}",trial
+Ж-204:028a131df445e619,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""desc"": ""H3 w по группе режима {q0–q3}/{q4}"", ""direction"": ""har_boosting"", ""h3"": ""reg"", ""kind"": ""h3"", ""row_id"": ""har_h3_reg"", ""trial"": true}",trial
+Ж-204:c9a40f1751c31b37,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""c"": 1.0, ""desc"": ""R1 Б-2 + q_w"", ""direction"": ""regime_aware"", ""kind"": ""stream"", ""row_id"": ""reg_r1a"", ""stream"": ""reg_r1a"", ""trial"": true}",trial
+Ж-204:059e452ad32f3cee,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""c"": 1.0, ""desc"": ""R1 Б-2 + q_w, стресс_RV, переход"", ""direction"": ""regime_aware"", ""kind"": ""stream"", ""row_id"": ""reg_r1b"", ""stream"": ""reg_r1b"", ""trial"": true}",trial
+Ж-204:5a7068cdf6972d68,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""c"": 1.0, ""desc"": ""R1 на форме остатка к HAR (L2)"", ""direction"": ""regime_aware"", ""kind"": ""stream"", ""row_id"": ""reg_r1c"", ""stream"": ""reg_r1c"", ""trial"": true}",trial
+Ж-204:784ef1dff1306a8c,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""desc"": ""R2 два режима {q0–q2}/{q3–q4}"", ""direction"": ""regime_aware"", ""kind"": ""experts"", ""row_id"": ""reg_r2a"", ""stream"": ""reg_r2a"", ""trial"": true}",trial
+Ж-204:224e9c4001834b6b,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""desc"": ""R2 три режима {q0–q1}/{q2–q3}/{q4}"", ""direction"": ""regime_aware"", ""kind"": ""experts"", ""row_id"": ""reg_r2b"", ""stream"": ""reg_r2b"", ""trial"": true}",trial
+Ж-204:c58a168ba40c67ca,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""desc"": ""R3 смесь экспертов R2a с логистикой на прошлом"", ""direction"": ""regime_aware"", ""kind"": ""r3"", ""row_id"": ""reg_r3"", ""stream"": ""reg_r2a"", ""trial"": true}",trial
+Ж-204:2d8920209757a7e2,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""alt"": ""b2"", ""desc"": ""R4 HAR-J(б)/Б-2, порог θ_Y по прошлым годам"", ""direction"": ""regime_aware"", ""kind"": ""r4"", ""row_id"": ""reg_r4a"", ""trial"": true}",trial
+Ж-204:c7651610420e323d,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""alt"": ""h2best"", ""desc"": ""R4 HAR-J(б)/лучшая H2, порог θ_Y"", ""direction"": ""regime_aware"", ""kind"": ""r4"", ""row_id"": ""reg_r4b"", ""trial"": true}",trial
+Ж-204:0de2ec19c216ef14,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""alt"": ""b2"", ""desc"": ""R4 стресс Г4 → Б-2, иначе HAR-J(б)"", ""direction"": ""regime_aware"", ""kind"": ""r4"", ""row_id"": ""reg_r4c"", ""stress"": true, ""trial"": true}",trial
+Ж-204:d285653afff6,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_f1', direction='feature_engineering', add=('f1_lag1', 'f1_lag2', 'f1_m10', 'f1_m63', 'f1_d_over_w', 'f1_chg', 'f1_acc', 'f1_std22', 'f1_dev63'), dr",trial
+Ж-204:3f74fe93ab52,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_f2', direction='feature_engineering', add=('f2_jshare', 'f2_jshare_m', 'f2_jfreq22', 'f2_jfreq5', 'f2_jint_chg', 'f2_since', 'f2_last_size', 'f2_la",trial
+Ж-204:7a4c1599d226,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_f3', direction='feature_engineering', add=('f3_rs_ratio', 'f3_rs_ratio5', 'f3_ret1', 'f3_neg1', 'f3_cumneg5', 'f3_cumneg22', 'f3_cum5', 'f3_lev63')",trial
+Ж-204:344764e88789,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_f4', direction='feature_engineering', add=('f4_rq_rel', 'f4_park', 'f4_range', 'f4_vov', 'f4_hhi'), drop='', window=0, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:e4ede233f781,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_f5', direction='feature_engineering', add=('f5_corr_d', 'f5_corr22', 'f5_beta22', 'f5_mret', 'f5_mneg5', 'f5_dvol', 'f5_rel22', 'f5_vol_dev'), drop",trial
+Ж-204:1172d9b28fd1,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_f6', direction='feature_engineering', add=('f6_dev252', 'f6_pct', 'f6_acc', 'f6_m_over_long', 'f6_mkt_chg', 'f6_har_bias22', 'f6_har_abs63', 'f6_cu",trial
+Ж-204:afaa058e1939,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_no_imoex', direction='feature_engineering', add=(), drop='no_imoex', window=0, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:a4edb12b1886,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_no_market', direction='feature_engineering', add=(), drop='no_market', window=0, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:703a005cfcdf,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_no_semivar', direction='feature_engineering', add=(), drop='no_semivar', window=0, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:fab1c0a8932b,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_no_gap', direction='feature_engineering', add=(), drop='no_gap', window=0, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:1832251d8426,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_top2', direction='feature_engineering', add=('f4_rq_rel', 'f4_park', 'f4_range', 'f4_vov', 'f4_hhi', 'f3_rs_ratio', 'f3_rs_ratio5', 'f3_ret1', 'f3_",trial
+Ж-204:d7234907c39b,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"Cfg(name='b2_top3', direction='feature_engineering', add=('f4_rq_rel', 'f4_park', 'f4_range', 'f4_vov', 'f4_hhi', 'f3_rs_ratio', 'f3_rs_ratio5', 'f3_ret1', 'f3_",trial
+Ж-204:3d5be13f0908,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_roll252', direction='rolling_recency', add=(), drop='', window=252, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:1da0a6021c73,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_roll504', direction='rolling_recency', add=(), drop='', window=504, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:95c35a907f67,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_roll756', direction='rolling_recency', add=(), drop='', window=756, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:547c66e2bce6,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_roll1008', direction='rolling_recency', add=(), drop='', window=1008, hl=0, freq='d', cusum_h=0.0)",trial
+Ж-204:74939ed2a545,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_weekly', direction='rolling_recency', add=(), drop='', window=0, hl=0, freq='w', cusum_h=0.0)",trial
+Ж-204:bb1606fb6012,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_monthly', direction='rolling_recency', add=(), drop='', window=0, hl=0, freq='m', cusum_h=0.0)",trial
+Ж-204:59dec5e1ace5,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_exp1y', direction='rolling_recency', add=(), drop='', window=0, hl=252, freq='d', cusum_h=0.0)",trial
+Ж-204:942df233d1b2,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_exp2y', direction='rolling_recency', add=(), drop='', window=0, hl=504, freq='d', cusum_h=0.0)",trial
+Ж-204:c77faddb5434,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_cusum_h5', direction='rolling_recency', add=(), drop='', window=0, hl=0, freq='d', cusum_h=5.0)",trial
+Ж-204:156ee340be62,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,rolling_recency,"Cfg(name='w_cusum_h8', direction='rolling_recency', add=(), drop='', window=0, hl=0, freq='d', cusum_h=8.0)",trial
+Ж-204:6f9b667757af,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""add"": [""f4_range""], ""hp"": ""I2"", ""kind"": ""c1_f4_range"", ""seed"": 42}",trial
+Ж-204:67ec68368f03,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""add"": [""f4_park""], ""hp"": ""I2"", ""kind"": ""c1_f4_park"", ""seed"": 42}",trial
+Ж-204:365963b63196,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""add"": [""f4_rq_rel"", ""f4_park"", ""f4_range"", ""f4_vov"", ""f4_hhi"", ""f1_lag1"", ""f1_lag2"", ""f1_m10"", ""f1_m63"", ""f1_d_over_w"", ""f1_chg"", ""f1_acc"", ""f1_std22"", ""f1_de",trial
+Ж-204:4e5d6f5745a5,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 0, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 4.330880728874676, ""colsample"": 0.40919616423534183, ""depth"": 2.0, ""gamma"": 0.0",trial
+Ж-204:c39226d42255,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 1, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 0.9170225492671691, ""colsample"": 0.44863737747479326, ""depth"": 2.0, ""gamma"": 0.",trial
+Ж-204:5eaa55ef40ee,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 2, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 1.8318092164684585, ""colsample"": 0.3976457024564293, ""depth"": 1.0, ""gamma"": 0.0",trial
+Ж-204:b5d6cb5080d5,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 3, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 0.8526206184364576, ""colsample"": 0.3325152889039984, ""depth"": 2.0, ""gamma"": 0.0",trial
+Ж-204:99bf2cd62a5f,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 4, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 2.2007624686980067, ""colsample"": 0.3683704798044687, ""depth"": 1.0, ""gamma"": 0.0",trial
+Ж-204:475faa9ac79b,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 5, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 2.600340105889054, ""colsample"": 0.7637655990477873, ""depth"": 1.0, ""gamma"": 0.01",trial
+Ж-204:cbde4465f358,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 6, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 4.609371175115584, ""colsample"": 0.9263791452993542, ""depth"": 2.0, ""gamma"": 0.02",trial
+Ж-204:8b65ca72948b,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 7, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 1.7837666334679465, ""colsample"": 0.4899443222417271, ""depth"": 1.0, ""gamma"": 0.0",trial
+Ж-204:d0afdb50ecc9,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 8, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 4.883839283223654, ""colsample"": 0.9353653566977626, ""depth"": 3.0, ""gamma"": 0.04",trial
+Ж-204:fcbbf01b782a,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 9, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 3.6989781966451307, ""colsample"": 0.9942725607783308, ""depth"": 3.0, ""gamma"": 0.0",trial
+Ж-204:3708bc7bfbff,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 10, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 3.4828971100497794, ""colsample"": 0.6694452251210223, ""depth"": 3.0, ""gamma"": 0.",trial
+Ж-204:ff507e9a8fec,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 11, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 3.7616925911595116, ""colsample"": 0.9943212253953548, ""depth"": 3.0, ""gamma"": 0.",trial
+Ж-204:0d404cd6ca4f,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 12, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 3.163322340965027, ""colsample"": 0.8436432454504161, ""depth"": 3.0, ""gamma"": 0.0",trial
+Ж-204:69cc3fbcc13c,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 13, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 3.109146561591176, ""colsample"": 0.8081005180988567, ""depth"": 3.0, ""gamma"": 0.0",trial
+Ж-204:6b402bcb3e71,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 14, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 2.865260284104883, ""colsample"": 0.8364706385310903, ""depth"": 3.0, ""gamma"": 0.0",trial
+Ж-204:0c93cc480600,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 15, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 3.885920957268659, ""colsample"": 0.6263797346002653, ""depth"": 3.0, ""gamma"": 0.0",trial
+Ж-204:bf5ee1cc071a,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 16, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 3.3081250897863863, ""colsample"": 0.8697955939044821, ""depth"": 3.0, ""gamma"": 0.",trial
+Ж-204:58ed1f297d19,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 17, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 4.078649186547715, ""colsample"": 0.714062369697008, ""depth"": 2.0, ""gamma"": 0.02",trial
+Ж-204:251285b1e660,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 18, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 4.174528898707061, ""colsample"": 0.5871542958125169, ""depth"": 2.0, ""gamma"": 0.0",trial
+Ж-204:6a9b55e0fc3b,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 19, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 4.85193467807792, ""colsample"": 0.7194046795896627, ""depth"": 2.0, ""gamma"": 0.02",trial
+Ж-204:9e7f87bac9d0,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 20, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 0.21134846329832513, ""colsample"": 0.525090145563046, ""depth"": 2.0, ""gamma"": 0.",trial
+Ж-204:ccf81fe43cbe,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,feature_engineering,"{""features"": ""b2_f4"", ""k"": 21, ""kind"": ""tpe"", ""n_startup"": 8, ""params"": {""alpha"": 0.5082595278147137, ""colsample"": 0.567951135137185, ""depth"": 2.0, ""gamma"": 0.0",trial
+Ж-204:feba3af570fb,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""kind"": ""c2_h3_w05_f4"", ""needs"": [""f4""], ""seed"": 42}",trial
+Ж-204:d5d152970715,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""kind"": ""c2_h3_exp_f4"", ""needs"": [""f4""], ""seed"": 42}",trial
+Ж-204:83aa9d241bc2,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""kind"": ""c2_h3_roll_f4"", ""needs"": [""f4""], ""seed"": 42}",trial
+Ж-204:4428b396c400,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""kind"": ""c2_h3_reg_f4"", ""needs"": [""f4""], ""seed"": 42}",trial
+Ж-204:1fda5e6a6595,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""kind"": ""c2_h3_w05_opt"", ""needs"": [""opt""], ""seed"": 42}",trial
+Ж-204:130030248077,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""kind"": ""c2_h3_exp_opt"", ""needs"": [""opt""], ""seed"": 42}",trial
+Ж-204:14d38aab9fe5,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""kind"": ""c2_h3_roll_opt"", ""needs"": [""opt""], ""seed"": 42}",trial
+Ж-204:5cb4466d2437,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""kind"": ""c2_h3_reg_opt"", ""needs"": [""opt""], ""seed"": 42}",trial
+Ж-204:580a2974eb80,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,har_boosting,"{""c"": 0.5, ""kind"": ""c2_h2l4_f4_c05"", ""seed"": 42}",trial
+Ж-204:092bdb2272c7,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""kind"": ""c3_r4_f4"", ""needs"": [""f4""], ""seed"": 42}",trial
+Ж-204:eeaa1fe7ff9f,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""kind"": ""c3_r4_opt"", ""needs"": [""opt""], ""seed"": 42}",trial
+Ж-204:eac2a0edbc06,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""kind"": ""c3_str_f4"", ""needs"": [""f4""], ""seed"": 42}",trial
+Ж-204:2f94298f7945,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""kind"": ""c3_f3calm_g4"", ""needs"": [""f4"", ""top2""], ""seed"": 42}",trial
+Ж-204:71ddcefb90ce,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""kind"": ""c3_f3calm_rv"", ""needs"": [""f4"", ""top2""], ""seed"": 42}",trial
+Ж-204:63b3bece4a4b,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,regime_aware,"{""kind"": ""c3_f3calm_har"", ""needs"": [""top2""], ""seed"": 42}",trial
+Ж-204:a2e2634c7bb8,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""hl"": 0, ""kind"": ""d_lgbm_f4"", ""lib"": ""lgbm"", ""seed"": 42, ""win"": 0}",trial
+Ж-204:240be5d0ec99,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""hl"": 0, ""kind"": ""d_xgb_f4_r1008"", ""lib"": ""xgb"", ""seed"": 42, ""win"": 1008}",trial
+Ж-204:dba82da5aee4,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""hl"": 504, ""kind"": ""d_xgb_f4_hl504"", ""lib"": ""xgb"", ""seed"": 42, ""win"": 0}",trial
+Ж-204:e656b197c7c4,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e1_roll"", ""members"": [""X"", ""L""], ""rule"": ""roll"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:684cf39c6703,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e1_exp"", ""members"": [""X"", ""L""], ""rule"": ""exp"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:4cbb91c2b27a,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e3_roll"", ""members"": [""H"", ""L""], ""rule"": ""roll"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:17909b1f20c8,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e3_exp"", ""members"": [""H"", ""L""], ""rule"": ""exp"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:c1af199ce623,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e4_roll"", ""members"": [""H"", ""X"", ""L""], ""rule"": ""roll"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:359108f3e3a9,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e4_exp"", ""members"": [""H"", ""X"", ""L""], ""rule"": ""exp"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:a0998c3e6fd1,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e5_roll"", ""members"": [""X"", ""Xr"", ""Xh""], ""rule"": ""roll"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:ab6b0fba5e03,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e5_exp"", ""members"": [""X"", ""Xr"", ""Xh""], ""rule"": ""exp"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:7f9e57176851,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e6_g4"", ""members"": [""H"", ""X"", ""L""], ""rule"": ""g4"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:0706fda28d8c,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e6_rv"", ""members"": [""H"", ""X"", ""L""], ""rule"": ""rv"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:34209b48c72d,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e7_hx"", ""members"": [""H"", ""X""], ""rule"": ""inv"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:91c276c6f375,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e7_hxl"", ""members"": [""H"", ""X"", ""L""], ""rule"": ""inv"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-204:3c114ddc9df3,Ж-204,sber_h1_deep_v1/OPTUNA_TRIALS.csv,ensemble_calibration,"{""kind"": ""e7_xl"", ""members"": [""X"", ""L""], ""rule"": ""inv"", ""seed"": 42, ""step"": 0.1, ""win"": 252}",trial
+Ж-206:xgboost:fb626014c844,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,objective,"{'alg': 'xgboost', 'loss': 'gamma', 'gw': 0.0, 'groups': ['F4'], 'drop': '', 'target': 'RV/S', 'hp': 'I2 (годовой LOYO, сетка 132)', 'seed': 42, 'window': 'expa",trial
+Ж-206:xgboost:cdd126a8a9e5,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,objective,"{'alg': 'xgboost', 'loss': 'qlike', 'gw': 0.0, 'groups': ['F4'], 'drop': '', 'target': 'RV/S', 'hp': 'I2 (годовой LOYO, сетка 132)', 'seed': 42, 'window': 'expa",trial
+Ж-206:xgboost:586c6f6a936c,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,objective,"{'alg': 'xgboost', 'loss': 'l2', 'gw': 0.5, 'groups': ['F4'], 'drop': '', 'target': 'ln(RV/S) − ln(RV_m/S)', 'hp': 'I2 (годовой LOYO, сетка 132)', 'seed': 42, '",trial
+Ж-206:xgboost:426ba45e73dd,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,objective,"{'alg': 'xgboost', 'loss': 'l2', 'gw': 1.0, 'groups': ['F4'], 'drop': '', 'target': 'ln(RV/S) − ln(RV_m/S)', 'hp': 'I2 (годовой LOYO, сетка 132)', 'seed': 42, '",trial
+Ж-206:xgboost:730eb6dd1151,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,objective,"{'alg': 'xgboost', 'loss': 'qlike', 'gw': 0.5, 'groups': ['F4'], 'drop': '', 'target': 'RV/S', 'hp': 'I2 (годовой LOYO, сетка 132)', 'seed': 42, 'window': 'expa",trial
+Ж-206:xgboost:c0061654d9fe,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,feature,"{'alg': 'xgboost', 'loss': 'l2', 'gw': 0.0, 'groups': ['F4', 'F2'], 'drop': '', 'target': 'ln(RV/S) − ln(RV_m/S)', 'hp': 'I2 (годовой LOYO, сетка 132)', 'seed':",trial
+Ж-206:xgboost:1ebf8d38a6cf,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,feature,"{'alg': 'xgboost', 'loss': 'l2', 'gw': 0.0, 'groups': ['F4'], 'drop': 'no_imoex', 'target': 'ln(RV/S) − ln(RV_m/S)', 'hp': 'I2 (годовой LOYO, сетка 132)', 'seed",trial
+Ж-206:xgboost:a99314b2de2c,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,feature,"{'alg': 'xgboost', 'loss': 'l2', 'gw': 0.0, 'groups': ['F4'], 'drop': 'no_market', 'target': 'ln(RV/S) − ln(RV_m/S)', 'hp': 'I2 (годовой LOYO, сетка 132)', 'see",trial
+Ж-206:xgboost:d3f99093bdd6,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,feature,"{'alg': 'xgboost', 'loss': 'l2', 'gw': 0.0, 'groups': ['F4'], 'drop': 'no_semivar', 'target': 'ln(RV/S) − ln(RV_m/S)', 'hp': 'I2 (годовой LOYO, сетка 132)', 'se",trial
+Ж-206:xgboost:a19fb9111260,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'max_depth': -1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', ",trial
+Ж-206:xgboost:200afbf5f07f,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'max_depth': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', '",trial
+Ж-206:xgboost:7eeb71d05a19,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'min_child_weight': -1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + с",trial
+Ж-206:xgboost:f2d2d9a89754,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'min_child_weight': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сд",trial
+Ж-206:xgboost:5ae2677bc223,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'learning_rate': -1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдви",trial
+Ж-206:xgboost:a595d80f3106,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'learning_rate': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг",trial
+Ж-206:xgboost:3bc53ef19e75,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'subsample': -1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', ",trial
+Ж-206:xgboost:9ccdda0a78d9,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'subsample': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', '",trial
+Ж-206:xgboost:d11f57a1455e,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + с",trial
+Ж-206:xgboost:c3b99d02f8b6,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -2.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + с",trial
+Ж-206:xgboost:acb901eb1f21,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'reg_alpha': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', '",trial
+Ж-206:xgboost:68c3b0ebc305,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'reg_alpha': 3.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', '",trial
+Ж-206:xgboost:ac25f2f22f94,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'reg_lambda': -1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг',",trial
+Ж-206:xgboost:5eaa305abd2c,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'reg_lambda': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', ",trial
+Ж-206:xgboost:b5e98f77d150,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'gamma': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', 'seed",trial
+Ж-206:xgboost:ee0deeda063b,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'gamma': 4.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдвиг', 'seed",trial
+Ж-206:xgboost:ccc33d88a2d5,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'max_delta_step': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдви",trial
+Ж-206:xgboost:02b692cbf00f,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'max_delta_step': 3.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сдви",trial
+Ж-206:xgboost:e5879e4c9c4b,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.8764, 'learning_rate': 1.8029, 'reg_lambda'",trial
+Ж-206:xgboost:047b7b2e9c78,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -2.5319, 'learning_rate': -1.376, 'reg_lambda'",trial
+Ж-206:xgboost:b74bae56d8a1,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.1967, 'learning_rate': 0.8323, 'reg_lambda'",trial
+Ж-206:xgboost:e34e7ab60d48,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -0.5027, 'learning_rate': -1.1506, 'reg_lambda",trial
+Ж-206:xgboost:1d722abcf4d7,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -2.0873, 'learning_rate': 0.099, 'reg_lambda':",trial
+Ж-206:xgboost:44dcb15aceca,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.1644, 'learning_rate': -1.442, 'reg_lambda'",trial
+Ж-206:xgboost:f6a51b5fd7d8,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.6318, 'learning_rate': 1.1407, 'reg_lambda'",trial
+Ж-206:xgboost:76aff73834d8,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.2228, 'learning_rate': -1.8142, 'reg_lambda",trial
+Ж-206:xgboost:87f802486717,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -0.1329, 'learning_rate': -0.5451, 'reg_lambda",trial
+Ж-206:xgboost:809946dad2c0,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -0.7835, 'learning_rate': -0.392, 'reg_lambda'",trial
+Ж-206:xgboost:327dfa5f5720,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -2.7091, 'learning_rate': -1.9508, 'reg_lambda",trial
+Ж-206:xgboost:30ad11ab6862,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -0.8734, 'learning_rate': -0.4776, 'reg_lambda",trial
+Ж-206:xgboost:deaae01f241a,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -0.8413, 'learning_rate': -1.1255, 'reg_lambda",trial
+Ж-206:xgboost:36fea5368b79,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.2276, 'learning_rate': 0.1111, 'reg_lambda'",trial
+Ж-206:xgboost:6f25eaa86816,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -0.0809, 'learning_rate': -0.7143, 'reg_lambda",trial
+Ж-206:xgboost:f548ee2e2a3b,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -0.5236, 'learning_rate': 0.5162, 'reg_lambda'",trial
+Ж-206:xgboost:f4e8e88d8a05,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.5093, 'learning_rate': -0.9508, 'reg_lambda",trial
+Ж-206:xgboost:32eb01255cf9,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -2.0862, 'learning_rate': -1.4998, 'reg_lambda",trial
+Ж-206:xgboost:456e92e63a86,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -1.6157, 'learning_rate': -0.8757, 'reg_lambda",trial
+Ж-206:xgboost:5eb7eee56e00,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'x2', 'family': 'l2', 'features': 'Б-2+F4', 'moves': {'colsample_bytree': -2.2584, 'learning_rate': -1.5301, 'reg_lambda",trial
+Ж-206:xgboost:0822ccea604b,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'gamma', 'features': 'Б-2+F4', 'moves': {'learning_rate': -1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + с",trial
+Ж-206:xgboost:efcef4191294,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'gamma', 'features': 'Б-2+F4', 'moves': {'learning_rate': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) + сд",trial
+Ж-206:xgboost:ee80338a7c90,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'gamma', 'features': 'Б-2+F4', 'moves': {'min_child_weight': -1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) ",trial
+Ж-206:xgboost:f4ff3bbb6aa1,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,hyperparameters,"{'alg': 'xgboost', 'wave': 'C', 'kind': 'hp', 'family': 'gamma', 'features': 'Б-2+F4', 'moves': {'min_child_weight': 1.0}, 'hp': 'I2 (годовой LOYO, сетка 132) +",trial
+Ж-206:xgboost:f8235f41a5ea,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 504, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO, ",trial
+Ж-206:xgboost:dc6b68eb801f,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 756, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO, ",trial
+Ж-206:xgboost:23b9c3a13492,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 1008, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO,",trial
+Ж-206:xgboost:f1e3028bb54d,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 1260, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO,",trial
+Ж-206:xgboost:35e9aec1ec0c,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 0, 'half_life_rows': 756, 'retrain': 'd', 'hp': 'I2 (годовой LOYO, ",trial
+Ж-206:xgboost:04ca23825655,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 0, 'half_life_rows': 1260, 'retrain': 'd', 'hp': 'I2 (годовой LOYO,",trial
+Ж-206:xgboost:abe9ef75cf9c,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 504, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO,",trial
+Ж-206:xgboost:d02d73f022de,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 756, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO,",trial
+Ж-206:xgboost:6f1c36feb40d,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 1008, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO",trial
+Ж-206:xgboost:c21c0a988341,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 1260, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO",trial
+Ж-206:xgboost:f4bcbcc053f7,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 0, 'half_life_rows': 756, 'retrain': 'd', 'hp': 'I2 (годовой LOYO,",trial
+Ж-206:xgboost:26cfe4cf1713,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 0, 'half_life_rows': 1260, 'retrain': 'd', 'hp': 'I2 (годовой LOYO",trial
+Ж-206:xgboost:eadb9b01b2fc,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 0, 'half_life_rows': 0, 'retrain': 'w', 'hp': 'I2 (годовой LOYO, се",trial
+Ж-206:xgboost:af41b66c589b,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 0, 'half_life_rows': 0, 'retrain': 'm', 'hp': 'I2 (годовой LOYO, се",trial
+Ж-206:xgboost:ebfe5327e38a,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 0, 'half_life_rows': 0, 'retrain': 'w', 'hp': 'I2 (годовой LOYO, с",trial
+Ж-206:xgboost:31005c441d11,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,temporal,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': '', 'window_pairs': 0, 'half_life_rows': 0, 'retrain': 'm', 'hp': 'I2 (годовой LOYO, с",trial
+Ж-206:xgboost:530b5c1289c7,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,regime,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': 'qw', 'window_pairs': 0, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO, ",trial
+Ж-206:xgboost:df0cd7ccdffb,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,regime,"{'alg': 'xgboost', 'wave': 'D', 'base': 'j', 'features': 'Б-2+F4', 'r1': 'all', 'window_pairs': 0, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO,",trial
+Ж-206:xgboost:668c39c9fbf1,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,regime,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': 'qw', 'window_pairs': 0, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO,",trial
+Ж-206:xgboost:b1da03b5318a,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,regime,"{'alg': 'xgboost', 'wave': 'D', 'base': 'f4', 'features': 'Б-2+F4', 'r1': 'all', 'window_pairs': 0, 'half_life_rows': 0, 'retrain': 'd', 'hp': 'I2 (годовой LOYO",trial
+Ж-206:xgboost:a0549ed3f1f9,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,regime,"{'alg': 'xgboost', 'wave': 'D', 'kind': 'r4', 'base': 'j', 'stress_cfg': '23b9c3a13492', 'calm_cfg': 'b21d716caa18', 'state': 'stress_RV (RV_w > q67 по 252 пред",trial
+Ж-206:xgboost:f906e46ad707,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,regime,"{'alg': 'xgboost', 'wave': 'D', 'kind': 'r4', 'base': 'j', 'stress_cfg': 'f8235f41a5ea', 'calm_cfg': 'b21d716caa18', 'state': 'stress_RV (RV_w > q67 по 252 пред",trial
+Ж-206:xgboost:21a09a97a43c,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,regime,"{'alg': 'xgboost', 'wave': 'D', 'kind': 'r4', 'base': 'f4', 'stress_cfg': '6f1c36feb40d', 'calm_cfg': '2228288c3f5f', 'state': 'stress_RV (RV_w > q67 по 252 пре",trial
+Ж-206:xgboost:b7675ebf4975,Ж-206/210,xgboost/OPTUNA_TRIALS.csv,regime,"{'alg': 'xgboost', 'wave': 'D', 'kind': 'r4', 'base': 'f4', 'stress_cfg': 'abe9ef75cf9c', 'calm_cfg': '2228288c3f5f', 'state': 'stress_RV (RV_w > q67 по 252 пре",trial
+Ж-206:lightgbm:2970fbbbec64,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 0: nl7_md30_l230_lr0.02_ff0.5_bag1_dp-1,trial
+Ж-206:lightgbm:5ce6798bff16,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 1: nl7_md30_l230_lr0.02_ff0.8_bag0.8_dp-1,trial
+Ж-206:lightgbm:7f66299b7bdf,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 2: nl7_md30_l230_lr0.02_ff0.8_bag1_dp-1,trial
+Ж-206:lightgbm:4c0870974608,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 3: nl7_md100_l230_lr0.02_ff0.8_bag0.8_dp-1,trial
+Ж-206:lightgbm:5052e1e67112,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 4: nl15_md30_l230_lr0.02_ff0.5_bag1_dp-1,trial
+Ж-206:lightgbm:4066c732c45d,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 5: nl15_md100_l210_lr0.05_ff0.8_bag1_dp-1,trial
+Ж-206:lightgbm:0cbb9a684662,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 6: nl15_md200_l210_lr0.05_ff0.5_bag1_dp-1,trial
+Ж-206:lightgbm:b5f181205597,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 7: nl31_md30_l22_lr0.02_ff0.5_bag1_dp-1,trial
+Ж-206:lightgbm:dff48cf2a520,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 8: nl31_md30_l210_lr0.02_ff0.8_bag0.8_dp-1,trial
+Ж-206:lightgbm:d96ad4a7e815,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 9: nl31_md30_l210_lr0.05_ff0.5_bag1_dp-1,trial
+Ж-206:lightgbm:e1130225169d,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 10: nl31_md30_l230_lr0.02_ff0.8_bag1_dp-1,trial
+Ж-206:lightgbm:56b93ab8aac3,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 11: nl31_md100_l210_lr0.02_ff0.5_bag1_dp-1,trial
+Ж-206:lightgbm:fc8e287a55a9,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 12: nl31_md200_l210_lr0.05_ff0.5_bag1_dp-1,trial
+Ж-206:lightgbm:00d3596d8099,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 13: nl31_md200_l210_lr0.05_ff0.8_bag1_dp-1,trial
+Ж-206:lightgbm:9a3fbb656c97,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,LB0 точка 14: nl31_md200_l230_lr0.05_ff0.5_bag1_dp-1,trial
+Ж-206:lightgbm:2cbba0c80912,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,"L1_level|lvl|L1 regression L2 по уровню RV/S, σ̂²=max(S·f, ε)",trial
+Ж-206:lightgbm:2d83a4a4b355,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,L3_gamma|gamma|L3 gamma (log-link),trial
+Ж-206:lightgbm:700840ee5869,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,"L4_qlike|qlike|L4 custom QLIKE, F=ln σ̂²",trial
+Ж-206:lightgbm:9b9a3496c73d,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,"L5a_rvw05|ln|L5 L2 по ln-цели с весами RV_w^-0,5",trial
+Ж-206:lightgbm:b129f1adc985,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,"L5b_rvw10|ln|L5 то же, RV_w^-1",trial
+Ж-206:lightgbm:193f8e64ad2a,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,"L5t_decay504|ln|L5 веса по возрасту, полураспад 504 строки",trial
+Ж-206:lightgbm:c63c39ec73de,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_F1|ln|OWN + группа F1 (9 столбцов),trial
+Ж-206:lightgbm:812fd9fcb759,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_F2|ln|OWN + группа F2 (8 столбцов),trial
+Ж-206:lightgbm:2cfe0c18b100,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_F3|ln|OWN + группа F3 (8 столбцов),trial
+Ж-206:lightgbm:fdd5df7217c4,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_F4|ln|OWN + группа F4 (5 столбцов),trial
+Ж-206:lightgbm:0621b4e34a3b,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_F5|ln|OWN + группа F5 (8 столбцов),trial
+Ж-206:lightgbm:deef989b3770,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_F6|ln|OWN + группа F6 (10 столбцов),trial
+Ж-206:lightgbm:664957883afa,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_top2|ln|OWN + группы F4+F3 (13 столбцов),trial
+Ж-206:lightgbm:4e59bd043732,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_top3|ln|OWN + группы F4+F3+F5 (21 столбцов),trial
+Ж-206:lightgbm:94c39a583244,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,F_all|ln|OWN + группы F1+F2+F3+F4+F5+F6 (48 столбцов),trial
+Ж-206:lightgbm:69edd272472e,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,A_no_imoex_F_top3|ln|обратная абляция: no_imoex из F_top3,trial
+Ж-206:lightgbm:8f809364e249,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,A_no_market_F_top3|ln|обратная абляция: no_market из F_top3,trial
+Ж-206:lightgbm:bd76ece8ce03,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,A_no_semivar_F_top3|ln|обратная абляция: no_semivar из F_top3,trial
+Ж-206:lightgbm:8aa4caa81a39,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,A_no_gap_F_top3|ln|обратная абляция: no_gap из F_top3,trial
+Ж-206:lightgbm:1457c26eb565,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,A_minus_F4_F_top3|ln|F_top3 без группы F4,trial
+Ж-206:lightgbm:851d362dc535,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,A_minus_F3_F_top3|ln|F_top3 без группы F3,trial
+Ж-206:lightgbm:fe86952c7ef4,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,obj_feat,A_minus_F5_F_top3|ln|F_top3 без группы F5,trial
+Ж-206:lightgbm:a79fc5259c48,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_num_leaves_lo|C-L1 ось num_leaves, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:90043883d697,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_num_leaves_hi|C-L1 ось num_leaves, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:4f2be60cf125,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_max_depth_lo|C-L1 ось max_depth, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:a38fe2d80f58,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_max_depth_hi|C-L1 ось max_depth, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:5b41b4f7b164,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_min_data_lo|C-L1 ось min_data, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:97bd5cbf7fc2,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_min_data_hi|C-L1 ось min_data, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:4d815bc2be54,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_lr_lo|C-L1 ось lr, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:244acc24aec9,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_lr_hi|C-L1 ось lr, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:0cfc13729e97,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_ff_lo|C-L1 ось ff, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:18bbac706e7a,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_ff_hi|C-L1 ось ff, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:2dbd3703fd71,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_bag_lo|C-L1 ось bag, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:c170b04d9379,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_bag_hi|C-L1 ось bag, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:981f5b04c229,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_l1_lo|C-L1 ось l1, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:6f39fa7874fd,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_l1_hi|C-L1 ось l1, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:49e9951df2ff,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_l2_lo|C-L1 ось l2, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:ffc43a955d19,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_l2_hi|C-L1 ось l2, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:5d3e111f5113,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_gain_lo|C-L1 ось gain, lo-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:a32ada88b5cc,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,hp,"C1_gain_hi|C-L1 ось gain, hi-точка вокруг базы C0_inh_F4",trial
+Ж-206:lightgbm:989406576ff5,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,D_w252|D1: rolling 252 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),trial
+Ж-206:lightgbm:ace2747485fd,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,D_w504|D1: rolling 504 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),trial
+Ж-206:lightgbm:ac58e34b792b,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,D_w756|D1: rolling 756 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),trial
+Ж-206:lightgbm:487bcd345e9f,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,D_w1008|D1: rolling 1008 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),trial
+Ж-206:lightgbm:e72f2319109a,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,D_w1260|D1: rolling 1260 последних пар; база C0_inh_F4 (HP И2 + Б-2 + F4),trial
+Ж-206:lightgbm:d9c60ffcc880,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,"D_dec756|D1: экспоненциальные веса, полураспад 756 строк; база C0_inh_F4 (HP И2 + Б-2 + F4)",trial
+Ж-206:lightgbm:d74ecf5efb7a,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,"D_dec1260|D1: экспоненциальные веса, полураспад 1260 строк; база C0_inh_F4 (HP И2 + Б-2 + F4)",trial
+Ж-206:lightgbm:751763ae62c8,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,"D_pick_window|D1 окно по прошлому: для года Y окно из 8 с min pen_Y (цели < 01.01.Y); потолок: min по кандидатам, выбор и оценка на тех же фолдах",trial
+Ж-206:lightgbm:7aba089cd19e,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,D_w0_wk|D2 частота w на окне D_w0; фолды LOYO скопированы с ежедневной,trial
+Ж-206:lightgbm:d53d3d9ed0c2,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,D_w0_mo|D2 частота m на окне D_w0; фолды LOYO скопированы с ежедневной,trial
+Ж-206:lightgbm:a649bc19d8e9,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,temporal,D_w0_adapt|D2 частота adapt на окне D_w0; фолды LOYO скопированы с ежедневной,trial
+Ж-206:lightgbm:cc713a327c46,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,regime,"R1a_stress|R1 режимные признаки в модель: stress (только данные <= t); база C0_inh_F4, расширяющееся окно, ежедневно",trial
+Ж-206:lightgbm:dc0a3b5f9b83,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,regime,"R1b_quintile|R1 режимные признаки в модель: q5 (только данные <= t); база C0_inh_F4, расширяющееся окно, ежедневно",trial
+Ж-206:lightgbm:1d83af21f466,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,regime,"R1c_transition|R1 режимные признаки в модель: trans (только данные <= t); база C0_inh_F4, расширяющееся окно, ежедневно",trial
+Ж-206:lightgbm:dc16fcce75a7,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,regime,"R1d_all|R1 режимные признаки в модель: stress+q5+trans (только данные <= t); база C0_inh_F4, расширяющееся окно, ежедневно",trial
+Ж-206:lightgbm:5bbf8c02f2ac,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,regime,"D_R4a_switch|R4a: стресс Г4 -> rolling 1008, спокойно -> расширяющееся (правило блока, фиксировано до счёта)",trial
+Ж-206:lightgbm:8ee31ef17166,Ж-206/210,lightgbm/OPTUNA_TRIALS.csv,regime,D_R4b_switch_pick|R4b: окно по режиму выбирается по году Y из 8 по средним фолдовым QLIKE режима (цели < 01.01.Y); потолок,trial
+Ж-206:xgb_lgbm_ensemble:214f844cafcc,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A1"", ""members"": ""HAR+XJ"", ""rule"": ""fixed_loyo"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:585bdb1f6b17,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A1"", ""members"": ""HAR+XJ"", ""rule"": ""inv_qlike_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:f15be2dc785f,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A1"", ""members"": ""HAR+XJ"", ""rule"": ""inv_rmse_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:9cdb1d4609dd,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A1"", ""members"": ""HAR+XJ"", ""rule"": ""roll_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:22b0433102e9,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A1"", ""members"": ""HAR+XJ"", ""rule"": ""shrink_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:6efb43572b66,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A2"", ""members"": ""HAR+LF"", ""rule"": ""fixed_loyo"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:65b92561b276,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A2"", ""members"": ""HAR+LF"", ""rule"": ""inv_qlike_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:4091fdbc44a9,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A2"", ""members"": ""HAR+LF"", ""rule"": ""inv_rmse_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:5bd3eeb46cb2,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A2"", ""members"": ""HAR+LF"", ""rule"": ""roll_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:8ec1568c90b6,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A2"", ""members"": ""HAR+LF"", ""rule"": ""shrink_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:698937a887df,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A3"", ""members"": ""XJ+LF"", ""rule"": ""fixed_loyo"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:7c5df40fa175,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A3"", ""members"": ""XJ+LF"", ""rule"": ""inv_qlike_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:a9cae23939cd,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A3"", ""members"": ""XJ+LF"", ""rule"": ""inv_rmse_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:95eab7f20866,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A3"", ""members"": ""XJ+LF"", ""rule"": ""roll_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:7c4651d10bfa,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A3"", ""members"": ""XJ+LF"", ""rule"": ""shrink_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:1eb0b3ab114c,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A4"", ""members"": ""HAR+XJ+LF"", ""rule"": ""fixed_loyo"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:11cba8e579e4,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A4"", ""members"": ""HAR+XJ+LF"", ""rule"": ""inv_qlike_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:fd88dada2de4,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A4"", ""members"": ""HAR+XJ+LF"", ""rule"": ""inv_rmse_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:339cc71e76c9,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A4"", ""members"": ""HAR+XJ+LF"", ""rule"": ""roll_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:9ad841e088c6,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A4"", ""members"": ""HAR+XJ+LF"", ""rule"": ""shrink_252"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:8528444d86c7,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A1"", ""members"": ""HAR+XJ"", ""rule"": ""roll_126"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:66b8502a05ba,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,ensemble,"{""combo"": ""A1"", ""members"": ""HAR+XJ"", ""rule"": ""roll_504"", ""seed"": 42, ""wave"": ""EA""}",trial
+Ж-206:xgb_lgbm_ensemble:fec343a84fe5,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,residual,"{""features"": ""B1q"", ""kind"": ""xq"", ""name"": ""B1q"", ""seed"": 42, ""wave"": ""EB""}",trial
+Ж-206:xgb_lgbm_ensemble:6378404826d8,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,residual,"{""features"": ""B2q"", ""kind"": ""lq"", ""name"": ""B2q"", ""seed"": 42, ""wave"": ""EB""}",trial
+Ж-206:xgb_lgbm_ensemble:0cb2390efc8f,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,residual,"{""features"": ""B1m"", ""kind"": ""h4"", ""name"": ""B1m"", ""seed"": 42, ""wave"": ""EB""}",trial
+Ж-206:xgb_lgbm_ensemble:e9a79805b076,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,residual,"{""features"": ""B2m"", ""kind"": ""h5"", ""name"": ""B2m"", ""seed"": 42, ""wave"": ""EB""}",trial
+Ж-206:xgb_lgbm_ensemble:6ea1b7d7c490,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,residual,"{""features"": ""B1a"", ""kind"": ""xa"", ""name"": ""B1a"", ""seed"": 42, ""wave"": ""EB""}",trial
+Ж-206:xgb_lgbm_ensemble:8fcabf0a0851,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,residual,"{""features"": ""B2q_noF4"", ""kind"": ""lq"", ""name"": ""B2q_noF4"", ""seed"": 42, ""wave"": ""EB""}",trial
+Ж-206:xgb_lgbm_ensemble:852f8d891273,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,residual,"{""features"": ""B2q_noIMOEX"", ""kind"": ""lq"", ""name"": ""B2q_noIMOEX"", ""seed"": 42, ""wave"": ""EB""}",trial
+Ж-206:xgb_lgbm_ensemble:ddcd6e16fdaa,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,residual,"{""features"": ""B2q_noMarket"", ""kind"": ""lq"", ""name"": ""B2q_noMarket"", ""seed"": 42, ""wave"": ""EB""}",trial
+Ж-206:xgb_lgbm_ensemble:3a70cf62d2fa,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,adaptive,"{""base_b"": ""B2q"", ""base_ml"": ""XJ"", ""name"": ""C2"", ""seed"": 42, ""wave"": ""EC""}",trial
+Ж-206:xgb_lgbm_ensemble:42724ccf0a69,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,adaptive,"{""base_b"": ""B2q"", ""base_ml"": ""XJ"", ""name"": ""C3"", ""seed"": 42, ""wave"": ""EC""}",trial
+Ж-206:xgb_lgbm_ensemble:fe77b1d6a115,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,adaptive,"{""base_b"": ""B2q"", ""base_ml"": ""XJ"", ""name"": ""C4"", ""seed"": 42, ""wave"": ""EC""}",trial
+Ж-206:xgb_lgbm_ensemble:0290ecf25558,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,adaptive,"{""base_b"": ""B2q"", ""base_ml"": ""XJ"", ""name"": ""C6"", ""seed"": 42, ""wave"": ""EC""}",trial
+Ж-206:xgb_lgbm_ensemble:a8e86d294383,Ж-206/210,xgb_lgbm_ensemble/OPTUNA_TRIALS.csv,adaptive,"{""base_b"": ""B2q"", ""base_ml"": ""XJ"", ""name"": ""C5"", ""seed"": 42, ""wave"": ""EC""}",trial
+pilot:rw,Ж-200/202,INVENTORY.csv,forecasts_p1,rw,pilot_forecast
+pilot:rv_w,Ж-200/202,INVENTORY.csv,forecasts_p1,rv_w,pilot_forecast
+pilot:rv_m,Ж-200/202,INVENTORY.csv,forecasts_p1,rv_m,pilot_forecast
+pilot:har_a,Ж-200/202,INVENTORY.csv,forecasts_p1,har_a,pilot_forecast
+pilot:har_b,Ж-200/202,INVENTORY.csv,forecasts_p1,har_b,pilot_forecast
+pilot:harj_a,Ж-200/202,INVENTORY.csv,forecasts_p1,harj_a,pilot_forecast
+pilot:harj_b,Ж-200/202,INVENTORY.csv,forecasts_p1,harj_b,pilot_forecast
+pilot:xgb_mse_nohar_free_a,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_nohar_free_a,pilot_forecast
+pilot:xgb_mse_nohar_free_b,Ж-200/202,INVENTORY.csv,forecasts_p2;этап2_top3_xgb,xgb_mse_nohar_free_b,pilot_forecast
+pilot:xgb_mse_nohar_free_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_nohar_free_btr,pilot_forecast
+pilot:xgb_mse_nohar_mono_a,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_nohar_mono_a,pilot_forecast
+pilot:xgb_mse_nohar_mono_b,Ж-200/202,INVENTORY.csv,forecasts_p2;этап2_top3_xgb,xgb_mse_nohar_mono_b,pilot_forecast
+pilot:xgb_mse_nohar_mono_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_nohar_mono_btr,pilot_forecast
+pilot:xgb_mse_har_free_a,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_har_free_a,pilot_forecast
+pilot:xgb_mse_har_free_b,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_har_free_b,pilot_forecast
+pilot:xgb_mse_har_free_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_har_free_btr,pilot_forecast
+pilot:xgb_mse_har_mono_a,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_har_mono_a,pilot_forecast
+pilot:xgb_mse_har_mono_b,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_har_mono_b,pilot_forecast
+pilot:xgb_mse_har_mono_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_mse_har_mono_btr,pilot_forecast
+pilot:xgb_hub_nohar_free_a,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_nohar_free_a,pilot_forecast
+pilot:xgb_hub_nohar_free_b,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_nohar_free_b,pilot_forecast
+pilot:xgb_hub_nohar_free_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_nohar_free_btr,pilot_forecast
+pilot:xgb_hub_nohar_mono_a,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_nohar_mono_a,pilot_forecast
+pilot:xgb_hub_nohar_mono_b,Ж-200/202,INVENTORY.csv,forecasts_p2;этап2_top3_xgb,xgb_hub_nohar_mono_b,pilot_forecast
+pilot:xgb_hub_nohar_mono_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_nohar_mono_btr,pilot_forecast
+pilot:xgb_hub_har_free_a,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_har_free_a,pilot_forecast
+pilot:xgb_hub_har_free_b,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_har_free_b,pilot_forecast
+pilot:xgb_hub_har_free_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_har_free_btr,pilot_forecast
+pilot:xgb_hub_har_mono_a,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_har_mono_a,pilot_forecast
+pilot:xgb_hub_har_mono_b,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_har_mono_b,pilot_forecast
+pilot:xgb_hub_har_mono_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,xgb_hub_har_mono_btr,pilot_forecast
+pilot:lgbm_mse_nohar_free_a,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_nohar_free_a,pilot_forecast
+pilot:lgbm_mse_nohar_free_b,Ж-200/202,INVENTORY.csv,forecasts_p2;этап2_top3_lgbm,lgbm_mse_nohar_free_b,pilot_forecast
+pilot:lgbm_mse_nohar_free_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_nohar_free_btr,pilot_forecast
+pilot:lgbm_mse_nohar_mono_a,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_nohar_mono_a,pilot_forecast
+pilot:lgbm_mse_nohar_mono_b,Ж-200/202,INVENTORY.csv,forecasts_p2;этап2_top3_lgbm,lgbm_mse_nohar_mono_b,pilot_forecast
+pilot:lgbm_mse_nohar_mono_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_nohar_mono_btr,pilot_forecast
+pilot:lgbm_mse_har_free_a,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_har_free_a,pilot_forecast
+pilot:lgbm_mse_har_free_b,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_har_free_b,pilot_forecast
+pilot:lgbm_mse_har_free_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_har_free_btr,pilot_forecast
+pilot:lgbm_mse_har_mono_a,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_har_mono_a,pilot_forecast
+pilot:lgbm_mse_har_mono_b,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_har_mono_b,pilot_forecast
+pilot:lgbm_mse_har_mono_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_mse_har_mono_btr,pilot_forecast
+pilot:lgbm_hub_nohar_free_a,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_nohar_free_a,pilot_forecast
+pilot:lgbm_hub_nohar_free_b,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_nohar_free_b,pilot_forecast
+pilot:lgbm_hub_nohar_free_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_nohar_free_btr,pilot_forecast
+pilot:lgbm_hub_nohar_mono_a,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_nohar_mono_a,pilot_forecast
+pilot:lgbm_hub_nohar_mono_b,Ж-200/202,INVENTORY.csv,forecasts_p2;этап2_top3_lgbm,lgbm_hub_nohar_mono_b,pilot_forecast
+pilot:lgbm_hub_nohar_mono_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_nohar_mono_btr,pilot_forecast
+pilot:lgbm_hub_har_free_a,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_har_free_a,pilot_forecast
+pilot:lgbm_hub_har_free_b,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_har_free_b,pilot_forecast
+pilot:lgbm_hub_har_free_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_har_free_btr,pilot_forecast
+pilot:lgbm_hub_har_mono_a,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_har_mono_a,pilot_forecast
+pilot:lgbm_hub_har_mono_b,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_har_mono_b,pilot_forecast
+pilot:lgbm_hub_har_mono_btr,Ж-200/202,INVENTORY.csv,forecasts_p2,lgbm_hub_har_mono_btr,pilot_forecast
+pilot:g1_c050,Ж-200/202,INVENTORY.csv,forecasts_p3,g1_c050,pilot_forecast
+pilot:g1_c075,Ж-200/202,INVENTORY.csv,forecasts_p3,g1_c075,pilot_forecast
+pilot:g1_c100,Ж-200/202,INVENTORY.csv,forecasts_p3,g1_c100,pilot_forecast
+pilot:g1_c100_nobias,Ж-200/202,INVENTORY.csv,forecasts_p3,g1_c100_nobias,pilot_forecast
+pilot:g2,Ж-200/202,INVENTORY.csv,forecasts_p3,g2,pilot_forecast
+pilot:g3,Ж-200/202,INVENTORY.csv,forecasts_p3,g3,pilot_forecast
+pilot:g4_hard,Ж-200/202,INVENTORY.csv,forecasts_p3,g4_hard,pilot_forecast
+pilot:g4_logit,Ж-200/202,INVENTORY.csv,forecasts_p3,g4_logit,pilot_forecast
+pilot:g5_always_h10,Ж-200/202,INVENTORY.csv,forecasts_p3,g5_always_h10,pilot_forecast
+pilot:g5_stress_h10,Ж-200/202,INVENTORY.csv,forecasts_p3,g5_stress_h10,pilot_forecast
+pilot:g5_always_h20,Ж-200/202,INVENTORY.csv,forecasts_p3,g5_always_h20,pilot_forecast
+pilot:g5_stress_h20,Ж-200/202,INVENTORY.csv,forecasts_p3,g5_stress_h20,pilot_forecast
+pilot:g5_always_h60,Ж-200/202,INVENTORY.csv,forecasts_p3,g5_always_h60,pilot_forecast
+pilot:g5_stress_h60,Ж-200/202,INVENTORY.csv,forecasts_p3,g5_stress_h60,pilot_forecast
+pilot:b1_xgb_c050_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c050_a__daily,pilot_forecast
+pilot:b1_xgb_c050_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c050_b__daily,pilot_forecast
+pilot:b1_xgb_c075_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c075_a__daily,pilot_forecast
+pilot:b1_xgb_c075_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c075_b__daily,pilot_forecast
+pilot:b1_xgb_c100_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c100_a__daily,pilot_forecast
+pilot:b1_xgb_c100_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c100_b__daily,pilot_forecast
+pilot:b1_xgb_c100_nobias_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c100_nobias_a__daily,pilot_forecast
+pilot:b1_xgb_c100_nobias_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c100_nobias_b__daily,pilot_forecast
+pilot:b2_m_xgb_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_m_xgb_a__daily,pilot_forecast
+pilot:b2_m_xgb_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_m_xgb_b__daily,pilot_forecast
+pilot:b4_m_xgb_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_m_xgb_a__daily,pilot_forecast
+pilot:b4_m_xgb_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_m_xgb_b__daily,pilot_forecast
+pilot:b2_252_xgb_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_252_xgb_a__daily,pilot_forecast
+pilot:b2_252_xgb_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_252_xgb_b__daily,pilot_forecast
+pilot:b4_252_xgb_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_252_xgb_a__daily,pilot_forecast
+pilot:b4_252_xgb_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_252_xgb_b__daily,pilot_forecast
+pilot:b5_xgb_free_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_xgb_free_a__daily,pilot_forecast
+pilot:b5_xgb_free_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_xgb_free_b__daily,pilot_forecast
+pilot:b5_xgb_mono_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_xgb_mono_a__daily,pilot_forecast
+pilot:b5_xgb_mono_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_xgb_mono_b__daily,pilot_forecast
+pilot:b1_lgbm_c050_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c050_a__daily,pilot_forecast
+pilot:b1_lgbm_c050_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c050_b__daily,pilot_forecast
+pilot:b1_lgbm_c075_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c075_a__daily,pilot_forecast
+pilot:b1_lgbm_c075_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c075_b__daily,pilot_forecast
+pilot:b1_lgbm_c100_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c100_a__daily,pilot_forecast
+pilot:b1_lgbm_c100_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c100_b__daily,pilot_forecast
+pilot:b1_lgbm_c100_nobias_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c100_nobias_a__daily,pilot_forecast
+pilot:b1_lgbm_c100_nobias_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c100_nobias_b__daily,pilot_forecast
+pilot:b2_m_lgbm_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_m_lgbm_a__daily,pilot_forecast
+pilot:b2_m_lgbm_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_m_lgbm_b__daily,pilot_forecast
+pilot:b4_m_lgbm_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_m_lgbm_a__daily,pilot_forecast
+pilot:b4_m_lgbm_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_m_lgbm_b__daily,pilot_forecast
+pilot:b2_252_lgbm_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_252_lgbm_a__daily,pilot_forecast
+pilot:b2_252_lgbm_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_252_lgbm_b__daily,pilot_forecast
+pilot:b4_252_lgbm_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_252_lgbm_a__daily,pilot_forecast
+pilot:b4_252_lgbm_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_252_lgbm_b__daily,pilot_forecast
+pilot:b5_lgbm_free_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_lgbm_free_a__daily,pilot_forecast
+pilot:b5_lgbm_free_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_lgbm_free_b__daily,pilot_forecast
+pilot:b5_lgbm_mono_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_lgbm_mono_a__daily,pilot_forecast
+pilot:b5_lgbm_mono_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_lgbm_mono_b__daily,pilot_forecast
+pilot:b3_nohar_lgbm_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b3_nohar_lgbm_a__daily,pilot_forecast
+pilot:b3_nohar_lgbm_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b3_nohar_lgbm_b__daily,pilot_forecast
+pilot:b3_har_lgbm_a__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b3_har_lgbm_a__daily,pilot_forecast
+pilot:b3_har_lgbm_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b3_har_lgbm_b__daily,pilot_forecast
+pilot:b7_p2best_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b7_p2best_b__daily,pilot_forecast
+pilot:b7_best_b1_b5[b1_xgb_c075_b]_b__daily,Ж-200/202,INVENTORY.csv,forecasts_pb,b7_best_b1_b5[b1_xgb_c075_b]_b__daily,pilot_forecast
+pilot:b1_xgb_c050_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c050_a__monthly,pilot_forecast
+pilot:b1_xgb_c050_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c050_b__monthly,pilot_forecast
+pilot:b1_xgb_c075_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c075_a__monthly,pilot_forecast
+pilot:b1_xgb_c075_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c075_b__monthly,pilot_forecast
+pilot:b1_xgb_c100_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c100_a__monthly,pilot_forecast
+pilot:b1_xgb_c100_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c100_b__monthly,pilot_forecast
+pilot:b1_xgb_c100_nobias_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c100_nobias_a__monthly,pilot_forecast
+pilot:b1_xgb_c100_nobias_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_xgb_c100_nobias_b__monthly,pilot_forecast
+pilot:b2_m_xgb_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_m_xgb_a__monthly,pilot_forecast
+pilot:b2_m_xgb_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_m_xgb_b__monthly,pilot_forecast
+pilot:b4_m_xgb_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_m_xgb_a__monthly,pilot_forecast
+pilot:b4_m_xgb_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_m_xgb_b__monthly,pilot_forecast
+pilot:b2_252_xgb_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_252_xgb_a__monthly,pilot_forecast
+pilot:b2_252_xgb_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_252_xgb_b__monthly,pilot_forecast
+pilot:b4_252_xgb_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_252_xgb_a__monthly,pilot_forecast
+pilot:b4_252_xgb_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_252_xgb_b__monthly,pilot_forecast
+pilot:b5_xgb_free_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_xgb_free_a__monthly,pilot_forecast
+pilot:b5_xgb_free_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_xgb_free_b__monthly,pilot_forecast
+pilot:b5_xgb_mono_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_xgb_mono_a__monthly,pilot_forecast
+pilot:b5_xgb_mono_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_xgb_mono_b__monthly,pilot_forecast
+pilot:b1_lgbm_c050_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c050_a__monthly,pilot_forecast
+pilot:b1_lgbm_c050_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c050_b__monthly,pilot_forecast
+pilot:b1_lgbm_c075_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c075_a__monthly,pilot_forecast
+pilot:b1_lgbm_c075_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c075_b__monthly,pilot_forecast
+pilot:b1_lgbm_c100_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c100_a__monthly,pilot_forecast
+pilot:b1_lgbm_c100_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c100_b__monthly,pilot_forecast
+pilot:b1_lgbm_c100_nobias_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c100_nobias_a__monthly,pilot_forecast
+pilot:b1_lgbm_c100_nobias_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b1_lgbm_c100_nobias_b__monthly,pilot_forecast
+pilot:b2_m_lgbm_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_m_lgbm_a__monthly,pilot_forecast
+pilot:b2_m_lgbm_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_m_lgbm_b__monthly,pilot_forecast
+pilot:b4_m_lgbm_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_m_lgbm_a__monthly,pilot_forecast
+pilot:b4_m_lgbm_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_m_lgbm_b__monthly,pilot_forecast
+pilot:b2_252_lgbm_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_252_lgbm_a__monthly,pilot_forecast
+pilot:b2_252_lgbm_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b2_252_lgbm_b__monthly,pilot_forecast
+pilot:b4_252_lgbm_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_252_lgbm_a__monthly,pilot_forecast
+pilot:b4_252_lgbm_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b4_252_lgbm_b__monthly,pilot_forecast
+pilot:b5_lgbm_free_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_lgbm_free_a__monthly,pilot_forecast
+pilot:b5_lgbm_free_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_lgbm_free_b__monthly,pilot_forecast
+pilot:b5_lgbm_mono_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_lgbm_mono_a__monthly,pilot_forecast
+pilot:b5_lgbm_mono_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b5_lgbm_mono_b__monthly,pilot_forecast
+pilot:b3_nohar_lgbm_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b3_nohar_lgbm_a__monthly,pilot_forecast
+pilot:b3_nohar_lgbm_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b3_nohar_lgbm_b__monthly,pilot_forecast
+pilot:b3_har_lgbm_a__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b3_har_lgbm_a__monthly,pilot_forecast
+pilot:b3_har_lgbm_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b3_har_lgbm_b__monthly,pilot_forecast
+pilot:b7_p2best_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b7_p2best_b__monthly,pilot_forecast
+pilot:b7_best_b1_b5[b2_m_xgb_b]_b__monthly,Ж-200/202,INVENTORY.csv,forecasts_pb,b7_best_b1_b5[b2_m_xgb_b]_b__monthly,pilot_forecast
+pilot:fx_i1_base_a,Ж-200/202,INVENTORY.csv,fix_forecasts_a,fx_i1_base_a,pilot_forecast
+pilot:fx_i1_base_b,Ж-200/202,INVENTORY.csv,fix_forecasts_a,fx_i1_base_b,pilot_forecast
+pilot:fx_i1_free_a,Ж-200/202,INVENTORY.csv,fix_forecasts_a,fx_i1_free_a,pilot_forecast
+pilot:fx_i1_free_b,Ж-200/202,INVENTORY.csv,fix_forecasts_a,fx_i1_free_b,pilot_forecast
+pilot:fx_i12_a,Ж-200/202,INVENTORY.csv,fix_forecasts_a,fx_i12_a,pilot_forecast
+pilot:fx_i12_b,Ж-200/202,INVENTORY.csv,fix_forecasts_a,fx_i12_b,pilot_forecast
+pilot:fx_i123_proxy_a,Ж-200/202,INVENTORY.csv,fix_forecasts_a,fx_i123_proxy_a,pilot_forecast
+pilot:fx_i123_proxy_b,Ж-200/202,INVENTORY.csv,fix_forecasts_a,fx_i123_proxy_b,pilot_forecast
+pilot:fx_i12_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i12_g132_a,pilot_forecast
+pilot:fx_i12_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i12_g132_b,pilot_forecast
+pilot:fx_i123p_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i123p_g132_a,pilot_forecast
+pilot:fx_i123p_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i123p_g132_b,pilot_forecast
+pilot:fx_i123i_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i123i_g132_a,pilot_forecast
+pilot:fx_i123i_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i123i_g132_b,pilot_forecast
+pilot:fx_i1234w_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i1234w_g132_a,pilot_forecast
+pilot:fx_i1234w_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i1234w_g132_b,pilot_forecast
+pilot:fx_i5_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i5_g132_a,pilot_forecast
+pilot:fx_i5_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i5_g132_b,pilot_forecast
+pilot:fx_b1_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_b1_g132_a,pilot_forecast
+pilot:fx_b1_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_b1_g132_b,pilot_forecast
+pilot:fx_b2_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_b2_g132_a,pilot_forecast
+pilot:fx_b2_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_b2_g132_b,pilot_forecast
+pilot:fx_b1hard_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_b1hard_g132_a,pilot_forecast
+pilot:fx_b1hard_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_b1hard_g132_b,pilot_forecast
+pilot:fx_i6_pure_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i6_pure_g132_a,pilot_forecast
+pilot:fx_i6_pure_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i6_pure_g132_b,pilot_forecast
+pilot:fx_i6_resid_g132_a,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i6_resid_g132_a,pilot_forecast
+pilot:fx_i6_resid_g132_b,Ж-200/202,INVENTORY.csv,fix_forecasts_c,fx_i6_resid_g132_b,pilot_forecast
+Ж-211:bounded:c114e1efbc79,Ж-211,hybrid_final_v1,bounded,"{""c"": 0.1, ""kind"": ""R2"", ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:bounded:ea41468dde1d,Ж-211,hybrid_final_v1,bounded,"{""c"": 0.2, ""kind"": ""R2"", ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:bounded:c40a071405f5,Ж-211,hybrid_final_v1,bounded,"{""c"": 0.35, ""kind"": ""R2"", ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:bounded:a791aa855748,Ж-211,hybrid_final_v1,bounded,"{""c"": 0.5, ""kind"": ""R2"", ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:residual_xgb:3254a85f8533,Ж-211,hybrid_final_v1,residual_xgb,"{""kind"": ""R3"", ""lam"": 0.25, ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:residual_xgb:d8e7a980b491,Ж-211,hybrid_final_v1,residual_xgb,"{""kind"": ""R3"", ""lam"": 0.5, ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:residual_xgb:7073e40cd196,Ж-211,hybrid_final_v1,residual_xgb,"{""kind"": ""R3"", ""lam"": 0.75, ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:bounded:d21f0013b0c8,Ж-211,hybrid_final_v1,bounded,"{""grid"": [[0.0, 1.0], [0.1, 1.0], [0.2, 1.0], [0.35, 1.0], [0.5, 1.0], [null, 1.0]], ""kind"": ""R2_wf"", ""min_closed"": 252, ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:residual_xgb:b64d71a44769,Ж-211,hybrid_final_v1,residual_xgb,"{""grid"": [[0.0, 1.0], [null, 0.25], [null, 0.5], [null, 0.75], [null, 1.0]], ""kind"": ""R3_wf"", ""min_closed"": 252, ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:residual_xgb:e669b6c3915f,Ж-211,hybrid_final_v1,residual_xgb,"{""grid"": [[0.0, 1.0], [0.1, 0.25], [0.1, 0.5], [0.1, 0.75], [0.1, 1.0], [0.2, 0.25], [0.2, 0.5], [0.2, 0.75], [0.2, 1.0], [0.35, 0.25], [0.35, 0.5], [0.35, 0.75], [0.35, 1.0], [0.5, 0.25], [0.5, 0.5], [0.5, 0.75], [0.5, 1.0], [null, 0.25], [null, 0.5], [null, 0.75], [null, 1.0]], ""kind"": ""R23_wf"", ""min_closed"": 252, ""model"": ""xgb"", ""stage"": ""bound""}",trial
+Ж-211:bounded:d6cd7272cd9b,Ж-211,hybrid_final_v1,bounded,"{""c"": 0.1, ""kind"": ""R2"", ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:bounded:5e6362796c5a,Ж-211,hybrid_final_v1,bounded,"{""c"": 0.2, ""kind"": ""R2"", ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:bounded:840ef65f532c,Ж-211,hybrid_final_v1,bounded,"{""c"": 0.35, ""kind"": ""R2"", ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:bounded:85396a053d11,Ж-211,hybrid_final_v1,bounded,"{""c"": 0.5, ""kind"": ""R2"", ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:residual_lgbm:b5d56c7ad232,Ж-211,hybrid_final_v1,residual_lgbm,"{""kind"": ""R3"", ""lam"": 0.25, ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:residual_lgbm:ef825f54c92d,Ж-211,hybrid_final_v1,residual_lgbm,"{""kind"": ""R3"", ""lam"": 0.5, ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:residual_lgbm:eb9ac6499015,Ж-211,hybrid_final_v1,residual_lgbm,"{""kind"": ""R3"", ""lam"": 0.75, ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:bounded:9b371d13b629,Ж-211,hybrid_final_v1,bounded,"{""grid"": [[0.0, 1.0], [0.1, 1.0], [0.2, 1.0], [0.35, 1.0], [0.5, 1.0], [null, 1.0]], ""kind"": ""R2_wf"", ""min_closed"": 252, ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:residual_lgbm:70bff19de917,Ж-211,hybrid_final_v1,residual_lgbm,"{""grid"": [[0.0, 1.0], [null, 0.25], [null, 0.5], [null, 0.75], [null, 1.0]], ""kind"": ""R3_wf"", ""min_closed"": 252, ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:residual_lgbm:1b62566e4307,Ж-211,hybrid_final_v1,residual_lgbm,"{""grid"": [[0.0, 1.0], [0.1, 0.25], [0.1, 0.5], [0.1, 0.75], [0.1, 1.0], [0.2, 0.25], [0.2, 0.5], [0.2, 0.75], [0.2, 1.0], [0.35, 0.25], [0.35, 0.5], [0.35, 0.75], [0.35, 1.0], [0.5, 0.25], [0.5, 0.5], [0.5, 0.75], [0.5, 1.0], [null, 0.25], [null, 0.5], [null, 0.75], [null, 1.0]], ""kind"": ""R23_wf"", ""min_closed"": 252, ""model"": ""lgbm"", ""stage"": ""bound""}",trial
+Ж-211:dyn_weights:4b67293fa01c,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H1"", ""members"": [""HAR"", ""XJ""], ""par"": 21, ""smooth"": ""ema"", ""stage"": ""weights"", ""target"": ""roll_126""}",trial
+Ж-211:dyn_weights:332ceb61ec76,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H1"", ""members"": [""HAR"", ""XJ""], ""par"": 63, ""smooth"": ""ema"", ""stage"": ""weights"", ""target"": ""roll_126""}",trial
+Ж-211:dyn_weights:afc0a9ebeab7,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H1"", ""members"": [""HAR"", ""XJ""], ""par"": 0.005, ""smooth"": ""rate"", ""stage"": ""weights"", ""target"": ""roll_126""}",trial
+Ж-211:dyn_weights:5863ec928009,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H1"", ""members"": [""HAR"", ""XJ""], ""par"": 0.02, ""smooth"": ""rate"", ""stage"": ""weights"", ""target"": ""roll_126""}",trial
+Ж-211:dyn_weights:6b1ecbe6854e,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H2"", ""members"": [""HAR"", ""LF""], ""par"": 21, ""smooth"": ""ema"", ""stage"": ""weights"", ""target"": ""roll_252""}",trial
+Ж-211:dyn_weights:b0dcbd1713df,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H2"", ""members"": [""HAR"", ""LF""], ""par"": 63, ""smooth"": ""ema"", ""stage"": ""weights"", ""target"": ""roll_252""}",trial
+Ж-211:dyn_weights:84fb12cf4081,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H2"", ""members"": [""HAR"", ""LF""], ""par"": 0.005, ""smooth"": ""rate"", ""stage"": ""weights"", ""target"": ""roll_252""}",trial
+Ж-211:dyn_weights:6b2bde2519b8,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H2"", ""members"": [""HAR"", ""LF""], ""par"": 0.02, ""smooth"": ""rate"", ""stage"": ""weights"", ""target"": ""roll_252""}",trial
+Ж-211:dyn_weights:17c446f15e74,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H7"", ""members"": [""HAR"", ""XJ"", ""LF""], ""par"": 63, ""smooth"": ""ema"", ""stage"": ""weights"", ""target"": ""roll_252""}",trial
+Ж-211:dyn_weights:ce71d2e52187,Ж-211,hybrid_final_v1,dyn_weights,"{""hyb"": ""H7"", ""members"": [""HAR"", ""XJ"", ""LF""], ""par"": 0.02, ""smooth"": ""rate"", ""stage"": ""weights"", ""target"": ""roll_252""}",trial
+Ж-211:residual_xgb:d81f00ed1f59,Ж-211,hybrid_final_v1,residual_xgb,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63"", ""f4_rq_rel"", ""f4_park"", ""f4_range"", ""f4_vov"", ""f4_hhi"", ""f5_corr_d"", ""f5_corr22"", ""f5_beta22"", ""f5_mret"", ""f5_mneg5"", ""f5_dvol"", ""f5_rel22"", ""f5_vol_dev""], ""groups"": [""F3"", ""F4"", ""F5""], ""kind"": ""set"", ""model"": ""xgb"", ""stage"": ""feat""}",trial
+Ж-211:residual_xgb:6de5a91ae277,Ж-211,hybrid_final_v1,residual_xgb,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63"", ""f4_rq_rel"", ""f4_park"", ""f4_range"", ""f4_vov"", ""f4_hhi""], ""groups"": [""F3"", ""F4""], ""kind"": ""set"", ""model"": ""xgb"", ""stage"": ""feat""}",trial
+Ж-211:residual_xgb:3c85d858c118,Ж-211,hybrid_final_v1,residual_xgb,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63"", ""f5_corr_d"", ""f5_corr22"", ""f5_beta22"", ""f5_mret"", ""f5_mneg5"", ""f5_dvol"", ""f5_rel22"", ""f5_vol_dev""], ""groups"": [""F3"", ""F5""], ""kind"": ""set"", ""model"": ""xgb"", ""stage"": ""feat""}",trial
+Ж-211:residual_xgb:6d91fbe0569c,Ж-211,hybrid_final_v1,residual_xgb,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63""], ""groups"": [""F3""], ""kind"": ""set"", ""model"": ""xgb"", ""stage"": ""feat""}",trial
+Ж-211:residual_xgb:90cf13eb6d23,Ж-211,hybrid_final_v1,residual_xgb,"{""cols"": [""f4_rq_rel"", ""f4_park"", ""f4_range"", ""f4_vov"", ""f4_hhi""], ""groups"": [""F4""], ""kind"": ""ablation"", ""model"": ""xgb"", ""stage"": ""feat""}",trial
+Ж-211:residual_xgb:ee9c4c23b49b,Ж-211,hybrid_final_v1,residual_xgb,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63""], ""groups"": [""F3""], ""kind"": ""ablation"", ""model"": ""xgb"", ""stage"": ""feat""}",trial
+Ж-211:residual_xgb:a29146b87267,Ж-211,hybrid_final_v1,residual_xgb,"{""grid"": [[0.0, 1.0], [0.1, 0.25], [0.1, 0.5], [0.1, 0.75], [0.1, 1.0], [0.2, 0.25], [0.2, 0.5], [0.2, 0.75], [0.2, 1.0], [0.35, 0.25], [0.35, 0.5], [0.35, 0.75], [0.35, 1.0], [0.5, 0.25], [0.5, 0.5], [0.5, 0.75], [0.5, 1.0], [null, 0.25], [null, 0.5], [null, 0.75], [null, 1.0]], ""kind"": ""R23_wf"", ""model"": ""xgb"", ""on"": ""abl_S34_noF3"", ""stage"": ""feat""}",trial
+Ж-211:residual_lgbm:36c9cbbe4c56,Ж-211,hybrid_final_v1,residual_lgbm,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63"", ""f4_rq_rel"", ""f4_park"", ""f4_range"", ""f4_vov"", ""f4_hhi"", ""f5_corr_d"", ""f5_corr22"", ""f5_beta22"", ""f5_mret"", ""f5_mneg5"", ""f5_dvol"", ""f5_rel22"", ""f5_vol_dev""], ""groups"": [""F3"", ""F4"", ""F5""], ""kind"": ""set"", ""model"": ""lgbm"", ""stage"": ""feat""}",trial
+Ж-211:residual_lgbm:2a30868797f4,Ж-211,hybrid_final_v1,residual_lgbm,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63"", ""f4_rq_rel"", ""f4_park"", ""f4_range"", ""f4_vov"", ""f4_hhi""], ""groups"": [""F3"", ""F4""], ""kind"": ""set"", ""model"": ""lgbm"", ""stage"": ""feat""}",trial
+Ж-211:residual_lgbm:8ff92aa07a47,Ж-211,hybrid_final_v1,residual_lgbm,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63"", ""f5_corr_d"", ""f5_corr22"", ""f5_beta22"", ""f5_mret"", ""f5_mneg5"", ""f5_dvol"", ""f5_rel22"", ""f5_vol_dev""], ""groups"": [""F3"", ""F5""], ""kind"": ""set"", ""model"": ""lgbm"", ""stage"": ""feat""}",trial
+Ж-211:residual_lgbm:72db7e6bd142,Ж-211,hybrid_final_v1,residual_lgbm,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63""], ""groups"": [""F3""], ""kind"": ""set"", ""model"": ""lgbm"", ""stage"": ""feat""}",trial
+Ж-211:residual_lgbm:effa4ce13dc5,Ж-211,hybrid_final_v1,residual_lgbm,"{""cols"": [""f4_rq_rel"", ""f4_park"", ""f4_range"", ""f4_vov"", ""f4_hhi""], ""groups"": [""F4""], ""kind"": ""ablation"", ""model"": ""lgbm"", ""stage"": ""feat""}",trial
+Ж-211:residual_lgbm:a8613f07fc96,Ж-211,hybrid_final_v1,residual_lgbm,"{""cols"": [""f3_rs_ratio"", ""f3_rs_ratio5"", ""f3_ret1"", ""f3_neg1"", ""f3_cumneg5"", ""f3_cumneg22"", ""f3_cum5"", ""f3_lev63""], ""groups"": [""F3""], ""kind"": ""ablation"", ""model"": ""lgbm"", ""stage"": ""feat""}",trial
+Ж-211:residual_lgbm:9ffbcefff6b5,Ж-211,hybrid_final_v1,residual_lgbm,"{""grid"": [[0.0, 1.0], [0.1, 0.25], [0.1, 0.5], [0.1, 0.75], [0.1, 1.0], [0.2, 0.25], [0.2, 0.5], [0.2, 0.75], [0.2, 1.0], [0.35, 0.25], [0.35, 0.5], [0.35, 0.75], [0.35, 1.0], [0.5, 0.25], [0.5, 0.5], [0.5, 0.75], [0.5, 1.0], [null, 0.25], [null, 0.5], [null, 0.75], [null, 1.0]], ""kind"": ""R23_wf"", ""model"": ""lgbm"", ""on"": ""abl_S34_noF3"", ""stage"": ""feat""}",trial
+Ж-212:har_features:1f37149023e4,Ж-212,hybrid_struct_v1,har_features,"{""base"": ""Б-2+F4 (33)"", ""blocks"": [""Bf""], ""control"": ""XJ"", ""hp"": ""hp_by_year X2"", ""model"": ""XGB""}",trial
+Ж-212:har_features:3a34d330f879,Ж-212,hybrid_struct_v1,har_features,"{""base"": ""Б-2+F4 (33)"", ""blocks"": [""Bc""], ""control"": ""XJ"", ""hp"": ""hp_by_year X2"", ""model"": ""XGB""}",trial
+Ж-212:har_features:c0a93b2d4e64,Ж-212,hybrid_struct_v1,har_features,"{""base"": ""Б-2+F4 (33)"", ""blocks"": [""Bf""], ""control"": ""LF"", ""hp"": ""LOYO 6 точек nl×lr, остальное C0_inh_F4"", ""model"": ""LGBM""}",trial
+Ж-212:har_features:c2d26371a566,Ж-212,hybrid_struct_v1,har_features,"{""base"": ""Б-2+F4 (33)"", ""blocks"": [""Bc""], ""control"": ""LF"", ""hp"": ""LOYO 6 точек nl×lr, остальное C0_inh_F4"", ""model"": ""LGBM""}",trial
+Ж-212:residual_qlike:e93f2dc703c2,Ж-212,hybrid_struct_v1,residual_qlike,"{""cfg"": ""Ca"", ""features"": ""B2F4"", ""hp"": {""colsample"": 0.8, ""l2"": 10.0, ""lr"": 0.03, ""mcw"": 50, ""subsample"": 0.8, ""trees"": 150}, ""model"": ""XGB"", ""mono"": [], ""mu"": 0.0, ""архитектурное_отличие_от"": ""Ж-206:xgb_lgbm_ensemble:fec343a84fe5 (B1q, XGB) / Ж-206:xgb_lgbm_ensemble:6378404826d8 (B2q, LGBM): аддитивная g без взаимодействий (глубина 1) и фиксированные HP вместо годового выбора И2""}",trial
+Ж-212:residual_qlike:03e5db5914cc,Ж-212,hybrid_struct_v1,residual_qlike,"{""cfg"": ""Cc"", ""features"": ""S7"", ""hp"": {""colsample"": 0.8, ""l2"": 10.0, ""lr"": 0.03, ""mcw"": 50, ""subsample"": 0.8, ""trees"": 150}, ""model"": ""XGB"", ""mono"": [], ""mu"": 0.0, ""архитектурное_отличие_от"": ""Ж-206:xgb_lgbm_ensemble:fec343a84fe5 / 6378404826d8 и Ж-211:residual_xgb:* / residual_lgbm:* (наборы S3/S34/S35/S345): только 7 «состояний HAR», без рыночных групп, закрытые ошибки HAR как признаки корректора""}",trial
+Ж-212:residual_qlike:9d20f6cba167,Ж-212,hybrid_struct_v1,residual_qlike,"{""cfg"": ""Ca"", ""features"": ""B2F4"", ""hp"": {""colsample"": 0.8, ""l2"": 10.0, ""lr"": 0.03, ""mcw"": 50, ""subsample"": 0.8, ""trees"": 150}, ""model"": ""LGBM"", ""mono"": [], ""mu"": 0.0, ""архитектурное_отличие_от"": ""Ж-206:xgb_lgbm_ensemble:fec343a84fe5 (B1q, XGB) / Ж-206:xgb_lgbm_ensemble:6378404826d8 (B2q, LGBM): аддитивная g без взаимодействий (глубина 1) и фиксированные HP вместо годового выбора И2""}",trial
+Ж-212:residual_qlike:875dea70f204,Ж-212,hybrid_struct_v1,residual_qlike,"{""cfg"": ""Cc"", ""features"": ""S7"", ""hp"": {""colsample"": 0.8, ""l2"": 10.0, ""lr"": 0.03, ""mcw"": 50, ""subsample"": 0.8, ""trees"": 150}, ""model"": ""LGBM"", ""mono"": [], ""mu"": 0.0, ""архитектурное_отличие_от"": ""Ж-206:xgb_lgbm_ensemble:fec343a84fe5 / 6378404826d8 и Ж-211:residual_xgb:* / residual_lgbm:* (наборы S3/S34/S35/S345): только 7 «состояний HAR», без рыночных групп, закрытые ошибки HAR как признаки корректора""}",trial
+Ж-212:component:5d5e154cb6d9,Ж-212,hybrid_struct_v1,component,"{""cols"": [0, 1, 2, 3, 4], ""kind"": ""D0"", ""name"": ""D0_full"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:d25b530c77ed,Ж-212,hybrid_struct_v1,component,"{""cols"": [1, 2, 3, 4], ""kind"": ""D0"", ""name"": ""D0_drop_d"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:b85782cf764d,Ж-212,hybrid_struct_v1,component,"{""cols"": [0, 2, 3, 4], ""kind"": ""D0"", ""name"": ""D0_drop_w"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:2123f925ed72,Ж-212,hybrid_struct_v1,component,"{""cols"": [0, 1, 3, 4], ""kind"": ""D0"", ""name"": ""D0_drop_m"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:8ae21d441efc,Ж-212,hybrid_struct_v1,component,"{""cols"": [0, 1, 2, 4], ""kind"": ""D0"", ""name"": ""D0_drop_J"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:311098faa001,Ж-212,hybrid_struct_v1,component,"{""cols"": [0, 1, 2, 3], ""kind"": ""D0"", ""name"": ""D0_drop_a"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:f2a771177ae2,Ж-212,hybrid_struct_v1,component,"{""form"": ""пни глубина 1, 100 деревьев, lr 0.05, QLIKE-gamma; offset = линейная часть D0-full без k + c0"", ""k"": ""d"", ""kind"": ""Dn"", ""name"": ""Dn_d"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:24e85bd15b88,Ж-212,hybrid_struct_v1,component,"{""form"": ""пни глубина 1, 100 деревьев, lr 0.05, QLIKE-gamma; offset = линейная часть D0-full без k + c0"", ""k"": ""w"", ""kind"": ""Dn"", ""name"": ""Dn_w"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:3cebb1610703,Ж-212,hybrid_struct_v1,component,"{""form"": ""пни глубина 1, 100 деревьев, lr 0.05, QLIKE-gamma; offset = линейная часть D0-full без k + c0"", ""k"": ""J"", ""kind"": ""Dn"", ""name"": ""Dn_J"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:component:680695018b86,Ж-212,hybrid_struct_v1,component,"{""X_t"": ""терциль RV_w, ln(RV_w/RV_m), терциль рынка, стресс Ж-210"", ""depth"": 2, ""k"": ""J"", ""kind"": ""Dx"", ""name"": ""Dx_J"", ""objective"": ""QLIKE-согласованная подгонка по закрытым парам"", ""phi"": [""d"", ""w"", ""m"", ""J"", ""a""]}",trial
+Ж-212:moe:d292993fd055,Ж-212,hybrid_struct_v1,moe,"{""experts"": ""HAR+XJ"", ""kind"": ""F1"", ""mix"": ""geometric"", ""selection"": ""causal on closed (>=252)""}",trial
+Ж-212:moe:c73a7558a75f,Ж-212,hybrid_struct_v1,moe,"{""experts"": ""HAR+LF"", ""kind"": ""F2"", ""mix"": ""geometric"", ""selection"": ""causal on closed (>=252)""}",trial
+Ж-214:qlike_harj:85ecfb0324c6,Ж-214,harj_hybrid_v2,qlike_harj,"{""controls"": [""A0"", ""D0_drop_a""], ""kind"": ""lin_qlike"", ""name"": ""Q1"", ""spec"": ""σ²=β0+βd·RVd+βw·RVw+βm·RVm+βJ·J в уровнях, β>=0, QLIKE-подгонка (проекция), закрытые пары, ежедневно"", ""отличие_от"": ""Ж-212:component:311098faa001""}",trial
+Ж-214:qlike_harj:46f70bbdf296,Ж-214,harj_hybrid_v2,qlike_harj,"{""controls"": [""A0"", ""D0_drop_a""], ""kind"": ""lin_qlike_nojump"", ""name"": ""Q2"", ""spec"": ""Q1 при βJ≡0"", ""отличие_от"": ""Ж-212:component:311098faa001""}",trial
+Ж-214:qlike_harj:fe874031b98b,Ж-214,harj_hybrid_v2,qlike_harj,"{""controls"": [""A0"", ""D0_drop_a""], ""kind"": ""loglin_qlike_decay"", ""name"": ""Q4"", ""overlap_Ж-204"": [""Ж-204:59dec5e1ace5"", ""Ж-204:942df233d1b2""], ""spec"": ""A0-спецификация (4 φ), QLIKE-подгонка с экспоненциальными весами, h∈{250;500;1000;∞} по закрытым (>=252; ничья — больший h)"", ""отличие_от"": ""Ж-212:component:311098faa001""}",trial
+Ж-214:qlike_harj:10a5819a0228,Ж-214,harj_hybrid_v2,qlike_harj,"{""controls"": [""A0"", ""D0_drop_a""], ""kind"": ""scale_c_pit"", ""name"": ""Q5"", ""spec"": ""коэффициенты A0, σ²=c_d·exp(f), c_d=mean RV/exp(f) по закрытым (>=252)"", ""отличие_от"": ""Ж-212:component:311098faa001""}",trial
+Ж-214:harq_j:c906ff3cb461,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_ln_d"", ""name"": ""H1"", ""q"": ""rq"", ""qlike"": false, ""spec"": ""ln RV_{t+1}=b0+(b_d+b_dQ·q_t)·ln RV_d+b_w ln RV_w+b_m ln RV_m+b_J ln(1+J), q=z(ln√RQ), OLS, σ²=exp(f+s²/2)""}",trial
+Ж-214:harq_j:55db23d115ea,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_rel_d"", ""name"": ""H4"", ""q"": ""rel"", ""qlike"": false, ""spec"": ""H1 с q=z(ln rv_rel), rv_rel=√(2RQ/n)/RV""}",trial
+Ж-214:harq_j:632de4132e57,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""qlike_harq_d"", ""name"": ""H7"", ""q"": ""rq"", ""qlike"": true, ""spec"": ""H1 с QLIKE-подгонкой в логарифмах (hs_qfit), σ²=exp(f)""}",trial
+Ж-214:harq_j:33f5a7a8c079,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_ln_dJ"", ""name"": ""H2"", ""spec"": {""q"": ""rq"", ""react"": [""J""]}}",trial
+Ж-214:harq_j:b2b1a8854499,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_ln_dw"", ""name"": ""H3"", ""spec"": {""q"": ""rq"", ""react"": [""w5""]}}",trial
+Ж-214:harq_j:da61544877fa,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_ln_d_wins"", ""name"": ""H5"", ""spec"": {""q"": ""rq"", ""wins"": [1, 99]}}",trial
+Ж-214:harq_j:d73233799ce5,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_ln_d_stress"", ""name"": ""H6"", ""spec"": {""q"": ""rq"", ""stress"": 80}}",trial
+Ж-214:harq_j:4bb685ea97c0,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""qlike_harq_dJ"", ""name"": ""H8"", ""spec"": {""q"": ""rq"", ""qlike"": true, ""react"": [""J""]}}",trial
+Ж-214:harq_j:989aa968d49b,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_levels_bpq"", ""name"": ""H9"", ""spec"": ""BPQ в уровнях, реакция >= 0 на [min, max] √RQ, QLIKE""}",trial
+Ж-214:harq_j:96908c460d53,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_plateau_1"", ""name"": ""H10"", ""spec"": {""q"": ""rq"", ""qwin"": 504, ""react"": [""J""]}}",trial
+Ж-214:harq_j:d8e1da64b3a2,Ж-214,harj_hybrid_v2,harq_j,"{""controls"": [""A0"", ""best_Q""], ""kind"": ""harq_plateau_2"", ""name"": ""H11"", ""spec"": {""q"": ""rq"", ""qwin"": 1008, ""react"": [""J""]}}",trial
+Ж-214:decomposition:139d493ed4b2,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""sign_own"", ""name"": ""S1"", ""scheme"": ""S"", ""spec"": ""RS+ и RS− — каждая log-HAR по своим d, w, m + ln(1+J); σ²=Σ""}",trial
+Ж-214:decomposition:0483d312a5e3,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""sign_shar_direct"", ""name"": ""S3"", ""scheme"": ""S"", ""spec"": ""прямая ln RV на [ln RS+_d, ln RS−_d, ln RV_w, ln RV_m, ln(1+J)] (SHAR-аналог, D1)""}",trial
+Ж-214:decomposition:25e9c9317f90,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""cj_own"", ""name"": ""J1"", ""scheme"": ""J"", ""spec"": ""C=RV−J: log-HAR по C + ln(1+J); J: ln(1+J) по своим d,w,m, Ĵ=max(expm1(f+s²/2),0); σ²=Ĉ+Ĵ""}",trial
+Ж-214:decomposition:260ec804e3d6,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""cj_logit"", ""name"": ""J3"", ""scheme"": ""J"", ""spec"": ""P(J_{t+1}>0): логистика+ridge λ=1, прогноз будущих скачков""}",trial
+Ж-214:decomposition:59ca706d2821,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""tod_own"", ""name"": ""T1"", ""scheme"": ""T"", ""spec"": ""OPEN, MIDDLE, CLOSE — каждая log-HAR по своим d,w,m + ln(1+J); σ²=Σ""}",trial
+Ж-214:decomposition:9ef15e4709eb,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""tod_edges"", ""name"": ""T3"", ""scheme"": ""T"", ""spec"": ""T1 + ln CLOSE_d в OPEN и MIDDLE, ln OPEN_d в CLOSE (края дня)""}",trial
+Ж-214:reconciliation:2ac73ec369e5,Ж-214,harj_hybrid_v2,reconciliation,"{""base_cfg"": ""T3"", ""controls"": [""A0"", ""SUM""], ""kind"": ""geo_blend"", ""name"": ""R2T"", ""scheme"": ""T"", ""spec"": ""f_д^(1−w)·f_Σ^w, w по закрытым (>=252), компоненты пропорционально""}",trial
+Ж-214:seasonality:10f5f6198671,Ж-214,harj_hybrid_v2,seasonality,"{""change_type"": ""input_measurement"", ""controls"": [""A0 (каноническая RV)""], ""kind"": ""sa_exp_input"", ""name"": ""Z1"", ""spec"": ""RV_sa (профиль — расширяющаяся медиана долей слота по дням < d) вместо RV в d, w, m; J прежний; цель — RV""}",trial
+Ж-214:seasonality:02b6367b29e4,Ж-214,harj_hybrid_v2,seasonality,"{""change_type"": ""input_measurement"", ""controls"": [""A0 (каноническая RV)""], ""kind"": ""sa_roll250_input"", ""name"": ""Z2"", ""spec"": ""то же, профиль — медиана долей за последние 250 дней""}",trial
+Ж-214:seasonality:13bdc21544af,Ж-214,harj_hybrid_v2,seasonality,"{""change_type"": ""input_measurement"", ""controls"": [""A0 (каноническая RV)""], ""kind"": ""sub20_input"", ""name"": ""Z4"", ""spec"": ""RV на 20-минутной сетке (среднее двух сдвигов) вместо RV в d, w, m""}",trial
+Ж-214:seasonality:35cc9eb48cea,Ж-214,harj_hybrid_v2,seasonality,"{""change_type"": ""input_measurement"", ""controls"": [""A0 (каноническая RV)""], ""kind"": ""trim_first_input"", ""name"": ""Z5"", ""spec"": ""RV без первого бара (слот 0) вместо RV в d, w, m""}",trial
+Ж-214:seasonality:a04f2e4f3648,Ж-214,harj_hybrid_v2,seasonality,"{""change_type"": ""target_definition"", ""controls"": [""A0""], ""kind"": ""sa_target_version"", ""name"": ""Z6"", ""profile"": ""Z2"", ""spec"": ""A0-спецификация по RV_sa, шкала c_d по закрытым, сравнение на исходной RV""}",trial
+Ж-214:decomposition:1470c1b09c62,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""tod_cross"", ""name"": ""T2"", ""scheme"": ""T"", ""spec"": ""OPEN/MIDDLE/CLOSE: свои d,w,m + ln(1+J) + ln d-лаг двух других частей, OLS в логарифмах""}",trial
+Ж-214:decomposition:cd1fb1b84d3e,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""tod_qlike"", ""name"": ""T4"", ""scheme"": ""T"", ""spec"": ""признаки T1, QLIKE-подгонка по каждой части, σ̂²=exp(Xγ)""}",trial
+Ж-214:decomposition:98500729efb4,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""tod_edges_w"", ""name"": ""P1"", ""scheme"": ""T"", ""spec"": ""T3 с краевой частью по w-среднему (плато T3)""}",trial
+Ж-214:decomposition:df3b7e66964e,Ж-214,harj_hybrid_v2,decomposition,"{""controls"": [""A0 (прямой D1)""], ""kind"": ""tod_edges_qlike"", ""name"": ""P2"", ""scheme"": ""T"", ""spec"": ""признаки T3, QLIKE-подгонка (плато T3)""}",trial
+Ж-214:seasonality:034d1a9ace34,Ж-214,harj_hybrid_v2,seasonality,"{""change_type"": ""input_measurement"", ""controls"": [""A0 (каноническая RV)""], ""kind"": ""sa_roll60_input"", ""name"": ""Z3"", ""spec"": ""RV_sa (профиль — медиана долей слота за последние 60 дней) вместо RV в d, w, m; J прежний; цель — RV""}",trial
+Ж-214:seasonality:be9580dadcb1,Ж-214,harj_hybrid_v2,seasonality,"{""change_type"": ""input_measurement"", ""controls"": [""A0 (каноническая RV)""], ""kind"": ""sa_roll500_input"", ""name"": ""Z7"", ""spec"": ""то же, профиль — последние 500 дней (сосед Z2)""}",trial
+Ж-214:structural_ml:e23f88336a1b,Ж-214,harj_hybrid_v2,structural_ml,"{""base"": ""A0 (HAR-J(б), PIT)"", ""controls"": [""XJ"", ""A0"", ""LF"", ""Ж-212 Ca/Cc"", ""A1_roll_126""], ""features"": ""ядро (4 HAR-признака + ln база) + группы MS (У24)"", ""groups"": [""Q"", ""S"", ""T"", ""M""], ""hp"": {""colsample"": 0.8, ""l2"": 10.0, ""lr"": 0.03, ""mcw"": 50, ""subsample"": 0.8, ""trees"": 150}, ""kind"": ""N1"", ""lambda_rule"": ""λ_wf по закрытым (>= 252), до этого 0 ≡ база"", ""lambdas"": [0.0, 0.25, 0.5, 0.75, 1.0], ""lib"": ""XGB"", ""mu"": 0.0, ""name"": ""N1x_A0"", ""parent"": null, ""отличие_от"": ""Ж-212:residual_qlike:03e5db5914cc"", ""отличие_также_от"": ""Ж-212:residual_qlike:e93f2dc703c2""}",trial
+Ж-214:structural_ml:5fe87cca6151,Ж-214,harj_hybrid_v2,structural_ml,"{""base"": ""A0 (HAR-J(б), PIT)"", ""controls"": [""XJ"", ""A0"", ""LF"", ""Ж-212 Ca/Cc"", ""A1_roll_126""], ""features"": ""ядро (4 HAR-признака + ln база) + группы MS (У24)"", ""groups"": [""Q"", ""S"", ""T"", ""M""], ""hp"": {""colsample"": 0.8, ""l2"": 10.0, ""lr"": 0.03, ""mcw"": 50, ""subsample"": 0.8, ""trees"": 150}, ""kind"": ""N1"", ""lambda_rule"": ""λ_wf по закрытым (>= 252), до этого 0 ≡ база"", ""lambdas"": [0.0, 0.25, 0.5, 0.75, 1.0], ""lib"": ""LGBM"", ""mu"": 0.0, ""name"": ""N1l_A0"", ""parent"": null, ""отличие_от"": ""Ж-212:residual_qlike:875dea70f204"", ""отличие_также_от"": ""Ж-212:residual_qlike:9d20f6cba167""}",trial
+Ж-214:market:d19e477a4d77,Ж-214,harj_hybrid_v2,market,"{""blocks"": [], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""mb"", ""name"": ""E1"", ""spec"": ""log-OLS A0-спецификации + Mb (imoex_d/w/m, corr/beta окна 22)"", ""use_mb"": true, ""win"": 22}",trial
+Ж-214:market:0450372701b8,Ж-214,harj_hybrid_v2,market,"{""blocks"": [""semicov""], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""mb_semicov"", ""name"": ""E2"", ""spec"": ""log-OLS A0-спецификации + Mb (imoex_d/w/m, corr/beta окна 22) + блоки semicov"", ""use_mb"": true, ""win"": 22}",trial
+Ж-214:market:d80791b637f5,Ж-214,harj_hybrid_v2,market,"{""blocks"": [""idio""], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""mb_idio"", ""name"": ""E3"", ""spec"": ""log-OLS A0-спецификации + Mb (imoex_d/w/m, corr/beta окна 22) + блоки idio"", ""use_mb"": true, ""win"": 22}",trial
+Ж-214:market:f14a271f8b87,Ж-214,harj_hybrid_v2,market,"{""blocks"": [""relrv""], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""mb_relrv"", ""name"": ""E4"", ""spec"": ""log-OLS A0-спецификации + Mb (imoex_d/w/m, corr/beta окна 22) + блоки relrv"", ""use_mb"": true, ""win"": 22}",trial
+Ж-214:market:96cff30fcd1a,Ж-214,harj_hybrid_v2,market,"{""blocks"": [""dmkt""], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""mb_dmkt"", ""name"": ""E5"", ""spec"": ""log-OLS A0-спецификации + Mb (imoex_d/w/m, corr/beta окна 22) + блоки dmkt"", ""use_mb"": true, ""win"": 22}",trial
+Ж-214:market:c62e82d24031,Ж-214,harj_hybrid_v2,market,"{""blocks"": [""mktsemi""], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""mb_mktsemi"", ""name"": ""E6"", ""spec"": ""log-OLS A0-спецификации + Mb (imoex_d/w/m, corr/beta окна 22) + блоки mktsemi"", ""use_mb"": true, ""win"": 22}",trial
+Ж-214:market:cbae5c152ac9,Ж-214,harj_hybrid_v2,market,"{""blocks"": [""semicov"", ""idio""], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""mb_all_new"", ""name"": ""E7"", ""spec"": ""log-OLS A0-спецификации + Mb (imoex_d/w/m, corr/beta окна 22) + блоки semicov,idio"", ""use_mb"": true, ""win"": 22}",trial
+Ж-214:market:8a01cfd1056f,Ж-214,harj_hybrid_v2,market,"{""blocks"": [""semicov"", ""idio""], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""a0_new_only"", ""name"": ""E8"", ""spec"": ""log-OLS A0-спецификации + без Mb + блоки semicov,idio"", ""use_mb"": false, ""win"": 22}",trial
+Ж-214:market:884812c1cb12,Ж-214,harj_hybrid_v2,market,"{""blocks"": [], ""controls"": [""Mb (E1)"", ""A0"", ""XJ"", ""LF""], ""kind"": ""mb_win63"", ""name"": ""E9"", ""spec"": ""log-OLS A0-спецификации + Mb (imoex_d/w/m, corr/beta окна 63)"", ""use_mb"": true, ""win"": 63}",trial
+Ж-217:xgb:A1:7f399c644c83,Ж-217,harj_panel_hybrid,panel_global,"{""arch"": ""panel_global"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 64323, ""name"": ""A1"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:B1:7cf57abecddd,Ж-217,harj_panel_hybrid,global_individual_alpha,"{""arch"": ""global_individual_alpha"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 64323, ""name"": ""B1"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:C1:e3150678c11f,Ж-217,harj_panel_hybrid,market_idio,"{""arch"": ""market_idio"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 59592, ""name"": ""C1"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:D1:e5bb1f3207e5,Ж-217,harj_panel_hybrid,confidence_gated,"{""arch"": ""confidence_gated"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 64323, ""name"": ""D1"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:A1:76264a7c8b83,Ж-217,harj_panel_hybrid,panel_global,"{""arch"": ""panel_global"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 64323, ""name"": ""A1"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:B1:6035d15e362b,Ж-217,harj_panel_hybrid,global_individual_alpha,"{""arch"": ""global_individual_alpha"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 64323, ""name"": ""B1"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:A2:b7574ba70c57,Ж-217,harj_panel_hybrid,panel_global_l2log,"{""arch"": ""panel_global_l2log"", ""kind"": ""panel_hybrid"", ""loss"": ""l2log"", ""module"": ""xgb"", ""n_rows"": 64323, ""name"": ""A2"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:C1:f2b2095882ba,Ж-217,harj_panel_hybrid,market_idio,"{""arch"": ""market_idio"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 59592, ""name"": ""C1"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:D1:92c03b5ec54a,Ж-217,harj_panel_hybrid,confidence_gated,"{""arch"": ""confidence_gated"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 64323, ""name"": ""D1"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:A3:1b784764bee8,Ж-217,harj_panel_hybrid,panel_global_X_only,"{""arch"": ""panel_global_X_only"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 64323, ""name"": ""A3"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:A2:3d3b833cfdb3,Ж-217,harj_panel_hybrid,panel_global_l2log,"{""arch"": ""panel_global_l2log"", ""kind"": ""panel_hybrid"", ""loss"": ""l2log"", ""module"": ""lgbm"", ""n_rows"": 64323, ""name"": ""A2"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:A3:1b78e6de1ef4,Ж-217,harj_panel_hybrid,panel_global_X_only,"{""arch"": ""panel_global_X_only"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 64323, ""name"": ""A3"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:A4:06873e113c66,Ж-217,harj_panel_hybrid,panel_global_plus_K2_features,"{""arch"": ""panel_global_plus_K2_features"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 64323, ""name"": ""A4"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:A4:93da3ce7eb20,Ж-217,harj_panel_hybrid,panel_global_plus_K2_features,"{""arch"": ""panel_global_plus_K2_features"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 64323, ""name"": ""A4"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:B2:de43bcd1efd7,Ж-217,harj_panel_hybrid,global_individual_alpha_gamma,"{""arch"": ""global_individual_alpha_gamma"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 64323, ""name"": ""B2"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:B2:f141cdeaffd1,Ж-217,harj_panel_hybrid,global_individual_alpha_gamma,"{""arch"": ""global_individual_alpha_gamma"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 64323, ""name"": ""B2"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:C2:181e5277b239,Ж-217,harj_panel_hybrid,market_idio_gm0,"{""arch"": ""market_idio_gm0"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 59592, ""name"": ""C2"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:C2:dd0c349cc7b5,Ж-217,harj_panel_hybrid,market_idio_gm0,"{""arch"": ""market_idio_gm0"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 59592, ""name"": ""C2"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:lgbm:D2:dade9f41367b,Ж-217,harj_panel_hybrid,confidence_gated_reliability_index,"{""arch"": ""confidence_gated_reliability_index"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""lgbm"", ""n_rows"": 64323, ""name"": ""D2"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial
+Ж-217:xgb:D2:9b90b7e876c4,Ж-217,harj_panel_hybrid,confidence_gated_reliability_index,"{""arch"": ""confidence_gated_reliability_index"", ""kind"": ""panel_hybrid"", ""loss"": ""qlike"", ""module"": ""xgb"", ""n_rows"": 64323, ""name"": ""D2"", ""select"": ""closed Y-1 (У-7)"", ""trial"": true, ""years"": ""2016-2026""}",trial

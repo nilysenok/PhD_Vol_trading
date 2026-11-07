@@ -217,9 +217,13 @@ STAGES = {"inv": stage_inv, "daily": stage_daily, "har": stage_har, "shift": sta
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=list(STAGES))
+    ap.add_argument("--stage", required=True, choices=list(STAGES) + ["hyb"])
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--module", choices=("xgb", "lgbm"))
     a = ap.parse_args()
+    if a.stage == "hyb":          # P2 (G9/G10): гибриды панели; --module обязателен
+        from models_v2.s10 import hp_hyb_run
+        return hp_hyb_run.stage(a.module, a.check) if a.module else ap.error("--stage hyb требует --module xgb|lgbm")
     return STAGES[a.stage](a.check)
 
 
