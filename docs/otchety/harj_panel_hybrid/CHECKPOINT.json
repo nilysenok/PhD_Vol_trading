@@ -1,0 +1,14 @@
+{
+ "program": "Ж-215/Ж-217 HAR-J Panel Hybrid, h=1",
+ "continues": "docs/otchety/harj_hybrid_v2/CHECKPOINT.json",
+ "N_registry_start": 585,
+ "budget": {
+  "total": 24,
+  "xgb": 10,
+  "lgbm": 10,
+  "reserve": 4
+ },
+ "used": 0,
+ "leaf": "P0",
+ "updated": "2026-11-07 08:32"
+}
