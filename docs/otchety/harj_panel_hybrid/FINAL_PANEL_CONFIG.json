@@ -1,0 +1,171 @@
+{
+ "status": "исследовательский, HISTORICAL WALK-FORWARD, не независимый OOS; не ACCEPTED; цифры — потолок",
+ "horizon": "h = 1",
+ "training_universe": {
+  "tickers": [
+   "AFLT",
+   "ALRS",
+   "HYDR",
+   "IRAO",
+   "LKOH",
+   "LSRG",
+   "MGNT",
+   "MOEX",
+   "MTLR",
+   "MTSS",
+   "NVTK",
+   "OGKB",
+   "PHOR",
+   "RTKM",
+   "SBER",
+   "TATN",
+   "VTBR"
+  ],
+  "n": 17,
+  "note": "Ж-220: E11 в обучении, выборе и поперечных признаках нет"
+ },
+ "finalists": {
+  "primary": "lgbm_D2",
+  "second": "xgb_D2"
+ },
+ "architecture": {
+  "lgbm_D2": "Confidence-Gated D2: λ_{i,t} = σ(w·z), z = (Ḡ 63 дня, разброс g по 5 бэггинг-копиям, ln RV_d/RV_m IMOEX, ln RV_d/RV_w, доля знака g за 22 дня), w — ридж-логистика по закрытым; f = HAR-J·exp(λ·clip(g, ±c)), g — LGBM QLIKE на 28 признаках z_*",
+  "xgb_D2": "то же, модуль XGBoost (второй финалист; порог R9 к K1 не прошёл: запас −0,000031)"
+ },
+ "features": [
+  "z_x_d_m",
+  "z_x_w_m",
+  "z_x_j_m",
+  "z_x_hdev",
+  "z_x_err1",
+  "z_x_err5",
+  "z_x_err22",
+  "z_x_jshare",
+  "z_x_open",
+  "z_x_mid",
+  "z_x_close",
+  "z_x_open_dev",
+  "z_x_mid_dev",
+  "z_x_close_dev",
+  "z_x_ln_close_mid",
+  "z_x_rs_neg_pos",
+  "z_x_ln_rel",
+  "z_m_imo_d_m",
+  "z_m_imo_w_m",
+  "z_m_med",
+  "z_m_disp",
+  "z_m_share_up",
+  "z_c_corr22",
+  "z_c_sys_share",
+  "z_c_ln_idio",
+  "z_c_semi_asym",
+  "z_c_rank",
+  "z_c_dev_med"
+ ],
+ "grid": {
+  "depth": [
+   2,
+   4
+  ],
+  "c": [
+   0.5,
+   1.0,
+   2.0
+  ],
+  "lambda": [
+   0.0,
+   0.25,
+   0.5,
+   0.75,
+   1.0
+  ],
+  "hp": {
+   "lr": 0.03,
+   "rounds": 800,
+   "patience": 50,
+   "min_leaf": 500,
+   "l2": 10.0,
+   "subsample": 0.8,
+   "colsample": 0.8,
+   "seed": 42,
+   "es_dates": 126,
+   "min_train": 1000
+  },
+  "default_first_year": [
+   2,
+   1.0,
+   1.0
+  ]
+ },
+ "yearly_selection_rule": "глубина, c, λ (κ, a, b, w) на год Y — по закрытым прогнозам года Y−1 по 17 бумагам (средний по бумагам QLIKE); первый год — default",
+ "selection": {
+  "crit_panel_window": "M16 × цели 2017–2021",
+  "margin_vs_K1": 0.0005,
+  "N_holm": 631,
+  "triple": [
+   "lgbm_D2"
+  ],
+  "u16": true
+ },
+ "input_sha256_16": {
+  "engine_panel_p17.parquet": "64efbc21ae4ee182",
+  "hyb_xgb_p17.parquet": "4651022b40f8fb8f",
+  "hyb_lgbm_p17.parquet": "4ae8d821a0a93377",
+  "panel_base.parquet": "6e2988c6a8615ac6",
+  "loto_p17_xgb.parquet": "0a75cbacec3f4dcb",
+  "loto_p17_lgbm.parquet": "cb0d121abd37ea0e",
+  "k45_p17.parquet": "adcad498dc29fe00"
+ },
+ "code": {
+  "git_head": "cc5f73018c1c3d190286f3cc66caab81343a5118",
+  "note": "models_v2/ в этой ветке не отслеживается git (так было до работы); ниже — SHA-256[:16] файлов кода",
+  "files_sha256_16": {
+   "hp_ctrl.py": "f98c4ae9ba178608",
+   "hp_daily.py": "88d61d290398432a",
+   "hp_diag.py": "61fc4a8e61070376",
+   "hp_diag_ab.py": "16630d1b05d2b7fa",
+   "hp_diag_core.py": "045c775a6248a30a",
+   "hp_diag_data.py": "ee0d19b3435fbb28",
+   "hp_diag_dh.py": "97961362ecd93885",
+   "hp_diag_rules.py": "08ec90322c39a292",
+   "hp_diag_tab.py": "eae362c5b75e1fcf",
+   "hp_engine.py": "c628f6f61e0aedb4",
+   "hp_feat.py": "d510310cf48a2783",
+   "hp_har.py": "c8136b0d71fe0fe7",
+   "hp_hyb_a4.py": "6b3ecd814e5b0844",
+   "hp_hyb_b.py": "bc77a7a54d7e21c3",
+   "hp_hyb_c.py": "0de4b701ab035c4c",
+   "hp_hyb_core.py": "b0210a40caf72700",
+   "hp_hyb_d.py": "1f0f2a47f7b7b4d4",
+   "hp_hyb_out.py": "e32bafde3440ea9d",
+   "hp_hyb_run.py": "b5baa272a9af566c",
+   "hp_inv.py": "62ef1341bd01d931",
+   "hp_k23.py": "4f3d73ac0c12cf87",
+   "hp_k23_calc.py": "a75ec4eec11ce2fa",
+   "hp_k23_out.py": "b3e244f16788685e",
+   "hp_k23_world.py": "2f177dfd2da2fe57",
+   "hp_loto.py": "a8b17bc4d762e968",
+   "hp_p17.py": "e329eb04921c0c0e",
+   "hp_p17_hyb.py": "983b1f7dbfcb56c9",
+   "hp_p17_out.py": "40039445d9f281a5",
+   "hp_p17_run.py": "6817c12b6b695098",
+   "hp_panel.py": "9194d3277aef576e",
+   "hp_paths.py": "423f2313d4b90a68",
+   "hp_port.py": "35e1b4a56ff5a6a3",
+   "hp_s17_check.py": "69fb077c23616e4a",
+   "hp_s17_loto.py": "3abf0f8a2fcade7c",
+   "hp_s17_run.py": "0608c2539f6ec30d",
+   "hp_s17_sel.py": "5640fef0864e4662",
+   "hp_s17_stats.py": "3818abfcef318e27",
+   "hp_shift.py": "40fbeb32dff67ec7",
+   "hp_stats_cmp.py": "ba21fcb24c2b373f",
+   "hp_stats_run.py": "83ee25561e11f618",
+   "hp_stats_sel.py": "7441fc5a855604a0",
+   "hp_stats_tst.py": "56bd1ee8500ec0ea",
+   "hp_stats_val.py": "ad8546f93fbb6be5",
+   "hp_sync.py": "f68adb09ccee16d0",
+   "hp_synth.py": "ae117c759aa04dde",
+   "run_hp.py": "1fdb3d531375084b"
+  }
+ }
+}

@@ -216,7 +216,7 @@ STAGES = {"inv": stage_inv, "daily": stage_daily, "har": stage_har, "shift": sta
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=list(STAGES) + ["hyb", "stats", "loto", "p17", "s17"])
+    ap.add_argument("--stage", required=True, choices=list(STAGES) + ["hyb", "stats", "loto", "p17", "s17", "diag"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--module", choices=("xgb", "lgbm"))
     ap.add_argument("--part", default="all")
@@ -227,7 +227,10 @@ def main() -> int:
     if a.stage in ("stats", "loto"):          # P3 (G11/G12)
         from models_v2.s10 import hp_stats_run
         return hp_stats_run.stage(a.stage, a.check, a.part, a.module)
-    if a.stage == "s17":          # P3-17 (G17, Ж-220): выбор, LOTO, статистика на 17 и перенос на E11
+    if a.stage == "diag":         # P3c (G13, Ж-217 R15): диагностика причин на обучении на 17
+        from models_v2.s10 import hp_diag
+        return hp_diag.stage(a.check)
+    if a.stage == "s17":        # P3-17 (G17, Ж-220): выбор, LOTO, статистика на 17 и перенос на E11
         from models_v2.s10 import hp_s17_run
         return hp_s17_run.stage(a.part, a.module, a.check)
     if a.stage == "p17":          # P17 (G16, Ж-220): обучение на 17
