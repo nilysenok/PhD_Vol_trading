@@ -16,11 +16,15 @@ POPS = {"17": ("M16", "SBER"), "E11": ("E11",)}
 TABLES = ("COMPARISON", "TESTS", "MCS", "PER_TICKER", "HARJ_VALUE")
 
 
+N_KEY = "N_declared_before_stats_p17_loto16"        # У-25: 631 + 3 повтора LOTO = 634 (ключ 631 — прежний, в архиве)
+LOTO_PREFIX = "loto16_p17_"                         # LOTO с поперечными признаками по 16 (прежние `loto_p17_*` в выводы не идут)
+
+
 def declared_n() -> int:
     cp = json.loads((P.REP / "CHECKPOINT.json").read_text())
-    if "N_declared_before_stats_p17" not in cp:
-        raise SystemExit("N не объявлено в CHECKPOINT.json: сначала `s17 --part sel`")
-    return int(cp["N_declared_before_stats_p17"])
+    if N_KEY not in cp:
+        raise SystemExit("N не объявлено в CHECKPOINT.json (%s): сначала шаг 1 листа LOTO-16" % N_KEY)
+    return int(cp[N_KEY])
 
 
 def population(k: pd.DataFrame, pop: str) -> pd.DataFrame:
@@ -90,7 +94,7 @@ def save(pop: str, parts: dict) -> None:
 
 def load_loto17() -> pd.DataFrame:
     """LOTO на 17 всех объявленных прогонов; неполный (не 17 бумаг у прогона) — ошибка."""
-    df = pd.concat([pd.read_parquet(P.OUT / ("loto_p17_%s.parquet" % m)) for m in ("xgb", "lgbm") if (P.OUT / ("loto_p17_%s.parquet" % m)).exists()], ignore_index=True)
+    df = pd.concat([pd.read_parquet(P.OUT / ("%s%s.parquet" % (LOTO_PREFIX, m))) for m in ("xgb", "lgbm") if (P.OUT / ("%s%s.parquet" % (LOTO_PREFIX, m))).exists()], ignore_index=True)
     decl = json.loads((SEL.D17 / "SELECTION.json").read_text())["loto"]
     bad = [c for c in decl if df[df["config"] == c]["ticker"].nunique() != 17]
     if bad:
@@ -119,7 +123,7 @@ def assemble(n: int, log=print) -> None:
     if "17" in have and _path("17", "lt").exists():
         lt = relabel(rd("17", "lt"), "17", "name")
         lt = lt[lt["n_tickers"].fillna(1) > 0] if "n_tickers" in lt else lt
-        _write("LOTO", lt, "LOTO на 17 (У-22): обучение на 16, выбор по 16; по бумагам и группам; панельные DM — в TESTS (config__LOTO)")
+        _write("LOTO", lt, "LOTO на 17 (У-22, У-25): обучение на 16, выбор по 16, поперечные признаки по 16; по бумагам и группам; панельные DM — в TESTS (config__LOTO)")
         loto_cfgs = set(tests[tests["config"].str.endswith("__LOTO")]["config"].str.replace("__LOTO", "", regex=False))
     if "17" in have:
         _write("LEVELS", V.levels(pt, tests, loto_cfgs).assign(population="17; l4_e11 — перенос на E11"), "уровни R14; evidence: confirm (M16 × 2022–02.2026), hist (M16 × вся история); уровень 4 — E11 и LOTO; потолок, ACCEPTED не присваивается")

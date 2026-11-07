@@ -32,5 +32,17 @@
  ],
  "declared_at_p17": "2026-11-07 12:07",
  "diag_rules_declared_at": "2026-11-07 14:01:22",
- "diag_rules_sha": "6179ebc89cbdb750"
+ "diag_rules_sha": "6179ebc89cbdb750",
+ "N_declared_before_stats_p17_loto16": 634,
+ "declared_at_p17_loto16": "2026-11-07 14:32",
+ "loto16_declared_p17": [
+  "xgb_A1",
+  "lgbm_A1",
+  "lgbm_D2"
+ ],
+ "loto16_note": "У-25: 631 + 3 повтора LOTO (поперечные признаки по 16); консервативно, прежний LOTO в N остаётся",
+ "selection_sha256_before_loto16": {
+  "SELECTION.csv": "2443f14e5d23ab0a0fa96fd37d068357ef952a04bcaf8785ffce7f2d69bfbfe5",
+  "SELECTION.json": "14986411ea15450edc962f4ddfd050f312e6d8f7647f43c18c4dc909987dab7c"
+ }
 }

@@ -43,9 +43,10 @@ def rank_outside(lnrel: pd.DataFrame, med: pd.Series, x: pd.Series) -> tuple:
     return ((less + 1.0) / (n + 1.0)).where(ok), (x - med.reindex(x.index)).where(ok)
 
 
-def features_all(daily: dict, imo: pd.DataFrame, k1: dict) -> dict:
-    """{бумага: таблица X/M/C (сырые + z)} на её датах; как hp_panel.features_all, но поперечные величины — по бумагам 17 (У-19)."""
-    mem = cross_members(list(daily))
+def features_all(daily: dict, imo: pd.DataFrame, k1: dict, cross=None) -> dict:
+    """{бумага: таблица X/M/C (сырые + z)} на её датах; как hp_panel.features_all, но поперечные величины — по бумагам 17 (У-19).
+    cross (У-25, LOTO-16): явный состав поперечных признаков (бумаги не из него — ранг и отклонение относительно него); по умолчанию — 17."""
+    mem = cross_members(list(daily)) if cross is None else [t for t in daily if t in cross]
     lnrel, up = PN.cross_frames({t: daily[t] for t in mem})
     cs = SY.cross_stats(lnrel, up)
     rank, dev = SY.cross_rank(lnrel, cs["m_med"])
@@ -62,10 +63,10 @@ def features_all(daily: dict, imo: pd.DataFrame, k1: dict) -> dict:
     return out
 
 
-def build_panel(daily: dict, imo: pd.DataFrame) -> pd.DataFrame:
-    """Панель движка (28 бумаг), K1 и все прочие колонки — как `hp_ctrl.build_panel_ext`; поперечные признаки — по 17."""
-    k1 = CT.k1_ext(daily)
-    feats = features_all(daily, imo, k1)
+def build_panel(daily: dict, imo: pd.DataFrame, cross=None, k1: dict | None = None) -> pd.DataFrame:
+    """Панель движка (28 бумаг), K1 и все прочие колонки — как `hp_ctrl.build_panel_ext`; поперечные признаки — по 17 (cross задан только в LOTO-16; k1 — готовый, чтобы не считать 17 раз)."""
+    k1 = CT.k1_ext(daily) if k1 is None else k1
+    feats = features_all(daily, imo, k1, cross)
     parts = [PN.ticker_rows(t, daily[t], k1[t], feats[t], imo["rv"]) for t in P.TICKERS]
     return pd.concat(parts, ignore_index=True).sort_values(["date", "ticker"]).reset_index(drop=True)
 

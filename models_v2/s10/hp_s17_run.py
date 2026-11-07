@@ -28,6 +28,9 @@ def stage(part: str, module: str | None, check: bool, nthread: int = 4) -> int:
     elif part in ("loto", "loto-rev") and module:
         from models_v2.s10 import hp_s17_loto as LO
         LO.run_module(module, [c.split("_", 1)[1] for c in declared()["loto"] if c.startswith(module + "_")], nthread, _log, reverse=part == "loto-rev")
+    elif part in ("loto16", "loto16-rev") and module:        # У-25: поперечные признаки по 16, те же 3 прогона
+        from models_v2.s10 import hp_s17_loto16 as LO16
+        LO16.run_module(module, [c.split("_", 1)[1] for c in declared()["loto"] if c.startswith(module + "_")], nthread, _log, reverse=part == "loto16-rev")
     elif part in ("stats", "e11"):
         from models_v2.s10 import hp_s17_stats as ST
         ST.run_part(part, _log)

@@ -71,7 +71,7 @@ def table_vs(pop: str, te: pd.DataFrame, bases: tuple, series: list) -> pd.DataF
 
 def build() -> str:
     cmp_, sel, mc, te = _rd("COMPARISON.csv"), _rd("SELECTION.csv"), _rd("MCS.csv"), _rd("TESTS.csv")
-    out = ["# Таблицы итога (генератор `hp_diag_tab.py`; источники — `statistics_p17/*.csv`, не пересчитывались)", "Δ = QLIKE(ряд) − QLIKE(база); минус — ряд лучше. DM — Ньюи–Уэст 5 по датам; p Холма — N = 631. «вся» = цели ≥ 2017-01-03, «подтв.» = 2022 — 02.2026.", ""]
+    out = ["# Таблицы итога (генератор `hp_diag_tab.py`; источники — `statistics_p17/*.csv`, не пересчитывались)", "Δ = QLIKE(ряд) − QLIKE(база); минус — ряд лучше. DM — Ньюи–Уэст 5 по датам; p Холма — N = 634 (У-25). «вся» = цели ≥ 2017-01-03, «подтв.» = 2022 — 02.2026.", ""]
     for pop, title in (("17", "Обучение на 17 (вывод — M16; SBER в обучении)"), ("E11", "E11 — перенос зафиксированной модели (не полностью независимая выборка, Ж-220 п. 9)")):
         out += ["## %s" % title, "### Уровни (QLIKE среднее по бумагам, общие даты ряда)", md(table_levels(pop, cmp_, sel, mc)), "### Против K1 и своего самостоятельного бустинга (K4 для XGB, K5 для LGBM)",
                 md(table_vs(pop, te, ("k1", "own"), ["k4", "k5", "k6", "k7"] + HYB)), "### Против K2 и K3 (замороженные самостоятельные бустинги бумаги; только бумаги, где они есть)", md(table_vs(pop, te, ("k2", "k3"), HYB)), ""]
@@ -86,9 +86,9 @@ def config() -> dict:
     head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=P.ROOT, capture_output=True, text=True).stdout.strip()
     return {"status": "исследовательский, HISTORICAL WALK-FORWARD, не независимый OOS; не ACCEPTED; цифры — потолок", "horizon": "h = 1", "training_universe": {"tickers": P.MAIN17, "n": 17, "note": "Ж-220: E11 в обучении, выборе и поперечных признаках нет"},
             "finalists": {"primary": "lgbm_D2", "second": "xgb_D2"}, "architecture": arch, "features": HC.Z28, "grid": {"depth": list(E.DEPTHS), "c": list(E.CS), "lambda": list(E.LAMS), "hp": E.HP, "default_first_year": list(E.DEFAULT)},
-            "yearly_selection_rule": "глубина, c, λ (κ, a, b, w) на год Y — по закрытым прогнозам года Y−1 по 17 бумагам (средний по бумагам QLIKE); первый год — default", "selection": {"crit_panel_window": "M16 × цели 2017–2021", "margin_vs_K1": 0.0005, "N_holm": sel["N_declared"],
-            "triple": sel["triple_cfgs"], "u16": sel["u16"]}, "input_sha256_16": {**sel["hashes"], "panel_base.parquet": P.sha16(P.OUT / "panel_base.parquet"), "loto_p17_xgb.parquet": P.sha16(P.OUT / "loto_p17_xgb.parquet"),
-            "loto_p17_lgbm.parquet": P.sha16(P.OUT / "loto_p17_lgbm.parquet"), "k45_p17.parquet": P.sha16(P.OUT / "k45_p17.parquet")}, "code": {"git_head": head, "note": "models_v2/ в этой ветке не отслеживается git (так было до работы); ниже — SHA-256[:16] файлов кода", "files_sha256_16": code}}
+            "yearly_selection_rule": "глубина, c, λ (κ, a, b, w) на год Y — по закрытым прогнозам года Y−1 по 17 бумагам (средний по бумагам QLIKE); первый год — default", "selection": {"crit_panel_window": "M16 × цели 2017–2021", "margin_vs_K1": 0.0005, "N_holm": json.loads((P.REP / "CHECKPOINT.json").read_text())["N_declared_before_stats_p17_loto16"], "N_selection_declared": sel["N_declared"],
+            "triple": sel["triple_cfgs"], "u16": sel["u16"]}, "input_sha256_16": {**sel["hashes"], "panel_base.parquet": P.sha16(P.OUT / "panel_base.parquet"), "loto16_p17_xgb.parquet": P.sha16(P.OUT / "loto16_p17_xgb.parquet"),
+            "loto16_p17_lgbm.parquet": P.sha16(P.OUT / "loto16_p17_lgbm.parquet"), "k45_p17.parquet": P.sha16(P.OUT / "k45_p17.parquet")}, "code": {"git_head": head, "note": "models_v2/ в этой ветке не отслеживается git (так было до работы); ниже — SHA-256[:16] файлов кода", "files_sha256_16": code}}
 
 
 def run() -> None:

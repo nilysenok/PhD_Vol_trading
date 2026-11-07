@@ -17,7 +17,7 @@ OK_NAME = re.compile(r"(_p17[_.])|(^k23_[A-Z]+\.parquet$)")
 
 
 def input_names() -> list:
-    return ["hyb_xgb_p17.parquet", "hyb_lgbm_p17.parquet", "k45_p17.parquet", "loto_p17_xgb.parquet", "loto_p17_lgbm.parquet"] + ["k23_%s.parquet" % t for t in P.MAIN17 + ["GCHE"]]
+    return ["hyb_xgb_p17.parquet", "hyb_lgbm_p17.parquet", "k45_p17.parquet", "loto16_p17_xgb.parquet", "loto16_p17_lgbm.parquet"] + ["k23_%s.parquet" % t for t in P.MAIN17 + ["GCHE"]]
 
 
 def check_names(names) -> None:
@@ -62,7 +62,8 @@ def load() -> pd.DataFrame:
 
 
 def load_loto() -> pd.DataFrame:
-    return pd.concat([pd.read_parquet(P.OUT / ("loto_p17_%s.parquet" % m))[KEY + ["config", "sigma2"]] for m in MODS], ignore_index=True)
+    """LOTO с поперечными признаками по 16 (У-25); прежний `loto_p17_*` в диагностику не идёт."""
+    return pd.concat([pd.read_parquet(P.OUT / ("loto16_p17_%s.parquet" % m))[KEY + ["config", "sigma2"]] for m in MODS], ignore_index=True)
 
 
 def row(cause: str, pop: str, w: str, item: str, metric: str, value, n=None, verdict: str = "") -> dict:
