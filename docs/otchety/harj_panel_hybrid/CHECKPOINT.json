@@ -9,8 +9,8 @@
   "reserve": 4
  },
  "used": 20,
- "leaf": "P3",
- "updated": "2026-11-07 09:45",
+ "leaf": "P17",
+ "updated": "2026-11-07 11:55",
  "N_registry": 605,
  "N_declared_before_stats": 608,
  "loto_declared": [
@@ -18,5 +18,10 @@
   "lgbm_A1",
   "xgb_A2"
  ],
- "declared_at": "2026-11-07 10:02"
+ "declared_at": "2026-11-07 10:02",
+ "p17": {
+  "panel_sha": "64efbc21ae4ee182",
+  "hyb_lgbm": "4ae8d821a0a93377",
+  "hyb_xgb": "4651022b40f8fb8f"
+ }
 }
