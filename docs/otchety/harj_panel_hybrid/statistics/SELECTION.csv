@@ -1,0 +1,27 @@
+# DEVELOPMENT; Ж-215/Ж-217 P0; crit_panel = среднее по M16 crit_wf, общие даты, цели 2017–2021 (R9, У-12); исследовательский, HISTORICAL WALK-FORWARD, не независимый OOS; выбор — внутренняя валидация M16 × 2017–2021, цифры — потолок
+series,crit_panel,n_tickers,n_rows,finalist,beats_own_ctrl_by_margin,triple_position
+k1,0.26219684273533,16,20206,False,,False
+k4,0.2751249214995388,16,20206,False,,False
+k5,0.27581921270321397,16,20206,False,,False
+k6,0.26361104427133747,16,20206,False,,False
+k7,0.26833126355234926,16,20206,False,,False
+xgb_A1,0.26368610162974243,16,20206,False,True,False
+xgb_A2,0.26081616411709607,16,20206,True,True,True
+xgb_A3,0.2641126229013512,16,20206,False,True,False
+xgb_A4,0.2618662630335239,16,20206,False,True,False
+xgb_B1,0.26879801127718395,16,20206,False,True,False
+xgb_B2,0.2667285865588126,16,20206,False,True,False
+xgb_C1,0.2715370157694983,16,20206,False,True,False
+xgb_C2,0.271248766310204,16,20206,False,True,False
+xgb_D1,0.26534890465567706,16,20206,False,True,False
+xgb_D2,0.26286245726342855,16,20206,False,True,False
+lgbm_A1,0.26316327678339907,16,20206,False,True,False
+lgbm_A2,0.2608857251384441,16,20206,True,True,False
+lgbm_A3,0.26354116992908105,16,20206,False,True,False
+lgbm_A4,0.26352960566956285,16,20206,False,True,False
+lgbm_B1,0.2681715509559413,16,20206,False,True,False
+lgbm_B2,0.2661992362112427,16,20206,False,True,False
+lgbm_C1,0.270932471306084,16,20206,False,True,False
+lgbm_C2,0.27084853540029374,16,20206,False,True,False
+lgbm_D1,0.264825711386164,16,20206,False,True,False
+lgbm_D2,0.26294838068828,16,20206,False,True,False

@@ -1,0 +1,22 @@
+# DEVELOPMENT; Ж-215/Ж-217 P0; P17: время счёта конфигураций, с
+config,wall_sec,fit_sec_runs,runs,module
+A1,90.0,87.9,A1,lgbm
+B1,0.2,87.9,A1,lgbm
+C1,145.7,141.2,"cu,cm",lgbm
+D1,0.4,87.9,A1,lgbm
+A2,114.0,111.8,A2,lgbm
+A3,56.1,54.1,A3,lgbm
+A4,77.3,75.3,A4,lgbm
+B2,0.7,87.9,A1,lgbm
+C2,0.3,94.7,cu,lgbm
+D2,222.2,303.3,"A1,bag43,bag44,bag45,bag46",lgbm
+A1,106.1,104.0,A1,xgb
+B1,0.2,104.0,A1,xgb
+C1,173.9,169.3,"cu,cm",xgb
+D1,0.3,104.0,A1,xgb
+A2,99.5,97.5,A2,xgb
+A3,58.6,56.7,A3,xgb
+A4,92.8,90.7,A4,xgb
+B2,0.7,104.0,A1,xgb
+C2,0.3,112.4,cu,xgb
+D2,237.1,334.1,"A1,bag43,bag44,bag45,bag46",xgb
