@@ -125,8 +125,8 @@ def stage_panel(check: bool) -> int:
     return _report(not bad, ["panel_base.parquet: строк %d, колонок %d, sha256[:16]=%s" % (len(panel), panel.shape[1], P.sha16(path)), *bad])
 
 
-def stage_k23(check: bool) -> int:
-    """P1a (лист другого агента): models_v2.s10.hp_k23.run(check); модуля ещё нет — «нет модуля», rc = 1."""
+def stage_k23(check: bool, tickers: list | None = None) -> int:
+    """P1a: models_v2.s10.hp_k23.run(check, tickers); tickers — список бумаг к счёту (по умолчанию основные 17); модуля нет — «нет модуля», rc = 1."""
     try:
         from models_v2.s10 import hp_k23
     except ModuleNotFoundError as e:
@@ -134,7 +134,7 @@ def stage_k23(check: bool) -> int:
             raise
         print("нет модуля models_v2.s10.hp_k23")
         return 1
-    return hp_k23.run(check)
+    return hp_k23.run(check, tickers)
 
 
 def _log(msg: str) -> None:
@@ -220,7 +220,10 @@ def main() -> int:
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--module", choices=("xgb", "lgbm"))
     ap.add_argument("--part", default="all")
+    ap.add_argument("--tickers", nargs="+", help="только --stage k23: бумаги к счёту (основные 17; готовые не пересчитываются)")
     a = ap.parse_args()
+    if a.stage == "k23":
+        return stage_k23(a.check, a.tickers)
     if a.stage in ("stats", "loto"):          # P3 (G11/G12)
         from models_v2.s10 import hp_stats_run
         return hp_stats_run.stage(a.stage, a.check, a.part, a.module)

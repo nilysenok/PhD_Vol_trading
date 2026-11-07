@@ -1,0 +1,72 @@
+{
+ "finalists": {
+  "xgb": "xgb_D2",
+  "lgbm": "lgbm_D2"
+ },
+ "positions": {
+  "A": {
+   "best": "lgbm_A4",
+   "crit": 0.2618462531384734,
+   "passes": false
+  },
+  "B": {
+   "best": "lgbm_B1",
+   "crit": 0.2640997486536758,
+   "passes": false
+  },
+  "C": {
+   "best": "xgb_C1",
+   "crit": 0.2721407684799316,
+   "passes": false
+  },
+  "D": {
+   "best": "lgbm_D2",
+   "crit": 0.26145148806475227,
+   "passes": true
+  }
+ },
+ "triple": [
+  "D"
+ ],
+ "triple_cfgs": [
+  "lgbm_D2"
+ ],
+ "beats_k45": {
+  "xgb_A1": true,
+  "xgb_A2": true,
+  "xgb_A3": true,
+  "xgb_A4": true,
+  "xgb_B1": true,
+  "xgb_B2": true,
+  "xgb_C1": true,
+  "xgb_C2": true,
+  "xgb_D1": true,
+  "xgb_D2": true,
+  "lgbm_A1": true,
+  "lgbm_A2": true,
+  "lgbm_A3": true,
+  "lgbm_A4": true,
+  "lgbm_B1": true,
+  "lgbm_B2": true,
+  "lgbm_C1": true,
+  "lgbm_C2": true,
+  "lgbm_D1": true,
+  "lgbm_D2": true
+ },
+ "u16_configs": [
+  "lgbm_D2"
+ ],
+ "u16": true,
+ "crit_k1": 0.26219684273533,
+ "N_declared": 631,
+ "loto": [
+  "xgb_A1",
+  "lgbm_A1",
+  "lgbm_D2"
+ ],
+ "hashes": {
+  "engine_panel_p17.parquet": "64efbc21ae4ee182",
+  "hyb_xgb_p17.parquet": "4651022b40f8fb8f",
+  "hyb_lgbm_p17.parquet": "4ae8d821a0a93377"
+ }
+}

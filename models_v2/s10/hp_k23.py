@@ -1,6 +1,6 @@
 """P1a (Ж-217 R10, У-3): контроли K2 (XGB `x2_best_j`) и K3 (LGBM `C0_inh_F4`) на 28 бумагах. Это контроли, не trials; новой оптимизации нет.
-Запуск: python3 -W ignore -m models_v2.s10.hp_k23 [--check]. Без --check: считает недостающие бумаги (SBER первой, побитно с components.XJ/LF; остальные 27 — только после сверки) и пишет выход;
-с --check — проверяет записанное. Процессов счёта <= 2 (пул spawn)."""
+Запуск: python3 -W ignore -m models_v2.s10.hp_k23 [--tickers T ...] [--check]. Без --check: после сверки SBER (побитно с components.XJ/LF) считает недостающие бумаги из списка (по умолчанию — основные 17; E11 — отказ,
+готовые `k23_<T>` не пересчитываются); с --check — проверяет 17 основных + GCHE (У-24, Ж-220 п. 6–7; `k23.parquet` из 28 не нужен). Процессов счёта <= 2 (пул spawn)."""
 from __future__ import annotations
 
 import argparse
@@ -62,54 +62,78 @@ def run_ticker(t: str, panel: pd.DataFrame, imoex: pd.DataFrame, pool: list, i2:
                                                                                               meta["secs_world"], meta["secs_i2"], meta["secs_forecast"]), flush=True)
 
 
-def compute_all() -> int:
-    from models_v2 import run_fix
+K23_17 = sorted(set(P.MAIN17) | {"GCHE"})      # У-24 (Ж-220 п. 6–7): 17 основных + GCHE (готова); E11 — перенос, K2/K3 не восстанавливаются
+
+
+def todo(tickers: list) -> list:
+    """Бумаги к счёту: только основные 17 (E11 — ValueError) и без готового `k23_<T>` (готовые не пересчитываются и не перезаписываются)."""
+    bad = [t for t in tickers if t not in P.MAIN17]
+    if bad:
+        raise ValueError("K2/K3 считаются только для основных 17 (Ж-220 п. 6–7): %s" % bad)
+    return [t for t in tickers if not _tpath(t).exists()]
+
+
+def compute_missing(tickers: list, panel: pd.DataFrame, imoex: pd.DataFrame, pool: list, run=None) -> list:
+    """Считает недостающие из `tickers` замороженной процедурой (И2 по правилу); возвращает список посчитанных."""
+    run, todo_ = run or run_ticker, todo(tickers)
+    for t in todo_:
+        run(t, panel, imoex, pool, None)
+    return todo_
+
+
+def compute_all(tickers: list | None = None) -> int:
     if P.sha16(P.OUT / "panel_base.parquet") != PANEL_SHA:
         print("panel_base.parquet: SHA не совпал с P0")
         return 1
-    P.OUT.mkdir(parents=True, exist_ok=True)
-    panel, imoex = pd.read_parquet(P.OUT / "panel_base.parquet", columns=PANEL_COLS), read_bars("IMOEX")
-    pool = KW.pool_papers(read_bars)
-    if not _tpath("SBER").exists():
-        run_ticker("SBER", panel, imoex, pool, run_fix.load_i2("i2_choice_g132"))
     d = KO.sber_diff(pd.read_parquet(_tpath("SBER")), pd.read_parquet(P.COMP))
     print("SBER vs components:", d, flush=True)
     if d["n"] != d["n_comp"] or d["max_abs_diff_xj"] != 0.0 or d["max_abs_diff_lf"] != 0.0:
         print("SBER не побитно — остальные бумаги не считаются (разбор до причины)")
         return 1
-    for t in [x for x in P.TICKERS if x != "SBER"]:
-        if not _tpath(t).exists():
-            run_ticker(t, panel, imoex, pool, None)
-    return assemble()
-
-
-def assemble() -> int:
-    df = pd.concat([pd.read_parquet(_tpath(t)) for t in P.TICKERS], ignore_index=True).sort_values(["date", "ticker"]).reset_index(drop=True)
-    meta = pd.DataFrame([json.loads(_mpath(t).read_text()) for t in P.TICKERS])
-    df.to_parquet(KO.K23)
-    tab = KO.qlike_table(df)
-    KO.write_csv(tab, "P1_K23.csv", "QLIKE K1/K2/K3 по бумагам и годам цели на общих датах (K1, K2, K3 определены)")
-    KO.write_csv(KO.summary(tab), "P1_K23_SUMMARY.csv", "группы и доля бумаг, где K2 < K1 и K3 < K1 (на общих датах)")
-    KO.write_csv(meta.drop(columns="i2"), "P1_K23_TIME.csv", "первый год У-3 (правило и фактический), число строк, время счёта по бумагам (с)")
-    KO.write_csv(pd.DataFrame([{"ticker": r.ticker, "year": Y, **h} for r in meta.itertuples() for Y, h in json.loads(r.i2).items()]), "P1_K23_I2.csv", "годовой выбор И2 каждой бумаги (HP K2/K3 = И2 + замороженные сдвиги)")
+    panel, imoex = pd.read_parquet(P.OUT / "panel_base.parquet", columns=PANEL_COLS), read_bars("IMOEX")
+    compute_missing(tickers or list(P.MAIN17), panel, imoex, KW.pool_papers(read_bars))
     return verify()
 
 
+def check_k23(tickers: list, panel: pd.DataFrame, comp: pd.DataFrame, load) -> list:
+    """Ошибки (пусто — ок) для `tickers`: `load(t)` -> k23_<T> или None. Нет файла основной бумаги — ошибка; сетка (t, t⁺) и RV цели — побитно панель; σ̂² K2/K3 конечны и > 0 (оба или ни одного);
+    SBER — побитно components.XJ/LF. `k23.parquet` из 28 не требуется (У-24)."""
+    bad = []
+    for t in tickers:
+        df, pt = load(t), panel[panel["ticker"] == t].reset_index(drop=True)
+        if df is None:
+            bad.append("%s: нет k23_%s.parquet" % (t, t))
+            continue
+        same = len(df) == len(pt) and all(np.array_equal(df[c].to_numpy(), pt[c].to_numpy()) for c in ("date", "t_plus", "rv_tplus"))
+        bad += [] if same else ["%s: сетка (t, t⁺) или rv_tplus не равны panel_base побитно" % t]
+        f = df[np.isfinite(df["sigma2_k2"]) | np.isfinite(df["sigma2_k3"])]
+        ok = np.isfinite(f["sigma2_k2"]) & np.isfinite(f["sigma2_k3"]) & (f["sigma2_k2"] > 0) & (f["sigma2_k3"] > 0)
+        bad += [] if len(f) and ok.all() else ["%s: σ̂² K2/K3 не конечны, ≤ 0, определён один из двух или прогнозов нет" % t]
+        if t == "SBER":
+            d = KO.sber_diff(df, comp)
+            bad += [] if d["n"] == d["n_comp"] and d["max_abs_diff_xj"] == d["max_abs_diff_lf"] == d["max_abs_diff_rv"] == 0.0 else ["SBER не побитно: %s" % d]
+    return bad
+
+
 def verify() -> int:
-    df, meta = pd.read_parquet(KO.K23), pd.DataFrame([json.loads(_mpath(t).read_text()) for t in P.TICKERS])
-    bad = KO.verify(df, pd.read_parquet(P.OUT / "panel_base.parquet", columns=PANEL_COLS), meta, pd.read_parquet(P.COMP))
-    print("k23.parquet: строк %d, бумаг %d, строк с прогнозом K2/K3: %d; первые годы У-3 (правило/факт): %s" % (
-        len(df), df["ticker"].nunique(), int(np.isfinite(df["sigma2_k2"]).sum()), {r.ticker: (r.y0_rule, r.y0_used) for r in meta.itertuples() if r.y0_rule != r.y0_used}))
+    bad = [] if P.sha16(P.OUT / "panel_base.parquet") == PANEL_SHA else ["panel_base.parquet: SHA не совпал с P0"]
+    bad += check_k23(K23_17, pd.read_parquet(P.OUT / "panel_base.parquet", columns=PANEL_COLS), pd.read_parquet(P.COMP), lambda t: pd.read_parquet(_tpath(t)) if _tpath(t).exists() else None)
+    bad += ["%s: нет k23_meta_%s.json" % (t, t) for t in K23_17 if not _mpath(t).exists()]
+    meta = {t: json.loads(_mpath(t).read_text()) for t in K23_17 if _mpath(t).exists()}
+    print("k23 на 17 + GCHE: бумаг %d из %d; первый год У-3: %s; время счёта, с: %s" % (len(meta), len(K23_17), {t: m["y0_used"] for t, m in meta.items()},
+                                                                                {t: round(m["secs_world"] + m["secs_i2"] + m["secs_forecast"]) for t, m in meta.items() if "secs_world" in m}))
     print("\n".join(bad))
     print("ИТОГ:", "OK" if not bad else "FAIL")
     return 1 if bad else 0
 
 
-def run(check: bool) -> int:
-    return verify() if check else compute_all()
+def run(check: bool, tickers: list | None = None) -> int:
+    return verify() if check else compute_all(tickers)
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
-    sys.exit(run(ap.parse_args().check))
+    ap.add_argument("--tickers", nargs="+", help="бумаги к счёту (только основные 17; готовые k23_<T> не пересчитываются)")
+    a = ap.parse_args()
+    sys.exit(run(a.check, a.tickers))
