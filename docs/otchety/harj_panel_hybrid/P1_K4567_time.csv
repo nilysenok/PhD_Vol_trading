@@ -1,0 +1,11 @@
+# DEVELOPMENT; Ж-215/Ж-217 P0; время счёта по стадиям, с (fit_depth — чистое время обучения моделей)
+stage,seconds
+panel_ext,9.5
+k6,21.4
+k7,8.5
+k4,264.1
+k4_fit_depth2,138.7
+k4_fit_depth4,124.8
+k5,232.1
+k5_fit_depth2,98.9
+k5_fit_depth4,132.7

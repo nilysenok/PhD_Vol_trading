@@ -1,16 +1,19 @@
-"""Ж-215 / Ж-217, лист P0. Запуск: python3 -W ignore -m models_v2.s10.run_hp --stage inv|daily|har|shift|port|panel [--check]
+"""Ж-215 / Ж-217, листы P0 и P1b (стадии k4567; k23 — лист P1a). Запуск: python3 -W ignore -m models_v2.s10.run_hp --stage inv|daily|har|shift|port|panel|k4567|k23 [--check]
 Без --check стадия считает и пишет; с --check — проверяет уже записанный выход и печатает итог (код возврата 0 — гейт закрыт). Порядок: inv, daily, har, shift, port, panel. ML-обучений нет."""
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+import time
 
 import numpy as np
 import pandas as pd
 
-from models_v2.s10 import hp_daily as HD, hp_feat as F, hp_har as HH, hp_inv as HI, hp_paths as P, hp_panel as PN, hp_port as PO, hp_shift as SH
+from models_v2.s10 import hp_ctrl as CT, hp_daily as HD, hp_feat as F, hp_har as HH, hp_inv as HI, hp_paths as P, hp_panel as PN, hp_port as PO, hp_shift as SH
 
 ALL = P.TICKERS + ["IMOEX"]
+NTHREAD = 6      # P1b: потоков обучения на процесс (в сумме не более 2 процессов счёта)
 
 
 def _daily(t: str) -> pd.DataFrame:
@@ -122,7 +125,94 @@ def stage_panel(check: bool) -> int:
     return _report(not bad, ["panel_base.parquet: строк %d, колонок %d, sha256[:16]=%s" % (len(panel), panel.shape[1], P.sha16(path)), *bad])
 
 
-STAGES = {"inv": stage_inv, "daily": stage_daily, "har": stage_har, "shift": stage_shift, "port": stage_port, "panel": stage_panel}
+def stage_k23(check: bool) -> int:
+    """P1a (лист другого агента): models_v2.s10.hp_k23.run(check); модуля ещё нет — «нет модуля», rc = 1."""
+    try:
+        from models_v2.s10 import hp_k23
+    except ModuleNotFoundError as e:
+        if e.name != "models_v2.s10.hp_k23":
+            raise
+        print("нет модуля models_v2.s10.hp_k23")
+        return 1
+    return hp_k23.run(check)
+
+
+def _log(msg: str) -> None:
+    print(time.strftime("%H:%M:%S"), msg, flush=True)
+
+
+def k4567_compute() -> dict:
+    """Все контроли P1b; время по стадиям. K1 для K6/K7 берётся из строк панели движка (те же даты)."""
+    tm, t0 = {}, time.time()
+    daily, imo = {t: _daily(t) for t in P.TICKERS}, _daily("IMOEX")
+    panel = CT.build_panel_ext(daily, imo)
+    panel.to_parquet(CT.ENGINE_PANEL)
+    tm["panel_ext"], t0 = time.time() - t0, time.time()
+    k1d = {t: g[["date"]].rename(columns={"date": "d"}) for t, g in panel.groupby("ticker")}
+    k6 = {t: CT.k6_series(daily[t], imo, k1d[t]) for t in P.TICKERS}
+    tm["k6"], t0 = time.time() - t0, time.time()
+    k1_imo = CT.k1_ext({"IMOEX": imo})["IMOEX"]            # K1 индекса на той же расширенной сетке (har_IMOEX начинается с 03.01.2017)
+    k7 = {t: CT.k7_series(daily[t], imo, k1d[t], k1_imo) for t in P.TICKERS}
+    tm["k7"], t0 = time.time() - t0, time.time()
+    res = {}
+    for name, module in (("k4", "xgb"), ("k5", "lgbm")):
+        fc, ch, secs = CT.run_k45(panel, module, nthread=NTHREAD, log=_log)
+        res[name] = (fc, ch)
+        tm[name], t0 = time.time() - t0, time.time()
+        for dpt, s in secs.items():
+            tm["%s_fit_depth%d" % (name, dpt)] = s
+    return {"panel": panel, "k6": k6, "k7": k7, "k4": res["k4"], "k5": res["k5"], "time": tm}
+
+
+def k4567_write(r: dict) -> None:
+    k = CT.assemble(r["panel"], r["k4"][0], r["k5"][0], r["k6"], r["k7"])
+    k.to_parquet(P.OUT / "k4567.parquet")
+    P.write_csv(CT.qlike_tables(k), "P1_K4567.csv", "QLIKE K1, K4 (XGB без HAR-J), K5 (LGBM без HAR-J), K6 (HAR-J+E8), K7 (компонентная HAR) на общих датах бумаги, цели с 2017-01-03; группы — среднее по бумагам")
+    P.write_csv(pd.concat([r["k4"][1].assign(control="k4"), r["k5"][1].assign(control="k5")]), "P1_K4567_choice.csv", "выбор (глубина, c) по годам, λ ≡ 1: по закрытым прогнозам года Y−1 (t⁺ < 01.01.Y); crit — средний по бумагам QLIKE")
+    P.write_csv(pd.DataFrame([{"stage": s, "seconds": round(v, 1)} for s, v in r["time"].items()]), "P1_K4567_time.csv", "время счёта по стадиям, с (fit_depth — чистое время обучения моделей)")
+    cp = json.loads((P.REP / "CHECKPOINT.json").read_text())
+    cp.update(leaf="P1", used=0, updated=time.strftime("%Y-%m-%d %H:%M"))
+    (P.REP / "CHECKPOINT.json").write_text(json.dumps(cp, ensure_ascii=False, indent=1))
+
+
+def k4567_check() -> list:
+    """Ошибки выхода P1b (пусто = ок)."""
+    bad, k = [], pd.read_parquet(P.OUT / "k4567.parquet")
+    if k.duplicated(CT.KEY).any():
+        bad.append("дубли (бумага, дата)")
+    for s in CT.SIG[1:]:
+        v = k[s].dropna()
+        if len(v) == 0 or not (np.isfinite(v) & (v > 0)).all():
+            bad.append("%s: нет значений или не конечны / не положительны" % s)
+    if set(CT.HAR_BASED) & {c[2:] for c in CT.K45_FEATS}:
+        bad.append("K4/K5 используют признаки из прогноза HAR")
+    e8 = pd.read_parquet(P.ROOT / "data/regen/harj_hybrid_v2/MKT_series.parquet")[["d", "E8"]].rename(columns={"d": "date"})
+    m = k[k["ticker"] == "SBER"].merge(e8, on="date")
+    dif = float(np.abs(m["sigma2_k6"] - m["E8"]).max())
+    print("K6 SBER vs E8 Ж-214: строк %d, max_abs_diff = %s" % (len(m), dif))
+    if len(m) < 2271 or dif != 0.0:
+        bad.append("K6 SBER ≠ E8 Ж-214 побитно")
+    pb = pd.read_parquet(P.OUT / "panel_base.parquet")[CT.KEY + ["sigma2_k1"]]
+    mk = k.merge(pb, on=CT.KEY, suffixes=("", "_b"))
+    d1 = float(np.abs(mk["sigma2_k1"] - mk["sigma2_k1_b"]).max())
+    print("K1 в k4567 vs panel_base: общих строк %d, max_abs_diff = %s" % (len(mk), d1))
+    bad += ["K1 расходится с panel_base"] if d1 != 0.0 or len(mk) != len(pb) else []
+    print("строк %d; K4 %d, K5 %d, K6 %d, K7 %d значений; K7 min %.4g" % (len(k), *(k[s].notna().sum() for s in CT.SIG[1:]), k["sigma2_k7"].min()))
+    cp = json.loads((P.REP / "CHECKPOINT.json").read_text())
+    return bad + ([] if cp.get("used") == 0 else ["CHECKPOINT used != 0"])
+
+
+def stage_k4567(check: bool) -> int:
+    if not check:
+        r = k4567_compute()
+        k4567_write(r)
+        for s, v in r["time"].items():
+            _log("время %s: %.1f с" % (s, v))
+    bad = k4567_check()
+    return _report(not bad, bad)
+
+
+STAGES = {"inv": stage_inv, "daily": stage_daily, "har": stage_har, "shift": stage_shift, "port": stage_port, "panel": stage_panel, "k4567": stage_k4567, "k23": stage_k23}
 
 
 def main() -> int:
