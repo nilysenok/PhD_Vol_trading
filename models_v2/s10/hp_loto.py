@@ -17,14 +17,16 @@ LOSS = {"A1": "qlike", "A2": "l2log"}
 PROGRAM = "Ж-217-LOTO"       # префикс строк реестра: не попадает в `used` бюджета 24 (префикс «Ж-217:»)
 
 
-def loto_ticker(module: str, name: str, panel: pd.DataFrame, base, tk: str, hp=None, nthread: int = 3, log=None) -> pd.DataFrame:
-    """Прогноз σ̂² на строках бумаги tk моделью, обученной без tk; выбор года Y по 27 прочим. -> ticker, date, t_plus, depth, c, lam, g, sigma2."""
+def loto_ticker(module: str, name: str, panel: pd.DataFrame, base, tk: str, hp=None, nthread: int = 3, log=None, extra_exclude=()) -> pd.DataFrame:
+    """Прогноз σ̂² на строках бумаги tk моделью, обученной без tk; выбор года Y по 27 прочим. -> ticker, date, t_plus, depth, c, lam, g, sigma2.
+    extra_exclude (P3-17, Ж-220): бумаги вне обучения и вне выбора года (E11) — обучение на 17 без tk, выбор по 16; по умолчанию пусто (как на 28)."""
     loss, base = LOSS[name], np.asarray(base, float)
-    runs = {d: E.walk_forward(panel, C.Z28, base, loss, module, d, exclude=(tk,), hp=hp, nthread=nthread, log=log) for d in E.DEPTHS}
-    oth = (panel["ticker"] != tk).to_numpy()
+    ex = (tk,) + tuple(extra_exclude)
+    runs = {d: E.walk_forward(panel, C.Z28, base, loss, module, d, exclude=ex, hp=hp, nthread=nthread, log=log) for d in E.DEPTHS}
+    oth = ~np.isin(panel["ticker"].to_numpy(), list(ex))
     po, bo = panel[oth].reset_index(drop=True), base[oth]
     ro = {d: r[oth].reset_index(drop=True) for d, r in runs.items()}
-    me, yr = ~oth, pd.DatetimeIndex(panel["date"]).year.to_numpy()
+    me, yr = (panel["ticker"] == tk).to_numpy(), pd.DatetimeIndex(panel["date"]).year.to_numpy()
     sig, dep, cc, ll, gg = (np.full(len(panel), np.nan) for _ in range(5))
     for Y in sorted(set(yr[yr >= E.FIRST_YEAR])):
         sel = E.choose(po, bo, ro, Y, loss)
@@ -54,17 +56,17 @@ def compute(module: str, name: str, panel: pd.DataFrame, base, sha: str, hp=None
     return pd.concat(parts, ignore_index=True)
 
 
-def register(module: str, name: str) -> bool:
-    """Строка реестра одного LOTO-прогона (по одной; повтор не дублируется). `used` бюджета не меняется (R11)."""
+def register(module: str, name: str, program: str = PROGRAM, n_tickers: int = 28, source: str = "Ж-217") -> bool:
+    """Строка реестра одного LOTO-прогона (по одной; повтор не дублируется). `used` бюджета не меняется (R11). program / n_tickers / source — P3-17 (`Ж-220-p17-LOTO`, 17 бумаг, «Ж-220»)."""
     with O.lock():
-        pre = "%s:%s:%s:" % (PROGRAM, module, name)
+        pre = "%s:%s:%s:" % (program, module, name)
         if any(r.startswith(pre) for r in O.REG.read_text(encoding="utf-8").splitlines()):
             return False
-        js = json.dumps({"name": name, "module": module, "kind": "loto", "trial": True, "arch": "leave_one_ticker_out", "n_tickers": 28}, ensure_ascii=False, sort_keys=True)
+        js = json.dumps({"name": name, "module": module, "kind": "loto", "trial": True, "arch": "leave_one_ticker_out", "n_tickers": n_tickers}, ensure_ascii=False, sort_keys=True)
         with open(O.REG, "a", newline="", encoding="utf-8") as f:
             if not O.REG.read_bytes().endswith(b"\n"):
                 f.write("\n")
-            csv.writer(f, lineterminator="\n").writerow([pre + hashlib.sha256(js.encode()).hexdigest()[:12], "Ж-217", "harj_panel_hybrid", "leave_one_ticker_out", js, "trial"])
+            csv.writer(f, lineterminator="\n").writerow([pre + hashlib.sha256(js.encode()).hexdigest()[:12], source, "harj_panel_hybrid", "leave_one_ticker_out", js, "trial"])
         return True
 
 

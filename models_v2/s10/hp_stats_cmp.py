@@ -20,10 +20,25 @@ def own_ctrl(model: str) -> str:
     return "k4" if model.startswith("xgb_") else "k5"
 
 
+def k23_frame() -> pd.DataFrame:
+    """K2/K3 по бумагам, где они есть: `k23_<T>.parquet` (Ж-220 (б): собранный `k23.parquet` не требуется; если он есть — читается он). Нет ни одного — пустая таблица."""
+    cols = S.KEY + ["sigma2_k2", "sigma2_k3"]
+    full = P.OUT / "k23.parquet"
+    if full.exists():
+        return pd.read_parquet(full)[cols]
+    parts = [pd.read_parquet(P.OUT / ("k23_%s.parquet" % t))[cols] for t in K23 if (P.OUT / ("k23_%s.parquet" % t)).exists()]
+    return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame({c: [] for c in cols})
+
+
+def k23_tickers() -> list:
+    """Бумаги из K23, у которых есть K2/K3 (число — в каждой таблице сравнений с ними)."""
+    return sorted(set(k23_frame()["ticker"]) & set(K23))
+
+
 def with_k23(k: pd.DataFrame) -> pd.DataFrame:
-    """Добавляет k2, k3 из `k23.parquet` (28 бумаг; NaN там, где замороженная процедура не прогнозирует)."""
-    x = pd.read_parquet(P.OUT / "k23.parquet")[S.KEY + ["sigma2_k2", "sigma2_k3"]]
-    return k.merge(x.rename(columns={"sigma2_k2": "k2", "sigma2_k3": "k3"}), on=S.KEY, how="left")
+    """Добавляет k2, k3 (NaN там, где K2/K3 нет: нет бумаги или замороженная процедура не прогнозирует)."""
+    x = k23_frame().rename(columns={"sigma2_k2": "k2", "sigma2_k3": "k3"})
+    return k.merge(x, on=S.KEY, how="left")
 
 
 def qrow(c: pd.DataFrame, s: str) -> np.ndarray:
@@ -76,18 +91,27 @@ def comparison(pt: pd.DataFrame, extra_ctrl: bool = False) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def run(k: pd.DataFrame, log=print) -> pd.DataFrame:
-    """-> таблица per-ticker (всех срезов); пишет COMPARISON.csv и PER_TICKER.csv."""
+def tables(k: pd.DataFrame) -> tuple:
+    """-> (per-ticker всех срезов, COMPARISON, общие строки): K2/K3 — на бумагах из `k23_tickers()` (число — в `n_k23_tickers`); без пустых срезов K2/K3."""
     c = S.common(k, SIGS)
     pt = per_ticker(c, SIGS, slice_masks(c))
     cmp_ = comparison(pt)
-    k2 = S.common(with_k23(k)[k["ticker"].isin(K23).to_numpy()], SIGS + ["k2", "k3"])
-    pt2 = per_ticker(k2, SIGS + ["k2", "k3"], {K23_PREF + n: m for n, m in slice_masks(k2).items()})
-    cmp2 = comparison(pt2, True)
-    cmp2["scope"] = cmp2["scope"].map(lambda s: "K23:" + s)
-    pt = pd.concat([pt, pt2], ignore_index=True)
+    k2 = S.common(with_k23(k)[k["ticker"].isin(k23_tickers()).to_numpy()], SIGS + ["k2", "k3"])
+    if len(k2):
+        pt2 = per_ticker(k2, SIGS + ["k2", "k3"], {K23_PREF + n: m for n, m in slice_masks(k2).items()})
+        cmp2 = comparison(pt2, True)
+        cmp2["scope"] = cmp2["scope"].map(lambda s: "K23:" + s)
+        cmp2["n_k23_tickers"] = cmp2["n_tickers"]                 # (б): бумаг с K2/K3 в области строки — в каждой таблице
+        pt, cmp_ = pd.concat([pt, pt2], ignore_index=True), pd.concat([cmp_, cmp2], ignore_index=True)
+    return pt, cmp_, c
+
+
+def run(k: pd.DataFrame, log=print) -> pd.DataFrame:
+    """-> таблица per-ticker (всех срезов); пишет COMPARISON.csv и PER_TICKER.csv."""
+    pt, cmp_, c = tables(k)
     stat = "%s; QLIKE: среднее по бумагам; no_top5dates_k1 — без 5 дат с наибольшим панельным QLIKE K1; no_240222 — без пар с датой или целью 24.02.2022" % S.STAT
-    P.write_csv(pd.concat([cmp_, cmp2], ignore_index=True), "statistics/COMPARISON.csv", stat)
-    P.write_csv(pt, "statistics/PER_TICKER.csv", "метрики по бумаге и срезам, все 25 рядов на общих датах бумаги; k23_* — общие даты со всеми рядами и K2, K3 (28 бумаг); " + S.STAT)
-    log("COMPARISON %d строк, PER_TICKER %d строк; общих строк %d; бумаг %d" % (len(cmp_) + len(cmp2), len(pt), len(c), c["ticker"].nunique()))
+    nk = "K2/K3 на %d бумагах: %s" % (len(k23_tickers()), ",".join(k23_tickers()))
+    P.write_csv(cmp_, "statistics/COMPARISON.csv", "%s; %s" % (stat, nk))
+    P.write_csv(pt, "statistics/PER_TICKER.csv", "метрики по бумаге и срезам, все 25 рядов на общих датах бумаги; k23_* — общие даты со всеми рядами и K2, K3 (%s); %s" % (nk, S.STAT))
+    log("COMPARISON %d строк, PER_TICKER %d строк; общих строк %d; бумаг %d" % (len(cmp_), len(pt), len(c), c["ticker"].nunique()))
     return pt

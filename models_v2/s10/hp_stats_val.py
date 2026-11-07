@@ -67,7 +67,8 @@ def levels(pt: pd.DataFrame, tests: pd.DataFrame, loto_cfgs: set) -> pd.DataFram
             e_ok = bool(e11 is not None and e11["delta_mean"] < 0 and e11["dm_p"] < 0.05)
             lt_ok = bool(lt is not None and lt["delta_mean"] < 0 and lt["dm_p"] < 0.05)
             lvl = 4 if (l3 and e_ok and lt_ok) else 3 if l3 else 2 if l2 else 1 if a["ok"] else 0
-            rows.append(dict(config=h, evidence=ev, level=lvl, l1_ok=a["ok"], l1_raw_only=bool(a["raw"] and not a["ok"]), d_k1=a.get("delta"), p_dm_k1=a.get("dm_p"), p_holm_k1=a.get("p_holm"), n_neg_periods=a.get("n_neg_periods"),
+            rk2 = _row(tests, h, "k2", "M16", CM.K23_PREF + w)
+            rows.append(dict(config=h, evidence=ev, level=lvl, n_k23_tickers_m16=None if rk2 is None else rk2.get("n_k23_tickers"), l1_ok=a["ok"], l1_raw_only=bool(a["raw"] and not a["ok"]), d_k1=a.get("delta"), p_dm_k1=a.get("dm_p"), p_holm_k1=a.get("p_holm"), n_neg_periods=a.get("n_neg_periods"),
                              l2_k4=c4["ok"], l2_k5=c5["ok"], l2_k2=c2["ok"], l2_k3=c3["ok"], d_k2_m16=c2.get("delta"), d_k3_m16=c3.get("delta"), p_dm_k2=c2.get("dm_p"), p_dm_k3=c3.get("dm_p"),
                              p_holm_k2=c2.get("p_holm"), p_holm_k3=c3.get("p_holm"), l3_no240222=None if n240 is None else bool(n240["delta_mean"] < 0), l3_no_top5=None if n5 is None else bool(n5["delta_mean"] < 0), frac_m16_better_k1=frac,
                              l4_e11=e_ok, l4_loto=lt_ok if lt is not None else "не считалось", status="потолок; ACCEPTED не присваивается"))

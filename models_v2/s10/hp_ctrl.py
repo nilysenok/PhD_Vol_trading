@@ -18,6 +18,25 @@ ENGINE_PANEL = P.OUT / "engine_panel.parquet"
 E8_BLOCKS, E8_WIN = ("semicov", "idio"), 22
 
 
+CONTROLS = ("K4", "K5", "K6", "K7")
+
+
+def registry_control_rows(path) -> list:
+    """Ключи строк реестра `ALL_TRIALS.csv` с именем K4…K7 (контроли — не trials, R10; Ж-215 справка). Пусто = ок."""
+    out = []
+    for ln in pd.read_csv(path, usecols=[0]).iloc[:, 0].astype(str):
+        parts = ln.split(":")
+        if len(parts) >= 3 and parts[2].upper() in CONTROLS:
+            out.append(ln)
+    return out
+
+
+def used_errors(registry_path) -> list:
+    """Проверка «контроли не в бюджете»: строк K4–K7 в реестре нет (после P2 `used` = 20 — гибриды, это не ошибка)."""
+    rows = registry_control_rows(registry_path)
+    return ["контроли K4–K7 в реестре %s: %s" % (registry_path.name if hasattr(registry_path, "name") else registry_path, rows)] if rows else []
+
+
 def k1_ext(daily: dict) -> dict:
     """K1 бумаг на сетке с первой даты с >= 252 закрытых пар (HAR-J, как hp_har.series)."""
     return {t: HH.series(d, HH.grid(H.make_panel(d), first_target="2000-01-01")) for t, d in daily.items()}

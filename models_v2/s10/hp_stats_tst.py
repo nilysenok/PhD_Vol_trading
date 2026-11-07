@@ -94,7 +94,7 @@ def run_tests(k: pd.DataFrame, loto: pd.DataFrame, n_declared: int, log=print) -
     rows = []
     pairs = [(h, b) for h in HYB for b in ("k1", "k4", "k5")]
     rows += rows_for(c, CM.SIGS, pairs, scope_masks(c), {w: wm.get(w, wm["all"]) for w in WINS}, "aux")
-    c2 = S.common(CM.with_k23(k)[k["ticker"].isin(CM.K23).to_numpy()], CM.SIGS + ["k2", "k3"])
+    c2 = S.common(CM.with_k23(k)[k["ticker"].isin(CM.k23_tickers()).to_numpy()], CM.SIGS + ["k2", "k3"])
     rows += k23_rows(c2)
     rows += rows_for(c, CM.SIGS, [(s, "k1") for s in ("k4", "k5", "k6", "k7")], scope_masks(c), {w: wm.get(w, wm["all"]) for w in WINS}, "control")
     df = pd.DataFrame(rows)
@@ -109,11 +109,13 @@ def run_tests(k: pd.DataFrame, loto: pd.DataFrame, n_declared: int, log=print) -
 def k23_rows(c2: pd.DataFrame) -> list:
     """G15: гибриды × {K2, K3} на ОБЩИХ датах бумаги со всеми рядами и K2, K3 (те же области и окна, что к K1/K4/K5); окна с префиксом `k23_`.
     Основное семейство — M16 × (подтверждение, вся история), как у K1/K4/K5; остальное — описательно. N Холма не меняется (K2/K3 — контроли)."""
-    wm = CM.slice_masks(c2)
-    rows = rows_for(c2, CM.SIGS + ["k2", "k3"], [(h, b) for h in HYB for b in ("k2", "k3")], scope_masks(c2), {w: wm.get(w, wm["all"]) for w in WINS}, "aux")
+    wm, sc = CM.slice_masks(c2), scope_masks(c2)
+    rows = rows_for(c2, CM.SIGS + ["k2", "k3"], [(h, b) for h in HYB for b in ("k2", "k3")], sc, {w: wm.get(w, wm["all"]) for w in WINS}, "aux")
+    n_k23 = {s: int(c2[m]["ticker"].nunique()) for s, m in sc.items()}
     for r in rows:
         r["kind"] = "main" if (r["scope"] == MAIN[0] and r["window"] in MAIN[1]) else "aux"
         r["window"] = CM.K23_PREF + r["window"]
+        r["n_k23_tickers"] = n_k23[r["scope"]]            # (б): бумаг с K2/K3 в области
     return rows
 
 
@@ -138,16 +140,18 @@ def loto_rows(c: pd.DataFrame, loto: pd.DataFrame) -> list:
 MCS_SETS = {"xgb": ["k1", "k4", "k6", "k7"], "lgbm": ["k1", "k5", "k6", "k7"]}
 
 
-def run_mcs(k: pd.DataFrame, log=print) -> pd.DataFrame:
+def run_mcs(k: pd.DataFrame, log=print, scopes=("M16", "all28")) -> pd.DataFrame:
     """MCS 90 % (T_max, блочный бутстрап дат) на панельном QLIKE по датам: наборы XGB и LGBM (контроли + 10 гибридов), области M16 / все 28, окна выбора / подтверждения / все."""
     c = S.common(k, CM.SIGS)
     wm, sm, rows = CM.slice_masks(c), scope_masks(c), []
     Q = qmatrix(c, CM.SIGS)
     for mod, ctl in MCS_SETS.items():
         ms = ctl + [h for h in HYB if h.startswith(mod + "_")]
-        for sn in ("M16", "all28"):
+        for sn in scopes:
             for wn in ("p2017_2021", "confirm_2022_2026", "all"):
                 tab = date_tab(c, Q, sm[sn], wm[wn])[ms]
+                if not len(tab):
+                    continue
                 r = SD.mcs(tab.to_numpy(), block_idx(len(tab)))
                 rows += [dict(set=mod, scope=sn, window=wn, model=m, mean_qlike=float(tab[m].mean()), mcs_p=float(r["p"][i]), in_mcs90=bool(r["in"][i]), n_dates=len(tab)) for i, m in enumerate(ms)]
     log("MCS: %d строк" % len(rows))

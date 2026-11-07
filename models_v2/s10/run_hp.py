@@ -198,8 +198,7 @@ def k4567_check() -> list:
     print("K1 в k4567 vs panel_base: общих строк %d, max_abs_diff = %s" % (len(mk), d1))
     bad += ["K1 расходится с panel_base"] if d1 != 0.0 or len(mk) != len(pb) else []
     print("строк %d; K4 %d, K5 %d, K6 %d, K7 %d значений; K7 min %.4g" % (len(k), *(k[s].notna().sum() for s in CT.SIG[1:]), k["sigma2_k7"].min()))
-    cp = json.loads((P.REP / "CHECKPOINT.json").read_text())
-    return bad + ([] if cp.get("used") == 0 else ["CHECKPOINT used != 0"])
+    return bad + CT.used_errors(P.REP / "ALL_TRIALS.csv")        # было «used == 0»: после P2 used = 20 (гибриды); контроли — не trials: строк K4–K7 в реестре нет
 
 
 def stage_k4567(check: bool) -> int:
@@ -217,7 +216,7 @@ STAGES = {"inv": stage_inv, "daily": stage_daily, "har": stage_har, "shift": sta
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=list(STAGES) + ["hyb", "stats", "loto", "p17"])
+    ap.add_argument("--stage", required=True, choices=list(STAGES) + ["hyb", "stats", "loto", "p17", "s17"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--module", choices=("xgb", "lgbm"))
     ap.add_argument("--part", default="all")
@@ -225,6 +224,9 @@ def main() -> int:
     if a.stage in ("stats", "loto"):          # P3 (G11/G12)
         from models_v2.s10 import hp_stats_run
         return hp_stats_run.stage(a.stage, a.check, a.part, a.module)
+    if a.stage == "s17":          # P3-17 (G17, Ж-220): выбор, LOTO, статистика на 17 и перенос на E11
+        from models_v2.s10 import hp_s17_run
+        return hp_s17_run.stage(a.part, a.module, a.check)
     if a.stage == "p17":          # P17 (G16, Ж-220): обучение на 17
         from models_v2.s10 import hp_p17_run
         return hp_p17_run.stage(a.part, a.module, a.check)
