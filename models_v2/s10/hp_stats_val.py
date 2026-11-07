@@ -38,24 +38,26 @@ def _row(tests: pd.DataFrame, cfg: str, comp: str, scope: str, win: str) -> pd.S
     return t.iloc[0] if len(t) else None
 
 
-def l1(tests: pd.DataFrame, cfg: str, comp: str, scope: str, win: str, holm: bool) -> dict:
-    """Условия уровня 1 к базе comp: Δ < 0; знак Δ < 0 в ≥ 2 из 3 периодов; DM p < 0,05; ДИ бутстрапа Δ < 0 (верхняя граница < 0); p Холма < 0,10 (иначе «только сырой»)."""
-    r = _row(tests, cfg, comp, scope, win)
+def l1(tests: pd.DataFrame, cfg: str, comp: str, scope: str, win: str, holm: bool, pref: str = "") -> dict:
+    """Условия уровня 1 к базе comp: Δ < 0; знак Δ < 0 в ≥ 2 из 3 периодов; DM p < 0,05; ДИ бутстрапа Δ < 0 (верхняя граница < 0); p Холма < 0,10 (иначе «только сырой»).
+    pref — префикс окон (`k23_` для K2/K3: общие даты с ними; win и периоды берутся с префиксом)."""
+    r = _row(tests, cfg, comp, scope, pref + win)
     if r is None:
         return dict(ok=False, raw=False)
-    signs = [(_row(tests, cfg, comp, scope, p) is not None and _row(tests, cfg, comp, scope, p)["delta_mean"] < 0) for p in P3]
+    signs = [(_row(tests, cfg, comp, scope, pref + p) is not None and _row(tests, cfg, comp, scope, pref + p)["delta_mean"] < 0) for p in P3]
     raw = bool(r["delta_mean"] < 0 and sum(signs) >= 2 and r["dm_p"] < 0.05 and r["boot_hi"] < 0)
     return dict(ok=bool(raw and (not holm or r["p_holm"] < 0.10)), raw=raw, delta=r["delta_mean"], dm_p=r["dm_p"], boot_hi=r["boot_hi"], p_holm=r.get("p_holm"), n_neg_periods=int(sum(signs)))
 
 
 def levels(pt: pd.DataFrame, tests: pd.DataFrame, loto_cfgs: set) -> pd.DataFrame:
-    """R14 по каждому гибриду и области доказательств: confirm (M16 × 2022–02.2026) и hist (M16 × вся история). Уровень 2 — к K1, K4 и K5 (У-9; K2/K3 — только справочно, 4 бумаги); 4 — E11 и LOTO."""
+    """R14 по каждому гибриду и области доказательств: confirm (M16 × 2022–02.2026) и hist (M16 × вся история). Уровень 2 — к K1, K4, K5 и K2, K3 (R14; K2/K3 — на общих датах с ними, окна `k23_*`, G15); 4 — E11 и LOTO."""
     rows = []
     for h in T.HYB:
         for ev, w in (("confirm_M16_2022_02.2026", "confirm_2022_2026"), ("hist_M16_2017_2026", "all")):
             a = l1(tests, h, "k1", "M16", w, True)
             c4, c5 = l1(tests, h, "k4", "M16", w, True), l1(tests, h, "k5", "M16", w, True)
-            l2 = a["ok"] and c4["ok"] and c5["ok"]
+            c2, c3 = l1(tests, h, "k2", "M16", w, True, CM.K23_PREF), l1(tests, h, "k3", "M16", w, True, CM.K23_PREF)
+            l2 = a["ok"] and c4["ok"] and c5["ok"] and c2["ok"] and c3["ok"]       # G15: к K1, K4, K5 и K2, K3 (R14)
             n240, n5 = _row(tests, h, "k1", "M16", "no_240222"), _row(tests, h, "k1", "M16", "no_top5_adv")
             ptw = pt[(pt["group"] == "M16") & (pt["period"] == w)].pivot_table(index="ticker", columns="model", values="qlike")
             frac = float((ptw[h] < ptw["k1"]).mean())
@@ -64,11 +66,11 @@ def levels(pt: pd.DataFrame, tests: pd.DataFrame, loto_cfgs: set) -> pd.DataFram
             lt = _row(tests, h + "__LOTO", "k1", "M16", w) if h in loto_cfgs else None
             e_ok = bool(e11 is not None and e11["delta_mean"] < 0 and e11["dm_p"] < 0.05)
             lt_ok = bool(lt is not None and lt["delta_mean"] < 0 and lt["dm_p"] < 0.05)
-            k23 = _row(tests, h, "k2", "K23_4", "k23_common"), _row(tests, h, "k3", "K23_4", "k23_common")
             lvl = 4 if (l3 and e_ok and lt_ok) else 3 if l3 else 2 if l2 else 1 if a["ok"] else 0
             rows.append(dict(config=h, evidence=ev, level=lvl, l1_ok=a["ok"], l1_raw_only=bool(a["raw"] and not a["ok"]), d_k1=a.get("delta"), p_dm_k1=a.get("dm_p"), p_holm_k1=a.get("p_holm"), n_neg_periods=a.get("n_neg_periods"),
-                             l2_k4=c4["ok"], l2_k5=c5["ok"], l3_no240222=None if n240 is None else bool(n240["delta_mean"] < 0), l3_no_top5=None if n5 is None else bool(n5["delta_mean"] < 0), frac_m16_better_k1=frac,
-                             l4_e11=e_ok, l4_loto=lt_ok if lt is not None else "не считалось", d_k2_on4=None if k23[0] is None else k23[0]["delta_mean"], d_k3_on4=None if k23[1] is None else k23[1]["delta_mean"], status="потолок; ACCEPTED не присваивается"))
+                             l2_k4=c4["ok"], l2_k5=c5["ok"], l2_k2=c2["ok"], l2_k3=c3["ok"], d_k2_m16=c2.get("delta"), d_k3_m16=c3.get("delta"), p_dm_k2=c2.get("dm_p"), p_dm_k3=c3.get("dm_p"),
+                             p_holm_k2=c2.get("p_holm"), p_holm_k3=c3.get("p_holm"), l3_no240222=None if n240 is None else bool(n240["delta_mean"] < 0), l3_no_top5=None if n5 is None else bool(n5["delta_mean"] < 0), frac_m16_better_k1=frac,
+                             l4_e11=e_ok, l4_loto=lt_ok if lt is not None else "не считалось", status="потолок; ACCEPTED не присваивается"))
     return pd.DataFrame(rows)
 
 
@@ -100,5 +102,5 @@ def loto_table(c: pd.DataFrame, loto: pd.DataFrame, tests: pd.DataFrame) -> pd.D
 
 def write(hv: pd.DataFrame, lv: pd.DataFrame, lt: pd.DataFrame) -> None:
     P.write_csv(hv, "statistics/HARJ_VALUE.csv", "добавленная ценность HAR-J: Δ QLIKE гибрида к K4/K5 СВОЕГО модуля; A1 — также к K1; по бумагам (среднее, медиана, доля Δ < 0), срезам и группам; %s" % S.STAT)
-    P.write_csv(lv, "statistics/LEVELS.csv", "уровни R14 (У-9: уровень 2 к K1, K4 и K5; K2/K3 справочно, 4 бумаги); evidence: confirm (M16 × 2022–02.2026), hist (M16 × вся история); %s" % S.STAT)
+    P.write_csv(lv, "statistics/LEVELS.csv", "уровни R14 (уровень 2 к K1, K4, K5 и K2, K3 — G15, K2/K3 на 28 бумагах, общие даты с ними); evidence: confirm (M16 × 2022–02.2026), hist (M16 × вся история); %s" % S.STAT)
     P.write_csv(lt, "statistics/LOTO.csv", "LOTO (У-13): по бумагам и группам — LOTO против пула и K1, DM (НУ 5, описательно; панельный — в TESTS); %s" % S.STAT)

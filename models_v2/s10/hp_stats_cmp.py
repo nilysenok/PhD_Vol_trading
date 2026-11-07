@@ -1,6 +1,7 @@
 """P3, G11: `COMPARISON.csv` и `PER_TICKER.csv` (R12): QLIKE, RMSE, MAE, R² (на RV и на ln RV) по бумаге и по группам M16 / SBER / E11 / все 28 / сектора (среднее и медиана по бумагам),
 срезы: all, 2017–2021, 2022, 2023–2025, 2026, 2022–2026 (подтверждение), без 24.02.2022, без gap, без 5 дат с наибольшим QLIKE K1, по годам; доли бумаг лучше K1, K4, K5.
-K2/K3 есть только у SBER, AFLT, ALRS, GCHE (У-9): срез `k23_common` — общие даты этих бумаг с K2, K3. Все ряды — на ОБЩИХ датах бумаги. Статус: исследовательский, HISTORICAL WALK-FORWARD, потолок."""
+K2/K3 — на всех 28 бумагах (`k23.parquet`, Ж-219 п. 5, G15; прежде — только 4, У-9): срезы с префиксом `k23_` — общие даты бумаги всех 27 рядов и K2, K3 (цели с 2017, без строк через остановку 2022, где K2/K3 нет).
+Все ряды — на ОБЩИХ датах бумаги. Статус: исследовательский, HISTORICAL WALK-FORWARD, потолок."""
 from __future__ import annotations
 
 import numpy as np
@@ -9,7 +10,8 @@ import pandas as pd
 from models_v2.s10 import hp_hyb_out as O, hp_paths as P, hp_stats_sel as S
 
 SIGS = S.model_cols()
-K23 = ["SBER", "AFLT", "ALRS", "GCHE"]
+K23 = list(P.TICKERS)       # бумаги, у которых есть K2/K3 (G15: все 28; до Ж-219 п. 5 — четыре)
+K23_PREF = "k23_"           # префикс периода/окна срезов с K2, K3 (общие даты уже с ними)
 D0 = pd.Timestamp("2022-02-24")
 METR = ["qlike", "rmse", "mae", "r2_rv", "r2_ln"]
 
@@ -19,8 +21,8 @@ def own_ctrl(model: str) -> str:
 
 
 def with_k23(k: pd.DataFrame) -> pd.DataFrame:
-    """Добавляет k2, k3 (NaN вне четырёх бумаг)."""
-    x = pd.concat([pd.read_parquet(P.OUT / ("k23_%s.parquet" % t))[S.KEY + ["sigma2_k2", "sigma2_k3"]] for t in K23], ignore_index=True)
+    """Добавляет k2, k3 из `k23.parquet` (28 бумаг; NaN там, где замороженная процедура не прогнозирует)."""
+    x = pd.read_parquet(P.OUT / "k23.parquet")[S.KEY + ["sigma2_k2", "sigma2_k3"]]
     return k.merge(x.rename(columns={"sigma2_k2": "k2", "sigma2_k3": "k3"}), on=S.KEY, how="left")
 
 
@@ -80,12 +82,12 @@ def run(k: pd.DataFrame, log=print) -> pd.DataFrame:
     pt = per_ticker(c, SIGS, slice_masks(c))
     cmp_ = comparison(pt)
     k2 = S.common(with_k23(k)[k["ticker"].isin(K23).to_numpy()], SIGS + ["k2", "k3"])
-    pt2 = per_ticker(k2, SIGS + ["k2", "k3"], {"k23_common": np.ones(len(k2), bool)})
+    pt2 = per_ticker(k2, SIGS + ["k2", "k3"], {K23_PREF + n: m for n, m in slice_masks(k2).items()})
     cmp2 = comparison(pt2, True)
-    cmp2["scope"] = cmp2["scope"].map(lambda s: "K23_4:" + s)
+    cmp2["scope"] = cmp2["scope"].map(lambda s: "K23:" + s)
     pt = pd.concat([pt, pt2], ignore_index=True)
     stat = "%s; QLIKE: среднее по бумагам; no_top5dates_k1 — без 5 дат с наибольшим панельным QLIKE K1; no_240222 — без пар с датой или целью 24.02.2022" % S.STAT
     P.write_csv(pd.concat([cmp_, cmp2], ignore_index=True), "statistics/COMPARISON.csv", stat)
-    P.write_csv(pt, "statistics/PER_TICKER.csv", "метрики по бумаге и срезам, все 25 рядов на общих датах бумаги; k23_common — общие даты с K2, K3 (SBER, AFLT, ALRS, GCHE); " + S.STAT)
+    P.write_csv(pt, "statistics/PER_TICKER.csv", "метрики по бумаге и срезам, все 25 рядов на общих датах бумаги; k23_* — общие даты со всеми рядами и K2, K3 (28 бумаг); " + S.STAT)
     log("COMPARISON %d строк, PER_TICKER %d строк; общих строк %d; бумаг %d" % (len(cmp_) + len(cmp2), len(pt), len(c), c["ticker"].nunique()))
     return pt

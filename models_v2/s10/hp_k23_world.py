@@ -25,6 +25,14 @@ FIRST_PAIRS = 126           # У-3: первый год Y, для которог
 YEARS = paths6.YEARS
 
 
+LN_BV = 4                   # столбец ln BV в F.X (`ft.NAMES`)
+
+
+def _bv_to_nan(col: np.ndarray) -> np.ndarray:
+    """У-18 (GATES_PANEL.md): BV = 0 (вырожденный день) даёт ln BV = −inf; нефинитное значение — пропуск (XGB/LGBM умеют пропуски), конечные — без изменений."""
+    return np.where(np.isfinite(col), col, np.nan)
+
+
 def pool_papers(read) -> list:
     """read(тикер) -> бары; результат — как `mkt.load_papers`: [paper(SBER)] + paper(PAPERS)."""
     return [mkt.paper(read(t)) for t in POOL]
@@ -33,6 +41,7 @@ def pool_papers(read) -> list:
 def build_world(bars: pd.DataFrame, imoex: pd.DataFrame, pool: list) -> dict:
     """Мир бумаги: F, grid, dz0 (Б-2 m_mkx), lvl (level_base для И2), feats, acc, eps. HP (`i2`) задаётся отдельно."""
     F = ft.build(bars)
+    F.X[:, LN_BV] = _bv_to_nan(F.X[:, LN_BV])
     grid = har.eligible(har.Panel(F.dates, F.seg, F.rv, F.X[:, :4]))
     M, _ = mkt.block(None, F.X[:, [0, 1, 2]], F.seg, F.dates, pool, imoex)
     acc = {g: tuple(c) for g, c in json.loads(ACC.read_text()).items()}

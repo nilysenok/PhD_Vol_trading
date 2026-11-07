@@ -1,6 +1,6 @@
 """P3, G11: `TESTS.csv` и `MCS.csv` (R13, У-14). Единица — ДАТА: Δ_d = среднее по бумагам дня d разности QLIKE (гибрид − база); DM — Ньюи–Уэст лаг 5, двусторонний p (`models_v2/s3/dm`);
 блочный бутстрап ДАТ (блок 20, 5000, seed 42; `stats_d.block_idx`) с сохранением всех бумаг дня; MCS 90 % (`stats_d.mcs`) на среднем по панели. Холм — `stats_d.holm_n(p, N)`, N объявлено ДО p (CHECKPOINT).
-Основное семейство Холма: 20 гибридов × {K1, K4, K5} на M16 × {2022–02.2026, вся история}; 20 × {K2, K3} на 4 бумагах; LOTO к K1 (M16, оба окна). Остальное — описательно (аux). Δ < 0 — гибрид лучше."""
+Основное семейство Холма: 20 гибридов × {K1, K4, K5} на M16 × {2022–02.2026, вся история}; 20 × {K2, K3} на M16 в тех же двух окнах на общих датах с K2, K3 (G15); LOTO к K1 (M16, оба окна). Остальное — описательно (аux). Δ < 0 — гибрид лучше."""
 from __future__ import annotations
 
 import json
@@ -88,14 +88,14 @@ def holm_main(df: pd.DataFrame, n_declared: int) -> pd.DataFrame:
 
 
 def run_tests(k: pd.DataFrame, loto: pd.DataFrame, n_declared: int, log=print) -> pd.DataFrame:
-    """TESTS.csv: гибриды × {K1, K4, K5} (все срезы), K2/K3 (4 бумаги), контроли K4–K7 к K1, LOTO к K1 и к пулу."""
+    """TESTS.csv: гибриды × {K1, K4, K5} (все срезы), K2/K3 (28 бумаг, `k23_*`), контроли K4–K7 к K1, LOTO к K1 и к пулу."""
     c = S.common(k, CM.SIGS)
     wm = CM.slice_masks(c)
     rows = []
     pairs = [(h, b) for h in HYB for b in ("k1", "k4", "k5")]
     rows += rows_for(c, CM.SIGS, pairs, scope_masks(c), {w: wm.get(w, wm["all"]) for w in WINS}, "aux")
     c2 = S.common(CM.with_k23(k)[k["ticker"].isin(CM.K23).to_numpy()], CM.SIGS + ["k2", "k3"])
-    rows += rows_for(c2, CM.SIGS + ["k2", "k3"], [(h, b) for h in HYB for b in ("k2", "k3")], {"K23_4": np.ones(len(c2), bool)}, {"k23_common": np.ones(len(c2), bool)}, "main")
+    rows += k23_rows(c2)
     rows += rows_for(c, CM.SIGS, [(s, "k1") for s in ("k4", "k5", "k6", "k7")], scope_masks(c), {w: wm.get(w, wm["all"]) for w in WINS}, "control")
     df = pd.DataFrame(rows)
     sel = (df["kind"] == "aux") & (df["scope"] == MAIN[0]) & df["window"].isin(MAIN[1])
@@ -104,6 +104,17 @@ def run_tests(k: pd.DataFrame, loto: pd.DataFrame, n_declared: int, log=print) -
     df = holm_main(pd.concat([df, pd.DataFrame(lt)], ignore_index=True), n_declared)
     log("TESTS: %d строк, основное семейство %d p, N=%d" % (len(df), int((df["kind"] == "main").sum()), n_declared))
     return df
+
+
+def k23_rows(c2: pd.DataFrame) -> list:
+    """G15: гибриды × {K2, K3} на ОБЩИХ датах бумаги со всеми рядами и K2, K3 (те же области и окна, что к K1/K4/K5); окна с префиксом `k23_`.
+    Основное семейство — M16 × (подтверждение, вся история), как у K1/K4/K5; остальное — описательно. N Холма не меняется (K2/K3 — контроли)."""
+    wm = CM.slice_masks(c2)
+    rows = rows_for(c2, CM.SIGS + ["k2", "k3"], [(h, b) for h in HYB for b in ("k2", "k3")], scope_masks(c2), {w: wm.get(w, wm["all"]) for w in WINS}, "aux")
+    for r in rows:
+        r["kind"] = "main" if (r["scope"] == MAIN[0] and r["window"] in MAIN[1]) else "aux"
+        r["window"] = CM.K23_PREF + r["window"]
+    return rows
 
 
 def loto_rows(c: pd.DataFrame, loto: pd.DataFrame) -> list:
