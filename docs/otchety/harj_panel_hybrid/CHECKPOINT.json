@@ -9,7 +9,14 @@
   "reserve": 4
  },
  "used": 20,
- "leaf": "P2",
+ "leaf": "P3",
  "updated": "2026-11-07 09:45",
- "N_registry": 605
+ "N_registry": 605,
+ "N_declared_before_stats": 608,
+ "loto_declared": [
+  "xgb_A1",
+  "lgbm_A1",
+  "xgb_A2"
+ ],
+ "declared_at": "2026-11-07 10:02"
 }

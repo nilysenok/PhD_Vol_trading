@@ -100,7 +100,8 @@ def test_loyo_ne_vidit_celi_goda_Y(sw, monkeypatch):
     monkeypatch.setattr(select, "GRID132", SMALL)
     bars, imo = sw
     a, b = _scores_2018(bars, imo, pool_of, False), _scores_2018(bars, imo, pool_of, True)
-    assert len(a) == 2 and np.isfinite(a["score"]).all() and a["score"].tolist() == b["score"].tolist()
+    sa, sb = a.set_index("label")["score"].to_dict(), b.set_index("label")["score"].to_dict()  # по метке: порядок прихода из Pool.imap_unordered не фиксирован (Р-1, находка 1)
+    assert len(a) == 2 and np.isfinite(a["score"]).all() and sa == sb
 
 
 def test_mutaciya_god_Y_vidit_celi_goda_Y_lovitsya(sw, monkeypatch):
