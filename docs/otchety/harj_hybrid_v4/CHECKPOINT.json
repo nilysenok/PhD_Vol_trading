@@ -38,9 +38,24 @@
  "N_wide_rule": "N_wide = N_declared_before_stats + число уникальных строк-проб в файлах data/regen/*h1*trials*.csv (ключ: файл, model, step, trial или point). В файлах нет колонки бумаги, поэтому считаются все пробы (верхняя оценка: «по этим бумагам» не отделить); пробы с одинаковыми гиперпараметрами в разных файлах — разные эксперименты и считаются отдельно",
  "B_rule": "«go» — лучшая из B1–B6 по crit_panel ≤ go_threshold_B; окна 2022+ в выборе не участвуют; B5 считается только по правилу (B5_RULE.csv)",
  "B_declared_at": "2026-11-08 03:31:48.427930",
- "B_runtime_sec": 80.8,
+ "B_runtime_sec": 80.7,
  "B_configs_spent": 5,
  "B_best": "B6",
- "B_cache_key": "8baa72f81607e33167cf4381e883fc7be9ad03532470ee13a60050f2107ba05a",
- "B_processes": 1
+ "B_cache_key": "349c3a333a82b277a15a262d1fba6b86a25566e71692b66ad83b0dbe18d61f43",
+ "B_processes": 1,
+ "C_declared_at": "2026-11-08 03:49:51.310607",
+ "C_rule": "лист C-a: C1 = z_div; C2 = + z_perf; C3 = + z_mkt; C4 = + z_new (HAR-surprise, Intraday Shape); F = H·exp(w(Z)·ln(M/H)), w = σ(α + δ_i + βᵀz); κ = λ = 250; переоценка раз в месяц по парам t⁺ < d0; выбор — crit_panel; stop/go этапа C — после C-b",
+ "C_a_configs": [
+  "C1",
+  "C2",
+  "C3",
+  "C4"
+ ],
+ "C_runtime_sec": 23.1,
+ "C_processes": 1,
+ "C_configs_spent": 4,
+ "used_after_C_a": 9,
+ "C_best": "C1",
+ "C_cache_key": "41e1fbdbc737000b875f7bf641ce038b2d53d144eb7c51e65818487ceb6cb553",
+ "Z_cache_key": "994d8fd5df513634201661ad4cd28e561b3590df1cd6716f3f1b43d96dc0ba52"
 }

@@ -1,0 +1,6 @@
+# DEVELOPMENT; HISTORICAL WALK-FORWARD 2017–02.2026, не независимый OOS; Ж-222 лист V4-0/A; первая цифра — потолок; SHA-256 прежних и пересчитанных таблиц B (лист C-a, 08.11)
+file,role,sha256,reason
+archive_pre_metrics/B_COMPARISON.csv,"до пересчёта метрик (rmse_ln, mae_ln, r2_lvl)",2f36515e3484aeab9303bc3d0c8ec03b675ec466fde17bb5017d01af448696a2,"RMSE/MAE/R² приведены к единому определению проекта (hp_hyb_out), Д7; прогнозы B не менялись"
+B_COMPARISON.csv,"после пересчёта (rmse, mae, r2_rv, r2_ln)",d435483de220761e35a59fd2e30ec9e71edceee0cf34c9fad0eca864c806c094,то же
+archive_pre_metrics/B_PER_TICKER.csv,"до пересчёта метрик (rmse_ln, mae_ln, r2_lvl)",81eb56b326b3eb861207e42d2bdfb934a01b43350520b779f1078f29f876e998,"RMSE/MAE/R² приведены к единому определению проекта (hp_hyb_out), Д7; прогнозы B не менялись"
+B_PER_TICKER.csv,"после пересчёта (rmse, mae, r2_rv, r2_ln)",6da6593112b159ceb3341c803d773c252103e77a6ca2dbfcac16940df606d3d7,то же

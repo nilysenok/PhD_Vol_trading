@@ -1,13 +1,12 @@
 """V4-B, G12: сравнение, статистика, MCS. Все ряды — на ОДИНАКОВЫХ датах (S.common: конечные, > 0 у всех рядов и RV). Окна — по году цели. M16 — среднее по бумагам; SBER — отдельно (B_SBER), в выбор не входит.
-Метрики: QLIKE (`models_v2.metrics`), rmse_ln / mae_ln (логарифмы, определение проекта `metrics.summary`), R² на уровне σ² (1 − ΣRSS/ΣTSS). Статистика — `hp_stats_tst`: pair_stats (DM НУ 5, блочный бутстрап дат), block_idx; Холм — `stats_d.holm_n`."""
+Метрики: единое определение проекта — формулы `hp_hyb_out` (QLIKE, RMSE, MAE по RV, R² по RV и по ln RV; с 08.11 вместо rmse_ln/mae_ln/r2_lvl). Статистика — `hp_stats_tst`: pair_stats (DM НУ 5, блочный бутстрап дат), block_idx; Холм — `stats_d.holm_n`."""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from models_v2 import metrics
 from models_v2.s5.d import stats_d as SD
-from models_v2.s10 import hp_stats_sel as S, hp_stats_tst as TST
+from models_v2.s10 import hp_hyb_out as HO, hp_stats_sel as S, hp_stats_tst as TST
 from models_v2.s11 import v4_io as IO
 
 WINS = IO.WINDOWS
@@ -22,10 +21,10 @@ def win_mask(k: pd.DataFrame, w: str) -> np.ndarray:
 
 
 def metr(rv, f) -> dict:
-    rv, f = np.asarray(rv, float), np.asarray(f, float)
-    s = metrics.summary(rv, f)
-    tss = float(((rv - rv.mean()) ** 2).sum())
-    return {"n": s["n"], "qlike": s["qlike"], "rmse_ln": s["rmse_ln"], "mae_ln": s["mae_ln"], "r2_lvl": 1.0 - float(((rv - f) ** 2).sum()) / tss if tss > 0 else np.nan}
+    """Единое определение проекта (Д7): формулы `hp_hyb_out` (итог панели): QLIKE, RMSE и MAE по RV, R² по RV и по ln RV (1 − SSE/SST внутри бумаги и окна)."""
+    k = pd.DataFrame({"ticker": "x", "group": "x", "rv_tplus": np.asarray(rv, float), "sigma2_s": np.asarray(f, float)})
+    r = HO._per_ticker(HO._row_metrics(k, ["s"]), ["s"], "w").iloc[0]
+    return {"n": int(r["n"]), "qlike": float(r["qlike"]), "rmse": float(r["rmse"]), "mae": float(r["mae"]), "r2_rv": float(r["r2_rv"]), "r2_ln": float(r["r2_ln"])}
 
 
 def per_ticker(c: pd.DataFrame, cols: list) -> pd.DataFrame:
@@ -40,7 +39,7 @@ def per_ticker(c: pd.DataFrame, cols: list) -> pd.DataFrame:
 
 def comparison(c: pd.DataFrame, cols: list, crit: pd.DataFrame, pt: pd.DataFrame) -> pd.DataFrame:
     """Ряд × окно: среднее по M16 каждой метрики (среднее по бумагам), crit_panel, Δ QLIKE к K1 в % от уровня K1."""
-    m16 = pt[pt["group"] == "M16"].groupby(["window", "series"])[["qlike", "rmse_ln", "mae_ln", "r2_lvl"]].mean().reset_index()
+    m16 = pt[pt["group"] == "M16"].groupby(["window", "series"])[["qlike", "rmse", "mae", "r2_rv", "r2_ln"]].mean().reset_index()
     n = c[c["group"] == "M16"]
     rows = []
     for w in WINS:

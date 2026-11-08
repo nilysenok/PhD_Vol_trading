@@ -1,6 +1,10 @@
 key,program,source,direction,config,kind
-Ж-222:B1:cd6aedd97576,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B1"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
-Ж-222:B2:c216d5fb1791,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B2"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
-Ж-222:B3:fc4f79c30657,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B3"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
-Ж-222:B4:a6dacccf054e,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B4"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
-Ж-222:B6:fcd15dc21470,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B6"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
+Ж-222:B1:36408dbd493e,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B1"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""349c3a333a82b277""}",trial
+Ж-222:B2:037956cb0dda,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B2"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""349c3a333a82b277""}",trial
+Ж-222:B3:f7c6e9c8c8f2,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B3"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""349c3a333a82b277""}",trial
+Ж-222:B4:437a8b60dbcc,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B4"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""349c3a333a82b277""}",trial
+Ж-222:B6:c8f5a0edfd41,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B6"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""349c3a333a82b277""}",trial
+Ж-222:C1:0a8c26166d9e,Ж-222,harj_hybrid_v4,conditional_mixture_Ca,"{""cfg"": ""C1"", ""feats"": [""ell"", ""abs_ell""], ""kappa"": 250, ""lam"": 250, ""cache_key"": ""41e1fbdbc737000b""}",trial
+Ж-222:C2:07abd633dd82,Ж-222,harj_hybrid_v4,conditional_mixture_Ca,"{""cfg"": ""C2"", ""feats"": [""ell"", ""abs_ell"", ""ewqd"", ""lerr_h"", ""lerr_m""], ""kappa"": 250, ""lam"": 250, ""cache_key"": ""41e1fbdbc737000b""}",trial
+Ж-222:C3:8c37b43de431,Ж-222,harj_hybrid_v4,conditional_mixture_Ca,"{""cfg"": ""C3"", ""feats"": [""ell"", ""abs_ell"", ""ewqd"", ""lerr_h"", ""lerr_m"", ""med_lrv"", ""dlrv"", ""jshare""], ""kappa"": 250, ""lam"": 250, ""cache_key"": ""41e1fbdbc737000b""}",trial
+Ж-222:C4:d562fbd05876,Ж-222,harj_hybrid_v4,conditional_mixture_Ca,"{""cfg"": ""C4"", ""feats"": [""ell"", ""abs_ell"", ""ewqd"", ""lerr_h"", ""lerr_m"", ""med_lrv"", ""dlrv"", ""jshare"", ""sur_mkt"", ""lasth"", ""herf""], ""kappa"": 250, ""lam"": 250, ""cache_key"": ""41e1fbdbc737000b""}",trial
