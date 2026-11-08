@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 
@@ -165,18 +166,18 @@ def main_dx(check: bool) -> int:
     return 1 if bad else 0
 
 
-def main_ntp(check: bool) -> int:
-    """Лист NTP (G29–G31): прогнозы NTP1–NTP4 (`v4_ntp*`), состояния, отчёт и проверки — `v4_ntpd_*` (вне путей прогноза)."""
-    from models_v2.s11 import v4_ntpd_main
-    return v4_ntpd_main.main_ntp(check)
+LATE = {"NTP": ("v4_ntpd_main", "main_ntp"), "CLD": ("v4_cldd_main", "main_cld")}        # листы NTP (G29–G31), CLD (G32–G34): диагностика `v4_*d_*` вне путей прогноза, импорт — по требованию
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP"])
+    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP", "CLD"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
-    mains = {"CS": main_cs, "DX": main_dx, "E": main_e, "B": main_b, "Ca": main_ca, "Cb": main_cb, "NTP": main_ntp}
+    mains = {"CS": main_cs, "DX": main_dx, "E": main_e, "B": main_b, "Ca": main_ca, "Cb": main_cb}
+    if a.stage in LATE:
+        mod, fn = LATE[a.stage]
+        return getattr(importlib.import_module("models_v2.s11." + mod), fn)(a.check)
     if a.stage in mains:
         return mains[a.stage](a.check)
     r = stage_audit() if a.stage == "audit" else stage_a()

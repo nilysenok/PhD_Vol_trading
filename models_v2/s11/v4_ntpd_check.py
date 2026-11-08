@@ -132,7 +132,7 @@ def g30(r: dict) -> list:
     L = lt[lt["held_out"].isin(IO.M16 + ["M16"])]
     if set(lt["config"]) != {r["best"]} or set(L["held_out"]) != set(IO.M16 + ["M16"]) or not L["delta_zero_check"].astype(str).eq("True").all():
         bad.append("G30: NTP_LOTO неполон или исключённая бумага в панельной величине")
-    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:")]
+    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:") and not k.startswith("Ж-222:CLD")]       # отступление (лист CLD): строки CLD1–CLD4 другой стадии не считаются
     pref = sorted(k.split(":")[1] for k in keys)
     if sorted(x for x in pref if x.startswith("NTP")) != ST.CFGS or len(keys) != 27 or len(set(pref)) != 27:
         bad.append("G30: ALL_TRIALS — нет строк Ж-222:NTP1…NTP4 (по одной) или потеряны строки других стадий (всего ожидалось 27)")
