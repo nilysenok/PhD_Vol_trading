@@ -28,11 +28,14 @@ def evidence(r: dict) -> list:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["0", "GS"])
+    ap.add_argument("--stage", required=True, choices=["0", "GS", "SP"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--cfg", choices=["GS1", "GS2", "GS3", "GS4", "GS5"])
     ap.add_argument("--decide-form", action="store_true")
     a = ap.parse_args(argv)
+    if a.stage == "SP":
+        from models_v2.s12 import v5_sp_main
+        return v5_sp_main.main(a)
     if a.stage == "GS":
         from models_v2.s12 import v5_gs_main
         return v5_gs_main.main(a)

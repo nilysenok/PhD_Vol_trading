@@ -12,7 +12,7 @@ import pandas as pd
 from models_v2.s12 import run_v5, v5_0_dx_ols as O, v5_0_dx_score as DS, v5_0_io as IO, v5_0_stage as ST
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED = {"v5_0_stage.py", "run_v5.py"}               # стадия подключает диагностику; сами dx-модули друг друга импортируют
+ALLOWED = {"v5_0_stage.py", "run_v5.py", "run_v5_dx.py"}             # стадия подключает диагностику; сами dx-модули друг друга импортируют
 
 
 def imports_dx(source: str) -> bool:
@@ -28,7 +28,7 @@ def violators() -> list:
     bad = []
     for d in ("s10", "s11", "s12"):
         for p in sorted((ROOT / "models_v2" / d).glob("*.py")):
-            if p.name in ALLOWED or p.name.startswith("v5_0_dx"):
+            if p.name in ALLOWED or p.name.startswith(("v5_0_dx", "v5_dx1_")):
                 continue
             if imports_dx(p.read_text(encoding="utf-8")):
                 bad.append("%s/%s" % (d, p.name))

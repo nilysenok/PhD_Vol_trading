@@ -28,7 +28,7 @@ def load_regs() -> tuple:
     prior = TR.load_regs()
     v4 = pd.read_csv(IO.ROOT / "docs/otchety" / V4_NAME / "ALL_TRIALS.csv")
     v5 = pd.read_csv(ALL_TRIALS) if ALL_TRIALS.exists() else pd.read_csv(io.StringIO(HEADER))
-    v5 = v5[~v5["key"].str.startswith("Ж-226:GS")]          # отступление (лист 1a): строки Graph-Score — не лист 0
+    v5 = v5[~v5["key"].str.startswith(("Ж-226:GS", "Ж-226:SP"))]          # отступление (листы 1a, 2): строки Graph-Score и Spectral Energy — не лист 0
     return prior, v4, v5
 
 
@@ -73,8 +73,9 @@ def write_checkpoint(cpd: dict) -> None:
     """Время записи сохраняется при повторном запуске (идемпотентно): если файл есть и числа те же, не переписывается."""
     if CP.exists():
         old = json.loads(CP.read_text())
-        if {k: v for k, v in old.items() if k not in ("written_at", "GS")} == {k: v for k, v in cpd.items() if k != "written_at"}:
+        if {k: v for k, v in old.items() if k not in ("written_at", "GS", "SP")} == {k: v for k, v in cpd.items() if k != "written_at"}:
             return
-        if "GS" in old:                                                  # отступление (лист 1a): ключ GS не затирается
-            cpd = {**cpd, "GS": old["GS"]}
+        for key in ("GS", "SP"):                                         # отступление (листы 1a, 2): ключи GS и SP не затираются
+            if key in old:
+                cpd = {**cpd, key: old[key]}
     CP.write_text(json.dumps(cpd, ensure_ascii=False, indent=1))

@@ -81,5 +81,17 @@
    "GS5": "87d1e8aaa1cd1fbb"
   },
   "written_at": "2026-11-08 13:27:53"
+ },
+ "SP": {
+  "used": 4,
+  "best_sp": "SP1",
+  "direction2": "stop",
+  "cache_keys": {
+   "SP1": "930a69e4d975fdd0",
+   "SP2": "dc381debe2d24156",
+   "SP3": "00066c0b1f9f0e89",
+   "SP4": "68cb60f88c5f0d32"
+  },
+  "written_at": "2026-11-08 13:52:20"
  }
 }
