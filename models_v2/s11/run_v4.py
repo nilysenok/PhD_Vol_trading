@@ -165,23 +165,20 @@ def main_dx(check: bool) -> int:
     return 1 if bad else 0
 
 
+def main_ntp(check: bool) -> int:
+    """Лист NTP (G29–G31): прогнозы NTP1–NTP4 (`v4_ntp*`), состояния, отчёт и проверки — `v4_ntpd_*` (вне путей прогноза)."""
+    from models_v2.s11 import v4_ntpd_main
+    return v4_ntpd_main.main_ntp(check)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS"])
+    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
-    if a.stage == "CS":
-        return main_cs(a.check)
-    if a.stage == "DX":
-        return main_dx(a.check)
-    if a.stage == "E":
-        return main_e(a.check)
-    if a.stage == "B":
-        return main_b(a.check)
-    if a.stage == "Ca":
-        return main_ca(a.check)
-    if a.stage == "Cb":
-        return main_cb(a.check)
+    mains = {"CS": main_cs, "DX": main_dx, "E": main_e, "B": main_b, "Ca": main_ca, "Cb": main_cb, "NTP": main_ntp}
+    if a.stage in mains:
+        return mains[a.stage](a.check)
     r = stage_audit() if a.stage == "audit" else stage_a()
     gates = "G1–G5" if a.stage == "audit" else "G6–G7"
     if not a.check:

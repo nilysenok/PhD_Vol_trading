@@ -65,4 +65,4 @@ M16, вся история: LOTO 0.2889 / пул 0.2889 / K1 0.2958 (Δ к пу�
 ## Реестр
 Повторный запуск стадии больше не удаляет строки других стадий (`v4_trials.replace_rows`); в ALL_TRIALS — строки Ж-222:B*, C*, E*.
 
-Файлы: E_COMPARISON, E_PER_TICKER, E_TESTS, E_MCS, E_YEARS, E_SBER, E_LOTO, E_BIAS (.csv); входы sha256=96eab07b07c6…, код sha256=aad6a9e9f1a3….
+Файлы: E_COMPARISON, E_PER_TICKER, E_TESTS, E_MCS, E_YEARS, E_SBER, E_LOTO, E_BIAS (.csv); входы sha256=96eab07b07c6…, код sha256=838b9ec6516e….

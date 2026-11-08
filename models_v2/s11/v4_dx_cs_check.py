@@ -87,7 +87,7 @@ def g28(r: dict) -> list:
     L = lt[lt["held_out"].isin(IO.M16 + ["M16"])]
     if set(lt["config"]) != {r["best"]} or set(L["held_out"]) != set(IO.M16 + ["M16"]) or not L["delta_zero_check"].astype(str).eq("True").all():
         bad.append("G28: CS_LOTO неполон или параметры исключённой ≠ панельным")
-    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:")]
+    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:") and not k.startswith("Ж-222:NTP")]       # отступление (лист NTP): строки NTP1–NTP4 другой стадии не считаются
     pref = sorted(k.split(":")[1] for k in keys)
     if sorted(x for x in pref if x.startswith("CS")) != ST.CFGS or len(keys) != 23 or len(set(pref)) != 23:
         bad.append("G28: ALL_TRIALS — нет строк Ж-222:CS1, CS2 (по одной) или потеряны строки других стадий (всего ожидалось 23)")

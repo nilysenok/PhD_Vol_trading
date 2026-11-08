@@ -85,12 +85,12 @@
   "E5",
   "E6"
  ],
- "E_runtime_sec": 94.8,
+ "E_runtime_sec": 87.7,
  "E_processes": 1,
  "E_configs_spent": 6,
  "used_after_E": 21,
  "E_best": "E5",
- "E_cache_key": "fbddcacd1397c272b1f841a3bc3e6f6888c0904581472660b83ea9669adaa6a8",
+ "E_cache_key": "75932d2dc860da29cd871e1ecf3867e4d0920858ce581c5e05167302571ae1f8",
  "E_stop_go": "stop",
  "E_go_rules": {
   "cfg": {
@@ -242,6 +242,104 @@
  "DX_declared_at": "2026-11-08 04:54:14.608952",
  "DX_rule": "лист DX (Ж-225 п. 7): диагностика по году цели 2017–2026 × группе (M16, SBER) × M ∈ {√(K2·K3), K2, K3}, H = K1; пункты 1–6 — DX_YEARS, пункт 7 — DX_FEATURES (квинтили по прошлому окну), разбор 2018 — DX_2018; задним числом, описательно, 0 конфигураций, в выбор не входит",
  "DX_configs_spent": 0,
- "DX_runtime_sec": 17.7,
- "DX_done": true
+ "DX_runtime_sec": 17.5,
+ "DX_done": true,
+ "NTP_declared_at": "2026-11-08 05:13:30.112247",
+ "NTP_rule": "лист NTP (Ж-225 п. 4): F = M^(1−π)·C8^π, M = √(K2·K3), C8 — сохранённый прогноз; всё по закрытым парам (t⁺ ≤ d); D′ = QLIKE(C8) − QLIKE(M); до 60 закрытых пар бумаги π = 0,5; NTP1 π = σ(−m/s), EWMA 60, κ = 250; NTP2 fixed share α = 0,02, η = 1/медиана QLIKE панели; NTP3 гейт σ(a_i + b·m/s + c·|ℓ| + e·z_mkt), κ = λ = 250·s²; NTP4 — NTP1 с шагом ≤ 0,02; «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "NTP_configs": [
+  "NTP1",
+  "NTP2",
+  "NTP3",
+  "NTP4"
+ ],
+ "NTP_runtime_sec": 10.4,
+ "NTP_processes": 1,
+ "NTP_configs_spent": 4,
+ "used_after_NTP": 27,
+ "NTP_best": "NTP1",
+ "NTP_cache_key": "526c0ab5c348ef8ae9f61fa393038f83c65e6cc7b6502e1cd239c52ca8c7b15a",
+ "NTP_stop_go": "stop",
+ "NTP_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "C1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31453985471977297,
+    "crit_trim1": 0.19670723576291949
+   },
+   "C4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31460794948872595,
+    "crit_trim1": 0.19517092010461534
+   },
+   "C8": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3127549364559757,
+    "crit_trim1": 0.19498783734971692
+   },
+   "NTP1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3156742337130511,
+    "crit_trim1": 0.19664883542096198
+   },
+   "NTP2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3177588994716296,
+    "crit_trim1": 0.20523892558820744
+   },
+   "NTP3": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31578556423787363,
+    "crit_trim1": 0.20197536093686147
+   },
+   "NTP4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3156804500624273,
+    "crit_trim1": 0.1966089637822697
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "C8"
+ }
 }
