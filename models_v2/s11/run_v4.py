@@ -166,12 +166,12 @@ def main_dx(check: bool) -> int:
     return 1 if bad else 0
 
 
-LATE = {"NTP": ("v4_ntpd_main", "main_ntp"), "CLD": ("v4_cldd_main", "main_cld"), "RQC": ("v4_rqc_main", "main_rqc"), "H": ("v4_hd_main", "main_h")}        # листы NTP (G29–G31), CLD (G32–G34), K8-RQC (G35–G37), этап H (G38–G41; `--check` только читает): диагностика `v4_*d_*` вне путей прогноза, импорт — по требованию
+LATE = {"NTP": ("v4_ntpd_main", "main_ntp"), "CLD": ("v4_cldd_main", "main_cld"), "RQC": ("v4_rqc_main", "main_rqc"), "H": ("v4_hd_main", "main_h"), "I": ("v4_i_main", "main_i")}      # листы NTP (G29–G31), CLD (G32–G34), K8-RQC (G35–G37), этап H (G38–G41; `--check` только читает): диагностика `v4_*d_*` вне путей прогноза, импорт — по требованию
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP", "CLD", "RQC", "H"])
+    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP", "CLD", "RQC", "H", "I"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
     if a.check and a.stage in SB.SANDBOXED:       # G38: `--check` не меняет файлов проекта — пересчёт и проверка в песочнице (копия выходов)

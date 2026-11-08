@@ -15,6 +15,18 @@ DAYS = ("2019-06-03", "2021-09-01")
 EXPECT_KEYS = RQ.EXPECT_KEYS + ST.CFGS
 
 
+def prior_sha_without_stage_i() -> str:
+    """Отступление (лист I): то же, что `v4_h_cache.prior_sha`, но файлы этапа I (I1–I3*, I_*) — не «прежние» (сам `v4_h_cache` не правится: он входит в хэш кода H)."""
+    import hashlib
+    import re
+    h = hashlib.sha256()
+    for f in sorted(HC.OUT.glob("*.parquet")):
+        if not HC.OWN.match(f.name) and not re.match(r"^I(\d|_)", f.name):
+            h.update(f.name.encode())
+            h.update(IO.sha256(f).encode())
+    return h.hexdigest()
+
+
 def g39_forecasts(o: dict) -> list:
     bad, P = [], R.prepare(o["P"], o["Zh"], ["herf"])[0]
     for cfg in ST.CFGS:
@@ -48,7 +60,7 @@ def g39_pit(o: dict) -> list:
     if set(lt["config"]) != {o["best"]} or set(lt["held_out"]) != set(IO.M16 + ["M16"]) or not lt["delta_zero_check"].astype(str).eq("True").all():
         bad.append("G39: H_LOTO неполон или исключённая бумага влияет на панель")
     cp = o["cp"]
-    if cp.get("H_prior_sha") != HC.prior_sha():
+    if cp.get("H_prior_sha") != prior_sha_without_stage_i():
         bad.append("G39: прежние прогнозы/Z/BRK изменились после объявления (хэш parquet ≠ записанному)")
     t = dt.datetime.strptime(cp["H_declared_at"], "%Y-%m-%d %H:%M:%S.%f").timestamp()
     early = [f.name for f in HC.OUT.glob("*.parquet") if HC.OWN.match(f.name) and f.stat().st_mtime <= t]
@@ -83,7 +95,7 @@ def g40_tables(o: dict) -> list:
         bad.append("G40: H_VALUE неполон или Δ к K8 не совпадает с пересчётом")
     if len(cf) != 8 * o["P"]["date"].dt.to_period("M").nunique():
         bad.append("G40: H_COEF — не 8 × число месяцев")
-    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:")]
+    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:") and not k.startswith("Ж-222:I")]       # отступление (лист I): строки I1–I3 не считаются
     if sorted(k.split(":")[1] for k in keys) != sorted(EXPECT_KEYS):
         bad.append("G40: ALL_TRIALS — строки Ж-222 не B…RQC + H1–H8 по одной (%d, ожидалось %d)" % (len(keys), len(EXPECT_KEYS)))
     return bad

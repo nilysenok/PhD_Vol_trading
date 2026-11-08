@@ -89,7 +89,7 @@ def g24_tables(o: dict) -> list:
     if max(abs(Y.crit_from_years(yr)[s] - cs[s]) for s in cs.index) > 1e-12:
         bad.append("G24: сумма crit_part по годам ≠ crit_panel")
     tr = pd.read_csv(IO.REP / "ALL_TRIALS.csv")
-    j = tr[tr["key"].str.startswith("Ж-222:") & ~tr["key"].str.startswith(("Ж-222:CS", "Ж-222:NTP", "Ж-222:CLD", "Ж-222:K8", "Ж-222:RQC", "Ж-222:H"))]["key"].str.split(":").str[1]       # отступление (листы DX-CS, CLD, K8-RQC): строки CS1, CS2, NTP, CLD1–CLD4, K8, RQC1–RQC3 других стадий не считаются
+    j = tr[tr["key"].str.startswith("Ж-222:") & ~tr["key"].str.startswith(("Ж-222:CS", "Ж-222:NTP", "Ж-222:CLD", "Ж-222:K8", "Ж-222:RQC", "Ж-222:H", "Ж-222:I"))]["key"].str.split(":").str[1]       # отступление (листы DX-CS, CLD, K8-RQC): строки CS1, CS2, NTP, CLD1–CLD4, K8, RQC1–RQC3 других стадий не считаются
     if sorted(j.tolist()) != sorted(["B1", "B2", "B3", "B4", "B6"] + ["C%d" % i for i in range(1, 11)] + R.CFGS) or len(j) != 21:
         bad.append("G24: ALL_TRIALS — строки Ж-222 не B1–B4,B6 + C1–C10 + E1–E6 по одной (%d)" % len(j))
     return bad
