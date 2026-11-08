@@ -57,5 +57,22 @@
  "used_after_C_a": 9,
  "C_best": "C1",
  "C_cache_key": "41e1fbdbc737000b875f7bf641ce038b2d53d144eb7c51e65818487ceb6cb553",
- "Z_cache_key": "994d8fd5df513634201661ad4cd28e561b3590df1cd6716f3f1b43d96dc0ba52"
+ "Z_cache_key": "994d8fd5df513634201661ad4cd28e561b3590df1cd6716f3f1b43d96dc0ba52",
+ "C_b_declared_at": "2026-11-08 04:12:12.887090",
+ "C_b_rule": "лист C-b: C5 GAM (B-сплайн ℓ, 5 ст. св.); C6 монотонный (γ ≥ 0 при EWMA преимущества M); C7 QLIKE-бустинг (200 деревьев, глубина 2, шаг 0,05, лист ≥ 500, набор Z C4, раз в год); C8 два режима (π = σ(a + b·z_mkt_level)); C9 три эксперта (softmax); C10 наклоны β_i = β + η_i; κ = λ = 250·s²; месячная переоценка по парам t⁺ < d0 (C7 — годовая); выбор — crit_panel",
+ "C_b_configs": [
+  "C5",
+  "C6",
+  "C7",
+  "C8",
+  "C9",
+  "C10"
+ ],
+ "C_b_runtime_sec": 43.6,
+ "C_b_processes": 1,
+ "C_b_configs_spent": 6,
+ "used_after_C_b": 15,
+ "C_best_overall": "C8",
+ "C_b_cache_key": "f865c3195e10a82b3cfedc9bb368506cececc367a86fabb98b7a7f5753ebd9c2",
+ "C_stop_go": "stop"
 }
