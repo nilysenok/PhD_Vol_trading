@@ -93,5 +93,43 @@
    "SP4": "68cb60f88c5f0d32"
   },
   "written_at": "2026-11-08 13:52:20"
+ },
+ "FIN": {
+  "configs_spent_by_FIN": 0,
+  "used_total": 9,
+  "budget": 24,
+  "by_direction": {
+   "GS": 5,
+   "SP": 4
+  },
+  "go_any": false,
+  "best_gs": "GS4",
+  "best_sp": "SP1",
+  "N_prior": 680,
+  "N_declared_before_stats": 704,
+  "N_wide": 3104,
+  "closed_directions": {
+   "1 Graph-Score": "stop: ни одна GS не прошла три условия «go»; лучшая GS4; выигрыш к K8 держится на 2022 (числа — FIN_ALL.csv, раздел 14 итога)",
+   "2 Spectral": "stop: лучшая SP1 прошла условия 1 и 2, не прошла 3; выигрыш держится на 2018 (числа — FIN_ALL.csv, FIN_YEARS.csv)",
+   "3 Moments": "ABANDON: p Вальда K8 2017–2021 выше 0,01 — новой информации нет (DX1_MOMENTS.csv)",
+   "4 Latent": "ABANDON: структура совпадает с GS3/GS4/GS5",
+   "5 Jump": "ABANDON: значимые скачки несут долю QLIKE менее чем вдвое выше доли дней (DX1_JUMPS.csv)",
+   "6 Break": "ABANDON: нет «go» направления 1 (план п. 3.6)",
+   "7 сочетания": "ABANDON: нет «go» ни одного направления"
+  },
+  "cache_keys": {
+   "GS1": "5ca1df13ef92b9ed",
+   "GS2": "aa51e4e9acd4d085",
+   "GS3": "5aa9a040d0531445",
+   "GS4": "f8f12fa62d7808ee",
+   "GS5": "87d1e8aaa1cd1fbb",
+   "SP1": "930a69e4d975fdd0",
+   "SP2": "dc381debe2d24156",
+   "SP3": "00066c0b1f9f0e89",
+   "SP4": "68cb60f88c5f0d32"
+  },
+  "tables_sha": "a163569b1cfb84d18d4db649183eb62b592d0c07156594c8dad2987d7a4ce018",
+  "other_keys_sha": "c71cec83b3b636930249d0287f43e1e52b7d186f922e70205adcaa9c4977a8fc",
+  "written_at": "2026-11-08 14:28:11"
  }
 }

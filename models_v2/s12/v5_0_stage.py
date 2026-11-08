@@ -81,7 +81,7 @@ def g10(r: dict) -> list:
     if not RG.CP.exists() or not RG.ALL_TRIALS.exists():
         return bad + ["G10: нет CHECKPOINT.json/ALL_TRIALS.csv на диске"]
     d = json.loads(RG.CP.read_text())
-    if {k: v for k, v in d.items() if k not in ("written_at", "GS", "SP")} != json.loads(json.dumps({k: v for k, v in c.items() if k != "written_at"})):
+    if {k: v for k, v in d.items() if k not in ("written_at", "GS", "SP", "FIN")} != json.loads(json.dumps({k: v for k, v in c.items() if k != "written_at"})):
         bad.append("G10: CHECKPOINT на диске ≠ пересчёту")
     return bad
 

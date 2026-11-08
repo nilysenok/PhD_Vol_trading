@@ -73,9 +73,9 @@ def write_checkpoint(cpd: dict) -> None:
     """Время записи сохраняется при повторном запуске (идемпотентно): если файл есть и числа те же, не переписывается."""
     if CP.exists():
         old = json.loads(CP.read_text())
-        if {k: v for k, v in old.items() if k not in ("written_at", "GS", "SP")} == {k: v for k, v in cpd.items() if k != "written_at"}:
+        if {k: v for k, v in old.items() if k not in ("written_at", "GS", "SP", "FIN")} == {k: v for k, v in cpd.items() if k != "written_at"}:
             return
-        for key in ("GS", "SP"):                                         # отступление (листы 1a, 2): ключи GS и SP не затираются
+        for key in ("GS", "SP", "FIN"):                                  # отступление (листы 1a, 2, FIN): ключи GS, SP и FIN не затираются
             if key in old:
                 cpd = {**cpd, key: old[key]}
     CP.write_text(json.dumps(cpd, ensure_ascii=False, indent=1))
