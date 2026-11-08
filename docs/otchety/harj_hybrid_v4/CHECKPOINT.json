@@ -1,0 +1,780 @@
+{
+ "program": "HAR-J Hybrid V4 (Ж-221 + Ж-222), h=1, 17 бумаг",
+ "N_prior": 634,
+ "budget": 60,
+ "N_declared_before_stats": 694,
+ "rule": "N_prior = |объединение ключей `key` реестров|; реестры кумулятивны (каждый следующий содержит предыдущий), поэтому суммировать строки нельзя (двойной счёт)",
+ "sources": {
+  "hybrid_final_v1": 521,
+  "hybrid_struct_v1": 541,
+  "harj_hybrid_v2": 585,
+  "harj_panel_hybrid": 634
+ },
+ "panel_declared": {
+  "N_declared_before_stats": 608,
+  "N_declared_before_stats_p17": 631
+ },
+ "used": 0,
+ "written_at": "2026-11-08 03:12:36",
+ "note": "записано до любого p; аудит и этап A конфигураций не расходуют",
+ "go_threshold_B": 0.26095148806475227,
+ "B_controls_crit_panel": {
+  "k1": 0.26219684273533,
+  "k2": 0.2682053350295673,
+  "k3": 0.26820294241134257,
+  "d2": 0.26145148806475227
+ },
+ "B_margin": 0.0005,
+ "N_wide": 3094,
+ "N_wide_optuna_trials": 2400,
+ "N_wide_optuna_parts": {
+  "D16_5_h1_base_trials.csv": 360,
+  "D16_5_h1_trials.csv": 360,
+  "D17_1_h1_G1Xopt_trials.csv": 360,
+  "D17_1_h1_G1opt_trials.csv": 360,
+  "D22_h1_trials.csv": 480,
+  "D24_1_h1_d812m_trials.csv": 480
+ },
+ "N_wide_rule": "N_wide = N_declared_before_stats + число уникальных строк-проб в файлах data/regen/*h1*trials*.csv (ключ: файл, model, step, trial или point). В файлах нет колонки бумаги, поэтому считаются все пробы (верхняя оценка: «по этим бумагам» не отделить); пробы с одинаковыми гиперпараметрами в разных файлах — разные эксперименты и считаются отдельно",
+ "B_rule": "«go» — лучшая из B1–B6 по crit_panel ≤ go_threshold_B; окна 2022+ в выборе не участвуют; B5 считается только по правилу (B5_RULE.csv)",
+ "B_declared_at": "2026-11-08 03:31:48.427930",
+ "B_runtime_sec": 83.0,
+ "B_configs_spent": 5,
+ "B_best": "B6",
+ "B_cache_key": "8ce2487108a8385750c7bf0ebed5352c42c0f6e2048976cafa94bb82d318808e",
+ "B_processes": 1,
+ "C_declared_at": "2026-11-08 03:49:51.310607",
+ "C_rule": "лист C-a: C1 = z_div; C2 = + z_perf; C3 = + z_mkt; C4 = + z_new (HAR-surprise, Intraday Shape); F = H·exp(w(Z)·ln(M/H)), w = σ(α + δ_i + βᵀz); κ = λ = 250; переоценка раз в месяц по парам t⁺ < d0; выбор — crit_panel; stop/go этапа C — после C-b",
+ "C_a_configs": [
+  "C1",
+  "C2",
+  "C3",
+  "C4"
+ ],
+ "C_runtime_sec": 23.6,
+ "C_processes": 1,
+ "C_configs_spent": 4,
+ "used_after_C_a": 9,
+ "C_best": "C1",
+ "C_cache_key": "bc9517ca1917492263cd4761c3486ad3d0e70ae0425347ab9f622f4d43a63208",
+ "Z_cache_key": "994d8fd5df513634201661ad4cd28e561b3590df1cd6716f3f1b43d96dc0ba52",
+ "C_b_declared_at": "2026-11-08 04:12:12.887090",
+ "C_b_rule": "лист C-b: C5 GAM (B-сплайн ℓ, 5 ст. св.); C6 монотонный (γ ≥ 0 при EWMA преимущества M); C7 QLIKE-бустинг (200 деревьев, глубина 2, шаг 0,05, лист ≥ 500, набор Z C4, раз в год); C8 два режима (π = σ(a + b·z_mkt_level)); C9 три эксперта (softmax); C10 наклоны β_i = β + η_i; κ = λ = 250·s²; месячная переоценка по парам t⁺ < d0 (C7 — годовая); выбор — crit_panel",
+ "C_b_configs": [
+  "C5",
+  "C6",
+  "C7",
+  "C8",
+  "C9",
+  "C10"
+ ],
+ "C_b_runtime_sec": 43.5,
+ "C_b_processes": 1,
+ "C_b_configs_spent": 6,
+ "used_after_C_b": 15,
+ "C_best_overall": "C8",
+ "C_b_cache_key": "eadf0cf8346b2b5789ca49014f3ad88c8d30a7765868206b71ebe8b3a4ec9d66",
+ "C_stop_go": "stop",
+ "E_declared_at": "2026-11-08 04:26:35.413450",
+ "E_rule": "этап E: F = F0·exp(b_t); E1 F0 = H; E2–E5 F0 = G = B2; E6 = H·exp(b + w·ℓ) + дневная EWMA; b — по парам t⁺ ≤ d (обновление ежедневно), до 60 закрытых пар бумаги b = 0; b ∈ [−0,5; 0,5]; κ = 250; E1/E2 hl 60, E3 hl 20, E4 hl 20 × hl 120, E5 Калман (q/r раз в год), E6 месячная (b, w) hl 250 + EWMA hl 20; панель — 17 бумаг, в LOTO — 16; выбор — crit_panel",
+ "E_configs": [
+  "E1",
+  "E2",
+  "E3",
+  "E4",
+  "E5",
+  "E6"
+ ],
+ "E_runtime_sec": 86.0,
+ "E_processes": 1,
+ "E_configs_spent": 6,
+ "used_after_E": 21,
+ "E_best": "E5",
+ "E_cache_key": "159ee40c63419adadf1bbd348fd3458dea8147fd13bd076482bd989f468704e2",
+ "E_stop_go": "stop",
+ "E_go_rules": {
+  "cfg": {
+   "E1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.32389610484542947,
+    "crit_trim1": 0.2029920307235183
+   },
+   "E2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3318245671532791,
+    "crit_trim1": 0.21468207549380036
+   },
+   "E3": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3372115314888279,
+    "crit_trim1": 0.2054772002002544
+   },
+   "E4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3417117665614574,
+    "crit_trim1": 0.2065674447928913
+   },
+   "E5": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.324209144059021,
+    "crit_trim1": 0.19774370174651873
+   },
+   "E6": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3400650874042138,
+    "crit_trim1": 0.2054711545023683
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "E5"
+ },
+ "CS_declared_at": "2026-11-08 04:50:59.202559",
+ "CS_rule": "лист DX-CS, Cold Start (Ж-225 п. 3): база — C8 (два режима, med_lrv), всё прочее как в C8 (κ = λ = 250·s², месячная переоценка по парам t⁺ < d0, до 60 закрытых пар — приор w = 0,5); CS1: λ_prior(n) = 250·250/(250 + n), n — закрытые пары панели; CS2: κ_i(n_i) = 250·250/(250 + n_i), n_i — закрытые пары бумаги i; «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "CS_configs": [
+  "CS1",
+  "CS2"
+ ],
+ "CS_runtime_sec": 25.1,
+ "CS_processes": 1,
+ "CS_configs_spent": 2,
+ "used_after_CS": 23,
+ "CS_best": "CS2",
+ "CS_cache_key": "4edf758d7b996b15f179a117073820b9ea028fc79520b5c351e1e08ca8aaceb5",
+ "CS_stop_go": "stop",
+ "CS_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "C1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31453985471977297,
+    "crit_trim1": 0.19670723576291949
+   },
+   "C4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31460794948872595,
+    "crit_trim1": 0.19517092010461534
+   },
+   "C8": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3127549364559757,
+    "crit_trim1": 0.19498783734971692
+   },
+   "CS1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3152566949832226,
+    "crit_trim1": 0.1959045603220855
+   },
+   "CS2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3129611889738245,
+    "crit_trim1": 0.1950917052959892
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "C8"
+ },
+ "DX_declared_at": "2026-11-08 04:54:14.608952",
+ "DX_rule": "лист DX (Ж-225 п. 7): диагностика по году цели 2017–2026 × группе (M16, SBER) × M ∈ {√(K2·K3), K2, K3}, H = K1; пункты 1–6 — DX_YEARS, пункт 7 — DX_FEATURES (квинтили по прошлому окну), разбор 2018 — DX_2018; задним числом, описательно, 0 конфигураций, в выбор не входит",
+ "DX_configs_spent": 0,
+ "DX_runtime_sec": 17.4,
+ "DX_done": true,
+ "NTP_declared_at": "2026-11-08 05:13:30.112247",
+ "NTP_rule": "лист NTP (Ж-225 п. 4): F = M^(1−π)·C8^π, M = √(K2·K3), C8 — сохранённый прогноз; всё по закрытым парам (t⁺ ≤ d); D′ = QLIKE(C8) − QLIKE(M); до 60 закрытых пар бумаги π = 0,5; NTP1 π = σ(−m/s), EWMA 60, κ = 250; NTP2 fixed share α = 0,02, η = 1/медиана QLIKE панели; NTP3 гейт σ(a_i + b·m/s + c·|ℓ| + e·z_mkt), κ = λ = 250·s²; NTP4 — NTP1 с шагом ≤ 0,02; «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "NTP_configs": [
+  "NTP1",
+  "NTP2",
+  "NTP3",
+  "NTP4"
+ ],
+ "NTP_runtime_sec": 10.4,
+ "NTP_processes": 1,
+ "NTP_configs_spent": 4,
+ "used_after_NTP": 27,
+ "NTP_best": "NTP1",
+ "NTP_cache_key": "526c0ab5c348ef8ae9f61fa393038f83c65e6cc7b6502e1cd239c52ca8c7b15a",
+ "NTP_stop_go": "stop",
+ "NTP_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "C1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31453985471977297,
+    "crit_trim1": 0.19670723576291949
+   },
+   "C4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31460794948872595,
+    "crit_trim1": 0.19517092010461534
+   },
+   "C8": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3127549364559757,
+    "crit_trim1": 0.19498783734971692
+   },
+   "NTP1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3156742337130511,
+    "crit_trim1": 0.19664883542096198
+   },
+   "NTP2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3177588994716296,
+    "crit_trim1": 0.20523892558820744
+   },
+   "NTP3": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31578556423787363,
+    "crit_trim1": 0.20197536093686147
+   },
+   "NTP4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3156804500624273,
+    "crit_trim1": 0.1966089637822697
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "C8"
+ },
+ "CLD_declared_at": "2026-11-08 05:37:20.808027",
+ "CLD_rule": "лист CLD (Ж-225 п. 5): F = H·exp(w·ℓ), ℓ = ln(M/H), M = √(K2·K3), H = K1; D = QLIKE(H) − QLIKE(M); D̂ = E[D|z_d] — регрессия раз в месяц по закрытым парам 17 бумаг (t⁺ < d0), расширяющееся окно; до 60 пар w = 0,5; CLD1 гребень λ = 250, w = σ(D̂/ŝ); CLD2 та же регрессия, w = clip(0,5 + D̂/(2c)), c = p90 |D|; CLD3 Хьюбер δ = 1,345·ŝ; CLD4 аддитивная (кубический B-сплайн, 4 ст. св., гребень 250); z = ℓ, |ℓ|, lerr_h, lerr_m, ln RV, медиана ln RV, Δ ln RV, Херфиндаль, доля последнего часа, HAR-surprise рынка, время после излома (CUSUM h = 5, k = 0,5); «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "CLD_configs": [
+  "CLD1",
+  "CLD2",
+  "CLD3",
+  "CLD4"
+ ],
+ "CLD_runtime_sec": 32.8,
+ "CLD_processes": 1,
+ "CLD_configs_spent": 4,
+ "used_after_CLD": 31,
+ "CLD_best": "CLD1",
+ "CLD_cache_key": "fc11334b34d21b27dc04b00794f72082b461955e903c17288cde09f7f921bc7c",
+ "CLD_stop_go": "stop",
+ "CLD_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "C1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31453985471977297,
+    "crit_trim1": 0.19670723576291949
+   },
+   "C4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31460794948872595,
+    "crit_trim1": 0.19517092010461534
+   },
+   "C8": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3127549364559757,
+    "crit_trim1": 0.19498783734971692
+   },
+   "NTP1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3156742337130511,
+    "crit_trim1": 0.19664883542096198
+   },
+   "NTP3": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31578556423787363,
+    "crit_trim1": 0.20197536093686147
+   },
+   "CLD1": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.31143461449199084,
+    "crit_trim1": 0.19341818468142696
+   },
+   "CLD2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31246918459247575,
+    "crit_trim1": 0.19565237733770247
+   },
+   "CLD3": {
+    "c1": false,
+    "c2": false,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.31227256565219297,
+    "crit_trim1": 0.19405770194907765
+   },
+   "CLD4": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.3117746788722481,
+    "crit_trim1": 0.19362941724261007
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "CLD1"
+ },
+ "RQC_declared_at": "2026-11-08 06:06:18.016425",
+ "RQC_rule": "лист K8-RQC (Ж-225 п. 6): K8 = sqrt(H·M), H = K1, M = sqrt(K2·K3) (контроль, 1 конфигурация); F = a·K8, a = mean(RV/K8) по закрытым парам t⁺ ≤ d, обрезка [0,6; 1,6], до 60 закрытых пар a = 1: RQC1 — все закрытые пары 17 бумаг (расширяющееся окно); RQC2 — пары панели года Y−1 (2017: a = 1); RQC3 — ln a бумаги = иерархическая (κ = 250) EWMA (полураспад 60) winsorized (p5/p95 прошлого окна бумаги) ln(RV/K8); заморозка на 5 дней с дня-скачка (доля J > p90 или |Δ ln RV| > p95 по прошлому окну бумаги), шаг |Δ ln a| ≤ 0,02; панель — 17 бумаг, в LOTO — 16; «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "RQC_configs": [
+  "K8",
+  "RQC1",
+  "RQC2",
+  "RQC3"
+ ],
+ "RQC_prior_sha": "b6b51ca85e3ed407d48f9334868b1167e8567f537fd8a322c03f11ea741efd14",
+ "RQC_runtime_sec": 7.7,
+ "RQC_processes": 1,
+ "RQC_configs_spent": 4,
+ "used_after_RQC": 35,
+ "RQC_best": "RQC2",
+ "RQC_cache_key": "8323ae9332afa33177500655b724f13fd9c32f6c58a8ba963e6fb13dde41e8dc",
+ "RQC_stop_go": "stop",
+ "RQC_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "K8": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.3111059549225575,
+    "crit_trim1": 0.19379342983607817
+   },
+   "RQC1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31580022033406685,
+    "crit_trim1": 0.19525267911870203
+   },
+   "RQC2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31396432131808394,
+    "crit_trim1": 0.19599097382629851
+   },
+   "RQC3": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.36058494997283524,
+    "crit_trim1": 0.1975246528834852
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "K8"
+ },
+ "H_declared_at": "2026-11-08 06:31:53.888929",
+ "H_rule": "этап H (Ж-225, Ж-222 п. 9): F = K8·exp(clip(θᵀz̃, ±0,5)), K8 = √(H·√(K2·K3)), H = K1; z̃ — признак, ортогонализованный к (ln H, ln M, ℓ, |ℓ|) гребневой регрессией (λ = 250) на закрытых парах окна оценки; θ — минимум среднего QLIKE на закрытых парах 17 бумаг (t⁺ < d0, расширяющееся окно с 2017-01, раз в месяц), гребень λ = 250·s², без свободного члена; до 60 пар g = 0; H1 рыночный HAR-surprise, H2 секторный, H3 внутридневная форма, H4 вероятность скачка, H5 согласованность прогнозов, H6 нестабильность режима (CUSUM, с. о. Δ ln медианной RV), H7 всё вместе, H8 = H7 с иерархией θ_i = θ + η_i (κ = 250·s²); «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "H_configs": [
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "H7",
+  "H8"
+ ],
+ "H_prior_sha": "54b37a027f955abdbf0f34930c801e0523b43ff4767c274fae1c96e21382d137",
+ "H_runtime_sec": 28.6,
+ "H_processes": 1,
+ "H_configs_spent": 8,
+ "used_after_H": 43,
+ "H_best": "H2",
+ "H_cache_key": "c070059a53e7f012658e68e257af3e08cb943ea95f6871171c3dad11941106c0",
+ "H_stop_go": "stop",
+ "H_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "K8": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.3111059549225575,
+    "crit_trim1": 0.19379342983607817
+   },
+   "C8": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3127549364559757,
+    "crit_trim1": 0.19498783734971692
+   },
+   "CLD1": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.31143461449199084,
+    "crit_trim1": 0.19341818468142696
+   },
+   "H1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.32035401246264805,
+    "crit_trim1": 0.19886266020726456
+   },
+   "H2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31269454092267845,
+    "crit_trim1": 0.19702729355775736
+   },
+   "H3": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3118056877589821,
+    "crit_trim1": 0.19523588232231817
+   },
+   "H4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3121435285869609,
+    "crit_trim1": 0.1945011842190047
+   },
+   "H5": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.31170137336241044,
+    "crit_trim1": 0.19237306058706616
+   },
+   "H6": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31041747409662934,
+    "crit_trim1": 0.20459389028035424
+   },
+   "H7": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31760540438805007,
+    "crit_trim1": 0.20055457508551888
+   },
+   "H8": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3213489658162194,
+    "crit_trim1": 0.20281627577592537
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "K8"
+ },
+ "I_declared_at": "2026-11-08 07:06:03.825214",
+ "I_rule": "этап I (Ж-222 п. 10): RV = C + J (J = max(RV − BV, 0), C = RV − J, как в HAR-J K1); Ĉ — HAR на ln C (день, неделя, месяц), гребень λ = 250, поправка exp(σ̂²/2); Ĵ = p̂·m̂, p̂ — логит события J > 0 на (EWMA₂₀ частоты, J/RV, ln RV), m̂ — EWMA₆₀ величины J при J > 0, стянутая к панельной (κ = 250); свободные члены бумаг — κ = 250; оценка раз в месяц по закрытым парам 17 бумаг с 2017-01, до 60 пар S = K8; I1 = Ĉ + Ĵ, I2 = √(K8·S), I3 = K8·exp(θ(ln S − ln K8)), θ ∈ [0, 1] — QLIKE, гребень λ = 250·s²; «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "I_configs": [
+  "I1",
+  "I2",
+  "I3"
+ ],
+ "I_prior_sha": "52344a4f8e293c88d7aa6dfb54e5c26f9d79c3b42bc1c3e6dad8afdef19fa628",
+ "I_runtime_sec": 2.0,
+ "I_processes": 1,
+ "I_configs_spent": 3,
+ "used_after_I": 46,
+ "I_best": "I2",
+ "I_cache_key": "40f6795587eae765972d5fe457e1e04cf15a9095ab0650d6f086a4fec8e3858d",
+ "I_stop_go": "stop",
+ "I_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "K8": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.3111059549225575,
+    "crit_trim1": 0.19379342983607817
+   },
+   "C8": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3127549364559757,
+    "crit_trim1": 0.19498783734971692
+   },
+   "CLD1": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.31143461449199084,
+    "crit_trim1": 0.19341818468142696
+   },
+   "H2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31269454092267845,
+    "crit_trim1": 0.19702729355775736
+   },
+   "I1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3096427649256537,
+    "crit_trim1": 0.20702147926038897
+   },
+   "I2": {
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3064798259093752,
+    "crit_trim1": 0.1984902327279749
+   },
+   "I3": {
+    "c1": true,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3099468234693663,
+    "crit_trim1": 0.19654474950592346
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "I2"
+ },
+ "FIN_declared_at": "2026-11-08 07:33:30.018536",
+ "FIN_rule": "три лучшие архитектуры = три конфигурации из 46 (K8 включена) с наименьшим crit_panel (M16 × 2017–2021); окна 2022+ в выбор не входят; FIN конфигураций не расходует",
+ "FIN_configs_spent": 0,
+ "FIN_prior_parquet_sha": "fcd62a0157a285d68cf403fb4a2d6e92d5cb4edc3a27cb8c73b27187ae489ffb",
+ "FIN_prior_tables_sha": "6f3a010b25cf7dd18bd0d25e07c7c937c18b78f96749e236b683c27eba6f2096",
+ "FIN_top3": [
+  "I2",
+  "I3",
+  "K8"
+ ],
+ "FIN_best": "I2",
+ "FIN_go_any": false,
+ "FIN_cache_note": "производные таблицы; прогнозы и таблицы этапов не менялись"
+}

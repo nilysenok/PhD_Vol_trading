@@ -1,0 +1,19 @@
+# DEVELOPMENT; HISTORICAL WALK-FORWARD 2017–02.2026, не независимый OOS; Ж-222 лист V4-0/A; первая цифра — потолок; цель RV, даты, источники, сдвиг (Д1), OOF по метаданным; код-проверка пар — v4_oofcode
+ticker,n_h,n_k23,n_aligned,dates_equal_h_k23,t_plus_diff_h_k23,rv_diff_h_k23,rv_vs_daily_h,tplus_not_next_h,rv_vs_daily_k23,tplus_not_next_k23,rv_vs_daily_eng,tplus_not_next_eng,rv_vs_daily_d2,tplus_not_next_d2,k1_diff_k23,k1_diff_eng,k1_diff_d2,shift_ok_h,shift_ok_k2,shift_ok_k3,shift_ok_d2,y0_used,n_forecast_meta,n_forecast_file,hp_year_ok,i2_covers_years,first_year_ok,oof_k2k3,align_ok,status
+AFLT,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+ALRS,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+HYDR,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+IRAO,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+LKOH,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+LSRG,2270,2270,2269,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2269,2269,True,True,True,True,True,OOF-пригоден
+MGNT,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+MOEX,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+MTLR,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+MTSS,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+NVTK,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+OGKB,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+PHOR,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+RTKM,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+SBER,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+TATN,2272,2272,2271,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2271,2271,True,True,True,True,True,OOF-пригоден
+VTBR,2268,2268,2267,True,0,0,0,0,0,0,0,0,0,0,0,0,0,True,True,True,True,2017,2267,2267,True,True,True,True,True,OOF-пригоден
