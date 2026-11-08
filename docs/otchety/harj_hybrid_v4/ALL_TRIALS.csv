@@ -1,1 +1,6 @@
 key,program,source,direction,config,kind
+Ж-222:B1:cd6aedd97576,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B1"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
+Ж-222:B2:c216d5fb1791,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B2"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
+Ж-222:B3:fc4f79c30657,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B3"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
+Ж-222:B4:a6dacccf054e,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B4"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial
+Ж-222:B6:fcd15dc21470,Ж-222,harj_hybrid_v4,operators_B,"{""cfg"": ""B6"", ""kappa"": 250, ""prior"": 250, ""cache_key"": ""8baa72f81607e331""}",trial

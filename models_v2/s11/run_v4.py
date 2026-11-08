@@ -80,11 +80,27 @@ def check_a(r: dict) -> list:
     return bad
 
 
+def main_b(check: bool) -> int:
+    """Этап B (G9–G14): модули v4_b*; `--check` после записи проверяет гейты и печатает итог."""
+    from models_v2.s11 import v4_b_check, v4_b_stage       # локально: audit/A не зависят от модулей этапа B
+    r = v4_b_stage.stage_b()
+    if not check:
+        print("стадия B записана; лучшая %s; конфигураций %d" % (r["best"], len(r["cfgs"])))
+        return 0
+    bad = v4_b_check.all_checks(r)
+    print("\n".join(bad) if bad else "G9–G14: все проверки пройдены")
+    print("лучшая B: %s; crit_panel: %s" % (r["best"], r["crit"].set_index("series")["crit_panel"].round(5).to_dict()))
+    print("ИТОГ:", "FAIL" if bad else "OK")
+    return 1 if bad else 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["audit", "A"])
+    ap.add_argument("--stage", required=True, choices=["audit", "A", "B"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
+    if a.stage == "B":
+        return main_b(a.check)
     r = stage_audit() if a.stage == "audit" else stage_a()
     gates = "G1–G5" if a.stage == "audit" else "G6–G7"
     if not a.check:
