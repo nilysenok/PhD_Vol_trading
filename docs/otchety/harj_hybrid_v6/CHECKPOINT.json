@@ -192,10 +192,101 @@
    }
   },
   "inputs_hash": "00023d4b18d0b46f",
-  "code_hash": "ae4d5ea480092ac6",
+  "code_hash": "6356ebb503e205f6",
   "code_version": "v6.0",
   "used": 0,
   "note": "лист 0: конфигурации не расходуются; записано до первого прогноза V6 и до любого p",
-  "written_at": "2026-11-09 01:26:19"
+  "written_at": "2026-11-09 01:54:44"
+ },
+ "1a": {
+  "program": "HAR-J Hybrid V6 (Ж-227), SBER, h=1, лист 1a",
+  "configs": [
+   "A0"
+  ],
+  "used": 1,
+  "budget": 18,
+  "N": 722,
+  "N_wide": 3122,
+  "inputs_hash": "00023d4b18d0b46f",
+  "code_hash_v6_1": "a8d3549221589f23",
+  "code_hash_v6_0": "6356ebb503e205f6",
+  "code_version": "v6.1a",
+  "k1_sha256": "4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9",
+  "bars_sha256": "b451cb48473ac15c246e5d2df0dae64704dff718039e7f34ca0a05ab47d76b9f",
+  "h_check": {
+   "n_warm": 377,
+   "first_warm": "2015-07-07",
+   "last_warm": "2016-12-29",
+   "n_early": 63,
+   "max_diff_early": 0.0,
+   "n_all": 2272,
+   "max_diff_all": 0.0
+  },
+  "align": {
+   "rv_maxdiff": 0.0,
+   "h_maxdiff": 0.0,
+   "t_plus_equal": true
+  },
+  "s_features_sha": "7df51cc2ba14dafe",
+  "a0_f_sha": "862635744dfcd198",
+  "n_dates": 2271,
+  "n_refits": 109,
+  "lam_counts": {
+   "0.001": 26,
+   "0.01": 4,
+   "0.1": 33,
+   "1.0": 46
+  },
+  "qlike_all": 0.23004439490023734,
+  "qlike_2017_2021": 0.1537224669052595,
+  "go": [
+   {
+    "cond": 1,
+    "name": "crit_SBER",
+    "value": 0.16931793574678533,
+    "threshold": 0.16322590139696252,
+    "passed": false
+   },
+   {
+    "cond": 2,
+    "name": "без целей 2017",
+    "value": 0.21903308029025048,
+    "threshold": 0.20970878901435439,
+    "passed": false
+   },
+   {
+    "cond": 3,
+    "name": "без целей 2017–2018",
+    "value": 0.128220606852252,
+    "threshold": 0.11937209323777576,
+    "passed": false
+   },
+   {
+    "cond": 4,
+    "name": "без 1 % крайних дат",
+    "value": 0.12306051203725879,
+    "threshold": 0.11436498314876802,
+    "passed": false
+   },
+   {
+    "cond": 5,
+    "name": "лет лучше лучшего из K2/K3 (из 5)",
+    "value": 2.0,
+    "threshold": 3.0,
+    "passed": false
+   }
+  ],
+  "go_all": false,
+  "new_information_vs_K1": {
+   "delta": -0.0015608965371199934,
+   "p_dm_one": 0.22462367822554785,
+   "years_neg": 4,
+   "cond_i": true,
+   "cond_ii": false,
+   "cond_iii": true,
+   "new_information": false
+  },
+  "note": "лист 1a: A0 = S + LIN; потолок, не OOS",
+  "written_at": "2026-11-09 02:01:51"
  }
 }

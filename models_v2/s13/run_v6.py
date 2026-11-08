@@ -2,13 +2,14 @@
   python3 -W ignore -m models_v2.s13.run_v6 --stage 0          # пересчитать и записать выходы листа
   python3 -W ignore -m models_v2.s13.run_v6 --stage 0 --check  # ТОЛЬКО ЧТЕНИЕ: пересчёт в памяти, сверка с диском, суммарный хэш выходов до и после
   python3 -W ignore -m models_v2.s13.run_v6 --digest-v5        # суммарный хэш выходов V5 (G9: до и после проверок V5)
-Моделей не обучает; конфигурации не расходуются."""
+  python3 -W ignore -m models_v2.s13.run_v6 --stage 1a [--check]   # лист 1a: A0 = S + LIN (записать / только проверить)
+Стадия 0 моделей не обучает, конфигурации не расходует; стадия 1a расходует одну (A0)."""
 from __future__ import annotations
 
 import argparse
 import sys
 
-from models_v2.s13 import v6_0_io as IO, v6_0_stage as ST
+from models_v2.s13 import v6_0_io as IO, v6_0_stage as ST, v6_1_ev as EV1, v6_1_stage as S1
 
 
 def evidence(r: dict) -> list:
@@ -33,9 +34,28 @@ def evidence(r: dict) -> list:
     return out
 
 
+def main_1a(check: bool, before: str) -> int:
+    """Стадия 1a (лист 1a): A0 = S + LIN. Без --check — пересчёт и запись; с --check — только чтение, хэш выходов до и после."""
+    r = S1.compute()
+    if not check:
+        S1.write(r)
+        print("стадия 1a записана; хэш выходов %s; счёт %.1f с" % (IO.outputs_digest(), r["seconds"]))
+        return 0
+    bad = S1.check(r)
+    after = IO.outputs_digest()
+    if before != after:
+        bad.append("--check изменил файлы: хэш выходов до %s, после %s" % (before, after))
+    print("\n".join(EV1.evidence(r)))
+    print("счёт одного полного прогона: %.1f с" % r["seconds"])
+    print("хэш выходов до = после: %s (%s)" % (before == after, after[:16]))
+    print("\n".join(bad) if bad else "G10–G15: все проверки пройдены")
+    print("ИТОГ:", "FAIL" if bad else "OK")
+    return 1 if bad else 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=["0"])
+    ap.add_argument("--stage", choices=["0", "1a"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--digest-v5", action="store_true")
     a = ap.parse_args(argv)
@@ -43,8 +63,10 @@ def main(argv=None) -> int:
         print("хэш выходов V5: %s" % IO.v5_digest())
         return 0
     if a.stage is None:
-        ap.error("нужен --stage 0 или --digest-v5")
+        ap.error("нужен --stage 0, --stage 1a или --digest-v5")
     before = IO.outputs_digest()
+    if a.stage == "1a":
+        return main_1a(a.check, before)
     r = ST.compute()
     if not a.check:
         ST.write(r)

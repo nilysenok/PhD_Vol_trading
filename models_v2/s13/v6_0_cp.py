@@ -51,6 +51,6 @@ def check(entry: dict) -> list:
         bad.append("G8: CHECKPOINT ключ 0 на диске ≠ пересчёту")
     if (entry["N"], entry["N_wide"]) != (722, 3122):
         bad.append("G8: N = %s, N_wide = %s (ожидалось 722, 3122)" % (entry["N"], entry["N_wide"]))
-    if not ALL_TRIALS.exists() or ALL_TRIALS.read_text(encoding="utf-8") != IO.HEADER_TRIALS:
-        bad.append("G8: ALL_TRIALS.csv не только заголовок")
+    if not ALL_TRIALS.exists() or not ALL_TRIALS.read_text(encoding="utf-8").startswith(IO.HEADER_TRIALS):          # с листа 1a после заголовка идут строки конфигураций
+        bad.append("G8: ALL_TRIALS.csv не начинается с заголовка")
     return bad

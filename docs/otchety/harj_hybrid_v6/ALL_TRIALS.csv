@@ -1,1 +1,2 @@
 key,program,source,direction,config,kind
+Ж-227:A0,Ж-227,"docs/otchety/HARJ_HYBRID_SBER_V6_PLAN.md п. 3 (A0), 2.1, 2.2",A0_baseline,"{""cfg"": ""A0"", ""features"": [""S""], ""learner"": ""LIN"", ""base_rule22"": ""K1 (справочно; в листе 1b база A1/A2 — A0)"", ""base"": ""H=K1"", ""form"": ""F=H*exp(clip(g,-1,1))""}",trial
