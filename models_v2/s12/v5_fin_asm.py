@@ -33,7 +33,8 @@ def build(t: dict) -> str:
     parts.append(sec(15, "Особый вопрос: есть ли в новых архитектурах информация, которой нет в бустингах", B.special(t) + "\nОхват (`FIN_ENCOMPASS.csv`):\n\n" + W2.enc_block(t)))
     parts.append(sec(16, "Реестр всех испытаний и CHECKPOINT", W2.registry_block(t)))
     parts.append(sec(17, "Отступления листов", TX.DEPARTURES))
-    parts.append(sec(18, "Воспроизводимость", TX.FOOT))
+    parts.append(sec(18, "Оговорки проверки перед слиянием (`harj_hybrid_v5/PROVERKA_V5.md`)", TX.CAVEATS))
+    parts.append(sec(19, "Воспроизводимость", TX.FOOT))
     return "\n".join(parts) + "\n"
 
 
@@ -47,6 +48,11 @@ def reproduction() -> str:
             "Стадия без `--check` ПИШЕТ выходы, `--check` только читает (пересчёт в памяти, сверка с диском, хэш выходов до и после). Прогнозы GS и SP пишутся в `data/regen/harj_hybrid_v5/` с ключом кэша = хэш входов и кода (Д5); FIN прогнозов не считает, конфигурации не расходует. "
             "GS: до GS3–GS5 нужно записать форму score (`--decide-form` после `--cfg GS1`, `--cfg GS2`); `--cfg GSn` считает одну конфигурацию.\n\n```\n%s\n```\n\nОтдельные шаги GS: `python3 -W ignore -m models_v2.s12.run_v5 --stage GS --cfg GS1` (и GS2), затем `--stage GS --decide-form`, затем `--cfg GS3`…`GS5`.\n\n"
             "Тесты: `python3 -W ignore -m pytest tests/test_v2_v5_*.py -q -p no:cacheprovider`.\n\nВходы (только чтение): прогнозы V4 (`data/regen/harj_hybrid_v4`, `harj_panel_hybrid`), M10-бары 17 бумаг. Выходы: `data/regen/harj_hybrid_v5/`, `docs/otchety/harj_hybrid_v5/` (таблицы, отчёты, `CHECKPOINT.json`, `ALL_TRIALS.csv`), `docs/otchety/HARJ_HYBRID_V5_FINAL.md`. Итоговый документ собирается из таблиц на диске; `--stage FIN --check` пересобирает его и сверяет с файлом.\n" % cmds)
+
+
+def write_final_only() -> None:
+    """Пересобрать только `HARJ_HYBRID_V5_FINAL.md` (таблицы, CHECKPOINT, REPRODUCTION не трогаются; замера времени нет)."""
+    B.FINAL.write_text(build(W.load()), encoding="utf-8")
 
 
 def write_docs() -> None:
