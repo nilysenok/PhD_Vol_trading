@@ -1,0 +1,135 @@
+{
+ "program": "HAR-J Hybrid V5 (Ж-226), h=1, 17 бумаг",
+ "N_prior": 680,
+ "budget": 24,
+ "N_declared_before_stats": 704,
+ "N_wide": 3104,
+ "N_wide_optuna_trials": 2400,
+ "N_wide_optuna_parts": {
+  "D16_5_h1_base_trials.csv": 360,
+  "D16_5_h1_trials.csv": 360,
+  "D17_1_h1_G1Xopt_trials.csv": 360,
+  "D17_1_h1_G1opt_trials.csv": 360,
+  "D22_h1_trials.csv": 480,
+  "D24_1_h1_d812m_trials.csv": 480
+ },
+ "sources": {
+  "hybrid_final_v1": 521,
+  "hybrid_struct_v1": 541,
+  "harj_hybrid_v2": 585,
+  "harj_panel_hybrid": 634,
+  "harj_hybrid_v4": 46
+ },
+ "rule": "N_prior = |объединение ключей `key` реестров|; реестры кумулятивны (каждый следующий содержит предыдущий), поэтому суммировать строки нельзя (двойной счёт)",
+ "go_rule": "три условия одновременно (GATES_V5.md, Договорённости): crit_panel; crit_panel без 2017; crit_panel без 1 % крайних дат; планка включает K8",
+ "go_thresholds": {
+  "margin": 0.0005,
+  "cond1_crit_panel": 0.2604807656644858,
+  "cond1_min_of": "K8",
+  "cond2_crit_no2017": 0.3106059549225575,
+  "cond3_crit_trim1": 0.19329342983607817,
+  "values": {
+   "crit_panel": {
+    "k1": 0.26219684273533,
+    "k2": 0.2682053350295673,
+    "k3": 0.26820294241134257,
+    "d2": 0.26145148806475227,
+    "K8": 0.2609807656644858
+   },
+   "crit_no2017": {
+    "k2": 0.322360969947865,
+    "k3": 0.32199852560401315,
+    "d2": 0.3125899955428389,
+    "K8": 0.3111059549225575,
+    "k1": 0.3095772845098441
+   },
+   "crit_trim1": {
+    "k2": 0.22071969656859985,
+    "k3": 0.23002350934971522,
+    "d2": 0.1947403918361985,
+    "K8": 0.19379342983607817,
+    "k1": 0.19845190913038288
+   }
+  }
+ },
+ "controls_crit_panel": {
+  "k1": 0.26219684273533,
+  "k2": 0.2682053350295673,
+  "k3": 0.26820294241134257,
+  "d2": 0.26145148806475227,
+  "K8": 0.2609807656644858
+ },
+ "used": 0,
+ "note": "лист 0: конфигурации не расходуются; записано до первой конфигурации и до любого p",
+ "written_at": "2026-11-08 12:38:59",
+ "GS": {
+  "form": "GS2",
+  "form_crit_panel": {
+   "GS1": 0.2616763146446288,
+   "GS2": 0.2614864366307934
+  },
+  "form_rule": "меньший crit_panel из GS1 (сырой s) и GS2 (min(s,3)); записано до счёта GS3–GS5",
+  "form_written_at": "2026-11-08 13:12:16",
+  "used": 5,
+  "best_gs": "GS4",
+  "direction1": "stop",
+  "cache_keys": {
+   "GS1": "5ca1df13ef92b9ed",
+   "GS2": "aa51e4e9acd4d085",
+   "GS3": "5aa9a040d0531445",
+   "GS4": "f8f12fa62d7808ee",
+   "GS5": "87d1e8aaa1cd1fbb"
+  },
+  "written_at": "2026-11-08 13:27:53"
+ },
+ "SP": {
+  "used": 4,
+  "best_sp": "SP1",
+  "direction2": "stop",
+  "cache_keys": {
+   "SP1": "930a69e4d975fdd0",
+   "SP2": "dc381debe2d24156",
+   "SP3": "00066c0b1f9f0e89",
+   "SP4": "68cb60f88c5f0d32"
+  },
+  "written_at": "2026-11-08 13:52:20"
+ },
+ "FIN": {
+  "configs_spent_by_FIN": 0,
+  "used_total": 9,
+  "budget": 24,
+  "by_direction": {
+   "GS": 5,
+   "SP": 4
+  },
+  "go_any": false,
+  "best_gs": "GS4",
+  "best_sp": "SP1",
+  "N_prior": 680,
+  "N_declared_before_stats": 704,
+  "N_wide": 3104,
+  "closed_directions": {
+   "1 Graph-Score": "stop: ни одна GS не прошла три условия «go»; лучшая GS4; выигрыш к K8 держится на 2022 (числа — FIN_ALL.csv, раздел 14 итога)",
+   "2 Spectral": "stop: лучшая SP1 прошла условия 1 и 2, не прошла 3; выигрыш держится на 2018 (числа — FIN_ALL.csv, FIN_YEARS.csv)",
+   "3 Moments": "ABANDON: p Вальда K8 2017–2021 выше 0,01 — новой информации нет (DX1_MOMENTS.csv)",
+   "4 Latent": "ABANDON: структура совпадает с GS3/GS4/GS5",
+   "5 Jump": "ABANDON: значимые скачки несут долю QLIKE менее чем вдвое выше доли дней (DX1_JUMPS.csv)",
+   "6 Break": "ABANDON: нет «go» направления 1 (план п. 3.6)",
+   "7 сочетания": "ABANDON: нет «go» ни одного направления"
+  },
+  "cache_keys": {
+   "GS1": "5ca1df13ef92b9ed",
+   "GS2": "aa51e4e9acd4d085",
+   "GS3": "5aa9a040d0531445",
+   "GS4": "f8f12fa62d7808ee",
+   "GS5": "87d1e8aaa1cd1fbb",
+   "SP1": "930a69e4d975fdd0",
+   "SP2": "dc381debe2d24156",
+   "SP3": "00066c0b1f9f0e89",
+   "SP4": "68cb60f88c5f0d32"
+  },
+  "tables_sha": "a163569b1cfb84d18d4db649183eb62b592d0c07156594c8dad2987d7a4ce018",
+  "other_keys_sha": "c71cec83b3b636930249d0287f43e1e52b7d186f922e70205adcaa9c4977a8fc",
+  "written_at": "2026-11-08 14:28:11"
+ }
+}
