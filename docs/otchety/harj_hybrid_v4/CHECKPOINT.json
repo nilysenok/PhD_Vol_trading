@@ -763,5 +763,18 @@
    }
   },
   "best": "I2"
- }
+ },
+ "FIN_declared_at": "2026-11-08 07:33:30.018536",
+ "FIN_rule": "три лучшие архитектуры = три конфигурации из 46 (K8 включена) с наименьшим crit_panel (M16 × 2017–2021); окна 2022+ в выбор не входят; FIN конфигураций не расходует",
+ "FIN_configs_spent": 0,
+ "FIN_prior_parquet_sha": "fcd62a0157a285d68cf403fb4a2d6e92d5cb4edc3a27cb8c73b27187ae489ffb",
+ "FIN_prior_tables_sha": "6f3a010b25cf7dd18bd0d25e07c7c937c18b78f96749e236b683c27eba6f2096",
+ "FIN_top3": [
+  "I2",
+  "I3",
+  "K8"
+ ],
+ "FIN_best": "I2",
+ "FIN_go_any": false,
+ "FIN_cache_note": "производные таблицы; прогнозы и таблицы этапов не менялись"
 }
