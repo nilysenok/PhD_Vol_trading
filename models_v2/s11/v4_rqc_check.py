@@ -42,7 +42,7 @@ def g36_tables(o: dict) -> list:
     w = a[a["kind"] == "window"]
     if not {"RQC1", "RQC2", "RQC3", "E1", "E5"} <= set(w["config"]) or not {"2018-03..04 (санкции)", "2022-02-24..03-31"} <= set(w["month"]) or not (a["kind"] == "month").any():
         bad.append("G36: RQC_A — нет месяцев/окон 2018 и 2022 или E1–E5")
-    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:")]
+    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:") and not k.startswith("Ж-222:H")]       # отступление (лист H): строки H1–H8 не считаются
     if sorted(k.split(":")[1] for k in keys) != sorted(EXPECT_KEYS):
         bad.append("G36: ALL_TRIALS — строки Ж-222 не B…CLD + K8, RQC1–RQC3 по одной (%d, ожидалось %d)" % (len(keys), len(EXPECT_KEYS)))
     return bad

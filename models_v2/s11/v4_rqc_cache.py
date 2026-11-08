@@ -30,7 +30,7 @@ def prior_sha() -> str:
     """Хэш всех прежних parquet программы (кроме K8, RQC*): прежние прогнозы должны остаться побитно прежними (сверка в --check с записью при объявлении)."""
     h = hashlib.sha256()
     for f in sorted(OUT.glob("*.parquet")):
-        if not f.name.startswith(("K8", "RQC")):
+        if not f.name.startswith(("K8", "RQC", "ZH_", "H_")) and not (f.name[:1] == "H" and f.name[1:2].isdigit()):       # отступление (лист H): файлы ZH_*, H1–H8*, H_* — выходы этапа H, не «прежние»
             h.update(f.name.encode())
             h.update(IO.sha256(f).encode())
     return h.hexdigest()

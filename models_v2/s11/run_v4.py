@@ -11,7 +11,7 @@ import sys
 
 import pandas as pd
 
-from models_v2.s11 import v4_a, v4_audit as AU, v4_bench, v4_compl, v4_gaps, v4_io as IO, v4_isolation, v4_oofcode, v4_oracle, v4_trials
+from models_v2.s11 import v4_a, v4_audit as AU, v4_bench, v4_compl, v4_gaps, v4_io as IO, v4_isolation, v4_oofcode, v4_oracle, v4_sandbox as SB, v4_trials
 
 DONE_KEYS = ("Ж-211", "Ж-212", "Ж-214", "Ж-217")
 
@@ -156,24 +156,31 @@ def main_cs(check: bool) -> int:
 def main_dx(check: bool) -> int:
     """Лист DX (G26): диагностика недостатка информации по годам; модули `v4_dx_*` — задним числом, вне путей прогноза."""
     from models_v2.s11 import v4_dx_check, v4_dx_stage
-    r = v4_dx_stage.stage_dx()
     if not check:
+        v4_dx_stage.stage_dx()
         print("стадия DX записана")
         return 0
-    bad = v4_dx_check.all_checks(r)
+    bad = v4_dx_check.all_checks({})       # G38: `--check` только читает выходы стадии с диска (пересчёта и записи, в т. ч. DX_runtime_sec, нет); `all_checks` r не использует
     print("\n".join(bad) if bad else "G26: все проверки пройдены")
     print("ИТОГ:", "FAIL" if bad else "OK")
     return 1 if bad else 0
 
 
-LATE = {"NTP": ("v4_ntpd_main", "main_ntp"), "CLD": ("v4_cldd_main", "main_cld"), "RQC": ("v4_rqc_main", "main_rqc")}        # листы NTP (G29–G31), CLD (G32–G34), K8-RQC (G35–G37):диагностика `v4_*d_*` вне путей прогноза, импорт — по требованию
+LATE = {"NTP": ("v4_ntpd_main", "main_ntp"), "CLD": ("v4_cldd_main", "main_cld"), "RQC": ("v4_rqc_main", "main_rqc"), "H": ("v4_hd_main", "main_h")}        # листы NTP (G29–G31), CLD (G32–G34), K8-RQC (G35–G37), этап H (G38–G41; `--check` только читает): диагностика `v4_*d_*` вне путей прогноза, импорт — по требованию
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP", "CLD", "RQC"])
+    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP", "CLD", "RQC", "H"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
+    if a.check and a.stage in SB.SANDBOXED:       # G38: `--check` не меняет файлов проекта — пересчёт и проверка в песочнице (копия выходов)
+        with SB.sandbox():
+            return _dispatch(a)
+    return _dispatch(a)
+
+
+def _dispatch(a) -> int:
     mains = {"CS": main_cs, "DX": main_dx, "E": main_e, "B": main_b, "Ca": main_ca, "Cb": main_cb}
     if a.stage in LATE:
         mod, fn = LATE[a.stage]

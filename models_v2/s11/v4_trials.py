@@ -92,7 +92,7 @@ def verify() -> list:
     cp = json.loads((IO.REP / "CHECKPOINT.json").read_text())
     if cp["N_prior"] != n_prior(regs) or cp["N_declared_before_stats"] != cp["N_prior"] + BUDGET:
         bad.append("CHECKPOINT: N_prior / N_declared_before_stats не сходятся с реестрами")
-    rows = [x for x in (IO.REP / "ALL_TRIALS.csv").read_text().strip().splitlines()[1:] if not x.startswith(("Ж-222:B", "Ж-222:C", "Ж-222:E", "Ж-222:NTP", "Ж-222:K8", "Ж-222:RQC"))]       # (+ K8, RQC — лист K8-RQC); строки этапов B, C, E (Ж-222:B*, C*, E*) допустимы — их пишут стадии B, Ca, Cb, E
+    rows = [x for x in (IO.REP / "ALL_TRIALS.csv").read_text().strip().splitlines()[1:] if not x.startswith(("Ж-222:B", "Ж-222:C", "Ж-222:E", "Ж-222:NTP", "Ж-222:K8", "Ж-222:RQC", "Ж-222:H"))]       # отступление (лист H): + Ж-222:H*       # (+ K8, RQC — лист K8-RQC); строки этапов B, C, E (Ж-222:B*, C*, E*) допустимы — их пишут стадии B, Ca, Cb, E
     if rows:
         bad.append("ALL_TRIALS.csv: есть строки конфигураций вне этапа B")
     if not all(registry_rows(regs)["contains_previous"]):
