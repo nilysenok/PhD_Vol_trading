@@ -89,7 +89,7 @@ def g20_loto_trials(r: dict) -> list:
     L = lt[lt["held_out"].isin(IO.M16 + ["M16"])]
     if set(lt["config"]) != need or not L["delta_zero_check"].astype(str).eq("True").all() or any(set(L[L["config"] == c]["held_out"]) != set(IO.M16 + ["M16"]) for c in need):
         bad.append("G20: C_LOTO неполон или параметры исключённой ≠ панельным")
-    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:C")]
+    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:C") and not k.startswith("Ж-222:CS")]       # отступление (лист DX-CS): строки CS1, CS2 другой стадии сохраняются
     if sorted(k.split(":")[1] for k in keys) != sorted(ST.ALLC):
         bad.append("G20: ALL_TRIALS — нет строк Ж-222:C1…C10 (ровно по одной)")
     return bad

@@ -136,11 +136,44 @@ def main_e(check: bool) -> int:
     return 1 if bad else 0
 
 
+def main_cs(check: bool) -> int:
+    """Лист DX-CS, Cold Start (G27–G28): прогнозы CS1, CS2 (`v4_cs*`), диагностика холодного старта и отчёт (`v4_dx_*`, вне путей прогноза)."""
+    from models_v2.s11 import v4_cs_stage, v4_dx_cold, v4_dx_cs_check, v4_dx_cs_report
+    r = v4_cs_stage.stage_cs()
+    d = v4_dx_cold.cold_start(r)
+    (v4_cs_stage.IO.REP / "CS_REPORT.md").write_text(v4_dx_cs_report.build(r, d))
+    if not check:
+        print("стадия CS записана; лучшая CS %s" % r["best"])
+        return 0
+    bad = v4_dx_cs_check.all_checks(r, d)
+    print("\n".join(bad) if bad else "G27–G28: все проверки пройдены")
+    print("лучшая CS: %s; crit_panel: %s" % (r["best"], r["crit"].set_index("series")["crit_panel"].round(5).to_dict()))
+    print("ИТОГ:", "FAIL" if bad else "OK")
+    return 1 if bad else 0
+
+
+def main_dx(check: bool) -> int:
+    """Лист DX (G26): диагностика недостатка информации по годам; модули `v4_dx_*` — задним числом, вне путей прогноза."""
+    from models_v2.s11 import v4_dx_check, v4_dx_stage
+    r = v4_dx_stage.stage_dx()
+    if not check:
+        print("стадия DX записана")
+        return 0
+    bad = v4_dx_check.all_checks(r)
+    print("\n".join(bad) if bad else "G26: все проверки пройдены")
+    print("ИТОГ:", "FAIL" if bad else "OK")
+    return 1 if bad else 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E"])
+    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
+    if a.stage == "CS":
+        return main_cs(a.check)
+    if a.stage == "DX":
+        return main_dx(a.check)
     if a.stage == "E":
         return main_e(a.check)
     if a.stage == "B":

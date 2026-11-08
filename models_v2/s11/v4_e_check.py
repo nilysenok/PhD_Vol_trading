@@ -89,7 +89,7 @@ def g24_tables(o: dict) -> list:
     if max(abs(Y.crit_from_years(yr)[s] - cs[s]) for s in cs.index) > 1e-12:
         bad.append("G24: сумма crit_part по годам ≠ crit_panel")
     tr = pd.read_csv(IO.REP / "ALL_TRIALS.csv")
-    j = tr[tr["key"].str.startswith("Ж-222:")]["key"].str.split(":").str[1]
+    j = tr[tr["key"].str.startswith("Ж-222:") & ~tr["key"].str.startswith("Ж-222:CS")]["key"].str.split(":").str[1]       # отступление (лист DX-CS): строки CS1, CS2 другой стадии не считаются
     if sorted(j.tolist()) != sorted(["B1", "B2", "B3", "B4", "B6"] + ["C%d" % i for i in range(1, 11)] + R.CFGS) or len(j) != 21:
         bad.append("G24: ALL_TRIALS — строки Ж-222 не B1–B4,B6 + C1–C10 + E1–E6 по одной (%d)" % len(j))
     return bad

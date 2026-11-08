@@ -68,12 +68,12 @@
   "C9",
   "C10"
  ],
- "C_b_runtime_sec": 43.8,
+ "C_b_runtime_sec": 45.2,
  "C_b_processes": 1,
  "C_b_configs_spent": 6,
  "used_after_C_b": 15,
  "C_best_overall": "C8",
- "C_b_cache_key": "fcbb6b8fc0cb671b0cbe638ebcb7b2088abefe7b6aa73de771212ae028a4c0a3",
+ "C_b_cache_key": "7814388f239b94d1064016675ad182180fb4e56de53e459aa6aabf7d183a9e1b",
  "C_stop_go": "stop",
  "E_declared_at": "2026-11-08 04:26:35.413450",
  "E_rule": "этап E: F = F0·exp(b_t); E1 F0 = H; E2–E5 F0 = G = B2; E6 = H·exp(b + w·ℓ) + дневная EWMA; b — по парам t⁺ ≤ d (обновление ежедневно), до 60 закрытых пар бумаги b = 0; b ∈ [−0,5; 0,5]; κ = 250; E1/E2 hl 60, E3 hl 20, E4 hl 20 × hl 120, E5 Калман (q/r раз в год), E6 месячная (b, w) hl 250 + EWMA hl 20; панель — 17 бумаг, в LOTO — 16; выбор — crit_panel",
@@ -85,12 +85,12 @@
   "E5",
   "E6"
  ],
- "E_runtime_sec": 88.0,
+ "E_runtime_sec": 94.8,
  "E_processes": 1,
  "E_configs_spent": 6,
  "used_after_E": 21,
  "E_best": "E5",
- "E_cache_key": "a6f49983e9a2ec8980974e7e0985755aaa628e74ca4e8ed9d21955a221f9ccff",
+ "E_cache_key": "fbddcacd1397c272b1f841a3bc3e6f6888c0904581472660b83ea9669adaa6a8",
  "E_stop_go": "stop",
  "E_go_rules": {
   "cfg": {
@@ -158,5 +158,90 @@
    }
   },
   "best": "E5"
- }
+ },
+ "CS_declared_at": "2026-11-08 04:50:59.202559",
+ "CS_rule": "лист DX-CS, Cold Start (Ж-225 п. 3): база — C8 (два режима, med_lrv), всё прочее как в C8 (κ = λ = 250·s², месячная переоценка по парам t⁺ < d0, до 60 закрытых пар — приор w = 0,5); CS1: λ_prior(n) = 250·250/(250 + n), n — закрытые пары панели; CS2: κ_i(n_i) = 250·250/(250 + n_i), n_i — закрытые пары бумаги i; «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "CS_configs": [
+  "CS1",
+  "CS2"
+ ],
+ "CS_runtime_sec": 27.1,
+ "CS_processes": 1,
+ "CS_configs_spent": 2,
+ "used_after_CS": 23,
+ "CS_best": "CS2",
+ "CS_cache_key": "dee37f3a8ac75694768205ec7358d351a0ea6b6e24d5140f0197cbe0ab62fd82",
+ "CS_stop_go": "stop",
+ "CS_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "C1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31453985471977297,
+    "crit_trim1": 0.19670723576291949
+   },
+   "C4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31460794948872595,
+    "crit_trim1": 0.19517092010461534
+   },
+   "C8": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3127549364559757,
+    "crit_trim1": 0.19498783734971692
+   },
+   "CS1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3152566949832226,
+    "crit_trim1": 0.1959045603220855
+   },
+   "CS2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3129611889738245,
+    "crit_trim1": 0.1950917052959892
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "C8"
+ },
+ "DX_declared_at": "2026-11-08 04:54:14.608952",
+ "DX_rule": "лист DX (Ж-225 п. 7): диагностика по году цели 2017–2026 × группе (M16, SBER) × M ∈ {√(K2·K3), K2, K3}, H = K1; пункты 1–6 — DX_YEARS, пункт 7 — DX_FEATURES (квинтили по прошлому окну), разбор 2018 — DX_2018; задним числом, описательно, 0 конфигураций, в выбор не входит",
+ "DX_configs_spent": 0,
+ "DX_runtime_sec": 17.7,
+ "DX_done": true
 }
