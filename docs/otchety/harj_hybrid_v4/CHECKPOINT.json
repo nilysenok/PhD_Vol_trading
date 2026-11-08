@@ -90,7 +90,7 @@
  "E_configs_spent": 6,
  "used_after_E": 21,
  "E_best": "E5",
- "E_cache_key": "78e6e0711b9b9a27172b4c8815013967da017070ab558d736ef0566a21fe912a",
+ "E_cache_key": "63e561a112ee3fe2726489091da63a136ba5c03a0b9db3f734b42ec795177563",
  "E_stop_go": "stop",
  "E_go_rules": {
   "cfg": {
@@ -455,5 +455,80 @@
    }
   },
   "best": "CLD1"
+ },
+ "RQC_declared_at": "2026-11-08 06:06:18.016425",
+ "RQC_rule": "лист K8-RQC (Ж-225 п. 6): K8 = sqrt(H·M), H = K1, M = sqrt(K2·K3) (контроль, 1 конфигурация); F = a·K8, a = mean(RV/K8) по закрытым парам t⁺ ≤ d, обрезка [0,6; 1,6], до 60 закрытых пар a = 1: RQC1 — все закрытые пары 17 бумаг (расширяющееся окно); RQC2 — пары панели года Y−1 (2017: a = 1); RQC3 — ln a бумаги = иерархическая (κ = 250) EWMA (полураспад 60) winsorized (p5/p95 прошлого окна бумаги) ln(RV/K8); заморозка на 5 дней с дня-скачка (доля J > p90 или |Δ ln RV| > p95 по прошлому окну бумаги), шаг |Δ ln a| ≤ 0,02; панель — 17 бумаг, в LOTO — 16; «go» — три условия (Ж-225 п. 10); выбор — crit_panel",
+ "RQC_configs": [
+  "K8",
+  "RQC1",
+  "RQC2",
+  "RQC3"
+ ],
+ "RQC_prior_sha": "b6b51ca85e3ed407d48f9334868b1167e8567f537fd8a322c03f11ea741efd14",
+ "RQC_runtime_sec": 7.7,
+ "RQC_processes": 1,
+ "RQC_configs_spent": 4,
+ "used_after_RQC": 35,
+ "RQC_best": "RQC2",
+ "RQC_cache_key": "8323ae9332afa33177500655b724f13fd9c32f6c58a8ba963e6fb13dde41e8dc",
+ "RQC_stop_go": "stop",
+ "RQC_go_rules": {
+  "cfg": {
+   "k1": {
+    "c1": false,
+    "c2": true,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3095772845098441,
+    "crit_trim1": 0.19845190913038288
+   },
+   "K8": {
+    "c1": false,
+    "c2": true,
+    "c3": true,
+    "go": false,
+    "crit_no2017": 0.3111059549225575,
+    "crit_trim1": 0.19379342983607817
+   },
+   "RQC1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31580022033406685,
+    "crit_trim1": 0.19525267911870203
+   },
+   "RQC2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.31396432131808394,
+    "crit_trim1": 0.19599097382629851
+   },
+   "RQC3": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.36058494997283524,
+    "crit_trim1": 0.1975246528834852
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "K8"
  }
 }

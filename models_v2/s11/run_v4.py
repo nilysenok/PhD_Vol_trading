@@ -166,12 +166,12 @@ def main_dx(check: bool) -> int:
     return 1 if bad else 0
 
 
-LATE = {"NTP": ("v4_ntpd_main", "main_ntp"), "CLD": ("v4_cldd_main", "main_cld")}        # листы NTP (G29–G31), CLD (G32–G34): диагностика `v4_*d_*` вне путей прогноза, импорт — по требованию
+LATE = {"NTP": ("v4_ntpd_main", "main_ntp"), "CLD": ("v4_cldd_main", "main_cld"), "RQC": ("v4_rqc_main", "main_rqc")}        # листы NTP (G29–G31), CLD (G32–G34), K8-RQC (G35–G37):диагностика `v4_*d_*` вне путей прогноза, импорт — по требованию
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP", "CLD"])
+    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E", "DX", "CS", "NTP", "CLD", "RQC"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
     mains = {"CS": main_cs, "DX": main_dx, "E": main_e, "B": main_b, "Ca": main_ca, "Cb": main_cb}

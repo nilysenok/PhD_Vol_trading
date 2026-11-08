@@ -148,7 +148,7 @@ def g33(r: dict, pred: pd.DataFrame) -> list:
     L = lt[lt["held_out"].isin(IO.M16 + ["M16"])]
     if set(lt["config"]) != {r["best"]} or set(L["held_out"]) != set(IO.M16 + ["M16"]) or not L["delta_zero_check"].astype(str).eq("True").all():
         bad.append("G33: CLD_LOTO неполон или исключённая бумага в оценке")
-    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:")]
+    keys = [k for k in pd.read_csv(IO.REP / "ALL_TRIALS.csv")["key"] if k.startswith("Ж-222:") and not k.startswith(("Ж-222:K8", "Ж-222:RQC"))]       # отступление (лист K8-RQC): строки K8, RQC1–RQC3 не считаются
     pref = sorted(k.split(":")[1] for k in keys)
     if sorted(x for x in pref if x.startswith("CLD")) != ST.CFGS or len(keys) != 31 or len(set(pref)) != 31:
         bad.append("G33: ALL_TRIALS — нет строк Ж-222:CLD1…CLD4 (по одной) или потеряны строки других стадий (всего ожидалось 31)")
