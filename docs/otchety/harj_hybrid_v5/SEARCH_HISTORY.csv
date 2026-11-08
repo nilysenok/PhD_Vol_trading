@@ -1,0 +1,17 @@
+# DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-226, лист 0 (диагностика, моделей не обучали); код v5.0 032ec65726c5cc32; входы e5054f9bc8eca0db; G10: реестры испытаний h=1; N по объединению ключей, не по сумме строк
+item,name,rows,unique_keys,dup_rows,n_trial,n_pilot_forecast,contains_previous,new_vs_previous,programs,note
+registry,hybrid_final_v1,521,521.0,0.0,332.0,189.0,True,521.0,Ж-204:106;Ж-206/210:182;Ж-200/202:189;Ж-211:44,
+registry,hybrid_struct_v1,541,541.0,0.0,352.0,189.0,True,20.0,Ж-204:106;Ж-206/210:182;Ж-200/202:189;Ж-211:44;Ж-212:20,
+registry,harj_hybrid_v2,585,585.0,0.0,396.0,189.0,True,44.0,Ж-204:106;Ж-206/210:182;Ж-200/202:189;Ж-211:44;Ж-212:20;Ж-214:44,
+registry,harj_panel_hybrid,634,634.0,0.0,445.0,189.0,True,49.0,Ж-204:106;Ж-206/210:182;Ж-200/202:189;Ж-211:44;Ж-212:20;Ж-214:44;Ж-217:23;Ж-220-p17:20;Ж-220:6,
+registry,harj_hybrid_v4,46,46.0,0.0,46.0,0.0,False,46.0,Ж-222:46,"V4 не содержит прежних ключей: не кумулятивный, ключи добавляются к объединению"
+registry,harj_hybrid_v5,0,0.0,0.0,0.0,0.0,False,0.0,,лист 0: конфигураций нет
+other_h1_file,D16_5_h1_base_trials.csv,360,,,360.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D16_5_h1_trials.csv,360,,,360.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D17_1_h1_G1Xopt_trials.csv,360,,,360.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D17_1_h1_G1opt_trials.csv,360,,,360.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D22_h1_trials.csv,480,,,480.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D24_1_h1_d812m_trials.csv,480,,,480.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+N,"N_prior (объединение ключей, до V5)",680,,,,,,,,сумма строк реестров 2327 — НЕ N
+N,N_declared (N_prior + бюджет V5 24),704,,,,,,,,
+N,N_wide (N_declared + пробы Optuna h=1),3104,,,,,,,,
