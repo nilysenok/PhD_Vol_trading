@@ -1,0 +1,26 @@
+# DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-227, лист 0 (SBER, h = 1; аудит и паспорт, моделей не обучали); код v6.0 ae4d5ea480092ac6; входы 00023d4b18d0b46f; K2/K3 SBER: дизайн выбирался на SBER 2017–2021 (sber_h1_deep_v1; Ж-204/206/210), оговорка для всех сравнений; G1: контроли K1,K2,K3,M,K8,D2 SBER побитно прежние
+section,item,source,sha256,sha_v5,ok,n,first_d,last_d,first_t_plus,last_t_plus,finite_share,qlike_all,qlike_2017_2021,expected_4dp,value,real_ok,mutation_plus1_passes
+file,SBER:K1,data/regen/harj_panel_hybrid/har_SBER.parquet,4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9,4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9,True,,,,,,,,,,,,
+file,SBER:K2,data/regen/harj_panel_hybrid/k23_SBER.parquet,d19679f827513aafe78f424a40ae86d747e05aa37d5277177d7ef4ffd62139fc,d19679f827513aafe78f424a40ae86d747e05aa37d5277177d7ef4ffd62139fc,True,,,,,,,,,,,,
+file,SBER:K3,data/regen/harj_panel_hybrid/k23_SBER.parquet,d19679f827513aafe78f424a40ae86d747e05aa37d5277177d7ef4ffd62139fc,d19679f827513aafe78f424a40ae86d747e05aa37d5277177d7ef4ffd62139fc,True,,,,,,,,,,,,
+file,SBER:LGBM-D2,data/regen/harj_panel_hybrid/hyb_lgbm_p17.parquet,4ae8d821a0a93377740f0b779bda9ec62e3a04bfd62ab076c5332cb1f74b399d,4ae8d821a0a93377740f0b779bda9ec62e3a04bfd62ab076c5332cb1f74b399d,True,,,,,,,,,,,,
+series,K1,,,,True,2271.0,2016-12-30,2026-02-26,2017-01-03,2026-02-27,1.0,0.23366211569377798,0.1552833634423795,0.2337,,,
+series,K2,,,,True,2271.0,2016-12-30,2026-02-26,2017-01-03,2026-02-27,1.0,0.21129548546704566,0.1536225524021531,0.2113,,,
+series,K3,,,,True,2271.0,2016-12-30,2026-02-26,2017-01-03,2026-02-27,1.0,0.21167138359221363,0.15297223371598936,0.2117,,,
+series,M,,,,True,2271.0,2016-12-30,2026-02-26,2017-01-03,2026-02-27,1.0,0.21086285955154435,0.1528324728252529,,,,
+series,K8,,,,True,2271.0,2016-12-30,2026-02-26,2017-01-03,2026-02-27,1.0,0.21651332291699166,0.1497051613179173,0.2165,,,
+series,D2,,,,True,2271.0,2016-12-30,2026-02-26,2017-01-03,2026-02-27,1.0,0.22444647451099778,0.15296256384317436,0.2244,,,
+k8,K8 = √(H·√(K2·K3)) против K8.parquet V4 (SBER),,,,True,2271.0,,,,,,,,,0.0,,
+shift,K1,,,,True,,,,,,,,,,,True,False
+shift,K2,,,,True,,,,,,,,,,,True,False
+shift,K3,,,,True,,,,,,,,,,,True,False
+shift,M,,,,True,,,,,,,,,,,True,False
+shift,K8,,,,True,,,,,,,,,,,True,False
+shift,D2,,,,True,,,,,,,,,,,True,False
+ref_0.2081,repro_diff,,,,,,,,,,,,,,4.0043867590627835e-05,,
+ref_0.2081,n_ref,,,,,,,,,,,,,,2271.0,,
+ref_0.2081,n_common,,,,,,,,,,,,,,2271.0,,
+ref_0.2081,rv_mismatch,,,,,,,,,,,,,,0.0,,
+ref_0.2081,t_plus_mismatch,,,,,,,,,,,,,,0.0,,
+ref_0.2081,xj_vs_k2_maxdiff,,,,,,,,,,,,,,0.0,,
+ref_0.2081,lf_vs_k3_maxdiff,,,,,,,,,,,,,,0.0,,
