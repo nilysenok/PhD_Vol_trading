@@ -1,0 +1,20 @@
+{
+ "program": "HAR-J Hybrid V4 (Ж-221 + Ж-222), h=1, 17 бумаг",
+ "N_prior": 634,
+ "budget": 60,
+ "N_declared_before_stats": 694,
+ "rule": "N_prior = |объединение ключей `key` реестров|; реестры кумулятивны (каждый следующий содержит предыдущий), поэтому суммировать строки нельзя (двойной счёт)",
+ "sources": {
+  "hybrid_final_v1": 521,
+  "hybrid_struct_v1": 541,
+  "harj_hybrid_v2": 585,
+  "harj_panel_hybrid": 634
+ },
+ "panel_declared": {
+  "N_declared_before_stats": 608,
+  "N_declared_before_stats_p17": 631
+ },
+ "used": 0,
+ "written_at": "2026-11-08 03:12:36",
+ "note": "записано до любого p; аудит и этап A конфигураций не расходуют"
+}

@@ -1,0 +1,13 @@
+# DEVELOPMENT; HISTORICAL WALK-FORWARD 2017–02.2026, не независимый OOS; Ж-222 лист V4-0/A; первая цифра — потолок; реестры гибридов h=1 (Ж-211/212/214/217–220); правило подсчёта в строке N_prior
+item,name,rows,unique_keys,dup_rows,n_trial,n_pilot_forecast,contains_previous,new_vs_previous,programs,note
+registry,hybrid_final_v1,521,521,0,332.0,189,True,521,Ж-204:106;Ж-206/210:182;Ж-200/202:189;Ж-211:44,
+registry,hybrid_struct_v1,541,541,0,352.0,189,True,20,Ж-204:106;Ж-206/210:182;Ж-200/202:189;Ж-211:44;Ж-212:20,
+registry,harj_hybrid_v2,585,585,0,396.0,189,True,44,Ж-204:106;Ж-206/210:182;Ж-200/202:189;Ж-211:44;Ж-212:20;Ж-214:44,
+registry,harj_panel_hybrid,634,634,0,445.0,189,True,49,Ж-204:106;Ж-206/210:182;Ж-200/202:189;Ж-211:44;Ж-212:20;Ж-214:44;Ж-217:23;Ж-220-p17:20;Ж-220:6,
+other_h1_file,D16_5_h1_base_trials.csv,360,,,360.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D16_5_h1_trials.csv,360,,,360.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D17_1_h1_G1Xopt_trials.csv,360,,,360.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D17_1_h1_G1opt_trials.csv,360,,,360.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D22_h1_trials.csv,480,,,480.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+other_h1_file,D24_1_h1_d812m_trials.csv,480,,,480.0,,,,model=lgbm;xgb,вне реестров гибридов; в N_prior не входит (см. GAPS.csv)
+N_prior,union_unique_keys,634,634,,,,,,,"N_prior = |объединение ключей `key` реестров|; реестры кумулятивны (каждый следующий содержит предыдущий), поэтому суммировать строки нельзя (двойной счёт)"
