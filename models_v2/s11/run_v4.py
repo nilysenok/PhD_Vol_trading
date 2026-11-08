@@ -122,11 +122,27 @@ def main_cb(check: bool) -> int:
     return 1 if bad else 0
 
 
+def main_e(check: bool) -> int:
+    """Этап E (G22–G25): модули v4_e*; `--check` после записи проверяет гейты и печатает итог."""
+    from models_v2.s11 import v4_e_check, v4_e_stage
+    r = v4_e_stage.stage_e()
+    if not check:
+        print("стадия E записана; лучшая E %s" % r["best"])
+        return 0
+    bad = v4_e_check.all_checks(r)
+    print("\n".join(bad) if bad else "G22–G25: все проверки пройдены")
+    print("лучшая E: %s; crit_panel: %s" % (r["best"], r["crit"].set_index("series")["crit_panel"].round(5).to_dict()))
+    print("ИТОГ:", "FAIL" if bad else "OK")
+    return 1 if bad else 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb"])
+    ap.add_argument("--stage", required=True, choices=["audit", "A", "B", "Ca", "Cb", "E"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
+    if a.stage == "E":
+        return main_e(a.check)
     if a.stage == "B":
         return main_b(a.check)
     if a.stage == "Ca":

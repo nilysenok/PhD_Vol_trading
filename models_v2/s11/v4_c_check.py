@@ -97,7 +97,7 @@ def g17_loto_trials_b(o: dict) -> list:
     if set(L["held_out"]) != set(IO.M16 + ["M16"]) or not L["delta_zero_check"].astype(str).eq("True").all() or set(lt["config"]) != {o["best"]}:
         bad.append("G17: C_LOTO неполон или δ ≠ 0 у исключённой")
     tr = pd.read_csv(IO.REP / "ALL_TRIALS.csv")
-    if sorted(k.split(":")[1] for k in tr["key"] if k.startswith("Ж-222:C")) != ST.BASE:
+    if sorted(k.split(":")[1] for k in tr["key"] if k.startswith("Ж-222:C") and k.split(":")[1] in ST.BASE) != ST.BASE:       # строки C5–C10 других стадий сохраняются (G22)
         bad.append("G17: ALL_TRIALS — нет строк Ж-222:C1…C4")
     bc = IO.read_csv("B_COMPARISON.csv")
     if not {"rmse", "mae", "r2_rv", "r2_ln"} <= set(bc.columns) or {"rmse_ln", "r2_lvl"} & set(bc.columns) or {"rmse", "r2_rv"} - set(IO.read_csv("B_PER_TICKER.csv").columns):

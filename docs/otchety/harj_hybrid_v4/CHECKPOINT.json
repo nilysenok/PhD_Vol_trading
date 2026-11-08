@@ -38,10 +38,10 @@
  "N_wide_rule": "N_wide = N_declared_before_stats + число уникальных строк-проб в файлах data/regen/*h1*trials*.csv (ключ: файл, model, step, trial или point). В файлах нет колонки бумаги, поэтому считаются все пробы (верхняя оценка: «по этим бумагам» не отделить); пробы с одинаковыми гиперпараметрами в разных файлах — разные эксперименты и считаются отдельно",
  "B_rule": "«go» — лучшая из B1–B6 по crit_panel ≤ go_threshold_B; окна 2022+ в выборе не участвуют; B5 считается только по правилу (B5_RULE.csv)",
  "B_declared_at": "2026-11-08 03:31:48.427930",
- "B_runtime_sec": 80.7,
+ "B_runtime_sec": 83.0,
  "B_configs_spent": 5,
  "B_best": "B6",
- "B_cache_key": "349c3a333a82b277a15a262d1fba6b86a25566e71692b66ad83b0dbe18d61f43",
+ "B_cache_key": "8ce2487108a8385750c7bf0ebed5352c42c0f6e2048976cafa94bb82d318808e",
  "B_processes": 1,
  "C_declared_at": "2026-11-08 03:49:51.310607",
  "C_rule": "лист C-a: C1 = z_div; C2 = + z_perf; C3 = + z_mkt; C4 = + z_new (HAR-surprise, Intraday Shape); F = H·exp(w(Z)·ln(M/H)), w = σ(α + δ_i + βᵀz); κ = λ = 250; переоценка раз в месяц по парам t⁺ < d0; выбор — crit_panel; stop/go этапа C — после C-b",
@@ -51,12 +51,12 @@
   "C3",
   "C4"
  ],
- "C_runtime_sec": 23.1,
+ "C_runtime_sec": 23.6,
  "C_processes": 1,
  "C_configs_spent": 4,
  "used_after_C_a": 9,
  "C_best": "C1",
- "C_cache_key": "41e1fbdbc737000b875f7bf641ce038b2d53d144eb7c51e65818487ceb6cb553",
+ "C_cache_key": "bc9517ca1917492263cd4761c3486ad3d0e70ae0425347ab9f622f4d43a63208",
  "Z_cache_key": "994d8fd5df513634201661ad4cd28e561b3590df1cd6716f3f1b43d96dc0ba52",
  "C_b_declared_at": "2026-11-08 04:12:12.887090",
  "C_b_rule": "лист C-b: C5 GAM (B-сплайн ℓ, 5 ст. св.); C6 монотонный (γ ≥ 0 при EWMA преимущества M); C7 QLIKE-бустинг (200 деревьев, глубина 2, шаг 0,05, лист ≥ 500, набор Z C4, раз в год); C8 два режима (π = σ(a + b·z_mkt_level)); C9 три эксперта (softmax); C10 наклоны β_i = β + η_i; κ = λ = 250·s²; месячная переоценка по парам t⁺ < d0 (C7 — годовая); выбор — crit_panel",
@@ -68,11 +68,95 @@
   "C9",
   "C10"
  ],
- "C_b_runtime_sec": 43.6,
+ "C_b_runtime_sec": 43.8,
  "C_b_processes": 1,
  "C_b_configs_spent": 6,
  "used_after_C_b": 15,
  "C_best_overall": "C8",
- "C_b_cache_key": "f865c3195e10a82b3cfedc9bb368506cececc367a86fabb98b7a7f5753ebd9c2",
- "C_stop_go": "stop"
+ "C_b_cache_key": "fcbb6b8fc0cb671b0cbe638ebcb7b2088abefe7b6aa73de771212ae028a4c0a3",
+ "C_stop_go": "stop",
+ "E_declared_at": "2026-11-08 04:26:35.413450",
+ "E_rule": "этап E: F = F0·exp(b_t); E1 F0 = H; E2–E5 F0 = G = B2; E6 = H·exp(b + w·ℓ) + дневная EWMA; b — по парам t⁺ ≤ d (обновление ежедневно), до 60 закрытых пар бумаги b = 0; b ∈ [−0,5; 0,5]; κ = 250; E1/E2 hl 60, E3 hl 20, E4 hl 20 × hl 120, E5 Калман (q/r раз в год), E6 месячная (b, w) hl 250 + EWMA hl 20; панель — 17 бумаг, в LOTO — 16; выбор — crit_panel",
+ "E_configs": [
+  "E1",
+  "E2",
+  "E3",
+  "E4",
+  "E5",
+  "E6"
+ ],
+ "E_runtime_sec": 88.0,
+ "E_processes": 1,
+ "E_configs_spent": 6,
+ "used_after_E": 21,
+ "E_best": "E5",
+ "E_cache_key": "a6f49983e9a2ec8980974e7e0985755aaa628e74ca4e8ed9d21955a221f9ccff",
+ "E_stop_go": "stop",
+ "E_go_rules": {
+  "cfg": {
+   "E1": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.32389610484542947,
+    "crit_trim1": 0.2029920307235183
+   },
+   "E2": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3318245671532791,
+    "crit_trim1": 0.21468207549380036
+   },
+   "E3": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3372115314888279,
+    "crit_trim1": 0.2054772002002544
+   },
+   "E4": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3417117665614574,
+    "crit_trim1": 0.2065674447928913
+   },
+   "E5": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.324209144059021,
+    "crit_trim1": 0.19774370174651873
+   },
+   "E6": {
+    "c1": false,
+    "c2": false,
+    "c3": false,
+    "go": false,
+    "crit_no2017": 0.3400650874042138,
+    "crit_trim1": 0.2054711545023683
+   }
+  },
+  "ref": {
+   "k2": {
+    "crit_no2017": 0.322360969947865,
+    "crit_trim1": 0.22071969656859985
+   },
+   "k3": {
+    "crit_no2017": 0.32199852560401315,
+    "crit_trim1": 0.23002350934971522
+   },
+   "d2": {
+    "crit_no2017": 0.3125899955428389,
+    "crit_trim1": 0.1947403918361985
+   }
+  },
+  "best": "E5"
+ }
 }

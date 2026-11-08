@@ -62,9 +62,7 @@ def trials_rows(key: str) -> list:
 
 
 def write_trials(key: str) -> None:
-    f = IO.REP / "ALL_TRIALS.csv"
-    keep = [x for x in f.read_text().splitlines()[1:] if not x.startswith(tuple("Ж-222:%s:" % c for c in CFGS))]
-    f.write_text(TR.HEADER + "".join(x + "\n" for x in keep + trials_rows(key)))
+    TR.replace_rows(["Ж-222:%s:" % c for c in CFGS], trials_rows(key))
 
 
 def stage_cb() -> dict:

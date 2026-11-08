@@ -54,6 +54,24 @@ def checkpoint(regs: dict) -> dict:
             "used": 0, "written_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "note": "записано до любого p; аудит и этап A конфигураций не расходуют"}
 
 
+def replace_rows(prefixes, rows: list, path=None) -> None:
+    """Общий способ записи реестра стадией (G22): строки с ключом, начинающимся с одного из `prefixes`, заменяются на `rows` (на месте первой прежней; нет прежних — в конец); все остальные строки сохраняются."""
+    f = path or IO.REP / "ALL_TRIALS.csv"
+    lines = f.read_text().splitlines()[1:] if f.exists() else []
+    mine = tuple(prefixes)
+    out, done = [], False
+    for x in lines:
+        if x.startswith(mine):
+            if not done:
+                out += list(rows)
+                done = True
+            continue
+        out.append(x)
+    if not done:
+        out += list(rows)
+    f.write_text(HEADER + "".join(x + "\n" for x in out))
+
+
 def write_all() -> dict:
     regs = load_regs()
     t = pd.concat([registry_rows(regs), other_h1_files()], ignore_index=True)
@@ -74,7 +92,7 @@ def verify() -> list:
     cp = json.loads((IO.REP / "CHECKPOINT.json").read_text())
     if cp["N_prior"] != n_prior(regs) or cp["N_declared_before_stats"] != cp["N_prior"] + BUDGET:
         bad.append("CHECKPOINT: N_prior / N_declared_before_stats не сходятся с реестрами")
-    rows = [x for x in (IO.REP / "ALL_TRIALS.csv").read_text().strip().splitlines()[1:] if not x.startswith(("Ж-222:B", "Ж-222:C"))]       # строки этапов B и C (Ж-222:B*, Ж-222:C*) допустимы — их пишут стадии B и Ca
+    rows = [x for x in (IO.REP / "ALL_TRIALS.csv").read_text().strip().splitlines()[1:] if not x.startswith(("Ж-222:B", "Ж-222:C", "Ж-222:E"))]       # строки этапов B, C, E (Ж-222:B*, C*, E*) допустимы — их пишут стадии B, Ca, Cb, E
     if rows:
         bad.append("ALL_TRIALS.csv: есть строки конфигураций вне этапа B")
     if not all(registry_rows(regs)["contains_previous"]):

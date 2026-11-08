@@ -31,6 +31,11 @@ def trials_rows(cfgs: list, key: str) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["key", "program", "source", "direction", "config", "kind"])
 
 
+def write_trials(cfgs: list, key: str) -> None:
+    rows = trials_rows(cfgs, key).to_csv(header=False, index=False, lineterminator="\n").splitlines()
+    TR.replace_rows(["Ж-222:B%d:" % i for i in range(1, 7)], rows)       # только строки B; строки других стадий (C, E) сохраняются
+
+
 def stage_b() -> dict:
     t0 = time.time()
     P = D.panel()
@@ -88,5 +93,4 @@ def write_all(o: dict) -> None:
     IO.write_csv(o["sber"], "B_SBER.csv", "SBER отдельно, в выбор не входит; ориентир 0,2081 — потолок; " + o["note"])
     IO.write_csv(pd.concat([o["loto"], o["gche"]], ignore_index=True), "B_LOTO.csv", "LOTO (16 бумаг, δ = 0 у исключённой) и перенос на GCHE; прочие E11 — нет M, не применимо; " + note)
     (IO.REP / "B_REPORT.md").write_text(RP.build(o))
-    keep = [x for x in (IO.REP / "ALL_TRIALS.csv").read_text().splitlines()[1:] if x.startswith("Ж-222:C")]       # строки этапа C (Ж-222:C*) не затираются повторным счётом B
-    (IO.REP / "ALL_TRIALS.csv").write_text(TR.HEADER + trials_rows(o["cfgs"], o["ks"]["key"]).to_csv(header=False, index=False, lineterminator="\n") + "".join(x + "\n" for x in keep))
+    write_trials(o["cfgs"], o["ks"]["key"])
