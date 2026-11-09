@@ -27,7 +27,11 @@ CONFIGS = {"A0": dict(direction="A0_baseline", features=["S"], learner="LIN", ba
            # лист 3: строки конфигураций E1–E3 (набор признаков, обучатель, база правила 2.2); движок не менялся
            "E1": dict(direction="BE_time_reversal_shock_recovery", features=["S", "R"], learner="LIN", base_rule22="A0", source=PLAN + " п. 5 (E1), 2.2", kind="trial"),
            "E2": dict(direction="BE_time_reversal_shock_recovery", features=["S", "R"], learner="GBM", base_rule22="A0 и E1", source=PLAN + " п. 5 (E2), 2.2", kind="trial"),
-           "E3": dict(direction="BE_time_reversal_shock_recovery", features=["S", "R", "Sigma"], learner="LIN", base_rule22="A1 и E1 (условная: E1 или E2 и A1 или A2 несут новую информацию против A0)", source=PLAN + " п. 5 (E3), 2.2", kind="trial")}
+           "E3": dict(direction="BE_time_reversal_shock_recovery", features=["S", "R", "Sigma"], learner="LIN", base_rule22="A1 и E1 (условная: E1 или E2 и A1 или A2 несут новую информацию против A0)", source=PLAN + " п. 5 (E3), 2.2", kind="trial"),
+           # лист 4: строки конфигураций D1–D3 (состояние Z_D, аналоги без обучателя, база правила 2.2 — контроль K9, не строка реестра); движок не менялся
+           "D1": dict(direction="D_historical_analog", features=["Z_D"], learner="analog_k50", base_rule22="K9 (контроль без бюджета)", source=PLAN + " п. 6 (D1), 2.2", kind="trial"),
+           "D2": dict(direction="D_historical_analog", features=["Z_D"], learner="analog_kernel_k100", base_rule22="K9 (контроль без бюджета)", source=PLAN + " п. 6 (D2), 2.2", kind="trial"),
+           "D3": dict(direction="D_historical_analog", features=["Z_D"], learner="analog_shrink_kappa50", base_rule22="K9 (контроль без бюджета)", source=PLAN + " п. 6 (D3), 2.2", kind="trial")}
 DECLARED = ["A0", "A1", "A2", "A3", "C1", "C2", "C3", "C4", "E1", "E2", "E3", "D1", "D2", "D3", "CB1", "CB2", "F1", "F2"]      # 18 id плана, п. 8
 CTRL = ["K1", "K2", "K3", "K8", "V4:NTP2"]
 
