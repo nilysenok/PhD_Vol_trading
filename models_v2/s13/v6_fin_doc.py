@@ -10,6 +10,9 @@ from models_v2.s13 import v6_0_io as IO, v6_fin_data as D
 
 WN = {"2017_2021": "2017–2021", "2022_2025": "2022–2025", "2026": "2026", "all": "вся история"}
 BASES = ["K1", "K2", "K3", "K8", "V4:NTP2"]
+DIAG = "A0g"
+PRE = [c for c in D.CFG if c != DIAG]  # 17 предрегистрированных; A0g — диагностический контроль (Ж-230), в выбор «лучшей конструкции» не входит
+LBL = "A0g — диагностический контроль (Ж-230)"
 FIN_CSV = D.TABLES
 ALIAS = {"FIN_ALL": "all", "FIN_YEARS": "years", "FIN_TESTS": "tests", "FIN_MCS": "mcs", "FIN_ABLATION": "abl", "FIN_STRESS": "stress", "FIN_ENCOMPASS": "enc", "FIN_INFO_ALL": "info", "FIN_LEVELS": "levels"}
 
@@ -66,6 +69,12 @@ def tt(t: dict, c: str, base: str, win: str):
 
 
 def best(t: dict, win: str) -> str:
+    """Лучшая конструкция V6 — только из 17 предрегистрированных (A0g — диагностический контроль, Ж-230)."""
+    return min(PRE, key=lambda c: (q(t, c, win), c))
+
+
+def best_with_diag(t: dict, win: str) -> str:
+    """То же по всем 18 местам бюджета — для числовой сверки «выбор не меняется»."""
     return min(D.CFG, key=lambda c: (q(t, c, win), c))
 
 
@@ -86,13 +95,13 @@ def first_line(t: dict) -> str:
     b17, ba = best(t, "2017_2021"), best(t, "all")
     if any(clear_vs_boosts(t, c, w) for c in D.CFG for w in ("2017_2021", "all")):
         raise ValueError("первая строка документа написана для результата «интервалов целиком ниже 0 против K2 и K3 нет»")
-    pts = [c for c in D.CFG if point_better(t, c, "2017_2021")]
-    pa = [c for c in D.CFG if point_better(t, c, "all")]
+    pts = [c for c in PRE if point_better(t, c, "2017_2021")]
+    pa = [c for c in PRE if point_better(t, c, "all")]
     cell = lambda c, w: "к K2 %s, к K3 %s" % (iv(tt(t, c, "K2", w)), iv(tt(t, c, "K3", w)))
-    return ("Нет: ни у одной из %d конфигураций V6 нет статистически подтверждённого преимущества над самостоятельными XGBoost (K2) и LightGBM (K3) на SBER; уровень 5: «статистически неподтверждённое историческое улучшение». "
+    return ("Нет: ни у одной из %d конфигураций V6 (%d предрегистрированных и диагностический контроль A0g, Ж-230; лучшая конструкция выбирается из предрегистрированных) нет статистически подтверждённого преимущества над самостоятельными XGBoost (K2) и LightGBM (K3) на SBER; уровень 5: «статистически неподтверждённое историческое улучшение». "
             "Δ — в %% уровня QLIKE K1, 90 %% интервал. Точечно лучше обоих бустингов в окне выбора 2017–2021 — %d конфигураций из %d (лучшая %s, QLIKE %s: %s; интервалы включают 0), на всей истории — %d (лучшая по QLIKE %s, %s: %s); "
             "в 2022–2025 %s хуже обоих (Δ к K2 %s, к K3 %s). Лучший прежний ряд V4:NTP2 лучше любой конфигурации V6 на всей истории (%s против %s) и хуже %s в 2017–2021 (%s против %s). Числа — потолок / development walk-forward, не независимый OOS."
-            % (len(D.CFG), len(pts), len(D.CFG), b17, f(q(t, b17, "2017_2021")), cell(b17, "2017_2021"), len(pa), ba, f(q(t, ba, "all")), cell(ba, "all"), b17, s(tt(t, b17, "K2", "2022_2025").delta_pct), s(tt(t, b17, "K3", "2022_2025").delta_pct),
+            % (len(D.CFG), len(PRE), len(pts), len(PRE), b17, f(q(t, b17, "2017_2021")), cell(b17, "2017_2021"), len(pa), ba, f(q(t, ba, "all")), cell(ba, "all"), b17, s(tt(t, b17, "K2", "2022_2025").delta_pct), s(tt(t, b17, "K3", "2022_2025").delta_pct),
                f(q(t, "V4:NTP2", "all")), f(q(t, ba, "all")), b17, f(q(t, "V4:NTP2", "2017_2021")), f(q(t, b17, "2017_2021"))))
 
 

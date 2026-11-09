@@ -1,0 +1,29 @@
+{
+ "program": "HAR-J Hybrid V6 (Ж-230), SBER, h=1, лист Z3 (причины)",
+ "configs_spent": 0,
+ "n_dates": 2271,
+ "tables": [
+  "WHY_YEARS",
+  "WHY_TAILS",
+  "WHY_REGIME",
+  "WHY_MZ",
+  "WHY_CAPTURE",
+  "WHY_ROLL",
+  "WHY_GSIZE"
+ ],
+ "tables_sha": {
+  "WHY_YEARS": "1668748b087a646e",
+  "WHY_TAILS": "41241f81e6095339",
+  "WHY_REGIME": "32f792107d9f3263",
+  "WHY_MZ": "529468f125fafb8f",
+  "WHY_CAPTURE": "b92330e02fc0cd39",
+  "WHY_ROLL": "476cb8cdf674889e",
+  "WHY_GSIZE": "bb5c6f8b1147f2f6"
+ },
+ "doc_sha": "a5ae0d614dca8567",
+ "inputs_hash": "00023d4b18d0b46f",
+ "code_hash_v6_why": "d6d917bdc16922c9",
+ "code_version": "v6.why",
+ "note": "диагностика, не отбор; потолок, не OOS",
+ "written_at": "2026-11-09 14:04:59"
+}

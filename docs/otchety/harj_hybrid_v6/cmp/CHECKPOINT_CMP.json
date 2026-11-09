@@ -1,0 +1,82 @@
+{
+ "program": "HAR-J Hybrid V6 (Ж-227/Ж-230), SBER, h=1, лист Z2",
+ "status": "DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-230, лист Z2 (сравнение SBER V1–V6, h = 1; новых прогнозов и конфигураций нет)",
+ "rules": "правила Z2 п. 1–7 (docs/zadaniya/2026-11-09_harj_v6_Z2.md): общие даты; класс как в PRIOR_SBER; (а) финалист, (б) лучший PIT по QLIKE 2017–2021; лучший по окнам среди PIT; статистика V6 FIN; годы; воспроизведение 1e-9",
+ "N": 722,
+ "N_wide": 3122,
+ "used": 0,
+ "coverage": [
+  {
+   "row": "V1 (Ж-211)",
+   "registry": "hybrid_final_v1",
+   "unique_keys": 521,
+   "in_N722": true,
+   "in_N3122": true,
+   "note": "входит в N_prior = 680 (объединение ключей)"
+  },
+  {
+   "row": "V1 (Ж-212)",
+   "registry": "hybrid_struct_v1",
+   "unique_keys": 541,
+   "in_N722": true,
+   "in_N3122": true,
+   "note": "входит в N_prior = 680 (объединение ключей)"
+  },
+  {
+   "row": "V2",
+   "registry": "harj_hybrid_v2",
+   "unique_keys": 585,
+   "in_N722": true,
+   "in_N3122": true,
+   "note": "входит в N_prior = 680 (объединение ключей)"
+  },
+  {
+   "row": "V3",
+   "registry": "harj_panel_hybrid",
+   "unique_keys": 634,
+   "in_N722": true,
+   "in_N3122": true,
+   "note": "входит в N_prior = 680 (объединение ключей)"
+  },
+  {
+   "row": "V4",
+   "registry": "harj_hybrid_v4",
+   "unique_keys": 46,
+   "in_N722": true,
+   "in_N3122": true,
+   "note": "входит в N_prior = 680 (объединение ключей)"
+  },
+  {
+   "row": "V5",
+   "registry": "бюджет V5",
+   "unique_keys": 24,
+   "in_N722": true,
+   "in_N3122": true,
+   "note": "N_declared = 704"
+  },
+  {
+   "row": "V6",
+   "registry": "бюджет V6",
+   "unique_keys": 18,
+   "in_N722": true,
+   "in_N3122": true,
+   "note": "N = 722; N_wide = N + 2400 проб Optuna h = 1 (дизайн K2/K3)"
+  }
+ ],
+ "n_series_rows": 20,
+ "repro_rows": 694,
+ "repro_unexplained": 0,
+ "code_hash": "a227aca7a9d796f6",
+ "inputs_hash": "00023d4b18d0b46f",
+ "tables_sha": {
+  "CMP_SERIES": "573422a956bd7246fc58112475dc23804b989af65e110aeff4ca4a76130c7b87",
+  "CMP_REPRO": "f391d6947783743c042363b6840154e59cf67cc68e377f7dfdfcc097cabd728c",
+  "CMP_YEARS": "98b42c5f009d3ce0f504454c02466c6461c5286bea61d46f0bad58c56bfff008",
+  "CMP_WINDOWS": "318c0c0e264f69a848960a4254a07fdf292773bd4f0c15d69664a9aeadce5fcd",
+  "CMP_TESTS": "6f309a285f8e88b1a776489f35e0650e70b09bdee57d0f5a99e297084f5568b6",
+  "CMP_MCS": "67b34eaa3aaceddfb317d49a6a4862ec2866b05eb55e9ea2696193a326241097",
+  "CMP_BEST": "fdc8722c4774a6bfbbe5b2ab433feaa70d3a148d124c2ee983725c36ac778abc"
+ },
+ "note": "лист Z2: конфигурации не расходуются; обучения нет",
+ "written_at": "2026-11-09 14:09:04"
+}

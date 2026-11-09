@@ -1,7 +1,7 @@
-"""V6 лист FIN, G52: сборка `HARJ_HYBRID_SBER_V6_FINAL.md` и `REPRODUCTION_V6.md` из таблиц на диске. Дат и времени в документе нет (сборка дважды даёт тот же текст). Утверждения текста, зависящие от данных, проверяет `claims_fail`: не выполнены — сборка отказывает."""
+"""V6 лист FIN, G52: сборка `HARJ_HYBRID_SBER_V6_FINAL.md` и `REPRODUCTION_V6.md` из таблиц на диске. Времена в документе — только моменты решения об A0g из журнала (подраздел 5.1, `v6_fin_z1`); сборка дважды даёт тот же текст. Утверждения текста, зависящие от данных, проверяет `claims_fail`: не выполнены — сборка отказывает."""
 from __future__ import annotations
 
-from models_v2.s13 import v6_0_io as IO, v6_fin_data as D, v6_fin_doc as W, v6_fin_doc2 as W2, v6_fin_doc3 as W3, v6_fin_text as TX
+from models_v2.s13 import v6_0_io as IO, v6_fin_data as D, v6_fin_doc as W, v6_fin_doc2 as W2, v6_fin_doc3 as W3, v6_fin_text as TX, v6_fin_z1 as Z1
 
 FINAL = IO.ROOT / "docs/otchety/HARJ_HYBRID_SBER_V6_FINAL.md"
 REPRO = IO.REP / "REPRODUCTION_V6.md"
@@ -15,7 +15,7 @@ def sec(n: int, title: str, body: str) -> str:
 
 
 def claims_fail(t: dict) -> list:
-    return W3.claims_fail(t)
+    return W3.claims_fail(t) + Z1.claims_fail(t)
 
 
 def ref_2081(t: dict) -> float:
@@ -44,8 +44,8 @@ def build(t: dict) -> str:
                     % (m1, W.f(W.q(t, "V4:NTP2", "all")), W.f(W.q(t, "V4:NTP2", "2017_2021")), W.f(ref))))
     parts.append(sec(3, "Чем V6 отличается от прежних программ и что исключено как эквивалентное", "%s\nИсключено как эквивалентное: B — утро / вечер ≡ Ж-214 `rv_open`/`rv_close` и V4 C1–C4; C — поправка по √RQ ≡ HARQ-J (Ж-214 H1–H11); D — ядро только по времени ≡ V4 E1/E2; F — штраф нормы g ≡ Ж-212 Cb/Ce." % m2))
     parts.append(sec(4, "Формулы всех конструкций и уточнения, объявленные до счёта", TX.FORMULAS + "\n\n**Уточнения и добавления по листам:**\n\n" + TX.REFINEMENTS))
-    parts.append(sec(5, "Полная таблица конфигураций (18 мест бюджета) и метрики по окнам", "Посчитано 18 из 18; условные A3, C4, E3 посчитаны по правилу; CB2 не считалась (её условие — новая информация E1 или E2 против A0 и D2 против K9 — не выполнено); A0g — отступление.\n\n%s\nУсловия «go» (`*_GO.csv`):\n\n%s\n%s"
-                    % (W2.configs_block(t), W2.go_block(t), "".join("QLIKE, RMSE, MAE, R², bias — %s (`FIN_ALL.csv`):\n\n%s\n" % (W.WN[w], W2.metrics_block(t, w)) for w in ("all", "2017_2021", "2022_2025", "2026")))))
+    parts.append(sec(5, "Полная таблица конфигураций (18 мест бюджета) и метрики по окнам", "Посчитано 18 из 18; условные A3, C4, E3 посчитаны по правилу; CB2 не считалась (её условие — новая информация E1 или E2 против A0 и D2 против K9 — не выполнено); A0g — диагностический контроль (Ж-230), отступление от предрегистрации. Бюджет: %s Подробнее — подраздел 5.1.\n\n%s\nУсловия «go» (`*_GO.csv`):\n\n%s\n%s\n%s"
+                    % (Z1.budget_line(t), W2.configs_block(t), W2.go_block(t), "".join("QLIKE, RMSE, MAE, R², bias — %s (`FIN_ALL.csv`):\n\n%s\n" % (W.WN[w], W2.metrics_block(t, w)) for w in ("all", "2017_2021", "2022_2025", "2026")), Z1.section(t))))
     parts.append(sec(6, "QLIKE SBER по годам цели 2017…2026 (все конфигурации и контроли; D2 (контроль) — панельный V4/V5)", W2.years_block(t)))
     parts.append(sec(7, "Сравнение с HAR-J (K1), XGBoost (K2), LightGBM (K3), K8 и лучшим прежним гибридом (V4:NTP2)", "%s\nDM — односторонний «конфигурация лучше», Холм N = 722 и N_wide = 3122. Охват всех конфигураций:\n\n%s" % (
         "".join("%s\n%s\n" % (W2.delta_win(t, w), W2.p_win(t, w)) for w in ("2017_2021", "all", "2022_2025")), W.enc_block(t, D.CFG))))
@@ -58,7 +58,7 @@ def build(t: dict) -> str:
                     + "\nРазличимый эффект на SBER 2017–2021 (лист 0): %s %% уровня K1." % W.f(noise, 2)))
     parts.append(sec(12, "Решение о перспективах дальнейшей разработки", W3.perspectives(t)))
     parts.append(sec(13, "Отступления программы, ошибки дирижёра и оговорки", TX.DEPARTURES + "\n\n**Оговорки:**\n\n" + TX.CAVEATS.replace("{ref}", W.f(ref))))
-    return "\n".join(parts) + "\n"
+    return Z1.label_tables("\n".join(parts) + "\n")
 
 
 def reproduction() -> str:
