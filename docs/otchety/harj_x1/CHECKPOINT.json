@@ -1,0 +1,17 @@
+{
+ "P0": {
+  "code": "53f5274a7c24e9d8",
+  "configurations": 0,
+  "forecasts_written": 0,
+  "sha256": {
+   "P0_AUDIT.md": "2c14f2d17eb61bb354d0f856799fd9962c916471c7bd9fc7ae32c8f22e83db42",
+   "P0_DYN.csv": "6d1b2796d6d7dad1ba29f01dc8c73877d3e7e19d2b06fe2a23ad96fd7d00b5b6",
+   "P0_INIT.csv": "3bad9566951cb469efc5e17027f891d782cb6b3c1feddbe71820dc9c92d3c736",
+   "P0_MIX.csv": "27091f186359997b55be95c45a1525af43dfa31703bc8b978681b6e8d8082cae",
+   "P0_REPORT.md": "261fbeab42e524b2cf029bdadbf1e79d1ebb4c9713a4145b30f9908bd9537969",
+   "P0_SCALE.csv": "d423d5798020682373b667f93349b8c727d55f0c864ae91ed7891d5163e7b2fd"
+  },
+  "status": "DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-241, лист P0 (SBER, h = 1; аудит и проверки до обучения; конфигураций 0, прогнозов не записано)",
+  "written_at": "2026-11-10 01:09"
+ }
+}
