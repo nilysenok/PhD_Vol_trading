@@ -90,7 +90,8 @@ def test_mutations_F_not_H_at_zero_G_dates_and_pi_simplex_caught(made, monkeypat
     monkeypatch.setattr(R2, "same_dates", lambda d: True)
     try:
         bad = df.copy()
-        bad.loc[bad["G"] == 0, "F"] *= 1.01
+        bad.loc[bad.index[:3], "G"] = 0.0                                              # FX (версия 2): пары 2017 года с z — строк с G = 0 нет, подкладываем сами
+        bad.loc[bad.index[:3], "F"] = bad.loc[bad.index[:3], "H"] * 1.01
         bad.to_parquet(R2.path("6"), index=False)
         assert any("F ≠ H" in m for m in R2.check_cfg("6", {"cfg6": dict(rec, sha256_content=CR.content_hash(bad), sha256_file=IO.sha_file(R2.path("6")))}, "tcn", TAB, load=fake_load, seeds=SEEDS))
         bad = df.copy()

@@ -84,19 +84,26 @@ def ensure(path: Path | None = None, when: str | None = None) -> str:
 RESULT_KIND, RESULT_SUFFIX, STATUS_RES = "result", ":результат", "посчитана"
 
 
+V2_SUFFIX, ARCH_SUFFIX = ":результат_v2", ":результат_v1_архивирован"        # лист FX (09.11): результат версии 2 и пометка «результат v1 архивирован»; строки версии 1 остаются
+STATUS_ARCH = "результат v1 архивирован: дефект согласования z"
+SUFFIX_STATUS = {RESULT_SUFFIX: STATUS_RES, V2_SUFFIX: STATUS_RES, ARCH_SUFFIX: STATUS_ARCH}
+
+
 def is_result(r: list, decl: dict) -> bool:
-    """Строка результата: ключ `<ключ плана>:результат`, kind = result, статус «посчитана», полный ряд колонок."""
-    return len(r) == len(HEADER) and r[0].endswith(RESULT_SUFFIX) and r[0][:-len(RESULT_SUFFIX)] in decl and r[5] == RESULT_KIND and r[7] == STATUS_RES and bool(r[6])
+    """Строка результата: ключ `<ключ плана>` + суффикс (`:результат`, `:результат_v2`, `:результат_v1_архивирован`), kind = result, статус суффикса, полный ряд колонок."""
+    suf = next((s for s in SUFFIX_STATUS if r[0].endswith(s)), None)
+    return len(r) == len(HEADER) and suf is not None and r[0][:-len(suf)] in decl and r[5] == RESULT_KIND and r[7] == SUFFIX_STATUS[suf] and bool(r[6])
 
 
-def add_result(cfg: str, payload: dict, path: Path | None = None, when: str | None = None) -> str:
-    """Дописать строку результата конфигурации `cfg` в конец реестра (существующие байты не трогаются). Повтор — 'уже есть' (результат не переписывается)."""
-    path, key = path or TRIALS, "Ж-233:%s%s" % (cfg, RESULT_SUFFIX)
+def add_result(cfg: str, payload: dict, path: Path | None = None, when: str | None = None, suffix: str = RESULT_SUFFIX) -> str:
+    """Дописать строку результата конфигурации `cfg` в конец реестра (существующие байты не трогаются). Повтор — 'уже есть' (результат не переписывается).
+    suffix: `:результат` (версия 1), `V2_SUFFIX` (версия 2, лист FX) или `ARCH_SUFFIX` (пометка «результат v1 архивирован»); статус — по суффиксу."""
+    path, key = path or TRIALS, "Ж-233:%s%s" % (cfg, suffix)
     if key in {r[0] for r in read(path)[1:]}:
         return "уже есть"
     base = [r for r in read(path)[1:] if r[0] == "Ж-233:%s" % cfg][0]
     with open(path, "a", encoding="utf-8", newline="") as f:
-        csv.writer(f, lineterminator="\n").writerow([key, "Ж-233", base[2], base[3], json.dumps(payload, ensure_ascii=False, sort_keys=True), RESULT_KIND, when or now(), STATUS_RES])
+        csv.writer(f, lineterminator="\n").writerow([key, "Ж-233", base[2], base[3], json.dumps(payload, ensure_ascii=False, sort_keys=True), RESULT_KIND, when or now(), SUFFIX_STATUS[suffix]])
     return "дописана"
 
 

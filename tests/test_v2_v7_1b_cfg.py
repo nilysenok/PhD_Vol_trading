@@ -64,7 +64,8 @@ def test_run_kind_real_path_F_positive_g0_gives_H_and_signal_is_learned(honest):
     assert df["d"].iloc[0] == pd.Timestamp("2018-01-02") or df["d"].iloc[0] >= pd.Timestamp("2018-01-03")
     assert (df["F"] > 0).all() and np.isfinite(df["g"]).all()
     z = df["g"] == 0
-    assert z.any() and np.array_equal(df["F"][z], df["H"][z])                 # пока обучающих строк мало — F = H побитно
+    assert np.array_equal(df["F"][z], df["H"][z])                             # g = 0 ⇒ F = H побитно
+    assert not z.any()                                                        # FX (версия 2): пары 2017 года получают z энкодера 2018 — корректор учится с первой оцениваемой даты, F = H до конца 2018 нет
     late = df["d"] >= pd.Timestamp("2019-07-01")
     q_f = metrics.qlike(df["rv"][late].to_numpy(), df["F"][late].to_numpy()).mean()
     q_h = metrics.qlike(df["rv"][late].to_numpy(), df["H"][late].to_numpy()).mean()
@@ -86,23 +87,25 @@ def test_lin5_patch_restores_make_and_passes_other_specs():
     assert FT.make is orig
 
 
-def test_z_of_day_comes_from_encoder_of_its_year_and_mutation_year_plus_one_is_caught(monkeypatch):
+def test_z_of_refit_year_comes_from_encoder_of_that_year_and_mutation_year_plus_one_is_caught(monkeypatch):
+    # FX (версия 2): вместо «строка даты года y — энкодер года y» (z_matrix) — матрица энкодера года Y на всех датах ≤ 31.12.Y
     idx = TAB.index
-    z = CFG.z_matrix("tcn", 0, idx, lambda p: fake_load(p), YEARS)
-    yr = idx.year.to_numpy()
+    z = CFG.z_by_year("tcn", 0, idx, lambda p: fake_load(p), YEARS)
     for y in YEARS:
-        assert np.allclose(z[yr == y, 3], 0.5 * (y - 2018))
-    assert np.isnan(z[yr == 2017]).all()                                      # до 2018 энкодера нет — дат без z нет в обучении
+        upto = idx <= pd.Timestamp(y, 12, 31)
+        assert np.allclose(z[y][upto, 3], 0.5 * (y - 2018)) and np.isnan(z[y][~upto]).all()
     monkeypatch.setattr(CFG, "enc_year", lambda y: y + 1)
-    bad = CFG.z_matrix("tcn", 0, idx, lambda p: fake_load(p), YEARS[:-1])
-    assert not np.allclose(bad[yr == 2018, 3], 0.0)                           # мутант: z 2018 от энкодера 2019 — ловится
+    bad = CFG.z_by_year("tcn", 0, idx, lambda p: fake_load(p), YEARS[:-1])
+    assert not np.allclose(bad[2018][idx <= pd.Timestamp(2018, 12, 31), 3], 0.0)   # мутант: z 2018 от энкодера 2019 — ловится
     monkeypatch.undo()
 
 
-def test_mutation_encoder_of_year_plus_one_changes_forecast(honest, monkeypatch):
+def test_mutation_encoder_of_year_plus_one_changes_z_of_refit(honest, monkeypatch):
+    # FX: столбец 3 постоянен внутри переоценки (стандартизация его обнуляет), поэтому различие мутанта — в самом z; на прогноз через столбец 3 не влияет (см. tests/test_v2_v7_fx_z.py — шпион на WF._refit)
+    base = CFG.z_by_year("tcn", 0, TAB.index, lambda p: fake_load(p), YEARS)
     monkeypatch.setattr(CFG, "enc_year", lambda y: min(y + 1, 2020))
-    mutant = run()
-    assert not np.array_equal(mutant["g"].to_numpy(), honest["g"].to_numpy())
+    mutant = CFG.z_by_year("tcn", 0, TAB.index, lambda p: fake_load(p), YEARS)
+    assert not np.array_equal(np.nan_to_num(mutant[2018]), np.nan_to_num(base[2018]))
 
 
 def test_pit_future_targets_do_not_change_forecasts_and_closed_plus_one_mutant_is_caught(honest, monkeypatch):

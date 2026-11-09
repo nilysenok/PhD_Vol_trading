@@ -8,7 +8,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from models_v2.s14 import v7_0_io as IO, v7_1b_cfg as CFG, v7_1b_cfgrun as CR, v7_1b_sta as STA, v7_1m_reg as RG
+from models_v2.s14 import v7_0_io as IO, v7_1b_cfg as CFG, v7_1b_cfgrun as CR, v7_1b_sta as STA, v7_1m_reg as RG, v7_fx_warm as WM
 
 W3, CFG3 = 1, "3"
 PATH = IO.OUT / "1b" / "cfg3.parquet"
@@ -68,7 +68,7 @@ def write3() -> int:
     t0 = time.time()
     train_missing3(kind)
     CR.update_1b("stageA_w1", dict(encoder=kind, window=W3, years=list(STA.YEARS), seeds=list(STA.SEEDS), hashes=hashes3(kind), note="конфигурация 3: энкодер окна 1 день, бары < 01.01.Y"))
-    df = CFG.run_kind(kind, DATA.load_tab(), window=W3)
+    df = CFG.run_kind(kind, DATA.load_tab(), window=W3, warm=WM.load_warm())
     rec = save3(df, kind, time.time() - t0)
     CR.update_1b("cfg3", rec)
     RG.add_result(CFG3, dict(stage="1b-C", qlike_2018_2021=rec["qlike_2018_2021"], sha256_content=rec["sha256_content"], n_rows=len(df)))
@@ -99,7 +99,7 @@ def check3(cp: dict) -> list:
         bad.append("%s w1 2018 seed 0: пересчёт не совпал побитно" % kind)
     tab = DATA.load_tab()
     a = next(i for i in W6.refit_positions(tab.index, WF.FIRST_REFIT) if tab.index[i] >= CR.CHECK_FROM)
-    got = CFG.refit_block(kind, tab, a, window=W3)
+    got = CFG.refit_block(kind, tab, a, window=W3, warm=WM.load_warm())
     if not np.array_equal(got, df.set_index("d")["g"].reindex(tab.index[a:a + len(got)]).to_numpy(float)):
         bad.append("переоценка %s (конфигурация 3): пересчёт не совпал побитно с cfg3.parquet" % tab.index[a].date())
     return bad

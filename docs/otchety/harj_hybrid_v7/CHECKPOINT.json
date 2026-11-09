@@ -21,7 +21,7 @@
  "1a": {
   "N_holm": 733,
   "N_wide": 3166,
-  "code": "d4ba6ed7298b77fd",
+  "code": "c0c0aee2ea430374",
   "configs_computed": 0,
   "first_eval": "2018-01-03",
   "first_fit_stage_b": "2019-01-01",
@@ -73,7 +73,7 @@
    4
   ],
   "trainings_on_sber": 0,
-  "written_at": "2026-11-09T18:10:44+03:00"
+  "written_at": "2026-11-09T18:29:11+03:00"
  },
  "1b": {
   "E0": {
@@ -177,6 +177,414 @@
     ]
    },
    "threshold": 0.9
+  },
+  "cfg1": {
+   "file": "data/regen/harj_hybrid_v7/1b/cfg1.parquet",
+   "first": "2018-01-03",
+   "grid_lam_g": [
+    0.1,
+    1.0
+   ],
+   "lam_lb_lam_s": "не применяются (нет маршрутизатора)",
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 5,
+   "qlike_2018_2021": 0.16618944444676056,
+   "seconds": 6.7,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "1bad2f8e538fb2874343ee1b3276fde5d95a26c782d524c540f6d8a32a7719f5",
+   "sha256_file": "58d81cb4e952d8582d4226c329bd154d21273f8e14f830df9f4ab5e1b860024e"
+  },
+  "cfg2": {
+   "file": "data/regen/harj_hybrid_v7/1b/cfg2.parquet",
+   "first": "2018-01-03",
+   "grid_lam_g": [
+    0.1,
+    1.0
+   ],
+   "lam_lb_lam_s": "не применяются (нет маршрутизатора)",
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 5,
+   "qlike_2018_2021": 0.16968681193218832,
+   "seconds": 6.8,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "0909f39250a9b205f9d24d36e80d6ee74d2612651058e2dedba8ac41f7fba5c1",
+   "sha256_file": "e08d495a4ac30204d383e56dc3b015460836f113d9e2906e2040309b6250a130"
+  },
+  "cfg3": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/1b/cfg3.parquet",
+   "first": "2018-01-03",
+   "grid_lam_g": [
+    0.1,
+    1.0
+   ],
+   "lam_lb_lam_s": "не применяются (нет маршрутизатора)",
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 5,
+   "qlike_2018_2021": 0.1677865858544427,
+   "seconds": 6.6,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "1c9c024c173b59c11ef4afc82dcb0eda8067bfe9709fcde01855ac84074faa3b",
+   "sha256_file": "e88fb17d547d64567f0baba5c9f0fdb424b2bec4d636fe643429dad8f9c7f937",
+   "window": 1
+  },
+  "choice3": {
+   "cfg3_computed": false,
+   "choice": "tcn",
+   "n_dates": 1010,
+   "qlike": {
+    "cnn": 0.16968681193218832,
+    "tcn": 0.16618944444676056
+   },
+   "rule": "энкодер — лучший из 1 и 2 по QLIKE 2018–2021 (окно 5 дней), правило объявлено",
+   "version": 2,
+   "window": "t⁺ 2018–2021",
+   "written_before_cfg3": true
+  },
+  "choice3_v1": {
+   "cfg3_computed": false,
+   "choice": "tcn",
+   "n_dates": 1010,
+   "qlike": {
+    "cnn": 0.16795039824866786,
+    "tcn": 0.16778652860858279
+   },
+   "rule": "энкодер — лучший из 1 и 2 по QLIKE 2018–2021 (окно 5 дней), правило объявлено",
+   "window": "t⁺ 2018–2021",
+   "written_before_cfg3": true
+  },
+  "stageA": {
+   "code": "a99e5605c1af5daa",
+   "hashes": {
+    "cnn_w5_2018_s0.npz": "75a2d394b54f48d2766a0085c78e03033c4b22a787e2cddf38985c3194a8b8f3",
+    "cnn_w5_2018_s1.npz": "b5d85e8349fb7923f14f37064e381cc4ab8ca417b8144f42a7307fccd727fa66",
+    "cnn_w5_2018_s2.npz": "37410defa8b732e2d2d19cf0a652ee8b04a6c1fbd0f8401ab673d19729ea95b2",
+    "cnn_w5_2018_s3.npz": "f97c171c49e2c33edfaa17da8ac5c624bd485649688d1d1f3a0d85308e2a4e59",
+    "cnn_w5_2018_s4.npz": "3675fe3faca1d67114ab4f6321247a5c80b769ceacb1ce2ce49fa5052dcd2f46",
+    "cnn_w5_2019_s0.npz": "de6e441650a252e97a87f58e6ad230c2c22fd6c1fa451a58be48e42a51cee7f0",
+    "cnn_w5_2019_s1.npz": "d800e39c2f6445702249d21f88677980f2cb740fd0d1e067427a8642fd3101a0",
+    "cnn_w5_2019_s2.npz": "7a944882b4224f5687cbc99108f885aff8528454fd2148ece64c6ccd45828115",
+    "cnn_w5_2019_s3.npz": "e6730685b86f2e363030ef3c6ffcc359cb7a7b91566c53393e9757f3b9912eb5",
+    "cnn_w5_2019_s4.npz": "dfd52537ebac3d69fca0552e4bb5f75ce5eaa15bef63c8be38c2412065c98b23",
+    "cnn_w5_2020_s0.npz": "31872004500ab51c1f9e2d84e1d7adf3fe71bc16195aa4a77237a6af53d34514",
+    "cnn_w5_2020_s1.npz": "c7da216610d88921b04f941f5f37c5ff05616962e90668751dcc68eb37a6e459",
+    "cnn_w5_2020_s2.npz": "da6f4bdd4debab9ccdeeed1e9fc0c13da254050c21be1d93fc8ab5a7923ee578",
+    "cnn_w5_2020_s3.npz": "fcf1e6bfed9bd578720201e578dc20fe5ca5cccf6e9f1f6e6974676033767239",
+    "cnn_w5_2020_s4.npz": "fda442247450d2b0ea34d09d362a84958928510e8cb1f8e970abe1c5aef309b1",
+    "cnn_w5_2021_s0.npz": "5ed0e4b5a7542bb8b966b77e9ab560d2765b084ee572dd51737947e5b8b3b172",
+    "cnn_w5_2021_s1.npz": "5006cdc484fdccf5590c3fea9d49ad79627b41b5ae4222c20324c6fefdca2922",
+    "cnn_w5_2021_s2.npz": "aa7c9a3626f6afb4f17a8d6fa94ca7e51cb586a6c4a8a704ca2a444293dbb7e9",
+    "cnn_w5_2021_s3.npz": "9e559f69b0805613d1f5ac0f78be5483990d0e7febe2e122ef9127e9d4bdf882",
+    "cnn_w5_2021_s4.npz": "c1538d9950e54c032d81481c8e4863c7813334861c16cd2400e2ea677aef5707",
+    "cnn_w5_2022_s0.npz": "4edf19ce9184a115941d1a85bd20aa2460cf0d1bdbb8439f3bb9ffcb34697900",
+    "cnn_w5_2022_s1.npz": "fc81d395b305c7ce5f853c2b9159c8d8ae47e3490af3911757f39e6fb18917a0",
+    "cnn_w5_2022_s2.npz": "40fc239c899c73a11ebcd7a6d6a563493f1d6f43569661190edfe6419cd1d692",
+    "cnn_w5_2022_s3.npz": "63048df0bb89fa738d95138859c400baba442be28b4e56ee60f34d946535e1f7",
+    "cnn_w5_2022_s4.npz": "a2c80178aaddfc349f6292b26bfea7b77259b664fe3e5ca4f4df0cdedf2acfd4",
+    "cnn_w5_2023_s0.npz": "6f86596802a962a45a494e0f7237dd9e4de4ab8c0070fcae41e603c08182bf6a",
+    "cnn_w5_2023_s1.npz": "bae90b32e8142decfc7c6437f6b1d01cd0e798bb3979cf02c7522b7aea1e0c81",
+    "cnn_w5_2023_s2.npz": "dc077c356867b0b3ebdd8e0afae847e67c7c139d12945181a998bcb6bad60cac",
+    "cnn_w5_2023_s3.npz": "4284e2cf605f7dc5d229fb6dafef95fade5c556df4731f16d1c11fab243c4215",
+    "cnn_w5_2023_s4.npz": "3328abea0d10fbaab0bc655ff5590b17a713fa8ce6ea75585d8b9839c45f8ff6",
+    "cnn_w5_2024_s0.npz": "8873384a4e18ec25d733a4e7cc72bf57b9e1eabee914aff218aaf591626c49d2",
+    "cnn_w5_2024_s1.npz": "b0313f583684040b369c46e9e499676aef08fde1c43e356b97736cae119d8d40",
+    "cnn_w5_2024_s2.npz": "dd4daf680b0b0106895daba8a6b2a8bdcfa05fe882f57110dd033caeaba58ed9",
+    "cnn_w5_2024_s3.npz": "14a3fd49add3b122f812c72a31950f8d2f458f46b4d6a9d2a29874dd8add37e4",
+    "cnn_w5_2024_s4.npz": "f19767aed5cc78b6a74ce98c1929634991676cf2b25f3d5bfe629b9b505536ea",
+    "cnn_w5_2025_s0.npz": "3b6bb67753f3ff9901582b22f633107fb9a4179f8bfb0b8c5c6b55d96902bf09",
+    "cnn_w5_2025_s1.npz": "37f6fe48a673ac6c5cce49b4925bb0a90ad17bc8f9859e275038770e189d3b97",
+    "cnn_w5_2025_s2.npz": "ee7f3cf3b3303b0e3bfdb5fce81e92b3b8f3082f70cc1eaa0a2d675b8116d6c3",
+    "cnn_w5_2025_s3.npz": "27c57190ab80b086ae7ba2f495184b83a3a190bf219befce42719e17683f9145",
+    "cnn_w5_2025_s4.npz": "4eb78dc518e9fa6d1cc9300b2333b7ae2c2347e0a5c3b88f6008074bf20f46f1",
+    "cnn_w5_2026_s0.npz": "e78fb40758d34f8379c18c10e8fa5a81605e9c0f597e7bb345add5dddabee7e7",
+    "cnn_w5_2026_s1.npz": "5ea27602db943d0ae1c0c8b414de15697a45044471878426af84ccd436cede0a",
+    "cnn_w5_2026_s2.npz": "c0ed51a9f08c320349c1ef05c4fe49365d1c2c8dff96dcc69d8a7a947de07e88",
+    "cnn_w5_2026_s3.npz": "3f77175f9231d2f4b28c8e8eaa201d9030d2fe4236fcd58f3c8f942fa936a29e",
+    "cnn_w5_2026_s4.npz": "e77e01afc0694ee7de8d3775caec347d54040bddab7d4d82d0629a27fe66baba",
+    "tcn_w5_2018_s0.npz": "d8f567ae343480e9a9bdd7507f0eab5a83f2e62712e58d957f37921b6346bba8",
+    "tcn_w5_2018_s1.npz": "1136c527c72d99248ecaecff8e785d94c371f8e6a8cf42ffb9539bf69410fd54",
+    "tcn_w5_2018_s2.npz": "048acd4df52716dcae38d9bc4a90d62fc164c285bd2fea9ccc7206aa4432766c",
+    "tcn_w5_2018_s3.npz": "bb0820fa14c40639ad07aba2bde2de43eb918b588dbb6353e5a19684c526bf39",
+    "tcn_w5_2018_s4.npz": "6aa283fd2a15a04ef318bfdaa81d1bc0e1dc52c2def1a2251098ac44ef46177e",
+    "tcn_w5_2019_s0.npz": "1e3f8bdec11f96295cb27824e48d577577a49d9977383aa8e74ebac729e1a94a",
+    "tcn_w5_2019_s1.npz": "c7924165dd486d1501f77530d73d9319778e1378fc4d043459204bcb127343a6",
+    "tcn_w5_2019_s2.npz": "885f23e2fb56b2a9fd2b36ae450a4eaf292e9cf8646f288ad94cd45d5f58c414",
+    "tcn_w5_2019_s3.npz": "388dc8579ae4ce46ac95af4a6a20534cb2acd3932a7caf6042412347462d6dd8",
+    "tcn_w5_2019_s4.npz": "087e7b4e5174ce5774e1420dc234466a814beb732ac320f87f70f2b7713ef892",
+    "tcn_w5_2020_s0.npz": "5bf16abcf145d4a666fb9661a05101ec2398e04a9e419ded206494471d64d64e",
+    "tcn_w5_2020_s1.npz": "a00bf25134f05069e1de39c2ab35a24fa8bb496cb3f4a5fc729c788aec82f822",
+    "tcn_w5_2020_s2.npz": "608bdc95e8472c1af42ee6552c1721d79f6a7868438edb731109501a9ead2814",
+    "tcn_w5_2020_s3.npz": "7f27201a84eaca108bfccbd617fa9399352a8109f990c61db6dc2c0bfce48eea",
+    "tcn_w5_2020_s4.npz": "3ef91eacd5e089d451b07527a558243953328522e9833f76bce0177a51ea33e7",
+    "tcn_w5_2021_s0.npz": "2f76058aae1ba4c3c972f67217c7a10e845ba5966d0c8d394d7069c45be0d490",
+    "tcn_w5_2021_s1.npz": "2f2ffe0c87de4853b020d6796efd9159c112e159836850240b4b77e35efb4fc0",
+    "tcn_w5_2021_s2.npz": "34f326ae30efba04eeb3e8132fb76f5e896be4c2b1b5496fd5d455c2961f907d",
+    "tcn_w5_2021_s3.npz": "e63899a802048cb74602d0dfd62cf949a6280c6ce51c60415c0bc91c508f1c56",
+    "tcn_w5_2021_s4.npz": "25551eb5e2695fecf4fdf2f7e290df026eff78d4771de4794119846bc0369d5b",
+    "tcn_w5_2022_s0.npz": "94a6c2c3b6d97011e57e12dfa38ae38b5ac4fbaacdd81d037b7a333907b5d83e",
+    "tcn_w5_2022_s1.npz": "fe1d3a9b160ad5702387c4607827f4ec0c8ca065b33cd26eb0fe736f3a1c2bfa",
+    "tcn_w5_2022_s2.npz": "75713fb7f64e5e57c55c81c174563665be4cc1391591ef70e1ec095370cb9102",
+    "tcn_w5_2022_s3.npz": "f6ffe861b350484526dda31dd30c4d691f7b0e73b1f996fb145130024121b961",
+    "tcn_w5_2022_s4.npz": "7b947edfe9cec0d9c964db529489e7e761b3a76b686257af16067cebf8eb14c8",
+    "tcn_w5_2023_s0.npz": "57ec3ba170fffc93abc2572a9cd24feaf1ee276dd233bd701c057223f4528429",
+    "tcn_w5_2023_s1.npz": "8d5c8e0c4ce944a95210f6a3a4af669fc0d254b42a1f92e681214fa9f8abc6eb",
+    "tcn_w5_2023_s2.npz": "c1c79b9448df35894f0c85ff6f1f48161a4203b2fcb9064d4a7a7aec84240442",
+    "tcn_w5_2023_s3.npz": "12236aad07b62595214ab04a93e3a7e246af74092b280e2d6a34ca54c138505f",
+    "tcn_w5_2023_s4.npz": "b466831ab4fc65a93b102f6a7c46b5df68a20f111d852f8ce68096cf52d4fad9",
+    "tcn_w5_2024_s0.npz": "6ee76a5deb9087395e3f51346e2459dfc9df55cbe1e55fe7469290330a97ca23",
+    "tcn_w5_2024_s1.npz": "41ddfaf4c73c6a12403a2680476d2c4b735c80b0b35f374d78a9e97fa2fd83a6",
+    "tcn_w5_2024_s2.npz": "1736c8ace85bda9d98bd6647eb529da1c8141bc18a4b16b283ece7f95c3e36b8",
+    "tcn_w5_2024_s3.npz": "1c24d3706cde2c37b1d3931402ac901f03c4a378964432c548fc901315bfeb84",
+    "tcn_w5_2024_s4.npz": "d39dcf92617be083a2895aeb92d2130e0c4b6c5a3ae733305ae6d9ef7b89256d",
+    "tcn_w5_2025_s0.npz": "034db2213d043bfccbbdeb8597e98a6a81ff486ebf1571f3dec703bbc467c58d",
+    "tcn_w5_2025_s1.npz": "b2fcd3b75ab61041021c7e544d2511532abf8477e243c5674f1247ecbb890b4d",
+    "tcn_w5_2025_s2.npz": "048bb3da518f9e16f6b6796549f5e86ec44a0bd76e2223d3bb483f59e5a0cde9",
+    "tcn_w5_2025_s3.npz": "40bd68722b8fd9c9340c3d35e6769329a43761def5685f1b4b2205f9c167e18e",
+    "tcn_w5_2025_s4.npz": "0a86d084a0ca153ce388a83e4992f8d7a41b8c05e00a8bb7633f1fd29351311c",
+    "tcn_w5_2026_s0.npz": "708c2fdd9575beaaf6a3813dee0408cf30f00c28ffadc80e98c38a480899179d",
+    "tcn_w5_2026_s1.npz": "e693737185b379ca3f19e4fe8470c3befe7a8b22c5abc2a3cf20c568cc7d0ae5",
+    "tcn_w5_2026_s2.npz": "75e77bdce9a66ae584c44720def2411236b479d198fc6ee12e77a3bd713e24c4",
+    "tcn_w5_2026_s3.npz": "16762efe90b977e836a2e998dc28e15894c4beb1d5cc4a9f74f1906da5c7eef5",
+    "tcn_w5_2026_s4.npz": "e7e6e60951529ebab9c32ecb8baf5f33439ad51afbd10dafb6ac88e60516a863"
+   },
+   "kinds": [
+    "tcn",
+    "cnn"
+   ],
+   "n_files": 90,
+   "note": "G22–G23: Stage A и E0 на SBER; конфигураций 0",
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "years": [
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+   ]
+  },
+  "stageA_w1": {
+   "encoder": "tcn",
+   "hashes": {
+    "tcn_w1_2018_s0.npz": "df5a36e8a41dd0caadce9286982f5738dae974a90a9bfd5116c4021eeb0224c1",
+    "tcn_w1_2018_s1.npz": "d3df31c385bdd411249eddea1b103734c9adcda60760501e52b6f497ecd11e61",
+    "tcn_w1_2018_s2.npz": "eb5ca0a9947a568d72607986a51bd15d4b237834cd1dddaa62f6ae3dcc01d396",
+    "tcn_w1_2018_s3.npz": "d05a5c2e9b6015707ff1138d53589f0624bb695c5e3b72a7e62f4ee5c9b0408f",
+    "tcn_w1_2018_s4.npz": "ab9412fe6af590c4457edfae325f418bfe0d838cd1352ca79bb9f9f0494970f3",
+    "tcn_w1_2019_s0.npz": "9b9d4451711f6ef2a5f2f53c9cb33a219fb3500d6c512fa191784cccb3ca688f",
+    "tcn_w1_2019_s1.npz": "3cd447b834367e7859b64ca62a4f25b533eb92d9939339ebb892b94c020471e6",
+    "tcn_w1_2019_s2.npz": "65ecbc5263d6b8ab3310ac22fbb6a95687305c5228d83c27dd454aa682feb9c1",
+    "tcn_w1_2019_s3.npz": "0bfc6ad75f529a4bc013a39760ac4820566e55ceb5d3c8b301ef3c945c69d71d",
+    "tcn_w1_2019_s4.npz": "c17013194e838d338a6bb90b0fa57205e4abb57e7b2d67271e550b15601a6f38",
+    "tcn_w1_2020_s0.npz": "5fb0b78bb71da0eeaa98a270711f185b33a4e3d612300ec7c2c6932634813dc1",
+    "tcn_w1_2020_s1.npz": "805504ec48f36283e56213d52cabb454e0b49b0ac67787332e022a5f9f98f557",
+    "tcn_w1_2020_s2.npz": "2455cb2b5d15748e1c6f1b4e13b6575b582b5046cadca4f7ddea36a1d04995e3",
+    "tcn_w1_2020_s3.npz": "f4d80d8ff985280753a904815c39b7fcd7e89174bc8796ef162f2dd62f8924fd",
+    "tcn_w1_2020_s4.npz": "5729b5c0019058e0ee19c2f8323def841006a3696d436f82e1b4c2e3c3d7542d",
+    "tcn_w1_2021_s0.npz": "5df0bada2b36a065f0ddf7c87206abccdedf1d0960e2463e70e58cb83f5cf4a2",
+    "tcn_w1_2021_s1.npz": "9d063939423cf083cbe219394ffe0fcfb94fca8e8d1639978c5c28f2f23893c4",
+    "tcn_w1_2021_s2.npz": "caa543836a9a1450036cf26af1601a8f994a6c3fb6b58af5e608baf0b567cda6",
+    "tcn_w1_2021_s3.npz": "6547267da309274adb63d55f543e77c89ae29adffb04dff3828416c19000884a",
+    "tcn_w1_2021_s4.npz": "4389e3105bf18945b64c4c2c55aef1629313ad2ae76a6c4f661d459c39e1423b",
+    "tcn_w1_2022_s0.npz": "1966093a8e9488c29ef622c5042d3a40996b386adfa085006f674c31eb98a531",
+    "tcn_w1_2022_s1.npz": "d693e2710f80921d116e4b7ffc17e48c4d16661ac1ec779b220512e745414d12",
+    "tcn_w1_2022_s2.npz": "836b316b96677073be68659fdef54e5074c1693e0c4e4cf8a2550c7dcd75aec0",
+    "tcn_w1_2022_s3.npz": "61016e0470a9a5fc3fd4c2ae3cae4feb01e50f0182ff9bf1c424341fe661920c",
+    "tcn_w1_2022_s4.npz": "1122c30872a70b8c8dca16be4c0b623989e6ea1a97b77d2ae992418f3d1d2c8b",
+    "tcn_w1_2023_s0.npz": "84ab67fde2a0c35f779d8e32f6e8a04c2659b088b573a9e8e53473334553601d",
+    "tcn_w1_2023_s1.npz": "0b5dba30440ae0714772548a090c3478d6daf8a1fa8d287d036e3d4a03fcde49",
+    "tcn_w1_2023_s2.npz": "f92b8cf1af8c59ddffe6f35c56b1bed1309e319b5f76e630336b173cd4177e76",
+    "tcn_w1_2023_s3.npz": "a19f281aefda27c4c0f584831f5eea6b6225e1807b4840cec36260111ad75c65",
+    "tcn_w1_2023_s4.npz": "bb38588a7135a370a7ffc079088330e3514f9c9d6ba2e8220fa3670489e50247",
+    "tcn_w1_2024_s0.npz": "61c506b895289dc98a7f469be510bfe0ff674cd30b77dbeae9add8218e17b93e",
+    "tcn_w1_2024_s1.npz": "ba1f91c04a28b7595b9df103a224888ee8df81f95656ea2607fa27ce1e1acee1",
+    "tcn_w1_2024_s2.npz": "e054bca84f3d1d505c1408ccb7d545bedd67fc0b094cdf69bb0890cdc7c35464",
+    "tcn_w1_2024_s3.npz": "0aa77ebc4a406e8b6ccb12b8030fa05c1612fc392849948f049ba05449814f72",
+    "tcn_w1_2024_s4.npz": "150836e9db184786658d147adf771d49f87e1162cc5ec506f2e110bd205d53d5",
+    "tcn_w1_2025_s0.npz": "9949a3fd9d9165c1066a8b0a89170b31bd3339195bfcab30b62f16d697aab1da",
+    "tcn_w1_2025_s1.npz": "f799584ef55728484b209e75e9f9de3ad05742cc77fa50c75a9f318d6af4b6a2",
+    "tcn_w1_2025_s2.npz": "d3b99f40de30574cc9eb449c8b00c924170bd6ed5c8d9cecd23b6eeb3ac61d3b",
+    "tcn_w1_2025_s3.npz": "3c0ce6777e780bc42a49a46616e25372698aa8183b6e7ee95218df4e476963bc",
+    "tcn_w1_2025_s4.npz": "ef5b782c85d0724949ee18ff69669294cb1c7dd1ed344a2906c9018068682062",
+    "tcn_w1_2026_s0.npz": "60250a372363477612e89b971babdee1f7f15fa5617e907aaffe1553ea33d7b1",
+    "tcn_w1_2026_s1.npz": "e76b3db4382b4f3131598383a0f6648d23c7e1fbd5f49f4035659b66418474c7",
+    "tcn_w1_2026_s2.npz": "24a5edc03d9c52c5d513651e62b9eccc5538cbc8cdb7ab66dd7bfa50dfc1379f",
+    "tcn_w1_2026_s3.npz": "d25c780e79fddb9e50cc690f2f8caf7d63649a4a0cd07bab475615dbc3605dcd",
+    "tcn_w1_2026_s4.npz": "49e30c92c92eb8c8582c55526ccdae50cf8ed747c4f3d0355d3a6e9b2d6449f4"
+   },
+   "note": "конфигурация 3: энкодер окна 1 день, бары < 01.01.Y",
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "window": 1,
+   "years": [
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+   ]
+  }
+ },
+ "1b_v1": {
+  "E0": {
+   "both_no_new_info": false,
+   "cnn": {
+    "n_eval": {
+     "2018": 254,
+     "2019": 252,
+     "2020": 250,
+     "2021": 255
+    },
+    "no_new_info": false,
+    "r2_mean": [
+     0.7323649922777811,
+     0.015645122095144747,
+     0.2798342678050057,
+     -0.15650905817559338
+    ],
+    "r2_min_year_comp": -1.7055575623356916,
+    "r2_seeds": [
+     [
+      0.7653953103745549,
+      0.0740336775033325,
+      0.21096177729090165,
+      0.12181369911587465
+     ],
+     [
+      0.8532830139535724,
+      0.2087334326009007,
+      0.348076122587218,
+      0.10235011574750785
+     ],
+     [
+      0.5349022753058839,
+      0.04741393779069829,
+      -0.18196747152128678,
+      -0.23335605176123758
+     ],
+     [
+      0.8159096915463061,
+      -0.09411649360391279,
+      0.5748073916506473,
+      -0.44226385320145123
+     ],
+     [
+      0.6923346702085884,
+      -0.15783894381529495,
+      0.44729351901754827,
+      -0.3310892007786606
+     ]
+    ]
+   },
+   "rule": "R² компоненты — среднее по seeds 0–4 (взвешено по годам 2018–2021 числом дат); 'нет новой информации' — все 4 ≥ 0,9",
+   "stop_4_11": false,
+   "tcn": {
+    "n_eval": {
+     "2018": 254,
+     "2019": 252,
+     "2020": 250,
+     "2021": 255
+    },
+    "no_new_info": false,
+    "r2_mean": [
+     0.7798485578587042,
+     0.21677372459987815,
+     0.21510770251635397,
+     0.18809662549699963
+    ],
+    "r2_min_year_comp": -0.592712330880719,
+    "r2_seeds": [
+     [
+      0.8014707643822675,
+      -0.10737476572903712,
+      0.18596282040598489,
+      0.12484019920653859
+     ],
+     [
+      0.8261832657069439,
+      0.2686382862052727,
+      0.22498078728405843,
+      0.10234012855285177
+     ],
+     [
+      0.8983293239728264,
+      0.45255854593530925,
+      0.47512144177858834,
+      0.1329066697408436
+     ],
+     [
+      0.6530815995522519,
+      0.09283612432390055,
+      0.011373405781711931,
+      0.3815679903651444
+     ],
+     [
+      0.7201778356792322,
+      0.3772104322639454,
+      0.1781000573314262,
+      0.19882813961961976
+     ]
+    ]
+   },
+   "threshold": 0.9
+  },
+  "archive_sha256": {
+   "1b/cfg1.parquet": "3dd6f38ef04c167c781151a19235b6c88eb0c45453e38a04c3884498bb1b3dda",
+   "1b/cfg2.parquet": "5df146b4f03a9807468820bfff2bbb3928257f2118a3328745124b4e89dafa61",
+   "1b/cfg3.parquet": "d048e44870fcdc555204b46468d182cbf037f9e2bf2180575826beab8bdd6fd4",
+   "otchety/1b_B_QLIKE.csv": "a9af986751e8c2263eab05a1d21a43e4d3ab3902649e73a956554cdcbb114e89",
+   "otchety/1b_E0.csv": "fb0207d416d94caf1d8bc612086537bc73b5329b44f7bc89749bc76baa4b9256",
+   "otchety/1b_GO.csv": "36fe2882c80dac0d62bf1b89de1629e7d9f1988f5060ac94b79741d2a83ce2c4",
+   "otchety/1b_MCS.csv": "fb704a8a7d415006a57790c21028943552964b8a385ebfeccff591fdd3f89b0e",
+   "otchety/1b_METRICS.csv": "9d71cbb58a0db2da845f3b60438a7de57f3980878ad3bb6e999e21580d56b796",
+   "otchety/1b_NEWINFO.csv": "65917a19bac9c4cf5b6af8c8d3bd586daa008d04dd70a0102c8a8c0ff78904a8",
+   "otchety/1b_STRESS.csv": "399582fe94620e646041a79e4eb8ce5e5c11363458155bca462e4cbde4d1a50b",
+   "otchety/1b_TESTS.csv": "02d68cb78a49bac6cc9c20f1546e734bee053ef8ca8b40c1a36a0b347076365e",
+   "otchety/1b_YEARS.csv": "ea2d359b4355818a8cf4772bfa50e6e13b0475dfe4e8f4dfc38214d80a144a54",
+   "otchety/2a_QLIKE.csv": "b06655bf475659038484d83762c0098a6666b4a666ed79470286037923c9c180",
+   "otchety/LEAF1B_REPORT.md": "257b5b63cb4d9be2e9a05cada7e71c8964347b9dd0c21deb7cbe37463cb0a375"
   },
   "cfg1": {
    "file": "data/regen/harj_hybrid_v7/1b/cfg1.parquet",
@@ -1234,6 +1642,7 @@
    },
    "status": "DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-232, лист 1b-C (конфигурации 1–3; окна 2022+ — только оценка, выбора по ним нет)"
   },
+  "reason": "дефект согласования z (Ж-237, «Моя ошибка [V7]» 18:13): в версии 1 строка даты года y брала z от энкодера года y, так что при переоценке в году Y корректор учился на парах прошлых лет в координатах других энкодеров (знак, порядок и масштаб компонент не согласованы; `docs/otchety/harj_hybrid_v7/FX_DIAG.csv`), а у пар 2017 года z не было совсем (F = H до конца 2018)",
   "rules": {
    "cfg1": {
     "go": false,
@@ -1497,6 +1906,196 @@
    "encoder": "tcn",
    "file": "data/regen/harj_hybrid_v7/2/cfg4.parquet",
    "first": "2018-01-03",
+   "fitted_share": 1.0,
+   "grid": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     1.0,
+     0.0
+    ]
+   ],
+   "lam_lb": "не применяется (нет маршрутизатора)",
+   "lam_selected": {
+    "0.1/0": 326,
+    "1/0": 159
+   },
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 76,
+   "qlike_2018_2021": 0.16103666461407026,
+   "router": "—",
+   "seconds": 16.1,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "863c1bc9458edef4da996be82f24c283378b80e577b9b7443ba95dec79afb0ca",
+   "sha256_file": "653f1799fa3cb676ff20af830ae8e38c20545f64905ff071501e05a98770747a",
+   "window": 5
+  },
+  "cfg5": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/2/cfg5.parquet",
+   "first": "2018-01-03",
+   "fitted_share": 1.0,
+   "grid": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.1
+    ],
+    [
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.1
+    ]
+   ],
+   "lam_lb": "в решётке",
+   "lam_selected": {
+    "0.1/0": 174,
+    "0.1/0.1": 169,
+    "1/0": 78,
+    "1/0.1": 64
+   },
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 61,
+   "qlike_2018_2021": 0.16177370424398507,
+   "router": "A",
+   "seconds": 55.7,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "e802b457c2b986718a9ebf470b4f8522c9d5abf16a8450163e78f60703577225",
+   "sha256_file": "cbcd8a81d4409dc7d4605d6deb956d372b88f1b28f64a1da2121cbc7447aae3e",
+   "window": 5
+  },
+  "cfg6": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/2/cfg6.parquet",
+   "first": "2018-01-03",
+   "fitted_share": 1.0,
+   "grid": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.1
+    ],
+    [
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.1
+    ]
+   ],
+   "lam_lb": "в решётке",
+   "lam_selected": {
+    "0.1/0": 125,
+    "0.1/0.1": 170,
+    "1/0": 106,
+    "1/0.1": 84
+   },
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 77,
+   "qlike_2018_2021": 0.16180282045335273,
+   "router": "B",
+   "seconds": 62.2,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "08e7534e6bd1cc8563ca416baa42d7f8253726966f972765648b57c3d0975103",
+   "sha256_file": "92e0898119d5338371fa44a151730460f0ad53608fade11edb864826f44fee8c",
+   "window": 5
+  },
+  "cfg7": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/2/cfg7.parquet",
+   "first": "2018-01-03",
+   "fitted_share": 1.0,
+   "grid": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.1
+    ],
+    [
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.1
+    ]
+   ],
+   "lam_lb": "в решётке",
+   "lam_selected": {
+    "0.1/0": 182,
+    "0.1/0.1": 149,
+    "1/0": 71,
+    "1/0.1": 83
+   },
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 41,
+   "qlike_2018_2021": 0.1660963974089164,
+   "router": "C",
+   "seconds": 47.2,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "3badc3e9fd0896b718f6aea90dd70673a5172ff779a83ac8ee53e15e6fae00f8",
+   "sha256_file": "a0db3d0e5f3c3bd93d086ed2ebb06788db934caa06ed59fba384b73b77830e62",
+   "window": 5
+  }
+ },
+ "2_v1": {
+  "archive_sha256": {
+   "2/cfg4.parquet": "8ae89529a9faf6e968850aa165a4ec599046d8f306a66d4a13f821fd0e01e9d0",
+   "2/cfg5.parquet": "4ccf44668e13edb3415ff55c6a0d142e19b72b597874fdbe9d7b3acc7804b3b9",
+   "2/cfg6.parquet": "8569ca60e52bd5dbec778e978b61936557bbc3d1495134d22f67ddcc448a86af",
+   "2/cfg7.parquet": "2969bec593b7fd407433008a7a9d3ffa88239a3bca850826ee78c18c3bd8a94e"
+  },
+  "cfg4": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/2/cfg4.parquet",
+   "first": "2018-01-03",
    "fitted_share": 0.9063429137760158,
    "grid": [
     [
@@ -1674,6 +2273,82 @@
    "sha256_content": "5c79538d1eb7431c4f6b7e734a61deb898aecb06c87adba2560275a1ad892630",
    "sha256_file": "2969bec593b7fd407433008a7a9d3ffa88239a3bca850826ee78c18c3bd8a94e",
    "window": 5
-  }
+  },
+  "reason": "дефект согласования z (Ж-237, «Моя ошибка [V7]» 18:13): в версии 1 строка даты года y брала z от энкодера года y, так что при переоценке в году Y корректор учился на парах прошлых лет в координатах других энкодеров (знак, порядок и масштаб компонент не согласованы; `docs/otchety/harj_hybrid_v7/FX_DIAG.csv`), а у пар 2017 года z не было совсем (F = H до конца 2018)"
+ },
+ "fx": {
+  "choice3_v1": "tcn",
+  "choice3_v2": "tcn",
+  "diag_median_corr_same": {
+   "cnn_1": 0.9596223976316149,
+   "cnn_2": 0.834107978983037,
+   "cnn_3": 0.024881685553036863,
+   "cnn_4": 0.06962966473091345,
+   "tcn_1": 0.9691621460218951,
+   "tcn_2": 0.6117422250839117,
+   "tcn_3": 0.4847502522588103,
+   "tcn_4": 0.23582042653663288
+  },
+  "e0": {
+   "both_no_new_info": false,
+   "max_abs_diff_vs_v1": {
+    "cnn": 0.0,
+    "tcn": 0.0
+   },
+   "r2_mean": {
+    "cnn": [
+     0.7323649922777811,
+     0.015645122095144747,
+     0.2798342678050057,
+     -0.15650905817559338
+    ],
+    "tcn": [
+     0.7798485578587042,
+     0.21677372459987815,
+     0.21510770251635397,
+     0.18809662549699963
+    ]
+   }
+  },
+  "note": "лист FX: версия 2 посчитана; сравнений с контролями, p и окон 2022+ нет (лист 2b)",
+  "qlike_2018_2021": {
+   "1": {
+    "sha256_v2": "1bad2f8e538fb2874343ee1b3276fde5d95a26c782d524c540f6d8a32a7719f5",
+    "v1": 0.16778652860858279,
+    "v2": 0.16618944444676056
+   },
+   "2": {
+    "sha256_v2": "0909f39250a9b205f9d24d36e80d6ee74d2612651058e2dedba8ac41f7fba5c1",
+    "v1": 0.16795039824866786,
+    "v2": 0.16968681193218832
+   },
+   "3": {
+    "sha256_v2": "1c9c024c173b59c11ef4afc82dcb0eda8067bfe9709fcde01855ac84074faa3b",
+    "v1": 0.1666080596294583,
+    "v2": 0.1677865858544427
+   },
+   "4": {
+    "sha256_v2": "863c1bc9458edef4da996be82f24c283378b80e577b9b7443ba95dec79afb0ca",
+    "v1": 0.1639144135066518,
+    "v2": 0.16103666461407026
+   },
+   "5": {
+    "sha256_v2": "e802b457c2b986718a9ebf470b4f8522c9d5abf16a8450163e78f60703577225",
+    "v1": 0.1650836204121811,
+    "v2": 0.16177370424398507
+   },
+   "6": {
+    "sha256_v2": "08e7534e6bd1cc8563ca416baa42d7f8253726966f972765648b57c3d0975103",
+    "v1": 0.16519688168439298,
+    "v2": 0.16180282045335273
+   },
+   "7": {
+    "sha256_v2": "3badc3e9fd0896b718f6aea90dd70673a5172ff779a83ac8ee53e15e6fae00f8",
+    "v1": 0.16667562415084014,
+    "v2": 0.1660963974089164
+   }
+  },
+  "warm_rows": 377,
+  "written_at": "2026-11-09T18:28:48+03:00"
  }
 }

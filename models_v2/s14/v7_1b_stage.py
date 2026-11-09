@@ -53,8 +53,8 @@ def write() -> int:
     print("E0: " + "; ".join("%s R²=%s нет новой информации=%s" % (k, np.round(r[k]["r2_mean"], 3).tolist(), r[k]["no_new_info"]) for k in STA.KINDS))
     from models_v2.s14 import v7_1b_cfgrun as CR                  # лист 1b-B: конфигурации 1–2 и choice3 (конфигурация 3 — лист 1b-C)
     rc = CR.write_cfgs()
-    from models_v2.s14 import v7_1b_cfg3 as C3, v7_1b_evrun as EVR  # лист 1b-C: конфигурация 3 (энкодер из choice3), оценка 1–3, реестр, отчёт
-    return rc or C3.write3() or EVR.write_eval()
+    from models_v2.s14 import v7_1b_cfg3 as C3                    # лист 1b-C: конфигурация 3 (энкодер из choice3); оценка 1–3 (`v7_1b_evrun.write_eval`) версии 2 — лист 2b, здесь не пишется (лист FX)
+    return rc or C3.write3()
 
 
 def check() -> int:
@@ -79,13 +79,13 @@ def check() -> int:
             bad.append("E0 %s: пересчёт ≠ CHECKPOINT" % k)
     from models_v2.s14 import v7_1b_cfgrun as CR                  # лист 1b-B: конфигурации 1–2, выбор для 3
     bad += CR.check(cp)
-    from models_v2.s14 import v7_1b_cfg3 as C3, v7_1b_evrun as EVR  # лист 1b-C: конфигурация 3 и оценка
-    bad += C3.check3(cp) + EVR.check_eval(cp)
+    from models_v2.s14 import v7_1b_cfg3 as C3, v7_fx_arch as AR   # лист 1b-C: конфигурация 3; лист FX: архив версии 1 (sha256 против `1b_v1`); оценка 1–3 версии 2 — лист 2b
+    bad += C3.check3(cp) + AR.check_archive(read_cp())
     return _fail(bad) if bad else _ok()
 
 
 def _ok() -> int:
-    print("OK: G22 %d артефактов с хэшами CHECKPOINT, пересчёт 2018/seed 0 (TCN, CNN) побитно; G23 E0 сошёлся с CHECKPOINT; G24 (1–3): cfg1/cfg2/cfg3 по sha256, переоценка и энкодер окна 1 побитно, choice3 сошёлся; G25 таблицы оценки и отчёт равны пересчёту" % len(STA.tasks()))
+    print("OK: G22 %d артефактов с хэшами CHECKPOINT, пересчёт 2018/seed 0 (TCN, CNN) побитно; G23 E0 сошёлся с CHECKPOINT; G24/G35 (1–3, версия 2): cfg1/cfg2/cfg3 по sha256, переоценка и энкодер окна 1 побитно, choice3 сошёлся; G34 архив версии 1 по sha256 сошёлся с `1b_v1`/`2_v1`" % len(STA.tasks()))
     return 0
 
 

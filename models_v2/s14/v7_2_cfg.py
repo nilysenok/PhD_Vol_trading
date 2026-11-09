@@ -1,4 +1,4 @@
-"""V7-2a: конфигурации 4–7 (план п. 3–5). Энкодер — TCN-w5 (`1b.choice3`), z даты d — от энкодера года d, seed s ∈ 0–4 (`v7_1b_cfg.z_matrix`); Z — 9 признаков режима (`v7_1m_feat.build_Z`), стандартизация по закрытым парам внутри `walk_forward`.
+"""V7-2a: конфигурации 4–7 (план п. 3–5). Энкодер — TCN-w5 (`1b.choice3`), при переоценке в году Y z всех обучающих пар и прогнозов блока — от энкодера года Y, seed s ∈ 0–4 (`v7_1b_cfg.z_by_year`, версия 2, лист FX); Z — 9 признаков режима (`v7_1m_feat.build_Z`), стандартизация по закрытым парам внутри `walk_forward`.
  4 — плоский корректор g(z, Z) = c·tanh(MLP 13→5→1), 76 параметров; решётка — λ_g ∈ {0,1; 1} (λ_LB не применяется: маршрутизатора нет);
  5 / 6 / 7 — Residual MoE K = 2, маршрутизатор A (Z) / B (Z, z) / C (z); эксперты g_k(z) = c·tanh(a_k + b_kᵀz) и решётка λ_g × λ_LB (4 точки) ОДИНАКОВЫ — различается только `router`.
 Walk-forward — `v7_1m_wf.walk_forward` без изменений (помесячно, закрытые пары t⁺ ≤ d, валидация 126). Прогноз = среднее ln F по 5 seeds; π и g_k — среднее по seeds. Веса и эксперты снимаются обёрткой над `WF._refit` (G не меняется).
@@ -80,7 +80,7 @@ def walk_seed(cfg: str, tab, Zg, z, seed: int, keep: bool = False) -> dict:
     """Один seed: walk_forward (G, fitted, fits) и π, g_k по строкам (NaN вне переоценённых блоков)."""
     sink = dict(keep=keep)
     with aux_patch(sink):
-        r = WF.walk_forward(tab, Zg, z, SPECS[cfg], seeds=(seed,), grid=GRIDS[cfg])
+        r = CFG1.walk(tab, Zg, z, SPECS[cfg], seeds=(seed,), grid=GRIDS[cfg])          # z — {год: z энкодера года} (боевой путь) или массив (синтетика)
     n = len(tab)
     pi, gk = np.full((n, 3), np.nan), np.full((n, 2), np.nan)
     for lo, a in ((k, v) for k, v in sink.items() if k != "keep"):
@@ -113,7 +113,7 @@ def run_cfg(cfg: str, tab: pd.DataFrame, Zg: np.ndarray, z_of, seeds=FT.SEEDS, k
 
 def run_prod(cfg: str, tab: pd.DataFrame, kind: str, load=STA.load, seeds=FT.SEEDS, years=STA.YEARS) -> tuple:
     """Боевой путь: Z = build_Z(tab), z года d энкодера `kind` (TCN-w5) того же seed."""
-    return run_cfg(cfg, tab, FE.build_Z(tab).to_numpy(float), lambda s: CFG1.z_matrix(kind, s, tab.index, load, years), seeds)
+    return run_cfg(cfg, tab, FE.build_Z(tab).to_numpy(float), lambda s: CFG1.z_by_year(kind, s, tab.index, load, years), seeds)
 
 
 def refit_block(cfg: str, tab: pd.DataFrame, kind: str, a: int, load=STA.load, seeds=FT.SEEDS, years=STA.YEARS) -> dict:
@@ -125,7 +125,7 @@ def refit_block(cfg: str, tab: pd.DataFrame, kind: str, a: int, load=STA.load, s
     for s in seeds:
         sink = {}
         with aux_patch(sink):
-            res, _ = WF._refit(CFG1.wf_inputs(tab), Zg, CFG1.z_matrix(kind, s, tab.index, load, years), SPECS[cfg], tab.index[a], a, b, (s,), GRIDS[cfg])
+            res, _ = WF._refit(CFG1.wf_inputs(tab), Zg, CFG1.z_of_year(kind, s, tab.index, tab.index[a].year, load), SPECS[cfg], tab.index[a], a, b, (s,), GRIDS[cfg])
         Gs.append(res["G"])
         sinks.append(sink.get(a))
     out = dict(G=np.mean(np.stack(Gs), axis=0))

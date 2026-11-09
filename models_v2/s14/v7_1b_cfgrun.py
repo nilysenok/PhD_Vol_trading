@@ -8,7 +8,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from models_v2.s14 import v7_0_io as IO, v7_1b_cfg as CFG, v7_1b_sta as STA, v7_1m_reg as RG
+from models_v2.s14 import v7_0_io as IO, v7_1b_cfg as CFG, v7_1b_sta as STA, v7_1m_reg as RG, v7_fx_warm as WM
 
 STATUS_1B = "DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-232, лист 1b-B (конфигурации 1–2; окна 2022+ не оценивались; конфигурация 3 не считалась)"
 CHECK_FROM = pd.Timestamp("2019-07-01")                 # переоценка для побитной сверки: первая, не раньше этой даты
@@ -56,7 +56,7 @@ def write_cfgs() -> int:
             print("конфигурация %s: уже посчитана, пропуск" % CFG.CFG_ID[k])
             continue
         t0 = time.time()
-        dfs[k] = CFG.run_kind(k, tab)
+        dfs[k] = CFG.run_kind(k, tab, warm=WM.load_warm())
         update_1b("cfg" + CFG.CFG_ID[k], save(k, dfs[k], time.time() - t0))
         print("конфигурация %s (%s): %d строк, %.0f с" % (CFG.CFG_ID[k], k, len(dfs[k]), time.time() - t0))
     ch = CFG.choose(dfs)
@@ -97,7 +97,7 @@ def check(cp: dict) -> list:
     from models_v2.s14 import v7_1m_data as DATA, v7_1m_wf as WF
     tab = DATA.load_tab()
     a = next(i for i in W6.refit_positions(tab.index, WF.FIRST_REFIT) if tab.index[i] >= CHECK_FROM)
-    got, df = CFG.refit_block("tcn", tab, a), dfs["tcn"]
+    got, df = CFG.refit_block("tcn", tab, a, warm=WM.load_warm()), dfs["tcn"]
     want = df.set_index("d")["g"].reindex(tab.index[a:a + len(got)]).to_numpy(float)
     if not np.array_equal(got, want):
         bad.append("переоценка %s (TCN): пересчёт не совпал побитно с cfg1.parquet" % tab.index[a].date())

@@ -180,15 +180,15 @@ EVIDENCE G9–G12 (ручные гейты, дирижёр, 09.11.2026 15:51):
     - число: корреляции компонент z энкодера года Y+1 и сохранённого z энкодера года Y на датах года Y (Y = 2018…2025), со знаком;
     - тест на синтетике: два «года» с переставленными или перевёрнутыми компонентами — корректор по смешанным координатам хуже, чем по согласованным;
     - тест «прежний `z_matrix` смешивает энкодеры» — красный на старом коде.
-  - EVIDENCE: pending
+  - EVIDENCE (09.11.2026 18:30 по `date`): ЗАКРЫТ. `FX_DIAG.csv` (v7_fx_diag; 80 наборов kind×Y×seed): медиана corr одноимённых компонент TCN 0,969/0,612/0,485/0,236, CNN 0,960/0,834/0,025/0,070; 0 из 80 наборов с всеми четырьмя > 0,9; 56 с отрицательным знаком; перестановка нетождественна у 44; медиана Σ|corr| по лучшей перестановке 2,87 из 4. Гипотеза подтверждена. До правки на старом коде `pytest tests/test_v2_v7_fx_z.py`: 2 failed (`test_refit_in_year_Y_all_rows_from_encoder_Y` — AssertionError: violations ≠ []; `…_pair_z_from_encoder_of_its_own_year_is_caught`), 2 passed; после правки `pytest tests/test_v2_v7_fx_*.py`: 12 passed (синтетика «смесь хуже согласованных»: `test_mixed_coordinates_are_worse_than_consistent_known_answer`).
 - **G33 — исправление.**
   - CHECK: та же; `run_v7 --stage 1b --check`.
   - EXPECT:
     - при переоценке в году Y z всех обучающих пар и прогнозов года Y — от энкодера года Y; главные компоненты — по z дат < Y;
     - мутации ловятся: «z пары от энкодера её года», «главные компоненты по датам ≥ Y», «энкодер года Y+1»;
     - пары с 2015-07 получают z.
-  - EVIDENCE: pending
-- **G34 — архив версии 1.** CHECK: `shasum` архива против CHECKPOINT `1b_v1`, `2_v1`. EXPECT: прогнозы 1–7, E0 и таблицы версии 1 в `data/regen/harj_hybrid_v7/archive_v1/` с sha256 и причиной; ключи `1b_v1`, `2_v1`. EVIDENCE: pending
+  - EVIDENCE (09.11.2026 18:30): ЗАКРЫТ. `v7_1b_cfg.z_of_year/z_by_year/year_z_patch/walk` (z энкодера года Y — на всех датах ≤ 31.12.Y); `tests/test_v2_v7_fx_z.py`: `test_refit_in_year_Y_all_rows_from_encoder_Y` (+ пары 2017 с z), мутации `test_mutation_pair_z_from_encoder_of_its_own_year_is_caught`, `test_mutation_encoder_of_year_plus_one_is_caught`, `test_pca_of_encoder_year_uses_only_dates_before_year_and_mutation_is_caught` (главные компоненты по датам ≥ Y), `test_warm_pairs_get_z_enter_training_and_output_dates_unchanged` (377 пар прогрева с 2015-07-07; 1–3). `run_v7 --stage 1b --check` rc 0: «OK: G22 90 артефактов … G24/G35 (1–3, версия 2) … G34 архив версии 1 по sha256 сошёлся».
+- **G34 — архив версии 1.** CHECK: `shasum` архива против CHECKPOINT `1b_v1`, `2_v1`. EXPECT: прогнозы 1–7, E0 и таблицы версии 1 в `data/regen/harj_hybrid_v7/archive_v1/` с sha256 и причиной; ключи `1b_v1`, `2_v1`. EVIDENCE (09.11.2026 18:30): ЗАКРЫТ. `archive_v1/{1b,2}/cfg1..7.parquet` (перенос; пример sha256 cfg1 `3dd6f38e…1dda`), `archive_v1/otchety/` (копии `1b_*.csv`, `2a_QLIKE.csv`, `LEAF1B_REPORT.md`), `archive_v1/README.md` (sha256 и причина); ключи `1b_v1`, `2_v1` с `archive_sha256`; `ALL_TRIALS.csv` +7 строк «результат v1 архивирован: дефект согласования z» (строки v1 не удалены). Проверка — `check_archive` внутри `run_v7 --stage 1b --check` (rc 0); `tests/test_v2_v7_fx_arch.py` 3 passed (подмена/пропажа файла архива ловится).
 - **G35 — пересчёт версии 2.**
   - CHECK: `run_v7 --stage 1b --check`, `--stage 2 --check`.
   - EXPECT:
@@ -198,5 +198,5 @@ EVIDENCE G9–G12 (ручные гейты, дирижёр, 09.11.2026 15:51):
     - хэши.
     
     Оценки против контролей и p-значений нет (это G28–G30).
-  - EVIDENCE: pending
-- **G36 — регрессия.** CHECK: `run_v7 --stage 0|1a|1b|2 --check`; `pytest tests/test_v2_v7_*.py`; хэш выходов до и после. EXPECT: rc 0; изменения прежних тестов — только явно разрешённые дирижёром. EVIDENCE: pending
+  - EVIDENCE (09.11.2026 18:30): ЗАКРЫТ. `python3 -m models_v2.s14.v7_fx_run` (rc 0): E0 v2 = v1 (max |Δ R²| 0 у TCN и CNN — E0 и в v1 считался по z энкодера года Y); конфигурации 1–3 (по 7 с), 4–7 (16/56/62/47 с); 2018 строк, первая дата 2018-01-03. Выбор для 3: `1b.choice3_v1` = tcn, `1b.choice3` (v2) = tcn (QLIKE 0,166189 против 0,169687), записан до счёта 3. QLIKE 2018–2021 v1 → v2: 1 0,167787→0,166189; 2 0,167950→0,169687; 3 0,166608→0,167787; 4 0,163914→0,161037; 5 0,165084→0,161774; 6 0,165197→0,161803; 7 0,166676→0,166096 (потолок, без p и контролей). Хэши — CHECKPOINT `1b.cfg1..3`, `2.cfg4..7`, ключ `fx`; `run_v7 --stage 1b --check` rc 0, `--stage 2 --check` rc 0 («OK: G27 … переоценка каждой побитно»). Отчёт: `FX_REPORT.md`.
+- **G36 — регрессия.** CHECK: `run_v7 --stage 0|1a|1b|2 --check`; `pytest tests/test_v2_v7_*.py`; хэш выходов до и после. EXPECT: rc 0; изменения прежних тестов — только явно разрешённые дирижёром. EVIDENCE (09.11.2026 18:30): ЗАКРЫТ с оговоркой. `run_v7 --stage 0|1a|1b|2 --check` — rc 0 ×4 (хэш выходов до = после у каждой проверки; перед этим `--stage 1a` перезаписал ключ `1a.code`, т. к. правлен `v7_1m_reg.py`); `pytest tests/test_v2_v7_*.py` — 293 passed (было 281 + 12 новых). Изменены прежние тесты (нужна санкция дирижёра): `test_v2_v7_1b_cfg.py` (3 теста: переписаны под `z_by_year`; «g = 0 в начале» → «g = 0 строк нет»), `test_v2_v7_2_chk.py` (1 тест: строки G = 0 подкладываются). Остальных красных нет.
