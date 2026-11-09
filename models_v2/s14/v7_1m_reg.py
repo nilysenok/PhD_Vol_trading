@@ -88,7 +88,8 @@ V2_SUFFIX, ARCH_SUFFIX = ":результат_v2", ":результат_v1_ар�
 STATUS_ARCH = "результат v1 архивирован: дефект согласования z"
 R2B_SUFFIX = ":результат_2b"                                                              # лист DX (G41): результат оценки 2b (конфигурации 1–7, версия 2); строки регистрации не меняются
 NOT_RUN_SUFFIX, STATUS_NOT_RUN = ":не_считается", "не считается: условие ложно (2.cond9)"          # лист 3 (G42): строка «9 — не считается»; регистрация не меняется
-SUFFIX_STATUS = {RESULT_SUFFIX: STATUS_RES, V2_SUFFIX: STATUS_RES, ARCH_SUFFIX: STATUS_ARCH, R2B_SUFFIX: STATUS_RES, NOT_RUN_SUFFIX: STATUS_NOT_RUN}
+NOT_RUN11_SUFFIX, STATUS_NOT_RUN11 = ":не_считается_4cond11", "не считается: условие ложно (4.cond11)"                    # лист 4a (G46): строка «11 — не считается», если 4.cond11 ложно
+SUFFIX_STATUS = {RESULT_SUFFIX: STATUS_RES, V2_SUFFIX: STATUS_RES, ARCH_SUFFIX: STATUS_ARCH, R2B_SUFFIX: STATUS_RES, NOT_RUN_SUFFIX: STATUS_NOT_RUN, NOT_RUN11_SUFFIX: STATUS_NOT_RUN11}
 
 
 def is_result(r: list, decl: dict) -> bool:

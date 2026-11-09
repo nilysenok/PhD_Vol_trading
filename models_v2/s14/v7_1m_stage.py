@@ -84,6 +84,9 @@ def run_configs(stage: str, config: str | None, check: bool) -> int:
     if stage == "3":                                                                          # лист 3: счёт конфигурации 8 (`v7_3_run`); 9 бегун отказывает по условию
         from models_v2.s14 import v7_3_run as S3
         S3.connect(RUNNERS)
+    if stage == "4":                                                                          # лист 4a: счёт конфигурации 10 (`v7_4_run`); 11 бегун отказывает, пока в CHECKPOINT нет `cond_11 = true`
+        from models_v2.s14 import v7_4_run as S4
+        S4.connect(RUNNERS)
     ok, refused = [], []
     for cfg in ids:
         try:
@@ -96,6 +99,9 @@ def run_configs(stage: str, config: str | None, check: bool) -> int:
         return S2.check_run(ok)
     if check and stage == "3" and S3.ready(RG.CHECKPOINT):                                    # 8 посчитана: проверка читает файлы и ничего не пишет (отказ 9 — ожидаемый)
         return S3.check_run(ok, refused)
+    if check and stage == "4" and S4.ready(RG.CHECKPOINT):                                    # 10 посчитана: проверка читает файлы и ничего не пишет (отказ 11 — ожидаемый)
+        from models_v2.s14 import v7_4_chk as CK4
+        return CK4.check_run(ok, refused)
     if check:
         print("%s: допущены реестром %s, отказано %s (--check: данные не читались, ничего не записано)" % ("OK" if not refused else "ОТКАЗ", ok, refused))
     elif ok and any(c not in RUNNERS for c in ok):
@@ -104,6 +110,8 @@ def run_configs(stage: str, config: str | None, check: bool) -> int:
     else:
         for cfg in ok:
             RUNNERS[cfg]()
+    if stage == "4" and not config and refused == ["11"] and S4.ready(RG.CHECKPOINT):          # ожидаемый отказ 11 (условная конфигурация без `cond_11`)
+        return 0
     return 0 if stage == "3" and not config and S3.refusal_ok(refused, RG.CHECKPOINT) else 3 if refused else 0
 
 
