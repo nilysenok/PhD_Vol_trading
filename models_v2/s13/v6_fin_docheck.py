@@ -7,7 +7,7 @@ import re
 
 import pandas as pd
 
-from models_v2.s13 import v6_fin_asm as A, v6_fin_doc as W, v6_fin_text as TX
+from models_v2.s13 import v6_fin_asm as A, v6_fin_doc as W, v6_fin_text as TX, v6_fin_z1 as Z1
 
 DEC = re.compile(r"\d+,\d+")
 PARTS = ["Результат", "Что исследовано в V1–V5", "Чем V6 отличается", "Формулы", "Полная таблица конфигураций", "QLIKE SBER по годам", "Сравнение с HAR-J", "Абляции", "Стресс-проверки",
@@ -38,6 +38,7 @@ def check_doc(t: dict | None = None, doc: str | None = None) -> list:
         out.append("G52: первая строка / статус")
     heads = [ln for ln in doc.splitlines() if ln.startswith("## ")]
     out += ["G52: нет раздела %d «%s»" % (i + 1, p) for i, p in enumerate(PARTS) if len(heads) <= i or p not in heads[i]]
+    out += Z1.label_bad(doc)
     if "bps" in doc.lower():
         out.append("G52: bps в документе (владельцу — проценты)")
     return out
