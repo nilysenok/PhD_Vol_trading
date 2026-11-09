@@ -560,3 +560,10 @@
   - хэш выходов до и после равен;
   - существующие тесты не менялись.
   EVIDENCE: 09.11.2026, `run_v6 --stage 0, 1a, 1b, 2, 3, 4, 5, 6, FIN --check` и `run_v5 --stage 0|GS|SP|FIN --check`, `run_v5_dx --stage DX1 --check` — все 14 rc 0; хэш выходов V6 до и после равен (52871b5d…), V5 равен (e4e6e115…); `pytest tests/test_v2_v5_*.py tests/test_v2_v6_*.py` — 356 тестов собрано (327 прежних + 29 новых), rc 0; снимок sha256 всех выходов V6/V5 до и после листа: изменён только `CHECKPOINT.json` (ключ FIN добавлен, в ключах 1a…6 заменено `code_hash_v6_1`), добавлены FIN_*.csv и REPRODUCTION_V6.md; существующие тесты не менялись. ЗАКРЫТ
+
+## Лист FIN2 (замечание З-1)
+
+- **G56 — раздел 12 итога без «Подтверждено» при p Холма ≥ 0,05.**
+  CHECK: `python3 -W ignore -m models_v2.s13.run_v6 --stage FIN --check`; `python3 -W ignore -m pytest tests/test_v2_v6_fin_doc.py tests/test_v2_v6_fin_tabs.py tests/test_v2_v6_fin_iso.py tests/test_v2_v6_fin2_doc.py`; `grep -n Подтверждено docs/otchety/HARJ_HYBRID_SBER_V6_FINAL.md`
+  EXPECT: rc 0, ИТОГ OK, все passed; нет строк «Подтверждено» про результаты с p Холма ≥ 0,05; 0 расхождений чисел.
+  EVIDENCE: 09.11.2026, `--stage FIN` пересобрал документ; таблицы FIN_*.csv и *_INFO.csv побайтно равны прежним (агрегатный sha256 74143aef… до и после); `--stage FIN --check` rc 0, ИТОГ OK, чисел сверено 4215, расхождений 0; pytest четырёх файлов — 32 passed (29 прежних + 3 новых; до пересборки новые падали); grep: единственное вхождение — строка 917 раздела 13 (описание правки), результатов со словом «Подтверждено» нет. ЗАКРЫТ
