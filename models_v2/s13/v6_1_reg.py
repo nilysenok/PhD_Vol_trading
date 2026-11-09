@@ -23,7 +23,11 @@ CONFIGS = {"A0": dict(direction="A0_baseline", features=["S"], learner="LIN", ba
            "C1": dict(direction="C_measurement_uncertainty", features=["S", "Q"], learner="LIN", base_rule22="A0", source=PLAN + " п. 4 (C1), 2.2", kind="trial"),
            "C2": dict(direction="C_measurement_uncertainty", features=["S", "Q"], learner="GBM", base_rule22="A0 и C1", source=PLAN + " п. 4 (C2), 2.2", kind="trial"),
            "C3": dict(direction="C_measurement_uncertainty", features=["S", "Q", "u*(s1,s2,s3)"], learner="LIN", base_rule22="C1 (и A0)", source=PLAN + " п. 4 (C3), 2.2", kind="trial"),
-           "C4": dict(direction="C_measurement_uncertainty", features=["S", "Q", "u*(s1,s2,s3)"], learner="GBM", base_rule22="C3 и A0 (условная: C1, C2 или C3 несёт новую информацию против A0)", source=PLAN + " п. 4 (C4), 2.2", kind="trial")}
+           "C4": dict(direction="C_measurement_uncertainty", features=["S", "Q", "u*(s1,s2,s3)"], learner="GBM", base_rule22="C3 и A0 (условная: C1, C2 или C3 несёт новую информацию против A0)", source=PLAN + " п. 4 (C4), 2.2", kind="trial"),
+           # лист 3: строки конфигураций E1–E3 (набор признаков, обучатель, база правила 2.2); движок не менялся
+           "E1": dict(direction="BE_time_reversal_shock_recovery", features=["S", "R"], learner="LIN", base_rule22="A0", source=PLAN + " п. 5 (E1), 2.2", kind="trial"),
+           "E2": dict(direction="BE_time_reversal_shock_recovery", features=["S", "R"], learner="GBM", base_rule22="A0 и E1", source=PLAN + " п. 5 (E2), 2.2", kind="trial"),
+           "E3": dict(direction="BE_time_reversal_shock_recovery", features=["S", "R", "Sigma"], learner="LIN", base_rule22="A1 и E1 (условная: E1 или E2 и A1 или A2 несут новую информацию против A0)", source=PLAN + " п. 5 (E3), 2.2", kind="trial")}
 DECLARED = ["A0", "A1", "A2", "A3", "C1", "C2", "C3", "C4", "E1", "E2", "E3", "D1", "D2", "D3", "CB1", "CB2", "F1", "F2"]      # 18 id плана, п. 8
 CTRL = ["K1", "K2", "K3", "K8", "V4:NTP2"]
 
