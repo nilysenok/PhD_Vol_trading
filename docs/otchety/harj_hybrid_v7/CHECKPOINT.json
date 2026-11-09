@@ -21,7 +21,7 @@
  "1a": {
   "N_holm": 733,
   "N_wide": 3166,
-  "code": "8d32b8fc27864a4f",
+  "code": "d4ba6ed7298b77fd",
   "configs_computed": 0,
   "first_eval": "2018-01-03",
   "first_fit_stage_b": "2019-01-01",
@@ -73,7 +73,7 @@
    4
   ],
   "trainings_on_sber": 0,
-  "written_at": "2026-11-09T17:38:10+03:00"
+  "written_at": "2026-11-09T18:10:44+03:00"
  },
  "1b": {
   "E0": {
@@ -1490,6 +1490,190 @@
     2025,
     2026
    ]
+  }
+ },
+ "2": {
+  "cfg4": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/2/cfg4.parquet",
+   "first": "2018-01-03",
+   "fitted_share": 0.9063429137760158,
+   "grid": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     1.0,
+     0.0
+    ]
+   ],
+   "lam_lb": "не применяется (нет маршрутизатора)",
+   "lam_selected": {
+    "0.1/0": 290,
+    "1/0": 150
+   },
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 76,
+   "qlike_2018_2021": 0.1639144135066518,
+   "router": "—",
+   "seconds": 14.1,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "f815436d6639dbe452bfb41db0d594efc68bc0322fa2df45c4082458db15b689",
+   "sha256_file": "8ae89529a9faf6e968850aa165a4ec599046d8f306a66d4a13f821fd0e01e9d0",
+   "window": 5
+  },
+  "cfg5": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/2/cfg5.parquet",
+   "first": "2018-01-03",
+   "fitted_share": 0.9063429137760158,
+   "grid": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.1
+    ],
+    [
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.1
+    ]
+   ],
+   "lam_lb": "в решётке",
+   "lam_selected": {
+    "0.1/0": 161,
+    "0.1/0.1": 135,
+    "1/0": 81,
+    "1/0.1": 63
+   },
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 61,
+   "qlike_2018_2021": 0.1650836204121811,
+   "router": "A",
+   "seconds": 44.4,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "7be34d9dd21197ebc50a56f473eca02a8ef71c1105b639ddd568ef8abb05db43",
+   "sha256_file": "4ccf44668e13edb3415ff55c6a0d142e19b72b597874fdbe9d7b3acc7804b3b9",
+   "window": 5
+  },
+  "cfg6": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/2/cfg6.parquet",
+   "first": "2018-01-03",
+   "fitted_share": 0.9063429137760158,
+   "grid": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.1
+    ],
+    [
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.1
+    ]
+   ],
+   "lam_lb": "в решётке",
+   "lam_selected": {
+    "0.1/0": 159,
+    "0.1/0.1": 154,
+    "1/0": 73,
+    "1/0.1": 54
+   },
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 77,
+   "qlike_2018_2021": 0.16519688168439298,
+   "router": "B",
+   "seconds": 48.3,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "f6aa73ccba690cdb048e31adaf4bbd691f8eec9436fa59003071e5310234965a",
+   "sha256_file": "8569ca60e52bd5dbec778e978b61936557bbc3d1495134d22f67ddcc448a86af",
+   "window": 5
+  },
+  "cfg7": {
+   "encoder": "tcn",
+   "file": "data/regen/harj_hybrid_v7/2/cfg7.parquet",
+   "first": "2018-01-03",
+   "fitted_share": 0.9063429137760158,
+   "grid": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.1
+    ],
+    [
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.1
+    ]
+   ],
+   "lam_lb": "в решётке",
+   "lam_selected": {
+    "0.1/0": 174,
+    "0.1/0.1": 101,
+    "1/0": 83,
+    "1/0.1": 82
+   },
+   "last": "2026-02-26",
+   "n_dates_2018_2021": 1010,
+   "n_rows": 2018,
+   "params": 41,
+   "qlike_2018_2021": 0.16667562415084014,
+   "router": "C",
+   "seconds": 34.9,
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "sha256_content": "5c79538d1eb7431c4f6b7e734a61deb898aecb06c87adba2560275a1ad892630",
+   "sha256_file": "2969bec593b7fd407433008a7a9d3ffa88239a3bca850826ee78c18c3bd8a94e",
+   "window": 5
   }
  }
 }

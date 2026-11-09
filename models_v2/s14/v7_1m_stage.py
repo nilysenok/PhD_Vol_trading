@@ -78,6 +78,9 @@ def write_1a(cp_path: Path | None = None, trials: Path | None = None) -> str:
 
 def run_configs(stage: str, config: str | None, check: bool) -> int:
     ids = [config] if config else RG.STAGE_CONFIGS[stage]
+    if stage == "2":                                                                          # лист 2a: счёт конфигураций 4–7 (`v7_2_run`); уже стоящие обработчики не заменяются
+        from models_v2.s14 import v7_2_run as S2
+        S2.connect(RUNNERS)
     ok, refused = [], []
     for cfg in ids:
         try:
@@ -86,6 +89,8 @@ def run_configs(stage: str, config: str | None, check: bool) -> int:
         except RG.Refusal as e:
             refused.append(cfg)
             print("ОТКАЗ конфигурации %s: %s" % (cfg, e))
+    if check and stage == "2" and not refused:                                                # 2a: проверка читает данные SBER и файлы, ничего не пишет
+        return S2.check_run(ok)
     if check:
         print("%s: допущены реестром %s, отказано %s (--check: данные не читались, ничего не записано)" % ("OK" if not refused else "ОТКАЗ", ok, refused))
     elif ok and any(c not in RUNNERS for c in ok):
