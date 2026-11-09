@@ -55,6 +55,7 @@ def verdicts(n: dict) -> dict:
     return dict(a=va, b=vb, c=vc, d=vd)
 
 
+NOTE = "по правилу листа DX, объявленному до счёта; одна бумага; контроль «константа» добавлен после первого просмотра"
 NAMES = dict(a="(а) недостаточная выразительность энкодера", b="(б) отсутствие предсказуемого сигнала", c="(в) избыточная регуляризация", d="(г) дублирование информации HAR-J и бустингов")
 
 
@@ -74,14 +75,15 @@ def md(df: pd.DataFrame, cols=None, fmt="%.4f") -> str:
 def render(t: dict, status: str) -> str:
     n = numbers(t)
     v = verdicts(n)
-    L = ["# DX — причины отсутствия новой информации (V7, SBER, h = 1)", "", "Статус: " + status, "", head_line(v), "",
+    note = lambda k: " [%s]" % NOTE if k in ("b", "d") and v[k].startswith("подтверждена") else ""   # замечание З-2 проверки
+    L = ["# DX — причины отсутствия новой информации (V7, SBER, h = 1)", "", "Статус: " + status, "", head_line(v) + (" Пометка к «подтверждена» в (б) и (г): %s." % NOTE if note("b") or note("d") else ""), "",
          "Числа — из таблиц `DX_*.csv` (генератор `v7_dx_rep.render`). Сравнения «в выборке» — на обучающих парах; «вне выборки» — сохранённые прогнозы; верхняя оценка — ex post, не для отбора. Окно выводов 2018–2021; 2022+ — только справочно.", ""]
     L += ["## (а) Энкодер: %s" % v["a"], "",
           "- Доля ячеек (kind, год, seed), где энкодер лучше всех трёх наивных на отложенных 10 %%: %.3f (правило: ≥ %.1f — отброшена, ≤ %.1f — подтверждена)." % (n["enc_share_beats"], A_HI, A_LO),
           "- Медиана MSE энкодера / лучшего наивного: %.3f; медиана доли дисперсии 4 компонент из 16: %.3f; эффективный ранг (медиана): %.2f; мёртвых осей (макс.): %d." % (n["enc_mse_ratio_best_naive"], n["enc_share_top4_median"], n["enc_eff_rank_median"], n["enc_dead_axes_max"]),
           "- Средняя |corr| компонент z между seeds одного года: с выравниванием %.3f, без выравнивания %.3f." % (n["stab_aligned_mean"], n["stab_unaligned_mean"]), "",
           md(t["ENC"].groupby(["kind", "year"], as_index=False)[["mse_enc", "mse_mean", "mse_ewma", "mse_profile", "mse_const", "share_top4", "eff_rank"]].mean()), ""]
-    L += ["## (б) Сигнал: %s" % v["b"], "",
+    L += ["## (б) Сигнал: %s%s" % (v["b"], note("b")), "",
           "- Снижение QLIKE к H, %% (2018–2021, средние по годам Y → Y+1): в выборке %s; вне выборки %s." % (_d(n["sig_in"]), _d(n["sig_out"])),
           "- Контроль без модели «константа» (F = H·среднее rv/H закрытых пар; добавлен после первого просмотра, правила вывода не менялись), %%: в выборке %s; вне выборки %s." % (_d(n["const_in"]), _d(n["const_out"])),
           "- Частный R² задним числом (z энкодера 2021, гребень α = %g): %.4f; R²(z) %.4f (ex post, не для отбора)." % (n["expost_best_alpha"], n["expost_partial_r2_best"], n["expost_r2_z_best"]), "",
@@ -90,7 +92,7 @@ def render(t: dict, status: str) -> str:
           "- Снижение QLIKE в выборке по λ_g (среднее по конфигурациям 1, 4 и датам 2019-01, 2020-01, 2021-01), %%: %s. Решётка плана воспроизводит выбор побитно во всех %d ячейках: %s." % (_d(n["sweep_red"]), len(t["LAMSWEEP"]) // 4, bool(t["LAMSWEEP"]["lattice_repro"].all())),
           "- Доля выборов минимального λ_g = 0,1 (1, 4, 6): %.3f; доля |G| > 0,9 по seeds (макс. по конфигурациям и годам): %.4f; медиана средних |G|: %.4f." % (n["lam_share_lowest"], n["g_share_gt09_seed_max"], n["g_mean_abs_median"]), "",
           md(t["LAMSWEEP"], ["cfg", "date", "lam_g", "red_in_pct", "val_q_mean", "mean_epochs"]), "", md(t["LAM"].query("year == 'all'"), ["cfg", "lam_g", "lam_lb", "n", "share", "cp_match"]), "", md(t["G"], ["cfg", "year", "mean_abs_g", "q90", "q99", "share_gt09_avg", "share_gt09_seed"]), ""]
-    L += ["## (г) Дублирование: %s" % v["d"], "",
+    L += ["## (г) Дублирование: %s%s" % (v["d"], note("d")), "",
           "- R² вне выборки PIT-регрессии ln(RV/K2) на z: 2018–2021 %.4f; 2018–2025 %.4f. R² компонент z на четырёх контролях (2018–2021): %.3f." % (n["pit_r2_dev"], n["pit_r2_all"], n["z_r2_on_controls"]),
           "- Разрыв к K2 (QLIKE, плюс = хуже K2), 2018–2025: конфигурация 4 %.4f, 6 %.4f; без 2022: %.4f и %.4f; доля 2022 в разрыве: %.2f и %.2f." % (n["gap_total"]["4"], n["gap_total"]["6"], n["gap_without_2022"]["4"], n["gap_without_2022"]["6"], n["gap_share_2022"]["4"], n["gap_share_2022"]["6"]), "",
           md(t["PIT"].groupby("year_t_plus", as_index=False)["r2_oos"].mean()), "", md(t["PCORR"].query("year >= 2018 and year <= 2021").groupby("var", as_index=False).mean(numeric_only=True).drop(columns=["year", "seed"])), "", md(t["GAP"], ["cfg", "year", "n", "delta_vs_K2", "contribution", "share_of_total"]), ""]

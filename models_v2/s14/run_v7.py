@@ -112,13 +112,16 @@ def check_sequences(store: dict) -> list:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["0", "1a", "1b", "2", "3", "4", "DX"])
+    ap.add_argument("--stage", required=True, choices=["0", "1a", "1b", "2", "3", "4", "DX", "FIN"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--config", default=None, help="id конфигурации реестра (стадии 1b–4); по умолчанию — все конфигурации стадии")
     args = ap.parse_args(argv)
     if args.stage == "1b":                                  # лист 1b-A: Stage A и E0 (конфигурации 1–3 — листы 1b-B/C)
         from models_v2.s14 import v7_1b_stage as S1B
         return S1B.run(args.check)
+    if args.stage == "FIN":                              # лист FIN: итог из сохранённых прогнозов и таблиц (`v7_fin_stage`), конфигураций 0
+        from models_v2.s14 import v7_fin_stage as FS
+        return FS.run(args.check)
     if args.stage == "DX":                               # лист DX: диагностика причин (`v7_dx_run`), конфигураций 0
         from models_v2.s14 import v7_dx_run as DXR
         return DXR.run(args.check)

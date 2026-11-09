@@ -7440,7 +7440,7 @@
   }
  },
  "DX": {
-  "code": "3463066039bded07",
+  "code": "420677af643b71ed",
   "n_configurations": 0,
   "new_forecasts": 0,
   "numbers": {
@@ -7519,6 +7519,64 @@
    "c": "отброшена",
    "d": "подтверждена"
   }
+ },
+ "FIN": {
+  "code_hash_v7_fin": "b385bca2db36b805",
+  "code_version": "v7.fin",
+  "computed": 9,
+  "configs_spent_by_FIN": 0,
+  "doc_sha": "ec771598229d4dda",
+  "inputs_hash": "22e87c222e2df0b2",
+  "n_dates": 2018,
+  "not_run_by_condition": [
+   9,
+   11
+  ],
+  "note": "лист FIN: потолок, не OOS",
+  "other_keys_sha": "99b7e9e8f6c7717e",
+  "places": 11,
+  "program": "HAR-J Hybrid V7 (Ж-232), SBER, h=1, лист FIN",
+  "reserve_used": false,
+  "series": 18,
+  "tables": [
+   "FIN_ALL",
+   "FIN_YEARS",
+   "FIN_TESTS",
+   "FIN_MCS",
+   "FIN_STRESS",
+   "FIN_AFTER",
+   "FIN_PAIRS",
+   "FIN_GO",
+   "FIN_WEIGHTS",
+   "FIN_SPEC",
+   "FIN_V1",
+   "FIN_LAMSWEEP",
+   "FIN_DATA",
+   "FIN_CHANNELS",
+   "FIN_DX",
+   "FIN_REGISTRY",
+   "FIN_DEPARTURES"
+  ],
+  "tables_sha": {
+   "FIN_AFTER": "4cf9c59468baee2f",
+   "FIN_ALL": "8e728876facb0566",
+   "FIN_CHANNELS": "cdb506bab3c35788",
+   "FIN_DATA": "ab18eafd9e901840",
+   "FIN_DEPARTURES": "78d6b53cc6bfd8ca",
+   "FIN_DX": "953f5576b980abb8",
+   "FIN_GO": "960df0306fde3ed5",
+   "FIN_LAMSWEEP": "fda0cfa07106b22d",
+   "FIN_MCS": "28bf242aecd23ba1",
+   "FIN_PAIRS": "01d9e4776631b26c",
+   "FIN_REGISTRY": "4a8c53e09244ff3d",
+   "FIN_SPEC": "a5350181aede7db7",
+   "FIN_STRESS": "a8efd25499f0ccb0",
+   "FIN_TESTS": "11358132a5e52daa",
+   "FIN_V1": "d1036523b44832c1",
+   "FIN_WEIGHTS": "329005fa8cdfa84f",
+   "FIN_YEARS": "d9cfd0fb1f74d5fb"
+  },
+  "written_at": "2026-11-09 22:10:32"
  },
  "fx": {
   "choice3_v1": "tcn",
