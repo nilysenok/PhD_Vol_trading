@@ -18,7 +18,12 @@ CONFIGS = {"A0": dict(direction="A0_baseline", features=["S"], learner="LIN", ba
            # лист 1b: строки конфигураций A1–A3 (набор признаков, обучатель, база правила 2.2); движок не менялся
            "A1": dict(direction="A_path_signature", features=["S", "Sigma"], learner="LIN", base_rule22="A0", source=PLAN + " п. 3 (A1), 2.2", kind="trial"),
            "A2": dict(direction="A_path_signature", features=["S", "Sigma"], learner="GBM", base_rule22="A0 и A1", source=PLAN + " п. 3 (A2), 2.2", kind="trial"),
-           "A3": dict(direction="A_path_signature", features=["S", "Sigma", "Sigma3"], learner="LIN", base_rule22="A1 (условная: A1 или A2 несёт новую информацию против A0)", source=PLAN + " п. 3 (A3), 2.2", kind="trial")}
+           "A3": dict(direction="A_path_signature", features=["S", "Sigma", "Sigma3"], learner="LIN", base_rule22="A1 (условная: A1 или A2 несёт новую информацию против A0)", source=PLAN + " п. 3 (A3), 2.2", kind="trial"),
+           # лист 2: строки конфигураций C1–C4 (набор признаков, обучатель, база правила 2.2); движок не менялся
+           "C1": dict(direction="C_measurement_uncertainty", features=["S", "Q"], learner="LIN", base_rule22="A0", source=PLAN + " п. 4 (C1), 2.2", kind="trial"),
+           "C2": dict(direction="C_measurement_uncertainty", features=["S", "Q"], learner="GBM", base_rule22="A0 и C1", source=PLAN + " п. 4 (C2), 2.2", kind="trial"),
+           "C3": dict(direction="C_measurement_uncertainty", features=["S", "Q", "u*(s1,s2,s3)"], learner="LIN", base_rule22="C1 (и A0)", source=PLAN + " п. 4 (C3), 2.2", kind="trial"),
+           "C4": dict(direction="C_measurement_uncertainty", features=["S", "Q", "u*(s1,s2,s3)"], learner="GBM", base_rule22="C3 и A0 (условная: C1, C2 или C3 несёт новую информацию против A0)", source=PLAN + " п. 4 (C4), 2.2", kind="trial")}
 DECLARED = ["A0", "A1", "A2", "A3", "C1", "C2", "C3", "C4", "E1", "E2", "E3", "D1", "D2", "D3", "CB1", "CB2", "F1", "F2"]      # 18 id плана, п. 8
 CTRL = ["K1", "K2", "K3", "K8", "V4:NTP2"]
 
@@ -60,8 +65,12 @@ def write_trials(ids: list) -> None:
     CP0.ALL_TRIALS.write_text(trial_text(ids), encoding="utf-8")
 
 
-def trials_ok(ids: list) -> bool:
-    return CP0.ALL_TRIALS.exists() and CP0.ALL_TRIALS.read_text(encoding="utf-8") == trial_text(ids)
+def trials_ok(ids: list, exact: bool = False) -> bool:
+    """exact — файл = строки ids; иначе — строки ids стоят первыми, дальше только строки следующих листов из списка плана (лист 2 дописывает C1–C4 после A0–A3)."""
+    if not CP0.ALL_TRIALS.exists():
+        return False
+    txt = CP0.ALL_TRIALS.read_text(encoding="utf-8")
+    return txt == trial_text(ids) if exact else txt.startswith(trial_text(ids)) and not trials_bad(txt)
 
 
 def trials_bad(text: str, ids_ok=DECLARED) -> list:

@@ -4,13 +4,14 @@
   python3 -W ignore -m models_v2.s13.run_v6 --digest-v5        # суммарный хэш выходов V5 (G9: до и после проверок V5)
   python3 -W ignore -m models_v2.s13.run_v6 --stage 1a [--check]   # лист 1a: A0 = S + LIN (записать / только проверить)
   python3 -W ignore -m models_v2.s13.run_v6 --stage 1b [--check]   # лист 1b: A1, A2, A3 по правилу 2.2, DX-A (записать / только проверить)
+  python3 -W ignore -m models_v2.s13.run_v6 --stage 2 [--check]    # лист 2: C1, C2, C3, C4 по правилу 2.2 (записать / только проверить)
 Стадия 0 моделей не обучает, конфигурации не расходует; стадия 1a расходует одну (A0); стадия 1b — A1, A2 и (по правилу) A3."""
 from __future__ import annotations
 
 import argparse
 import sys
 
-from models_v2.s13 import v6_0_io as IO, v6_0_stage as ST, v6_1_ev as EV1, v6_1_stage as S1, v6_1b_dxa as DXA, v6_1b_ev as EV1B, v6_1b_io as IO1B, v6_1b_stage as S1B
+from models_v2.s13 import v6_0_io as IO, v6_0_stage as ST, v6_1_ev as EV1, v6_1_stage as S1, v6_1b_dxa as DXA, v6_1b_ev as EV1B, v6_1b_io as IO1B, v6_1b_stage as S1B, v6_2_ev as EV2, v6_2_io as IO2, v6_2_stage as S2
 
 
 def evidence(r: dict) -> list:
@@ -78,9 +79,28 @@ def main_1b(check: bool, before: str) -> int:
     return 1 if bad else 0
 
 
+def main_2(check: bool, before: str) -> int:
+    """Стадия 2 (лист 2): C1, C2, C3 и C4 по правилу 2.2 (Measurement Uncertainty)."""
+    r = S2.compute()
+    if not check:
+        IO2.write(r)
+        print("стадия 2 записана; хэш выходов %s; счёт %.1f с" % (IO.outputs_digest(), r["seconds"]))
+        return 0
+    bad = IO2.check(r)
+    after = IO.outputs_digest()
+    if before != after:
+        bad.append("--check изменил файлы: хэш выходов до %s, после %s" % (before, after))
+    print("\n".join(EV2.evidence(r)))
+    print("счёт одного полного прогона: %.1f с" % r["seconds"])
+    print("хэш выходов до = после: %s (%s)" % (before == after, after[:16]))
+    print("\n".join(bad) if bad else "G24–G28: все проверки пройдены")
+    print("ИТОГ:", "FAIL" if bad else "OK")
+    return 1 if bad else 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=["0", "1a", "1b"])
+    ap.add_argument("--stage", choices=["0", "1a", "1b", "2"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--digest-v5", action="store_true")
     a = ap.parse_args(argv)
@@ -94,6 +114,8 @@ def main(argv=None) -> int:
         return main_1a(a.check, before)
     if a.stage == "1b":
         return main_1b(a.check, before)
+    if a.stage == "2":
+        return main_2(a.check, before)
     r = ST.compute()
     if not a.check:
         ST.write(r)

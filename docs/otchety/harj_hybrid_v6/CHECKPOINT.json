@@ -208,7 +208,7 @@
   "N": 722,
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
-  "code_hash_v6_1": "df4b4e86e966fe2d",
+  "code_hash_v6_1": "1de8c0372f25b66e",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.1a",
   "k1_sha256": "4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9",
@@ -303,7 +303,7 @@
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
   "code_hash_v6_1b": "9e98000a9f8da3ab",
-  "code_hash_v6_1": "df4b4e86e966fe2d",
+  "code_hash_v6_1": "1de8c0372f25b66e",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.1b",
   "qlike": {
@@ -650,5 +650,362 @@
   "note": "лист 1b: потолок, не OOS",
   "A3": "посчитана по правилу 2.2",
   "written_at": "2026-11-09 02:30:44"
+ },
+ "2": {
+  "program": "HAR-J Hybrid V6 (Ж-227), SBER, h=1, лист 2",
+  "configs": [
+   "A0",
+   "A1",
+   "A2",
+   "A3",
+   "C1",
+   "C2",
+   "C3",
+   "C4"
+  ],
+  "used": 8,
+  "budget": 18,
+  "N": 722,
+  "N_wide": 3122,
+  "inputs_hash": "00023d4b18d0b46f",
+  "code_hash_v6_2": "e48445c8b406f3ac",
+  "code_hash_v6_1": "1de8c0372f25b66e",
+  "code_hash_v6_0": "6356ebb503e205f6",
+  "code_version": "v6.2",
+  "qlike": {
+   "A0": {
+    "all": 0.23004439490023734,
+    "y2017_2021": 0.1537224669052595
+   },
+   "A1": {
+    "all": 0.23353548093206974,
+    "y2017_2021": 0.15321112327136643
+   },
+   "A2": {
+    "all": 0.21996937284914447,
+    "y2017_2021": 0.1452950450829126
+   },
+   "A3": {
+    "all": 0.23014351625960414,
+    "y2017_2021": 0.15215078156890072
+   },
+   "C1": {
+    "all": 0.23158456520578244,
+    "y2017_2021": 0.15478853088634975
+   },
+   "C2": {
+    "all": 0.21837273506352678,
+    "y2017_2021": 0.14922518252055325
+   },
+   "C3": {
+    "all": 0.23171830605106095,
+    "y2017_2021": 0.15513115971382646
+   },
+   "C4": {
+    "all": 0.21817815853750938,
+    "y2017_2021": 0.14980364123527296
+   }
+  },
+  "f_sha": {
+   "C1": "74f0efb1d2a94a39",
+   "C2": "ab2f6c2762d77c6c",
+   "C3": "53fb7f1f60738c77",
+   "C4": "e1352e5cec2f2af8"
+  },
+  "f_sha_prev": {
+   "A1": "e4e5d29c191a50fa",
+   "A2": "8902e2f98f760024",
+   "A3": "4d65a9e7f30cf027"
+  },
+  "q_sha": "0b3c89de08569fe7",
+  "n_dates": 2271,
+  "u_groups": {
+   "n_high": 423,
+   "n_valid": 2270
+  },
+  "new_information": [
+   {
+    "pair": "C1 vs A0",
+    "delta_qlike": 0.0010660639810902428,
+    "dm_p_one": 0.832625476822386,
+    "years_neg": 2,
+    "new_information": false
+   },
+   {
+    "pair": "C2 vs A0",
+    "delta_qlike": -0.004497284384706257,
+    "dm_p_one": 0.010082182731032483,
+    "years_neg": 5,
+    "new_information": true
+   },
+   {
+    "pair": "C3 vs A0",
+    "delta_qlike": 0.0014086928085669526,
+    "dm_p_one": 0.8560419169413752,
+    "years_neg": 1,
+    "new_information": false
+   },
+   {
+    "pair": "C2 vs C1",
+    "delta_qlike": -0.0055633483657965,
+    "dm_p_one": 0.0032869421688204513,
+    "years_neg": 5,
+    "new_information": true
+   },
+   {
+    "pair": "C3 vs C1",
+    "delta_qlike": 0.00034262882747670975,
+    "dm_p_one": 0.7180150438212423,
+    "years_neg": 1,
+    "new_information": false
+   },
+   {
+    "pair": "C4 vs C3",
+    "delta_qlike": -0.005327518478553506,
+    "dm_p_one": 0.0066954033651546035,
+    "years_neg": 5,
+    "new_information": true
+   },
+   {
+    "pair": "C4 vs A0",
+    "delta_qlike": -0.003918825669986553,
+    "dm_p_one": 0.027510002129858272,
+    "years_neg": 4,
+    "new_information": true
+   }
+  ],
+  "go": {
+   "C1": [
+    {
+     "cond": 1,
+     "value": 0.16931495792447415,
+     "passed": false
+    },
+    {
+     "cond": 2,
+     "value": 0.21901160554880406,
+     "passed": false
+    },
+    {
+     "cond": 3,
+     "value": 0.13116980257869287,
+     "passed": false
+    },
+    {
+     "cond": 4,
+     "value": 0.12296973883216583,
+     "passed": false
+    },
+    {
+     "cond": 5,
+     "value": 2.0,
+     "passed": false
+    }
+   ],
+   "C2": [
+    {
+     "cond": 1,
+     "value": 0.16542852309543526,
+     "passed": false
+    },
+    {
+     "cond": 2,
+     "value": 0.21335606794279158,
+     "passed": false
+    },
+    {
+     "cond": 3,
+     "value": 0.12526017633971126,
+     "passed": false
+    },
+    {
+     "cond": 4,
+     "value": 0.11658208190043884,
+     "passed": false
+    },
+    {
+     "cond": 5,
+     "value": 2.0,
+     "passed": false
+    }
+   ],
+   "C3": [
+    {
+     "cond": 1,
+     "value": 0.1694825296752876,
+     "passed": false
+    },
+    {
+     "cond": 2,
+     "value": 0.21893616099139923,
+     "passed": false
+    },
+    {
+     "cond": 3,
+     "value": 0.13142239890284121,
+     "passed": false
+    },
+    {
+     "cond": 4,
+     "value": 0.12110448129303555,
+     "passed": false
+    },
+    {
+     "cond": 5,
+     "value": 2.0,
+     "passed": false
+    }
+   ],
+   "C4": [
+    {
+     "cond": 1,
+     "value": 0.1653627928637097,
+     "passed": false
+    },
+    {
+     "cond": 2,
+     "value": 0.21477913361782583,
+     "passed": false
+    },
+    {
+     "cond": 3,
+     "value": 0.12473146119070845,
+     "passed": false
+    },
+    {
+     "cond": 4,
+     "value": 0.11473342607899575,
+     "passed": false
+    },
+    {
+     "cond": 5,
+     "value": 3.0,
+     "passed": true
+    }
+   ]
+  },
+  "coef_stability": {
+   "C1": {
+    "q1": {
+     "mean": -0.018280279770123573,
+     "sd": 0.04102171773639527,
+     "share_same_sign": 0.5229357798165137,
+     "stable": false
+    },
+    "q2": {
+     "mean": 0.03816967066879449,
+     "sd": 0.032654197984879715,
+     "share_same_sign": 1.0,
+     "stable": true
+    },
+    "q3": {
+     "mean": -0.007723808653452471,
+     "sd": 0.007839344114507778,
+     "share_same_sign": 0.8532110091743119,
+     "stable": false
+    },
+    "q4": {
+     "mean": 0.014626298145316314,
+     "sd": 0.0149451896635384,
+     "share_same_sign": 0.8623853211009175,
+     "stable": false
+    },
+    "q5": {
+     "mean": -0.0006591168275572993,
+     "sd": 0.007686861112567325,
+     "share_same_sign": 0.48623853211009177,
+     "stable": false
+    },
+    "q6": {
+     "mean": 0.006336834513153134,
+     "sd": 0.014921219028263374,
+     "share_same_sign": 0.6422018348623854,
+     "stable": false
+    },
+    "q7": {
+     "mean": -0.014937265627170487,
+     "sd": 0.014057546041995153,
+     "share_same_sign": 0.8990825688073395,
+     "stable": false
+    },
+    "q8": {
+     "mean": 0.005208703319416704,
+     "sd": 0.004650638568824535,
+     "share_same_sign": 1.0,
+     "stable": true
+    }
+   },
+   "C3": {
+    "q1": {
+     "mean": -0.01790768546485085,
+     "sd": 0.04094224944013081,
+     "share_same_sign": 0.41284403669724773,
+     "stable": false
+    },
+    "q2": {
+     "mean": 0.03258129385281809,
+     "sd": 0.027588069722843087,
+     "share_same_sign": 1.0,
+     "stable": true
+    },
+    "q3": {
+     "mean": -0.010787111692038037,
+     "sd": 0.007795821144800442,
+     "share_same_sign": 0.9357798165137615,
+     "stable": true
+    },
+    "q4": {
+     "mean": 0.012712463894700899,
+     "sd": 0.015107882794779356,
+     "share_same_sign": 0.7706422018348624,
+     "stable": false
+    },
+    "q5": {
+     "mean": -0.00138990974170601,
+     "sd": 0.008163692895221326,
+     "share_same_sign": 0.6055045871559633,
+     "stable": false
+    },
+    "q6": {
+     "mean": 0.004316700724277882,
+     "sd": 0.01241899531950206,
+     "share_same_sign": 0.6146788990825688,
+     "stable": false
+    },
+    "q7": {
+     "mean": -0.0149242397262485,
+     "sd": 0.01316478011217978,
+     "share_same_sign": 0.908256880733945,
+     "stable": true
+    },
+    "q8": {
+     "mean": 0.004980564218008122,
+     "sd": 0.004650894782196893,
+     "share_same_sign": 1.0,
+     "stable": true
+    },
+    "u_s1": {
+     "mean": -0.004364726389452834,
+     "sd": 0.019488514654813043,
+     "share_same_sign": 0.44954128440366975,
+     "stable": false
+    },
+    "u_s2": {
+     "mean": -0.007619530359706931,
+     "sd": 0.011336640908035706,
+     "share_same_sign": 0.7889908256880734,
+     "stable": false
+    },
+    "u_s3": {
+     "mean": -0.021808564056432948,
+     "sd": 0.01526812769639913,
+     "share_same_sign": 1.0,
+     "stable": true
+    }
+   }
+  },
+  "note": "лист 2: потолок, не OOS",
+  "C4": "посчитана по правилу 2.2",
+  "written_at": "2026-11-09 03:18:10"
  }
 }
