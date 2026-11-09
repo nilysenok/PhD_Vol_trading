@@ -113,10 +113,15 @@ def check(cp: dict, ids=C2.IDS) -> list:
 
 def check_run(ids) -> int:
     before = IO.outputs_digest()
-    bad = check(CR.read_cp(), tuple(ids))
+    cp = CR.read_cp()
+    bad = check(cp, tuple(ids))
+    if tuple(ids) == C2.IDS:                                            # 2b: таблицы оценки 1–7 (G28–G30) — пересчёт и сверка, без записи
+        from models_v2.s14 import v7_2_evrun as EVR
+        bad += EVR.check_eval(cp)
     if IO.outputs_digest() != before:
         bad.append("--check изменил выходы (хэш до ≠ после)")
-    print("\n".join(bad) if bad else "OK: G27 конфигурации %s по sha256 CHECKPOINT, F > 0, G = 0 ⇒ F = H, π в симплексе, даты = датам конфигурации 1, переоценка каждой побитно; выходы не изменены" % ", ".join(ids))
+    print("\n".join(bad) if bad else "OK: G27 конфигурации %s по sha256 CHECKPOINT, F > 0, G = 0 ⇒ F = H, π в симплексе, даты = датам конфигурации 1, переоценка каждой побитно; %sвыходы не изменены"
+          % (", ".join(ids), "G28–G30 таблицы оценки, отчёт, 2.eval/rules/cond9 равны пересчёту; " if tuple(ids) == C2.IDS else ""))
     return 1 if bad else 0
 
 
