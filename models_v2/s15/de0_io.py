@@ -31,7 +31,7 @@ def sha_file(path) -> str:
 @functools.lru_cache(maxsize=1)
 def code_hash() -> str:
     h = hashlib.sha256()
-    for f in sorted(Path(__file__).parent.glob("*.py")):
+    for f in sorted(Path(__file__).parent.glob("de0_*.py")):      # только код DE0: листы E1… (de_*.py, run_de.py) хэш выходов DE0 не меняют
         h.update(f.name.encode() + f.read_bytes())
     return h.hexdigest()[:16]
 
