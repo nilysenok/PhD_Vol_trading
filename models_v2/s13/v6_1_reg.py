@@ -35,8 +35,11 @@ CONFIGS = {"A0": dict(direction="A0_baseline", features=["S"], learner="LIN", ba
            # лист 5: строки конфигураций CB1, F1, F2 (набор признаков, обучатель, база правила 2.2); движок не менялся
            "CB1": dict(direction="CB_combination", features=["S", "Sigma", "Q"], learner="LIN", base_rule22="A0 (описательно: A1 и C1)", source=PLAN + " п. 2, 7 (CB1), 2.2", kind="trial"),
            "F1": dict(direction="F_distributionally_robust", features=["S", "Sigma", "Q"], learner="LIN_robust_mean_plus_0.5sd_years", base_rule22="CB1", source=PLAN + " п. 7 (F1), 2.2", kind="trial"),
-           "F2": dict(direction="F_distributionally_robust", features=["S", "Sigma", "Q"], learner="LIN_robust_softmax_eta20_years", base_rule22="CB1", source=PLAN + " п. 7 (F2), 2.2", kind="trial")}
-DECLARED = ["A0", "A1", "A2", "A3", "C1", "C2", "C3", "C4", "E1", "E2", "E3", "D1", "D2", "D3", "CB1", "CB2", "F1", "F2"]      # 18 id плана, п. 8
+           "F2": dict(direction="F_distributionally_robust", features=["S", "Sigma", "Q"], learner="LIN_robust_softmax_eta20_years", base_rule22="CB1", source=PLAN + " п. 7 (F2), 2.2", kind="trial"),
+           # лист 6: A0g — 18-я конфигурация на месте CB2, ОТСТУПЛЕНИЕ от предрегистрации (вопрос 1 [V6], умолчание 09.11 10:01); движок не менялся
+           "A0g": dict(direction="A0g_ablation_deviation", features=["S"], learner="GBM", base_rule22="база правила 2.2 для A2, C2, C4, E2 (рядом прежний вывод против A0)",
+                       source="ОТСТУПЛЕНИЕ от предрегистрации, вопрос 1 [V6]: A0g на месте CB2; " + PLAN + " п. 2 (GBM), 2.2", kind="trial")}
+DECLARED = ["A0", "A1", "A2", "A3", "C1", "C2", "C3", "C4", "E1", "E2", "E3", "D1", "D2", "D3", "CB1", "CB2", "F1", "F2", "A0g"]      # 18 id плана, п. 8; A0g (лист 6) — вместо CB2 по вопросу 1
 CTRL = ["K1", "K2", "K3", "K8", "V4:NTP2"]
 
 
