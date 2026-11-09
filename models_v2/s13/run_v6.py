@@ -3,13 +3,14 @@
   python3 -W ignore -m models_v2.s13.run_v6 --stage 0 --check  # ТОЛЬКО ЧТЕНИЕ: пересчёт в памяти, сверка с диском, суммарный хэш выходов до и после
   python3 -W ignore -m models_v2.s13.run_v6 --digest-v5        # суммарный хэш выходов V5 (G9: до и после проверок V5)
   python3 -W ignore -m models_v2.s13.run_v6 --stage 1a [--check]   # лист 1a: A0 = S + LIN (записать / только проверить)
-Стадия 0 моделей не обучает, конфигурации не расходует; стадия 1a расходует одну (A0)."""
+  python3 -W ignore -m models_v2.s13.run_v6 --stage 1b [--check]   # лист 1b: A1, A2, A3 по правилу 2.2, DX-A (записать / только проверить)
+Стадия 0 моделей не обучает, конфигурации не расходует; стадия 1a расходует одну (A0); стадия 1b — A1, A2 и (по правилу) A3."""
 from __future__ import annotations
 
 import argparse
 import sys
 
-from models_v2.s13 import v6_0_io as IO, v6_0_stage as ST, v6_1_ev as EV1, v6_1_stage as S1
+from models_v2.s13 import v6_0_io as IO, v6_0_stage as ST, v6_1_ev as EV1, v6_1_stage as S1, v6_1b_dxa as DXA, v6_1b_ev as EV1B, v6_1b_io as IO1B, v6_1b_stage as S1B
 
 
 def evidence(r: dict) -> list:
@@ -53,9 +54,33 @@ def main_1a(check: bool, before: str) -> int:
     return 1 if bad else 0
 
 
+DXA_NOTE = "G19: диагностика задним числом, не выбор (никакой результат не используется для выбора признаков и параметров A1–A3); Wald для Σ с и без спектра V5"
+
+
+def main_1b(check: bool, before: str) -> int:
+    """Стадия 1b (лист 1b): A1, A2, A3 по правилу; DX-A (диагностика) вызывается здесь, оркестратором, а не путём прогноза."""
+    r = S1B.compute()
+    dx = DXA.compute(r["tab"], r["r0"]["S"].set_index("d"), r["sigfe"].set_index("d"))
+    extra = {"DXA.csv": (dx, DXA_NOTE)}
+    if not check:
+        IO1B.write(r, extra)
+        print("стадия 1b записана; хэш выходов %s; счёт %.1f с" % (IO.outputs_digest(), r["seconds"]))
+        return 0
+    bad = IO1B.check(r, extra)
+    after = IO.outputs_digest()
+    if before != after:
+        bad.append("--check изменил файлы: хэш выходов до %s, после %s" % (before, after))
+    print("\n".join(EV1B.evidence(r, dx)))
+    print("счёт одного полного прогона: %.1f с" % r["seconds"])
+    print("хэш выходов до = после: %s (%s)" % (before == after, after[:16]))
+    print("\n".join(bad) if bad else "G17–G22: все проверки пройдены")
+    print("ИТОГ:", "FAIL" if bad else "OK")
+    return 1 if bad else 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=["0", "1a"])
+    ap.add_argument("--stage", choices=["0", "1a", "1b"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--digest-v5", action="store_true")
     a = ap.parse_args(argv)
@@ -67,6 +92,8 @@ def main(argv=None) -> int:
     before = IO.outputs_digest()
     if a.stage == "1a":
         return main_1a(a.check, before)
+    if a.stage == "1b":
+        return main_1b(a.check, before)
     r = ST.compute()
     if not a.check:
         ST.write(r)

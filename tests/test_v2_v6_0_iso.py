@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from models_v2.s13 import run_v6, v6_0_cp as CP, v6_0_io as IO, v6_0_stage as ST
+from models_v2.s13 import run_v6, v6_0_cp as CP, v6_0_io as IO, v6_0_stage as ST, v6_1_reg as RG
 
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED = {"v6_0_stage.py", "run_v6.py"}
@@ -88,10 +88,12 @@ def test_checkpoint_n_and_all_trials_header_only(tmp_path, monkeypatch):
     e = CP.read()["0"]
     assert (e["N"], e["N_wide"], e["budget_V6"], e["used"]) == (722, 3122, 18, 0) and e["go_series"] and "written_at" in e
     assert CP.check(e) == []
-    assert CP.ALL_TRIALS.read_text(encoding="utf-8") == IO.HEADER_TRIALS
+    txt = CP.ALL_TRIALS.read_text(encoding="utf-8")                                # G23: заголовок прежний; строки — только Ж-227:<id> из списка плана, без дублей
+    assert txt.startswith(IO.HEADER_TRIALS) and RG.trials_bad(txt) == []
     assert any("N = 1" in b for b in CP.check({**e, "N": 1}))                      # мутация: N, подменённый на 1
-    CP.ALL_TRIALS.write_text(IO.HEADER_TRIALS + "k,Ж-227,x,A,{},trial\n", encoding="utf-8")
-    assert any("ALL_TRIALS" in b for b in CP.check(e))                              # мутация: trial записан до первого прогноза
+    row = txt.splitlines(keepends=True)[1]
+    assert RG.trials_bad(IO.HEADER_TRIALS + "k,Ж-227,x,A,{},trial\n") and RG.trials_bad(txt + "Ж-227:A0_sens_up,Ж-227,x,A,{},trial\n")      # мутация: необъявленная строка
+    assert RG.trials_bad(txt + row) and RG.trials_bad(txt.replace("key,program", "key,prog", 1))                                              # мутации: дубль; заголовок изменён
 
 
 def test_thresholds_written_before_any_forecast_numbers_are_finite():

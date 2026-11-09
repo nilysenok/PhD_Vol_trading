@@ -39,7 +39,7 @@ def test_registry_has_exactly_a0_and_budget_ok():
     t = RG.trial_text(["A0"]).splitlines()
     assert t[0] == IO.HEADER_TRIALS.strip() and len(t) == 2 and t[1].startswith("Ж-227:A0,") and len(RG.CONFIGS) <= 18
     assert "λ" not in t[1] and "sens" not in t[1].lower()
-    assert (CP.ALL_TRIALS.read_text(encoding="utf-8") == RG.trial_text(["A0"]))                  # диск = реестр
+    assert CP.ALL_TRIALS.read_text(encoding="utf-8").startswith(RG.trial_text(["A0"]))          # диск = реестр (с листа 1b после строки A0 идут A1–A3: правка по G18)
 
 
 @pytest.fixture(scope="module")

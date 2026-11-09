@@ -14,7 +14,12 @@ from models_v2.s13 import v6_0_cp as CP0, v6_0_io as IO
 CODE_VERSION = "v6.1a"
 STATUS = "DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-227, лист 1a (SBER, h = 1; инфраструктура и абляционная база A0)"
 PLAN = "docs/otchety/HARJ_HYBRID_SBER_V6_PLAN.md"
-CONFIGS = {"A0": dict(direction="A0_baseline", features=["S"], learner="LIN", base_rule22="K1 (справочно; в листе 1b база A1/A2 — A0)", source=PLAN + " п. 3 (A0), 2.1, 2.2", kind="trial")}
+CONFIGS = {"A0": dict(direction="A0_baseline", features=["S"], learner="LIN", base_rule22="K1 (справочно; в листе 1b база A1/A2 — A0)", source=PLAN + " п. 3 (A0), 2.1, 2.2", kind="trial"),
+           # лист 1b: строки конфигураций A1–A3 (набор признаков, обучатель, база правила 2.2); движок не менялся
+           "A1": dict(direction="A_path_signature", features=["S", "Sigma"], learner="LIN", base_rule22="A0", source=PLAN + " п. 3 (A1), 2.2", kind="trial"),
+           "A2": dict(direction="A_path_signature", features=["S", "Sigma"], learner="GBM", base_rule22="A0 и A1", source=PLAN + " п. 3 (A2), 2.2", kind="trial"),
+           "A3": dict(direction="A_path_signature", features=["S", "Sigma", "Sigma3"], learner="LIN", base_rule22="A1 (условная: A1 или A2 несёт новую информацию против A0)", source=PLAN + " п. 3 (A3), 2.2", kind="trial")}
+DECLARED = ["A0", "A1", "A2", "A3", "C1", "C2", "C3", "C4", "E1", "E2", "E3", "D1", "D2", "D3", "CB1", "CB2", "F1", "F2"]      # 18 id плана, п. 8
 CTRL = ["K1", "K2", "K3", "K8", "V4:NTP2"]
 
 
@@ -57,3 +62,17 @@ def write_trials(ids: list) -> None:
 
 def trials_ok(ids: list) -> bool:
     return CP0.ALL_TRIALS.exists() and CP0.ALL_TRIALS.read_text(encoding="utf-8") == trial_text(ids)
+
+
+def trials_bad(text: str, ids_ok=DECLARED) -> list:
+    """Строки ALL_TRIALS: заголовок прежний; ключи только `Ж-227:<id>` из списка плана (id в CONFIGS: текст строки побитно прежний), без дублей. -> список нарушений (пусто = ок)."""
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0] != IO.HEADER_TRIALS:
+        return ["заголовок ALL_TRIALS изменён"]
+    keys = [ln.split(",", 1)[0] for ln in lines[1:]]
+    bad = ["строка вне списка плана: %s" % k for k in keys if not (k.startswith("Ж-227:") and k[6:] in ids_ok)]
+    bad += ["дубль: %s" % k for k in sorted(set(keys)) if keys.count(k) > 1]
+    for ln, k in zip(lines[1:], keys):
+        if k[6:] in CONFIGS and ln != trial_text([k[6:]])[len(IO.HEADER_TRIALS):]:
+            bad.append("текст строки %s ≠ реестру" % k)
+    return bad

@@ -118,7 +118,8 @@ def write(r: dict) -> list:
     cp, old = CP0.read(), CP0.read().get("1a")
     entry = {**r["checkpoint"], "written_at": old["written_at"]} if old and stable(old) == stable(r["checkpoint"]) else r["checkpoint"]
     CP0.CP.write_text(json.dumps({**cp, "1a": entry}, ensure_ascii=False, indent=1))
-    RG.write_trials(IDS)
+    if "Ж-227:A0," not in RG.CP0.ALL_TRIALS.read_text(encoding="utf-8"):      # строки следующих листов (A1–A3) при перезаписи 1a не стираются
+        RG.write_trials(IDS)
     return out
 
 
@@ -153,6 +154,7 @@ def check(r: dict) -> list:
     cp = CP0.read().get("1a")
     if cp is None or stable(cp) != stable(r["checkpoint"]):
         bad.append("G15: CHECKPOINT ключ 1a на диске ≠ пересчёту")
-    if not RG.trials_ok(IDS):
-        bad.append("G15: ALL_TRIALS.csv ≠ строка Ж-227:A0")
+    txt = RG.CP0.ALL_TRIALS.read_text(encoding="utf-8") if RG.CP0.ALL_TRIALS.exists() else ""
+    if RG.trials_bad(txt) or "Ж-227:A0," not in txt:      # с листа 1b в реестре идут и строки A1–A3: проверяется состав, не равенство одной строке
+        bad.append("G15: ALL_TRIALS.csv: нет строки Ж-227:A0 или недопустимые строки: %s" % RG.trials_bad(txt))
     return bad
