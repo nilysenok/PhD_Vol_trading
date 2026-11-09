@@ -1,0 +1,21 @@
+{
+ "0": {
+  "code": "cb9ad46b7ea3790b",
+  "inputs": "22e87c222e2df0b2",
+  "out_bytes": 36946539,
+  "out_files": {
+   "X_w1.npz": 5735634,
+   "X_w5.npz": 26068938,
+   "store_raw.npz": 5141967
+  },
+  "status": {
+   "G1_controls_equal": true,
+   "G3_identity_max_rel": 2.745374561204834e-16,
+   "G3_identity_ok": true,
+   "G5_first_a": "2016-12-30",
+   "G5_first_b": "2016-12-30",
+   "n_configurations": 0,
+   "trainings_on_sber": 0
+  }
+ }
+}
