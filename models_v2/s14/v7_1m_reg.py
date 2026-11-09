@@ -86,7 +86,8 @@ RESULT_KIND, RESULT_SUFFIX, STATUS_RES = "result", ":результат", "по�
 
 V2_SUFFIX, ARCH_SUFFIX = ":результат_v2", ":результат_v1_архивирован"        # лист FX (09.11): результат версии 2 и пометка «результат v1 архивирован»; строки версии 1 остаются
 STATUS_ARCH = "результат v1 архивирован: дефект согласования z"
-SUFFIX_STATUS = {RESULT_SUFFIX: STATUS_RES, V2_SUFFIX: STATUS_RES, ARCH_SUFFIX: STATUS_ARCH}
+R2B_SUFFIX = ":результат_2b"                                                              # лист DX (G41): результат оценки 2b (конфигурации 1–7, версия 2); строки регистрации не меняются
+SUFFIX_STATUS = {RESULT_SUFFIX: STATUS_RES, V2_SUFFIX: STATUS_RES, ARCH_SUFFIX: STATUS_ARCH, R2B_SUFFIX: STATUS_RES}
 
 
 def is_result(r: list, decl: dict) -> bool:

@@ -112,16 +112,23 @@ def check_sequences(store: dict) -> list:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["0", "1a", "1b", "2", "3", "4"])
+    ap.add_argument("--stage", required=True, choices=["0", "1a", "1b", "2", "3", "4", "DX"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--config", default=None, help="id конфигурации реестра (стадии 1b–4); по умолчанию — все конфигурации стадии")
     args = ap.parse_args(argv)
     if args.stage == "1b":                                  # лист 1b-A: Stage A и E0 (конфигурации 1–3 — листы 1b-B/C)
         from models_v2.s14 import v7_1b_stage as S1B
         return S1B.run(args.check)
+    if args.stage == "DX":                               # лист DX: диагностика причин (`v7_dx_run`), конфигураций 0
+        from models_v2.s14 import v7_dx_run as DXR
+        return DXR.run(args.check)
     if args.stage != "0":                                # лист 1a-M: формы, реестр, каркас конфигураций (`v7_1m_stage`; torch импортируется только здесь)
         from models_v2.s14 import v7_1m_stage as S1
-        return S1.run(args.stage, args.check, args.config)
+        rc = S1.run(args.stage, args.check, args.config)
+        if args.stage == "2" and not args.check and args.config is None and rc == 0:      # запись стадии 2: оценка 1–7 (`v7_2_evrun`) и строки 2b; `--check` по-прежнему только читает
+            from models_v2.s14 import v7_dx_run as DXR
+            return DXR.write_2b()
+        return rc
     before = IO.outputs_digest()
     a = build_all()
     if args.check:
