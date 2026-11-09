@@ -208,7 +208,7 @@
   "N": 722,
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
-  "code_hash_v6_1": "9e8a6c18e3a790c9",
+  "code_hash_v6_1": "4899ad4965877066",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.1a",
   "k1_sha256": "4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9",
@@ -303,7 +303,7 @@
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
   "code_hash_v6_1b": "9e98000a9f8da3ab",
-  "code_hash_v6_1": "9e8a6c18e3a790c9",
+  "code_hash_v6_1": "4899ad4965877066",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.1b",
   "qlike": {
@@ -669,7 +669,7 @@
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
   "code_hash_v6_2": "2a44a10149f1a7f4",
-  "code_hash_v6_1": "9e8a6c18e3a790c9",
+  "code_hash_v6_1": "4899ad4965877066",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.2",
   "qlike": {
@@ -1029,7 +1029,7 @@
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
   "code_hash_v6_3": "64cc2b5f6333501a",
-  "code_hash_v6_1": "9e8a6c18e3a790c9",
+  "code_hash_v6_1": "4899ad4965877066",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.3",
   "qlike": {
@@ -1360,7 +1360,7 @@
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
   "code_hash_v6_4": "556ba330be8c1ab2",
-  "code_hash_v6_1": "9e8a6c18e3a790c9",
+  "code_hash_v6_1": "4899ad4965877066",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.4",
   "qlike": {
@@ -1603,7 +1603,7 @@
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
   "code_hash_v6_5": "97aebd4569b3363d",
-  "code_hash_v6_1": "9e8a6c18e3a790c9",
+  "code_hash_v6_1": "4899ad4965877066",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.5",
   "qlike": {
@@ -2275,7 +2275,7 @@
   "N_wide": 3122,
   "inputs_hash": "00023d4b18d0b46f",
   "code_hash_v6_6": "a0f56fb35afe1baf",
-  "code_hash_v6_1": "9e8a6c18e3a790c9",
+  "code_hash_v6_1": "4899ad4965877066",
   "code_hash_v6_0": "6356ebb503e205f6",
   "code_version": "v6.6",
   "qlike": {
@@ -2492,5 +2492,43 @@
   ],
   "note": "лист 6: потолок, не OOS",
   "written_at": "2026-11-09 10:06:33"
+ },
+ "FIN": {
+  "program": "HAR-J Hybrid V6 (Ж-227), SBER, h=1, лист FIN",
+  "configs_spent_by_FIN": 0,
+  "used_total": 18,
+  "budget": 18,
+  "N": 722,
+  "N_wide": 3122,
+  "n_dates": 2271,
+  "series": 28,
+  "tables": [
+   "FIN_ALL",
+   "FIN_YEARS",
+   "FIN_TESTS",
+   "FIN_MCS",
+   "FIN_ABLATION",
+   "FIN_STRESS",
+   "FIN_ENCOMPASS",
+   "FIN_INFO_ALL",
+   "FIN_LEVELS"
+  ],
+  "tables_sha": {
+   "FIN_ALL": "3905278d7d51b994",
+   "FIN_YEARS": "23f04984b75c0989",
+   "FIN_TESTS": "1f3a89366a04d9f4",
+   "FIN_MCS": "717526007d48266d",
+   "FIN_ABLATION": "25b45b54d79728b4",
+   "FIN_STRESS": "b4fdc95ec3f9c729",
+   "FIN_ENCOMPASS": "7b711d81089cd99d",
+   "FIN_INFO_ALL": "7a797538e8273f58",
+   "FIN_LEVELS": "8e1f5b73fbe1dcde"
+  },
+  "other_keys_sha": "ded3ef316193b184",
+  "inputs_hash": "00023d4b18d0b46f",
+  "code_hash_v6_fin": "ebff2ff1d0060b20",
+  "code_version": "v6.fin",
+  "note": "лист FIN: потолок, не OOS",
+  "written_at": "2026-11-09 11:00:47"
  }
 }

@@ -530,33 +530,33 @@
   EXPECT:
   - `FIN_ALL`, `FIN_YEARS`, `FIN_TESTS`, `FIN_ENCOMPASS`, `FIN_INFO_ALL`, `FIN_STRESS`, `FIN_ABLATION` — все 18 мест бюджета, контроли K1, K2, K3, M, K8, D2, V4:NTP2, V5 GS4/SP1, K9;
   - числа совпадают с таблицами листов (≤ 1e-12).
-  EVIDENCE: pending
+  EVIDENCE: 09.11.2026, `run_v6 --stage FIN --check` rc 0, «G50–G54: все проверки пройдены»: 28 рядов (10 контролей, 18 конфигураций), 2271 дата; строк FIN_ALL 364, FIN_TESTS 342, FIN_STRESS 180, FIN_ENCOMPASS 72, FIN_INFO_ALL 184, FIN_ABLATION 86; метрики, тесты, стресс FIN = `<cfg>_METRICS/TESTS/STRESS.csv` (≤ 1e-12), пары правила п. 2.2 = пересчёту (1e-9); лучшая 2017–2021 A2 (QLIKE 0,145295): к K3 −4,94 [−12,44; +0,69], к K8 −2,84 [−5,85; −0,16], к NTP2 −2,06 [−6,08; +1,19]; лучшая вся история E2 (0,216359): к K3 +2,01 [−2,93; +7,80], к K8 −0,07 [−2,10; +1,90], к NTP2 +2,84 [−1,32; +8,14]. ЗАКРЫТ
 - **G51 — MCS 90 %.**
   CHECK: `run_v6 --stage FIN --check` (раздел G51)
   EXPECT: `FIN_MCS.csv` по QLIKE 2017–2021 и всей истории, реализация V5 (импорт), seed фиксирован.
-  EVIDENCE: pending
+  EVIDENCE: 09.11.2026, `--stage FIN --check` rc 0: FIN_MCS 84 строки (3 окна × 28 рядов), `stats_d.mcs` + `hp_stats_tst.block_idx`; MCS 90 %: 2017–2021 — 28 из 28, 2022–2025 — 27, вся история — 27 (вне MCS: F2); тест `test_v2_v6_fin_tabs.py::test_mcs_excludes_clearly_worse_series_and_keeps_equal_ones`, детерминизм и мутация знака потерь. ЗАКРЫТ
 - **G52 — итоговый документ.**
   CHECK: `run_v6 --stage FIN --check` (раздел G52); `pytest tests/test_v2_v6_fin_*.py`
   EXPECT:
   - `HARJ_HYBRID_SBER_V6_FINAL.md` содержит все 13 разделов задания;
   - каждое число документа сверено с таблицами функцией сборки, расхождений 0;
   - мутации ловятся: подменённое число, «лучше / хуже», знак Δ.
-  EVIDENCE: pending
+  EVIDENCE: 09.11.2026, `--stage FIN --check` rc 0: 13 разделов, чисел сверено 4214, расхождений 0, статические числа ⊆ определений; `pytest tests/test_v2_v6_fin_*.py` — 29 passed (doc 12, tabs 9, iso 8): подменённое число, «хуже»→«лучше», знак, перевёрнутый знак Δ в таблице, интервал ниже 0 против K2/K3, число вне таблиц ловятся. ЗАКРЫТ
 - **G53 — реестр и CHECKPOINT.**
   CHECK: `run_v6 --stage FIN --check` (раздел G53)
   EXPECT:
   - `ALL_TRIALS.csv` — 18 строк `Ж-227:*`, без дублей, каждая объявлена в плане или в решении вопроса 1;
   - ключ `FIN` с хэшами всех выходов;
   - `REPRODUCTION_V6.md` — команды всех стадий.
-  EVIDENCE: pending
+  EVIDENCE: 09.11.2026, `--stage FIN --check` rc 0: ALL_TRIALS — 18 строк `Ж-227:*`, без дублей, A0g с пометкой отступления; ключ FIN (израсходовано 0, used_total 18 из 18, хэши 9 таблиц) = пересчёту; ключи 0…6 по содержанию равны состоянию до листа (проверено восстановлением: без FIN и со старым `code_hash_v6_1` sha256 файла равен снимку до); REPRODUCTION_V6.md — 9 стадий с `--check`. ЗАКРЫТ
 - **G54 — уровни 1–5 по всем конфигурациям.**
   CHECK: `run_v6 --stage FIN --check` (раздел G54)
   EXPECT: сводная таблица уровней; статус уровня 5 — словами блока.
-  EVIDENCE: pending
+  EVIDENCE: 09.11.2026, `--stage FIN --check` rc 0: FIN_LEVELS.csv — 90 строк (18 конфигураций × уровни 1–5); уровень 5 «нет» у 18 из 18, основание — «статистически неподтверждённое историческое улучшение» (у D1, E1, F2 — «улучшения к K1 нет»). ЗАКРЫТ
 - **G55 — регрессия.**
   CHECK: `run_v6 --stage 0…6,FIN --check`; пять проверок V5; `pytest tests/test_v2_v5_*.py tests/test_v2_v6_*.py`
   EXPECT:
   - все rc 0;
   - хэш выходов до и после равен;
   - существующие тесты не менялись.
-  EVIDENCE: pending
+  EVIDENCE: 09.11.2026, `run_v6 --stage 0, 1a, 1b, 2, 3, 4, 5, 6, FIN --check` и `run_v5 --stage 0|GS|SP|FIN --check`, `run_v5_dx --stage DX1 --check` — все 14 rc 0; хэш выходов V6 до и после равен (52871b5d…), V5 равен (e4e6e115…); `pytest tests/test_v2_v5_*.py tests/test_v2_v6_*.py` — 356 тестов собрано (327 прежних + 29 новых), rc 0; снимок sha256 всех выходов V6/V5 до и после листа: изменён только `CHECKPOINT.json` (ключ FIN добавлен, в ключах 1a…6 заменено `code_hash_v6_1`), добавлены FIN_*.csv и REPRODUCTION_V6.md; существующие тесты не менялись. ЗАКРЫТ
