@@ -4132,5 +4132,53 @@
   "computed_at": "09.11.2026 23:59:26",
   "n": 2018,
   "sha256": "1e6393719a44284d0d714b18721d6702a0906d529f2d5984876994c437e8243f"
+ },
+ "E5": {
+  "base": "V6:A0g",
+  "best": "X3",
+  "computed_at": "10.11.2026 00:13:06",
+  "condition": false,
+  "delta_pct": 2.069059769062575,
+  "hi90": 3.8941949981282473,
+  "lo90": 0.6714569198676902,
+  "n_years": 4,
+  "p_one": 0.9911474840788188,
+  "qlike": {
+   "X2": 0.1726206868091482,
+   "X3": 0.1625741641724521,
+   "X4": 0.1632723908687307
+  },
+  "rule62": "нет",
+  "sha256": {
+   "E2_METRICS": "2d7002acf84a56c8d19667feb09dede56cbc3284936400555b222a75034f0e05",
+   "E2_PAIRS": "b73f4c71dea0bd6fc392de90dab85bc11f6f6d2ddfb2c52fc9bfed0efe5ba009",
+   "E3_METRICS": "887a9b1fb12a91526cd4d1046c5574fbd353db5ad9d15862becbab9320e95ef5",
+   "E3_PAIRS": "475df1db64a70b7fe95b72fd26c692fb71c65618b5b45a281abe0b7fd9f886bd",
+   "E4_METRICS": "edb33c94c7dd8e5481e2f2a55867150993ddb98c236dfbb59a7da4c8fcfcfcb1",
+   "E4_PAIRS": "0665d8cdf4c0b6d9c41db17dc2fb8cfd13eb7e77d0c7e2475d7c5e18895a3bd7"
+  },
+  "window": "2018_2021",
+  "x5_computed": false,
+  "years_neg": 0
+ },
+ "FIN": {
+  "code": "fbe2041464db5798",
+  "leaf_checked": 7923,
+  "leaf_mismatch": 0,
+  "numbers_in_doc": 2761,
+  "sha256": {
+   "FIN_ADV": "6620b856bd81b972554de9fe9b00530e0be5caf65540fab43f2bda934ddd3116",
+   "FIN_GO": "fbe0fb15986d4896687c665d2f4b4b78b4a6369ee39a0b67ed1e00e766c5dfd6",
+   "FIN_MCS": "a79564ee91ce3a0f0d09eb4eea06c2f7807aa3dff979a27e06e8dc00a9265646",
+   "FIN_METRICS": "d4d0a2e85865e979c6eb728c39fc84cdd4fbaeedc3df9997a3c401f0010afcbd",
+   "FIN_PAIRS": "769066e5b7d1370cb1413caf6ce36eae5f1650c8f269a0e537bf31f7c3ab7e41",
+   "FIN_STAB": "a590914d06e711042e151949adcf3572380ae2fdefd5a3d72c2bebe9ee225af8",
+   "FIN_STATE": "137ad16092c5de90524c5da15ece233b7c5cb0bd634a3c2f270dd6bd48b4d63c",
+   "FIN_STRESS": "da74367a35a1d6108d532c401d0c6f8ca1933ecbf7698770258b05bc79a8146f",
+   "FIN_TESTS": "7f79f6b9f976774494093af1bf15dad59969e66506b38f3a6f5b26651bac11b3",
+   "FIN_YEARS": "d55f2cbe2b470929c7500d21aa5f9b21a83fc41cab7299058c87917622ca622b"
+  },
+  "sha256_doc": "a260716fdc5b032d402028be176a4c6fbed895d9281eaa94ccb994b570c3f999",
+  "written_at": "10.11.2026 00:21:46"
  }
 }
