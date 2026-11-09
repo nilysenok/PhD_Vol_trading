@@ -94,8 +94,8 @@ def test_target_known_answer_and_eps():
     y, ok = P.targets(pk, np.array([0, 1]), 0.5)
     assert ok[0].tolist()[:5] == [True, True, True, False, False] and not ok[1].any() and not ok[:, -1].any()
     assert np.allclose(y[0, :3], np.log(np.array([4.0, 9.0, 16.0]) + 0.5), atol=1e-6)
-    assert P.eps_of(dict(r2=np.full((3, NET.SLOTS), 4.0)), np.arange(3)) == pytest.approx(4e-6)
-    assert P.eps_of(dict(r2=np.zeros((3, NET.SLOTS))), np.arange(3)) == P.EPS_REL
+    assert P.eps_pos(dict(r2=np.full((3, NET.SLOTS), 4.0)), np.arange(3)) == pytest.approx(0.04)        # 0,01·медиана положительных (решение [V7], лист 1b)
+    assert P.eps_pos(dict(r2=np.zeros((3, NET.SLOTS))), np.arange(3)) == P.EPS_REL                      # одни нули — запасное значение
 
 
 def test_pretrain_learns_something(pack):

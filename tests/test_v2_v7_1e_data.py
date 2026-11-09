@@ -79,8 +79,8 @@ def test_real_npz_shapes_masks_and_untrained_forward(W):
         assert not pk["mask"][0, :-1].any()                    # первый день: дней до начала истории нет — маска 0
     rows = P.train_rows(pk, 2018)
     assert pd.DatetimeIndex(pk["days"])[rows].max() < pd.Timestamp(2018, 1, 1) and len(rows) > 500
-    y, ok = P.targets(pk, rows, P.eps_of(pk, rows))
-    assert ok.sum() > 0.9 * len(rows) * 52 and np.isfinite(y[ok]).all() and P.eps_of(pk, rows) > 0
+    y, ok = P.targets(pk, rows, P.eps_pos(pk, rows))
+    assert ok.sum() > 0.9 * len(rows) * 52 and np.isfinite(y[ok]).all() and P.eps_pos(pk, rows) > 0
     idx = np.array([400, 1500, 2600])
     for kind in ("tcn", "cnn"):                                # случайные веса: только форма и конечность, без обучения
         torch.manual_seed(0)

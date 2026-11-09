@@ -1,6 +1,6 @@
 """V7-1a-E: предобучение энкодера (Stage A). Задача-предлог: ln(r²_{j+1}+ε) следующего бара по барам ≤ j; MSE на лог-метке, Adam,
 ранняя остановка по последним 10 % дней обучающего прошлого. Энкодер года Y учится только на сессиях < 01.01.Y (`train_rows`).
-ε = 1e-6 · медиана r² (бары обучающих дней; если медиана 0 — по положительным). Метка — по последнему дню окна; предыдущие дни окна — контекст (все ≤ d).
+ε = 0,01 · медиана положительных r² (`eps_pos`, бары обучающих дней; решение [V7] класса B, лист 1b). Метка — по последнему дню окна; предыдущие дни окна — контекст (все ≤ d).
 Вызов на данных SBER — только из стадии 1b; здесь данные не читаются при импорте.
 `bars` = pack: dict(X (D,W,53,11), mask (D,W,53), norm_ok (D,), days (D,) datetime64, r2 (D,53) сырой r², NaN где бара нет)."""
 from __future__ import annotations
@@ -17,6 +17,7 @@ from models_v2.s14 import v7_0_seq as SQ
 from models_v2.s14 import v7_1e_net as NET
 
 EPS_REL, VAL_FRAC, MIN_ROWS = 1e-6, 0.10, 60
+EPS_POS_REL = 0.01
 R2 = SQ.CH.index("r2")
 
 
@@ -46,13 +47,11 @@ def train_rows(pack: dict, year: int) -> np.ndarray:
     return np.flatnonzero(before & pack["norm_ok"] & pack["mask"][:, -1].any(1))
 
 
-def eps_of(pack: dict, rows: np.ndarray) -> float:
+def eps_pos(pack: dict, rows: np.ndarray) -> float:
+    """ε метки (решение [V7] класса B, до листа 1b): 0,01·медиана ПОЛОЖИТЕЛЬНЫХ r² баров обучающих дней `rows` (только прошлое: rows = `train_rows`). Нет положительных — EPS_REL."""
     v = pack["r2"][rows]
-    v = v[np.isfinite(v)]
-    med = float(np.median(v)) if len(v) else 0.0
-    if med <= 0 and (v > 0).any():
-        med = float(np.median(v[v > 0]))
-    return EPS_REL * med if med > 0 else EPS_REL
+    v = v[np.isfinite(v) & (v > 0)]
+    return EPS_POS_REL * float(np.median(v)) if len(v) else EPS_REL
 
 
 def targets(pack: dict, rows: np.ndarray, eps: float) -> tuple:
@@ -97,7 +96,7 @@ def train_encoder(kind: str, window: int, year: int, seed: int, bars: dict, max_
     if len(rows) < min_rows:
         raise ValueError("мало дней для предобучения года %d: %d" % (year, len(rows)))
     nv = max(1, int(round(VAL_FRAC * len(rows))))
-    eps = eps_of(bars, rows)
+    eps = eps_pos(bars, rows)
     y, ok = targets(bars, rows, eps)
     n_tr = len(rows) - nv
     with deterministic():

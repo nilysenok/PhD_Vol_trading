@@ -102,13 +102,16 @@ def test_mutation_gate_ignoring_condition_or_reserve_is_caught(reg, monkeypatch)
         RG.gate("12")                                                                         # отказ идёт уже по другой причине, не «резерв»: сообщение тестом различается
 
 
-def test_runner_refuses_by_stage_and_config(reg, capsys, monkeypatch):
+def test_runner_refuses_by_stage_and_config(reg, capsys, monkeypatch, tmp_path):
     RG.ensure(when="T")
     assert RUN.main(["--stage", "2", "--config", "12", "--check"]) == 3 and "резерв" in capsys.readouterr().out
     assert RUN.main(["--stage", "3", "--check"]) == 3                                         # 8 допущена, 9 — отказ (условие)
     out = capsys.readouterr().out
     assert "допущены реестром ['8']" in out and "отказано ['9']" in out
-    assert RUN.main(["--stage", "1b", "--check"]) == 0 and RUN.main(["--stage", "1b"]) == 2 and "не подключён" in capsys.readouterr().out
+    capsys.readouterr()
+    empty = tmp_path / "out"                                                                  # стадия 1b подключена (лист 1b-A): без артефактов Stage A `--check` отказывает и ничего не пишет
+    monkeypatch.setattr(IO, "OUT", empty)
+    assert RUN.main(["--stage", "1b", "--check"]) == 1 and "нет артефактов Stage A" in capsys.readouterr().out and not empty.exists()
     called = []
     monkeypatch.setitem(ST.RUNNERS, "5", lambda: called.append(5))
     assert RUN.main(["--stage", "2", "--config", "5"]) == 0 and called == [5]
@@ -188,5 +191,6 @@ def test_modules_1a_do_not_touch_sber_data_at_import_level():
 def test_real_registry_and_checkpoint_1a_are_consistent_if_written():
     if not RG.TRIALS.exists():
         pytest.skip("лист 1a ещё не записан")
-    assert RG.bad() == [] and len(RG.read()) == 12
+    from models_v2.s14 import v7_1b_regchk as RC      # лист 1b-C: строки регистрации (12, 16:44) не изменены побайтно; ниже — только результаты зарегистрированных конфигураций
+    assert RG.bad() == [] and RC.registration_intact() and RC.results_only_registered()
     assert ST.check_1a() == []

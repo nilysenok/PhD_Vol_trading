@@ -61,8 +61,7 @@ def write_stage(a: dict) -> None:
     for W in WINDOWS:
         np.savez_compressed(IO.OUT / ("X_w%d.npz" % W), **sequences(a["store"], W))
     sizes = {f.name: f.stat().st_size for f in sorted(IO.OUT.glob("*.npz"))}
-    cp = {"0": dict(status=st, code=IO.code_hash(), inputs=IO.inputs_hash(), out_files=sizes, out_bytes=int(sum(sizes.values())))}
-    (IO.REP / "CHECKPOINT.json").write_text(json.dumps(cp, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
+    IO.merge_checkpoint("0", dict(status=st, code=IO.code_hash(), inputs=IO.inputs_hash(), out_files=sizes, out_bytes=int(sum(sizes.values()))))
     print("записано; выходы data/regen: %s байт" % sum(sizes.values()))
 
 
@@ -117,7 +116,10 @@ def main(argv=None) -> int:
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--config", default=None, help="id конфигурации реестра (стадии 1b–4); по умолчанию — все конфигурации стадии")
     args = ap.parse_args(argv)
-    if args.stage != "0":                                   # лист 1a-M: формы, реестр, каркас конфигураций (`v7_1m_stage`; torch импортируется только здесь)
+    if args.stage == "1b":                                  # лист 1b-A: Stage A и E0 (конфигурации 1–3 — листы 1b-B/C)
+        from models_v2.s14 import v7_1b_stage as S1B
+        return S1B.run(args.check)
+    if args.stage != "0":                                # лист 1a-M: формы, реестр, каркас конфигураций (`v7_1m_stage`; torch импортируется только здесь)
         from models_v2.s14 import v7_1m_stage as S1
         return S1.run(args.stage, args.check, args.config)
     before = IO.outputs_digest()

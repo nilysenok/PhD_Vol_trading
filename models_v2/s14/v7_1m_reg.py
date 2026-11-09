@@ -81,6 +81,25 @@ def ensure(path: Path | None = None, when: str | None = None) -> str:
     return "дополнен"
 
 
+RESULT_KIND, RESULT_SUFFIX, STATUS_RES = "result", ":результат", "посчитана"
+
+
+def is_result(r: list, decl: dict) -> bool:
+    """Строка результата: ключ `<ключ плана>:результат`, kind = result, статус «посчитана», полный ряд колонок."""
+    return len(r) == len(HEADER) and r[0].endswith(RESULT_SUFFIX) and r[0][:-len(RESULT_SUFFIX)] in decl and r[5] == RESULT_KIND and r[7] == STATUS_RES and bool(r[6])
+
+
+def add_result(cfg: str, payload: dict, path: Path | None = None, when: str | None = None) -> str:
+    """Дописать строку результата конфигурации `cfg` в конец реестра (существующие байты не трогаются). Повтор — 'уже есть' (результат не переписывается)."""
+    path, key = path or TRIALS, "Ж-233:%s%s" % (cfg, RESULT_SUFFIX)
+    if key in {r[0] for r in read(path)[1:]}:
+        return "уже есть"
+    base = [r for r in read(path)[1:] if r[0] == "Ж-233:%s" % cfg][0]
+    with open(path, "a", encoding="utf-8", newline="") as f:
+        csv.writer(f, lineterminator="\n").writerow([key, "Ж-233", base[2], base[3], json.dumps(payload, ensure_ascii=False, sort_keys=True), RESULT_KIND, when or now(), STATUS_RES])
+    return "дописана"
+
+
 def bad(path: Path | None = None) -> list:
     """Нарушения реестра (пусто = ок): заголовок, 11 строк плана, дубли, текст конфигурации = объявленному, статус, время."""
     path = path or TRIALS
@@ -92,6 +111,8 @@ def bad(path: Path | None = None) -> list:
     out += ["дубль: %s" % k for k in sorted(set(keys)) if keys.count(k) > 1]
     decl = {"Ж-233:%s" % c["id"]: _row(c, "") for c in CONFIGS}
     for r in rows[1:]:
+        if is_result(r, decl):                                                                # строка результата (лист 1b+): дописана после регистрации, строка регистрации не тронута
+            continue
         if r[0] not in decl:
             out.append("строка вне плана: %s" % r[0])
         elif r[:6] != decl[r[0]][:6] or len(r) != len(HEADER) or not r[6]:

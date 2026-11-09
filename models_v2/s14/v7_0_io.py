@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import functools
 import hashlib
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -46,15 +47,26 @@ def inputs_hash() -> str:
     return h.hexdigest()[:16]
 
 
-def header(note: str) -> str:
-    return "# %s; код %s %s; входы %s; %s; %s\n" % (STATUS, CODE_VERSION, code_hash(), inputs_hash(), CAVEAT, note)
+def merge_checkpoint(key: str, value: dict, path: Path | None = None) -> dict:
+    """Запись стадии в CHECKPOINT.json СЛИЯНИЕМ ключей: чужие ключи (других стадий) сохраняются, меняется только `key` (класс № 117; Ж-235 п. 6)."""
+    path = path or REP / "CHECKPOINT.json"
+    cp = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    cp[key] = value
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(cp, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
+    return cp
 
 
-def write_csv(df: pd.DataFrame, name: str, note: str) -> Path:
+def header(note: str, status: str | None = None) -> str:
+    """status — строка статуса стадии (по умолчанию статус листа 0)."""
+    return "# %s; код %s %s; входы %s; %s; %s\n" % (status or STATUS, CODE_VERSION, code_hash(), inputs_hash(), CAVEAT, note)
+
+
+def write_csv(df: pd.DataFrame, name: str, note: str, status: str | None = None) -> Path:
     REP.mkdir(parents=True, exist_ok=True)
     p = REP / name
     with open(p, "w", encoding="utf-8") as f:
-        f.write(header(note))
+        f.write(header(note, status))
         df.to_csv(f, index=False, lineterminator="\n")
     return p
 
