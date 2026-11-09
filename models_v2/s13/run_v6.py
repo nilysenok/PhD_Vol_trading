@@ -7,6 +7,7 @@
   python3 -W ignore -m models_v2.s13.run_v6 --stage 2 [--check]    # лист 2: C1, C2, C3, C4 по правилу 2.2 (записать / только проверить)
   python3 -W ignore -m models_v2.s13.run_v6 --stage 3 [--check]    # лист 3: E1, E2, E3 по правилу, диагностика обращения времени (записать / только проверить)
   python3 -W ignore -m models_v2.s13.run_v6 --stage 4 [--check]    # лист 4: D1, D2, D3 (историческая аналогия) и контроль K9 (записать / только проверить)
+  python3 -W ignore -m models_v2.s13.run_v6 --stage 5 [--check]    # лист 5: CB1, F1, F2 (сочетание и Distributionally Robust; записать / только проверить)
 Стадия 0 моделей не обучает, конфигурации не расходует; стадия 1a расходует одну (A0); стадия 1b — A1, A2 и (по правилу) A3."""
 from __future__ import annotations
 
@@ -14,7 +15,7 @@ import argparse
 import sys
 
 from models_v2.s13 import (v6_0_io as IO, v6_0_stage as ST, v6_1_ev as EV1, v6_1_feat as FE, v6_1_stage as S1, v6_1b_dxa as DXA, v6_1b_ev as EV1B, v6_1b_io as IO1B, v6_1b_stage as S1B, v6_2_ev as EV2, v6_2_io as IO2, v6_2_stage as S2,
-                           v6_3_ev as EV3, v6_3_io as IO3, v6_3_stage as S3, v6_3_tr as TR3, v6_4_ev as EV4, v6_4_io as IO4, v6_4_stage as S4)
+                           v6_3_ev as EV3, v6_3_io as IO3, v6_3_stage as S3, v6_3_tr as TR3, v6_4_ev as EV4, v6_4_io as IO4, v6_4_stage as S4, v6_5_ev as EV5, v6_5_io as IO5, v6_5_stage as S5)
 
 
 def evidence(r: dict) -> list:
@@ -141,9 +142,28 @@ def main_4(check: bool, before: str) -> int:
     return 1 if bad else 0
 
 
+def main_5(check: bool, before: str) -> int:
+    """Стадия 5 (лист 5): CB1 (S + Σ + Q, LIN), F1 и F2 (робастные цели по средам-годам)."""
+    r = S5.compute()
+    if not check:
+        IO5.write(r)
+        print("стадия 5 записана; хэш выходов %s; счёт %.1f с" % (IO.outputs_digest(), r["seconds"]))
+        return 0
+    bad = IO5.check(r)
+    after = IO.outputs_digest()
+    if before != after:
+        bad.append("--check изменил файлы: хэш выходов до %s, после %s" % (before, after))
+    print("\n".join(EV5.evidence(r)))
+    print("счёт одного полного прогона: %.1f с" % r["seconds"])
+    print("хэш выходов до = после: %s (%s)" % (before == after, after[:16]))
+    print("\n".join(bad) if bad else "G41–G44: все проверки пройдены")
+    print("ИТОГ:", "FAIL" if bad else "OK")
+    return 1 if bad else 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=["0", "1a", "1b", "2", "3", "4"])
+    ap.add_argument("--stage", choices=["0", "1a", "1b", "2", "3", "4", "5"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--digest-v5", action="store_true")
     a = ap.parse_args(argv)
@@ -163,6 +183,8 @@ def main(argv=None) -> int:
         return main_3(a.check, before)
     if a.stage == "4":
         return main_4(a.check, before)
+    if a.stage == "5":
+        return main_5(a.check, before)
     r = ST.compute()
     if not a.check:
         ST.write(r)

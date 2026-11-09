@@ -87,6 +87,6 @@ def check(r: dict) -> list:
     cp = CP0.read().get("4")
     if cp is None or S1.stable(cp) != S1.stable(r["checkpoint"]):
         bad.append("G39: CHECKPOINT ключ 4 на диске ≠ пересчёту")
-    if not RG.trials_ok(r["ids"], exact=True):
+    if not RG.trials_ok(r["ids"]):      # лист 5 дописывает CB1, F1, F2 после D1–D3: проверяется префикс и состав, не равенство (правка листа 5)
         bad.append("G37/G39: ALL_TRIALS.csv ≠ строки %s" % r["ids"])
     return bad
