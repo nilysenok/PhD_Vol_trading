@@ -1,4 +1,4 @@
-# диагностика/оценка, не отбор; DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-240, лист E1 (X1; SBER, h = 1); код e1 f2d96b188bc08035
+# диагностика/оценка, не отбор; DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-240, лист E1 (X1; SBER, h = 1); код e1 b5e2fb76e66929d6
 cond,name,value,threshold,passed,config
 1,"QLIKE 2018–2021 − min(K2, K3, M, K8, NTP2, A2)",0.0030185373904390855,-0.0005,False,X1
 2,то же 2019–2021 (без 2018),0.0009456143687603391,-0.0005,False,X1

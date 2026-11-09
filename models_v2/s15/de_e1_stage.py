@@ -23,7 +23,7 @@ COLS = ["d", "t_plus", "rv", "M", "C", "s", "pi", "F", "pi0", "pi1", "a0", "a1"]
 
 def code_hash() -> str:
     h = hashlib.sha256()
-    for f in sorted(Path(__file__).parent.glob("de_*.py")) + [Path(__file__).parent / "run_de.py"]:
+    for f in sorted(Path(__file__).parent.glob("de_e1_*.py")) + [Path(__file__).parent / "de_reg.py"]:      # только код E1 (листы E2… и run_de.py хэш E1 не меняют)
         h.update(f.name.encode() + f.read_bytes())
     return h.hexdigest()[:16]
 

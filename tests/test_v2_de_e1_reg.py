@@ -46,12 +46,13 @@ def test_x5_refused_without_condition_and_allowed_with_it(reg):
     R.guard("X5", cp={"E5": {"condition": True}})
 
 
-def test_runner_stage_refusals(reg, capsys):
+def test_runner_stage_refusals(reg, capsys, monkeypatch):
     with pytest.raises(SystemExit, match="не зарегистрирована"):
         run_de.main(["--stage", "E1"])
     R.register("01.01.2020 10:00:00")
     with pytest.raises(SystemExit, match="условие"):
         run_de.main(["--stage", "E5"])                       # X5 без условия
+    monkeypatch.setattr(run_de, "STAGES", {})                # стадия без подключённого счёта — отказ; реальный счёт из теста не запускается
     with pytest.raises(SystemExit, match="не реализован"):
         run_de.main(["--stage", "E2"])
     with pytest.raises(SystemExit):

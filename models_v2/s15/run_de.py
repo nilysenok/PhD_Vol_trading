@@ -4,7 +4,10 @@ python3 -W ignore -m models_v2.s15.run_de --stage 0|reg|E1|E2|E3|E4|E5|FIN [--ch
 from __future__ import annotations
 
 import argparse
+import importlib
 import sys
+
+STAGES = {"E2": "de_e2_stage", "E3": "de_e3_stage", "E4": "de_e4_stage"}      # подключённые стадии листов E2+ (модуль с compute/write/check); тест подменяет таблицу
 
 
 def main(argv=None) -> int:
@@ -31,6 +34,15 @@ def main(argv=None) -> int:
         raise SystemExit("FIN: каркас — итог собирается после E5")
     cfg = R.STAGE_CFG[a.stage]
     R.guard(cfg)
+    if a.stage in STAGES:
+        S = importlib.import_module("models_v2.s15." + STAGES[a.stage])
+        if a.check:
+            bad = S.check()
+            print("%s --check: %s" % (a.stage, "0 расхождений" if not bad else "расхождений %d: %s" % (len(bad), "; ".join(bad))))
+            return 1 if bad else 0
+        S.write()
+        print("%s: %s, таблицы, отчёт и CHECKPOINT[%s] записаны" % (a.stage, cfg, a.stage))
+        return 0
     if a.stage != "E1":
         raise SystemExit("%s (%s): счёт в своём листе, здесь не реализован" % (a.stage, cfg))
     from models_v2.s15 import de_e1_stage as S1
