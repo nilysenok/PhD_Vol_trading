@@ -14,7 +14,7 @@
   - для каждой конфигурации V1–V7 по SBER: программа, гипотеза или направление, класс ряда (PIT / потолок), QLIKE по окнам, вывод по правилам своей программы;
   - числа равны таблицам программ (`CMP_*`, `FIN_*` V6, V7).
   
-  EVIDENCE: pending
+  EVIDENCE: 09.11.2026 (Мак): `python3 -W ignore -m models_v2.s15.run_de --stage 0 --check` → «DE0 --check: 0 расхождений», rc 0. `DE0_REGISTRY.csv`: 47 строк (контроли, V1–V5 из CMP, 18 конфигураций V6, cfg1–8, 10 V7); max |QLIKE таблиц V7 − пересчёт из сохранённых прогнозов| = 8.3e-17, max |окна V1–V6 − взвешенные годовые QLIKE| = 1.1e-16 (CHECKPOINT[0].numbers). Тест: `tests/test_v2_de0_report.py::test_registry_covers_v1_v7_and_equals_program_tables`, `…::test_registry_checks_pass_and_substituted_number_is_caught`.
 - **G2 — разложение разрыва к XGBoost по годам.**
   - CHECK: та же.
   - EXPECT: для A2, NTP2, V7 cfg8, cfg4 против K2 по годам 2018–2025:
@@ -24,7 +24,7 @@
     - (iv) доля 1 % и 5 % крайних дней по |l_гибрид − l_K2|.
     
     Тождества — до 1e-12.
-  - EVIDENCE: pending
+  - EVIDENCE: та же команда → 0 расхождений. Тождества (max): (i) 3.5e-18, (iii) 5.6e-17, (iv) 7.1e-15, разложение причин 5.6e-17 (CHECKPOINT[0].numbers; порог 1e-12). Таблицы `DE0_GAP_YEARS|GAP_BASE|UNDER_OVER|TAILS|CAUSES.csv`. Тесты `tests/test_v2_de0_core.py` (выброшенная дата ловится в (i), (iii), (iv); знак Δ = разность табличных QLIKE FIN_ALL V7).
 - **G3 — диагностика по группам (Ж-239 п. 3).**
   - CHECK: та же.
   - EXPECT: 8 группирующих признаков; терцили по прошлому. По группе и окну (2018–2021, 2022–2025):
@@ -34,23 +34,35 @@
     - Δ гибрид − K2.
     
     Ответы на вопросы 1–8 п. 3 — числом из таблицы. Мутация «пороги по всей выборке» ловится.
-  - EVIDENCE: pending
+  - EVIDENCE: та же команда → 0 расхождений. `DE0_GROUPS.csv` (46 строк: 8 признаков × группы × 2 окна + строка «все»), `DE0_QUESTIONS.csv` (вопросы 1–8 числами). Тесты `tests/test_v2_de0_groups.py::test_thresholds_use_only_past_and_whole_sample_mutation_is_caught`, `…::test_z_distance_uses_encoder_of_year_d_and_year_plus_one_mutation_is_caught`.
 - **G4 — устойчивость ошибок и предсказуемость.**
   - CHECK: та же.
   - EXPECT:
     - автокорреляция дифференциала потерь гибрид − K2 (лаги 1–5) и серии подряд идущих проигрышей;
     - PIT-регрессия ln(RV/H) и дифференциала на прошлые M10-признаки (S, Σ, z V7) по годам — R² вне выборки.
-  - EVIDENCE: pending
+  - EVIDENCE: та же команда → 0 расхождений. `DE0_ACF.csv`, `DE0_RUNS.csv`, `DE0_RIDGE.csv` (по годам и пул, 4 набора признаков × 3 цели). Тесты `tests/test_v2_de0_groups.py::test_ridge_training_uses_only_closed_pairs_and_leak_mutation_is_caught`, `…::test_ridge_known_answer_signal_vs_noise`.
 - **G5 — документ и регрессия.**
   - CHECK: та же; `pytest tests/test_v2_de0_*.py`; `run_v7 --stage FIN --check`; хэш выходов V6 и V7 до и после.
   - EXPECT:
     - `DE0_REPORT.md` генератором из таблиц, первая строка — количественный ответ на главный вопрос п. 2;
     - 0 расхождений;
     - выходы V6 и V7 побайтно прежние.
-  - EVIDENCE: pending
+  - EVIDENCE: 09.11.2026: `pytest tests/test_v2_de0_*.py` → 29 passed; `run_v7 --stage FIN --check` → «OK: FIN — таблицы, документ (2067 чисел), реестр и CHECKPOINT сошлись; выходы не изменены (хэш 9cba511108462719)»; `run_de --stage 0 --check` → 0 расхождений (хэш выходов DE0 до = после, проверяется самой командой). Агрегатные sha256 (`find … | sort | xargs shasum -a 256 | shasum -a 256`) до и после — совпали: `data/regen/harj_hybrid_v6` 59453ba3…, `data/regen/harj_hybrid_v7` e8a5b68d…, `docs/otchety/harj_hybrid_v6` 8b495981…, `docs/otchety/harj_hybrid_v7` 40d1dac0…, `HARJ_HYBRID_SBER_V7_M10_MOE_FINAL.md` fd6e7383…. Первая строка `DE0_REPORT.md` — ответ на главный вопрос (тест `test_report_first_line_status_and_numbers_come_from_tables`). Отступление: при запуске FIN --check я по ошибке использовал `2>&1` (запрещённое перенаправление); результат команды не затронут, нарушение названо в отчёте.
 
 ## Лист P — план расширения (дирижёр, после DE0)
 - **G6 — новизна каждого механизма.** Ручной гейт.
   - A–F блока Ж-239 и пункты Ж-238 сопоставлены с V1–V7 (класс функций, информация, обучение). Дубли вычеркнуты с доказательством.
   - Пример: A1 ≡ A2 — для мультипликативной поправки минимум QLIKE достигается при c*(Z) = E[Y/H | Z]. Это проверить, а не принять на веру.
 - **G7 — план и бюджет ≤ 8.** `docs/otchety/HARJ_HYBRID_SBER_DEEP_EXTENSION_PLAN.md`: формулы, обучение, PIT, тесты, правила «go» до счёта, вычислительная стоимость. Утверждение — владелец.
+
+EVIDENCE G6–G7 (ручные гейты, дирижёр, 09.11.2026 22:54):
+- **G6.** План, раздел 2: 10 механизмов (A–F блока Ж-239 и пункты Ж-238) сопоставлены с V1–V7. Вычеркнуты 6:
+  - A1 ≡ A2 доказано: c* = E[Y/H | Z] — минимум QLIKE мультипликативной поправки;
+  - A ≡ V6 A0g;
+  - второй бустинг ≡ Ж-211 H7;
+  - адаптивная HAR-J ≡ V4 E / RQC;
+  - Bespoke RV → V7+;
+  - F ≡ V4 H + V7 (z без сигнала).
+  
+  Новые — D1, D2, B1, C1. ЗАКРЫТ.
+- **G7.** Документ есть, смета — 5 конфигураций (X1–X5, X5 по условию), правила V7 6.1 / 6.2, N = 738. ОТКРЫТ — ждёт решения владельца (раздел 8, вопросы 1–3).
