@@ -17,5 +17,62 @@
    "n_configurations": 0,
    "trainings_on_sber": 0
   }
+ },
+ "1a": {
+  "N_holm": 733,
+  "N_wide": 3166,
+  "code": "06f494479ce38f21",
+  "configs_computed": 0,
+  "first_eval": "2018-01-03",
+  "first_fit_stage_b": "2019-01-01",
+  "grid": [
+   [
+    0.1,
+    0.0
+   ],
+   [
+    0.1,
+    0.1
+   ],
+   [
+    1.0,
+    0.0
+   ],
+   [
+    1.0,
+    0.1
+   ]
+  ],
+  "hold": 126,
+  "lr": 0.02,
+  "max_epochs": 300,
+  "min_train": 186,
+  "n_configs": 11,
+  "params": {
+   "anchor_b": 78,
+   "experts": 10,
+   "flat": 76,
+   "moe_b": 77,
+   "router": {
+    "A": 51,
+    "B": 67,
+    "C": 31
+   }
+  },
+  "patience": 25,
+  "reg": {
+   "lam2": 0.001,
+   "lam_e": 0.01,
+   "lam_s": 0.01
+  },
+  "seeds": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "trainings_on_sber": 0,
+  "written_at": "2026-11-09T16:54:38+03:00"
  }
 }

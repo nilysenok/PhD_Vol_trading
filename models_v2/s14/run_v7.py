@@ -113,9 +113,13 @@ def check_sequences(store: dict) -> list:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["0"])
+    ap.add_argument("--stage", required=True, choices=["0", "1a", "1b", "2", "3", "4"])
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--config", default=None, help="id конфигурации реестра (стадии 1b–4); по умолчанию — все конфигурации стадии")
     args = ap.parse_args(argv)
+    if args.stage != "0":                                   # лист 1a-M: формы, реестр, каркас конфигураций (`v7_1m_stage`; torch импортируется только здесь)
+        from models_v2.s14 import v7_1m_stage as S1
+        return S1.run(args.stage, args.check, args.config)
     before = IO.outputs_digest()
     a = build_all()
     if args.check:
