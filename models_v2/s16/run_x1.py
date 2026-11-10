@@ -126,9 +126,12 @@ def check_stage() -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", required=True, choices=["P0"])
+    ap.add_argument("--stage", required=True, choices=["P0", "YA"])
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
+    if a.stage == "YA":
+        from models_v2.s16 import x1_ya_stage as YA
+        return YA.run(a.check)
     return check_stage() if a.check else write_stage()
 
 

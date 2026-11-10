@@ -48,5 +48,41 @@
   
   Утверждение — владелец. EVIDENCE: pending
 
+## Лист Y-A — Y1 и Y2 (Ж-243; задание `docs/zadaniya/2026-11-10_harj_x1_YA.md`), 2 конфигурации
+
+- **YA1 — реестр до счёта.**
+  - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_ya_*.py -q`; чтение `docs/otchety/harj_x1/ALL_TRIALS.csv`.
+  - EXPECT: строки Y1–Y6 со статусом и временем записи; Y1, Y2 записаны раньше `computed_at` прогнозов; Y5, Y6 — «условная, не запускается без разрешения владельца (Ж-243)»; бегун отказывает Y5/Y6 и незарегистрированным. EVIDENCE (10.11.2026 04:32): `python3 -W ignore -m pytest tests/test_v2_x1_ya_*.py -q` — 39 passed (`test_v2_x1_ya_reg.py` 3: отказ незарегистрированной, записанной позже прогноза, Y5/Y6, повтор не переписывает). Реестр записан отдельной командой `python3 -W ignore -m models_v2.s16.x1_reg` 10.11.2026 04:21:03 (Y1–Y4 «зарегистрирована», Y5, Y6 «условная, не запускается без отдельного разрешения владельца (Ж-243)»); `computed_at` прогнозов — CHECKPOINT `YA` (после 04:21:03); `--check` перепроверяет порядок.
+- **YA2 — отключение даёт X1.**
+  - CHECK: та же.
+  - EXPECT: a = 0 ⇒ F = X1 побитно; до 2018-07-02 F = X1 побитно на боевом ряду; закрытых пар на 2018-07-02 = 124 (≥ 120), бегун отказывает при < 120. EVIDENCE (10.11.2026 04:32): `test_v2_x1_ya_walk.py` 8 passed — `test_zero_amplitudes_give_x1_bitwise`, `test_activation_and_bitwise_before_inclusion_on_synthetic`, `test_refuses_with_fewer_than_120_closed_pairs`, `test_real_series_before_inclusion_bitwise_and_124_pairs` (боевой ряд: закрытых пар на 2018-07-02 = 124, 124 дня active = 0, F = X1 побитно).
+- **YA3 — PIT и признаки.**
+  - CHECK: та же.
+  - EXPECT: мутации ловятся — бар дня t⁺ в s_d; пара «закрыто + 1» в переоценке; λ выбран по парам вне закрытых; e_d ≠ колонке `s` X1; Δ_d не по календарю t⁺. Аналитический градиент = численному (≤ 1e-6); κ оживает после a (синтетика). EVIDENCE (10.11.2026 04:32): `test_v2_x1_ya_feat.py` 6 passed (бар дня t⁺ в s_d: `test_pit_day_d_only_and_t_plus_bar_mutation_is_caught`; Δ_d: `test_delta_known_answer_and_calendar_mutation`; e_d: `test_e_d_is_x1_column_equal_to_de_states_and_mutation_is_caught`; карта слотов 46…51 против паспорта V7: `test_slot_map_matches_v7_passport`), `test_v2_x1_ya_fit.py` 8 passed (градиент ≤ 1e-6, κ оживает после a, восстановление a_n, a_e, κ на синтетике, λ по закрытым парам — мутация «после D» ловится), `test_v2_x1_ya_walk.py` («закрыто + 1» на боевом пути walk, Y2 с κ ≠ 0, e_d не из X1).
+- **YA4 — прогнозы и оценка.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.run_x1 --stage YA --check`.
+  - EXPECT: rc 0; пересчёт = файлам `data/regen/harj_x1/YA/y1.parquet`, `y2.parquet`; таблицы `YA_*.csv` = генератору; хэш выходов V6/V7/DE/P0/T0 до и после равен; `--check` ничего не пишет. EVIDENCE (10.11.2026 04:32): `python3 -W ignore -m models_v2.s16.run_x1 --stage YA` (запись, rc 0), затем `--stage YA --check` rc 0: «OK: Y1/Y2 пересчитаны и равны файлам, YA_*.csv и отчёт = генератор, реестр до прогноза, ключ YA.eval раньше таблиц с p; выходы V6/V7/DE/P0/T0 и YA не изменены (хэш 4e5732da8d99ab8e)». `x1_t0 --check` rc 0. Файлы: `data/regen/harj_x1/YA/y1.parquet`, `y2.parquet` (2018 строк), `docs/otchety/harj_x1/YA_*.csv`; CHECKPOINT ключи `YA`, `YA.eval`, `YA.rules`. ОТСТУПЛЕНИЕ/КРАСНОЕ: `run_x1 --stage P0 --check` теперь rc 1 («код s16 ≠ CHECKPOINT»): хэш кода P0 включает `run_x1.py`, который по заданию правлен (добавлена стадия YA); таблицы P0 и CHECKPOINT P0 не менялись, `pytest tests/test_v2_x1_p0_*.py` — 15 passed.
+- **YA5 — отчёт.**
+  - CHECK: та же; тест «подменённое число».
+  - EXPECT: `YA_REPORT.md` содержит по Y1 и Y2: Δ к X1, K2, K3, NTP2, cfg8, A2, cfg6, K1 (в % QLIKE базы, 90 % ДИ, p DM, Холм 744); правило 6.2 к X1; Y1 против Y2; по годам; окно «после включения»; клетки остатка X1; go 6.1; MCS; стресс. «Снижение ошибки» и «подтверждено» — раздельно. EVIDENCE (10.11.2026 04:32): `YA_REPORT.md` — генератор `x1_ya_doc.build` (разделы 2–13), `--check` rc 0 сверяет текст с генератором; `test_v2_x1_ya_eval.py` 6 passed (знак Δ и база процентов, Холм N = 744 / 3193 против числа строк, «go» = V7 при тех же базах, слово «подтверждено» — только при p Холма < 0,05) и `test_v2_x1_ya_stage.py` 8 passed (подменённое число в таблице и в отчёте ловится, p в `YA.eval` и порядок ключей ловятся, проверка с записью ловится). Числа: QLIKE все даты Y1 0,221268, Y2 0,220969, X1 0,221248; правило 6.2 к X1 — «нет» у обеих; p Холма N = 1,000 везде в основных окнах (исключение — NTP2, 2026: 0,644).
+
+## Лист Y-B — Y3 и Y4 (Ж-243; задание `docs/zadaniya/2026-11-10_harj_x1_YB.md`), 2 конфигурации
+
+- **YB1 — реестр.**
+  - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_yb_*.py -q`.
+  - EXPECT: Y3, Y4 зарегистрированы раньше `computed_at`; реестр не переписан (строки Y-A прежние); Y5/Y6 — отказ. EVIDENCE (10.11.2026): `pytest tests/test_v2_x1_yb_*.py` 20 passed; Y3, Y4 в `ALL_TRIALS.csv` с 10.11.2026 04:21:03 (лист Y-A), прогноз Y-B позже; `--check` (rc 0) проверяет `guard(computed_at)`; `test_y5_y6_always_refused` — отказ `x1_reg.guard` и `x1_yb_stage --stage Y5/Y6`.
+- **YB2 — отключение и масштаб.**
+  - CHECK: та же.
+  - EXPECT: θ = 0 или γ = 0 ⇒ F = X1 побитно; w ≡ 1 ⇒ B = RV побитно; среднее w = 1; до 2018-07-02 F = X1. EVIDENCE (10.11.2026): `test_w_one_gives_rv_bitwise_and_mean_one`, `test_theta_zero_or_gamma_zero_gives_x1_bitwise`, `test_y4_weights_mean_one_and_fallback`, `test_walk_off_before_activation_bitwise` — passed; на боевом ряду 124 дня active = 0 и F = X1 (в отчёте YB, раздел 1); Y4: среднее w − 1 = 0,00; дней RV_d = 0: 0.
+- **YB3 — PIT.**
+  - CHECK: та же.
+  - EXPECT: мутации ловятся — бар t⁺ в B_d; медиана слота с днём d; профиль Y4 по всей выборке; «закрыто + 1»; softmax по отсутствующим барам. Градиент аналитический = численному. EVIDENCE (10.11.2026): `test_bar_of_t_plus_in_B_mutation_caught`, `test_median_slot_with_day_d_mutation_caught_in_pair_data`, `test_slot_median_excludes_current_day_and_mutation_caught`, `test_profile_y4_pit_and_whole_sample_mutation_caught`, `test_closed_plus_one_mutation_caught`, `test_softmax_over_absent_bars_mutation_breaks_scale`, `test_analytic_gradient_equals_numeric_and_dead_point` (мёртвая точка θ = 0, γ = 0: градиент 0; старт плана: все компоненты ≠ 0; макс. расхождение с численным 5e-9 на боевых данных) — 20 passed.
+- **YB4 — прогнозы и оценка.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_yb_stage --check`; также `run_x1 --stage P0 --check` и `run_x1 --stage YA --check` — rc 0.
+  - EXPECT: rc 0; пересчёт = `data/regen/harj_x1/YB/y3.parquet`, `y4.parquet`, таблицам `YB_*.csv`; хэш выходов V6/V7/DE/P0/T0/YA до и после равен. EVIDENCE (10.11.2026): `x1_yb_stage --check` rc 0 (хэш выходов 10842b39127889da), `run_x1 --stage P0 --check` rc 0, `run_x1 --stage YA --check` rc 0.
+- **YB5 — отчёт и условие Y5/Y6.**
+  - CHECK: та же; тесты условия.
+  - EXPECT: `YB_REPORT.md` — как YA5 для Y3, Y4, плюс Y3 против Y4 и против Y1/Y2; `YB.condition` в CHECKPOINT = «правило 6.2 против X1 = да у Y1 или Y3»; Y5/Y6 не посчитаны. EVIDENCE (10.11.2026): `YB_REPORT.md` = генератор (`--check` rc 0); `YB.condition` = «нет» (Y1: нет, Y3: нет); `test_v2_x1_yb_cond.py` — известный ответ (4 сочетания), мутация «окно 2022+» ловится, подменённое число в отчёте ловится, проверка с записью ловится по хэшу; Y5/Y6 не запускались.
+
 ## Лист T0 — единая таблица QLIKE (Ж-242 пп. 1–2), 0 конфигураций
 - **T0.** CHECK: `python3 -W ignore -m models_v2.s16.x1_t0 --check`; `python3 -W ignore -m pytest tests/test_v2_x1_t0.py -q`. EXPECT: rc 0, расхождений нет; 8 passed (мутации «среднее показателей периодов», «не общие даты», «подменённое число» ловятся). EVIDENCE: 10.11.2026 — `--check`: «расхождений нет», rc 0, хэши P0_TABLE.*, P0_STATS.csv и CHECKPOINT V7/DE до и после совпали; pytest: 8 passed. Общий период: d 2018-01-03…2026-02-26, t⁺ 2018-01-04…2026-02-27, n = 2018, без 2017; X1 численно лучший (QLIKE 0,221248 против NTP2 0,222556), с поправкой Холма N = 738 / 3181 не подтверждён (p Холма 1,0000 против K2, K3, NTP2).
