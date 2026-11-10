@@ -40,10 +40,16 @@ def test_guard_refuses_unregistered_late_and_conditional(tmp_path) -> None:
 
 
 def test_real_registry_written_before_forecasts() -> None:
-    t = R.read().set_index("id")
-    assert list(t.index) == ["Y1", "Y2", "Y3", "Y4", "Y5", "Y6"]
+    full = R.read()
+    t = full.iloc[:6].set_index("id")                         # реестр только дополняется: после Y6 допустимы чужие строки (этап Z)
+    assert len(full) >= 6 and list(t.index) == ["Y1", "Y2", "Y3", "Y4", "Y5", "Y6"]
     assert t.loc["Y1":"Y4", "status"].eq("зарегистрирована").all() and t.loc["Y5":"Y6", "status"].eq(R.COND).all()
-    for y in ("Y1", "Y2"):
-        R.guard(y)                                            # реальный реестр пропускает Y1, Y2
+    for (i, n, f, p, st), (_, r) in zip(R.ROWS, t.reset_index().iterrows()):
+        assert (r["id"], r["name"], r["formula"], r["params"], r["status"]) == (i, n, f, p, st)   # прежние поля
+    assert set(t["registered_at"]) == {"10.11.2026 04:21:03"}                                      # прежнее время регистрации
+    for y in ("Y1", "Y2", "Y3", "Y4"):
+        R.guard(y, computed_at="10.11.2026 04:21:03")         # реестр не позже прогноза Y-A
+        with pytest.raises(SystemExit, match="позже прогноза"):
+            R.guard(y, computed_at="10.11.2026 04:21:02")     # «реестр позже прогноза» по-прежнему ловится
     with pytest.raises(SystemExit):
         R.guard("Y5")

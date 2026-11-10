@@ -86,3 +86,71 @@
 
 ## Лист T0 — единая таблица QLIKE (Ж-242 пп. 1–2), 0 конфигураций
 - **T0.** CHECK: `python3 -W ignore -m models_v2.s16.x1_t0 --check`; `python3 -W ignore -m pytest tests/test_v2_x1_t0.py -q`. EXPECT: rc 0, расхождений нет; 8 passed (мутации «среднее показателей периодов», «не общие даты», «подменённое число» ловятся). EVIDENCE: 10.11.2026 — `--check`: «расхождений нет», rc 0, хэши P0_TABLE.*, P0_STATS.csv и CHECKPOINT V7/DE до и после совпали; pytest: 8 passed. Общий период: d 2018-01-03…2026-02-26, t⁺ 2018-01-04…2026-02-27, n = 2018, без 2017; X1 численно лучший (QLIKE 0,221248 против NTP2 0,222556), с поправкой Холма N = 738 / 3181 не подтверждён (p Холма 1,0000 против K2, K3, NTP2).
+
+## Лист Z — ZA, ZB, ZB0, ZC, ZCp (Ж-246; план `docs/otchety/HARJ_HYBRID_SBER_Z_PLAN.md`; задание `docs/zadaniya/2026-11-10_harj_z.md`), 5 конфигураций
+
+- **Z1 — реестр.**
+  - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_z_*.py -q`.
+  - EXPECT: 5 строк Z (с пометкой «после просмотра Y1–Y4» у ZB, ZC) записаны раньше любого прогноза Z; строки Y1–Y6 не изменены; незарегистрированная конфигурация — отказ. EVIDENCE (10.11.2026): `pytest tests/test_v2_x1_z_*.py` 54 passed; ZA, ZB, ZB0, ZC, ZCp дописаны в `ALL_TRIALS.csv` отдельной командой `x1_z_reg` 10.11.2026 16:12:23 (ZB, ZC — «предложена после просмотра Y1–Y4 (Ж-246)»), прогноз Z записан 16:21 (CHECKPOINT `Z`.computed_at); строки Y1–Y6 — как в `x1_reg.ROWS` (`test_registry_has_five_z_rows_with_post_view_marks_and_y_rows_unchanged`); отказ Y5/Y6/Z6/ZX (`test_guard_refuses_unregistered_extra_late_and_bad_status`). Хэш ALL_TRIALS.csv в сверку P0/YA/YB не входит. КРАСНОЕ вне владения: `tests/test_v2_x1_ya_reg.py::test_real_registry_written_before_forecasts` (лист Y-A) требует ровно 6 строк реестра и теперь падает — нужна правка одного утверждения (`list(t.index)[:6]`) владельцем листа Y-A.
+- **Z2 — отключение.**
+  - CHECK: та же.
+  - EXPECT: g ≡ 0 ⇒ F = X1 побитно у всех пяти. ZB, ZB0 вне e_d = 1 — F = X1 побитно на боевом ряду. До включения F = X1. ZCp ≠ ZC только сдвигом z. EVIDENCE (10.11.2026): `pytest tests/test_v2_x1_z_walk.py` — `test_g_zero_gives_x1_bitwise[ZA|ZB|ZB0|ZC|ZCp]` (u ≡ 1 ⇒ F = X1 побитно), `test_zb_zb0_x1_outside_area_and_before_activation_and_before_inclusion`, `test_za_active_from_activation_and_zb_waits_for_30_extremes`, `test_zcp_is_zc_on_shifted_z_and_no_shift_mutation_is_caught` — passed; на боевом ряду 124 дня active = 0 у всех пяти (отчёт Z, раздел «Реестр и протокол»), ZB/ZB0 вне e_d = 1: Δ = 0,000 % (Z_STATES, состояние N), включение ZB с 2018-07-02 (33 закрытые экстремальные пары ≥ 30).
+- **Z3 — PIT и обучение.**
+  - CHECK: та же.
+  - EXPECT: мутации ловятся:
+    - «закрыто + 1»;
+    - λ/ω по парам после D;
+    - стандартизация z по всей выборке;
+    - v_d с днём d + 1;
+    - x_d с баром t⁺;
+    - валидация ZB по всем парам вместо экстремальных;
+    - ZCp без сдвига.
+
+    Аналитический градиент ZC = численному. Из старта плана градиент по b, a ≠ 0, по γ = 0. EVIDENCE (10.11.2026): `test_pit_future_targets_do_not_change_forecasts_and_closed_plus_one_is_caught[ZA|ZB|ZC]`, `test_lambda_omega_by_future_pairs_mutation_is_caught[ZA|ZC]`, `test_zc_standardization_by_whole_sample_mutation_is_caught`, `test_zb_validation_uses_extreme_pairs_and_all_pairs_mutation_is_caught`, `test_future_bars_and_days_do_not_change_features_and_mutations_are_caught` (бар t⁺ в x_d; день d + 1 в v_d), `test_standardize_uses_only_pool_and_whole_sample_mutation_is_caught`, `test_shift_is_cyclic_252_and_no_shift_mutation_is_caught`, `test_gate_gradient_analytic_equals_numeric_and_start_point` (расхождение ≤ 1e-7; в старте градиент по γ0, γ ровно 0, по b, a ≠ 0), `test_known_answer_zb_recovers_b_a_when_g_only_on_area` — passed (54 passed всего).
+- **Z4 — прогнозы и оценка.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_z_stage --check`; `x1_yb_stage --check`; `run_x1 --stage P0 --check`; `run_x1 --stage YA --check`; `x1_t0 --check`.
+  - EXPECT: все rc 0; пересчёт = `data/regen/harj_x1/Z/*.parquet` и `Z_*.csv`; хэш чужих выходов до и после равен. EVIDENCE (10.11.2026): `x1_z_stage --check` rc 0 (хэш выходов 9328dddf33219bcf), `x1_yb_stage --check` rc 0 (1d9a5f243be7959f), `run_x1 --stage P0 --check` rc 0 (07fdd942c58b79b4), `run_x1 --stage YA --check` rc 0 (5c1a590da69a8f0c), `x1_t0 --check` rc 0 («расхождений нет»). Хэш чужих выходов Z-стадии исключает `ZD_*` и ключи `ZD*` CHECKPOINT (параллельный лист ZD).
+- **Z5 — отчёт и критерии.**
+  - CHECK: та же; тесты отчёта.
+  - EXPECT: `Z_REPORT.md` — генератором. Содержит:
+    - QLIKE по окнам и годам;
+    - Δ к X1, K2, K3, NTP2, cfg8, Y2, Y3;
+    - состояния E/N по годам; клетки остатка;
+    - контрасты ZB/ZB0, ZC/ZCp, ZA/ZB/ZC;
+    - K1–K5 по каждой гипотезе с «продолжить / закрыть»;
+    - 6.2 и Холм 749 — «подтверждено» только при p Холма < 0,05.
+
+    Подменённое число ловится. EVIDENCE (10.11.2026): `Z_REPORT.md` = генератор (`--check` rc 0); `test_check_catches_substituted_table_number_and_substituted_crit` (Z_PAIRS, Z_CRIT), `test_check_catches_substituted_number_in_report`, `test_check_catches_p_in_eval_and_wrong_key_order`, `test_check_that_writes_a_file_is_caught_by_hash`; K1–K5 — `test_each_condition_alone_closes_the_hypothesis` (7 случаев), `test_boundaries_are_inclusive_...`; Холм N = 749 / N_wide = 3203 — `test_main_tables_shape_holm_n_749_and_states`, `test_holm_n_equals_row_count_mutation_is_caught`. Итог по Z_CRIT.csv: ZA — закрыть (1 из 5), ZB — продолжить (5 из 5), ZC — закрыть (0 из 5); правило 6.2 против X1 — нет у всех пяти, p Холма N = 749 = 1,000 — «не доказано» у всех.
+
+## Лист Z2 — H0/HD и условно H1 + Hc (Ж-246 п. 6; план `docs/otchety/HARJ_HYBRID_SBER_Z2_HAWKES_DRAFT.md`; задание `docs/zadaniya/2026-11-10_harj_z2.md`), ≤ 2 конфигурации
+
+- **Z2.1 — реестр.**
+  - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_z2_*.py -q`.
+  - EXPECT: H1, Hc, H2 записаны до любого счёта; H2 — «не считается без решения владельца»; строки Y и Z не изменены. EVIDENCE (10.11.2026 17:03): `pytest tests/test_v2_x1_z2_*.py -q` rc 0, 35 passed; H1, Hc, H2 дописаны в `ALL_TRIALS.csv` отдельной командой `x1_z2_reg` 10.11.2026 16:47:35 (H1, Hc — «зарегистрирована; условная (L1–L3); после просмотра Y1–Y4, ZD», H2 — «не считается без решения владельца»), счёт H0 — позже (Z2.condition записан после 16:47); `test_registry_rows_before_any_count_and_h2_always_refused` (H2 — отказ при любом `computed_at`; H3 и реестр позже прогноза — отказ; строки Y1–Y6 и ZA–ZCp = `x1_reg.ROWS`/`x1_z_reg.ROWS`), `test_register_appends_only_missing_rows_bytes_intact`. КРАСНОЕ вне владения: `tests/test_v2_x1_z_reg.py::test_registry_has_five_z_rows_with_post_view_marks_and_y_rows_unchanged` (лист Z) требует `reg.index[6:] == ZR.IDS` и падает от дописанных строк Z2 — нужна правка одного утверждения (`reg.index[6:11]`) владельцем листа Z.
+- **Z2.2 — H0 и HD.**
+  - CHECK: та же; `python3 -W ignore -m models_v2.s16.x1_z2_stage --check`.
+  - EXPECT: тождество e_d = 1[ΣN ≥ 1] побитно; синтетический Hawkes восстановлен в допуске; Пуассон → n̂ ≈ 0; `Z2_H0_*`, `Z2_HD.csv` = пересчёт. EVIDENCE (10.11.2026 17:03): `pytest tests/test_v2_x1_z2_*.py` 35 passed; `test_identity_on_real_store_all_days` (e_d = 1[ΣN ≥ 1] побитно на 2924 днях склада, `de_e1_state.states`), `test_known_answer_hawkes_recovered_and_poisson_gives_n_zero` (μ, n, β, ρ в допуске; Пуассон n̂ < 0,12, p χ²₄ > 0,01), `test_analytic_gradient_equals_numeric_...` и `test_kernel_equals_plan_reference_...` (медленный эталон по формулам плана); `python3 -W ignore -m models_v2.s16.x1_z2_stage --check` rc 0 («OK: H0/HD/условие пересчитаны и равны файлам … хэш 7f2efe0d390047e9»). H0: 2015–2021 n̂ = 0,651, полураспад 257 мин, η̂ = 2 (граница), ρ̂ = 1 (граница), LR = 1258,9, p χ²₄ = 2,7e-271; помесячно 91 окно, минимум событий 40 (17 окон < 100, с 2024-10-01); дубль: |corr| ξ_d с N_d = 0,931 > 0,8.
+- **Z2.3 — условие.**
+  - CHECK: та же.
+  - EXPECT: `Z2.condition` в CHECKPOINT раньше любого прогноза H1. Известный ответ на 4 сочетаниях. При ложном условии H1 и Hc не считаются; H2 — отказ всегда. EVIDENCE (10.11.2026 17:03): `Z2.condition` записан (value = false; L1 истинно, L2(а) истинно, L2(б) ложно, L3 ложно: окно < 100 событий (минимум 40) и дубль |corr| = 0,931 с N_d), ключей `Z2`, `Z2.eval`, `Z2.rules` и файлов `data/regen/harj_x1/Z2/` нет (`check` их отсутствие проверяет); `test_condition_known_answer_on_four_combinations` (4 сочетания), `test_condition_boundaries_and_l2b_alternative` (100 / 99 событий, p = 0,01, |corr| = 0,8 / 0,81), `test_runner_refuses_h1_on_false_condition_never_computes_and_h2_always`, `test_key_order_condition_forecast_eval_rules_and_no_p_in_eval`, `test_check_flags_forecasts_or_eval_keys_when_condition_false`.
+- **Z2.4 — PIT и прогнозы (если условие истинно).**
+  - CHECK: та же; `x1_z_stage --check`, `x1_zd_stage --check`, `x1_yb_stage --check`, `run_x1 --stage P0|YA --check`, `x1_t0 --check`.
+  - EXPECT: все 11 мутаций раздела 5 плана Z2 ловятся; a = 0 ⇒ F = X1 побитно; все проверки rc 0; хэш чужих выходов до и после равен. EVIDENCE (10.11.2026 17:03; условие ложно — H1/Hc на боевых данных не считались, PIT и ход проверены на синтетике): 11 мутаций — `test_threshold_uses_only_past_bars_and_day_d_mutation_caught` (1), `test_mutation_self_excitation_bar_k_excites_bar_k_caught` (2), `test_xi_of_day_d_ignores_bars_of_t_plus_and_mutation_caught` (3), `test_stage1_window_excludes_session_D_and_mutation_caught` (4), `test_pool_xi_uses_theta_D_for_all_rows_and_own_month_mutation_caught` (5, № 146), `test_closed_plus_one_mutation_caught` (6), `test_hc_permutation_invariants_and_mutations_caught` (7), `test_identity_e_equals_any_event_and_mutation_caught` (8), `test_a_zero_gives_x1_bitwise_and_stray_constant_mutation_caught` (9), `test_start_gradient_nonzero_and_dead_point_mutation_caught` (10), `test_branching_n_capped_at_09_and_mutation_caught` (11) + `test_mutation_no_overnight_decay_caught`; проверки rc 0: `x1_z2_stage --check`, `x1_z_stage --check`, `x1_zd_stage --check`, `x1_yb_stage --check`, `run_x1 --stage P0 --check`, `run_x1 --stage YA --check`, `x1_t0 --check`; хэш чужих выходов до и после равен внутри `x1_z2_stage --check` (7f2efe0d390047e9) и в каждой стадии.
+- **Z2.5 — отчёт.**
+  - CHECK: та же.
+  - EXPECT: `Z2_REPORT.md` генератором. H0, HD, условие; при счёте — K1–K5, 6.2, Холм 751, H1 против ZB. Подменённое число ловится. EVIDENCE (10.11.2026 17:03): `Z2_REPORT.md` = генератор (`--check` rc 0), содержит H0, HD, условие (первая строка — статус «разработка; историческая; после просмотра Y1–Y4, ZD, Z»); H1 не считалась → K1–K5, 6.2, Холм 751, H1 против ZB в отчёт не входят (раздел 4 фиксирует «не запускались»); `test_check_clean_and_substituted_report_or_table_or_foreign_write_caught` (отчёт, `Z2_H0_LR.csv`, запись чужого), `test_substituted_number_in_z2_crit_csv_caught` (`Z2_CRIT.csv` на синтетике), `test_k1_k5_known_answer_boundaries_and_each_condition_alone_closes`. Ветка оценки H1/Hc (`x1_z2_walk`, `x1_z2_eval`, `x1_z2_run`, запись в `x1_z2_stage.run_h1`) на боевых рядах НЕ исполнялась: walk — на синтетике, критерии — на таблицах известного ответа, целиком боевой прогон — не проверялся.
+
+## Лист ZD — предсказуемость полезности поправки (Ж-246; задание `docs/zadaniya/2026-11-10_harj_zd.md`), 0 конфигураций
+
+- **ZD1 — PIT.**
+  - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_zd_*.py -q`.
+  - EXPECT: модель D на дату d учится только на парах t⁺ ≤ D — мутация «закрыто + 1» ловится; стандартизация по прошлому — мутация «вся выборка» ловится; контроль сдвига 252 ≠ исходному. EVIDENCE: `python3 -W ignore -m pytest tests/test_v2_x1_zd_*.py -q -p no:warnings` → rc 0, 17 passed (10.11.2026): `test_future_pair_does_not_change_month` (мутация «закрыто + 1» меняет прогноз месяца), `test_standardization_pool_only_and_whole_sample_mutation`, `test_features_use_only_day_d_and_past` (мутация: бары дня t⁺), `test_shift_control_differs_from_z_on_real_data` (AUC (г) ≠ (а), 2018 строк). Закрыт.
+- **ZD2 — таблицы.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_zd_stage --check`.
+  - EXPECT: rc 0; `ZD_STATES.csv` (D по E/N × год для Y1, Y2, Y3), `ZD_PRED.csv` (AUC, ранговая корреляция по годам: z, только e_d, сдвиг 252), `ZD_CALIB.csv`; Σ D по состояниям = Σ D по годам (тождество). EVIDENCE: `python3 -W ignore -m models_v2.s16.x1_zd_stage --check` → rc 0, «OK: таблицы, отчёт, манифест = пересчёт; тождество Σ D выполнено; чужие выходы не изменены»; ZD_STATES.csv, ZD_PRED.csv, ZD_CALIB.csv, ZD_CAUSES.csv записаны запуском без `--check` (rc 0); тесты тождества (`test_v2_x1_zd_tab.py`: выброшенная дата и подмена суммы ломают его) — в 17 passed. Закрыт.
+- **ZD3 — изоляция.**
+  - CHECK: та же.
+  - EXPECT: ZD не пишет прогнозов, `CHECKPOINT.json`, `ALL_TRIALS.csv`; хэш чужих выходов до и после равен; `--check` ничего не пишет. EVIDENCE: та же команда `--check` → rc 0, хэш выходов YA/YB/P0/T0, `data/regen/harj_deep`, `harj_hybrid_v7`, `harj_x1/YA|YB` до и после равен (проверка внутри `check()`); `tests/test_v2_x1_zd_stage.py`: AST — модули ZD не содержат записи parquet, CHECKPOINT.json, ALL_TRIALS.csv, импорта `x1_reg`; детектор ловит такую запись; `--check` с записью в чужой выход ловится (`test_check_that_writes_is_caught`). CHECKPOINT.json и ALL_TRIALS.csv исключены из хэша осознанно (их пишет параллельно лист Z), вместо этого — AST-запрет записи. Закрыт.
+- **ZD4 — отчёт.**
+  - CHECK: та же.
+  - EXPECT: `ZD_REPORT.md` генератором; по каждой из 6 причин плана — число ZD или ссылка на готовую таблицу; подменённое число ловится. EVIDENCE: `ZD_REPORT.md` записан генератором `x1_zd_doc.build`, первая строка «диагностика, не отбор; историческая; без конфигураций»; раздел «Причины 1–6» — 6 причин (4 и 5 — «ZD не проверяет» + путь к готовой таблице); `--check` rc 0 (отчёт = генератор); `test_substituted_number_in_report_table_and_manifest_is_caught` и `test_report_first_line_zero_configs_and_identity` — в 17 passed. Закрыт.
