@@ -24,13 +24,33 @@ def test_registry_rows_before_any_count_and_h2_always_refused():
     assert all(i in reg.index and reg.at[i, "status"] == s for i, s in ((r[0], r[4]) for r in list(R.ROWS) + list(ZZ.ROWS)))
 
 
+def _without_z2(lines):
+    """Строки реестра без строк Z2 — по id, а не по позиции (после Z2 дописаны другие строки)."""
+    return [x for x in lines if x.split(",", 1)[0] not in ZR.IDS]
+
+
 def test_register_appends_only_missing_rows_bytes_intact(tmp_path):
     p = tmp_path / "t.csv"
     lines = R.TRIALS.read_text(encoding="utf-8").splitlines(keepends=True)
-    p.write_text("".join(lines[:-3]), encoding="utf-8")
+    kept = _without_z2(lines)
+    assert len(lines) - len(kept) == len(ZR.IDS) == 3
+    p.write_text("".join(kept), encoding="utf-8")
     before = p.read_bytes()
     assert ZR.register("10.11.2026 10:00:00", p) == 3 and p.read_bytes().startswith(before)
     assert ZR.register("10.11.2026 11:00:00", p) == 0
+
+
+def test_register_test_does_not_depend_on_registry_tail(tmp_path):
+    lines = R.TRIALS.read_text(encoding="utf-8").splitlines(keepends=True)
+    tail = lines + ["ZX,чужая,f,p,зарегистрирована,10.11.2026 12:00:00\n"]   # чужая строка в хвосте
+    p = tmp_path / "t.csv"
+    p.write_text("".join(_without_z2(tail)), encoding="utf-8")
+    before = p.read_bytes()
+    assert ZR.register("10.11.2026 10:00:00", p) == 3 and p.read_bytes().startswith(before)
+    # позиционный подход неверен: срез хвоста при дописанных после Z2 строках Z2 не убирает
+    q = tmp_path / "pos.csv"
+    q.write_text("".join(tail[:-3]), encoding="utf-8")
+    assert ZR.register("10.11.2026 10:00:00", q) != 3
 
 
 def tables(l1=True, l2a=True, nev=150, p=1e-9, corr=0.5):

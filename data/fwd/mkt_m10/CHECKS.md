@@ -1,0 +1,492 @@
+# CHECKS (данные M10 16 бумаг + IMOEX после 27.02.2026; значения RV не показаны)
+
+| gate | check | item | value | status |
+|---|---|---|---|---|
+| M2 | граница | AFLT: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | AFLT: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | AFLT: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | AFLT: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | AFLT: null в fwd | 0 | OK |
+| M3 | пропуски | AFLT: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | AFLT: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | AFLT: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | AFLT fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | AFLT fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | AFLT fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | AFLT fwd 2026-05 | osnov=1113 utro=381 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | AFLT fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | AFLT fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | AFLT fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | AFLT fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | AFLT fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | AFLT fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | AFLT архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | AFLT архив 3 мес 2026-01 | osnov=1007 utro=361 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | AFLT архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | AFLT: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | AFLT: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | AFLT fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | AFLT перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | ALRS: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | ALRS: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | ALRS: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | ALRS: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | ALRS: null в fwd | 0 | OK |
+| M3 | пропуски | ALRS: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | ALRS: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | ALRS: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | ALRS fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | ALRS fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | ALRS fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | ALRS fwd 2026-05 | osnov=1113 utro=380 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | ALRS fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | ALRS fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | ALRS fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | ALRS fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | ALRS fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | ALRS fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | ALRS архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | ALRS архив 3 мес 2026-01 | osnov=1007 utro=361 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | ALRS архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | ALRS: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | ALRS: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | ALRS fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | ALRS перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | HYDR: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 666 / 666 / 666; [] / [] | OK |
+| M2 | граница | HYDR: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | HYDR: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | HYDR: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | HYDR: null в fwd | 0 | OK |
+| M3 | пропуски | HYDR: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | HYDR: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | HYDR: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | HYDR fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | HYDR fwd 2026-03 | osnov=1165 utro=415 vecher=645 vyhodnoy=273 | INFO |
+| M3 | расписание | HYDR fwd 2026-04 | osnov=1166 utro=413 vecher=658 vyhodnoy=433 | INFO |
+| M3 | расписание | HYDR fwd 2026-05 | osnov=1113 utro=377 vecher=601 vyhodnoy=434 | INFO |
+| M3 | расписание | HYDR fwd 2026-06 | osnov=1166 utro=398 vecher=631 vyhodnoy=320 | INFO |
+| M3 | расписание | HYDR fwd 2026-07 | osnov=1219 utro=432 vecher=689 vyhodnoy=436 | INFO |
+| M3 | расписание | HYDR fwd 2026-08 | osnov=1113 utro=393 vecher=630 vyhodnoy=324 | INFO |
+| M3 | расписание | HYDR fwd 2026-09 | osnov=1166 utro=415 vecher=659 vyhodnoy=326 | INFO |
+| M3 | расписание | HYDR fwd 2026-10 | osnov=1166 utro=415 vecher=659 vyhodnoy=385 | INFO |
+| M3 | расписание | HYDR fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | HYDR архив 3 мес 2025-12 | osnov=1165 utro=413 vecher=638 vyhodnoy=328 | INFO |
+| M3 | расписание | HYDR архив 3 мес 2026-01 | osnov=1007 utro=358 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | HYDR архив 3 мес 2026-02 | osnov=1060 utro=360 vecher=551 vyhodnoy=272 | INFO |
+| M3 | зона времени | HYDR: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | HYDR: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | HYDR fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | HYDR перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | IRAO: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | IRAO: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | IRAO: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | IRAO: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | IRAO: null в fwd | 0 | OK |
+| M3 | пропуски | IRAO: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | IRAO: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | IRAO: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | IRAO fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | IRAO fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | IRAO fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | IRAO fwd 2026-05 | osnov=1113 utro=381 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | IRAO fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | IRAO fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | IRAO fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | IRAO fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | IRAO fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | IRAO fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | IRAO архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | IRAO архив 3 мес 2026-01 | osnov=1007 utro=361 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | IRAO архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | IRAO: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | IRAO: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | IRAO fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | IRAO перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | LKOH: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | LKOH: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | LKOH: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | LKOH: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | LKOH: null в fwd | 0 | OK |
+| M3 | пропуски | LKOH: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | LKOH: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | LKOH: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | LKOH fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | LKOH fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | LKOH fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | LKOH fwd 2026-05 | osnov=1113 utro=381 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | LKOH fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | LKOH fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | LKOH fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | LKOH fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | LKOH fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | LKOH fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | LKOH архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | LKOH архив 3 мес 2026-01 | osnov=1007 utro=343 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | LKOH архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | LKOH: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | LKOH: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | LKOH fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | LKOH перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | LSRG: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 661 / 661 / 661; [] / [] | OK |
+| M2 | граница | LSRG: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | LSRG: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | LSRG: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | LSRG: null в fwd | 0 | OK |
+| M3 | пропуски | LSRG: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | LSRG: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | LSRG: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | LSRG fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | LSRG fwd 2026-03 | osnov=1163 utro=401 vecher=637 vyhodnoy=262 | INFO |
+| M3 | расписание | LSRG fwd 2026-04 | osnov=1165 utro=400 vecher=658 vyhodnoy=406 | INFO |
+| M3 | расписание | LSRG fwd 2026-05 | osnov=1107 utro=371 vecher=588 vyhodnoy=418 | INFO |
+| M3 | расписание | LSRG fwd 2026-06 | osnov=1165 utro=397 vecher=631 vyhodnoy=310 | INFO |
+| M3 | расписание | LSRG fwd 2026-07 | osnov=1219 utro=428 vecher=688 vyhodnoy=434 | INFO |
+| M3 | расписание | LSRG fwd 2026-08 | osnov=1113 utro=390 vecher=625 vyhodnoy=311 | INFO |
+| M3 | расписание | LSRG fwd 2026-09 | osnov=1165 utro=400 vecher=650 vyhodnoy=309 | INFO |
+| M3 | расписание | LSRG fwd 2026-10 | osnov=1165 utro=408 vecher=658 vyhodnoy=359 | INFO |
+| M3 | расписание | LSRG fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=164 | INFO |
+| M3 | расписание | LSRG архив 3 мес 2025-12 | osnov=1165 utro=402 vecher=637 vyhodnoy=322 | INFO |
+| M3 | расписание | LSRG архив 3 мес 2026-01 | osnov=1007 utro=355 vecher=551 vyhodnoy=273 | INFO |
+| M3 | расписание | LSRG архив 3 мес 2026-02 | osnov=1056 utro=356 vecher=549 vyhodnoy=267 | INFO |
+| M3 | зона времени | LSRG: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | LSRG: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | LSRG fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | LSRG перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | MGNT: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 669 / 669 / 669; [] / [] | OK |
+| M2 | граница | MGNT: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | MGNT: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | MGNT: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | MGNT: null в fwd | 0 | OK |
+| M3 | пропуски | MGNT: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | MGNT: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | MGNT: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | MGNT fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | MGNT fwd 2026-03 | osnov=1166 utro=416 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | MGNT fwd 2026-04 | osnov=1166 utro=417 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | MGNT fwd 2026-05 | osnov=1113 utro=380 vecher=601 vyhodnoy=439 | INFO |
+| M3 | расписание | MGNT fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | MGNT fwd 2026-07 | osnov=1219 utro=435 vecher=690 vyhodnoy=439 | INFO |
+| M3 | расписание | MGNT fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | MGNT fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=329 | INFO |
+| M3 | расписание | MGNT fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | MGNT fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | MGNT архив 3 мес 2025-12 | osnov=1166 utro=417 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | MGNT архив 3 мес 2026-01 | osnov=1007 utro=360 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | MGNT архив 3 мес 2026-02 | osnov=1060 utro=361 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | MGNT: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | MGNT: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | MGNT fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | MGNT перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | MOEX: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | MOEX: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | MOEX: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | MOEX: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | MOEX: null в fwd | 0 | OK |
+| M3 | пропуски | MOEX: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | MOEX: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | MOEX: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | MOEX fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | MOEX fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | MOEX fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | MOEX fwd 2026-05 | osnov=1113 utro=381 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | MOEX fwd 2026-06 | osnov=1166 utro=399 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | MOEX fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | MOEX fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | MOEX fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | MOEX fwd 2026-10 | osnov=1166 utro=417 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | MOEX fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | MOEX архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | MOEX архив 3 мес 2026-01 | osnov=1007 utro=361 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | MOEX архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | MOEX: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | MOEX: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | MOEX fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | MOEX перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | MTLR: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | MTLR: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | MTLR: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | MTLR: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | MTLR: null в fwd | 0 | OK |
+| M3 | пропуски | MTLR: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | MTLR: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | MTLR: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | MTLR fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | MTLR fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | MTLR fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | MTLR fwd 2026-05 | osnov=1113 utro=380 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | MTLR fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | MTLR fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | MTLR fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | MTLR fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | MTLR fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | MTLR fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | MTLR архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | MTLR архив 3 мес 2026-01 | osnov=1007 utro=361 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | MTLR архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | MTLR: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | MTLR: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | MTLR fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | MTLR перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | MTSS: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | MTSS: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | MTSS: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | MTSS: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | MTSS: null в fwd | 0 | OK |
+| M3 | пропуски | MTSS: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | MTSS: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | MTSS: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | MTSS fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | MTSS fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | MTSS fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | MTSS fwd 2026-05 | osnov=1113 utro=380 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | MTSS fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | MTSS fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | MTSS fwd 2026-08 | osnov=1113 utro=398 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | MTSS fwd 2026-09 | osnov=1166 utro=417 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | MTSS fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | MTSS fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | MTSS архив 3 мес 2025-12 | osnov=1166 utro=417 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | MTSS архив 3 мес 2026-01 | osnov=1007 utro=361 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | MTSS архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | MTSS: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | MTSS: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | MTSS fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | MTSS перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | NVTK: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | NVTK: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | NVTK: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | NVTK: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | NVTK: null в fwd | 0 | OK |
+| M3 | пропуски | NVTK: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | NVTK: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | NVTK: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | NVTK fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | NVTK fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | NVTK fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | NVTK fwd 2026-05 | osnov=1113 utro=381 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | NVTK fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | NVTK fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | NVTK fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | NVTK fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | NVTK fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | NVTK fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | NVTK архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | NVTK архив 3 мес 2026-01 | osnov=1007 utro=361 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | NVTK архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | NVTK: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | NVTK: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | NVTK fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | NVTK перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | OGKB: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 659 / 659 / 659; [] / [] | OK |
+| M2 | граница | OGKB: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | OGKB: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | OGKB: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | OGKB: null в fwd | 0 | OK |
+| M3 | пропуски | OGKB: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | OGKB: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | OGKB: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | OGKB fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | OGKB fwd 2026-03 | osnov=1162 utro=410 vecher=640 vyhodnoy=268 | INFO |
+| M3 | расписание | OGKB fwd 2026-04 | osnov=1165 utro=411 vecher=655 vyhodnoy=423 | INFO |
+| M3 | расписание | OGKB fwd 2026-05 | osnov=1112 utro=373 vecher=598 vyhodnoy=413 | INFO |
+| M3 | расписание | OGKB fwd 2026-06 | osnov=1163 utro=393 vecher=626 vyhodnoy=298 | INFO |
+| M3 | расписание | OGKB fwd 2026-07 | osnov=1219 utro=431 vecher=687 vyhodnoy=428 | INFO |
+| M3 | расписание | OGKB fwd 2026-08 | osnov=1113 utro=395 vecher=627 vyhodnoy=304 | INFO |
+| M3 | расписание | OGKB fwd 2026-09 | osnov=1162 utro=409 vecher=650 vyhodnoy=316 | INFO |
+| M3 | расписание | OGKB fwd 2026-10 | osnov=1162 utro=414 vecher=653 vyhodnoy=375 | INFO |
+| M3 | расписание | OGKB fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=146 | INFO |
+| M3 | расписание | OGKB архив 3 мес 2025-12 | osnov=1165 utro=416 vecher=637 vyhodnoy=323 | INFO |
+| M3 | расписание | OGKB архив 3 мес 2026-01 | osnov=1005 utro=354 vecher=550 vyhodnoy=272 | INFO |
+| M3 | расписание | OGKB архив 3 мес 2026-02 | osnov=1057 utro=355 vecher=549 vyhodnoy=269 | INFO |
+| M3 | зона времени | OGKB: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | OGKB: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | OGKB fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | OGKB перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | PHOR: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 668 / 668 / 668; [] / [] | OK |
+| M2 | граница | PHOR: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | PHOR: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | PHOR: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | PHOR: null в fwd | 0 | OK |
+| M3 | пропуски | PHOR: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | PHOR: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | PHOR: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | PHOR fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | PHOR fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | PHOR fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=439 | INFO |
+| M3 | расписание | PHOR fwd 2026-05 | osnov=1113 utro=378 vecher=601 vyhodnoy=439 | INFO |
+| M3 | расписание | PHOR fwd 2026-06 | osnov=1166 utro=399 vecher=631 vyhodnoy=327 | INFO |
+| M3 | расписание | PHOR fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=439 | INFO |
+| M3 | расписание | PHOR fwd 2026-08 | osnov=1113 utro=397 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | PHOR fwd 2026-09 | osnov=1166 utro=417 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | PHOR fwd 2026-10 | osnov=1166 utro=417 vecher=660 vyhodnoy=383 | INFO |
+| M3 | расписание | PHOR fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | PHOR архив 3 мес 2025-12 | osnov=1166 utro=416 vecher=638 vyhodnoy=329 | INFO |
+| M3 | расписание | PHOR архив 3 мес 2026-01 | osnov=1007 utro=358 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | PHOR архив 3 мес 2026-02 | osnov=1060 utro=359 vecher=552 vyhodnoy=274 | INFO |
+| M3 | зона времени | PHOR: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | PHOR: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | PHOR fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | PHOR перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | RTKM: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | RTKM: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | RTKM: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | RTKM: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | RTKM: null в fwd | 0 | OK |
+| M3 | пропуски | RTKM: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | RTKM: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | RTKM: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | RTKM fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | RTKM fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | RTKM fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | RTKM fwd 2026-05 | osnov=1113 utro=379 vecher=601 vyhodnoy=439 | INFO |
+| M3 | расписание | RTKM fwd 2026-06 | osnov=1166 utro=396 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | RTKM fwd 2026-07 | osnov=1219 utro=436 vecher=690 vyhodnoy=436 | INFO |
+| M3 | расписание | RTKM fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | RTKM fwd 2026-09 | osnov=1166 utro=414 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | RTKM fwd 2026-10 | osnov=1166 utro=416 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | RTKM fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | RTKM архив 3 мес 2025-12 | osnov=1166 utro=417 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | RTKM архив 3 мес 2026-01 | osnov=1007 utro=360 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | RTKM архив 3 мес 2026-02 | osnov=1060 utro=359 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | RTKM: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | RTKM: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | RTKM fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | RTKM перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | TATN: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | TATN: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | TATN: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | TATN: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | TATN: null в fwd | 0 | OK |
+| M3 | пропуски | TATN: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | TATN: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | TATN: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | TATN fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | TATN fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | TATN fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | TATN fwd 2026-05 | osnov=1113 utro=381 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | TATN fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | TATN fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | TATN fwd 2026-08 | osnov=1113 utro=398 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | TATN fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | TATN fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | TATN fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | TATN архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | TATN архив 3 мес 2026-01 | osnov=1007 utro=343 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | TATN архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | TATN: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | TATN: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | TATN fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | TATN перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | VTBR: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 670 / 670 / 670; [] / [] | OK |
+| M2 | граница | VTBR: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | VTBR: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | VTBR: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | VTBR: null в fwd | 0 | OK |
+| M3 | пропуски | VTBR: будние дни SBER без баров основной сессии инструмента | 0:  | INFO |
+| M3 | пропуски | VTBR: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | VTBR: дней с барами (любая сессия) / будних дней SBER | 240 / 182 | INFO |
+| M3 | расписание | VTBR fwd 2026-02 | vyhodnoy=55 | INFO |
+| M3 | расписание | VTBR fwd 2026-03 | osnov=1166 utro=418 vecher=645 vyhodnoy=275 | INFO |
+| M3 | расписание | VTBR fwd 2026-04 | osnov=1166 utro=418 vecher=660 vyhodnoy=440 | INFO |
+| M3 | расписание | VTBR fwd 2026-05 | osnov=1113 utro=381 vecher=601 vyhodnoy=440 | INFO |
+| M3 | расписание | VTBR fwd 2026-06 | osnov=1166 utro=400 vecher=631 vyhodnoy=330 | INFO |
+| M3 | расписание | VTBR fwd 2026-07 | osnov=1219 utro=437 vecher=690 vyhodnoy=440 | INFO |
+| M3 | расписание | VTBR fwd 2026-08 | osnov=1113 utro=399 vecher=630 vyhodnoy=330 | INFO |
+| M3 | расписание | VTBR fwd 2026-09 | osnov=1166 utro=418 vecher=660 vyhodnoy=330 | INFO |
+| M3 | расписание | VTBR fwd 2026-10 | osnov=1166 utro=418 vecher=660 vyhodnoy=385 | INFO |
+| M3 | расписание | VTBR fwd 2026-11 | osnov=371 utro=115 vecher=181 vyhodnoy=165 | INFO |
+| M3 | расписание | VTBR архив 3 мес 2025-12 | osnov=1166 utro=418 vecher=638 vyhodnoy=330 | INFO |
+| M3 | расписание | VTBR архив 3 мес 2026-01 | osnov=1007 utro=361 vecher=551 vyhodnoy=275 | INFO |
+| M3 | расписание | VTBR архив 3 мес 2026-02 | osnov=1060 utro=362 vecher=552 vyhodnoy=275 | INFO |
+| M3 | зона времени | VTBR: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес  | 0: [] | INFO |
+| M3 | зона времени | VTBR: первый / последний слот будней fwd; архив 3 мес | 06:50 / 23:40; 06:50 / 23:40 | INFO |
+| M3 | единицы | VTBR fwd: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M3 | единицы | VTBR перекрытие: дней вне 0,9…1,1 (медиана value/volume ÷ close) | 0: [] | OK |
+| M2 | граница | IMOEX: перекрытие 20–27.02: архив / новые / общие; только в одном (архив / новые) | 275 / 275 / 275; [] / [] | OK |
+| M2 | граница | IMOEX: расхождения полей (цены/объём — 0; value — 1e-6 отн.) | 0: [] | OK |
+| M2 | граница | IMOEX: баров fwd ≤ 2026-02-27 23:59 / > 2026-11-10 23:59 | 0 / 0 | OK |
+| M2 | дубли | IMOEX: повторы begin: fwd / перекрытие | 0 / 0 | OK |
+| M2 | пустые значения | IMOEX: null в fwd | 0 | OK |
+| M3 | пропуски | IMOEX: будние дни SBER без баров основной сессии инструмента | 2: 2026-05-01 2026-06-12 | INFO |
+| M3 | пропуски | IMOEX: будние дни SBER с < 30 барами основной сессии (дата:баров) | 0:  | INFO |
+| M3 | пропуски | IMOEX: дней с барами (любая сессия) / будних дней SBER | 192 / 182 | INFO |
+| M3 | расписание | IMOEX fwd 2026-03 | osnov=1166 utro=22 vecher=22 | INFO |
+| M3 | расписание | IMOEX fwd 2026-04 | osnov=1166 utro=22 vecher=26 | INFO |
+| M3 | расписание | IMOEX fwd 2026-05 | osnov=1060 utro=20 vecher=40 | INFO |
+| M3 | расписание | IMOEX fwd 2026-06 | osnov=1113 utro=21 vecher=42 | INFO |
+| M3 | расписание | IMOEX fwd 2026-07 | osnov=1219 utro=23 vecher=46 | INFO |
+| M3 | расписание | IMOEX fwd 2026-08 | osnov=1113 utro=21 vecher=42 | INFO |
+| M3 | расписание | IMOEX fwd 2026-09 | osnov=1166 utro=123 vecher=131 vyhodnoy=110 | INFO |
+| M3 | расписание | IMOEX fwd 2026-10 | osnov=1166 utro=396 vecher=682 vyhodnoy=385 | INFO |
+| M3 | расписание | IMOEX fwd 2026-11 | osnov=371 utro=108 vecher=188 vyhodnoy=165 | INFO |
+| M3 | расписание | IMOEX архив 3 мес 2025-12 | osnov=1166 utro=22 vecher=22 | INFO |
+| M3 | расписание | IMOEX архив 3 мес 2026-01 | osnov=1007 utro=19 vecher=19 | INFO |
+| M3 | расписание | IMOEX архив 3 мес 2026-02 | osnov=1005 utro=19 vecher=19 | INFO |
+| M3 | зона времени | IMOEX: метки без зоны (мск); слоты будней fwd вне слотов архива 3 мес (РАСХОЖДЕНИЕ) | 47: ['07:00', '07:10', '07:20', '07:30', '07:40', '07:50', '08:00', '08:10', '08:20', '08:30', '08:40', '08:50', '09:00', '09:10', '09:20', '09:30', '09:40', '19:00', '19:10', '19:20'] | INFO |
+| M3 | зона времени | IMOEX: первый / последний слот будней fwd; архив 3 мес | 07:00 / 23:50; 09:50 / 18:50 | INFO |
+| M3 | зона времени | IMOEX: часы основной сессии (10:00–18:40) — первый / последний бар | 10:00 / 18:40 | OK |
+| M3 | единицы | IMOEX fwd: доля баров volume = 0 / медиана value / min close | 1.000 / 7.573e+08 / 1909.94 | INFO |
+| M3 | единицы | IMOEX архив 3 мес: доля баров volume = 0 / медиана value / min close | 1.000 / 7.714e+08 / 2622.20 | INFO |
+| M3 | единицы | IMOEX: объём как в архиве (доля нулей fwd = архив 3 мес) | см. строки выше | OK |
+| M4 | календарь SBER | дней по правилу IMOEX (build_daily, index_days = сессии IMOEX) / по замещающему (запечатанная RV) | 180 / 179 | INFO |
+| M4 | календарь SBER | даты только по правилу IMOEX (нет в запечатанной) | 1: 2026-11-04 | INFO |
+| M4 | календарь SBER | даты только по замещающему (нет по правилу IMOEX) | 0:  | INFO |
+| M4 | календарь SBER | правила совпадают | НЕТ (решение — дирижёр) | INFO |
+| M4 | календарь SBER | будние дни SBER без сессии IMOEX | 2: 2026-05-01 2026-06-12 | INFO |
+| M4 | доступность | AFLT: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | AFLT: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | ALRS: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | ALRS: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | HYDR: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | HYDR: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | IRAO: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | IRAO: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | LKOH: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | LKOH: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | LSRG: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | LSRG: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | MGNT: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | MGNT: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | MOEX: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | MOEX: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | MTLR: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | MTLR: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | MTSS: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | MTSS: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | NVTK: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | NVTK: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | OGKB: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | OGKB: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | PHOR: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | PHOR: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | RTKM: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | RTKM: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | TATN: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | TATN: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | VTBR: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 0 / 0 | OK |
+| M4 | доступность | VTBR: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:40 | INFO |
+| M4 | доступность | IMOEX: дней SBER / нет баров основной сессии / последний бар основной сессии позже SBER | 240 / 48 / 0 | OK |
+| M4 | доступность | IMOEX: максимум времени последнего бара основной сессии дня / любой сессии | 18:40 / 23:50 | INFO |
+| M1 | manifest | полнота ключей | полон | OK |
+| M1 | manifest | инструментов в манифесте (16 бумаг + IMOEX) | 17 | OK |
+| M1 | manifest | sha256 архивных файлов до = после = текущий (17) | 17 из 17 | OK |
+| M1 | manifest | sha256 сырых страниц и выходов | страниц 743; расхождений 0 | OK |
+| M1 | manifest | страницы подряд, все кроме последней полные (нет потери страницы) | все | OK |
+| M1 | manifest | sha256 кода загрузчика | 7b2b0926 | OK |
+| M1 | манифест | AFLT: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21598; 240 | INFO |
+| M1 | манифест | ALRS: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21597; 240 | INFO |
+| M1 | манифест | HYDR: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21522; 240 | INFO |
+| M1 | манифест | IRAO: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21598; 240 | INFO |
+| M1 | манифест | LKOH: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21598; 240 | INFO |
+| M1 | манифест | LSRG: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21287; 240 | INFO |
+| M1 | манифест | MGNT: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21589; 240 | INFO |
+| M1 | манифест | MOEX: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21596; 240 | INFO |
+| M1 | манифест | MTLR: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21597; 240 | INFO |
+| M1 | манифест | MTSS: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21595; 240 | INFO |
+| M1 | манифест | NVTK: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21598; 240 | INFO |
+| M1 | манифест | OGKB: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21323; 240 | INFO |
+| M1 | манифест | PHOR: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21582; 240 | INFO |
+| M1 | манифест | RTKM: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21580; 240 | INFO |
+| M1 | манифест | TATN: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21597; 240 | INFO |
+| M1 | манифест | VTBR: первая / последняя метка fwd; баров; дней | 2026-02-28 09:50:00 / 2026-11-10 23:40:00; 21598; 240 | INFO |
+| M1 | манифест | IMOEX: первая / последняя метка fwd; баров; дней | 2026-03-02 09:50:00 / 2026-11-10 23:50:00; 12175; 192 | INFO |
