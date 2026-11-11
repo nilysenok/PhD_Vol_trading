@@ -368,6 +368,77 @@
   "rows": 12,
   "spec_sha256": "45359d39dbad5c7f60721dc2dadc00dabe36122dc94a861a46bbb5f8b2e01aac"
  },
+ "S.Z.eval": {
+  "boot": 10000,
+  "boot_block": 20,
+  "boot_seed": 0,
+  "code": {
+   "z_doc.py": "bb58eefb4235aec227efaa36d81584cd73252e598e12593757ea9cbdf2347d10",
+   "z_doc_fmt.py": "96a296a2c4a42109fbb0d2c1a52165bbb916139b7a7ea216f853e9307a1ac93f",
+   "z_doc_s1.py": "fa848ed3d943d59eb64d407b97ca61056cb53e5e6715d3825cbc505193244011",
+   "z_doc_s2.py": "08036794d52693d6529f1af98876091a4ab516b6d3de67b0cf57443766da1156",
+   "z_eval.py": "d1ec8d9d96bee33167a34017d377711f248efa7276cad1c0adb8c61483c911a6",
+   "z_eval_cfg.py": "d4d0b229163305bb97d6bf78900b20c3d1e08be5a7220fda911fc9be89b28342",
+   "z_eval_chk.py": "842c4c194da6064910fe423fcd9140b1db31884900ed853dd45135e5e8c99c23",
+   "z_eval_gd.py": "7a2e78625f9644be8af865a6127a00b83f2a39a0f53514088a81a1f4b582c730",
+   "z_eval_null.py": "da9b78e157ac2a0eea5ec82f04cd4075bfbd25018991d2c423e4016db4e99f54",
+   "z_eval_par.py": "3dc1b9a6572d74c1e10b6062922214ba11a872ecf0ff53c1f7aff9cda46e35e5",
+   "z_eval_tab.py": "3486c31043510c6afe28dc41db103a40b3e9b5bc13b59fd7244d7f5d3a6e35e9"
+  },
+  "decision": "3",
+  "hz1": true,
+  "hz2": true,
+  "inputs": {
+   "data/regen/harj_struct/D/rckm.parquet": "08ec673d3e8278df1c47eeb08e33ae23a5813c9a9431093f1aefd35046262553",
+   "data/regen/harj_struct/L/rl1.parquet": "28bddc1668d50f6c0b9bef977924f83c819591b9b9fa89781b9852b37f2a9bf3",
+   "data/regen/harj_struct/R/rck.parquet": "97d6fff21834f09ef49a1fb92a396f2abc4a588979ca5e474d9daed65a51eb81",
+   "data/regen/harj_struct/R/rckc.parquet": "137fa114ea36ced91f82398c6f4235e9decf62a3cdb6e3860af8550d9925feed",
+   "data/regen/harj_struct/Z/rckz.parquet": "e8284586b668126e2cf1babe7740fbbbe9ca17535212438ace110a2f5538c670",
+   "data/regen/harj_struct/Z/rckzs.parquet": "4cd9345d1fb7c9603b6f8469c731665086a9248d8b915c22434a77654dfd07ad",
+   "data/regen/harj_struct/Z/rz.parquet": "35ab7b3aead961e6d9073a9070c839216916976b73b536233022d725edf6e7c2",
+   "data/regen/harj_struct/Z/zmaps.npz": "915533eee0b6b62b7c887a944e7c8a0b67ed5d60b99543c79c00c4b89512aaaa",
+   "data/regen/harj_x1/W5/w5g.parquet": "0ae40e1bcc7691e1ea580ec52224a7f4736c629594505a8bafbd29ba80fca8fe",
+   "docs/otchety/harj_struct/S_Z_NULL.csv": "598197078091e75b223304d9bb4a160835db30188bfa0cbc7cc1d8a9d500abdf",
+   "docs/otchety/harj_struct/S_Z_SPEC.md": "3ab588cd1a15898927552477f15d873357dace2eb29805d6c372cfbea4936e7f"
+  },
+  "ktrim": 22,
+  "lag_main": 8,
+  "m_family": 6,
+  "n": 2198,
+  "n_holm": 855,
+  "n_holm_wide": 3415,
+  "outputs": {
+   "S_Z_CONC.csv": "9f90b306b51d32899b8c4ff964fd889b4f1919fb05fad6b7fb016ef73c2888d9",
+   "S_Z_DEC.csv": "0e36a28602aee0335b5f31797e8493721db5c49176586555f292793362a77f8e",
+   "S_Z_GUARD.csv": "611648784aa620ac06a7e77bb1830819ef0e9d4d32216a1d13cf4567dff9922d",
+   "S_Z_MCS.csv": "15e51b95a9fad5c3fb60aecc2702b2cd48043be315d600f77d08e50f742df8b8",
+   "S_Z_MECH.csv": "957497bf25b36cd718d3116814c6436f5c3b6c7e57d2cf9a6965ef08e9c9d98d",
+   "S_Z_PARAMS.csv": "3a28fb651cdeef5a67b279d23993994e115ef9d48eec1a748820f0980a948d32",
+   "S_Z_POWER.csv": "bf38a4e6aaf3aa9a3787ba2154bf0adfc47973238d999dba876b57b425a9ba9b",
+   "S_Z_SEL.csv": "b9755f4981340e64897bbeae9aa2c87976934898c2946716d4bd8e105b27f0db",
+   "S_Z_SPA.csv": "fdbd6b909ceab73edaf2e83a122ce5f06810e0c62452da6e7590980e92a1348f",
+   "S_Z_STATS.csv": "e8c0b07b1ba094437a8ddd72d62cd7112e801a1656f0afd66abfb52837175b78",
+   "S_Z_TABLE.csv": "ed714812d3ffc34af29e59b7c7555f66cd427db65166fff4c182e748b6e53a1b",
+   "S_Z_YEARS.csv": "c70b7043adc9e3bcc4b061ba2c86d74fec876f20b3366a2328d89aeb87b578e7"
+  },
+  "thr": {
+   "У1-S": 0.415,
+   "У2-S": 0.5,
+   "У3-S": 1.0
+  },
+  "written_at": "12.11.2026 01:47:38"
+ },
+ "S.Z.registered": {
+  "n": 855,
+  "n_base": 852,
+  "n_wide": 3415,
+  "n_wide_base": 3409,
+  "prior_bytes": 38171,
+  "prior_sha256": "20c60a25a9ee353ff77c4634f8672e668ba349e1866f86565dd3c95ad8390ed7",
+  "registered_at": "12.11.2026 01:28:31",
+  "rows": 3,
+  "spec_sha256": "3ab588cd1a15898927552477f15d873357dace2eb29805d6c372cfbea4936e7f"
+ },
  "W1": {
   "configurations": 0,
   "forecasts_written": 0,

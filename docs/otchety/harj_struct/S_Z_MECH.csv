@@ -1,0 +1,33 @@
+# исследовательский результат на раскрытой истории, не OOS; механизм выбран после просмотра истории
+# критерии разд. 7 S_Z_SPEC.md объявлены и зарегистрированы до счёта; «подтверждено» только при p Холма (N программы) < 0,05 и p SPA < 0,05 по своей строке; замена кандидата — только решение владельца
+# D_M: t⁺ 2018-01-04…2026-11-10, n = 2198; l = RV/F − ln(RV/F) − 1, QLIKE = среднее дневных потерь (без обрезки); Δ в % QLIKE базы, минус — лучше; DEVELOPMENT / HISTORICAL WALK-FORWARD
+section,item,key,value
+hz2,delta_Z_vs_RCK_pct,,-0.0697428099378
+hz2,delta_Zs_vs_RCK_pct,,0.169383441719
+hz2,delta_Z_vs_Zs_pct,,-0.238721896293
+hz2,share_control,"доля контроля < 0,5",-2.42868679754
+decomp,total_vs_RCK,,-0.0697428099378
+decomp,frozen_pi,,-0.0926641968145
+decomp,layer_reaction,,0.0229213868767
+lnratio,q,q01,-0.128152478036
+lnratio,q,q05,-0.0769367863394
+lnratio,q,q50,0
+lnratio,q,q95,0.0585144104631
+lnratio,q,q99,0.101303178851
+lnratio,share_abs_gt_1e-3,,0.825693996127
+lnratio,n_active_dates,,1549
+corr_ex_post,corr_all_active,ex post,0.0797769259615
+corr_ex_post,corr_changed_dates,ex post,0.0915861918619
+noise,q05,,-0.302917805574
+noise,q95,,0.433135361178
+noise,mean,,0.0219185882914
+noise,std,,0.278040196401
+noise,share_nonzero_mean,,0.586666666667
+noise_real,Z_vs_RCK|D_M,,-0.0697428099378
+noise_rule,Z_vs_RCK|D_M,не отличим от шума процедуры,-0.0697428099378
+noise_real,Z_vs_RCK|active,,-0.0935414513387
+noise_rule,Z_vs_RCK|active,не отличим от шума процедуры,-0.0935414513387
+noise_real,Z_vs_Zs|D_M,,-0.238721896293
+noise_rule,Z_vs_Zs|D_M,не отличим от шума процедуры,-0.238721896293
+noise_real,Z_vs_Zs|active,,-0.319997359984
+noise_rule,Z_vs_Zs|active,вне 5–95 % нулевого распределения,-0.319997359984
