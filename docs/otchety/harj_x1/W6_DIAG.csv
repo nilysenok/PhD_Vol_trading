@@ -1,0 +1,1281 @@
+# W6_DIAG — диагностика ПОСЛЕ ПРОСМОТРА окна M (W1–W5); DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS; ряды W6D-* — диагностические, критериев не получают
+# l = RV/F − ln(RV/F) − 1; Δ и части — в % QLIKE(X1) периода, минус — лучше X1; Σ(ceil, bias, noise) = delta (тождество); u = ln(RV/X1)
+# окно M: t⁺ 2018-01-04…2026-11-10, n = 2198; сохранённые ряды не менялись
+block,series,period,item,value,note
+A_decomp,W5-G,2018,n,253,
+A_decomp,W5-G,2018,n_dom,25,
+A_decomp,W5-G,2018,delta,1.5386152219331215,
+A_decomp,W5-G,2018,c_star,-0.1327020355609957,
+A_decomp,W5-G,2018,c_bar,0.1273609578909349,
+A_decomp,W5-G,2018,c_sd,0.09173059450032756,
+A_decomp,W5-G,2018,ceil,-0.3188567710297043,
+A_decomp,W5-G,2018,bias,1.1753179040214345,
+A_decomp,W5-G,2018,noise,0.6821540889413912,
+A_decomp,W5-G,2018,resid,1.1102230246251565e-16,
+A_decomp,W5-G,2019,n,252,
+A_decomp,W5-G,2019,n_dom,56,
+A_decomp,W5-G,2019,delta,0.7573567118797895,
+A_decomp,W5-G,2019,c_star,0.00840331032728127,
+A_decomp,W5-G,2019,c_bar,0.0847348783764765,
+A_decomp,W5-G,2019,c_sd,0.015555419712523446,
+A_decomp,W5-G,2019,ceil,-0.0072774643666559434,
+A_decomp,W5-G,2019,bias,0.5838351245394202,
+A_decomp,W5-G,2019,noise,0.1807990517070252,
+A_decomp,W5-G,2019,resid,5.551115123125783e-17,
+A_decomp,W5-G,2020,n,250,
+A_decomp,W5-G,2020,n_dom,57,
+A_decomp,W5-G,2020,delta,-0.7627943220048518,
+A_decomp,W5-G,2020,c_star,0.11751051351456489,
+A_decomp,W5-G,2020,c_bar,0.08348384114361102,
+A_decomp,W5-G,2020,c_sd,0.009808031477424446,
+A_decomp,W5-G,2020,ceil,-1.0610897917998305,
+A_decomp,W5-G,2020,bias,0.08649652572858613,
+A_decomp,W5-G,2020,noise,0.21179894406639255,
+A_decomp,W5-G,2020,resid,1.1102230246251565e-16,
+A_decomp,W5-G,2021,n,255,
+A_decomp,W5-G,2021,n_dom,55,
+A_decomp,W5-G,2021,delta,0.4476424030493109,
+A_decomp,W5-G,2021,c_star,0.029033371555826755,
+A_decomp,W5-G,2021,c_bar,0.08544011408898648,
+A_decomp,W5-G,2021,c_sd,0.00975589885633214,
+A_decomp,W5-G,2021,ceil,-0.0819160437540483,
+A_decomp,W5-G,2021,bias,0.3005352699738903,
+A_decomp,W5-G,2021,noise,0.22902317682946893,
+A_decomp,W5-G,2021,resid,-5.551115123125783e-17,
+A_decomp,W5-G,2022,n,207,
+A_decomp,W5-G,2022,n_dom,44,
+A_decomp,W5-G,2022,delta,-4.083354476721573,
+A_decomp,W5-G,2022,c_star,0.7797751548779532,
+A_decomp,W5-G,2022,c_bar,0.12469100155203693,
+A_decomp,W5-G,2022,c_sd,0.021531078454977908,
+A_decomp,W5-G,2022,ceil,-17.940182287275118,
+A_decomp,W5-G,2022,bias,12.083056372827055,
+A_decomp,W5-G,2022,noise,1.773771437726493,
+A_decomp,W5-G,2022,resid,-5.10702591327572e-15,
+A_decomp,W5-G,2023,n,254,
+A_decomp,W5-G,2023,n_dom,55,
+A_decomp,W5-G,2023,delta,-0.4384042919974881,
+A_decomp,W5-G,2023,c_star,0.11313379571192614,
+A_decomp,W5-G,2023,c_bar,0.1459684494749074,
+A_decomp,W5-G,2023,c_sd,0.008217968000633165,
+A_decomp,W5-G,2023,ceil,-0.5808866811145652,
+A_decomp,W5-G,2023,bias,0.04659059927285579,
+A_decomp,W5-G,2023,noise,0.09589178984422139,
+A_decomp,W5-G,2023,resid,-6.938893903907228e-17,
+A_decomp,W5-G,2024,n,256,
+A_decomp,W5-G,2024,n_dom,56,
+A_decomp,W5-G,2024,delta,-0.2605088139903203,
+A_decomp,W5-G,2024,c_star,0.09798969134064761,
+A_decomp,W5-G,2024,c_bar,0.16047176853518197,
+A_decomp,W5-G,2024,c_sd,0.003947007343814172,
+A_decomp,W5-G,2024,ceil,-0.44119191643649325,
+A_decomp,W5-G,2024,bias,0.1700112443882947,
+A_decomp,W5-G,2024,noise,0.010671858057878257,
+A_decomp,W5-G,2024,resid,6.938893903907228e-18,
+A_decomp,W5-G,2025,n,253,
+A_decomp,W5-G,2025,n_dom,57,
+A_decomp,W5-G,2025,delta,1.6533784096866462,
+A_decomp,W5-G,2025,c_star,-0.037378052942184554,
+A_decomp,W5-G,2025,c_bar,0.14023625950989474,
+A_decomp,W5-G,2025,c_sd,0.00769383603567754,
+A_decomp,W5-G,2025,ceil,-0.0733856811862935,
+A_decomp,W5-G,2025,bias,1.5826807869203698,
+A_decomp,W5-G,2025,noise,0.1440833039525698,
+A_decomp,W5-G,2025,resid,-5.551115123125783e-17,
+A_decomp,W5-G,2026_до_27.02,n,38,
+A_decomp,W5-G,2026_до_27.02,n_dom,9,
+A_decomp,W5-G,2026_до_27.02,delta,0.984983130821763,
+A_decomp,W5-G,2026_до_27.02,c_star,-0.0005611191204416775,
+A_decomp,W5-G,2026_до_27.02,c_bar,0.13663927961453512,
+A_decomp,W5-G,2026_до_27.02,c_sd,0.0010563314951336116,
+A_decomp,W5-G,2026_до_27.02,ceil,-1.753025118386594e-05,
+A_decomp,W5-G,2026_до_27.02,bias,1.0019219148993002,
+A_decomp,W5-G,2026_до_27.02,noise,-0.016921253826353202,
+A_decomp,W5-G,2026_до_27.02,resid,-3.122502256758253e-17,
+A_decomp,W5-G,2026_F,n,180,
+A_decomp,W5-G,2026_F,n_dom,38,
+A_decomp,W5-G,2026_F,delta,1.1830761106854453,
+A_decomp,W5-G,2026_F,c_star,-5.341408071094275e-05,
+A_decomp,W5-G,2026_F,c_bar,0.1373843400225065,
+A_decomp,W5-G,2026_F,c_sd,0.003298063135016455,
+A_decomp,W5-G,2026_F,ceil,-1.8545103119248312e-07,
+A_decomp,W5-G,2026_F,bias,1.1734588964386399,
+A_decomp,W5-G,2026_F,noise,0.009617399697836685,
+A_decomp,W5-G,2026_F,resid,-9.194034422677078e-17,
+A_decomp,W5-G,h1_2018-2021,n,1010,
+A_decomp,W5-G,h1_2018-2021,n_dom,193,
+A_decomp,W5-G,h1_2018-2021,delta,0.6584060104349804,
+A_decomp,W5-G,h1_2018-2021,c_star,0.031084309152946056,
+A_decomp,W5-G,h1_2018-2021,c_bar,0.0900878878571821,
+A_decomp,W5-G,h1_2018-2021,c_sd,0.037722859333756784,
+A_decomp,W5-G,h1_2018-2021,ceil,-0.058706511332423425,
+A_decomp,W5-G,h1_2018-2021,bias,0.20528120999620855,
+A_decomp,W5-G,h1_2018-2021,noise,0.5118313117711952,
+A_decomp,W5-G,h1_2018-2021,resid,0.0,
+A_decomp,W5-G,calm_2023-2025,n,763,
+A_decomp,W5-G,calm_2023-2025,n_dom,168,
+A_decomp,W5-G,calm_2023-2025,delta,0.24845477964511337,
+A_decomp,W5-G,calm_2023-2025,c_star,0.0592906937733399,
+A_decomp,W5-G,calm_2023-2025,c_bar,0.14885803899496486,
+A_decomp,W5-G,calm_2023-2025,c_sd,0.010968164298906399,
+A_decomp,W5-G,calm_2023-2025,ceil,-0.16779723675416214,
+A_decomp,W5-G,calm_2023-2025,bias,0.36443124734925997,
+A_decomp,W5-G,calm_2023-2025,noise,0.05182076905001551,
+A_decomp,W5-G,calm_2023-2025,resid,2.7755575615628914e-17,
+A_decomp,W5-G,h2_2022-2026,n,1188,
+A_decomp,W5-G,h2_2022-2026,n_dom,259,
+A_decomp,W5-G,h2_2022-2026,delta,-0.9982151082445241,
+A_decomp,W5-G,h2_2022-2026,c_star,0.21529250234669509,
+A_decomp,W5-G,h2_2022-2026,c_bar,0.14264445195687178,
+A_decomp,W5-G,h2_2022-2026,c_sd,0.015605700630656659,
+A_decomp,W5-G,h2_2022-2026,ceil,-2.0485272363763447,
+A_decomp,W5-G,h2_2022-2026,bias,0.22216794277554638,
+A_decomp,W5-G,h2_2022-2026,noise,0.8281441853562755,
+A_decomp,W5-G,h2_2022-2026,resid,-1.3322676295501878e-15,
+A_decomp,W5-G,h2_без_2022,n,981,
+A_decomp,W5-G,h2_без_2022,n_dom,215,
+A_decomp,W5-G,h2_без_2022,delta,0.4019012156771541,
+A_decomp,W5-G,h2_без_2022,c_star,0.04659495133823969,
+A_decomp,W5-G,h2_без_2022,c_bar,0.14631864645832635,
+A_decomp,W5-G,h2_без_2022,c_sd,0.010910561072933743,
+A_decomp,W5-G,h2_без_2022,ceil,-0.10933346305184832,
+A_decomp,W5-G,h2_без_2022,bias,0.4770715313533986,
+A_decomp,W5-G,h2_без_2022,noise,0.034163147375603824,
+A_decomp,W5-G,h2_без_2022,resid,6.938893903907228e-18,
+A_decomp,W5-G,M,n,2198,
+A_decomp,W5-G,M,n_dom,452,
+A_decomp,W5-G,M,delta,-0.4393356440844646,
+A_decomp,W5-G,M,c_star,0.1407458014165469,
+A_decomp,W5-G,M,c_bar,0.12020326418864147,
+A_decomp,W5-G,M,c_sd,0.037722521350040665,
+A_decomp,W5-G,M,ceil,-0.98685813504868,
+A_decomp,W5-G,M,bias,0.020186239819703907,
+A_decomp,W5-G,M,noise,0.5273362511445113,
+A_decomp,W5-G,M,resid,1.1102230246251565e-16,
+A_decomp,W5-G,M_без_2022,n,1991,
+A_decomp,W5-G,M_без_2022,n_dom,408,
+A_decomp,W5-G,M_без_2022,delta,0.5110037111445809,
+A_decomp,W5-G,M_без_2022,c_star,0.039287785732705464,
+A_decomp,W5-G,M_без_2022,c_bar,0.11971929251219685,
+A_decomp,W5-G,M_без_2022,c_sd,0.03903904832734736,
+A_decomp,W5-G,M_без_2022,ceil,-0.08455816407823123,
+A_decomp,W5-G,M_без_2022,bias,0.3405813135350524,
+A_decomp,W5-G,M_без_2022,noise,0.25498056168775973,
+A_decomp,W5-G,M_без_2022,resid,0.0,
+A_decomp,W5-G,2018,beta_estimator_ex_post,-0.20363269520570232,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2018,beta_estimator_ex_post_se,0.155409241452302,
+A_decomp,W5-G,2019,beta_estimator_ex_post,0.06390199249760316,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2019,beta_estimator_ex_post_se,0.0803338508353262,
+A_decomp,W5-G,2020,beta_estimator_ex_post,0.13989603870881265,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2020,beta_estimator_ex_post_se,0.09214118544823019,
+A_decomp,W5-G,2021,beta_estimator_ex_post,0.062426552826302315,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2021,beta_estimator_ex_post_se,0.08245340938855301,
+A_decomp,W5-G,2022,beta_estimator_ex_post,0.49722825660255043,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2022,beta_estimator_ex_post_se,0.26871654207453777,
+A_decomp,W5-G,2023,beta_estimator_ex_post,0.17760527729730866,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2023,beta_estimator_ex_post_se,0.12551400771879526,
+A_decomp,W5-G,2024,beta_estimator_ex_post,0.1550749120854081,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2024,beta_estimator_ex_post_se,0.13679929194199694,
+A_decomp,W5-G,2025,beta_estimator_ex_post,0.020682225810098764,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2025,beta_estimator_ex_post_se,0.11325131203372318,
+A_decomp,W5-G,2026_F,beta_estimator_ex_post,0.06446327328179124,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,2026_F,beta_estimator_ex_post_se,0.11133158429194576,
+A_decomp,W5-G,h1_2018-2021,beta_estimator_ex_post,0.05083628603529848,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,h1_2018-2021,beta_estimator_ex_post_se,0.04740446226448715,
+A_decomp,W5-G,calm_2023-2025,beta_estimator_ex_post,0.11639946739171422,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,calm_2023-2025,beta_estimator_ex_post_se,0.07249698186863758,
+A_decomp,W5-G,h2_2022-2026,beta_estimator_ex_post,0.17537179042248038,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,h2_2022-2026,beta_estimator_ex_post_se,0.071070656819,
+A_decomp,W5-G,h2_без_2022,beta_estimator_ex_post,0.10582566000499496,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,h2_без_2022,beta_estimator_ex_post_se,0.060462422072986695,
+A_decomp,W5-G,M,beta_estimator_ex_post,0.12039518187725515,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,M,beta_estimator_ex_post_se,0.04532155403303125,
+A_decomp,W5-G,M_без_2022,beta_estimator_ex_post,0.07813635109418482,Δū + ½Δs² по дням периода (без клипа)
+A_decomp,W5-G,M_без_2022,beta_estimator_ex_post_se,0.038649043580537674,
+A_decomp,ZB,2018,n,253,
+A_decomp,ZB,2018,n_dom,37,
+A_decomp,ZB,2018,delta,-0.06318663779148818,
+A_decomp,ZB,2018,c_star,0.02186625486026954,
+A_decomp,ZB,2018,c_bar,0.012391159221198994,
+A_decomp,ZB,2018,c_sd,0.05585780522604204,
+A_decomp,ZB,2018,ceil,-0.0134840902130593,
+A_decomp,ZB,2018,bias,0.0025213988389449055,
+A_decomp,ZB,2018,noise,-0.05222394641737378,
+A_decomp,ZB,2018,resid,-1.3877787807814457e-17,
+A_decomp,ZB,2018,b_star,0.11929767850947898,
+A_decomp,ZB,2018,a_star,0.15238276875616805,
+A_decomp,ZB,2018,b_bar,0.03531034429707625,
+A_decomp,ZB,2018,a_bar,0.04663531908731133,
+A_decomp,ZB,2018,ceil2,-0.621755278579179,
+A_decomp,ZB,2018,bias2,0.30370165925380993,
+A_decomp,ZB,2018,noise2,0.2548669815338809,
+A_decomp,ZB,2018,resid2,5.551115123125783e-17,
+A_decomp,ZB,2019,n,252,
+A_decomp,ZB,2019,n_dom,16,
+A_decomp,ZB,2019,delta,-0.11384570856525537,
+A_decomp,ZB,2019,c_star,-0.025661650129183672,
+A_decomp,ZB,2019,c_bar,0.054918978104649116,
+A_decomp,ZB,2019,c_sd,0.09833132437305481,
+A_decomp,ZB,2019,ceil,-0.019171499085209764,
+A_decomp,ZB,2019,bias,0.18563847468948985,
+A_decomp,ZB,2019,noise,-0.2803126841695355,
+A_decomp,ZB,2019,resid,0.0,
+A_decomp,ZB,2019,b_star,-0.0070412319388057105,
+A_decomp,ZB,2019,a_star,0.15833387553547365,
+A_decomp,ZB,2019,b_bar,0.0736925201194519,
+A_decomp,ZB,2019,a_bar,0.09533915715949565,
+A_decomp,ZB,2019,ceil2,-0.6425869682899022,
+A_decomp,ZB,2019,bias2,0.3344291384518059,
+A_decomp,ZB,2019,noise2,0.19431212127284095,
+A_decomp,ZB,2019,resid2,8.326672684688674e-17,
+A_decomp,ZB,2020,n,250,
+A_decomp,ZB,2020,n_dom,56,
+A_decomp,ZB,2020,delta,0.29789604287925797,
+A_decomp,ZB,2020,c_star,-0.04604284302897498,
+A_decomp,ZB,2020,c_bar,-0.010988069747611403,
+A_decomp,ZB,2020,c_sd,0.06223290615170866,
+A_decomp,ZB,2020,ceil,-0.1515016715644119,
+A_decomp,ZB,2020,bias,0.08813886434227239,
+A_decomp,ZB,2020,noise,0.36125885010139747,
+A_decomp,ZB,2020,resid,0.0,
+A_decomp,ZB,2020,b_star,-0.03643409542422237,
+A_decomp,ZB,2020,a_star,0.013409668374867494,
+A_decomp,ZB,2020,b_bar,0.03155227465009907,
+A_decomp,ZB,2020,a_bar,0.06093326475819614,
+A_decomp,ZB,2020,ceil2,-0.16115603751977403,
+A_decomp,ZB,2020,bias2,0.19883176503368022,
+A_decomp,ZB,2020,noise2,0.2602203153653518,
+A_decomp,ZB,2020,resid2,0.0,
+A_decomp,ZB,2021,n,255,
+A_decomp,ZB,2021,n_dom,37,
+A_decomp,ZB,2021,delta,-0.3462613376087296,
+A_decomp,ZB,2021,c_star,-0.018406142953232847,
+A_decomp,ZB,2021,c_bar,-0.025365550134225395,
+A_decomp,ZB,2021,c_sd,0.06428581200354593,
+A_decomp,ZB,2021,ceil,-0.021800425472314956,
+A_decomp,ZB,2021,bias,0.0031430581965139993,
+A_decomp,ZB,2021,noise,-0.32760397033292865,
+A_decomp,ZB,2021,resid,0.0,
+A_decomp,ZB,2021,b_star,0.04281383035050685,
+A_decomp,ZB,2021,a_star,0.11290559828648603,
+A_decomp,ZB,2021,b_bar,0.01147195643839591,
+A_decomp,ZB,2021,a_bar,0.06395693110680097,
+A_decomp,ZB,2021,ceil2,-0.7687461951930075,
+A_decomp,ZB,2021,bias2,0.14222900716037348,
+A_decomp,ZB,2021,noise2,0.28025585042390433,
+A_decomp,ZB,2021,resid2,0.0,
+A_decomp,ZB,2022,n,207,
+A_decomp,ZB,2022,n_dom,92,
+A_decomp,ZB,2022,delta,-7.048297945353541,
+A_decomp,ZB,2022,c_star,0.4104252214700044,
+A_decomp,ZB,2022,c_bar,0.0581120043550271,
+A_decomp,ZB,2022,c_sd,0.22718419935913992,
+A_decomp,ZB,2022,ceil,-9.072254899448343,
+A_decomp,ZB,2022,bias,6.548541685001495,
+A_decomp,ZB,2022,noise,-4.524584730906692,
+A_decomp,ZB,2022,resid,-8.881784197001252e-16,
+A_decomp,ZB,2022,b_star,0.7257358170006468,
+A_decomp,ZB,2022,a_star,0.5387896461618619,
+A_decomp,ZB,2022,b_bar,0.2564866646005834,
+A_decomp,ZB,2022,a_bar,0.21876093973347785,
+A_decomp,ZB,2022,ceil2,-22.889796832295623,
+A_decomp,ZB,2022,bias2,8.100526839493527,
+A_decomp,ZB,2022,noise2,7.740972047448558,
+A_decomp,ZB,2022,resid2,-3.552713678800501e-15,
+A_decomp,ZB,2023,n,254,
+A_decomp,ZB,2023,n_dom,20,
+A_decomp,ZB,2023,delta,-0.8049424004160608,
+A_decomp,ZB,2023,c_star,-0.2910665391547703,
+A_decomp,ZB,2023,c_bar,-0.007711185767147613,
+A_decomp,ZB,2023,c_sd,0.29440865924116505,
+A_decomp,ZB,2023,ceil,-1.224328590483338,
+A_decomp,ZB,2023,bias,1.1631619580354098,
+A_decomp,ZB,2023,noise,-0.7437757679681325,
+A_decomp,ZB,2023,resid,0.0,
+A_decomp,ZB,2023,b_star,-0.06040782819090211,
+A_decomp,ZB,2023,a_star,0.23094708270461126,
+A_decomp,ZB,2023,b_bar,0.26411801935944185,
+A_decomp,ZB,2023,a_bar,0.24478079501849798,
+A_decomp,ZB,2023,ceil2,-2.2740773038961057,
+A_decomp,ZB,2023,bias2,1.3723417989358713,
+A_decomp,ZB,2023,noise2,0.09679310454417361,
+A_decomp,ZB,2023,resid2,5.551115123125783e-17,
+A_decomp,ZB,2024,n,256,
+A_decomp,ZB,2024,n_dom,22,
+A_decomp,ZB,2024,delta,-0.7456452421715148,
+A_decomp,ZB,2024,c_star,0.1580027814042592,
+A_decomp,ZB,2024,c_bar,0.0919533624656796,
+A_decomp,ZB,2024,c_sd,0.2625662528740596,
+A_decomp,ZB,2024,ceil,-0.4599446758848763,
+A_decomp,ZB,2024,bias,0.0779026158500034,
+A_decomp,ZB,2024,noise,-0.3636031821366419,
+A_decomp,ZB,2024,resid,-5.551115123125783e-17,
+A_decomp,ZB,2024,b_star,0.2893518215804549,
+A_decomp,ZB,2024,a_star,0.24472057737970454,
+A_decomp,ZB,2024,b_bar,0.23985673378933825,
+A_decomp,ZB,2024,a_bar,0.2370046755770966,
+A_decomp,ZB,2024,ceil2,-1.1974847986022796,
+A_decomp,ZB,2024,bias2,0.036197419989447865,
+A_decomp,ZB,2024,noise2,0.4156421364413169,
+A_decomp,ZB,2024,resid2,0.0,
+A_decomp,ZB,2025,n,253,
+A_decomp,ZB,2025,n_dom,22,
+A_decomp,ZB,2025,delta,1.830387500937458,
+A_decomp,ZB,2025,c_star,-0.2261437915320869,
+A_decomp,ZB,2025,c_bar,0.06203580822799266,
+A_decomp,ZB,2025,c_sd,0.25429145464926456,
+A_decomp,ZB,2025,ceil,-0.974905105735115,
+A_decomp,ZB,2025,bias,1.5520904137495217,
+A_decomp,ZB,2025,noise,1.2532021929230512,
+A_decomp,ZB,2025,resid,2.220446049250313e-16,
+A_decomp,ZB,2025,b_star,-0.2287578083556161,
+A_decomp,ZB,2025,a_star,-0.003969975968158009,
+A_decomp,ZB,2025,b_bar,0.19512140698248148,
+A_decomp,ZB,2025,a_bar,0.20443645965244903,
+A_decomp,ZB,2025,ceil2,-0.9754871632115036,
+A_decomp,ZB,2025,bias2,2.748977269954912,
+A_decomp,ZB,2025,noise2,0.05689739419404946,
+A_decomp,ZB,2025,resid2,1.3877787807814457e-16,
+A_decomp,ZB,2026_до_27.02,n,38,
+A_decomp,ZB,2026_до_27.02,n_dom,0,
+A_decomp,ZB,2026_до_27.02,delta,0.0,
+A_decomp,ZB,2026_до_27.02,ceil,0.0,
+A_decomp,ZB,2026_до_27.02,bias,0.0,
+A_decomp,ZB,2026_до_27.02,noise,0.0,
+A_decomp,ZB,2026_до_27.02,resid,0.0,
+A_decomp,ZB,2026_F,n,180,
+A_decomp,ZB,2026_F,n_dom,16,
+A_decomp,ZB,2026_F,delta,0.596214392908707,
+A_decomp,ZB,2026_F,c_star,-0.00018269768304658105,
+A_decomp,ZB,2026_F,c_bar,0.03319441969869029,
+A_decomp,ZB,2026_F,c_sd,0.18327199200993177,
+A_decomp,ZB,2026_F,ceil,-9.134851343314476e-07,
+A_decomp,ZB,2026_F,bias,0.03015373336698126,
+A_decomp,ZB,2026_F,noise,0.5660615730268601,
+A_decomp,ZB,2026_F,resid,0.0,
+A_decomp,ZB,2026_F,b_star,0.01648107704366271,
+A_decomp,ZB,2026_F,a_star,0.020726303285551025,
+A_decomp,ZB,2026_F,b_bar,0.1823391350936056,
+A_decomp,ZB,2026_F,a_bar,0.1844455774604274,
+A_decomp,ZB,2026_F,ceil2,-0.008684068749136407,
+A_decomp,ZB,2026_F,bias2,0.5416628735381857,
+A_decomp,ZB,2026_F,noise2,0.06323558811965778,
+A_decomp,ZB,2026_F,resid2,1.3877787807814457e-17,
+A_decomp,ZB,h1_2018-2021,n,1010,
+A_decomp,ZB,h1_2018-2021,n_dom,146,
+A_decomp,ZB,h1_2018-2021,delta,-0.03537251278059138,
+A_decomp,ZB,h1_2018-2021,c_star,-0.019239659419244676,
+A_decomp,ZB,h1_2018-2021,c_bar,-0.0014841145203686962,
+A_decomp,ZB,h1_2018-2021,c_sd,0.07042559994964426,
+A_decomp,ZB,h1_2018-2021,ceil,-0.016730225275931005,
+A_decomp,ZB,h1_2018-2021,bias,0.014255722238907212,
+A_decomp,ZB,h1_2018-2021,noise,-0.03289800974356759,
+A_decomp,ZB,h1_2018-2021,resid,0.0,
+A_decomp,ZB,h1_2018-2021,b_star,0.03542197073541115,
+A_decomp,ZB,h1_2018-2021,a_star,0.0931082856735364,
+A_decomp,ZB,h1_2018-2021,b_bar,0.03203392348992636,
+A_decomp,ZB,h1_2018-2021,a_bar,0.06184659313830869,
+A_decomp,ZB,h1_2018-2021,ceil2,-0.3586657672938776,
+A_decomp,ZB,h1_2018-2021,bias2,0.05017104908198586,
+A_decomp,ZB,h1_2018-2021,noise2,0.27312220543130034,
+A_decomp,ZB,h1_2018-2021,resid2,5.551115123125783e-17,
+A_decomp,ZB,calm_2023-2025,n,763,
+A_decomp,ZB,calm_2023-2025,n_dom,64,
+A_decomp,ZB,calm_2023-2025,delta,0.002570470732815588,
+A_decomp,ZB,calm_2023-2025,c_star,-0.09392748253151834,
+A_decomp,ZB,calm_2023-2025,c_bar,0.050524031873716214,
+A_decomp,ZB,calm_2023-2025,c_sd,0.27332861394434693,
+A_decomp,ZB,calm_2023-2025,ceil,-0.1524581545652677,
+A_decomp,ZB,calm_2023-2025,bias,0.35468228697713183,
+A_decomp,ZB,calm_2023-2025,noise,-0.19965366167904852,
+A_decomp,ZB,calm_2023-2025,resid,-2.7755575615628914e-17,
+A_decomp,ZB,calm_2023-2025,b_star,0.010614992794318164,
+A_decomp,ZB,calm_2023-2025,a_star,0.14790092887417813,
+A_decomp,ZB,calm_2023-2025,b_bar,0.23206061694013866,
+A_decomp,ZB,calm_2023-2025,a_bar,0.228239388678437,
+A_decomp,ZB,calm_2023-2025,ceil2,-0.6230453467073677,
+A_decomp,ZB,calm_2023-2025,bias2,0.5376033106655023,
+A_decomp,ZB,calm_2023-2025,noise2,0.08801250677468092,
+A_decomp,ZB,calm_2023-2025,resid2,5.551115123125783e-17,
+A_decomp,ZB,h2_2022-2026,n,1188,
+A_decomp,ZB,h2_2022-2026,n_dom,172,
+A_decomp,ZB,h2_2022-2026,delta,-2.143445353340576,
+A_decomp,ZB,h2_2022-2026,c_star,0.21354223285451102,
+A_decomp,ZB,h2_2022-2026,c_bar,0.05297065788232196,
+A_decomp,ZB,h2_2022-2026,c_sd,0.24203835582869498,
+A_decomp,ZB,h2_2022-2026,ceil,-1.3375733707207778,
+A_decomp,ZB,h2_2022-2026,bias,0.7426378528961576,
+A_decomp,ZB,h2_2022-2026,noise,-1.5485098355159561,
+A_decomp,ZB,h2_2022-2026,resid,0.0,
+A_decomp,ZB,h2_2022-2026,b_star,0.452646144873728,
+A_decomp,ZB,h2_2022-2026,a_star,0.37681346181203357,
+A_decomp,ZB,h2_2022-2026,b_bar,0.24050045807511763,
+A_decomp,ZB,h2_2022-2026,a_bar,0.21909567773410912,
+A_decomp,ZB,h2_2022-2026,ceil2,-5.386358533145008,
+A_decomp,ZB,h2_2022-2026,bias2,0.9652642371596423,
+A_decomp,ZB,h2_2022-2026,noise2,2.27764894264479,
+A_decomp,ZB,h2_2022-2026,resid2,-8.881784197001252e-16,
+A_decomp,ZB,h2_без_2022,n,981,
+A_decomp,ZB,h2_без_2022,n_dom,80,
+A_decomp,ZB,h2_без_2022,delta,0.08250406426933912,
+A_decomp,ZB,h2_без_2022,c_star,-0.07446228223598848,
+A_decomp,ZB,h2_без_2022,c_bar,0.04705810943871103,
+A_decomp,ZB,h2_без_2022,c_sd,0.25793914019580255,
+A_decomp,ZB,h2_без_2022,ceil,-0.09979647096565492,
+A_decomp,ZB,h2_без_2022,bias,0.261721241550274,
+A_decomp,ZB,h2_без_2022,noise,-0.07942070631527995,
+A_decomp,ZB,h2_без_2022,resid,0.0,
+A_decomp,ZB,h2_без_2022,b_star,0.019726079115827157,
+A_decomp,ZB,h2_без_2022,a_star,0.12942277339137742,
+A_decomp,ZB,h2_без_2022,b_bar,0.22211632057083203,
+A_decomp,ZB,h2_без_2022,a_bar,0.219480626434835,
+A_decomp,ZB,h2_без_2022,ceil2,-0.440942928351199,
+A_decomp,ZB,h2_без_2022,bias2,0.4440157798322711,
+A_decomp,ZB,h2_без_2022,noise2,0.07943121278826709,
+A_decomp,ZB,h2_без_2022,resid2,0.0,
+A_decomp,ZB,M,n,2198,
+A_decomp,ZB,M,n_dom,318,
+A_decomp,ZB,M,delta,-1.4322636556922623,
+A_decomp,ZB,M,c_star,0.11333838336672536,
+A_decomp,ZB,M,c_bar,0.02796941017542625,
+A_decomp,ZB,M,c_sd,0.18627846720462557,
+A_decomp,ZB,M,ceil,-0.44604039891400005,
+A_decomp,ZB,M,bias,0.25067083451568783,
+A_decomp,ZB,M,noise,-1.2368940912939503,
+A_decomp,ZB,M,resid,2.220446049250313e-16,
+A_decomp,ZB,M,b_star,0.27201742251227257,
+A_decomp,ZB,M,a_star,0.26039568932967116,
+A_decomp,ZB,M,b_bar,0.14478940760518705,
+A_decomp,ZB,M,a_bar,0.14689955713352149,
+A_decomp,ZB,M,ceil2,-2.6813609512324317,
+A_decomp,ZB,M,bias2,0.5146206223660769,
+A_decomp,ZB,M,noise2,0.7344766731740927,
+A_decomp,ZB,M,resid2,-2.220446049250313e-16,
+A_decomp,ZB,M_без_2022,n,1991,
+A_decomp,ZB,M_без_2022,n_dom,226,
+A_decomp,ZB,M_без_2022,delta,0.032366098133275525,
+A_decomp,ZB,M_без_2022,c_star,-0.038440714966523695,
+A_decomp,ZB,M_без_2022,c_bar,0.01569897360673917,
+A_decomp,ZB,M_без_2022,c_sd,0.16520988378022325,
+A_decomp,ZB,M_без_2022,ceil,-0.04369365939368633,
+A_decomp,ZB,M_без_2022,bias,0.08622075705024569,
+A_decomp,ZB,M_без_2022,noise,-0.010160999523283845,
+A_decomp,ZB,M_без_2022,resid,8.673617379884035e-18,
+A_decomp,ZB,M_без_2022,b_star,0.031009505047932432,
+A_decomp,ZB,M_без_2022,a_star,0.10918489143508052,
+A_decomp,ZB,M_без_2022,b_bar,0.09931972776635314,
+A_decomp,ZB,M_без_2022,a_bar,0.11764625094238883,
+A_decomp,ZB,M_без_2022,ceil2,-0.3848360437794233,
+A_decomp,ZB,M_без_2022,bias2,0.1164813382137664,
+A_decomp,ZB,M_без_2022,noise2,0.30072080369893245,
+A_decomp,ZB,M_без_2022,resid2,0.0,
+B_param,W5-G,2018,c_star,-0.1327020355609957,ln mean e^u области (уровень ex post)
+B_param,W5-G,2018,c_star_se,0.14932171677490516,
+B_param,W5-G,2018,c_pit_mean,0.1273609578909349,средняя применённая PIT-поправка
+B_param,W5-G,2018,pit_minus_star,0.2600629934519306,
+B_param,W5-G,2018,n_dom,25,
+B_param,W5-G,2019,c_star,0.00840331032728127,ln mean e^u области (уровень ex post)
+B_param,W5-G,2019,c_star_se,0.07246077361550535,
+B_param,W5-G,2019,c_pit_mean,0.0847348783764765,средняя применённая PIT-поправка
+B_param,W5-G,2019,pit_minus_star,0.07633156804919523,
+B_param,W5-G,2019,n_dom,56,
+B_param,W5-G,2020,c_star,0.11751051351456489,ln mean e^u области (уровень ex post)
+B_param,W5-G,2020,c_star_se,0.08865459829563004,
+B_param,W5-G,2020,c_pit_mean,0.08348384114361102,средняя применённая PIT-поправка
+B_param,W5-G,2020,pit_minus_star,-0.03402667237095387,
+B_param,W5-G,2020,n_dom,57,
+B_param,W5-G,2021,c_star,0.029033371555826755,ln mean e^u области (уровень ex post)
+B_param,W5-G,2021,c_star_se,0.07495761241377662,
+B_param,W5-G,2021,c_pit_mean,0.08544011408898648,средняя применённая PIT-поправка
+B_param,W5-G,2021,pit_minus_star,0.05640674253315973,
+B_param,W5-G,2021,n_dom,55,
+B_param,W5-G,2022,c_star,0.7797751548779532,ln mean e^u области (уровень ex post)
+B_param,W5-G,2022,c_star_se,0.3633089027002124,
+B_param,W5-G,2022,c_pit_mean,0.12469100155203693,средняя применённая PIT-поправка
+B_param,W5-G,2022,pit_minus_star,-0.6550841533259163,
+B_param,W5-G,2022,n_dom,44,
+B_param,W5-G,2023,c_star,0.11313379571192614,ln mean e^u области (уровень ex post)
+B_param,W5-G,2023,c_star_se,0.12115213615344347,
+B_param,W5-G,2023,c_pit_mean,0.1459684494749074,средняя применённая PIT-поправка
+B_param,W5-G,2023,pit_minus_star,0.03283465376298125,
+B_param,W5-G,2023,n_dom,55,
+B_param,W5-G,2024,c_star,0.09798969134064761,ln mean e^u области (уровень ex post)
+B_param,W5-G,2024,c_star_se,0.12762452453932038,
+B_param,W5-G,2024,c_pit_mean,0.16047176853518197,средняя применённая PIT-поправка
+B_param,W5-G,2024,pit_minus_star,0.06248207719453436,
+B_param,W5-G,2024,n_dom,56,
+B_param,W5-G,2025,c_star,-0.037378052942184554,ln mean e^u области (уровень ex post)
+B_param,W5-G,2025,c_star_se,0.10083744676440692,
+B_param,W5-G,2025,c_pit_mean,0.14023625950989474,средняя применённая PIT-поправка
+B_param,W5-G,2025,pit_minus_star,0.1776143124520793,
+B_param,W5-G,2025,n_dom,57,
+B_param,W5-G,2026_до_27.02,c_star,-0.0005611191204416775,ln mean e^u области (уровень ex post)
+B_param,W5-G,2026_до_27.02,c_star_se,0.15685939552075387,
+B_param,W5-G,2026_до_27.02,c_pit_mean,0.13663927961453512,средняя применённая PIT-поправка
+B_param,W5-G,2026_до_27.02,pit_minus_star,0.1372003987349768,
+B_param,W5-G,2026_до_27.02,n_dom,9,
+B_param,W5-G,2026_F,c_star,-5.341408071094275e-05,ln mean e^u области (уровень ex post)
+B_param,W5-G,2026_F,c_star_se,0.09659949116340087,
+B_param,W5-G,2026_F,c_pit_mean,0.1373843400225065,средняя применённая PIT-поправка
+B_param,W5-G,2026_F,pit_minus_star,0.13743775410321743,
+B_param,W5-G,2026_F,n_dom,38,
+B_param,W5-G,2018-2025,het_Q,7.618870117348806,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,W5-G,2018-2025,het_df,7,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,W5-G,2018-2025,het_p,0.3673972332280075,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,W5-G,2018-2025,het_tau2,0.0009646295123063377,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,W5-G,2018-2025,het_tau,0.03105848535112969,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,W5-G,2018-2025,het_mu,0.04088199690427201,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,W5-G,2018-2025,het_se_mean,0.13728971390715003,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,W5-G,2018-2025_без_2022,het_Q,3.4417949195284185,
+B_param,W5-G,2018-2025_без_2022,het_df,6,
+B_param,W5-G,2018-2025_без_2022,het_p,0.7516968366285238,
+B_param,W5-G,2018-2025_без_2022,het_tau2,0.0,
+B_param,W5-G,2018-2025_без_2022,het_tau,0.0,
+B_param,W5-G,2018-2025_без_2022,het_mu,0.03359665898540907,
+B_param,W5-G,2018-2025_без_2022,het_se_mean,0.10500125836528398,
+B_param,ZB,2018,c_star,0.02186625486026954,ln mean e^u области (уровень ex post)
+B_param,ZB,2018,c_star_se,0.116074549396871,
+B_param,ZB,2018,c_pit_mean,0.012391159221198994,средняя применённая PIT-поправка
+B_param,ZB,2018,pit_minus_star,-0.009475095639070548,
+B_param,ZB,2018,n_dom,37,
+B_param,ZB,2019,c_star,-0.025661650129183672,ln mean e^u области (уровень ex post)
+B_param,ZB,2019,c_star_se,0.16068819765561582,
+B_param,ZB,2019,c_pit_mean,0.054918978104649116,средняя применённая PIT-поправка
+B_param,ZB,2019,pit_minus_star,0.08058062823383279,
+B_param,ZB,2019,n_dom,16,
+B_param,ZB,2020,c_star,-0.04604284302897498,ln mean e^u области (уровень ex post)
+B_param,ZB,2020,c_star_se,0.10964827622245361,
+B_param,ZB,2020,c_pit_mean,-0.010988069747611403,средняя применённая PIT-поправка
+B_param,ZB,2020,pit_minus_star,0.03505477328136358,
+B_param,ZB,2020,n_dom,56,
+B_param,ZB,2021,c_star,-0.018406142953232847,ln mean e^u области (уровень ex post)
+B_param,ZB,2021,c_star_se,0.10612306324175036,
+B_param,ZB,2021,c_pit_mean,-0.025365550134225395,средняя применённая PIT-поправка
+B_param,ZB,2021,pit_minus_star,-0.006959407180992548,
+B_param,ZB,2021,n_dom,37,
+B_param,ZB,2022,c_star,0.4104252214700044,ln mean e^u области (уровень ex post)
+B_param,ZB,2022,c_star_se,0.25648356596033506,
+B_param,ZB,2022,c_pit_mean,0.0581120043550271,средняя применённая PIT-поправка
+B_param,ZB,2022,pit_minus_star,-0.35231321711497726,
+B_param,ZB,2022,n_dom,92,
+B_param,ZB,2023,c_star,-0.2910665391547703,ln mean e^u области (уровень ex post)
+B_param,ZB,2023,c_star_se,0.1657205195158737,
+B_param,ZB,2023,c_pit_mean,-0.007711185767147613,средняя применённая PIT-поправка
+B_param,ZB,2023,pit_minus_star,0.2833553533876227,
+B_param,ZB,2023,n_dom,20,
+B_param,ZB,2024,c_star,0.1580027814042592,ln mean e^u области (уровень ex post)
+B_param,ZB,2024,c_star_se,0.3187749531075992,
+B_param,ZB,2024,c_pit_mean,0.0919533624656796,средняя применённая PIT-поправка
+B_param,ZB,2024,pit_minus_star,-0.06604941893857959,
+B_param,ZB,2024,n_dom,22,
+B_param,ZB,2025,c_star,-0.2261437915320869,ln mean e^u области (уровень ex post)
+B_param,ZB,2025,c_star_se,0.20806789481411944,
+B_param,ZB,2025,c_pit_mean,0.06203580822799266,средняя применённая PIT-поправка
+B_param,ZB,2025,pit_minus_star,0.28817959976007956,
+B_param,ZB,2025,n_dom,22,
+B_param,ZB,2026_F,c_star,-0.00018269768304658105,ln mean e^u области (уровень ex post)
+B_param,ZB,2026_F,c_star_se,0.18627354528618217,
+B_param,ZB,2026_F,c_pit_mean,0.03319441969869029,средняя применённая PIT-поправка
+B_param,ZB,2026_F,pit_minus_star,0.03337711738173687,
+B_param,ZB,2026_F,n_dom,16,
+B_param,ZB,2018-2025,het_Q,6.8920272064293195,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,ZB,2018-2025,het_df,7,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,ZB,2018-2025,het_p,0.44020797484027197,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,ZB,2018-2025,het_tau2,0.0,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,ZB,2018-2025,het_tau,0.0,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,ZB,2018-2025,het_mu,-0.034814733516757845,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,ZB,2018-2025,het_se_mean,0.18019762748932727,неоднородность уровня c*_y между годами (ДерСимониан–Лэрд)
+B_param,ZB,2018-2025_без_2022,het_Q,3.7492362686269507,
+B_param,ZB,2018-2025_без_2022,het_df,6,
+B_param,ZB,2018-2025_без_2022,het_p,0.7105677452818373,
+B_param,ZB,2018-2025_без_2022,het_tau2,0.0,
+B_param,ZB,2018-2025_без_2022,het_tau,0.0,
+B_param,ZB,2018-2025_без_2022,het_mu,-0.0539194308946854,
+B_param,ZB,2018-2025_без_2022,het_se_mean,0.1692996362791833,
+B_param,ZB,2018,b_star,0.11929767850947898,
+B_param,ZB,2018,b_star_se,0.13483773776808494,
+B_param,ZB,2018,a_star,0.15238276875616805,
+B_param,ZB,2018,a_star_se,0.07029624782115684,
+B_param,ZB,2018,b_pit_mean,0.03531034429707625,
+B_param,ZB,2018,a_pit_mean,0.04663531908731133,
+B_param,ZB,2019,b_star,-0.0070412319388057105,
+B_param,ZB,2019,b_star_se,0.15567861254005147,
+B_param,ZB,2019,a_star,0.15833387553547365,
+B_param,ZB,2019,a_star_se,0.11219946011175397,
+B_param,ZB,2019,b_pit_mean,0.0736925201194519,
+B_param,ZB,2019,a_pit_mean,0.09533915715949565,
+B_param,ZB,2020,b_star,-0.03643409542422237,
+B_param,ZB,2020,b_star_se,0.16553894903086194,
+B_param,ZB,2020,a_star,0.013409668374867494,
+B_param,ZB,2020,a_star_se,0.11033343000277443,
+B_param,ZB,2020,b_pit_mean,0.03155227465009907,
+B_param,ZB,2020,a_pit_mean,0.06093326475819614,
+B_param,ZB,2021,b_star,0.04281383035050685,
+B_param,ZB,2021,b_star_se,0.10829349209971614,
+B_param,ZB,2021,a_star,0.11290559828648603,
+B_param,ZB,2021,a_star_se,0.09501543303205834,
+B_param,ZB,2021,b_pit_mean,0.01147195643839591,
+B_param,ZB,2021,a_pit_mean,0.06395693110680097,
+B_param,ZB,2022,b_star,0.7257358170006468,
+B_param,ZB,2022,b_star_se,0.30477227298253834,
+B_param,ZB,2022,a_star,0.5387896461618619,
+B_param,ZB,2022,a_star_se,0.15704211820585895,
+B_param,ZB,2022,b_pit_mean,0.2564866646005834,
+B_param,ZB,2022,a_pit_mean,0.21876093973347785,
+B_param,ZB,2023,b_star,-0.06040782819090211,
+B_param,ZB,2023,b_star_se,0.23677304132994034,
+B_param,ZB,2023,a_star,0.23094708270461126,
+B_param,ZB,2023,a_star_se,0.13378331017558823,
+B_param,ZB,2023,b_pit_mean,0.26411801935944185,
+B_param,ZB,2023,a_pit_mean,0.24478079501849798,
+B_param,ZB,2024,b_star,0.2893518215804549,
+B_param,ZB,2024,b_star_se,0.3810990665395109,
+B_param,ZB,2024,a_star,0.24472057737970454,
+B_param,ZB,2024,a_star_se,0.23779642225836756,
+B_param,ZB,2024,b_pit_mean,0.23985673378933825,
+B_param,ZB,2024,a_pit_mean,0.2370046755770966,
+B_param,ZB,2025,b_star,-0.2287578083556161,
+B_param,ZB,2025,b_star_se,0.2664028789142851,
+B_param,ZB,2025,a_star,-0.003969975968158009,
+B_param,ZB,2025,a_star_se,0.17435078875420812,
+B_param,ZB,2025,b_pit_mean,0.19512140698248148,
+B_param,ZB,2025,a_pit_mean,0.20443645965244903,
+B_param,ZB,2026_F,b_star,0.01648107704366271,
+B_param,ZB,2026_F,b_star_se,0.20673334838528123,
+B_param,ZB,2026_F,a_star,0.020726303285551025,
+B_param,ZB,2026_F,a_star_se,0.13450278350530778,
+B_param,ZB,2026_F,b_pit_mean,0.1823391350936056,
+B_param,ZB,2026_F,a_pit_mean,0.1844455774604274,
+B_param,ZB,2018-2025,het_b_Q,7.296188288406419,неоднородность b*_y между годами
+B_param,ZB,2018-2025,het_b_df,7,неоднородность b*_y между годами
+B_param,ZB,2018-2025,het_b_p,0.3987059489753985,неоднородность b*_y между годами
+B_param,ZB,2018-2025,het_b_tau2,0.0013760235895451593,неоднородность b*_y между годами
+B_param,ZB,2018-2025,het_b_tau,0.0370947919463792,неоднородность b*_y между годами
+B_param,ZB,2018-2025,het_b_mu,0.052678096479409846,неоднородность b*_y между годами
+B_param,ZB,2018-2025,het_b_se_mean,0.21917450640062364,неоднородность b*_y между годами
+C_shrink,W6D-GJS,2018,pit_beta_raw_mean,0.12512432695691952,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2018,pit_se_mean,0.271141997543307,
+C_shrink,W6D-GJS,2018,pit_z_mean,0.43002475187143935,
+C_shrink,W6D-GJS,2018,pit_kappa_mean,0.0,
+C_shrink,W6D-GJS,2019,pit_beta_raw_mean,0.08447600862375433,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2019,pit_se_mean,0.14944265840102514,
+C_shrink,W6D-GJS,2019,pit_z_mean,0.5667869656758818,
+C_shrink,W6D-GJS,2019,pit_kappa_mean,0.0,
+C_shrink,W6D-GJS,2020,pit_beta_raw_mean,0.08441164813143531,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2020,pit_se_mean,0.09342035501385165,
+C_shrink,W6D-GJS,2020,pit_z_mean,0.909888493872891,
+C_shrink,W6D-GJS,2020,pit_kappa_mean,0.023296584023455903,
+C_shrink,W6D-GJS,2021,pit_beta_raw_mean,0.08545593260647812,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2021,pit_se_mean,0.06993095181678968,
+C_shrink,W6D-GJS,2021,pit_z_mean,1.2192879123351317,
+C_shrink,W6D-GJS,2021,pit_kappa_mean,0.320841483096888,
+C_shrink,W6D-GJS,2022,pit_beta_raw_mean,0.12681609938967886,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2022,pit_se_mean,0.07096220985836516,
+C_shrink,W6D-GJS,2022,pit_z_mean,1.7749684797673178,
+C_shrink,W6D-GJS,2022,pit_kappa_mean,0.6665803686228047,
+C_shrink,W6D-GJS,2023,pit_beta_raw_mean,0.14655620598766464,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2023,pit_se_mean,0.06643432218906924,
+C_shrink,W6D-GJS,2023,pit_z_mean,2.209999747794015,
+C_shrink,W6D-GJS,2023,pit_kappa_mean,0.7918478715515551,
+C_shrink,W6D-GJS,2024,pit_beta_raw_mean,0.16056279989336106,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2024,pit_se_mean,0.059670058684679624,
+C_shrink,W6D-GJS,2024,pit_z_mean,2.6936222081979437,
+C_shrink,W6D-GJS,2024,pit_kappa_mean,0.8612973338603599,
+C_shrink,W6D-GJS,2025,pit_beta_raw_mean,0.13953926849661463,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2025,pit_se_mean,0.05436615550587865,
+C_shrink,W6D-GJS,2025,pit_z_mean,2.5657227577845068,
+C_shrink,W6D-GJS,2025,pit_kappa_mean,0.8476461230326783,
+C_shrink,W6D-GJS,2026,pit_beta_raw_mean,0.13712151270934372,"β̂ по пулу, без клипа"
+C_shrink,W6D-GJS,2026,pit_se_mean,0.04964107492049053,
+C_shrink,W6D-GJS,2026,pit_z_mean,2.7631676948461394,
+C_shrink,W6D-GJS,2026,pit_kappa_mean,0.8688163461029283,
+C_shrink,W6D-ZJS,2018,pit_b_mean,0.04334520145508027,
+C_shrink,W6D-ZJS,2018,pit_a_mean,0.0523857428698725,
+C_shrink,W6D-ZJS,2018,pit_se_b_mean,0.13128842609295424,
+C_shrink,W6D-ZJS,2018,pit_se_a_mean,0.10693179740229487,
+C_shrink,W6D-ZJS,2018,pit_W_mean,0.5221642973180814,
+C_shrink,W6D-ZJS,2018,pit_k_mean,0.0,
+C_shrink,W6D-ZJS,2018,pit_n_ext_mean,52.5,
+C_shrink,W6D-ZJS,2019,pit_b_mean,0.06937167011537658,
+C_shrink,W6D-ZJS,2019,pit_a_mean,0.09471040049214664,
+C_shrink,W6D-ZJS,2019,pit_se_b_mean,0.09449122255611675,
+C_shrink,W6D-ZJS,2019,pit_se_a_mean,0.070559808286261,
+C_shrink,W6D-ZJS,2019,pit_W_mean,1.920742521203179,
+C_shrink,W6D-ZJS,2019,pit_k_mean,0.08275405271758479,
+C_shrink,W6D-ZJS,2019,pit_n_ext_mean,78.41666666666667,
+C_shrink,W6D-ZJS,2020,pit_b_mean,0.027589245739556848,
+C_shrink,W6D-ZJS,2020,pit_a_mean,0.06235754528489709,
+C_shrink,W6D-ZJS,2020,pit_se_b_mean,0.08705502078595291,
+C_shrink,W6D-ZJS,2020,pit_se_a_mean,0.06364240183198715,
+C_shrink,W6D-ZJS,2020,pit_W_mean,1.160406856768801,
+C_shrink,W6D-ZJS,2020,pit_k_mean,0.0015824987911256434,
+C_shrink,W6D-ZJS,2020,pit_n_ext_mean,113.5,
+C_shrink,W6D-ZJS,2021,pit_b_mean,0.011876863456681477,
+C_shrink,W6D-ZJS,2021,pit_a_mean,0.059656373790270646,
+C_shrink,W6D-ZJS,2021,pit_se_b_mean,0.07825754035022577,
+C_shrink,W6D-ZJS,2021,pit_se_a_mean,0.05636076276309385,
+C_shrink,W6D-ZJS,2021,pit_W_mean,1.7674805537466238,
+C_shrink,W6D-ZJS,2021,pit_k_mean,0.04881441580099347,
+C_shrink,W6D-ZJS,2021,pit_n_ext_mean,152.58333333333334,
+C_shrink,W6D-ZJS,2022,pit_b_mean,0.27926308132873234,
+C_shrink,W6D-ZJS,2022,pit_a_mean,0.2338435742612729,
+C_shrink,W6D-ZJS,2022,pit_se_b_mean,0.14719299214176115,
+C_shrink,W6D-ZJS,2022,pit_se_a_mean,0.08155888238349084,
+C_shrink,W6D-ZJS,2022,pit_W_mean,12.073827784035613,
+C_shrink,W6D-ZJS,2022,pit_k_mean,0.7879749831475498,
+C_shrink,W6D-ZJS,2022,pit_n_ext_mean,226.45454545454547,
+C_shrink,W6D-ZJS,2023,pit_b_mean,0.26368553087368224,
+C_shrink,W6D-ZJS,2023,pit_a_mean,0.24644867342569862,
+C_shrink,W6D-ZJS,2023,pit_se_b_mean,0.14878260847192826,
+C_shrink,W6D-ZJS,2023,pit_se_a_mean,0.08008755785072887,
+C_shrink,W6D-ZJS,2023,pit_W_mean,19.114891707053296,
+C_shrink,W6D-ZJS,2023,pit_k_mean,0.8903621403194512,
+C_shrink,W6D-ZJS,2023,pit_n_ext_mean,281.6666666666667,
+C_shrink,W6D-ZJS,2024,pit_b_mean,0.2360068216314606,
+C_shrink,W6D-ZJS,2024,pit_a_mean,0.23279688559563216,
+C_shrink,W6D-ZJS,2024,pit_se_b_mean,0.14386357660587065,
+C_shrink,W6D-ZJS,2024,pit_se_a_mean,0.07721117380579402,
+C_shrink,W6D-ZJS,2024,pit_W_mean,19.779895877449764,
+C_shrink,W6D-ZJS,2024,pit_k_mean,0.8943414376369603,
+C_shrink,W6D-ZJS,2024,pit_n_ext_mean,296.5833333333333,
+C_shrink,W6D-ZJS,2025,pit_b_mean,0.1948940146371271,
+C_shrink,W6D-ZJS,2025,pit_a_mean,0.20396710666656429,
+C_shrink,W6D-ZJS,2025,pit_se_b_mean,0.1355859263404455,
+C_shrink,W6D-ZJS,2025,pit_se_a_mean,0.07324462590901461,
+C_shrink,W6D-ZJS,2025,pit_W_mean,16.558098128132226,
+C_shrink,W6D-ZJS,2025,pit_k_mean,0.8782627672887543,
+C_shrink,W6D-ZJS,2025,pit_n_ext_mean,323.0833333333333,
+C_shrink,W6D-ZJS,2026,pit_b_mean,0.17952263180072892,
+C_shrink,W6D-ZJS,2026,pit_a_mean,0.18511305365540426,
+C_shrink,W6D-ZJS,2026,pit_se_b_mean,0.13136285146863863,
+C_shrink,W6D-ZJS,2026,pit_se_a_mean,0.07102036431114797,
+C_shrink,W6D-ZJS,2026,pit_W_mean,13.158086540223415,
+C_shrink,W6D-ZJS,2026,pit_k_mean,0.8477825968108583,
+C_shrink,W6D-ZJS,2026,pit_n_ext_mean,340.3636363636364,
+C_shrink,W6D-GJS,M,qlike,0.21581770840516334,окно M
+C_shrink,W6D-GJS,2018,delta_vs_X1,0.0,PIT-сжатие
+C_shrink,W5-G,2018,delta_vs_X1,1.5386152219331215,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2018,kappa_star,0.0,потолок сжатия ex post периода
+C_shrink,W5-G,2018,delta_at_kappa_star,0.0,
+C_shrink,W6D-GJS,2018,kappa_mean_dom,0.0,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2019,delta_vs_X1,0.0,PIT-сжатие
+C_shrink,W5-G,2019,delta_vs_X1,0.7573567118797895,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2019,kappa_star,0.0,потолок сжатия ex post периода
+C_shrink,W5-G,2019,delta_at_kappa_star,0.0,
+C_shrink,W6D-GJS,2019,kappa_mean_dom,0.0,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2020,delta_vs_X1,0.07071168767424331,PIT-сжатие
+C_shrink,W5-G,2020,delta_vs_X1,-0.7627943220048518,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2020,kappa_star,1.0,потолок сжатия ex post периода
+C_shrink,W5-G,2020,delta_at_kappa_star,-0.7627943220048518,
+C_shrink,W6D-GJS,2020,kappa_mean_dom,0.022304444337156826,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2021,delta_vs_X1,0.25087071143708833,PIT-сжатие
+C_shrink,W5-G,2021,delta_vs_X1,0.4476424030493109,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2021,kappa_star,0.17,потолок сжатия ex post периода
+C_shrink,W5-G,2021,delta_at_kappa_star,-0.020962329296747597,
+C_shrink,W6D-GJS,2021,kappa_mean_dom,0.313739230589137,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2022,delta_vs_X1,-1.9773293575131077,PIT-сжатие
+C_shrink,W5-G,2022,delta_vs_X1,-4.083354476721573,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2022,kappa_star,1.0,потолок сжатия ex post периода
+C_shrink,W5-G,2022,delta_at_kappa_star,-4.083354476721573,
+C_shrink,W6D-GJS,2022,kappa_mean_dom,0.6564706494501458,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2023,delta_vs_X1,-0.4780534435184951,PIT-сжатие
+C_shrink,W5-G,2023,delta_vs_X1,-0.4384042919974881,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2023,kappa_star,0.73,потолок сжатия ex post периода
+C_shrink,W5-G,2023,delta_at_kappa_star,-0.5067284715940842,
+C_shrink,W6D-GJS,2023,kappa_mean_dom,0.7887975845275225,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2024,delta_vs_X1,-0.35471056967727704,PIT-сжатие
+C_shrink,W5-G,2024,delta_vs_X1,-0.2605088139903203,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2024,kappa_star,0.61,потолок сжатия ex post периода
+C_shrink,W5-G,2024,delta_at_kappa_star,-0.43441197376106977,
+C_shrink,W6D-GJS,2024,kappa_mean_dom,0.8607916141130926,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2025,delta_vs_X1,1.3143993861021501,PIT-сжатие
+C_shrink,W5-G,2025,delta_vs_X1,1.6533784096866462,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2025,kappa_star,0.0,потолок сжатия ex post периода
+C_shrink,W5-G,2025,delta_at_kappa_star,0.0,
+C_shrink,W6D-GJS,2025,kappa_mean_dom,0.8485112650781742,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2026_до_27.02,delta_vs_X1,0.7225608720856228,PIT-сжатие
+C_shrink,W5-G,2026_до_27.02,delta_vs_X1,0.984983130821763,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2026_до_27.02,kappa_star,0.01,потолок сжатия ex post периода
+C_shrink,W5-G,2026_до_27.02,delta_at_kappa_star,-4.833435188998287e-06,
+C_shrink,W6D-GJS,2026_до_27.02,kappa_mean_dom,0.8576597093183148,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,2026_F,delta_vs_X1,0.9167483920765302,PIT-сжатие
+C_shrink,W5-G,2026_F,delta_vs_X1,1.1830761106854453,без сжатия (сохранённый ряд)
+C_shrink,W5-G,2026_F,kappa_star,0.0,потолок сжатия ex post периода
+C_shrink,W5-G,2026_F,delta_at_kappa_star,0.0,
+C_shrink,W6D-GJS,2026_F,kappa_mean_dom,0.8707617011800104,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,h1_2018-2021,delta_vs_X1,0.06166825849892602,PIT-сжатие
+C_shrink,W5-G,h1_2018-2021,delta_vs_X1,0.6584060104349804,без сжатия (сохранённый ряд)
+C_shrink,W5-G,h1_2018-2021,kappa_star,0.0,потолок сжатия ex post периода
+C_shrink,W5-G,h1_2018-2021,delta_at_kappa_star,0.0,
+C_shrink,W6D-GJS,h1_2018-2021,kappa_mean_dom,0.09599487569751543,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,calm_2023-2025,delta_vs_X1,0.10030962050979406,PIT-сжатие
+C_shrink,W5-G,calm_2023-2025,delta_vs_X1,0.24845477964511337,без сжатия (сохранённый ряд)
+C_shrink,W5-G,calm_2023-2025,kappa_star,0.37,потолок сжатия ex post периода
+C_shrink,W5-G,calm_2023-2025,delta_at_kappa_star,-0.14728627577161743,
+C_shrink,W6D-GJS,calm_2023-2025,kappa_mean_dom,0.833055593147636,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,h2_2022-2026,delta_vs_X1,-0.4565873726566181,PIT-сжатие
+C_shrink,W5-G,h2_2022-2026,delta_vs_X1,-0.9982151082445241,без сжатия (сохранённый ряд)
+C_shrink,W5-G,h2_2022-2026,kappa_star,1.0,потолок сжатия ex post периода
+C_shrink,W5-G,h2_2022-2026,delta_at_kappa_star,-0.9982151082445242,
+C_shrink,W6D-GJS,h2_2022-2026,kappa_mean_dom,0.8094437461517935,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,h2_без_2022,delta_vs_X1,0.2335648127604357,PIT-сжатие
+C_shrink,W5-G,h2_без_2022,delta_vs_X1,0.4019012156771541,без сжатия (сохранённый ряд)
+C_shrink,W5-G,h2_без_2022,kappa_star,0.3,потолок сжатия ex post периода
+C_shrink,W5-G,h2_без_2022,delta_at_kappa_star,-0.0988841329629915,
+C_shrink,W6D-GJS,h2_без_2022,kappa_mean_dom,0.8407498682674795,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,M,delta_vs_X1,-0.2817481012189713,PIT-сжатие
+C_shrink,W5-G,M,delta_vs_X1,-0.4393356440844646,без сжатия (сохранённый ряд)
+C_shrink,W5-G,M,kappa_star,0.79,потолок сжатия ex post периода
+C_shrink,W5-G,M,delta_at_kappa_star,-0.46939625828407533,
+C_shrink,W6D-GJS,M,kappa_mean_dom,0.5048073921746349,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-GJS,M_без_2022,delta_vs_X1,0.16044983239568583,PIT-сжатие
+C_shrink,W5-G,M_без_2022,delta_vs_X1,0.5110037111445809,без сжатия (сохранённый ряд)
+C_shrink,W5-G,M_без_2022,kappa_star,0.18,потолок сжатия ex post периода
+C_shrink,W5-G,M_без_2022,delta_at_kappa_star,-0.028229616483228335,
+C_shrink,W6D-GJS,M_без_2022,kappa_mean_dom,0.48845155070374646,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,M,qlike,0.21404820571800523,окно M
+C_shrink,W6D-ZJS,2018,delta_vs_X1,0.0,PIT-сжатие
+C_shrink,ZB,2018,delta_vs_X1,-0.06318663779148818,без сжатия (сохранённый ряд)
+C_shrink,ZB,2018,kappa_star,0.85,потолок сжатия ex post периода
+C_shrink,ZB,2018,delta_at_kappa_star,-0.06528731847060014,
+C_shrink,W6D-ZJS,2018,kappa_mean_dom,0.0,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2019,delta_vs_X1,0.22718854736175773,PIT-сжатие
+C_shrink,ZB,2019,delta_vs_X1,-0.11384570856525537,без сжатия (сохранённый ряд)
+C_shrink,ZB,2019,kappa_star,0.68,потолок сжатия ex post периода
+C_shrink,ZB,2019,delta_at_kappa_star,-0.14629657905641824,
+C_shrink,W6D-ZJS,2019,kappa_mean_dom,0.10489409454588905,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2020,delta_vs_X1,0.0009861233860604533,PIT-сжатие
+C_shrink,ZB,2020,delta_vs_X1,0.29789604287925797,без сжатия (сохранённый ряд)
+C_shrink,ZB,2020,kappa_star,0.0,потолок сжатия ex post периода
+C_shrink,ZB,2020,delta_at_kappa_star,0.0,
+C_shrink,W6D-ZJS,2020,kappa_mean_dom,0.00033910688381263786,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2021,delta_vs_X1,0.08101750861710859,PIT-сжатие
+C_shrink,ZB,2021,delta_vs_X1,-0.3462613376087296,без сжатия (сохранённый ряд)
+C_shrink,ZB,2021,kappa_star,1.0,потолок сжатия ex post периода
+C_shrink,ZB,2021,delta_at_kappa_star,-0.3462613376087296,
+C_shrink,W6D-ZJS,2021,kappa_mean_dom,0.13164707651974294,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2022,delta_vs_X1,-5.380886088752276,PIT-сжатие
+C_shrink,ZB,2022,delta_vs_X1,-7.048297945353541,без сжатия (сохранённый ряд)
+C_shrink,ZB,2022,kappa_star,1.0,потолок сжатия ex post периода
+C_shrink,ZB,2022,delta_at_kappa_star,-7.048297945353541,
+C_shrink,W6D-ZJS,2022,kappa_mean_dom,0.7465266890963507,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2023,delta_vs_X1,-0.7951390374969225,PIT-сжатие
+C_shrink,ZB,2023,delta_vs_X1,-0.8049424004160608,без сжатия (сохранённый ряд)
+C_shrink,ZB,2023,kappa_star,0.9,потолок сжатия ex post периода
+C_shrink,ZB,2023,delta_at_kappa_star,-0.8135354506066301,
+C_shrink,W6D-ZJS,2023,kappa_mean_dom,0.8854449572414513,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2024,delta_vs_X1,-0.7153781138781167,PIT-сжатие
+C_shrink,ZB,2024,delta_vs_X1,-0.7456452421715148,без сжатия (сохранённый ряд)
+C_shrink,ZB,2024,kappa_star,0.88,потолок сжатия ex post периода
+C_shrink,ZB,2024,delta_at_kappa_star,-0.7593356875426007,
+C_shrink,W6D-ZJS,2024,kappa_mean_dom,0.8983588533772,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2025,delta_vs_X1,1.51464976465866,PIT-сжатие
+C_shrink,ZB,2025,delta_vs_X1,1.830387500937458,без сжатия (сохранённый ряд)
+C_shrink,ZB,2025,kappa_star,0.0,потолок сжатия ex post периода
+C_shrink,ZB,2025,delta_at_kappa_star,0.0,
+C_shrink,W6D-ZJS,2025,kappa_mean_dom,0.8795253548392499,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2026_до_27.02,delta_vs_X1,0.0,PIT-сжатие
+C_shrink,ZB,2026_до_27.02,delta_vs_X1,0.0,без сжатия (сохранённый ряд)
+C_shrink,ZB,2026_до_27.02,kappa_star,0.0,потолок сжатия ex post периода
+C_shrink,ZB,2026_до_27.02,delta_at_kappa_star,0.0,
+C_shrink,W6D-ZJS,2026_до_27.02,kappa_mean_dom,,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,2026_F,delta_vs_X1,0.4072448291488107,PIT-сжатие
+C_shrink,ZB,2026_F,delta_vs_X1,0.596214392908707,без сжатия (сохранённый ряд)
+C_shrink,ZB,2026_F,kappa_star,0.07,потолок сжатия ex post периода
+C_shrink,ZB,2026_F,delta_at_kappa_star,-0.0031150293432016646,
+C_shrink,W6D-ZJS,2026_F,kappa_mean_dom,0.8405466213529762,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,h1_2018-2021,delta_vs_X1,0.05323189711735467,PIT-сжатие
+C_shrink,ZB,h1_2018-2021,delta_vs_X1,-0.03537251278059138,без сжатия (сохранённый ряд)
+C_shrink,ZB,h1_2018-2021,kappa_star,0.58,потолок сжатия ex post периода
+C_shrink,ZB,h1_2018-2021,delta_at_kappa_star,-0.07248367312346436,
+C_shrink,W6D-ZJS,h1_2018-2021,kappa_mean_dom,0.0449879269140974,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,calm_2023-2025,delta_vs_X1,-0.07762867840027192,PIT-сжатие
+C_shrink,ZB,calm_2023-2025,delta_vs_X1,0.002570470732815588,без сжатия (сохранённый ряд)
+C_shrink,ZB,calm_2023-2025,kappa_star,0.49,потолок сжатия ex post периода
+C_shrink,ZB,calm_2023-2025,delta_at_kappa_star,-0.26597501536618323,
+C_shrink,W6D-ZJS,calm_2023-2025,kappa_mean_dom,0.8878492457123582,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,h2_2022-2026,delta_vs_X1,-1.6861408251474765,PIT-сжатие
+C_shrink,ZB,h2_2022-2026,delta_vs_X1,-2.143445353340576,без сжатия (сохранённый ряд)
+C_shrink,ZB,h2_2022-2026,kappa_star,1.0,потолок сжатия ex post периода
+C_shrink,ZB,h2_2022-2026,delta_at_kappa_star,-2.1434453533405757,
+C_shrink,W6D-ZJS,h2_2022-2026,kappa_mean_dom,0.8078578666517603,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,h2_без_2022,delta_vs_X1,-0.009369522961856358,PIT-сжатие
+C_shrink,ZB,h2_без_2022,delta_vs_X1,0.08250406426933912,без сжатия (сохранённый ряд)
+C_shrink,ZB,h2_без_2022,kappa_star,0.45,потолок сжатия ex post периода
+C_shrink,ZB,h2_без_2022,delta_at_kappa_star,-0.2051579952416776,
+C_shrink,W6D-ZJS,h2_без_2022,kappa_mean_dom,0.8783887208404817,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,M,delta_vs_X1,-1.0993441919083353,PIT-сжатие
+C_shrink,ZB,M,delta_vs_X1,-1.4322636556922623,без сжатия (сохранённый ряд)
+C_shrink,ZB,M,kappa_star,1.0,потолок сжатия ex post периода
+C_shrink,ZB,M,delta_at_kappa_star,-1.4322636556922623,
+C_shrink,W6D-ZJS,M,kappa_mean_dom,0.4576094037533364,средний применённый κ в области (дни c ≠ 0)
+C_shrink,W6D-ZJS,M_без_2022,delta_vs_X1,0.017257547135975465,PIT-сжатие
+C_shrink,ZB,M_без_2022,delta_vs_X1,0.032366098133275525,без сжатия (сохранённый ряд)
+C_shrink,ZB,M_без_2022,kappa_star,0.47,потолок сжатия ex post периода
+C_shrink,ZB,M_без_2022,delta_at_kappa_star,-0.14732910892311035,
+C_shrink,W6D-ZJS,M_без_2022,kappa_mean_dom,0.33999705750750786,средний применённый κ в области (дни c ≠ 0)
+D_union,W6D-U1,2018,delta_vs_X1,8.257516708462138,
+D_union,W6D-U1,2019,delta_vs_X1,9.528798663711676,
+D_union,W6D-U1,2020,delta_vs_X1,-0.417125833374366,
+D_union,W6D-U1,2021,delta_vs_X1,1.6765228530834884,
+D_union,W6D-U1,2022,delta_vs_X1,-13.281854631386855,
+D_union,W6D-U1,2023,delta_vs_X1,-1.3521077611986185,
+D_union,W6D-U1,2024,delta_vs_X1,-0.48101984599016356,
+D_union,W6D-U1,2025,delta_vs_X1,5.619224449145664,
+D_union,W6D-U1,2026_до_27.02,delta_vs_X1,1.9674532608329074,
+D_union,W6D-U1,2026_F,delta_vs_X1,2.8215750048100796,
+D_union,W6D-U1,h1_2018-2021,delta_vs_X1,5.215959835733484,
+D_union,W6D-U1,calm_2023-2025,delta_vs_X1,1.0346088836288974,
+D_union,W6D-U1,h2_2022-2026,delta_vs_X1,-3.244799388348657,
+D_union,W6D-U1,h2_без_2022,delta_vs_X1,1.3102768047954467,
+D_union,W6D-U1,M,delta_vs_X1,-0.39046864957874644,
+D_union,W6D-U1,M_без_2022,delta_vs_X1,2.9715313851725322,
+D_union,W6D-U1,M,qlike,0.21558240725259825,
+D_union,W6D-U1,M,delta_vs_K2,-1.4760817720009811,
+D_union,W6D-U1,2018,pit_th_e_mean,-0.07791452248679966,
+D_union,W6D-U1,2018,pit_th_es_mean,0.027170236994667935,
+D_union,W6D-U1,2018,pit_th_gap_mean,0.5770129302826937,
+D_union,W6D-U1,2018,pit_se_e_mean,0.14387153097858849,
+D_union,W6D-U1,2018,pit_se_gap_mean,0.4476966245883036,
+D_union,W6D-U1,2018,pit_W_mean,2.190955239111623,
+D_union,W6D-U1,2018,pit_k_mean,1.0,
+D_union,W6D-U1,2019,pit_th_e_mean,0.0018883585238248385,
+D_union,W6D-U1,2019,pit_th_es_mean,0.08869391745621974,
+D_union,W6D-U1,2019,pit_th_gap_mean,0.3309817299786456,
+D_union,W6D-U1,2019,pit_se_e_mean,0.10847605865204547,
+D_union,W6D-U1,2019,pit_se_gap_mean,0.29316559137448267,
+D_union,W6D-U1,2019,pit_W_mean,3.0032390049953577,
+D_union,W6D-U1,2019,pit_k_mean,1.0,
+D_union,W6D-U1,2020,pit_th_e_mean,-0.014063316541475517,
+D_union,W6D-U1,2020,pit_th_es_mean,0.07537148086156752,
+D_union,W6D-U1,2020,pit_th_gap_mean,0.2329963569191991,
+D_union,W6D-U1,2020,pit_se_e_mean,0.09099305983811946,
+D_union,W6D-U1,2020,pit_se_gap_mean,0.1910765829412154,
+D_union,W6D-U1,2020,pit_W_mean,3.0290803787539198,
+D_union,W6D-U1,2020,pit_k_mean,1.0,
+D_union,W6D-U1,2021,pit_th_e_mean,-0.021022920554759694,
+D_union,W6D-U1,2021,pit_th_es_mean,0.07567175664843591,
+D_union,W6D-U1,2021,pit_th_gap_mean,0.1859801110268181,
+D_union,W6D-U1,2021,pit_se_e_mean,0.07912160402003833,
+D_union,W6D-U1,2021,pit_se_gap_mean,0.14363647881495614,
+D_union,W6D-U1,2021,pit_W_mean,3.9955400703183788,
+D_union,W6D-U1,2021,pit_k_mean,1.0,
+D_union,W6D-U1,2022,pit_th_e_mean,0.2029408796882776,
+D_union,W6D-U1,2022,pit_th_es_mean,0.22922819892323903,
+D_union,W6D-U1,2022,pit_th_gap_mean,0.23709606427036659,
+D_union,W6D-U1,2022,pit_se_e_mean,0.11849050366497815,
+D_union,W6D-U1,2022,pit_se_gap_mean,0.12725153493214883,
+D_union,W6D-U1,2022,pit_W_mean,14.908227673761267,
+D_union,W6D-U1,2022,pit_k_mean,1.0,
+D_union,W6D-U1,2023,pit_th_e_mean,0.22153954865603762,
+D_union,W6D-U1,2023,pit_th_es_mean,0.2695040580562003,
+D_union,W6D-U1,2023,pit_th_gap_mean,0.25350465633574304,
+D_union,W6D-U1,2023,pit_se_e_mean,0.11698611716496139,
+D_union,W6D-U1,2023,pit_se_gap_mean,0.10988420238002196,
+D_union,W6D-U1,2023,pit_W_mean,26.769451088451518,
+D_union,W6D-U1,2023,pit_k_mean,1.0,
+D_union,W6D-U1,2024,pit_th_e_mean,0.21921126790465428,
+D_union,W6D-U1,2024,pit_th_es_mean,0.27360805972042807,
+D_union,W6D-U1,2024,pit_th_gap_mean,0.2390091226358271,
+D_union,W6D-U1,2024,pit_se_e_mean,0.11504817171605232,
+D_union,W6D-U1,2024,pit_se_gap_mean,0.09522629562313907,
+D_union,W6D-U1,2024,pit_W_mean,30.362406162806476,
+D_union,W6D-U1,2024,pit_k_mean,1.0,
+D_union,W6D-U1,2025,pit_th_e_mean,0.2202215194018441,
+D_union,W6D-U1,2025,pit_th_es_mean,0.26985932340978397,
+D_union,W6D-U1,2025,pit_th_gap_mean,0.2034047753165064,
+D_union,W6D-U1,2025,pit_se_e_mean,0.11279452731812305,
+D_union,W6D-U1,2025,pit_se_gap_mean,0.085513466420153,
+D_union,W6D-U1,2025,pit_W_mean,30.3773992195737,
+D_union,W6D-U1,2025,pit_k_mean,1.0,
+D_union,W6D-U1,2026,pit_th_e_mean,0.2014933457848728,
+D_union,W6D-U1,2026,pit_th_es_mean,0.24526807234743317,
+D_union,W6D-U1,2026,pit_th_gap_mean,0.18854301028624035,
+D_union,W6D-U1,2026,pit_se_e_mean,0.11056831330594799,
+D_union,W6D-U1,2026,pit_se_gap_mean,0.07759089288049818,
+D_union,W6D-U1,2026,pit_W_mean,25.107671565851295,
+D_union,W6D-U1,2026,pit_k_mean,1.0,
+D_union,W6D-U1,M,month_first,2018-07-02,
+D_union,W6D-U2,2018,delta_vs_X1,0.0,
+D_union,W6D-U2,2019,delta_vs_X1,0.06360250008577835,
+D_union,W6D-U2,2020,delta_vs_X1,0.12934619949393295,
+D_union,W6D-U2,2021,delta_vs_X1,-0.12619816751909382,
+D_union,W6D-U2,2022,delta_vs_X1,-10.007486738884278,
+D_union,W6D-U2,2023,delta_vs_X1,-1.5421257280713025,
+D_union,W6D-U2,2024,delta_vs_X1,-0.7400252153659309,
+D_union,W6D-U2,2025,delta_vs_X1,4.744424397429022,
+D_union,W6D-U2,2026_до_27.02,delta_vs_X1,1.5420639218890442,
+D_union,W6D-U2,2026_F,delta_vs_X1,2.1763659529637054,
+D_union,W6D-U2,h1_2018-2021,delta_vs_X1,0.0194272819016248,
+D_union,W6D-U2,calm_2023-2025,delta_vs_X1,0.6159639359470528,
+D_union,W6D-U2,h2_2022-2026,delta_vs_X1,-2.5318160865622534,
+D_union,W6D-U2,h2_без_2022,delta_vs_X1,0.8608372954939112,
+D_union,W6D-U2,M,delta_vs_X1,-1.671125907841403,
+D_union,W6D-U2,M_без_2022,delta_vs_X1,0.5029495130028625,
+D_union,W6D-U2,M,qlike,0.21281071290910702,
+D_union,W6D-U2,M,delta_vs_K2,-2.7427815474199035,
+D_union,W6D-U2,2018,pit_th_e_mean,-0.07791452248679966,
+D_union,W6D-U2,2018,pit_th_es_mean,0.027170236994667935,
+D_union,W6D-U2,2018,pit_th_gap_mean,0.5770129302826937,
+D_union,W6D-U2,2018,pit_se_e_mean,0.14387153097858849,
+D_union,W6D-U2,2018,pit_se_gap_mean,0.4476966245883036,
+D_union,W6D-U2,2018,pit_W_mean,2.190955239111623,
+D_union,W6D-U2,2018,pit_k_mean,0.0,
+D_union,W6D-U2,2019,pit_th_e_mean,0.0018883585238248385,
+D_union,W6D-U2,2019,pit_th_es_mean,0.08869391745621974,
+D_union,W6D-U2,2019,pit_th_gap_mean,0.3309817299786456,
+D_union,W6D-U2,2019,pit_se_e_mean,0.10847605865204547,
+D_union,W6D-U2,2019,pit_se_gap_mean,0.29316559137448267,
+D_union,W6D-U2,2019,pit_W_mean,3.0032390049953577,
+D_union,W6D-U2,2019,pit_k_mean,0.0599297254263075,
+D_union,W6D-U2,2020,pit_th_e_mean,-0.014063316541475517,
+D_union,W6D-U2,2020,pit_th_es_mean,0.07537148086156752,
+D_union,W6D-U2,2020,pit_th_gap_mean,0.2329963569191991,
+D_union,W6D-U2,2020,pit_se_e_mean,0.09099305983811946,
+D_union,W6D-U2,2020,pit_se_gap_mean,0.1910765829412154,
+D_union,W6D-U2,2020,pit_W_mean,3.0290803787539198,
+D_union,W6D-U2,2020,pit_k_mean,0.04845181411286097,
+D_union,W6D-U2,2021,pit_th_e_mean,-0.021022920554759694,
+D_union,W6D-U2,2021,pit_th_es_mean,0.07567175664843591,
+D_union,W6D-U2,2021,pit_th_gap_mean,0.1859801110268181,
+D_union,W6D-U2,2021,pit_se_e_mean,0.07912160402003833,
+D_union,W6D-U2,2021,pit_se_gap_mean,0.14363647881495614,
+D_union,W6D-U2,2021,pit_W_mean,3.9955400703183788,
+D_union,W6D-U2,2021,pit_k_mean,0.2361262555856328,
+D_union,W6D-U2,2022,pit_th_e_mean,0.2029408796882776,
+D_union,W6D-U2,2022,pit_th_es_mean,0.22922819892323903,
+D_union,W6D-U2,2022,pit_th_gap_mean,0.23709606427036659,
+D_union,W6D-U2,2022,pit_se_e_mean,0.11849050366497815,
+D_union,W6D-U2,2022,pit_se_gap_mean,0.12725153493214883,
+D_union,W6D-U2,2022,pit_W_mean,14.908227673761267,
+D_union,W6D-U2,2022,pit_k_mean,0.7596536279306971,
+D_union,W6D-U2,2023,pit_th_e_mean,0.22153954865603762,
+D_union,W6D-U2,2023,pit_th_es_mean,0.2695040580562003,
+D_union,W6D-U2,2023,pit_th_gap_mean,0.25350465633574304,
+D_union,W6D-U2,2023,pit_se_e_mean,0.11698611716496139,
+D_union,W6D-U2,2023,pit_se_gap_mean,0.10988420238002196,
+D_union,W6D-U2,2023,pit_W_mean,26.769451088451518,
+D_union,W6D-U2,2023,pit_k_mean,0.8875095991096642,
+D_union,W6D-U2,2024,pit_th_e_mean,0.21921126790465428,
+D_union,W6D-U2,2024,pit_th_es_mean,0.27360805972042807,
+D_union,W6D-U2,2024,pit_th_gap_mean,0.2390091226358271,
+D_union,W6D-U2,2024,pit_se_e_mean,0.11504817171605232,
+D_union,W6D-U2,2024,pit_se_gap_mean,0.09522629562313907,
+D_union,W6D-U2,2024,pit_W_mean,30.362406162806476,
+D_union,W6D-U2,2024,pit_k_mean,0.901137642089375,
+D_union,W6D-U2,2025,pit_th_e_mean,0.2202215194018441,
+D_union,W6D-U2,2025,pit_th_es_mean,0.26985932340978397,
+D_union,W6D-U2,2025,pit_th_gap_mean,0.2034047753165064,
+D_union,W6D-U2,2025,pit_se_e_mean,0.11279452731812305,
+D_union,W6D-U2,2025,pit_se_gap_mean,0.085513466420153,
+D_union,W6D-U2,2025,pit_W_mean,30.3773992195737,
+D_union,W6D-U2,2025,pit_k_mean,0.9007812282000215,
+D_union,W6D-U2,2026,pit_th_e_mean,0.2014933457848728,
+D_union,W6D-U2,2026,pit_th_es_mean,0.24526807234743317,
+D_union,W6D-U2,2026,pit_th_gap_mean,0.18854301028624035,
+D_union,W6D-U2,2026,pit_se_e_mean,0.11056831330594799,
+D_union,W6D-U2,2026,pit_se_gap_mean,0.07759089288049818,
+D_union,W6D-U2,2026,pit_W_mean,25.107671565851295,
+D_union,W6D-U2,2026,pit_k_mean,0.8804612425726069,
+D_union,W6D-U2,M,month_first,2018-07-02,
+D_union,W5-G,M,qlike,0.21547664564356425,сохранённый ряд
+D_union,ZB,M,qlike,0.21332767648299367,сохранённый ряд
+E_ceiling,oracle_const_all,2018,c_star,0.14033728906218276,
+E_ceiling,oracle_const_all,2018,delta_vs_X1,-3.9529518517389843,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2018,c_star,0.42499438676585666,
+E_ceiling,oracle_const_gap,2018,delta_vs_X1,-8.705067092185736,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2018,c_star,0.013030312505660339,
+E_ceiling,oracle_const_E,2018,delta_vs_X1,-0.00903225019621151,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2018,c_star,0.24615472467431718,
+E_ceiling,oracle_const_E_or_gap,2018,delta_vs_X1,-5.433955876925076,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2018,delta_vs_X1,-0.35215317875310687,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,2019,c_star,-0.04510017015437589,
+E_ceiling,oracle_const_all,2019,delta_vs_X1,-0.9266727080272165,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2019,c_star,0.00840331032728127,
+E_ceiling,oracle_const_gap,2019,delta_vs_X1,-0.0072774643666559434,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2019,c_star,-0.025661650129183672,
+E_ceiling,oracle_const_E,2019,delta_vs_X1,-0.019171499085209764,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2019,c_star,0.0056418705483724085,
+E_ceiling,oracle_const_E_or_gap,2019,delta_vs_X1,-0.003979661889798373,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2019,delta_vs_X1,-0.6425869682899022,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,2020,c_star,0.017929611731344493,
+E_ceiling,oracle_const_all,2020,delta_vs_X1,-0.10476741587733851,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2020,c_star,0.11751051351456489,
+E_ceiling,oracle_const_gap,2020,delta_vs_X1,-1.0610897917998305,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2020,c_star,-0.04604284302897498,
+E_ceiling,oracle_const_E,2020,delta_vs_X1,-0.1515016715644119,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2020,c_star,0.00041631169284219246,
+E_ceiling,oracle_const_E_or_gap,2020,delta_vs_X1,-2.2910926608624054e-05,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2020,delta_vs_X1,-0.16115603751977403,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,2021,c_star,-0.01904223978551417,
+E_ceiling,oracle_const_all,2021,delta_vs_X1,-0.16077632835025463,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2021,c_star,0.029033371555826755,
+E_ceiling,oracle_const_gap,2021,delta_vs_X1,-0.0819160437540483,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2021,c_star,-0.018406142953232847,
+E_ceiling,oracle_const_E,2021,delta_vs_X1,-0.021800425472314956,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2021,c_star,-0.042063652288353445,
+E_ceiling,oracle_const_E_or_gap,2021,delta_vs_X1,-0.25951531569342445,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2021,delta_vs_X1,-0.7687461951930075,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,2022,c_star,0.28425381239069086,
+E_ceiling,oracle_const_all,2022,delta_vs_X1,-9.364740870412627,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2022,c_star,0.7797751548779532,
+E_ceiling,oracle_const_gap,2022,delta_vs_X1,-17.940182287275118,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2022,c_star,0.4104252214700044,
+E_ceiling,oracle_const_E,2022,delta_vs_X1,-9.072254899448343,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2022,c_star,0.38533962601369537,
+E_ceiling,oracle_const_E_or_gap,2022,delta_vs_X1,-10.338307234826246,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2022,delta_vs_X1,-22.889796832295623,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,2023,c_star,-0.009053685016339947,
+E_ceiling,oracle_const_all,2023,delta_vs_X1,-0.01648867860478836,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2023,c_star,0.11313379571192614,
+E_ceiling,oracle_const_gap,2023,delta_vs_X1,-0.5808866811145652,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2023,c_star,-0.2910665391547703,
+E_ceiling,oracle_const_E,2023,delta_vs_X1,-1.224328590483338,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2023,c_star,0.07973985765134195,
+E_ceiling,oracle_const_E_or_gap,2023,delta_vs_X1,-0.3475819852919309,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2023,delta_vs_X1,-2.2740773038961057,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,2024,c_star,-0.030447251845645503,
+E_ceiling,oracle_const_all,2024,delta_vs_X1,-0.1865162108575321,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2024,c_star,0.09798969134064761,
+E_ceiling,oracle_const_gap,2024,delta_vs_X1,-0.44119191643649325,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2024,c_star,0.1580027814042592,
+E_ceiling,oracle_const_E,2024,delta_vs_X1,-0.4599446758848763,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2024,c_star,0.13442401954993985,
+E_ceiling,oracle_const_E_or_gap,2024,delta_vs_X1,-1.1258255786197018,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2024,delta_vs_X1,-1.1974847986022796,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,2025,c_star,-0.043512216897233565,
+E_ceiling,oracle_const_all,2025,delta_vs_X1,-0.4405183719877799,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2025,c_star,-0.037378052942184554,
+E_ceiling,oracle_const_gap,2025,delta_vs_X1,-0.0733856811862935,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2025,c_star,-0.2261437915320869,
+E_ceiling,oracle_const_E,2025,delta_vs_X1,-0.974905105735115,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2025,c_star,-0.09379187781369482,
+E_ceiling,oracle_const_E_or_gap,2025,delta_vs_X1,-0.5729123676803771,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2025,delta_vs_X1,-0.9754871632115036,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,2026_до_27.02,c_star,-0.06072471734608725,
+E_ceiling,oracle_const_all,2026_до_27.02,delta_vs_X1,-0.8497376913053936,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2026_до_27.02,c_star,-0.0005611191204416775,
+E_ceiling,oracle_const_gap,2026_до_27.02,delta_vs_X1,-1.753025118386594e-05,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2026_до_27.02,c_star,-0.0005611191204416775,
+E_ceiling,oracle_const_E_or_gap,2026_до_27.02,delta_vs_X1,-1.753025118386594e-05,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_all,2026_F,c_star,-0.03253564004471052,
+E_ceiling,oracle_const_all,2026_F,delta_vs_X1,-0.3224302786238669,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,2026_F,c_star,-5.341408071094275e-05,
+E_ceiling,oracle_const_gap,2026_F,delta_vs_X1,-1.8545103119248312e-07,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,2026_F,c_star,-0.00018269768304658105,
+E_ceiling,oracle_const_E,2026_F,delta_vs_X1,-9.134851343314476e-07,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,2026_F,c_star,-0.0072239752136349705,
+E_ceiling,oracle_const_E_or_gap,2026_F,delta_vs_X1,-0.004452656771224508,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,2026_F,delta_vs_X1,-0.008684068749136407,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,h1_2018-2021,c_star,0.026109311569343076,
+E_ceiling,oracle_const_all,h1_2018-2021,delta_vs_X1,-0.21638895833706911,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,h1_2018-2021,c_star,0.1586020189782878,
+E_ceiling,oracle_const_gap,h1_2018-2021,delta_vs_X1,-1.8438381358711102,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,h1_2018-2021,c_star,-0.01509669138521192,
+E_ceiling,oracle_const_E,h1_2018-2021,delta_vs_X1,-0.012646454921715376,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,h1_2018-2021,c_star,0.072442227221135,
+E_ceiling,oracle_const_E_or_gap,h1_2018-2021,delta_vs_X1,-0.609776253835934,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,h1_2018-2021,delta_vs_X1,-0.2905800740827118,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,calm_2023-2025,c_star,-0.027556844004073773,
+E_ceiling,oracle_const_all,calm_2023-2025,delta_vs_X1,-0.15991165315157235,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,calm_2023-2025,c_star,0.0592906937733399,
+E_ceiling,oracle_const_gap,calm_2023-2025,delta_vs_X1,-0.16779723675416214,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,calm_2023-2025,c_star,-0.09392748253151834,
+E_ceiling,oracle_const_E,calm_2023-2025,delta_vs_X1,-0.1524581545652677,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,calm_2023-2025,c_star,0.045251137735542867,
+E_ceiling,oracle_const_E_or_gap,calm_2023-2025,delta_vs_X1,-0.12391532952922078,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,calm_2023-2025,delta_vs_X1,-0.6230453467073677,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,h2_2022-2026,c_star,0.03255809669421357,
+E_ceiling,oracle_const_all,h2_2022-2026,delta_vs_X1,-0.20193587330218715,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,h2_2022-2026,c_star,0.21529250234669509,
+E_ceiling,oracle_const_gap,h2_2022-2026,delta_vs_X1,-2.0485272363763447,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,h2_2022-2026,c_star,0.21354223285451102,
+E_ceiling,oracle_const_E,h2_2022-2026,delta_vs_X1,-1.3375733707207778,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,h2_2022-2026,c_star,0.15514225653991065,
+E_ceiling,oracle_const_E_or_gap,h2_2022-2026,delta_vs_X1,-1.5810921820285084,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,h2_2022-2026,delta_vs_X1,-5.386358533145008,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,h2_без_2022,c_star,-0.02973419983416259,
+E_ceiling,oracle_const_all,h2_без_2022,delta_vs_X1,-0.1980400686472987,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,h2_без_2022,c_star,0.04659495133823969,
+E_ceiling,oracle_const_gap,h2_без_2022,delta_vs_X1,-0.10933346305184832,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,h2_без_2022,c_star,-0.07446228223598848,
+E_ceiling,oracle_const_E,h2_без_2022,delta_vs_X1,-0.09979647096565492,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,h2_без_2022,c_star,0.03435272827299153,
+E_ceiling,oracle_const_E_or_gap,h2_без_2022,delta_vs_X1,-0.07515152607802256,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,h2_без_2022,delta_vs_X1,-0.440942928351199,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,M,c_star,0.029599987538698885,
+E_ceiling,oracle_const_all,M,delta_vs_X1,-0.20442606135898667,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,M,c_star,0.1894632017867272,
+E_ceiling,oracle_const_gap,M,delta_vs_X1,-1.9390585898509611,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,M,c_star,0.10347048130030784,
+E_ceiling,oracle_const_E,M,delta_vs_X1,-0.4089578824203702,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,M,c_star,0.11622883856122387,
+E_ceiling,oracle_const_E_or_gap,M,delta_vs_X1,-1.1177462607558202,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,M,delta_vs_X1,-2.5005989705186096,"(b*, a*) ex post периода в днях E; не прогноз"
+E_ceiling,oracle_const_all,M_без_2022,c_star,-0.001016175256794981,
+E_ceiling,oracle_const_all,M_без_2022,delta_vs_X1,-0.0002723551124676087,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_gap,M_без_2022,c_star,0.1051871698177846,
+E_ceiling,oracle_const_gap,M_без_2022,delta_vs_X1,-0.6653272086008978,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E,M_без_2022,c_star,-0.033060259922911596,
+E_ceiling,oracle_const_E,M_без_2022,delta_vs_X1,-0.0371033932021381,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_const_E_or_gap,M_без_2022,c_star,0.056295474184163266,
+E_ceiling,oracle_const_E_or_gap,M_без_2022,delta_vs_X1,-0.27261419244703017,постоянная ex post периода на области; не прогноз
+E_ceiling,oracle_ba_E,M_без_2022,delta_vs_X1,-0.3389185377399673,"(b*, a*) ex post периода в днях E; не прогноз"
+F_alt,Б1,M,status: закрыт потолком,-0.19,"W3_SPEC 1.5 п. 1: третий эксперт K1 сверх потолка двух экспертов (ex post) −0,19 % к X1"
+F_alt,Б2,M,status: испытан W3 (диагностика),-0.121,"W3_SPEC 1.4: захват AH −0,121, DFTL126 −0,880 (< 1/3, все PIT-схемы хуже X1)"
+F_alt,Б3,M,status: испытан W5 блок A/B,,"W5_SPEC 0.2–0.3: состояния доверия и расхождения C/M меняют знак между половинами; 6 схем доверия — перенос h1→h2 +0,75…+2,12 %"
+F_alt,Б4,M,status: не испытан,-0.0371,"нет PIT-состояния «экстремальный бар IMOEX» (W2 разд. 2); потолок постоянной в днях E вне 2022 (E_ceiling oracle_const_E M_без_2022), W3: 84 % потолка уровня E — 2022"
+F_alt,Б5,M,status: закрыт диагностикой,-0.03,"W3_SPEC 1.6: corr(дисперсия ln(RV/X1) прошлого месяца, уровень следующего) = −0,03"
+F_alt,Б6,M,status: испытан W4,0.89,"W4_STAGE1: S1 к M в 2018–2021 +0,89 % при пороге +0,50 %"
+F_alt,Б7,M,status: испытан W5 блок C,,"W5_SPEC 0.3: ЦБ (перенос h2→h1 +5,26 %), экспирация, ребалансировка, CPI США, FOMC — не прошли"
+F_alt,Б8,M,status: не испытан,,"PIT-статус прогнозов h = 5, 22 (`data/regen/Bv2_*`) не проверен (W2 разд. 5) — ❓ для issledovatel"
+F_alt,Б9,M,status: не испытан (после просмотра Z2),,"Z2_REPORT разд. 2: N_d ≥ 2 против 1 — D_ZB −0,0638 за весь период, в 2018–2021 знак обратный"
+F_alt,Б10,M,status: диагностика W6 D_union,,"W6D-U2 — одна структура θᵀ[e, e·s, gap] с общим сжатием; см. D_union"
+F_alt,ZB,M,power_sd_iid,0.09696373851566652,с. о. дневной разности потерь к X1
+F_alt,ZB,M,power_sd_nw5,0.10933616946669567,"долгосрочное с. о. (Ньюи–Уэст, лаг 5)"
+F_alt,ZB,M,days_for_0.5pct,63141.43248085048,дней для одностороннего 5 % при мощности 80 % и Δ = −0.5 % QLIKE(X1) периода
+F_alt,ZB,M,days_for_1.0pct,15785.35812021262,дней для одностороннего 5 % при мощности 80 % и Δ = −1.0 % QLIKE(X1) периода
+F_alt,ZB,M_без_2022,power_sd_iid,0.04269919211107887,с. о. дневной разности потерь к X1
+F_alt,ZB,M_без_2022,power_sd_nw5,0.0419469788211647,"долгосрочное с. о. (Ньюи–Уэст, лаг 5)"
+F_alt,ZB,M_без_2022,days_for_0.5pct,12121.70512227769,дней для одностороннего 5 % при мощности 80 % и Δ = −0.5 % QLIKE(X1) периода
+F_alt,ZB,M_без_2022,days_for_1.0pct,3030.4262805694225,дней для одностороннего 5 % при мощности 80 % и Δ = −1.0 % QLIKE(X1) периода
+F_alt,W5-G,M,power_sd_iid,0.07275516583539118,с. о. дневной разности потерь к X1
+F_alt,W5-G,M,power_sd_nw5,0.0770634105035991,"долгосрочное с. о. (Ньюи–Уэст, лаг 5)"
+F_alt,W5-G,M,days_for_0.5pct,31367.735819285863,дней для одностороннего 5 % при мощности 80 % и Δ = −0.5 % QLIKE(X1) периода
+F_alt,W5-G,M,days_for_1.0pct,7841.933954821466,дней для одностороннего 5 % при мощности 80 % и Δ = −1.0 % QLIKE(X1) периода
+F_alt,W5-G,M_без_2022,power_sd_iid,0.04284925372582764,с. о. дневной разности потерь к X1
+F_alt,W5-G,M_без_2022,power_sd_nw5,0.04130373811698966,"долгосрочное с. о. (Ньюи–Уэст, лаг 5)"
+F_alt,W5-G,M_без_2022,days_for_0.5pct,11752.792221729203,дней для одностороннего 5 % при мощности 80 % и Δ = −0.5 % QLIKE(X1) периода
+F_alt,W5-G,M_без_2022,days_for_1.0pct,2938.198055432301,дней для одностороннего 5 % при мощности 80 % и Δ = −1.0 % QLIKE(X1) периода
+F_alt,W6D-U2,M,power_sd_iid,0.13386728521962396,с. о. дневной разности потерь к X1
+F_alt,W6D-U2,M,power_sd_nw5,0.1498460027695924,"долгосрочное с. о. (Ньюи–Уэст, лаг 5)"
+F_alt,W6D-U2,M,days_for_0.5pct,118597.91283565227,дней для одностороннего 5 % при мощности 80 % и Δ = −0.5 % QLIKE(X1) периода
+F_alt,W6D-U2,M,days_for_1.0pct,29649.478208913068,дней для одностороннего 5 % при мощности 80 % и Δ = −1.0 % QLIKE(X1) периода
+F_alt,W6D-U2,M_без_2022,power_sd_iid,0.06757795960043098,с. о. дневной разности потерь к X1
+F_alt,W6D-U2,M_без_2022,power_sd_nw5,0.06923000746709125,"долгосрочное с. о. (Ньюи–Уэст, лаг 5)"
+F_alt,W6D-U2,M_без_2022,days_for_0.5pct,33018.02547956928,дней для одностороннего 5 % при мощности 80 % и Δ = −0.5 % QLIKE(X1) периода
+F_alt,W6D-U2,M_без_2022,days_for_1.0pct,8254.50636989232,дней для одностороннего 5 % при мощности 80 % и Δ = −1.0 % QLIKE(X1) периода
+C_shrink,W6D-GJS,M,guard_основной,-0.2817481012189482,"правило W5 после просмотра, показ; Δ(W6D-GJS к X1) на окне M < 0, %"
+C_shrink,W6D-GJS,M,guard_У1,0.06166825849893698,"правило W5 после просмотра, показ; Δ(W6D-GJS к X1) в h1_2018-2021 ≤ порога, %"
+C_shrink,W6D-GJS,M,guard_У2,-0.45658737265661387,"правило W5 после просмотра, показ; Δ(W6D-GJS к X1) в h2_2022-2026 ≤ порога, %"
+C_shrink,W6D-GJS,M,guard_У3,0.0,"правило W5 после просмотра, показ; Δ(W6D-GJS к X1) в 2018 ≤ порога, %"
+C_shrink,W6D-GJS,M,guard_У4,1.0,"правило W5 после просмотра, показ; У4: только часть (а), 1 = QLIKE < W5-Ga"
+C_shrink,W6D-GJS,M,guard_У5,0.16044983239568666,"правило W5 после просмотра, показ; Δ(W6D-GJS к X1) без лучшего периода (2022) ≤ 0, %"
+C_shrink,W6D-ZJS,M,guard_основной,-1.0993441919083358,"правило W5 после просмотра, показ; Δ(W6D-ZJS к X1) на окне M < 0, %"
+C_shrink,W6D-ZJS,M,guard_У1,0.05323189711736731,"правило W5 после просмотра, показ; Δ(W6D-ZJS к X1) в h1_2018-2021 ≤ порога, %"
+C_shrink,W6D-ZJS,M,guard_У2,-1.686140825147453,"правило W5 после просмотра, показ; Δ(W6D-ZJS к X1) в h2_2022-2026 ≤ порога, %"
+C_shrink,W6D-ZJS,M,guard_У3,0.0,"правило W5 после просмотра, показ; Δ(W6D-ZJS к X1) в 2018 ≤ порога, %"
+C_shrink,W6D-ZJS,M,guard_У4,1.0,"правило W5 после просмотра, показ; У4: только часть (а), 1 = QLIKE < W5-Ga"
+C_shrink,W6D-ZJS,M,guard_У5,0.0172575471359757,"правило W5 после просмотра, показ; Δ(W6D-ZJS к X1) без лучшего периода (2022) ≤ 0, %"
+D_union,W6D-U1,M,guard_основной,-0.3904686495787235,"правило W5 после просмотра, показ; Δ(W6D-U1 к X1) на окне M < 0, %"
+D_union,W6D-U1,M,guard_У1,5.215959835733486,"правило W5 после просмотра, показ; Δ(W6D-U1 к X1) в h1_2018-2021 ≤ порога, %"
+D_union,W6D-U1,M,guard_У2,-3.2447993883486403,"правило W5 после просмотра, показ; Δ(W6D-U1 к X1) в h2_2022-2026 ≤ порога, %"
+D_union,W6D-U1,M,guard_У3,8.257516708462154,"правило W5 после просмотра, показ; Δ(W6D-U1 к X1) в 2018 ≤ порога, %"
+D_union,W6D-U1,M,guard_У4,1.0,"правило W5 после просмотра, показ; У4: только часть (а), 1 = QLIKE < W5-Ga"
+D_union,W6D-U1,M,guard_У5,2.9715313851725336,"правило W5 после просмотра, показ; Δ(W6D-U1 к X1) без лучшего периода (2022) ≤ 0, %"
+D_union,W6D-U2,M,guard_основной,-1.6711259078414198,"правило W5 после просмотра, показ; Δ(W6D-U2 к X1) на окне M < 0, %"
+D_union,W6D-U2,M,guard_У1,0.019427281901607252,"правило W5 после просмотра, показ; Δ(W6D-U2 к X1) в h1_2018-2021 ≤ порога, %"
+D_union,W6D-U2,M,guard_У2,-2.531816086562244,"правило W5 после просмотра, показ; Δ(W6D-U2 к X1) в h2_2022-2026 ≤ порога, %"
+D_union,W6D-U2,M,guard_У3,0.0,"правило W5 после просмотра, показ; Δ(W6D-U2 к X1) в 2018 ≤ порога, %"
+D_union,W6D-U2,M,guard_У4,1.0,"правило W5 после просмотра, показ; У4: только часть (а), 1 = QLIKE < W5-Ga"
+D_union,W6D-U2,M,guard_У5,0.5029495130028616,"правило W5 после просмотра, показ; Δ(W6D-U2 к X1) без лучшего периода (2022) ≤ 0, %"
