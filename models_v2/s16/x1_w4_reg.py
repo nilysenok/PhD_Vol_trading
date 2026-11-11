@@ -4,6 +4,7 @@
 `require(id)` — для W4-B/W4-C: отказ, если id нет в реестре. `check()` / `--check` только читают. Запуск: `python3 -W ignore -m models_v2.s16.x1_w4_reg [--check]`."""
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import json
 import sys
@@ -89,8 +90,37 @@ def require(cfg: str, trials: Path = TRIALS) -> None:
         raise SystemExit("%s: нет в реестре ALL_TRIALS.csv — счёт отказан (реестр до прогноза)" % cfg)
 
 
-def check(trials: Path = TRIALS, w4: Path = W4) -> list:
-    """Только чтение. -> список замечаний: 19 строк по id (не по позиции), одна `registered_at`, в корне W4 нет *.parquet."""
+def _t(s: str) -> dt.datetime:
+    return dt.datetime.strptime(s, "%d.%m.%Y %H:%M:%S")
+
+
+def _key_time(ckpt: Path, key: str):
+    """Время записи ключа стадии в CHECKPOINT (поля written_at / time / timestamp / created_at / at), если оно есть; иначе None."""
+    v = json.loads(ckpt.read_text(encoding="utf-8")).get(key) if ckpt.exists() else None
+    for f in ("written_at", "time", "timestamp", "created_at", "at"):
+        if isinstance(v, dict) and isinstance(v.get(f), str):
+            return _t(v[f])
+    return None
+
+
+def _after(reg_at: list, w4: Path, ckpt: Path, key: str) -> list:
+    """Режим «после прогноза»: registered_at раньше mtime самого раннего parquet и раньше времени записи ключа стадии (если оно есть). mtime — по часам файловой системы (копирование его меняет)."""
+    ps = sorted(w4.glob("*.parquet")) if w4.is_dir() else []
+    if not ps:
+        return ["режим after: в %s нет parquet, сравнивать не с чем" % w4]
+    try:
+        r = _t(reg_at[0])
+    except (ValueError, IndexError):
+        return ["registered_at не разобрана: %s" % reg_at]
+    first = min(dt.datetime.fromtimestamp(p.stat().st_mtime) for p in ps)
+    bad = [] if r < first else ["registered_at %s не раньше mtime самого раннего parquet %s" % (r, first)]
+    kt = _key_time(ckpt, key)
+    return bad + ([] if kt is None or r < kt else ["registered_at %s не раньше времени записи ключа %s (%s)" % (r, key, kt)])
+
+
+def check(trials: Path = TRIALS, w4: Path = W4, after: bool = False, ckpt: Path = CKPT) -> list:
+    """Только чтение. -> список замечаний: 19 строк по id (не по позиции), одна `registered_at`; по умолчанию — в корне W4 нет *.parquet.
+    `after=True` (CLI `--check-after`, после прогноза): вместо «parquet нет» — registered_at раньше mtime самого раннего parquet в W4 и раньше времени записи ключа `W4.stage1` (если в ключе есть время)."""
     cur = _read(trials)
     rows = cur[cur["id"].isin(IDS)]
     bad = []
@@ -98,6 +128,8 @@ def check(trials: Path = TRIALS, w4: Path = W4) -> list:
         bad.append("строк W3/W4 в реестре %d из %d (ожидаются ровно id раздела 7)" % (len(rows), len(IDS)))
     if rows["registered_at"].nunique() != 1:
         bad.append("registered_at не одна: %s" % sorted(rows["registered_at"].unique()))
+    if after:
+        return bad + _after(sorted(rows["registered_at"].unique()), w4, ckpt, "W4.stage1")
     pq = _parquet(w4)
     if pq:
         bad.append("в W4 есть parquet: %s" % pq)
@@ -105,8 +137,8 @@ def check(trials: Path = TRIALS, w4: Path = W4) -> list:
 
 
 if __name__ == "__main__":
-    if "--check" in sys.argv:
-        b = check()
+    if "--check" in sys.argv or "--check-after" in sys.argv:
+        b = check(after="--check-after" in sys.argv)
         print("check %s: строк %d; registered_at %s; parquet в W4: %d" % ("ok" if not b else "FAIL " + "; ".join(b), len(_read(TRIALS)[lambda d: d["id"].isin(IDS)]),
                                                                           sorted(_read(TRIALS)[lambda d: d["id"].isin(IDS)]["registered_at"].unique()), len(_parquet(W4))))
         sys.exit(1 if b else 0)

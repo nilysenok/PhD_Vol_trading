@@ -21,7 +21,7 @@ REAL = (W.TRIALS, W.CKPT, W.GAPS)
 
 def real_state() -> dict:
     s = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in REAL if p.exists()}
-    s["W5"] = sorted(str(p) for p in W.W5.rglob("*")) if W.W5.exists() else []
+    s["W5"] = {str(p.relative_to(W.W5)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(W.W5.rglob("*")) if p.is_file()} if W.W5.exists() else {}
     return s
 
 
@@ -110,15 +110,24 @@ def test_real_registry_is_all_or_nothing_and_by_id() -> None:
     other = cur[~cur["id"].isin(W.IDS)]
     assert not other["id"].str.match(r"^(W5D[0-9]+|W5-)").any()                           # чужих W5-строк (вне раздела 7) нет
     if len(mine) == 28:
-        assert W.check() == [] and mine["registered_at"].nunique() == 1                  # A.G4: одна registered_at, parquet в W5 нет
+        assert mine["registered_at"].nunique() == 1                                       # одна registered_at
+        pq = W._parquet(W.W5)
+        if pq:                                                                            # режим «после прогноза»: старый check() законно отказывает, регистрация раньше прогнозов
+            assert any("parquet" in b for b in W.check())
+            reg_at = pd.to_datetime(mine["registered_at"].iloc[0], format="%d.%m.%Y %H:%M:%S")
+            first = min(pd.Timestamp.fromtimestamp((W.W5 / n).stat().st_mtime) for n in pq)
+            assert reg_at < first
+            if "after" in W.check.__code__.co_varnames[:W.check.__code__.co_argcount]:
+                assert W.check(after=True) == []
+        else:
+            assert W.check() == []                                                        # A.G4: прогнозов нет
         assert len(cur[cur["id"].str.match(r"^(W5D[0-9]+|W5-)")]) == 28                  # A.G3
         cp = json.loads(W.CKPT.read_text(encoding="utf-8"))
         r = cp["W5.registered"]
         assert (r["n"], r["n_wide"], r["rows"], r["registered_at"]) == (798, 3301, 28, mine["registered_at"].iloc[0])
         assert cp["W5"]["forecasts_written"] == 0 and cp["W5"]["configurations"] == 0
     else:
-        assert W.check() and not W._parquet(W.W5)                                         # не зарегистрировано: check это видит, прогнозов всё равно нет
-    assert W._parquet(W.W5) == []                                                         # ни одного data/regen/harj_x1/W5/*.parquet (ступень 0)
+        assert W.check() and not W._parquet(W.W5)                                         # не зарегистрировано, а прогнозов нет — отказывает check по строкам
 
 
 # ---------- аудит метки gap (x1_w5_gaps) ----------

@@ -1,0 +1,192 @@
+# W5_CALENDAR_PIT — будние дни без торгов акциями MOEX и торговые выходные 2018-01-01..2026-11-10 с датой первого найденного публичного объявления (W5_SPEC раздел 11.3, Ж-252)
+# Дата обращения к источникам: 2026-11-11. Автор: issledovatel. Не коммитить.
+# Строк всего: 181. kind=weekday_closed: 94 (confirmed=yes 92; no 2). kind=weekend_trading: 87 (confirmed=yes 86; no 1). confirmed=yes всего 178; no всего 3.
+# confirmed=yes: страница-источник открыта напрямую и перечисляет этот день (дата и время публикации — со страницы; для части страниц MOEX время взято из заголовка поисковой выдачи: 2019-09-19 16:03, 2023-09-20 12:14, 2025-12-30 10:34 — страница открыта, дата совпала).
+# announced_at — первое найденное объявление среди открытых страниц; более раннее объявление (постановление Правительства о переносе или более ранний выпуск MOEX) мог существовать: см. W5_CALENDAR_PIT.md. Фактические сообщения ЦБ о продлении остановки 2022 даны по СМИ (source_kind=cbr, это пересказ решения ЦБ, страница cbr.ru не открывалась).
+# 2022-02-28..2022-03-23: остановка торгов акциями по решению Банка России; не известна заранее; каждое продление объявлялось за 0-3 дня. 2022-03-09 — самое раннее найденное объявление MOEX в день торгов 09:56 (до этого могло быть решение ЦБ вечером 08.03: не найдено). 2022-03-21 и 2022-03-23 — объявление не найдено (confirmed=no).
+# Дни без основной сессии, но с дополнительной сессией выходного дня (2026-02-23 2026-05-01 2026-06-12 2026-11-04): kind=weekday_closed; сессия — часть следующего торгового дня (n96571).
+# 2022-01-07 2022-02-23 2022-03-08 2022-05-09 2022-11-04: торгуются только иностранные акции (-RM); отечественными (в т.ч. SBER) нет.
+# 2025: сессии выходного дня на акциях с 2025-03-01; перечень всех выходных 2025 не найден — включены только даты, прямо названные в открытых сообщениях MOEX (остальные выходные 2025: не подтверждено).
+# 2022-03-05 (рабочая суббота по постановлению) в таблице нет: торги не проводились (остановка ЦБ).
+date,kind,reason,announced_at,source_url,source_kind,confirmed
+2018-01-01,weekday_closed,праздник (новогодние),2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-01-02,weekday_closed,праздник (новогодние),2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-01-08,weekday_closed,праздник (новогодние),2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-02-23,weekday_closed,праздник,2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-03-08,weekday_closed,праздник,2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-04-28,weekend_trading,рабочая суббота (перенос с 30.04; Пост. 1250 от 14.10.2017),2017-12-22 11:54,https://www.moex.com/n18128,moex_news,yes
+2018-05-01,weekday_closed,праздник,2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-05-09,weekday_closed,праздник,2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-06-09,weekend_trading,рабочая суббота (перенос с 11.06; Пост. 1250),2017-12-22 11:54,https://www.moex.com/n18128,moex_news,yes
+2018-06-12,weekday_closed,праздник,2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-11-05,weekday_closed,перенос праздника 4 ноября (воскресенье),2017-10-03 19:27,https://www.moex.com/n17268,moex_news,yes
+2018-12-29,weekend_trading,рабочая суббота (перенос на 31.12; Пост. 1250),2017-12-22 11:54,https://www.moex.com/n18128,moex_news,yes
+2018-12-31,weekday_closed,перенос (Пост. 1250 от 14.10.2017; MOEX объявила 24.12.2018),2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-01-01,weekday_closed,праздник (новогодние),2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-01-02,weekday_closed,праздник (новогодние),2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-01-07,weekday_closed,праздник (Рождество),2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-03-08,weekday_closed,праздник (8-10 марта),2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-05-01,weekday_closed,праздник,2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-05-09,weekday_closed,праздник,2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-06-12,weekday_closed,праздник,2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-11-04,weekday_closed,праздник,2018-12-24 18:11,https://www.moex.com/n22112,moex_news,yes
+2019-12-31,weekday_closed,решение биржи (31 декабря),2019-09-19 16:03,https://www.moex.com/n25096,moex_news,yes
+2020-01-01,weekday_closed,праздник (новогодние),2019-09-19 16:03,https://www.moex.com/n25096,moex_news,yes
+2020-01-02,weekday_closed,праздник (новогодние),2019-09-19 16:03,https://www.moex.com/n25096,moex_news,yes
+2020-01-07,weekday_closed,праздник (Рождество),2019-09-19 16:03,https://www.moex.com/n25096,moex_news,yes
+2020-02-24,weekday_closed,перенос праздника 23 февраля (воскресенье),2019-09-19 16:03,https://www.moex.com/n25096,moex_news,yes
+2020-03-09,weekday_closed,перенос праздника 8 марта (воскресенье),2019-09-19 16:03,https://www.moex.com/n25096,moex_news,yes
+2020-05-01,weekday_closed,праздник,2020-02-04 17:56,https://www.moex.com/n26810,moex_news,yes
+2020-05-11,weekday_closed,перенос праздника 9 мая (суббота),2020-02-04 17:56,https://www.moex.com/n26810,moex_news,yes
+2020-06-12,weekday_closed,праздник,2019-09-19 16:03,https://www.moex.com/n25096,moex_news,yes
+2020-06-24,weekday_closed,внеплановый нерабочий день (парад Победы; Указ),2020-06-03 12:13,https://www.moex.com/n28669,moex_news,yes
+2020-07-01,weekday_closed,внеплановый нерабочий день (голосование по поправкам; Указ),2020-06-03 12:13,https://www.moex.com/n28669,moex_news,yes
+2020-11-04,weekday_closed,праздник,2019-09-19 16:03,https://www.moex.com/n25096,moex_news,yes
+2020-12-31,weekday_closed,решение биржи (31 декабря),2020-12-22 13:05,https://www.moex.com/n31902,moex_news,yes
+2021-01-01,weekday_closed,праздник (новогодние),2020-10-05 16:22,https://www.moex.com/n30445,moex_news,yes
+2021-01-07,weekday_closed,праздник (Рождество),2020-10-05 16:22,https://www.moex.com/n30445,moex_news,yes
+2021-02-20,weekend_trading,рабочая суббота (перенос на 22.02; Пост. 1648 от 10.10.2020),2021-02-09 14:56,https://www.moex.com/n32519,moex_news,yes
+2021-02-23,weekday_closed,праздник,2020-10-05 16:22,https://www.moex.com/n30445,moex_news,yes
+2021-03-08,weekday_closed,праздник,2020-10-05 16:22,https://www.moex.com/n30445,moex_news,yes
+2021-05-03,weekday_closed,перенос праздника 1 мая (суббота),2020-10-05 16:22,https://www.moex.com/n30445,moex_news,yes
+2021-11-04,weekday_closed,праздник,2020-10-05 16:22,https://www.moex.com/n30445,moex_news,yes
+2021-12-31,weekday_closed,перенос (Пост. 1648 от 10.10.2020; MOEX: 31 декабря нет торгов),2021-10-07 18:25,https://www.moex.com/n36780,moex_news,yes
+2022-01-07,weekday_closed,праздник (Рождество; только иностранные акции),2021-10-07 18:25,https://www.moex.com/n36780,moex_news,yes
+2022-02-23,weekday_closed,праздник (только иностранные акции),2021-10-07 18:25,https://www.moex.com/n36780,moex_news,yes
+2022-02-28,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ),2022-02-28 13:08,https://zona.media/news/2022/02/28/cb,cbr,yes
+2022-03-01,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; продление),2022-02-28 23:13,https://ria.ru/20220228/torgi-1775695423.html,cbr,yes
+2022-03-02,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; продление),2022-03-02 08:27,https://zona.media/news/2022/03/02/mosbrj,cbr,yes
+2022-03-03,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; продление),2022-03-02 22:01,https://www.interfax.ru/business/825857,cbr,yes
+2022-03-04,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; продление),2022-03-04 09:12,https://www.rbc.ru/rbcfreenews/6221a4a39a7947ef95a4b1ba,cbr,yes
+2022-03-07,weekday_closed,внеплановая остановка (решение ЦБ; объявлено 04.03) + перенос Пост. 1564,2022-03-04 10:35,https://www.kommersant.ru/doc/5240553,cbr,yes
+2022-03-08,weekday_closed,праздник (только иностранные акции) + внеплановая остановка (решение ЦБ),2021-10-07 18:25,https://www.moex.com/n36780,moex_news,yes
+2022-03-09,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; объявление не позднее),2022-03-09 09:56,https://www.moex.com/n44776,moex_news,yes
+2022-03-10,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; продление),2022-03-09 22:25,https://www.mk.ru/economics/2022/03/09/fondovyy-rynok-mosbirzhi-reshili-ne-otkryvat-10-marta.html,cbr,yes
+2022-03-11,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; продление),2022-03-10 21:18,https://www.moex.com/n44982,moex_news,yes
+2022-03-14,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; на 14-18 марта),2022-03-12 20:31,https://www.rbc.ru/finances/12/03/2022/622cd74c9a79475535fc5a33,cbr,yes
+2022-03-15,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; на 14-18 марта),2022-03-12 20:31,https://www.rbc.ru/finances/12/03/2022/622cd74c9a79475535fc5a33,cbr,yes
+2022-03-16,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; на 14-18 марта),2022-03-12 20:31,https://www.rbc.ru/finances/12/03/2022/622cd74c9a79475535fc5a33,cbr,yes
+2022-03-17,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; на 14-18 марта),2022-03-12 20:31,https://www.rbc.ru/finances/12/03/2022/622cd74c9a79475535fc5a33,cbr,yes
+2022-03-18,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; на 14-18 марта),2022-03-12 20:31,https://www.rbc.ru/finances/12/03/2022/622cd74c9a79475535fc5a33,cbr,yes
+2022-03-21,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; торговались только ОФЗ) — объявление не найдено,,,search_snippet,no
+2022-03-22,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ),2022-03-21 22:05,https://www.moex.com/n45434,moex_news,yes
+2022-03-23,weekday_closed,внеплановая остановка торгов акциями (решение ЦБ; возобновление 24.03 объявлено 23.03 20:21) — объявление о 23.03 не найдено,,,search_snippet,no
+2022-05-02,weekday_closed,праздничные дни (MOEX изменила расписание: 29.12.2021 торги были заявлены),2022-04-19 12:35,https://www.moex.com/n47055,moex_news,yes
+2022-05-03,weekday_closed,перенос (Пост. 1564 от 16.09.2021; MOEX 29.12.2021 заявляла торги; закрыто с 19.04.2022),2022-04-19 12:35,https://www.moex.com/n47055,moex_news,yes
+2022-05-09,weekday_closed,праздник (только иностранные акции),2021-10-07 18:25,https://www.moex.com/n36780,moex_news,yes
+2022-05-10,weekday_closed,перенос (Пост. 1564; MOEX 29.12.2021 заявляла торги; закрыто с 19.04.2022),2022-04-19 12:35,https://www.moex.com/n47055,moex_news,yes
+2022-06-13,weekday_closed,перенос праздника 12 июня (MOEX 29.12.2021 заявляла торги; закрыто с 03.06.2022),2022-06-03 17:12,https://www.moex.com/n48076,moex_news,yes
+2022-11-04,weekday_closed,праздник (только иностранные акции),2021-10-07 18:25,https://www.moex.com/n36780,moex_news,yes
+2023-01-02,weekday_closed,праздник (новогодние),2022-10-03 13:00,https://www.moex.com/n51887,moex_news,yes
+2023-02-23,weekday_closed,праздник,2022-10-03 13:00,https://www.moex.com/n51887,moex_news,yes
+2023-03-08,weekday_closed,праздник,2022-10-03 13:00,https://www.moex.com/n51887,moex_news,yes
+2023-05-01,weekday_closed,праздник,2022-10-03 13:00,https://www.moex.com/n51887,moex_news,yes
+2023-05-09,weekday_closed,праздник,2022-10-03 13:00,https://www.moex.com/n51887,moex_news,yes
+2023-06-12,weekday_closed,праздник,2022-10-03 13:00,https://www.moex.com/n51887,moex_news,yes
+2024-01-01,weekday_closed,праздник (новогодние),2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-01-02,weekday_closed,праздник (новогодние),2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-02-23,weekday_closed,праздник,2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-03-08,weekday_closed,праздник,2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-04-27,weekend_trading,рабочая суббота (Пост. 1314 от 10.08.2023),2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-05-01,weekday_closed,праздник,2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-05-09,weekday_closed,праздник,2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-06-12,weekday_closed,праздник,2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-11-02,weekend_trading,рабочая суббота (Пост. 1314),2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-11-04,weekday_closed,праздник,2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-12-28,weekend_trading,рабочая суббота (Пост. 1314),2023-09-20 12:14,https://www.moex.com/n64121,moex_news,yes
+2024-12-31,weekday_closed,решение биржи (31 декабря),2024-12-24 17:00,https://www.moex.com/n75066,moex_news,yes
+2025-01-01,weekday_closed,праздник (новогодние),2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2025-01-02,weekday_closed,праздник (новогодние),2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2025-01-07,weekday_closed,праздник (Рождество),2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2025-03-01,weekend_trading,сессия выходного дня (запуск; эксперимент),2025-02-24 17:32,https://www.moex.com/n77931,moex_news,yes
+2025-03-02,weekend_trading,сессия выходного дня (запуск; эксперимент),2025-02-24 17:32,https://www.moex.com/n77931,moex_news,yes
+2025-03-29,weekend_trading,сессия выходного дня (с этой даты добавлены 26 акций),2025-03-26 10:15,https://www.moex.com/n88858,moex_news,yes
+2025-05-01,weekday_closed,праздник,2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2025-05-03,weekend_trading,сессия выходного дня (майские),2025-04-22 11:05,https://www.moex.com/n89673,moex_news,yes
+2025-05-04,weekend_trading,сессия выходного дня (майские),2025-04-22 11:05,https://www.moex.com/n89673,moex_news,yes
+2025-05-09,weekday_closed,праздник,2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2025-05-10,weekend_trading,сессия выходного дня (майские),2025-04-22 11:05,https://www.moex.com/n89673,moex_news,yes
+2025-05-11,weekend_trading,сессия выходного дня (майские),2025-04-22 11:05,https://www.moex.com/n89673,moex_news,yes
+2025-05-17,weekend_trading,сессия выходного дня (с этой даты добавлены 6 акций),2025-05-15 10:00,https://www.moex.com/n90242,moex_news,yes
+2025-06-12,weekday_closed,праздник,2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2025-08-30,weekend_trading,сессия выходного дня (с этой даты добавлена FIXR; найдено только сообщение от 02.09 — после дня),,https://www.moex.com/n93256,moex_news,no
+2025-09-06,weekend_trading,сессия выходного дня (с этой даты добавлено 98 акций),2025-09-02 14:59,https://www.moex.com/n93256,moex_news,yes
+2025-11-01,weekend_trading,рабочая суббота (Пост. 1335 от 04.10.2024),2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2025-11-04,weekday_closed,праздник,2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2025-12-20,weekend_trading,сессия выходного дня (с этой даты добавлена DOMRF),2025-12-19 13:48,https://www.moex.com/n96306,moex_news,yes
+2025-12-31,weekday_closed,перенос/решение (Пост. 1335; MOEX: 31 декабря нет торгов),2024-10-02 18:05,https://www.moex.com/n73701,moex_news,yes
+2026-01-01,weekday_closed,праздник (новогодние),2025-11-26 14:18,https://www.moex.com/n95604,moex_news,yes
+2026-01-02,weekday_closed,праздник (новогодние),2025-11-26 14:18,https://www.moex.com/n95604,moex_news,yes
+2026-01-07,weekday_closed,праздник (Рождество),2025-11-26 14:18,https://www.moex.com/n95604,moex_news,yes
+2026-01-17,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-01-18,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-01-24,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-01-25,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-01-31,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-02-01,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-02-07,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-02-08,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-02-21,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-02-22,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-02-23,weekday_closed,праздник (доп. сессия выходного дня — часть следующего торгового дня),2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-02-28,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-03-01,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-03-14,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-03-15,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-03-28,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-03-29,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-04-04,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-04-05,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-04-11,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-04-12,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-04-18,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-04-19,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-04-25,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-04-26,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-01,weekday_closed,праздник (доп. сессия выходного дня — часть следующего торгового дня),2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-02,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-03,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-16,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-17,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-23,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-24,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-30,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-05-31,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-06-06,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-06-07,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-06-12,weekday_closed,праздник (доп. сессия выходного дня — часть следующего торгового дня),2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-06-13,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-06-14,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-06-27,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-06-28,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-07-04,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-07-05,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-07-11,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-07-12,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-07-18,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-07-19,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-07-25,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-07-26,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-08-08,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-08-09,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-08-22,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-08-23,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-08-29,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-08-30,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-09-05,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-09-06,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-09-19,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-09-20,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-09-26,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-09-27,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-10-03,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-10-04,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-10-10,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-10-11,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-10-17,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-10-18,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-10-31,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-11-01,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-11-04,weekday_closed,праздник (доп. сессия выходного дня — часть следующего торгового дня),2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-11-07,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes
+2026-11-08,weekend_trading,сессия выходного дня 2026,2025-12-30 10:34,https://www.moex.com/n96571,moex_news,yes

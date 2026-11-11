@@ -134,6 +134,45 @@
    "W5_TABLE0.csv": "1ab0cc24938c72f99c8047b903a32364eeedde48466c8e1fca255187a09cffc5"
   }
  },
+ "W5.eval": {
+  "code": {
+   "x1_w5_diag.py": "b54b4bfe6818fb06c109f0b36d99cfb1bfd113966768e76bf4f80b20a163977a",
+   "x1_w5_diag_abc.py": "13c610364d88d009c9a804603ba56ac4855d75229c3459bb00068455e6d38b59",
+   "x1_w5_diag_d.py": "a880ecc428046a7205c066f0478e7bb3c470719b5ca9b0e8a4146d6c7a74d0f4",
+   "x1_w5_diag_t.py": "c83a590ca3198605671832a59e7018c6a43a9e35af2d776080fbd6924c5d686b",
+   "x1_w5_diag_v.py": "40e29f10c766ea443935df936582e1129b7293e535f097f57ba5ae4a69fa927a",
+   "x1_w5_doc.py": "b6f3ae27d3c11ef5111c75aade3ebbcf66e55adf35d3533884ee876124a25dd9",
+   "x1_w5_eval.py": "ed27a2b150168de971542b0c2e2a1f6bdaddefa83fe5b84d1d80b354afefa39c",
+   "x1_w5_eval_t.py": "85f3506a7719fd9c22121f38851d630137942457f63880af3560e6773dc6fa96",
+   "x1_w5_gap.py": "1e3bafdb0e0354f23137931f7cfaab9c8edd0c9c3e44218f2e5a7e332765827b",
+   "x1_w5_gap_cal.py": "5713b986f191adb13c08c056facfcc6e8e34b32684b9c5d52be8a59ef063fd51",
+   "x1_w5_gaps.py": "48724e1dfc4d560e60ebf6b28ad989fa88852f5a09341c0abe2b2f49e9b5102d",
+   "x1_w5_reg.py": "5956500aa9608fd670ac38361322a27bd6a4e5f0bddda86e9877884846007790"
+  },
+  "configurations": 0,
+  "decision": "X1 остаётся контрольной точкой; W5-G не прошёл: У1 (+0.6584); У3 (+1.5386); У5 (+0.5110)",
+  "forecasts_written": 0,
+  "inputs": {
+   "W5_CALENDAR_PIT.csv": "dffffef8dbbee61134c41c433bb89eb3592aed60cc22ed6fb4aec01e11bc04cf",
+   "W5_GAP_PIT.csv": "dfd3092330ccda090b3a4c71f8941c9087c7dcaf82ab8c636e4d3e7197ec948c",
+   "w5g.parquet": "0ae40e1bcc7691e1ea580ec52224a7f4736c629594505a8bafbd29ba80fca8fe",
+   "w5ga.parquet": "349d9753e3cc942b7056fca5611078c4d671fac3d3bf31082927350c9557795d",
+   "w5gb.parquet": "325299df85bb12fd4116865bcd63f6fb1f84a71ceed45272e2bc758ffd84c614",
+   "w5gk2.parquet": "e889b8d00fdbd73495f95814704e6dbcb7c65cf779a271ec10be269f4884f5ef"
+  },
+  "n_holm": 798,
+  "n_holm_wide": 3301,
+  "outputs": {
+   "W5_CONC.csv": "c092cde6b777133d8ebe7b8bd96395ddffbefb6fc86c50a21497608e6c44d6a3",
+   "W5_GAPDAYS.csv": "579dfe0f13cbe29e2d5a1617f7049176d710ac54c8be5c42b73a8e38a064754f",
+   "W5_GUARD.csv": "31d0c60c8aac856e10678a8d900d8f0981a31861335a4878adb5cf0fcee86969",
+   "W5_MCS.csv": "fb0cce2721e8a850695d04ccc7c5cb9519a49456ec2043365937bf3756d48d65",
+   "W5_SENS.csv": "4529788e1e5c4c570e8814257773e5ab1b5241f0d0f659c22e1a6aaea887736d",
+   "W5_STATS.csv": "e99f3f15af2f606cba175a6454ee1478bc6717bafe52dcbb17246c04a82bcb16",
+   "W5_TABLE.csv": "cc4c51d66b59a53fba310180533055cd7f7c421d79d4f2ab543af638ab2dbcc4",
+   "W5_YEARS.csv": "b9fc29ac000aad77142ffbadbf101794acb43104116b25591db4719ae8adbe0b"
+  }
+ },
  "W5.registered": {
   "n": 798,
   "n_wide": 3301,

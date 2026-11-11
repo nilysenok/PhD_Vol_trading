@@ -25,13 +25,18 @@ def tree_state() -> dict:
     return {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for d in (REP, REG) for p in sorted(d.rglob("*")) if p.is_file()}
 
 
+def w5_state() -> dict:
+    d = REG / "W5"
+    return {str(p.relative_to(d)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(d.rglob("*")) if p.is_file()} if d.exists() else {}
+
+
 @pytest.fixture(autouse=True)
 def real_files_untouched():
     before = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in REAL if p.exists()}
-    w5 = sorted(str(p) for p in (REG / "W5").rglob("*")) if (REG / "W5").exists() else []
+    w5 = w5_state()
     yield
     assert {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in REAL if p.exists()} == before        # реальные DIAG, TABLE0, ALL_TRIALS, CHECKPOINT прежние
-    assert (sorted(str(p) for p in (REG / "W5").rglob("*")) if (REG / "W5").exists() else []) == w5 == []  # W5 без прогнозов
+    assert w5_state() == w5                                                               # содержимое W5 (имена и sha256) до и после теста равно
 
 
 @pytest.fixture(scope="module")

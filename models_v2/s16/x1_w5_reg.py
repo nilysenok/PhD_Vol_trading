@@ -8,11 +8,12 @@
 - `merge_checkpoint(ckpt, now, rep=REP, code=<каталог модуля>)`: ключ `W5` = sha256 файлов `W5_DIAG.csv`, `W5_TABLE0.csv`, `W5_GAPS.csv`, `W5_SPEC.md` из `rep` и всех `x1_w5_*.py` из `code`,
   `configurations` 0, `forecasts_written` 0; ключ `W5.registered` = spec_sha256, registered_at, n, n_wide, rows. Формат файла: indent 1, sorted keys.
 - `require(cfg, trials=TRIALS)`: отказ (SystemExit), если id нет в реестре (для W5-B).
-- `check(trials=TRIALS, w5=W5) -> list` замечаний, только чтение: ровно 28 id раздела 7 (по id, не по позиции), без дублей, одна `registered_at`, в корне `w5` нет `*.parquet`.
+- `check(trials=TRIALS, w5=W5, after=False, ckpt=CKPT) -> list`; `after=True` (`--check-after`, после прогноза): registered_at раньше mtime самого раннего parquet в W5 и раньше времени ключа `W5.eval` (если оно есть) — замечаний, только чтение: ровно 28 id раздела 7 (по id, не по позиции), без дублей, одна `registered_at`, в корне `w5` нет `*.parquet`.
 - `check_gaps(gaps=GAPS) -> list` замечаний, только чтение: `x1_w5_gaps.check` — перечень пар с перерывом не по выходным пересчитан и равен файлу `W5_GAPS.csv`, 66 пар.
 Запуск: `python3 -W ignore -m models_v2.s16.x1_w5_reg [--check]`; без флага — регистрация (однократная)."""
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import json
 import sys
@@ -93,8 +94,37 @@ def require(cfg: str, trials: Path = TRIALS) -> None:
         raise SystemExit("%s: нет в реестре ALL_TRIALS.csv — счёт отказан (реестр до прогноза)" % cfg)
 
 
-def check(trials: Path = TRIALS, w5: Path = W5) -> list:
-    """Только чтение. -> список замечаний: 28 строк по id (не по позиции), одна `registered_at`, в корне W5 нет *.parquet."""
+def _t(s: str) -> dt.datetime:
+    return dt.datetime.strptime(s, "%d.%m.%Y %H:%M:%S")
+
+
+def _key_time(ckpt: Path, key: str):
+    """Время записи ключа стадии в CHECKPOINT (поля written_at / time / timestamp / created_at / at), если оно есть; иначе None."""
+    v = json.loads(ckpt.read_text(encoding="utf-8")).get(key) if ckpt.exists() else None
+    for f in ("written_at", "time", "timestamp", "created_at", "at"):
+        if isinstance(v, dict) and isinstance(v.get(f), str):
+            return _t(v[f])
+    return None
+
+
+def _after(reg_at: list, w5: Path, ckpt: Path, key: str) -> list:
+    """Режим «после прогноза»: registered_at раньше mtime самого раннего parquet и раньше времени записи ключа стадии (если оно есть). mtime — по часам файловой системы (копирование его меняет)."""
+    ps = sorted(w5.glob("*.parquet")) if w5.is_dir() else []
+    if not ps:
+        return ["режим after: в %s нет parquet, сравнивать не с чем" % w5]
+    try:
+        r = _t(reg_at[0])
+    except (ValueError, IndexError):
+        return ["registered_at не разобрана: %s" % reg_at]
+    first = min(dt.datetime.fromtimestamp(p.stat().st_mtime) for p in ps)
+    bad = [] if r < first else ["registered_at %s не раньше mtime самого раннего parquet %s" % (r, first)]
+    kt = _key_time(ckpt, key)
+    return bad + ([] if kt is None or r < kt else ["registered_at %s не раньше времени записи ключа %s (%s)" % (r, key, kt)])
+
+
+def check(trials: Path = TRIALS, w5: Path = W5, after: bool = False, ckpt: Path = CKPT) -> list:
+    """Только чтение. -> список замечаний: 28 строк по id (не по позиции), одна `registered_at`; по умолчанию — в корне W5 нет *.parquet.
+    `after=True` (CLI `--check-after`, после прогноза): вместо «parquet нет» — registered_at раньше mtime самого раннего parquet в W5 и раньше времени записи ключа `W5.eval` в CHECKPOINT (если в ключе есть время)."""
     cur = _read(trials)
     rows = cur[cur["id"].isin(IDS)]
     bad = []
@@ -102,6 +132,8 @@ def check(trials: Path = TRIALS, w5: Path = W5) -> list:
         bad.append("строк W5 в реестре %d из %d (ожидаются ровно id раздела 7)" % (len(rows), len(IDS)))
     if rows["registered_at"].nunique() != 1:
         bad.append("registered_at не одна: %s" % sorted(rows["registered_at"].unique()))
+    if after:
+        return bad + _after(sorted(rows["registered_at"].unique()), w5, ckpt, "W5.eval")
     pq = _parquet(w5)
     if pq:
         bad.append("в W5 есть parquet: %s" % pq)
@@ -114,8 +146,8 @@ def check_gaps(gaps: Path = GAPS) -> list:
 
 
 if __name__ == "__main__":
-    if "--check" in sys.argv:
-        b = check() + check_gaps()
+    if "--check" in sys.argv or "--check-after" in sys.argv:
+        b = check(after="--check-after" in sys.argv) + check_gaps()
         r = _read(TRIALS)
         r = r[r["id"].isin(IDS)]
         print("check %s: строк %d; registered_at %s; parquet в W5: %d; пар в W5_GAPS.csv: %d" % (

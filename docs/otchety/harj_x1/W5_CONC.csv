@@ -1,0 +1,56 @@
+# состояние gap выбрано из 24 после анализа истории окна M
+# способ оценки β выбран после просмотра 24.02.2022 (Д-2)
+# исследовательский результат на раскрытой истории, не новое независимое подтверждение (Ж-250 п. 6)
+# DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS; l = RV/F − ln(RV/F) − 1, среднее дневных потерь на общих датах окна M (t⁺ 2018-01-04…2026-11-10); Δ в % QLIKE базы, минус — лучше
+series,base,item,key,value
+W5-G,X1,summary,delta_total_pct,-0.4393356440844629
+W5-G,X1,summary,years_with_gain,4.0
+W5-G,X1,summary,periods,10.0
+W5-G,X1,summary,gain_total_pct,0.999007739523418
+W5-G,X1,summary,share_best_year,0.8454775759646996
+W5-G,X1,summary,share_two_best_years,0.907410773078534
+W5-G,X1,summary,worsening_sum_pct,0.5596720954389527
+W5-G,X1,loyo,2018,-0.7584133129674848
+W5-G,X1,loyo,2019,-0.5120387450451124
+W5-G,X1,loyo,2020,-0.4107833433326772
+W5-G,X1,loyo,2021,-0.4960179434291182
+W5-G,X1,loyo,2022,0.5110037111445819
+W5-G,X1,loyo,2023,-0.43947767148811484
+W5-G,X1,loyo,2024,-0.46662295521100317
+W5-G,X1,loyo,2025,-0.7050088045685478
+W5-G,X1,loyo,2026_до_27.02,-0.4639484457706506
+W5-G,X1,loyo,2026_F,-0.5455515311917104
+W5-G,K2,summary,delta_total_pct,-1.5244161804201142
+W5-G,K2,summary,years_with_gain,5.0
+W5-G,K2,summary,periods,10.0
+W5-G,K2,summary,gain_total_pct,2.023004092514987
+W5-G,K2,summary,share_best_year,0.4903409803653262
+W5-G,K2,summary,share_two_best_years,0.6941420732975124
+W5-G,K2,summary,worsening_sum_pct,0.4985879120948862
+W5-G,K2,loyo,2018,-0.625996057886236
+W5-G,K2,loyo,2019,-1.7909176165341536
+W5-G,K2,loyo,2020,-1.736930887959621
+W5-G,K2,loyo,2021,-1.4212419488764017
+W5-G,K2,loyo,2022,-1.4053257410116535
+W5-G,K2,loyo,2023,-1.721678689246516
+W5-G,K2,loyo,2024,-1.2852906701084241
+W5-G,K2,loyo,2025,-1.8699536695910164
+W5-G,K2,loyo,2026_до_27.02,-1.5630976090451183
+W5-G,K2,loyo,2026_F,-1.7364750525617005
+W5-G,K3,summary,delta_total_pct,-1.8417245142524667
+W5-G,K3,summary,years_with_gain,6.0
+W5-G,K3,summary,periods,10.0
+W5-G,K3,summary,gain_total_pct,2.1937704110146834
+W5-G,K3,summary,share_best_year,0.39965952562381335
+W5-G,K3,summary,share_two_best_years,0.7399140709093075
+W5-G,K3,summary,worsening_sum_pct,0.3520458967622249
+W5-G,K3,loyo,2018,-1.1323561069286523
+W5-G,K3,loyo,2019,-2.0634488685001515
+W5-G,K3,loyo,2020,-2.1555444648097994
+W5-G,K3,loyo,2021,-1.8037722587163512
+W5-G,K3,loyo,2022,-1.3743838116008587
+W5-G,K3,loyo,2023,-2.0724432119327725
+W5-G,K3,loyo,2024,-1.721310364371795
+W5-G,K3,loyo,2025,-2.175680285401729
+W5-G,K3,loyo,2026_до_27.02,-1.8827250838773906
+W5-G,K3,loyo,2026_F,-1.9276713322771857
