@@ -1,0 +1,1052 @@
+# S-D (Ж-256): разбор S-R по сохранённым рядам; DEVELOPMENT / HISTORICAL WALK-FORWARD; исследовательский, не OOS; обучения нет (слои X1/W5 пересчитаны прежним кодом над C при фиксированных θ)
+# D_M: t⁺ 2018-01-04…2026-11-10, n = 2198; l = RV/F − ln(RV/F) − 1; Δ, % — 100·(QLIKE ряда − QLIKE базы)/QLIKE базы на окне строки, минус — лучше; contrib — п. п. QLIKE базы на D_M (Σ по разбиению = Δ)
+# Ffr = B_mix^(1−π)·C^π·e^{βg} с сохранёнными π (X1) и β·g (W5-G); генератор <sp>/s_d/expl.py
+section,series,item,base,window,n,value
+J_layer,cfg8,q05_ln_cfg8,,D_M,2198,-0.776117
+J_layer,cfg8,q50_ln_cfg8,,D_M,2198,0.489224
+J_layer,cfg8,q95_ln_cfg8,,D_M,2198,1.88766
+J_layer,S-CK,pi_mean_new,,C ≠ cfg8,2074,0.387233
+J_layer,S-CK,pi_mean_X1,,C ≠ cfg8,2074,0.460447
+J_layer,S-CK,corr_delta_ln_cfg8,,C ≠ cfg8,2074,0.258169
+J_layer,S-CK,Ffr_only_level_vs_W5G,W5-G,D_M,2198,0.502903
+J_layer,S-CK,Ffr_only_dispersion_vs_W5G,W5-G,D_M,2198,0.94356
+J_layer,S-RCK,pi_mean_new,,C ≠ cfg8,1208,0.516578
+J_layer,S-RCK,pi_mean_X1,,C ≠ cfg8,1208,0.488966
+J_layer,S-RCK,corr_delta_ln_cfg8,,C ≠ cfg8,1208,0.141342
+J_layer,S-RCK,Ffr_only_level_vs_W5G,W5-G,D_M,2198,-0.166981
+J_layer,S-RCK,Ffr_only_dispersion_vs_W5G,W5-G,D_M,2198,-0.0163142
+J_layer,S-RCKb,pi_mean_new,,C ≠ cfg8,1037,0.506699
+J_layer,S-RCKb,pi_mean_X1,,C ≠ cfg8,1037,0.489005
+J_layer,S-RCKb,corr_delta_ln_cfg8,,C ≠ cfg8,1037,0.00743935
+J_layer,S-RCKb,Ffr_only_level_vs_W5G,W5-G,D_M,2198,-0.0877397
+J_layer,S-RCKb,Ffr_only_dispersion_vs_W5G,W5-G,D_M,2198,0.0294686
+J_layer,S-RCKc,pi_mean_new,,C ≠ cfg8,1106,0.466503
+J_layer,S-RCKc,pi_mean_X1,,C ≠ cfg8,1106,0.441857
+J_layer,S-RCKc,corr_delta_ln_cfg8,,C ≠ cfg8,1106,-0.350249
+J_layer,S-RCKc,Ffr_only_level_vs_W5G,W5-G,D_M,2198,-0.434866
+J_layer,S-RCKc,Ffr_only_dispersion_vs_W5G,W5-G,D_M,2198,0.0193645
+J_layer,S-A2,pi_mean_new,,C ≠ cfg8,2198,0.449754
+J_layer,S-A2,pi_mean_X1,,C ≠ cfg8,2198,0.461544
+J_layer,S-A2,corr_delta_ln_cfg8,,C ≠ cfg8,2198,0.064147
+J_layer,S-A2,Ffr_only_level_vs_W5G,W5-G,D_M,2198,-0.0473958
+J_layer,S-A2,Ffr_only_dispersion_vs_W5G,W5-G,D_M,2198,0.529784
+J_layer,S-RA2,pi_mean_new,,C ≠ cfg8,1605,0.476466
+J_layer,S-RA2,pi_mean_X1,,C ≠ cfg8,1605,0.45453
+J_layer,S-RA2,corr_delta_ln_cfg8,,C ≠ cfg8,1605,-0.875386
+J_layer,S-RA2,Ffr_only_level_vs_W5G,W5-G,D_M,2198,-0.112286
+J_layer,S-RA2,Ffr_only_dispersion_vs_W5G,W5-G,D_M,2198,0.0956594
+J_layer,S-RA2b,pi_mean_new,,C ≠ cfg8,1480,0.468714
+J_layer,S-RA2b,pi_mean_X1,,C ≠ cfg8,1480,0.460812
+J_layer,S-RA2b,corr_delta_ln_cfg8,,C ≠ cfg8,1480,-0.758036
+J_layer,S-RA2b,Ffr_only_level_vs_W5G,W5-G,D_M,2198,-0.102874
+J_layer,S-RA2b,Ffr_only_dispersion_vs_W5G,W5-G,D_M,2198,0.124931
+J_layer,S-RA2c,pi_mean_new,,C ≠ cfg8,1483,0.453846
+J_layer,S-RA2c,pi_mean_X1,,C ≠ cfg8,1483,0.434614
+J_layer,S-RA2c,corr_delta_ln_cfg8,,C ≠ cfg8,1483,-0.733434
+J_layer,S-RA2c,Ffr_only_level_vs_W5G,W5-G,D_M,2198,-0.0610021
+J_layer,S-RA2c,Ffr_only_dispersion_vs_W5G,W5-G,D_M,2198,0.0637207
+A_level,W5-G,qlike_F,,D_M,2198,0.215477
+A_level,X1,qlike_F,,D_M,2198,0.216427
+A_level,cfg8,qlike_C,,D_M,2198,0.220194
+A_level,S-CK,qlike_F,,D_M,2198,0.217894
+A_level,S-CK,qlike_X1layer,,D_M,2198,0.218616
+A_level,S-CK,qlike_C,,D_M,2198,0.225183
+A_level,S-CK,dC_vs_cfg8_pct,cfg8,D_M,2198,2.26577
+A_level,S-CK,dX1_vs_X1_pct,X1,D_M,2198,1.01103
+B_decomp,S-CK,total_F_vs_W5G,W5-G,D_M,2198,1.12184
+B_decomp,S-CK,frozen_pi,W5-G,D_M,2198,1.39688
+B_decomp,S-CK,layer_reaction,W5-G,D_M,2198,-0.275035
+C_window,S-CK,F_vs_W5G,W5-G,d>=2018-07-02,2074,1.24422
+C_window,S-CK,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,1.54926
+C_window,S-CK,F_vs_W5G,W5-G,d>=2019-08-01,1799,0.996542
+C_window,S-CK,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,1.40484
+C_window,S-CK,F_vs_W5G,W5-G,d>=2020-08-03,1549,1.06773
+C_window,S-CK,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,1.50588
+A_level,S-RCK,qlike_F,,D_M,2198,0.215027
+A_level,S-RCK,qlike_X1layer,,D_M,2198,0.216215
+A_level,S-RCK,qlike_C,,D_M,2198,0.220012
+A_level,S-RCK,dC_vs_cfg8_pct,cfg8,D_M,2198,-0.0827125
+A_level,S-RCK,dX1_vs_X1_pct,X1,D_M,2198,-0.0983951
+B_decomp,S-RCK,total_F_vs_W5G,W5-G,D_M,2198,-0.208776
+B_decomp,S-RCK,frozen_pi,W5-G,D_M,2198,-0.18373
+B_decomp,S-RCK,layer_reaction,W5-G,D_M,2198,-0.0250462
+C_window,S-RCK,F_vs_W5G,W5-G,d>=2018-07-02,2074,-0.231551
+C_window,S-RCK,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,-0.203772
+C_window,S-RCK,F_vs_W5G,W5-G,d>=2019-08-01,1799,-0.253082
+C_window,S-RCK,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,-0.22272
+C_window,S-RCK,F_vs_W5G,W5-G,d>=2020-08-03,1549,-0.279818
+C_window,S-RCK,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,-0.246249
+A_level,S-RCKb,qlike_F,,D_M,2198,0.215205
+A_level,S-RCKb,qlike_X1layer,,D_M,2198,0.216302
+A_level,S-RCKb,qlike_C,,D_M,2198,0.219724
+A_level,S-RCKb,dC_vs_cfg8_pct,cfg8,D_M,2198,-0.213623
+A_level,S-RCKb,dX1_vs_X1_pct,X1,D_M,2198,-0.0581905
+B_decomp,S-RCKb,total_F_vs_W5G,W5-G,D_M,2198,-0.126096
+B_decomp,S-RCKb,frozen_pi,W5-G,D_M,2198,-0.0551237
+B_decomp,S-RCKb,layer_reaction,W5-G,D_M,2198,-0.0709727
+C_window,S-RCKb,F_vs_W5G,W5-G,d>=2018-07-02,2074,-0.139852
+C_window,S-RCKb,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,-0.0611369
+C_window,S-RCKb,F_vs_W5G,W5-G,d>=2019-08-01,1799,-0.152856
+C_window,S-RCKb,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,-0.0668218
+C_window,S-RCKb,F_vs_W5G,W5-G,d>=2020-08-03,1549,-0.169004
+C_window,S-RCKb,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,-0.0738811
+A_level,S-RCKc,qlike_F,,D_M,2198,0.215
+A_level,S-RCKc,qlike_X1layer,,D_M,2198,0.216415
+A_level,S-RCKc,qlike_C,,D_M,2198,0.220207
+A_level,S-RCKc,dC_vs_cfg8_pct,cfg8,D_M,2198,0.00593643
+A_level,S-RCKc,dX1_vs_X1_pct,X1,D_M,2198,-0.00565001
+B_decomp,S-RCKc,total_F_vs_W5G,W5-G,D_M,2198,-0.221297
+B_decomp,S-RCKc,frozen_pi,W5-G,D_M,2198,-0.383944
+B_decomp,S-RCKc,layer_reaction,W5-G,D_M,2198,0.162647
+C_window,S-RCKc,F_vs_W5G,W5-G,d>=2018-07-02,2074,-0.245438
+C_window,S-RCKc,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,-0.425827
+C_window,S-RCKc,F_vs_W5G,W5-G,d>=2019-08-01,1799,-0.26826
+C_window,S-RCKc,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,-0.465423
+C_window,S-RCKc,F_vs_W5G,W5-G,d>=2020-08-03,1549,-0.2966
+C_window,S-RCKc,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,-0.514592
+A_level,S-A2,qlike_F,,D_M,2198,0.215476
+A_level,S-A2,qlike_X1layer,,D_M,2198,0.216363
+A_level,S-A2,qlike_C,,D_M,2198,0.218719
+A_level,S-A2,dC_vs_cfg8_pct,cfg8,D_M,2198,-0.669872
+A_level,S-A2,dX1_vs_X1_pct,X1,D_M,2198,-0.0299135
+B_decomp,S-A2,total_F_vs_W5G,W5-G,D_M,2198,-0.00035431
+B_decomp,S-A2,frozen_pi,W5-G,D_M,2198,0.489343
+B_decomp,S-A2,layer_reaction,W5-G,D_M,2198,-0.489697
+C_window,S-A2,F_vs_W5G,W5-G,d>=2018-07-02,2074,-0.180508
+C_window,S-A2,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,0.459551
+C_window,S-A2,F_vs_W5G,W5-G,d>=2019-08-01,1799,-0.382805
+C_window,S-A2,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,0.32936
+C_window,S-A2,F_vs_W5G,W5-G,d>=2020-08-03,1549,-0.392
+C_window,S-A2,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,0.412322
+A_level,S-RA2,qlike_F,,D_M,2198,0.215696
+A_level,S-RA2,qlike_X1layer,,D_M,2198,0.216746
+A_level,S-RA2,qlike_C,,D_M,2198,0.223799
+A_level,S-RA2,dC_vs_cfg8_pct,cfg8,D_M,2198,1.63714
+A_level,S-RA2,dX1_vs_X1_pct,X1,D_M,2198,0.147307
+B_decomp,S-RA2,total_F_vs_W5G,W5-G,D_M,2198,0.101638
+B_decomp,S-RA2,frozen_pi,W5-G,D_M,2198,-0.00637033
+B_decomp,S-RA2,layer_reaction,W5-G,D_M,2198,0.108008
+C_window,S-RA2,F_vs_W5G,W5-G,d>=2018-07-02,2074,0.112725
+C_window,S-RA2,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,-0.00706524
+C_window,S-RA2,F_vs_W5G,W5-G,d>=2019-08-01,1799,0.123207
+C_window,S-RA2,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,-0.00772221
+C_window,S-RA2,F_vs_W5G,W5-G,d>=2020-08-03,1549,0.0732686
+C_window,S-RA2,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,0.0387899
+A_level,S-RA2b,qlike_F,,D_M,2198,0.215692
+A_level,S-RA2b,qlike_X1layer,,D_M,2198,0.216751
+A_level,S-RA2b,qlike_C,,D_M,2198,0.222216
+A_level,S-RA2b,dC_vs_cfg8_pct,cfg8,D_M,2198,0.918122
+A_level,S-RA2b,dX1_vs_X1_pct,X1,D_M,2198,0.149514
+B_decomp,S-RA2b,total_F_vs_W5G,W5-G,D_M,2198,0.0998245
+B_decomp,S-RA2b,frozen_pi,W5-G,D_M,2198,0.0294772
+B_decomp,S-RA2b,layer_reaction,W5-G,D_M,2198,0.0703473
+C_window,S-RA2b,F_vs_W5G,W5-G,d>=2018-07-02,2074,0.110714
+C_window,S-RA2b,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,0.0326928
+C_window,S-RA2b,F_vs_W5G,W5-G,d>=2019-08-01,1799,0.121009
+C_window,S-RA2b,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,0.0357327
+C_window,S-RA2b,F_vs_W5G,W5-G,d>=2020-08-03,1549,0.0992804
+C_window,S-RA2b,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,0.0935481
+A_level,S-RA2c,qlike_F,,D_M,2198,0.215727
+A_level,S-RA2c,qlike_X1layer,,D_M,2198,0.216756
+A_level,S-RA2c,qlike_C,,D_M,2198,0.220535
+A_level,S-RA2c,dC_vs_cfg8_pct,cfg8,D_M,2198,0.154923
+A_level,S-RA2c,dX1_vs_X1_pct,X1,D_M,2198,0.151573
+B_decomp,S-RA2c,total_F_vs_W5G,W5-G,D_M,2198,0.116126
+B_decomp,S-RA2c,frozen_pi,W5-G,D_M,2198,0.0065229
+B_decomp,S-RA2c,layer_reaction,W5-G,D_M,2198,0.109603
+C_window,S-RA2c,F_vs_W5G,W5-G,d>=2018-07-02,2074,0.128794
+C_window,S-RA2c,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,0.00723446
+C_window,S-RA2c,F_vs_W5G,W5-G,d>=2019-08-01,1799,0.14077
+C_window,S-RA2c,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,0.00790716
+C_window,S-RA2c,F_vs_W5G,W5-G,d>=2020-08-03,1549,0.0370611
+C_window,S-RA2c,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,0.0187146
+A_level,S-A0,qlike_F,,D_M,2198,0.216886
+A_level,S-A0,qlike_X1layer,,D_M,2198,0.21771
+A_level,S-A0,qlike_C,,D_M,2198,0.218215
+A_level,S-A0,dC_vs_cfg8_pct,cfg8,D_M,2198,-0.898773
+A_level,S-A0,dX1_vs_X1_pct,X1,D_M,2198,0.592666
+B_decomp,S-A0,total_F_vs_W5G,W5-G,D_M,2198,0.654212
+B_decomp,S-A0,frozen_pi,W5-G,D_M,2198,0.482072
+B_decomp,S-A0,layer_reaction,W5-G,D_M,2198,0.17214
+C_window,S-A0,F_vs_W5G,W5-G,d>=2018-07-02,2074,0.387704
+C_window,S-A0,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,0.353833
+C_window,S-A0,F_vs_W5G,W5-G,d>=2019-08-01,1799,0.248907
+C_window,S-A0,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,0.283512
+C_window,S-A0,F_vs_W5G,W5-G,d>=2020-08-03,1549,0.276301
+C_window,S-A0,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,0.333846
+A_level,S-A1,qlike_F,,D_M,2198,0.216856
+A_level,S-A1,qlike_X1layer,,D_M,2198,0.217724
+A_level,S-A1,qlike_C,,D_M,2198,0.219743
+A_level,S-A1,dC_vs_cfg8_pct,cfg8,D_M,2198,-0.20495
+A_level,S-A1,dX1_vs_X1_pct,X1,D_M,2198,0.598856
+B_decomp,S-A1,total_F_vs_W5G,W5-G,D_M,2198,0.640153
+B_decomp,S-A1,frozen_pi,W5-G,D_M,2198,0.613225
+B_decomp,S-A1,layer_reaction,W5-G,D_M,2198,0.026928
+C_window,S-A1,F_vs_W5G,W5-G,d>=2018-07-02,2074,0.458321
+C_window,S-A1,Ffr_vs_W5G,W5-G,d>=2018-07-02,2074,0.490041
+C_window,S-A1,F_vs_W5G,W5-G,d>=2019-08-01,1799,0.385422
+C_window,S-A1,Ffr_vs_W5G,W5-G,d>=2019-08-01,1799,0.46682
+C_window,S-A1,F_vs_W5G,W5-G,d>=2020-08-03,1549,0.471716
+C_window,S-A1,Ffr_vs_W5G,W5-G,d>=2020-08-03,1549,0.593122
+D_pair,S-RCK|S-CK,F,S-CK,D_M,2198,-1.31586
+D_pair,S-RCK|S-CK,Ffr,S-CK (Ffr),D_M,2198,-1.55883
+D_pair,S-RCK|S-CK,C,S-CK (C),D_M,2198,-2.29645
+D_pair,S-RCK|S-CK,F_contrib_2022-02-24,S-CK,t+=2022-02-24,1,0.0125424
+D_pair,S-RCK|S-CK,F_without_2022-02-24,S-CK,D_M без t+ 2022-02-24,2197,-1.40946
+D_pair,S-RCK|S-CK,F_without_2022,S-CK,D_M без t+ 2022,1991,-1.39397
+D_pair,S-RCK|S-CK,F,S-CK,d>=2019-08-01,1799,-1.23729
+D_pair,S-RCK|S-CK,F,S-CK,d>=2020-08-03,1549,-1.33331
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2018,253,-0.205151
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2019,252,-0.0850179
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2020,250,-0.0463189
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2021,255,-0.119298
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2022,207,-0.199856
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2023,254,-0.228178
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2024,256,-0.313253
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2025,253,-0.0956136
+D_pair,S-RCK|S-CK,F_contrib_year,S-CK,2026,218,-0.0231726
+D_pair,S-RCKb|S-CK,F,S-CK,D_M,2198,-1.2341
+D_pair,S-RCKb|S-CK,Ffr,S-CK (Ffr),D_M,2198,-1.432
+D_pair,S-RCKb|S-CK,C,S-CK (C),D_M,2198,-2.42446
+D_pair,S-RCKb|S-CK,F_contrib_2022-02-24,S-CK,t+=2022-02-24,1,0.018316
+D_pair,S-RCKb|S-CK,F_without_2022-02-24,S-CK,D_M без t+ 2022-02-24,2197,-1.32884
+D_pair,S-RCKb|S-CK,F_without_2022,S-CK,D_M без t+ 2022,1991,-1.28788
+D_pair,S-RCKb|S-CK,F,S-CK,d>=2019-08-01,1799,-1.13806
+D_pair,S-RCKb|S-CK,F,S-CK,d>=2020-08-03,1549,-1.22367
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2018,253,-0.205151
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2019,252,-0.0850179
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2020,250,-0.0232858
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2021,255,-0.117211
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2022,207,-0.203034
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2023,254,-0.195521
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2024,256,-0.301509
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2025,253,-0.110276
+D_pair,S-RCKb|S-CK,F_contrib_year,S-CK,2026,218,0.00691042
+D_pair,S-RCKc|S-CK,F,S-CK,D_M,2198,-1.32824
+D_pair,S-RCKc|S-CK,Ffr,S-CK (Ffr),D_M,2198,-1.75629
+D_pair,S-RCKc|S-CK,C,S-CK (C),D_M,2198,-2.20976
+D_pair,S-RCKc|S-CK,F_contrib_2022-02-24,S-CK,t+=2022-02-24,1,0.0294394
+D_pair,S-RCKc|S-CK,F_without_2022-02-24,S-CK,D_M без t+ 2022-02-24,2197,-1.44053
+D_pair,S-RCKc|S-CK,F_without_2022,S-CK,D_M без t+ 2022,1991,-1.40162
+D_pair,S-RCKc|S-CK,F,S-CK,d>=2019-08-01,1799,-1.25232
+D_pair,S-RCKc|S-CK,F,S-CK,d>=2020-08-03,1549,-1.34992
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2018,253,-0.205151
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2019,252,-0.0850179
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2020,250,-0.103903
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2021,255,-0.106018
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2022,207,-0.206118
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2023,254,-0.220638
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2024,256,-0.229503
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2025,253,-0.11589
+D_pair,S-RCKc|S-CK,F_contrib_year,S-CK,2026,218,-0.0560022
+D_pair,S-RA2|S-A2,F,S-A2,D_M,2198,0.101992
+D_pair,S-RA2|S-A2,Ffr,S-A2 (Ffr),D_M,2198,-0.493299
+D_pair,S-RA2|S-A2,C,S-A2 (C),D_M,2198,2.32257
+D_pair,S-RA2|S-A2,F_contrib_2022-02-24,S-A2,t+=2022-02-24,1,0.484988
+D_pair,S-RA2|S-A2,F_without_2022-02-24,S-A2,D_M без t+ 2022-02-24,2197,-0.40469
+D_pair,S-RA2|S-A2,F_without_2022,S-A2,D_M без t+ 2022,1991,-0.720146
+D_pair,S-RA2|S-A2,F,S-A2,d>=2019-08-01,1799,0.507957
+D_pair,S-RA2|S-A2,F,S-A2,d>=2020-08-03,1549,0.4671
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2018,253,-0.264199
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2019,252,-0.0621518
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2020,250,0.0850643
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2021,255,0.0909581
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2022,207,0.682301
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2023,254,-0.0273292
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2024,256,-0.268365
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2025,253,-0.154785
+D_pair,S-RA2|S-A2,F_contrib_year,S-A2,2026,218,0.0204993
+D_pair,S-RA2b|S-A2,F,S-A2,D_M,2198,0.100179
+D_pair,S-RA2b|S-A2,Ffr,S-A2 (Ffr),D_M,2198,-0.457626
+D_pair,S-RA2b|S-A2,C,S-A2 (C),D_M,2198,1.5987
+D_pair,S-RA2b|S-A2,F_contrib_2022-02-24,S-A2,t+=2022-02-24,1,0.479152
+D_pair,S-RA2b|S-A2,F_without_2022-02-24,S-A2,D_M без t+ 2022-02-24,2197,-0.400439
+D_pair,S-RA2b|S-A2,F_without_2022,S-A2,D_M без t+ 2022,1991,-0.755703
+D_pair,S-RA2b|S-A2,F,S-A2,d>=2019-08-01,1799,0.50575
+D_pair,S-RA2b|S-A2,F,S-A2,d>=2020-08-03,1549,0.493214
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2018,253,-0.264199
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2019,252,-0.0581952
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2020,250,0.0647298
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2021,255,0.0713193
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2022,207,0.70914
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2023,254,-0.0323501
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2024,256,-0.245529
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2025,253,-0.141965
+D_pair,S-RA2b|S-A2,F_contrib_year,S-A2,2026,218,-0.00277204
+D_pair,S-RA2c|S-A2,F,S-A2,D_M,2198,0.116481
+D_pair,S-RA2c|S-A2,Ffr,S-A2 (Ffr),D_M,2198,-0.480469
+D_pair,S-RA2c|S-A2,C,S-A2 (C),D_M,2198,0.830357
+D_pair,S-RA2c|S-A2,F_contrib_2022-02-24,S-A2,t+=2022-02-24,1,0.454951
+D_pair,S-RA2c|S-A2,F_without_2022-02-24,S-A2,D_M без t+ 2022-02-24,2197,-0.357643
+D_pair,S-RA2c|S-A2,F_without_2022,S-A2,D_M без t+ 2022,1991,-0.565687
+D_pair,S-RA2c|S-A2,F,S-A2,d>=2019-08-01,1799,0.525587
+D_pair,S-RA2c|S-A2,F,S-A2,d>=2020-08-03,1549,0.43075
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2018,253,-0.264199
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2019,252,-0.0363374
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2020,250,0.0711484
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2021,255,0.0936743
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2022,207,0.572322
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2023,254,-0.0381547
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2024,256,-0.207885
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2025,253,-0.100696
+D_pair,S-RA2c|S-A2,F_contrib_year,S-A2,2026,218,0.0266086
+D_pair,S-RCK|S-RCKb,F,S-RCKb,D_M,2198,-0.0827841
+D_pair,S-RCK|S-RCKb,Ffr,S-RCKb (Ffr),D_M,2198,-0.128677
+D_pair,S-RCK|S-RCKb,C,S-RCKb (C),D_M,2198,0.131191
+D_pair,S-RCK|S-RCKb,F_contrib_2022-02-24,S-RCKb,t+=2022-02-24,1,-0.00584569
+D_pair,S-RCK|S-RCKb,F_without_2022-02-24,S-RCKb,D_M без t+ 2022-02-24,2197,-0.0817118
+D_pair,S-RCK|S-RCKb,F_without_2022,S-RCKb,D_M без t+ 2022,1991,-0.107482
+D_pair,S-RCK|S-RCKb,F,S-RCKb,d>=2019-08-01,1799,-0.100379
+D_pair,S-RCK|S-RCKb,F,S-RCKb,d>=2020-08-03,1549,-0.111002
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2018,253,0
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2019,252,0
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2020,250,-0.0233209
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2021,255,-0.00211264
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2022,207,0.00321786
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2023,254,-0.0330647
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2024,256,-0.0118909
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2025,253,0.0148461
+D_pair,S-RCK|S-RCKb,F_contrib_year,S-RCKb,2026,218,-0.0304589
+D_pair,S-RCK|S-RCKc,F,S-RCKc,D_M,2198,0.0125487
+D_pair,S-RCK|S-RCKc,Ffr,S-RCKc (Ffr),D_M,2198,0.200986
+D_pair,S-RCK|S-RCKc,C,S-RCKc (C),D_M,2198,-0.0886437
+D_pair,S-RCK|S-RCKc,F_contrib_2022-02-24,S-RCKc,t+=2022-02-24,1,-0.0171244
+D_pair,S-RCK|S-RCKc,F_without_2022-02-24,S-RCKc,D_M без t+ 2022-02-24,2197,0.0315196
+D_pair,S-RCK|S-RCKc,F_without_2022,S-RCKc,D_M без t+ 2022,1991,0.00775368
+D_pair,S-RCK|S-RCKc,F,S-RCKc,d>=2019-08-01,1799,0.0152188
+D_pair,S-RCK|S-RCKc,F,S-RCKc,d>=2020-08-03,1549,0.0168314
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2018,253,0
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2019,252,0
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2020,250,0.0583595
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2021,255,-0.0134585
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2022,207,0.00634575
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2023,254,-0.00764156
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2024,256,-0.0848773
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2025,253,0.0205492
+D_pair,S-RCK|S-RCKc,F_contrib_year,S-RCKc,2026,218,0.0332716
+D_pair,S-RA2|S-RA2b,F,S-RA2b,D_M,2198,0.00181142
+D_pair,S-RA2|S-RA2b,Ffr,S-RA2b (Ffr),D_M,2198,-0.035837
+D_pair,S-RA2|S-RA2b,C,S-RA2b (C),D_M,2198,0.712481
+D_pair,S-RA2|S-RA2b,F_contrib_2022-02-24,S-RA2b,t+=2022-02-24,1,0.00583031
+D_pair,S-RA2|S-RA2b,F_without_2022-02-24,S-RA2b,D_M без t+ 2022-02-24,2197,-0.00426788
+D_pair,S-RA2|S-RA2b,F_without_2022,S-RA2b,D_M без t+ 2022,1991,0.0358275
+D_pair,S-RA2|S-RA2b,F,S-RA2b,d>=2019-08-01,1799,0.00219537
+D_pair,S-RA2|S-RA2b,F,S-RA2b,d>=2020-08-03,1549,-0.0259861
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2018,253,0
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2019,252,-0.00395262
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2020,250,0.0203141
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2021,255,0.0196191
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2022,207,-0.0268123
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2023,254,0.00501584
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2024,256,-0.0228139
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2025,253,-0.0128069
+D_pair,S-RA2|S-RA2b,F_contrib_year,S-RA2b,2026,218,0.0232481
+D_pair,S-RA2|S-RA2c,F,S-RA2c,D_M,2198,-0.0144713
+D_pair,S-RA2|S-RA2c,Ffr,S-RA2c (Ffr),D_M,2198,-0.0128924
+D_pair,S-RA2|S-RA2c,C,S-RA2c (C),D_M,2198,1.47993
+D_pair,S-RA2|S-RA2c,F_contrib_2022-02-24,S-RA2c,t+=2022-02-24,1,0.0300017
+D_pair,S-RA2|S-RA2c,F_without_2022-02-24,S-RA2c,D_M без t+ 2022-02-24,2197,-0.0472157
+D_pair,S-RA2|S-RA2c,F_without_2022,S-RA2c,D_M без t+ 2022,1991,-0.155339
+D_pair,S-RA2|S-RA2c,F,S-RA2c,d>=2019-08-01,1799,-0.0175381
+D_pair,S-RA2|S-RA2c,F,S-RA2c,d>=2020-08-03,1549,0.0361941
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2018,253,0
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2019,252,-0.0257844
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2020,250,0.0138997
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2021,255,-0.00271303
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2022,207,0.109851
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2023,254,0.0108129
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2024,256,-0.0604097
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2025,253,-0.0540253
+D_pair,S-RA2|S-RA2c,F_contrib_year,S-RA2c,2026,218,-0.00610215
+E_C,S-CK,share_days_C_ne_cfg8,,D_M,2198,0.943585
+E_C,S-CK,mean_lnC_cfg8,,active,2074,0.0387928
+E_C,S-CK,sd_lnC_cfg8,,active,2074,0.0711545
+E_C,S-CK,q05_lnC_cfg8,,active,2074,-0.061204
+E_C,S-CK,q50_lnC_cfg8,,active,2074,0.0308503
+E_C,S-CK,q95_lnC_cfg8,,active,2074,0.163564
+E_C,S-CK,share_neg,,active,2074,0.288332
+E_C,S-CK,corr_delta_ln_rv_cfg8,,active,2074,-0.0236149
+E_C,S-CK,C_only_level_vs_cfg8,cfg8,D_M,2198,0.308725
+E_C,S-CK,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,2.03445
+E_C,S-CK,C_full_vs_cfg8,cfg8,D_M,2198,2.26577
+E_C,S-RCK,share_days_C_ne_cfg8,,D_M,2198,0.549591
+E_C,S-RCK,mean_lnC_cfg8,,active,1208,-0.0313027
+E_C,S-RCK,sd_lnC_cfg8,,active,1208,0.0214284
+E_C,S-RCK,q05_lnC_cfg8,,active,1208,-0.063254
+E_C,S-RCK,q50_lnC_cfg8,,active,1208,-0.027978
+E_C,S-RCK,q95_lnC_cfg8,,active,1208,-0.0148322
+E_C,S-RCK,share_neg,,active,1208,0.990066
+E_C,S-RCK,corr_delta_ln_rv_cfg8,,active,1208,0.0209933
+E_C,S-RCK,C_only_level_vs_cfg8,cfg8,D_M,2198,0.195694
+E_C,S-RCK,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,-0.269827
+E_C,S-RCK,C_full_vs_cfg8,cfg8,D_M,2198,-0.0827125
+E_C,S-RCKb,share_days_C_ne_cfg8,,D_M,2198,0.471793
+E_C,S-RCKb,mean_lnC_cfg8,,active,1037,-0.0270483
+E_C,S-RCKb,sd_lnC_cfg8,,active,1037,0.0402405
+E_C,S-RCKb,q05_lnC_cfg8,,active,1037,-0.0966697
+E_C,S-RCKb,q50_lnC_cfg8,,active,1037,-0.0240158
+E_C,S-RCKb,q95_lnC_cfg8,,active,1037,0.0202845
+E_C,S-RCKb,share_neg,,active,1037,0.882353
+E_C,S-RCKb,corr_delta_ln_rv_cfg8,,active,1037,0.0334133
+E_C,S-RCKb,C_only_level_vs_cfg8,cfg8,D_M,2198,0.211014
+E_C,S-RCKb,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,-0.413306
+E_C,S-RCKb,C_full_vs_cfg8,cfg8,D_M,2198,-0.213623
+E_C,S-RCKc,share_days_C_ne_cfg8,,D_M,2198,0.503185
+E_C,S-RCKc,mean_lnC_cfg8,,active,1106,-0.0789962
+E_C,S-RCKc,sd_lnC_cfg8,,active,1106,0.0724879
+E_C,S-RCKc,q05_lnC_cfg8,,active,1106,-0.177619
+E_C,S-RCKc,q50_lnC_cfg8,,active,1106,-0.0809448
+E_C,S-RCKc,q95_lnC_cfg8,,active,1106,0.0293119
+E_C,S-RCKc,share_neg,,active,1106,0.905063
+E_C,S-RCKc,corr_delta_ln_rv_cfg8,,active,1106,0.0350439
+E_C,S-RCKc,C_only_level_vs_cfg8,cfg8,D_M,2198,-0.172055
+E_C,S-RCKc,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,0.164472
+E_C,S-RCKc,C_full_vs_cfg8,cfg8,D_M,2198,0.00593643
+E_C,S-A2,share_days_C_ne_cfg8,,D_M,2198,1
+E_C,S-A2,mean_lnC_cfg8,,active,2198,-0.00610242
+E_C,S-A2,sd_lnC_cfg8,,active,2198,0.0804898
+E_C,S-A2,q05_lnC_cfg8,,active,2198,-0.122647
+E_C,S-A2,q50_lnC_cfg8,,active,2198,-0.0041486
+E_C,S-A2,q95_lnC_cfg8,,active,2198,0.109873
+E_C,S-A2,share_neg,,active,2198,0.535487
+E_C,S-A2,corr_delta_ln_rv_cfg8,,active,2198,0.0193348
+E_C,S-A2,C_only_level_vs_cfg8,cfg8,D_M,2198,0.0465002
+E_C,S-A2,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,-0.712014
+E_C,S-A2,C_full_vs_cfg8,cfg8,D_M,2198,-0.669872
+E_C,S-RA2,share_days_C_ne_cfg8,,D_M,2198,0.730209
+E_C,S-RA2,mean_lnC_cfg8,,active,1605,-0.0122872
+E_C,S-RA2,sd_lnC_cfg8,,active,1605,0.0342444
+E_C,S-RA2,q05_lnC_cfg8,,active,1605,-0.0771331
+E_C,S-RA2,q50_lnC_cfg8,,active,1605,-0.00712157
+E_C,S-RA2,q95_lnC_cfg8,,active,1605,0.0285776
+E_C,S-RA2,share_neg,,active,1605,0.605607
+E_C,S-RA2,corr_delta_ln_rv_cfg8,,active,1605,-0.00419606
+E_C,S-RA2,C_only_level_vs_cfg8,cfg8,D_M,2198,0.00591177
+E_C,S-RA2,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,1.61131
+E_C,S-RA2,C_full_vs_cfg8,cfg8,D_M,2198,1.63714
+E_C,S-RA2b,share_days_C_ne_cfg8,,D_M,2198,0.673339
+E_C,S-RA2b,mean_lnC_cfg8,,active,1480,-0.013657
+E_C,S-RA2b,sd_lnC_cfg8,,active,1480,0.0203005
+E_C,S-RA2b,q05_lnC_cfg8,,active,1480,-0.0535915
+E_C,S-RA2b,q50_lnC_cfg8,,active,1480,-0.0100725
+E_C,S-RA2b,q95_lnC_cfg8,,active,1480,0.0102031
+E_C,S-RA2b,share_neg,,active,1480,0.786486
+E_C,S-RA2b,corr_delta_ln_rv_cfg8,,active,1480,-0.0257136
+E_C,S-RA2b,C_only_level_vs_cfg8,cfg8,D_M,2198,0.0400974
+E_C,S-RA2b,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,0.866115
+E_C,S-RA2b,C_full_vs_cfg8,cfg8,D_M,2198,0.918122
+E_C,S-RA2c,share_days_C_ne_cfg8,,D_M,2198,0.674704
+E_C,S-RA2c,mean_lnC_cfg8,,active,1483,-0.00607498
+E_C,S-RA2c,sd_lnC_cfg8,,active,1483,0.0403649
+E_C,S-RA2c,q05_lnC_cfg8,,active,1483,-0.0749524
+E_C,S-RA2c,q50_lnC_cfg8,,active,1483,-0.0048749
+E_C,S-RA2c,q95_lnC_cfg8,,active,1483,0.0529607
+E_C,S-RA2c,share_neg,,active,1483,0.556979
+E_C,S-RA2c,corr_delta_ln_rv_cfg8,,active,1483,0.0283477
+E_C,S-RA2c,C_only_level_vs_cfg8,cfg8,D_M,2198,-0.0585922
+E_C,S-RA2c,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,0.212222
+E_C,S-RA2c,C_full_vs_cfg8,cfg8,D_M,2198,0.154923
+E_C,S-A0,share_days_C_ne_cfg8,,D_M,2198,1
+E_C,S-A0,mean_lnC_cfg8,,active,2198,0.0037388
+E_C,S-A0,sd_lnC_cfg8,,active,2198,0.0711907
+E_C,S-A0,q05_lnC_cfg8,,active,2198,-0.0902732
+E_C,S-A0,q50_lnC_cfg8,,active,2198,8.77887e-05
+E_C,S-A0,q95_lnC_cfg8,,active,2198,0.11333
+E_C,S-A0,share_neg,,active,2198,0.499545
+E_C,S-A0,corr_delta_ln_rv_cfg8,,active,2198,0.012526
+E_C,S-A0,C_only_level_vs_cfg8,cfg8,D_M,2198,-0.0200136
+E_C,S-A0,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,-0.882052
+E_C,S-A0,C_full_vs_cfg8,cfg8,D_M,2198,-0.898773
+E_C,S-A1,share_days_C_ne_cfg8,,D_M,2198,1
+E_C,S-A1,mean_lnC_cfg8,,active,2198,0.00419225
+E_C,S-A1,sd_lnC_cfg8,,active,2198,0.0728252
+E_C,S-A1,q05_lnC_cfg8,,active,2198,-0.0927582
+E_C,S-A1,q50_lnC_cfg8,,active,2198,0.000271344
+E_C,S-A1,q95_lnC_cfg8,,active,2198,0.115842
+E_C,S-A1,share_neg,,active,2198,0.497725
+E_C,S-A1,corr_delta_ln_rv_cfg8,,active,2198,0.00210349
+E_C,S-A1,C_only_level_vs_cfg8,cfg8,D_M,2198,-0.0220045
+E_C,S-A1,C_only_dispersion_vs_cfg8,cfg8,D_M,2198,-0.183714
+E_C,S-A1,C_full_vs_cfg8,cfg8,D_M,2198,-0.20495
+F_months,S-RCK,days_pre,,D_M,649,649
+F_months,S-RCK,months_pre,,D_M,106,31
+F_months,S-RCK,contrib_F_pre,W5-G,D_M,649,0
+F_months,S-RCK,contrib_Ffr_pre,W5-G,D_M,649,-5.62592e-16
+F_months,S-RCK,days_theta0,,D_M,341,341
+F_months,S-RCK,months_theta0,,D_M,106,16
+F_months,S-RCK,contrib_F_theta0,W5-G,D_M,341,-0.000628904
+F_months,S-RCK,contrib_Ffr_theta0,W5-G,D_M,341,0
+F_months,S-RCK,days_theta_ne0,,D_M,1208,1208
+F_months,S-RCK,months_theta_ne0,,D_M,106,59
+F_months,S-RCK,contrib_F_theta_ne0,W5-G,D_M,1208,-0.208147
+F_months,S-RCK,contrib_Ffr_theta_ne0,W5-G,D_M,1208,-0.18373
+F_months,S-RCKb,days_pre,,D_M,649,649
+F_months,S-RCKb,months_pre,,D_M,106,31
+F_months,S-RCKb,contrib_F_pre,W5-G,D_M,649,0
+F_months,S-RCKb,contrib_Ffr_pre,W5-G,D_M,649,-5.62592e-16
+F_months,S-RCKb,days_theta0,,D_M,512,512
+F_months,S-RCKb,months_theta0,,D_M,106,24
+F_months,S-RCKb,contrib_F_theta0,W5-G,D_M,512,0.00130735
+F_months,S-RCKb,contrib_Ffr_theta0,W5-G,D_M,512,-4.68827e-17
+F_months,S-RCKb,days_theta_ne0,,D_M,1037,1037
+F_months,S-RCKb,months_theta_ne0,,D_M,106,51
+F_months,S-RCKb,contrib_F_theta_ne0,W5-G,D_M,1037,-0.127404
+F_months,S-RCKb,contrib_Ffr_theta_ne0,W5-G,D_M,1037,-0.0551237
+F_months,S-RCKc,days_pre,,D_M,649,649
+F_months,S-RCKc,months_pre,,D_M,106,31
+F_months,S-RCKc,contrib_F_pre,W5-G,D_M,649,0
+F_months,S-RCKc,contrib_Ffr_pre,W5-G,D_M,649,-5.62592e-16
+F_months,S-RCKc,days_theta0,,D_M,443,443
+F_months,S-RCKc,months_theta0,,D_M,106,22
+F_months,S-RCKc,contrib_F_theta0,W5-G,D_M,443,0.0241635
+F_months,S-RCKc,contrib_Ffr_theta0,W5-G,D_M,443,4.68827e-16
+F_months,S-RCKc,days_theta_ne0,,D_M,1106,1106
+F_months,S-RCKc,months_theta_ne0,,D_M,106,53
+F_months,S-RCKc,contrib_F_theta_ne0,W5-G,D_M,1106,-0.245461
+F_months,S-RCKc,contrib_Ffr_theta_ne0,W5-G,D_M,1106,-0.383944
+F_months,S-RA2,days_pre,,D_M,399,399
+F_months,S-RA2,months_pre,,D_M,106,19
+F_months,S-RA2,contrib_F_pre,W5-G,D_M,399,0
+F_months,S-RA2,contrib_Ffr_pre,W5-G,D_M,399,-9.37653e-17
+F_months,S-RA2,days_theta0,,D_M,194,194
+F_months,S-RA2,months_theta0,,D_M,106,9
+F_months,S-RA2,contrib_F_theta0,W5-G,D_M,194,0.0195665
+F_months,S-RA2,contrib_Ffr_theta0,W5-G,D_M,194,1.87531e-16
+F_months,S-RA2,days_theta_ne0,,D_M,1605,1605
+F_months,S-RA2,months_theta_ne0,,D_M,106,78
+F_months,S-RA2,contrib_F_theta_ne0,W5-G,D_M,1605,0.0820712
+F_months,S-RA2,contrib_Ffr_theta_ne0,W5-G,D_M,1605,-0.00637033
+F_months,S-RA2b,days_pre,,D_M,399,399
+F_months,S-RA2b,months_pre,,D_M,106,19
+F_months,S-RA2b,contrib_F_pre,W5-G,D_M,399,0
+F_months,S-RA2b,contrib_Ffr_pre,W5-G,D_M,399,-9.37653e-17
+F_months,S-RA2b,days_theta0,,D_M,319,319
+F_months,S-RA2b,months_theta0,,D_M,106,15
+F_months,S-RA2b,contrib_F_theta0,W5-G,D_M,319,0.00134218
+F_months,S-RA2b,contrib_Ffr_theta0,W5-G,D_M,319,4.68827e-17
+F_months,S-RA2b,days_theta_ne0,,D_M,1480,1480
+F_months,S-RA2b,months_theta_ne0,,D_M,106,72
+F_months,S-RA2b,contrib_F_theta_ne0,W5-G,D_M,1480,0.0984823
+F_months,S-RA2b,contrib_Ffr_theta_ne0,W5-G,D_M,1480,0.0294772
+F_months,S-RA2c,days_pre,,D_M,399,399
+F_months,S-RA2c,months_pre,,D_M,106,19
+F_months,S-RA2c,contrib_F_pre,W5-G,D_M,399,0
+F_months,S-RA2c,contrib_Ffr_pre,W5-G,D_M,399,-9.37653e-17
+F_months,S-RA2c,days_theta0,,D_M,316,316
+F_months,S-RA2c,months_theta0,,D_M,106,16
+F_months,S-RA2c,contrib_F_theta0,W5-G,D_M,316,-0.0133242
+F_months,S-RA2c,contrib_Ffr_theta0,W5-G,D_M,316,6.56357e-16
+F_months,S-RA2c,days_theta_ne0,,D_M,1483,1483
+F_months,S-RA2c,months_theta_ne0,,D_M,106,71
+F_months,S-RA2c,contrib_F_theta_ne0,W5-G,D_M,1483,0.12945
+F_months,S-RA2c,contrib_Ffr_theta_ne0,W5-G,D_M,1483,0.0065229
+F_agree,CK,months_active,,D_M,75,75
+F_agree,CK,same_theta0_status_S-RCK_S-RCKb,,active months,75,0.866667
+F_agree,CK,same_theta0_status_S-RCK_S-RCKc,,active months,75,0.76
+F_agree,CK,same_theta0_status_S-RCKb_S-RCKc,,active months,75,0.626667
+F_agree,CK,same_lambda_R_Rb,,active months,75,0.493333
+F_agree,CK,same_lambda_R_Rc,,active months,75,0.213333
+F_agree,A2,months_active,,D_M,87,87
+F_agree,A2,same_theta0_status_S-RA2_S-RA2b,,active months,87,0.908046
+F_agree,A2,same_theta0_status_S-RA2_S-RA2c,,active months,87,0.804598
+F_agree,A2,same_theta0_status_S-RA2b_S-RA2c,,active months,87,0.735632
+F_agree,A2,same_lambda_R_Rb,,active months,87,0.873563
+F_agree,A2,same_lambda_R_Rc,,active months,87,0.310345
+G_ck_parts,S-RCK,full|C_vs_cfg8,cfg8,D_M,2198,-0.0827125
+G_ck_parts,S-RCK,full|Ffr_vs_W5G,W5-G,D_M,2198,-0.18373
+G_ck_parts,S-RCK,full|F_vs_W5G,W5-G,D_M,2198,-0.208776
+G_ck_parts,S-RCK,full|X1_vs_X1,X1,D_M,2198,-0.0983951
+G_ck_parts,S-RCK,level_only|C_vs_cfg8,cfg8,D_M,2198,0.0913279
+G_ck_parts,S-RCK,level_only|Ffr_vs_W5G,W5-G,D_M,2198,-0.157672
+G_ck_parts,S-RCK,level_only|F_vs_W5G,W5-G,D_M,2198,-0.186459
+G_ck_parts,S-RCK,level_only|X1_vs_X1,X1,D_M,2198,-0.0844986
+G_ck_parts,S-RCK,memory_only|C_vs_cfg8,cfg8,D_M,2198,0.00938246
+G_ck_parts,S-RCK,memory_only|Ffr_vs_W5G,W5-G,D_M,2198,-0.0018528
+G_ck_parts,S-RCK,memory_only|F_vs_W5G,W5-G,D_M,2198,0.00302124
+G_ck_parts,S-RCK,memory_only|X1_vs_X1,X1,D_M,2198,0.00266212
+G_ck_parts,S-RCK,decay_only|C_vs_cfg8,cfg8,D_M,2198,-0.181912
+G_ck_parts,S-RCK,decay_only|Ffr_vs_W5G,W5-G,D_M,2198,-0.0189398
+G_ck_parts,S-RCK,decay_only|F_vs_W5G,W5-G,D_M,2198,-0.0182155
+G_ck_parts,S-RCK,decay_only|X1_vs_X1,X1,D_M,2198,-0.0105151
+G_ck_parts,S-RCK,no_level|C_vs_cfg8,cfg8,D_M,2198,-0.166612
+G_ck_parts,S-RCK,no_level|Ffr_vs_W5G,W5-G,D_M,2198,-0.0192283
+G_ck_parts,S-RCK,no_level|F_vs_W5G,W5-G,D_M,2198,-0.0143646
+G_ck_parts,S-RCK,no_level|X1_vs_X1,X1,D_M,2198,-0.00683661
+G_ck_parts,S-RCK,no_memory|C_vs_cfg8,cfg8,D_M,2198,-0.0966032
+G_ck_parts,S-RCK,no_memory|Ffr_vs_W5G,W5-G,D_M,2198,-0.17908
+G_ck_parts,S-RCK,no_memory|F_vs_W5G,W5-G,D_M,2198,-0.20789
+G_ck_parts,S-RCK,no_memory|X1_vs_X1,X1,D_M,2198,-0.0980454
+G_ck_parts,S-RCK,no_decay|C_vs_cfg8,cfg8,D_M,2198,0.0986281
+G_ck_parts,S-RCK,no_decay|Ffr_vs_W5G,W5-G,D_M,2198,-0.164214
+G_ck_parts,S-RCK,no_decay|F_vs_W5G,W5-G,D_M,2198,-0.184356
+G_ck_parts,S-RCK,no_decay|X1_vs_X1,X1,D_M,2198,-0.0809501
+G_ck_parts,S-RCK,months_theta_ne0,,D_M,59,59
+G_ck_theta,S-RCK,gam_c|median,,months θ≠0,59,0
+G_ck_theta,S-RCK,gam_c|share_ne0,,months θ≠0,59,0
+G_ck_theta,S-RCK,gam_p|median,,months θ≠0,59,0.00672041
+G_ck_theta,S-RCK,gam_p|share_ne0,,months θ≠0,59,1
+G_ck_theta,S-RCK,th_c0|median,,months θ≠0,59,-0.0274524
+G_ck_theta,S-RCK,th_c0|share_ne0,,months θ≠0,59,1
+G_ck_theta,S-RCK,th_p0|median,,months θ≠0,59,-0.0239196
+G_ck_theta,S-RCK,th_p0|share_ne0,,months θ≠0,59,1
+G_ck_theta,S-RCK,th_c1|median,,months θ≠0,59,-0.00474767
+G_ck_theta,S-RCK,th_c1|share_ne0,,months θ≠0,59,1
+G_ck_theta,S-RCK,th_p1|median,,months θ≠0,59,0.0116044
+G_ck_theta,S-RCK,th_p1|share_ne0,,months θ≠0,59,1
+G_ck_theta,S-RCK,share_days_lnM_lt0,,D_M,2198,0.544131
+G_ck_parts,S-RCKb,full|C_vs_cfg8,cfg8,D_M,2198,-0.213623
+G_ck_parts,S-RCKb,full|Ffr_vs_W5G,W5-G,D_M,2198,-0.0551237
+G_ck_parts,S-RCKb,full|F_vs_W5G,W5-G,D_M,2198,-0.126096
+G_ck_parts,S-RCKb,full|X1_vs_X1,X1,D_M,2198,-0.0581905
+G_ck_parts,S-RCKb,level_only|C_vs_cfg8,cfg8,D_M,2198,-0.029843
+G_ck_parts,S-RCKb,level_only|Ffr_vs_W5G,W5-G,D_M,2198,-0.0850304
+G_ck_parts,S-RCKb,level_only|F_vs_W5G,W5-G,D_M,2198,-0.186761
+G_ck_parts,S-RCKb,level_only|X1_vs_X1,X1,D_M,2198,-0.104822
+G_ck_parts,S-RCKb,memory_only|C_vs_cfg8,cfg8,D_M,2198,0.0660219
+G_ck_parts,S-RCKb,memory_only|Ffr_vs_W5G,W5-G,D_M,2198,0.0182876
+G_ck_parts,S-RCKb,memory_only|F_vs_W5G,W5-G,D_M,2198,0.0303265
+G_ck_parts,S-RCKb,memory_only|X1_vs_X1,X1,D_M,2198,0.0263809
+G_ck_parts,S-RCKb,decay_only|C_vs_cfg8,cfg8,D_M,2198,-0.138932
+G_ck_parts,S-RCKb,decay_only|Ffr_vs_W5G,W5-G,D_M,2198,0.0298165
+G_ck_parts,S-RCKb,decay_only|F_vs_W5G,W5-G,D_M,2198,0.0196368
+G_ck_parts,S-RCKb,decay_only|X1_vs_X1,X1,D_M,2198,0.0086055
+G_ck_parts,S-RCKb,no_level|C_vs_cfg8,cfg8,D_M,2198,-0.0481774
+G_ck_parts,S-RCKb,no_level|Ffr_vs_W5G,W5-G,D_M,2198,0.0490385
+G_ck_parts,S-RCKb,no_level|F_vs_W5G,W5-G,D_M,2198,0.0540072
+G_ck_parts,S-RCKb,no_level|X1_vs_X1,X1,D_M,2198,0.0411486
+G_ck_parts,S-RCKb,no_memory|C_vs_cfg8,cfg8,D_M,2198,-0.26014
+G_ck_parts,S-RCKb,no_memory|Ffr_vs_W5G,W5-G,D_M,2198,-0.0677826
+G_ck_parts,S-RCKb,no_memory|F_vs_W5G,W5-G,D_M,2198,-0.169275
+G_ck_parts,S-RCKb,no_memory|X1_vs_X1,X1,D_M,2198,-0.0974225
+G_ck_parts,S-RCKb,no_decay|C_vs_cfg8,cfg8,D_M,2198,-0.0170281
+G_ck_parts,S-RCKb,no_decay|Ffr_vs_W5G,W5-G,D_M,2198,-0.0772133
+G_ck_parts,S-RCKb,no_decay|F_vs_W5G,W5-G,D_M,2198,-0.147387
+G_ck_parts,S-RCKb,no_decay|X1_vs_X1,X1,D_M,2198,-0.0752516
+G_ck_parts,S-RCKb,months_theta_ne0,,D_M,51,51
+G_ck_theta,S-RCKb,gam_c|median,,months θ≠0,51,0
+G_ck_theta,S-RCKb,gam_c|share_ne0,,months θ≠0,51,0.372549
+G_ck_theta,S-RCKb,gam_p|median,,months θ≠0,51,0.005838
+G_ck_theta,S-RCKb,gam_p|share_ne0,,months θ≠0,51,1
+G_ck_theta,S-RCKb,th_c0|median,,months θ≠0,51,-0.0342773
+G_ck_theta,S-RCKb,th_c0|share_ne0,,months θ≠0,51,1
+G_ck_theta,S-RCKb,th_p0|median,,months θ≠0,51,-0.00677488
+G_ck_theta,S-RCKb,th_p0|share_ne0,,months θ≠0,51,1
+G_ck_theta,S-RCKb,th_c1|median,,months θ≠0,51,0.000447261
+G_ck_theta,S-RCKb,th_c1|share_ne0,,months θ≠0,51,1
+G_ck_theta,S-RCKb,th_p1|median,,months θ≠0,51,0.00450571
+G_ck_theta,S-RCKb,th_p1|share_ne0,,months θ≠0,51,1
+G_ck_theta,S-RCKb,share_days_lnM_lt0,,D_M,2198,0.416288
+G_ck_parts,S-RCKc,full|C_vs_cfg8,cfg8,D_M,2198,0.00593643
+G_ck_parts,S-RCKc,full|Ffr_vs_W5G,W5-G,D_M,2198,-0.383944
+G_ck_parts,S-RCKc,full|F_vs_W5G,W5-G,D_M,2198,-0.221297
+G_ck_parts,S-RCKc,full|X1_vs_X1,X1,D_M,2198,-0.00565001
+G_ck_parts,S-RCKc,level_only|C_vs_cfg8,cfg8,D_M,2198,0.0200912
+G_ck_parts,S-RCKc,level_only|Ffr_vs_W5G,W5-G,D_M,2198,-0.441038
+G_ck_parts,S-RCKc,level_only|F_vs_W5G,W5-G,D_M,2198,-0.399932
+G_ck_parts,S-RCKc,level_only|X1_vs_X1,X1,D_M,2198,-0.112704
+G_ck_parts,S-RCKc,memory_only|C_vs_cfg8,cfg8,D_M,2198,0.196089
+G_ck_parts,S-RCKc,memory_only|Ffr_vs_W5G,W5-G,D_M,2198,0.0665461
+G_ck_parts,S-RCKc,memory_only|F_vs_W5G,W5-G,D_M,2198,0.0689692
+G_ck_parts,S-RCKc,memory_only|X1_vs_X1,X1,D_M,2198,0.0674986
+G_ck_parts,S-RCKc,decay_only|C_vs_cfg8,cfg8,D_M,2198,0.361879
+G_ck_parts,S-RCKc,decay_only|Ffr_vs_W5G,W5-G,D_M,2198,0.223452
+G_ck_parts,S-RCKc,decay_only|F_vs_W5G,W5-G,D_M,2198,0.189106
+G_ck_parts,S-RCKc,decay_only|X1_vs_X1,X1,D_M,2198,0.145933
+G_ck_parts,S-RCKc,no_level|C_vs_cfg8,cfg8,D_M,2198,0.617049
+G_ck_parts,S-RCKc,no_level|Ffr_vs_W5G,W5-G,D_M,2198,0.302357
+G_ck_parts,S-RCKc,no_level|F_vs_W5G,W5-G,D_M,2198,0.225484
+G_ck_parts,S-RCKc,no_level|X1_vs_X1,X1,D_M,2198,0.187074
+G_ck_parts,S-RCKc,no_memory|C_vs_cfg8,cfg8,D_M,2198,-0.076789
+G_ck_parts,S-RCKc,no_memory|Ffr_vs_W5G,W5-G,D_M,2198,-0.392125
+G_ck_parts,S-RCKc,no_memory|F_vs_W5G,W5-G,D_M,2198,-0.268129
+G_ck_parts,S-RCKc,no_memory|X1_vs_X1,X1,D_M,2198,-0.0423516
+G_ck_parts,S-RCKc,no_decay|C_vs_cfg8,cfg8,D_M,2198,0.0285579
+G_ck_parts,S-RCKc,no_decay|Ffr_vs_W5G,W5-G,D_M,2198,-0.449733
+G_ck_parts,S-RCKc,no_decay|F_vs_W5G,W5-G,D_M,2198,-0.359995
+G_ck_parts,S-RCKc,no_decay|X1_vs_X1,X1,D_M,2198,-0.0840048
+G_ck_parts,S-RCKc,months_theta_ne0,,D_M,53,53
+G_ck_theta,S-RCKc,gam_c|median,,months θ≠0,53,0
+G_ck_theta,S-RCKc,gam_c|share_ne0,,months θ≠0,53,0.301887
+G_ck_theta,S-RCKc,gam_p|median,,months θ≠0,53,0.190908
+G_ck_theta,S-RCKc,gam_p|share_ne0,,months θ≠0,53,1
+G_ck_theta,S-RCKc,th_c0|median,,months θ≠0,53,-0.264218
+G_ck_theta,S-RCKc,th_c0|share_ne0,,months θ≠0,53,1
+G_ck_theta,S-RCKc,th_p0|median,,months θ≠0,53,0.0171792
+G_ck_theta,S-RCKc,th_p0|share_ne0,,months θ≠0,53,1
+G_ck_theta,S-RCKc,th_c1|median,,months θ≠0,53,-0.0724385
+G_ck_theta,S-RCKc,th_c1|share_ne0,,months θ≠0,53,1
+G_ck_theta,S-RCKc,th_p1|median,,months θ≠0,53,0.0789257
+G_ck_theta,S-RCKc,th_p1|share_ne0,,months θ≠0,53,1
+G_ck_theta,S-RCKc,share_days_lnM_lt0,,D_M,2198,0.455414
+G_ck_parts,S-CK,full|C_vs_cfg8,cfg8,D_M,2198,2.26577
+G_ck_parts,S-CK,full|Ffr_vs_W5G,W5-G,D_M,2198,1.39688
+G_ck_parts,S-CK,full|F_vs_W5G,W5-G,D_M,2198,1.12184
+G_ck_parts,S-CK,full|X1_vs_X1,X1,D_M,2198,1.01103
+G_ck_parts,S-CK,level_only|C_vs_cfg8,cfg8,D_M,2198,1.85767
+G_ck_parts,S-CK,level_only|Ffr_vs_W5G,W5-G,D_M,2198,1.17216
+G_ck_parts,S-CK,level_only|F_vs_W5G,W5-G,D_M,2198,0.898404
+G_ck_parts,S-CK,level_only|X1_vs_X1,X1,D_M,2198,0.695545
+G_ck_parts,S-CK,memory_only|C_vs_cfg8,cfg8,D_M,2198,0.100318
+G_ck_parts,S-CK,memory_only|Ffr_vs_W5G,W5-G,D_M,2198,-0.0199847
+G_ck_parts,S-CK,memory_only|F_vs_W5G,W5-G,D_M,2198,0.0530044
+G_ck_parts,S-CK,memory_only|X1_vs_X1,X1,D_M,2198,0.0504034
+G_ck_parts,S-CK,decay_only|C_vs_cfg8,cfg8,D_M,2198,1.23858
+G_ck_parts,S-CK,decay_only|Ffr_vs_W5G,W5-G,D_M,2198,0.642305
+G_ck_parts,S-CK,decay_only|F_vs_W5G,W5-G,D_M,2198,0.359263
+G_ck_parts,S-CK,decay_only|X1_vs_X1,X1,D_M,2198,0.477097
+G_ck_parts,S-CK,no_level|C_vs_cfg8,cfg8,D_M,2198,1.24136
+G_ck_parts,S-CK,no_level|Ffr_vs_W5G,W5-G,D_M,2198,0.586664
+G_ck_parts,S-CK,no_level|F_vs_W5G,W5-G,D_M,2198,0.356452
+G_ck_parts,S-CK,no_level|X1_vs_X1,X1,D_M,2198,0.470234
+G_ck_parts,S-CK,no_memory|C_vs_cfg8,cfg8,D_M,2198,2.29915
+G_ck_parts,S-CK,no_memory|Ffr_vs_W5G,W5-G,D_M,2198,1.46139
+G_ck_parts,S-CK,no_memory|F_vs_W5G,W5-G,D_M,2198,1.10881
+G_ck_parts,S-CK,no_memory|X1_vs_X1,X1,D_M,2198,0.998188
+G_ck_parts,S-CK,no_decay|C_vs_cfg8,cfg8,D_M,2198,1.88948
+G_ck_parts,S-CK,no_decay|Ffr_vs_W5G,W5-G,D_M,2198,1.13502
+G_ck_parts,S-CK,no_decay|F_vs_W5G,W5-G,D_M,2198,0.891601
+G_ck_parts,S-CK,no_decay|X1_vs_X1,X1,D_M,2198,0.691371
+G_ck_parts,S-CK,months_theta_ne0,,D_M,100,100
+G_ck_theta,S-CK,gam_c|median,,months θ≠0,100,0
+G_ck_theta,S-CK,gam_c|share_ne0,,months θ≠0,100,0.26
+G_ck_theta,S-CK,gam_p|median,,months θ≠0,100,0
+G_ck_theta,S-CK,gam_p|share_ne0,,months θ≠0,100,0.27
+G_ck_theta,S-CK,th_c0|median,,months θ≠0,100,-0.0207862
+G_ck_theta,S-CK,th_c0|share_ne0,,months θ≠0,100,1
+G_ck_theta,S-CK,th_p0|median,,months θ≠0,100,0.05457
+G_ck_theta,S-CK,th_p0|share_ne0,,months θ≠0,100,1
+G_ck_theta,S-CK,th_c1|median,,months θ≠0,100,-0.014406
+G_ck_theta,S-CK,th_c1|share_ne0,,months θ≠0,100,1
+G_ck_theta,S-CK,th_p1|median,,months θ≠0,100,0.0966433
+G_ck_theta,S-CK,th_p1|share_ne0,,months θ≠0,100,1
+G_ck_theta,S-CK,share_days_lnM_lt0,,D_M,2198,0.272066
+H_level_score,S-RCK,score_levelF_R|median,,active months,75,0.0170148
+H_level_score,S-RCK,score_levelF_R|share_pos,,active months,75,1
+H_level_score,S-RCK,score_levelC_R|max_abs,,active months,75,1.99295e-16
+H_level_score,S-RCK,cov_pi_clipped_ratio|median,,active months,75,-0.0170269
+H_level_score,S-RCK,score_levelF_plain|median,,active months,75,0.00893136
+H_level_score,S-RCK,score_levelF_plain|share_pos,,active months,75,0.826667
+H_level_score,S-RCK,pi_mean_pool|median,,active months,75,0.432098
+H_level_score,S-RCK,one_minus_m|median,,active months,75,0.0280545
+H_level_score,W5-G,mean_clipped_ratio_pi_tercile1,,"D_M (описательно, не PIT)",733,1.02184
+H_level_score,cfg8,mean_clipped_ratio_pi_tercile1,,"D_M (описательно, не PIT)",733,1.007
+H_level_score,B_mix,mean_clipped_ratio_pi_tercile1,,"D_M (описательно, не PIT)",733,1.05504
+H_level_score,S-RCK,mean_lnC_cfg8_pi_tercile1,,"D_M (описательно, не PIT)",733,-0.0148266
+H_level_score,W5-G,mean_clipped_ratio_pi_tercile2,,"D_M (описательно, не PIT)",732,0.950353
+H_level_score,cfg8,mean_clipped_ratio_pi_tercile2,,"D_M (описательно, не PIT)",732,0.961783
+H_level_score,B_mix,mean_clipped_ratio_pi_tercile2,,"D_M (описательно, не PIT)",732,0.983604
+H_level_score,S-RCK,mean_lnC_cfg8_pi_tercile2,,"D_M (описательно, не PIT)",732,-0.0175442
+H_level_score,W5-G,mean_clipped_ratio_pi_tercile3,,"D_M (описательно, не PIT)",733,0.892147
+H_level_score,cfg8,mean_clipped_ratio_pi_tercile3,,"D_M (описательно, не PIT)",733,0.910189
+H_level_score,B_mix,mean_clipped_ratio_pi_tercile3,,"D_M (описательно, не PIT)",733,0.929835
+H_level_score,S-RCK,mean_lnC_cfg8_pi_tercile3,,"D_M (описательно, не PIT)",733,-0.0192406
+H_level_score,S-RCK,th_c0_plus_th_p0_half|mean,,2020,5,-0.0342795
+H_level_score,S-RCK,th_c0_plus_th_p0_half|mean,,2021,12,-0.0267769
+H_level_score,S-RCK,th_c0_plus_th_p0_half|mean,,2022,6,-0.0202255
+H_level_score,S-RCK,th_c0_plus_th_p0_half|mean,,2023,3,-0.0250607
+H_level_score,S-RCK,th_c0_plus_th_p0_half|mean,,2024,12,-0.0252568
+H_level_score,S-RCK,th_c0_plus_th_p0_half|mean,,2025,10,-0.0349909
+H_level_score,S-RCK,th_c0_plus_th_p0_half|mean,,2026,11,-0.0448266
+I_a2_params,S-A2,months_theta_ne0,,D_M,106,106
+I_a2_params,S-A2,lam|median,,months θ≠0,106,0.001
+I_a2_params,S-A2,d0|median,,months θ≠0,106,0.0524857
+I_a2_params,S-A2,d_s|median,,months θ≠0,106,0.356605
+I_a2_params,S-A2,d_m|median,,months θ≠0,106,-0.0228727
+I_a2_params,S-A2,d_l|median,,months θ≠0,106,-0.0721687
+I_a2_params,S-A2,d_J|median,,months θ≠0,106,0.256396
+I_a2_params,S-A2,om_s|median,,months θ≠0,106,0.376193
+I_a2_params,S-A2,om_m|median,,months θ≠0,106,0.00554944
+I_a2_params,S-A2,om_l|median,,months θ≠0,106,0.0100771
+I_a2_params,S-A2,dw|median,,months θ≠0,106,0.197282
+I_a2_params,S-A2,dk|median,,months θ≠0,106,0.10163
+I_a2_params,S-A2,bdev_s|median,,months θ≠0,106,0.335161
+I_a2_params,S-A2,bdev_m|median,,months θ≠0,106,0.136867
+I_a2_params,S-A2,bdev_l|median,,months θ≠0,106,0.00581716
+I_a2_params,S-A2,atv_s|median,,months θ≠0,106,0.299775
+I_a2_params,S-A2,atv_m|median,,months θ≠0,106,0.004281
+I_a2_params,S-A2,atv_l|median,,months θ≠0,106,0.00671947
+I_a2_params_year,S-A2,lam|mean,,2018,12,0.00535
+I_a2_params_year,S-A2,d0|mean,,2018,12,0.151949
+I_a2_params_year,S-A2,om_s|mean,,2018,12,0.324416
+I_a2_params_year,S-A2,bdev_s|mean,,2018,12,0.360975
+I_a2_params_year,S-A2,bdev_l|mean,,2018,12,0.314547
+I_a2_params_year,S-A2,dw|mean,,2018,12,0
+I_a2_params_year,S-A2,dk|mean,,2018,12,-0.167163
+I_a2_params_year,S-A2,lam|mean,,2019,12,0.01
+I_a2_params_year,S-A2,d0|mean,,2019,12,0.0377879
+I_a2_params_year,S-A2,om_s|mean,,2019,12,0.159906
+I_a2_params_year,S-A2,bdev_s|mean,,2019,12,0.107617
+I_a2_params_year,S-A2,bdev_l|mean,,2019,12,0.00232386
+I_a2_params_year,S-A2,dw|mean,,2019,12,2.37633e-14
+I_a2_params_year,S-A2,dk|mean,,2019,12,-0.02787
+I_a2_params_year,S-A2,lam|mean,,2020,12,0.006175
+I_a2_params_year,S-A2,d0|mean,,2020,12,0.0336563
+I_a2_params_year,S-A2,om_s|mean,,2020,12,0.313647
+I_a2_params_year,S-A2,bdev_s|mean,,2020,12,0.284708
+I_a2_params_year,S-A2,bdev_l|mean,,2020,12,0.00470042
+I_a2_params_year,S-A2,dw|mean,,2020,12,0.122996
+I_a2_params_year,S-A2,dk|mean,,2020,12,0.0171768
+I_a2_params_year,S-A2,lam|mean,,2021,12,0.001
+I_a2_params_year,S-A2,d0|mean,,2021,12,0.0711684
+I_a2_params_year,S-A2,om_s|mean,,2021,12,0.689112
+I_a2_params_year,S-A2,bdev_s|mean,,2021,12,0.38358
+I_a2_params_year,S-A2,bdev_l|mean,,2021,12,0.0229312
+I_a2_params_year,S-A2,dw|mean,,2021,12,0.219861
+I_a2_params_year,S-A2,dk|mean,,2021,12,-0.0159997
+I_a2_params_year,S-A2,lam|mean,,2022,11,0.0019
+I_a2_params_year,S-A2,d0|mean,,2022,11,0.0481632
+I_a2_params_year,S-A2,om_s|mean,,2022,11,0.438401
+I_a2_params_year,S-A2,bdev_s|mean,,2022,11,0.489872
+I_a2_params_year,S-A2,bdev_l|mean,,2022,11,0.22569
+I_a2_params_year,S-A2,dw|mean,,2022,11,0.183045
+I_a2_params_year,S-A2,dk|mean,,2022,11,0.39446
+I_a2_params_year,S-A2,lam|mean,,2023,12,0.005275
+I_a2_params_year,S-A2,d0|mean,,2023,12,-0.00513861
+I_a2_params_year,S-A2,om_s|mean,,2023,12,0.360826
+I_a2_params_year,S-A2,bdev_s|mean,,2023,12,0.531963
+I_a2_params_year,S-A2,bdev_l|mean,,2023,12,0.0288143
+I_a2_params_year,S-A2,dw|mean,,2023,12,0.209573
+I_a2_params_year,S-A2,dk|mean,,2023,12,0.264237
+I_a2_params_year,S-A2,lam|mean,,2024,12,0.00355
+I_a2_params_year,S-A2,d0|mean,,2024,12,0.0191003
+I_a2_params_year,S-A2,om_s|mean,,2024,12,0.397893
+I_a2_params_year,S-A2,bdev_s|mean,,2024,12,0.594488
+I_a2_params_year,S-A2,bdev_l|mean,,2024,12,0.0277366
+I_a2_params_year,S-A2,dw|mean,,2024,12,0.196306
+I_a2_params_year,S-A2,dk|mean,,2024,12,0.290868
+I_a2_params_year,S-A2,lam|mean,,2025,12,0.002125
+I_a2_params_year,S-A2,d0|mean,,2025,12,0.029697
+I_a2_params_year,S-A2,om_s|mean,,2025,12,0.546214
+I_a2_params_year,S-A2,bdev_s|mean,,2025,12,0.751804
+I_a2_params_year,S-A2,bdev_l|mean,,2025,12,0.0450817
+I_a2_params_year,S-A2,dw|mean,,2025,12,0.21383
+I_a2_params_year,S-A2,dk|mean,,2025,12,0.425676
+I_a2_params_year,S-A2,lam|mean,,2026,11,0.0082
+I_a2_params_year,S-A2,d0|mean,,2026,11,-0.021527
+I_a2_params_year,S-A2,om_s|mean,,2026,11,0.153777
+I_a2_params_year,S-A2,bdev_s|mean,,2026,11,0.211045
+I_a2_params_year,S-A2,bdev_l|mean,,2026,11,0.0109284
+I_a2_params_year,S-A2,dw|mean,,2026,11,0.235162
+I_a2_params_year,S-A2,dk|mean,,2026,11,0.175271
+I_a2_params,S-RA2,months_theta_ne0,,D_M,78,78
+I_a2_params,S-RA2,lam|median,,months θ≠0,78,0.1
+I_a2_params,S-RA2,d0|median,,months θ≠0,78,0.000396861
+I_a2_params,S-RA2,d_s|median,,months θ≠0,78,-0.0165625
+I_a2_params,S-RA2,d_m|median,,months θ≠0,78,-0.022497
+I_a2_params,S-RA2,d_l|median,,months θ≠0,78,-0.0185574
+I_a2_params,S-RA2,d_J|median,,months θ≠0,78,-0.00114961
+I_a2_params,S-RA2,om_s|median,,months θ≠0,78,0.00155801
+I_a2_params,S-RA2,om_m|median,,months θ≠0,78,0.00479611
+I_a2_params,S-RA2,om_l|median,,months θ≠0,78,0.00151779
+I_a2_params,S-RA2,dw|median,,months θ≠0,78,0.0044118
+I_a2_params,S-RA2,dk|median,,months θ≠0,78,-0.00185598
+I_a2_params,S-RA2,bdev_s|median,,months θ≠0,78,0.00385939
+I_a2_params,S-RA2,bdev_m|median,,months θ≠0,78,0.00299159
+I_a2_params,S-RA2,bdev_l|median,,months θ≠0,78,0.000365748
+I_a2_params,S-RA2,atv_s|median,,months θ≠0,78,0.00124552
+I_a2_params,S-RA2,atv_m|median,,months θ≠0,78,0.00370876
+I_a2_params,S-RA2,atv_l|median,,months θ≠0,78,0.00101197
+I_a2_params_year,S-RA2,lam|mean,,2019,5,0.0802
+I_a2_params_year,S-RA2,d0|mean,,2019,5,0.0190361
+I_a2_params_year,S-RA2,om_s|mean,,2019,5,0.120649
+I_a2_params_year,S-RA2,bdev_s|mean,,2019,5,0.0487124
+I_a2_params_year,S-RA2,bdev_l|mean,,2019,5,0.00218734
+I_a2_params_year,S-RA2,dw|mean,,2019,5,0.00650224
+I_a2_params_year,S-RA2,dk|mean,,2019,5,-0.0115473
+I_a2_params_year,S-RA2,lam|mean,,2020,12,0.1
+I_a2_params_year,S-RA2,d0|mean,,2020,12,0.00128908
+I_a2_params_year,S-RA2,om_s|mean,,2020,12,0.0191213
+I_a2_params_year,S-RA2,bdev_s|mean,,2020,12,0.00128318
+I_a2_params_year,S-RA2,bdev_l|mean,,2020,12,0.000326053
+I_a2_params_year,S-RA2,dw|mean,,2020,12,0.00490337
+I_a2_params_year,S-RA2,dk|mean,,2020,12,-0.00353147
+I_a2_params_year,S-RA2,lam|mean,,2021,12,0.09175
+I_a2_params_year,S-RA2,d0|mean,,2021,12,0.00730504
+I_a2_params_year,S-RA2,om_s|mean,,2021,12,0.0475242
+I_a2_params_year,S-RA2,bdev_s|mean,,2021,12,0.00883175
+I_a2_params_year,S-RA2,bdev_l|mean,,2021,12,0.000465428
+I_a2_params_year,S-RA2,dw|mean,,2021,12,0.0272077
+I_a2_params_year,S-RA2,dk|mean,,2021,12,-0.024434
+I_a2_params_year,S-RA2,lam|mean,,2022,8,0.087625
+I_a2_params_year,S-RA2,d0|mean,,2022,8,-0.000240522
+I_a2_params_year,S-RA2,om_s|mean,,2022,8,0.0511959
+I_a2_params_year,S-RA2,bdev_s|mean,,2022,8,0.0423766
+I_a2_params_year,S-RA2,bdev_l|mean,,2022,8,0.000603103
+I_a2_params_year,S-RA2,dw|mean,,2022,8,0.031777
+I_a2_params_year,S-RA2,dk|mean,,2022,8,-0.00679566
+I_a2_params_year,S-RA2,lam|mean,,2023,7,0.1
+I_a2_params_year,S-RA2,d0|mean,,2023,7,-0.00238933
+I_a2_params_year,S-RA2,om_s|mean,,2023,7,0.00094846
+I_a2_params_year,S-RA2,bdev_s|mean,,2023,7,0.00435555
+I_a2_params_year,S-RA2,bdev_l|mean,,2023,7,0.000376518
+I_a2_params_year,S-RA2,dw|mean,,2023,7,0.00421545
+I_a2_params_year,S-RA2,dk|mean,,2023,7,-0.00244179
+I_a2_params_year,S-RA2,lam|mean,,2024,12,0.1
+I_a2_params_year,S-RA2,d0|mean,,2024,12,-0.00382541
+I_a2_params_year,S-RA2,om_s|mean,,2024,12,0
+I_a2_params_year,S-RA2,bdev_s|mean,,2024,12,0.00473924
+I_a2_params_year,S-RA2,bdev_l|mean,,2024,12,0.000473897
+I_a2_params_year,S-RA2,dw|mean,,2024,12,0.00140992
+I_a2_params_year,S-RA2,dk|mean,,2024,12,-0.00204154
+I_a2_params_year,S-RA2,lam|mean,,2025,12,0.1
+I_a2_params_year,S-RA2,d0|mean,,2025,12,0.00100755
+I_a2_params_year,S-RA2,om_s|mean,,2025,12,0
+I_a2_params_year,S-RA2,bdev_s|mean,,2025,12,0.00480418
+I_a2_params_year,S-RA2,bdev_l|mean,,2025,12,0.000424196
+I_a2_params_year,S-RA2,dw|mean,,2025,12,0.0027102
+I_a2_params_year,S-RA2,dk|mean,,2025,12,0.00146789
+I_a2_params_year,S-RA2,lam|mean,,2026,10,0.1
+I_a2_params_year,S-RA2,d0|mean,,2026,10,0.00124411
+I_a2_params_year,S-RA2,om_s|mean,,2026,10,0
+I_a2_params_year,S-RA2,bdev_s|mean,,2026,10,0.00384109
+I_a2_params_year,S-RA2,bdev_l|mean,,2026,10,0.000350361
+I_a2_params_year,S-RA2,dw|mean,,2026,10,0.00465598
+I_a2_params_year,S-RA2,dk|mean,,2026,10,0.00165983
+I_a2_params,S-RA2b,months_theta_ne0,,D_M,72,72
+I_a2_params,S-RA2b,lam|median,,months θ≠0,72,0.1
+I_a2_params,S-RA2b,d0|median,,months θ≠0,72,-0.0127478
+I_a2_params,S-RA2b,d_s|median,,months θ≠0,72,-0.00986569
+I_a2_params,S-RA2b,d_m|median,,months θ≠0,72,-0.00745405
+I_a2_params,S-RA2b,d_l|median,,months θ≠0,72,-0.0087423
+I_a2_params,S-RA2b,d_J|median,,months θ≠0,72,-0.00217749
+I_a2_params,S-RA2b,om_s|median,,months θ≠0,72,0
+I_a2_params,S-RA2b,om_m|median,,months θ≠0,72,0
+I_a2_params,S-RA2b,om_l|median,,months θ≠0,72,0.000619125
+I_a2_params,S-RA2b,dw|median,,months θ≠0,72,0.000543674
+I_a2_params,S-RA2b,dk|median,,months θ≠0,72,-0.00185187
+I_a2_params,S-RA2b,bdev_s|median,,months θ≠0,72,0.00595044
+I_a2_params,S-RA2b,bdev_m|median,,months θ≠0,72,0.00475224
+I_a2_params,S-RA2b,bdev_l|median,,months θ≠0,72,0.000462566
+I_a2_params,S-RA2b,atv_s|median,,months θ≠0,72,0
+I_a2_params,S-RA2b,atv_m|median,,months θ≠0,72,0
+I_a2_params,S-RA2b,atv_l|median,,months θ≠0,72,0.000412748
+I_a2_params_year,S-RA2b,lam|mean,,2019,5,0.1
+I_a2_params_year,S-RA2b,d0|mean,,2019,5,-0.000290881
+I_a2_params_year,S-RA2b,om_s|mean,,2019,5,0.0208762
+I_a2_params_year,S-RA2b,bdev_s|mean,,2019,5,0.0046836
+I_a2_params_year,S-RA2b,bdev_l|mean,,2019,5,0.00046078
+I_a2_params_year,S-RA2b,dw|mean,,2019,5,0
+I_a2_params_year,S-RA2b,dk|mean,,2019,5,-0.00284128
+I_a2_params_year,S-RA2b,lam|mean,,2020,12,0.1
+I_a2_params_year,S-RA2b,d0|mean,,2020,12,-0.0066488
+I_a2_params_year,S-RA2b,om_s|mean,,2020,12,0.0224695
+I_a2_params_year,S-RA2b,bdev_s|mean,,2020,12,0.00416544
+I_a2_params_year,S-RA2b,bdev_l|mean,,2020,12,0.000357301
+I_a2_params_year,S-RA2b,dw|mean,,2020,12,0
+I_a2_params_year,S-RA2b,dk|mean,,2020,12,-0.00436446
+I_a2_params_year,S-RA2b,lam|mean,,2021,12,0.09175
+I_a2_params_year,S-RA2b,d0|mean,,2021,12,-0.00869937
+I_a2_params_year,S-RA2b,om_s|mean,,2021,12,0.0635665
+I_a2_params_year,S-RA2b,bdev_s|mean,,2021,12,0.0466487
+I_a2_params_year,S-RA2b,bdev_l|mean,,2021,12,0.000301777
+I_a2_params_year,S-RA2b,dw|mean,,2021,12,1.80662e-06
+I_a2_params_year,S-RA2b,dk|mean,,2021,12,-0.0289476
+I_a2_params_year,S-RA2b,lam|mean,,2022,5,0.1
+I_a2_params_year,S-RA2b,d0|mean,,2022,5,-0.0132241
+I_a2_params_year,S-RA2b,om_s|mean,,2022,5,0.0106015
+I_a2_params_year,S-RA2b,bdev_s|mean,,2022,5,0.00665165
+I_a2_params_year,S-RA2b,bdev_l|mean,,2022,5,0.000350785
+I_a2_params_year,S-RA2b,dw|mean,,2022,5,0.00632338
+I_a2_params_year,S-RA2b,dk|mean,,2022,5,0.00198168
+I_a2_params_year,S-RA2b,lam|mean,,2023,3,0.1
+I_a2_params_year,S-RA2b,d0|mean,,2023,3,-0.00863625
+I_a2_params_year,S-RA2b,om_s|mean,,2023,3,0.000398878
+I_a2_params_year,S-RA2b,bdev_s|mean,,2023,3,0.00669877
+I_a2_params_year,S-RA2b,bdev_l|mean,,2023,3,0.000353594
+I_a2_params_year,S-RA2b,dw|mean,,2023,3,0.00306335
+I_a2_params_year,S-RA2b,dk|mean,,2023,3,-0.00186115
+I_a2_params_year,S-RA2b,lam|mean,,2024,12,0.1
+I_a2_params_year,S-RA2b,d0|mean,,2024,12,-0.0151545
+I_a2_params_year,S-RA2b,om_s|mean,,2024,12,0
+I_a2_params_year,S-RA2b,bdev_s|mean,,2024,12,0.0071474
+I_a2_params_year,S-RA2b,bdev_l|mean,,2024,12,0.000520451
+I_a2_params_year,S-RA2b,dw|mean,,2024,12,0.00104549
+I_a2_params_year,S-RA2b,dk|mean,,2024,12,-0.00163262
+I_a2_params_year,S-RA2b,lam|mean,,2025,12,0.1
+I_a2_params_year,S-RA2b,d0|mean,,2025,12,-0.013788
+I_a2_params_year,S-RA2b,om_s|mean,,2025,12,0
+I_a2_params_year,S-RA2b,bdev_s|mean,,2025,12,0.00708093
+I_a2_params_year,S-RA2b,bdev_l|mean,,2025,12,0.000532205
+I_a2_params_year,S-RA2b,dw|mean,,2025,12,0.00335956
+I_a2_params_year,S-RA2b,dk|mean,,2025,12,0.0019592
+I_a2_params_year,S-RA2b,lam|mean,,2026,11,0.1
+I_a2_params_year,S-RA2b,d0|mean,,2026,11,-0.0160221
+I_a2_params_year,S-RA2b,om_s|mean,,2026,11,0
+I_a2_params_year,S-RA2b,bdev_s|mean,,2026,11,0.00593422
+I_a2_params_year,S-RA2b,bdev_l|mean,,2026,11,0.000475876
+I_a2_params_year,S-RA2b,dw|mean,,2026,11,0.0055641
+I_a2_params_year,S-RA2b,dk|mean,,2026,11,0.00199964
+I_a2_params,S-RA2c,months_theta_ne0,,D_M,71,71
+I_a2_params,S-RA2c,lam|median,,months θ≠0,71,0.01
+I_a2_params,S-RA2c,d0|median,,months θ≠0,71,0.0197406
+I_a2_params,S-RA2c,d_s|median,,months θ≠0,71,-0.00522561
+I_a2_params,S-RA2c,d_m|median,,months θ≠0,71,-0.0564257
+I_a2_params,S-RA2c,d_l|median,,months θ≠0,71,-0.0285449
+I_a2_params,S-RA2c,d_J|median,,months θ≠0,71,0.00595511
+I_a2_params,S-RA2c,om_s|median,,months θ≠0,71,0.0149509
+I_a2_params,S-RA2c,om_m|median,,months θ≠0,71,0.0299838
+I_a2_params,S-RA2c,om_l|median,,months θ≠0,71,0.00149858
+I_a2_params,S-RA2c,dw|median,,months θ≠0,71,0.009662
+I_a2_params,S-RA2c,dk|median,,months θ≠0,71,-0.00247087
+I_a2_params,S-RA2c,bdev_s|median,,months θ≠0,71,0.0458727
+I_a2_params,S-RA2c,bdev_m|median,,months θ≠0,71,0.0240669
+I_a2_params,S-RA2c,bdev_l|median,,months θ≠0,71,0.00156834
+I_a2_params,S-RA2c,atv_s|median,,months θ≠0,71,0.0119346
+I_a2_params,S-RA2c,atv_m|median,,months θ≠0,71,0.0232109
+I_a2_params,S-RA2c,atv_l|median,,months θ≠0,71,0.000999111
+I_a2_params_year,S-RA2c,lam|mean,,2019,5,0.0802
+I_a2_params_year,S-RA2c,d0|mean,,2019,5,0.0189613
+I_a2_params_year,S-RA2c,om_s|mean,,2019,5,0.12753
+I_a2_params_year,S-RA2c,bdev_s|mean,,2019,5,0.0570237
+I_a2_params_year,S-RA2c,bdev_l|mean,,2019,5,0.00291298
+I_a2_params_year,S-RA2c,dw|mean,,2019,5,0.00137026
+I_a2_params_year,S-RA2c,dk|mean,,2019,5,-0.0122007
+I_a2_params_year,S-RA2c,lam|mean,,2020,11,0.037
+I_a2_params_year,S-RA2c,d0|mean,,2020,11,0.036787
+I_a2_params_year,S-RA2c,om_s|mean,,2020,11,0.312656
+I_a2_params_year,S-RA2c,bdev_s|mean,,2020,11,0.130553
+I_a2_params_year,S-RA2c,bdev_l|mean,,2020,11,0.000747331
+I_a2_params_year,S-RA2c,dw|mean,,2020,11,0.0983887
+I_a2_params_year,S-RA2c,dk|mean,,2020,11,-0.162767
+I_a2_params_year,S-RA2c,lam|mean,,2021,11,0.019
+I_a2_params_year,S-RA2c,d0|mean,,2021,11,0.0552242
+I_a2_params_year,S-RA2c,om_s|mean,,2021,11,0.349073
+I_a2_params_year,S-RA2c,bdev_s|mean,,2021,11,0.115666
+I_a2_params_year,S-RA2c,bdev_l|mean,,2021,11,0.00149881
+I_a2_params_year,S-RA2c,dw|mean,,2021,11,0.166783
+I_a2_params_year,S-RA2c,dk|mean,,2021,11,-0.206217
+I_a2_params_year,S-RA2c,lam|mean,,2022,3,0.1
+I_a2_params_year,S-RA2c,d0|mean,,2022,3,-0.00182669
+I_a2_params_year,S-RA2c,om_s|mean,,2022,3,0.00799347
+I_a2_params_year,S-RA2c,bdev_s|mean,,2022,3,0.00324414
+I_a2_params_year,S-RA2c,bdev_l|mean,,2022,3,0.000261978
+I_a2_params_year,S-RA2c,dw|mean,,2022,3,0.00750858
+I_a2_params_year,S-RA2c,dk|mean,,2022,3,-0.000544846
+I_a2_params_year,S-RA2c,lam|mean,,2023,12,0.061
+I_a2_params_year,S-RA2c,d0|mean,,2023,12,0.00868089
+I_a2_params_year,S-RA2c,om_s|mean,,2023,12,0.0828229
+I_a2_params_year,S-RA2c,bdev_s|mean,,2023,12,0.104914
+I_a2_params_year,S-RA2c,bdev_l|mean,,2023,12,0.00463582
+I_a2_params_year,S-RA2c,dw|mean,,2023,12,0.0153602
+I_a2_params_year,S-RA2c,dk|mean,,2023,12,-0.0325637
+I_a2_params_year,S-RA2c,lam|mean,,2024,9,0.028
+I_a2_params_year,S-RA2c,d0|mean,,2024,9,0.0122946
+I_a2_params_year,S-RA2c,om_s|mean,,2024,9,0.0837927
+I_a2_params_year,S-RA2c,bdev_s|mean,,2024,9,0.150249
+I_a2_params_year,S-RA2c,bdev_l|mean,,2024,9,0.00924714
+I_a2_params_year,S-RA2c,dw|mean,,2024,9,0.00773106
+I_a2_params_year,S-RA2c,dk|mean,,2024,9,-0.0517024
+I_a2_params_year,S-RA2c,lam|mean,,2025,12,0.00925
+I_a2_params_year,S-RA2c,d0|mean,,2025,12,0.0236171
+I_a2_params_year,S-RA2c,om_s|mean,,2025,12,0.01066
+I_a2_params_year,S-RA2c,bdev_s|mean,,2025,12,0.0854098
+I_a2_params_year,S-RA2c,bdev_l|mean,,2025,12,0.00635586
+I_a2_params_year,S-RA2c,dw|mean,,2025,12,0.0185451
+I_a2_params_year,S-RA2c,dk|mean,,2025,12,0.0147082
+I_a2_params_year,S-RA2c,lam|mean,,2026,8,0.0505
+I_a2_params_year,S-RA2c,d0|mean,,2026,8,0.0182889
+I_a2_params_year,S-RA2c,om_s|mean,,2026,8,0.0306845
+I_a2_params_year,S-RA2c,bdev_s|mean,,2026,8,0.168133
+I_a2_params_year,S-RA2c,bdev_l|mean,,2026,8,0.0130227
+I_a2_params_year,S-RA2c,dw|mean,,2026,8,0.0228393
+I_a2_params_year,S-RA2c,dk|mean,,2026,8,0.0438582
