@@ -25,6 +25,37 @@
   "status": "DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-241, лист P0 (SBER, h = 1; аудит и проверки до обучения; конфигураций 0, прогнозов не записано)",
   "written_at": "2026-11-10 04:35"
  },
+ "W1": {
+  "configurations": 0,
+  "forecasts_written": 0,
+  "inputs": {
+   "data/fwd/models/calendar.parquet": "6fc6fb60b8625f85b8bfc9b43b562a39cfb831ceeb05b501da4453aa7af7e09f",
+   "data/fwd/models/cfg8.parquet": "9b7062774189ad89f32805318a210ae8e28a762095e6bb21836c9f976978053b",
+   "data/fwd/models/k1.parquet": "4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9",
+   "data/fwd/models/k23.parquet": "61f0548e385ebeb295e19f727bab80c3d0cbbe5f36e0419dc2aeaf6857d1e20d",
+   "data/fwd/models/new/cfg8.parquet": "c3a658bb8fdc7ad23707fa0f1c940ad181287bd4bdd1501edeacb40c47be8c02",
+   "data/fwd/models/new/k1.parquet": "c1e4b23d67eebf721694bd31baebcffe1a8735424350aae4309309794c7d8842",
+   "data/fwd/models/new/k23.parquet": "0ff9ca293639f53830de6be6edd98c20870c28f0d095c0d5d0a2a2e818df20fa",
+   "data/fwd/models/new/x1.parquet": "12c2b3614fd2a63bdd027af98b0b9dd823217478a7d4f80a800c553a2c34e7d8",
+   "data/fwd/models/new/zb.parquet": "4a815f5a5037c9b70dd14efa95963f18494019ea4cf94e9a59fb4da5dd90c69d",
+   "data/fwd/models/new/zb0.parquet": "0f74658dd3ecb71a3c5c2bec12a1cafac07bb3169e3d1b1cbfad91d9b264d324",
+   "data/fwd/models/state_es.parquet": "4ca82999bc8a6fb87eeff7fd03484bf7c91003e733f2aaa82a2769647fca5a0b",
+   "data/fwd/models/x1.parquet": "56d9351607780959a3e2710809f8e4871ccb44cb1f825373c8430a0a3058fea3",
+   "data/fwd/models/zb.parquet": "7dc542f52b06a9f0318215b819b67729d02915b7f68b910b91884db16d14f43c",
+   "data/fwd/models/zb0.parquet": "dd0e5df7edd72bacd8b3a0ab33da7dd1064f8139ad7164931bd948bcd4574a37"
+  },
+  "n_holm": 751,
+  "outputs": {
+   "W1_BIAS.csv": "d1a939ce2d2cdc4d6ba9864ba278d14b41619ae6e0c96986f90d88b78f622dcb",
+   "W1_CONC.csv": "910f70878757e42e811f1ed03ed93d81e010a946eafdebfc725a4191b8789fd2",
+   "W1_JOIN.csv": "fb4d5819456ba97481d9f295b1fd9c7afe84e73baa99156dc1e5a63a3e327417",
+   "W1_REPORT.md": "7fa8baa7da952fabcc31a02336e463940cc31dec165eb26471b35dc18db73602",
+   "W1_STATES.csv": "2606444e448985d295a46e9f46269726328cec12c88fec48d7725c3ef5c4fee9",
+   "W1_STATS.csv": "df7733de6b623b76efa66492a86f1cbd4289ca34a26c69d6b07f57bc1bcd31e7",
+   "W1_TABLE.csv": "4bd98f07ac93f6b2cd1abc8dd74a96534db0ef2dc029c1d5bbbdc8d1fb605849",
+   "W1_YEARS.csv": "c328292fb7968d6f27dad03ebf55b48c5c04e0af7ec78ce527bbe2f20124083d"
+  }
+ },
  "YA": {
   "code": "81e0434a7c8115a3",
   "columns": [
