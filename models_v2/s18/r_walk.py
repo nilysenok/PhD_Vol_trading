@@ -59,18 +59,23 @@ def decide(G: dict, rule: str) -> tuple:
     return best[0], {lam: int(G[lam][0] < 0) for lam in LAMS}
 
 
+LOSS_MODE = {"R": "R", "plain": "plain", "Rm1": "R"}    # режим потери для RL.fit_r; Rm1 — S-RCKm (Ж-256): m := 1, обрезка c сохранена
+
+
 def stats_of(x0, T, mode: str) -> tuple:
+    if mode == "Rm1":
+        return RL.clip_stats(x0, T)[0], 1.0
     return RL.clip_stats(x0, T) if mode == "R" else (float("inf"), 1.0)
 
 
 def choose(ctx: Ctx, P, mode: str, rule: str = "blocks") -> tuple:
     bl = blocks(P) if rule == "blocks" else blocks(P)[-1:]
     G = {lam: [] for lam in LAMS}
-    for T, Vb in bl:
-        c, m, VT, VV = *stats_of(ctx.x0, T, mode), ctx.view(T), ctx.view(Vb)
+    for T, Vb in bl:     # обучение — на уровне ctx.view_train / x0_train; валидация — всегда уровень F (ctx.view, ctx.lnf0)
+        c, m, VT, VV = *stats_of(ctx.x0_train, T, mode), ctx.view_train(T), ctx.view(Vb)
         base = float(RL.ell(ctx.rv[Vb], ctx.lnf0[Vb]).mean())
         for lam in LAMS:
-            th = RL.fit_r(VT, ctx.arch, lam, c, m, mode, corr=ctx.corr(T))
+            th = RL.fit_r(VT, ctx.arch, lam, c, m, LOSS_MODE[mode], corr=ctx.corr(T))
             lnf = RL.ln_f(torch.as_tensor(RL.predict_lnc(th, VV, ctx.arch)), VV).numpy()
             G[lam].append(float(RL.ell(ctx.rv[Vb], lnf).mean()) - base)
     lam, w = decide(G, rule)
@@ -83,11 +88,11 @@ def fit_month(ctx: Ctx, P, days, c0, mode: str, rule: str = "blocks") -> dict:
     if len(P) < MIN_POOL:
         return out
     lam, w, G = choose(ctx, P, mode, rule)
-    out.update(active=True, lam=lam, w=tuple(w[k] for k in LAMS), c=stats_of(ctx.x0, P, mode)[0], m=stats_of(ctx.x0, P, mode)[1])
+    out.update(active=True, lam=lam, w=tuple(w[k] for k in LAMS), c=stats_of(ctx.x0_train, P, mode)[0], m=stats_of(ctx.x0_train, P, mode)[1])
     for i, k in enumerate(LAMS):
         out["G"][i, NB - len(G[k]):] = G[k]
     if lam > 0.0:
-        th = RL.fit_r(ctx.view(P), ctx.arch, lam, out["c"], out["m"], mode, corr=ctx.corr(P))
+        th = RL.fit_r(ctx.view_train(P), ctx.arch, lam, out["c"], out["m"], LOSS_MODE[mode], corr=ctx.corr(P))
         out.update(theta=np.mean(th, axis=0), C=np.exp(RL.predict_lnc(th, ctx.view(days), ctx.arch)))
     return out
 
@@ -106,8 +111,8 @@ def month_bounds(ctx: Ctx) -> list:
     return list(zip(pos, pos[1:] + [len(xd)]))
 
 
-def walk_variant(var: str, ctx: Ctx, positions=None, work=None) -> list:
-    arch, mode, rule = VARS[var]
+def walk_variant(var: str, ctx: Ctx, positions=None, work=None, spec=None) -> list:
+    arch, mode, rule = spec or VARS[var]
     out, c8 = [], ctx.x["C"].to_numpy(float)
     for a, b in month_bounds(ctx):
         if positions is not None and a not in positions:
@@ -127,7 +132,7 @@ def walk_variant(var: str, ctx: Ctx, positions=None, work=None) -> list:
 
 
 def assemble(var: str, ctx: Ctx, parts: list) -> pd.DataFrame:
-    x, arch, n = ctx.x, VARS[var][0], len(ctx.x)
+    x, arch, n = ctx.x, ctx.arch, len(ctx.x)
     col = {k: np.full(n, np.nan) for k in ("lam", "c", "m")}
     w, G = np.full((n, 3), np.nan), np.full((n, 9), np.nan)
     C, ntr, act, th = x["C"].to_numpy(float).copy(), np.zeros(n, int), np.zeros(n, bool), np.zeros((n, RL.n_par(arch)))

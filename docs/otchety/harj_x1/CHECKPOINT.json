@@ -152,6 +152,65 @@
   "rows": 9,
   "spec_sha256": "b38f01b43ce79d71305a752cc7c47596c4155f6ce38cf21288b0e1b1572e984c"
  },
+ "S.D.eval": {
+  "boot": 10000,
+  "boot_block": 20,
+  "boot_seed": 0,
+  "code": {
+   "d_doc.py": "33b008871d88fcdd5cb51120f96bbc5e48bdd41533681329d5132eab81797484",
+   "d_doc_fmt.py": "ef94c60b857c2ac918c0b31ed72f5ff26ab602d4a136b9d2b4fded9225adeb68",
+   "d_eval.py": "1713a11393847685dd0b6c3dced3c50c72f15742578480311275cd367c7e48c8",
+   "d_eval_chk.py": "87870b0b794cb64687464a04e5fd3aafe8ca9dead8f7fd2d4ff18b15150a8300",
+   "d_eval_par.py": "45a6089ac34c4567b08b046a969f3cb62a7fa01b562939ec63517d44b5459e70",
+   "d_eval_tab.py": "2bd5e7df31b2f341b5fac86ac6fab362955bb160e5b8c8ab7d5f36bd80fe2d90"
+  },
+  "elements": {
+   "S-RCKf|(i) потеря на уровне F вместо C": "worse_noise",
+   "S-RCKm|(iii) поправка уровня m": "not_found"
+  },
+  "inputs": {
+   "data/regen/harj_struct/CM/feat.parquet": "e31691e0d0dfff1f083d17f97f126ff0afb462d7b07db35f1c5549304b433029",
+   "data/regen/harj_struct/D/rckf.parquet": "52740db6f9811952c7f16d792673d360a634aefdcb36038a90a6f4f6a7e2991b",
+   "data/regen/harj_struct/D/rckm.parquet": "08ec673d3e8278df1c47eeb08e33ae23a5813c9a9431093f1aefd35046262553",
+   "data/regen/harj_struct/R/rck.parquet": "97d6fff21834f09ef49a1fb92a396f2abc4a588979ca5e474d9daed65a51eb81",
+   "data/regen/harj_struct/R/rckb.parquet": "e35ebf7248958bfada75bc112c003cf6899dd0d1c4f5f88b38159c5109ac79b7",
+   "data/regen/harj_x1/W5/w5g.parquet": "0ae40e1bcc7691e1ea580ec52224a7f4736c629594505a8bafbd29ba80fca8fe",
+   "docs/otchety/harj_struct/S_D_SPEC.md": "7e84eb9368e553b5ddc1cece2637d8f2dd284c284a20ccc04e2184d426bcd3a0",
+   "models_v2/s18/r_loss.py": "3ae5c9b1af7e38e4025619db5a423c1724ba3b4b31bf50191e678da6b5bd783c",
+   "models_v2/s18/r_walk.py": "9021113db1d3a0bbba1ac5e3d6526063db23bef23d45b651ab0a57cf07c362f6",
+   "models_v2/s18/r_walk_ctx.py": "8262991b3bdf70f56caa0c36c453415198d6b83c81dee10ea29c932beb2674e0"
+  },
+  "ktrim": 22,
+  "lag_main": 8,
+  "n": 2198,
+  "outputs": {
+   "S_D_DELTA.csv": "b5d3a27b688fde3906b4afe50cab1d7078d504082fb6900c374ebc63cf6c7d67",
+   "S_D_ELEMENTS.csv": "46c70df7687b95337520630527977bdd57cb4ccda4ca8cd4a153dfd8a2d82405",
+   "S_D_MECH.csv": "3cf60a1d18b75f8c90234dcc680edde72263818d9b9535d01e8147c66086aa1f",
+   "S_D_PRED.csv": "1cd2388086f1e3dd77ca690cdc92e8449cf9f3dcc3fb374aee7b9b76246f431d",
+   "S_D_SLICES.csv": "9f8f20e53c4d411dc74be11d7faa91222c32c2b46930234c9bb6b0f0f357d896",
+   "S_D_TABLE.csv": "e2b76bda7bba4e493c8fd9843022fe2fc2aeb997204c9b450e36f89447528460",
+   "S_D_YEARS.csv": "c87d8491ab56f1fbf0586ae72f0d98b2381d2951610210d3c0b8ba3141d5efaf"
+  },
+  "predictions": {
+   "P-f": "выполнено",
+   "P-f2": "нет",
+   "P-m": "выполнено"
+  },
+  "summary": "сочетание не предусмотрено спецификацией: (i) = worse_noise, (iii) = not_found",
+  "written_at": "11.11.2026 20:42:39"
+ },
+ "S.D.registered": {
+  "n": 848,
+  "n_base": 846,
+  "n_wide": 3401,
+  "n_wide_base": 3397,
+  "prior_bytes": 35683,
+  "prior_sha256": "b943a8b2b53b6be156b727ecfc2b8e5a9022ad8281860a793468ff8f2199d9cc",
+  "registered_at": "11.11.2026 20:36:50",
+  "rows": 2,
+  "spec_sha256": "7e84eb9368e553b5ddc1cece2637d8f2dd284c284a20ccc04e2184d426bcd3a0"
+ },
  "S.R.eval": {
   "boot": 10000,
   "code": {

@@ -1,0 +1,57 @@
+# диагностика вклада элементов R, исследовательский результат, не OOS; абляции S-RCKm, S-RCKf не кандидаты (Ж-256); критерии разд. 5 S_D_SPEC.md объявлены до счёта; Холма и SPA нет, p справочно
+# D_M: t⁺ 2018-01-04…2026-11-10, n = 2198; l = RV/F − ln(RV/F) − 1, QLIKE = среднее дневных потерь (без обрезки); Δ в % QLIKE базы, минус — лучше; DEVELOPMENT / HISTORICAL WALK-FORWARD
+section,series,item,value
+level_months_frozen,S-RCK,n_days_C_ne_cfg8,1208
+level_months_frozen,S-RCK,share_days_C_ne_cfg8,0.549590536852
+level_months_frozen,S-RCK,mean_ln_C_cfg8,-0.0313026643069
+level_months_frozen,S-RCK,sd_ln_C_cfg8,0.0214284379887
+level_months_frozen,S-RCKm,n_days_C_ne_cfg8,1167
+level_months_frozen,S-RCKm,share_days_C_ne_cfg8,0.530937215651
+level_months_frozen,S-RCKm,mean_ln_C_cfg8,-0.0510688301332
+level_months_frozen,S-RCKm,sd_ln_C_cfg8,0.0217773218437
+level_months_frozen,S-RCKf,n_days_C_ne_cfg8,1141
+level_months_frozen,S-RCKf,share_days_C_ne_cfg8,0.519108280255
+level_months_frozen,S-RCKf,mean_ln_C_cfg8,-0.00258496747001
+level_months_frozen,S-RCKf,sd_ln_C_cfg8,0.0157960236084
+level_months_frozen,S-RCK,n_active_months,75
+level_months_frozen,S-RCK,n_months_theta0,16
+level_months_frozen,S-RCK,n_months_lam_0.1,52
+level_months_frozen,S-RCK,n_months_lam_0.01,4
+level_months_frozen,S-RCK,n_months_lam_0.001,3
+level_months_frozen,S-RCKm,n_active_months,75
+level_months_frozen,S-RCKm,n_months_theta0,18
+level_months_frozen,S-RCKm,n_months_lam_0.1,53
+level_months_frozen,S-RCKm,n_months_lam_0.01,4
+level_months_frozen,S-RCKm,n_months_lam_0.001,0
+level_months_frozen,S-RCKf,n_active_months,75
+level_months_frozen,S-RCKf,n_months_theta0,19
+level_months_frozen,S-RCKf,n_months_lam_0.1,49
+level_months_frozen,S-RCKf,n_months_lam_0.01,7
+level_months_frozen,S-RCKf,n_months_lam_0.001,0
+level_months_frozen,S-RCK,F_vs_W5G_pct,-0.208776141455
+level_months_frozen,S-RCK,Ffr_vs_W5G_pct,-0.183729935574
+level_months_frozen,S-RCK,reaction_pct,-0.0250462058807
+level_months_frozen,S-RCKm,F_vs_W5G_pct,-0.275853391225
+level_months_frozen,S-RCKm,Ffr_vs_W5G_pct,-0.172429970996
+level_months_frozen,S-RCKm,reaction_pct,-0.103423420229
+level_months_frozen,S-RCKf,F_vs_W5G_pct,-0.0586445366289
+level_months_frozen,S-RCKf,Ffr_vs_W5G_pct,-0.0600328563624
+level_months_frozen,S-RCKf,reaction_pct,0.00138831973352
+fixed_theta,S-RCK,full|F_vs_W5G_pct,-0.208776141455
+fixed_theta,S-RCK,full|max_rel_F_vs_saved,5.55111512313e-16
+fixed_theta,S-RCK,level_only|F_vs_W5G_pct,-0.186458862283
+fixed_theta,S-RCK,memory_only|F_vs_W5G_pct,0.00302123969922
+fixed_theta,S-RCK,decay_only|F_vs_W5G_pct,-0.0182155088591
+fixed_theta,S-RCKm,full|F_vs_W5G_pct,-0.275853391225
+fixed_theta,S-RCKm,full|max_rel_F_vs_saved,5.55111512313e-16
+fixed_theta,S-RCKm,level_only|F_vs_W5G_pct,-0.280553153893
+fixed_theta,S-RCKm,memory_only|F_vs_W5G_pct,0.00919963402963
+fixed_theta,S-RCKm,decay_only|F_vs_W5G_pct,-0.0166708525808
+fixed_theta,S-RCKf,full|F_vs_W5G_pct,-0.0586445366289
+fixed_theta,S-RCKf,full|max_rel_F_vs_saved,4.4408920985e-16
+fixed_theta,S-RCKf,level_only|F_vs_W5G_pct,-0.0610749745349
+fixed_theta,S-RCKf,memory_only|F_vs_W5G_pct,0.00142971104137
+fixed_theta,S-RCKf,decay_only|F_vs_W5G_pct,0.045854972775
+trim_overlap,S-RCKm|S-RCKf к S-RCK,n_each,44
+trim_overlap,S-RCKm|S-RCKf к S-RCK,n_common,18
+trim_overlap,S-RCKm|S-RCKf к S-RCK,jaccard,0.257142857143
