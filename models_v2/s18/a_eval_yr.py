@@ -23,14 +23,15 @@ PAIRS = (("М1", "X1"), ("М2", "W5-G"))
 SKIP = ("кандидат", "решение")
 
 
-def years(tp, ls: dict) -> pd.DataFrame:
+def years(tp, ls: dict, comps=None) -> pd.DataFrame:
     mk, rows = T5.masks(tp), []
+    comps = COMPS if comps is None else comps
 
     def kind(p):
         return "half" if p in (H1, H2) else "period"
     for k in ls:
         rows += [dict(series=k, base="-", kind=kind(p), period=p, n=int(m.sum()), q_series=float(ls[k][m].mean()), q_base=np.nan, delta_pct=np.nan, contrib_pct=np.nan, delta_total_pct=np.nan) for p, m in mk.items()]
-    for h, b in COMPS:
+    for h, b in comps:
         c, tot = SS.contrib(ls[h], ls[b], mk), 100.0 * float(ls[h].mean() - ls[b].mean()) / float(ls[b].mean())
         rows += [dict(series=h, base=b, kind=kind(p), period=p, n=int(m.sum()), q_series=float(ls[h][m].mean()), q_base=float(ls[b][m].mean()), delta_pct=100.0 * float(ls[h][m].mean() / ls[b][m].mean() - 1.0),
                       contrib_pct=c[p], delta_total_pct=tot) for p, m in mk.items()]
@@ -46,10 +47,10 @@ def _dl(d, lb, keep) -> float:
     return 100.0 * float(d[keep].sum()) / float(lb[keep].sum())
 
 
-def conc(tp, ls: dict) -> pd.DataFrame:
+def conc(tp, ls: dict, comps=None) -> pd.DataFrame:
     tp, pm, out = pd.DatetimeIndex(tp), SS.period_masks(tp), []
     y, n = tp.year.to_numpy(), len(tp)
-    for h, b in COMPS:
+    for h, b in (COMPS if comps is None else comps):
         d, lb = ls[h] - ls[b], ls[b]
         c, tot = SS.contrib(ls[h], lb, pm), 100.0 * float(ls[h].mean() - lb.mean()) / float(lb.mean())
         out += SS.conc_rows(h, b, ls, pm, c, tot)
