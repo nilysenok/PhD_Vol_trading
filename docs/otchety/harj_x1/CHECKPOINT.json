@@ -1,4 +1,15 @@
 {
+ "FWD": {
+  "freeze": {
+   "n_new": 180,
+   "path": "docs/otchety/harj_fwd/FREEZE.json",
+   "power_sha256": "a5ea9427a767f0f99f4d042d044f373489f4c4a4dda8866e4ad409de7283538e",
+   "rehearsal_sha256": "8a174051187dfbb052748a3a34b27bc9dd5b8474ff7ce874204944874bbec3e2",
+   "sha256": "4c9085d64b193f508d4221e2f07ef5445582b6b222c07643ba34c0d503470fd6",
+   "v": 1,
+   "written_at": "2026-11-11T03:22:05+03:00"
+  }
+ },
  "P0": {
   "code": "b6d1bb9bdbbca147",
   "configurations": 0,

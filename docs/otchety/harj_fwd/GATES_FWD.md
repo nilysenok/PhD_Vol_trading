@@ -115,9 +115,9 @@
 | L5.2 сквозные обрезки | `… --run through` (d = 2025-12-30, 2026-02-26: K2/K3 всех строк и cfg8 полный ход с нуля) | узлы дня d и префиксы < d = архив (≤ 1e-12 отн. для torch/xgboost/lightgbm) | 2 из 2 без расхождений (`mode = skvoznaya`) |
 | L5.3 тесты Л5 | `pytest tests/test_fwd_l5_*.py` | passed | 17 passed, 2 skipped (зависят от FREEZE.json), 134 с, rc 0 |
 | L5.4 мощность n_new | `python3 -m models_v2.s17.fwd_power --write` | n = 180 (длина календаря); перенос = прежний POWER.csv при n = 179 | `n_new=180`, 196 строк; тест воспроизведения n = 179 passed |
-| L5.5 запись FREEZE.json | `python3 -m models_v2.s17.fwd_freeze --write --commit <id>` | v1, все ключи раздела 6; blob кода = коммит | pending — после коммита кода Л5/Л6 (команда дирижёра) |
+| L5.5 запись FREEZE.json | `python3 -m models_v2.s17.fwd_freeze --write --commit <id>` | v1, все ключи раздела 6; blob кода = коммит | записан 11.11.2026 03:22 MSK с `--commit 37c3180c`: `FREEZE.json v1 записан: n_new=180, файлов в замыкании 144; не в коммите 0, отличаются 0`; sha256 4c9085d64b193f508d4221e2f07ef5445582b6b222c07643ba34c0d503470fd6; ключ `FWD.freeze` влит в CHECKPOINT |
 
-Закрыто 4 из 5 (L5.5 pending по указанию дирижёра: код Л5/Л6 ещё не в коммите).
+Закрыто 5 из 5.
 
 Оговорки Л5:
 - ↺ Допуск 1e-12 отн. только для узлов torch/xgboost/lightgbm (колонка `tol`): 18 строк из 1146 не побитно (cfg8 на 15 днях, X1, ZB, ZB0 на 2026-02-02) — в допуске. Остальное — побитно, допуск 0.
