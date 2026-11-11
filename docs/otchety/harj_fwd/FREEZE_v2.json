@@ -1,0 +1,1706 @@
+{
+ "calendar": {
+  "days": [
+   "2026-03-02",
+   "2026-03-03",
+   "2026-03-04",
+   "2026-03-05",
+   "2026-03-06",
+   "2026-03-09",
+   "2026-03-10",
+   "2026-03-11",
+   "2026-03-12",
+   "2026-03-13",
+   "2026-03-16",
+   "2026-03-17",
+   "2026-03-18",
+   "2026-03-19",
+   "2026-03-20",
+   "2026-03-23",
+   "2026-03-24",
+   "2026-03-25",
+   "2026-03-26",
+   "2026-03-27",
+   "2026-03-30",
+   "2026-03-31",
+   "2026-04-01",
+   "2026-04-02",
+   "2026-04-03",
+   "2026-04-06",
+   "2026-04-07",
+   "2026-04-08",
+   "2026-04-09",
+   "2026-04-10",
+   "2026-04-13",
+   "2026-04-14",
+   "2026-04-15",
+   "2026-04-16",
+   "2026-04-17",
+   "2026-04-20",
+   "2026-04-21",
+   "2026-04-22",
+   "2026-04-23",
+   "2026-04-24",
+   "2026-04-27",
+   "2026-04-28",
+   "2026-04-29",
+   "2026-04-30",
+   "2026-05-04",
+   "2026-05-05",
+   "2026-05-06",
+   "2026-05-07",
+   "2026-05-08",
+   "2026-05-11",
+   "2026-05-12",
+   "2026-05-13",
+   "2026-05-14",
+   "2026-05-15",
+   "2026-05-18",
+   "2026-05-19",
+   "2026-05-20",
+   "2026-05-21",
+   "2026-05-22",
+   "2026-05-25",
+   "2026-05-26",
+   "2026-05-27",
+   "2026-05-28",
+   "2026-05-29",
+   "2026-06-01",
+   "2026-06-02",
+   "2026-06-03",
+   "2026-06-04",
+   "2026-06-05",
+   "2026-06-08",
+   "2026-06-09",
+   "2026-06-10",
+   "2026-06-11",
+   "2026-06-15",
+   "2026-06-16",
+   "2026-06-17",
+   "2026-06-18",
+   "2026-06-19",
+   "2026-06-22",
+   "2026-06-23",
+   "2026-06-24",
+   "2026-06-25",
+   "2026-06-26",
+   "2026-06-29",
+   "2026-06-30",
+   "2026-07-01",
+   "2026-07-02",
+   "2026-07-03",
+   "2026-07-06",
+   "2026-07-07",
+   "2026-07-08",
+   "2026-07-09",
+   "2026-07-10",
+   "2026-07-13",
+   "2026-07-14",
+   "2026-07-15",
+   "2026-07-16",
+   "2026-07-17",
+   "2026-07-20",
+   "2026-07-21",
+   "2026-07-22",
+   "2026-07-23",
+   "2026-07-24",
+   "2026-07-27",
+   "2026-07-28",
+   "2026-07-29",
+   "2026-07-30",
+   "2026-07-31",
+   "2026-08-03",
+   "2026-08-04",
+   "2026-08-05",
+   "2026-08-06",
+   "2026-08-07",
+   "2026-08-10",
+   "2026-08-11",
+   "2026-08-12",
+   "2026-08-13",
+   "2026-08-14",
+   "2026-08-17",
+   "2026-08-18",
+   "2026-08-19",
+   "2026-08-20",
+   "2026-08-21",
+   "2026-08-24",
+   "2026-08-25",
+   "2026-08-26",
+   "2026-08-27",
+   "2026-08-28",
+   "2026-08-31",
+   "2026-09-01",
+   "2026-09-02",
+   "2026-09-03",
+   "2026-09-04",
+   "2026-09-07",
+   "2026-09-08",
+   "2026-09-09",
+   "2026-09-10",
+   "2026-09-11",
+   "2026-09-14",
+   "2026-09-15",
+   "2026-09-16",
+   "2026-09-17",
+   "2026-09-18",
+   "2026-09-21",
+   "2026-09-22",
+   "2026-09-23",
+   "2026-09-24",
+   "2026-09-25",
+   "2026-09-28",
+   "2026-09-29",
+   "2026-09-30",
+   "2026-10-01",
+   "2026-10-02",
+   "2026-10-05",
+   "2026-10-06",
+   "2026-10-07",
+   "2026-10-08",
+   "2026-10-09",
+   "2026-10-12",
+   "2026-10-13",
+   "2026-10-14",
+   "2026-10-15",
+   "2026-10-16",
+   "2026-10-19",
+   "2026-10-20",
+   "2026-10-21",
+   "2026-10-22",
+   "2026-10-23",
+   "2026-10-26",
+   "2026-10-27",
+   "2026-10-28",
+   "2026-10-29",
+   "2026-10-30",
+   "2026-11-02",
+   "2026-11-03",
+   "2026-11-04",
+   "2026-11-05",
+   "2026-11-06",
+   "2026-11-09",
+   "2026-11-10"
+  ],
+  "n_new": 180,
+  "note": "правило rv > 0 по ценам проверяет скрипт открытия после замка; расхождение — ↺",
+  "pairs": [
+   [
+    "2026-02-27",
+    "2026-03-02"
+   ],
+   [
+    "2026-03-02",
+    "2026-03-03"
+   ],
+   [
+    "2026-03-03",
+    "2026-03-04"
+   ],
+   [
+    "2026-03-04",
+    "2026-03-05"
+   ],
+   [
+    "2026-03-05",
+    "2026-03-06"
+   ],
+   [
+    "2026-03-06",
+    "2026-03-09"
+   ],
+   [
+    "2026-03-09",
+    "2026-03-10"
+   ],
+   [
+    "2026-03-10",
+    "2026-03-11"
+   ],
+   [
+    "2026-03-11",
+    "2026-03-12"
+   ],
+   [
+    "2026-03-12",
+    "2026-03-13"
+   ],
+   [
+    "2026-03-13",
+    "2026-03-16"
+   ],
+   [
+    "2026-03-16",
+    "2026-03-17"
+   ],
+   [
+    "2026-03-17",
+    "2026-03-18"
+   ],
+   [
+    "2026-03-18",
+    "2026-03-19"
+   ],
+   [
+    "2026-03-19",
+    "2026-03-20"
+   ],
+   [
+    "2026-03-20",
+    "2026-03-23"
+   ],
+   [
+    "2026-03-23",
+    "2026-03-24"
+   ],
+   [
+    "2026-03-24",
+    "2026-03-25"
+   ],
+   [
+    "2026-03-25",
+    "2026-03-26"
+   ],
+   [
+    "2026-03-26",
+    "2026-03-27"
+   ],
+   [
+    "2026-03-27",
+    "2026-03-30"
+   ],
+   [
+    "2026-03-30",
+    "2026-03-31"
+   ],
+   [
+    "2026-03-31",
+    "2026-04-01"
+   ],
+   [
+    "2026-04-01",
+    "2026-04-02"
+   ],
+   [
+    "2026-04-02",
+    "2026-04-03"
+   ],
+   [
+    "2026-04-03",
+    "2026-04-06"
+   ],
+   [
+    "2026-04-06",
+    "2026-04-07"
+   ],
+   [
+    "2026-04-07",
+    "2026-04-08"
+   ],
+   [
+    "2026-04-08",
+    "2026-04-09"
+   ],
+   [
+    "2026-04-09",
+    "2026-04-10"
+   ],
+   [
+    "2026-04-10",
+    "2026-04-13"
+   ],
+   [
+    "2026-04-13",
+    "2026-04-14"
+   ],
+   [
+    "2026-04-14",
+    "2026-04-15"
+   ],
+   [
+    "2026-04-15",
+    "2026-04-16"
+   ],
+   [
+    "2026-04-16",
+    "2026-04-17"
+   ],
+   [
+    "2026-04-17",
+    "2026-04-20"
+   ],
+   [
+    "2026-04-20",
+    "2026-04-21"
+   ],
+   [
+    "2026-04-21",
+    "2026-04-22"
+   ],
+   [
+    "2026-04-22",
+    "2026-04-23"
+   ],
+   [
+    "2026-04-23",
+    "2026-04-24"
+   ],
+   [
+    "2026-04-24",
+    "2026-04-27"
+   ],
+   [
+    "2026-04-27",
+    "2026-04-28"
+   ],
+   [
+    "2026-04-28",
+    "2026-04-29"
+   ],
+   [
+    "2026-04-29",
+    "2026-04-30"
+   ],
+   [
+    "2026-04-30",
+    "2026-05-04"
+   ],
+   [
+    "2026-05-04",
+    "2026-05-05"
+   ],
+   [
+    "2026-05-05",
+    "2026-05-06"
+   ],
+   [
+    "2026-05-06",
+    "2026-05-07"
+   ],
+   [
+    "2026-05-07",
+    "2026-05-08"
+   ],
+   [
+    "2026-05-08",
+    "2026-05-11"
+   ],
+   [
+    "2026-05-11",
+    "2026-05-12"
+   ],
+   [
+    "2026-05-12",
+    "2026-05-13"
+   ],
+   [
+    "2026-05-13",
+    "2026-05-14"
+   ],
+   [
+    "2026-05-14",
+    "2026-05-15"
+   ],
+   [
+    "2026-05-15",
+    "2026-05-18"
+   ],
+   [
+    "2026-05-18",
+    "2026-05-19"
+   ],
+   [
+    "2026-05-19",
+    "2026-05-20"
+   ],
+   [
+    "2026-05-20",
+    "2026-05-21"
+   ],
+   [
+    "2026-05-21",
+    "2026-05-22"
+   ],
+   [
+    "2026-05-22",
+    "2026-05-25"
+   ],
+   [
+    "2026-05-25",
+    "2026-05-26"
+   ],
+   [
+    "2026-05-26",
+    "2026-05-27"
+   ],
+   [
+    "2026-05-27",
+    "2026-05-28"
+   ],
+   [
+    "2026-05-28",
+    "2026-05-29"
+   ],
+   [
+    "2026-05-29",
+    "2026-06-01"
+   ],
+   [
+    "2026-06-01",
+    "2026-06-02"
+   ],
+   [
+    "2026-06-02",
+    "2026-06-03"
+   ],
+   [
+    "2026-06-03",
+    "2026-06-04"
+   ],
+   [
+    "2026-06-04",
+    "2026-06-05"
+   ],
+   [
+    "2026-06-05",
+    "2026-06-08"
+   ],
+   [
+    "2026-06-08",
+    "2026-06-09"
+   ],
+   [
+    "2026-06-09",
+    "2026-06-10"
+   ],
+   [
+    "2026-06-10",
+    "2026-06-11"
+   ],
+   [
+    "2026-06-11",
+    "2026-06-15"
+   ],
+   [
+    "2026-06-15",
+    "2026-06-16"
+   ],
+   [
+    "2026-06-16",
+    "2026-06-17"
+   ],
+   [
+    "2026-06-17",
+    "2026-06-18"
+   ],
+   [
+    "2026-06-18",
+    "2026-06-19"
+   ],
+   [
+    "2026-06-19",
+    "2026-06-22"
+   ],
+   [
+    "2026-06-22",
+    "2026-06-23"
+   ],
+   [
+    "2026-06-23",
+    "2026-06-24"
+   ],
+   [
+    "2026-06-24",
+    "2026-06-25"
+   ],
+   [
+    "2026-06-25",
+    "2026-06-26"
+   ],
+   [
+    "2026-06-26",
+    "2026-06-29"
+   ],
+   [
+    "2026-06-29",
+    "2026-06-30"
+   ],
+   [
+    "2026-06-30",
+    "2026-07-01"
+   ],
+   [
+    "2026-07-01",
+    "2026-07-02"
+   ],
+   [
+    "2026-07-02",
+    "2026-07-03"
+   ],
+   [
+    "2026-07-03",
+    "2026-07-06"
+   ],
+   [
+    "2026-07-06",
+    "2026-07-07"
+   ],
+   [
+    "2026-07-07",
+    "2026-07-08"
+   ],
+   [
+    "2026-07-08",
+    "2026-07-09"
+   ],
+   [
+    "2026-07-09",
+    "2026-07-10"
+   ],
+   [
+    "2026-07-10",
+    "2026-07-13"
+   ],
+   [
+    "2026-07-13",
+    "2026-07-14"
+   ],
+   [
+    "2026-07-14",
+    "2026-07-15"
+   ],
+   [
+    "2026-07-15",
+    "2026-07-16"
+   ],
+   [
+    "2026-07-16",
+    "2026-07-17"
+   ],
+   [
+    "2026-07-17",
+    "2026-07-20"
+   ],
+   [
+    "2026-07-20",
+    "2026-07-21"
+   ],
+   [
+    "2026-07-21",
+    "2026-07-22"
+   ],
+   [
+    "2026-07-22",
+    "2026-07-23"
+   ],
+   [
+    "2026-07-23",
+    "2026-07-24"
+   ],
+   [
+    "2026-07-24",
+    "2026-07-27"
+   ],
+   [
+    "2026-07-27",
+    "2026-07-28"
+   ],
+   [
+    "2026-07-28",
+    "2026-07-29"
+   ],
+   [
+    "2026-07-29",
+    "2026-07-30"
+   ],
+   [
+    "2026-07-30",
+    "2026-07-31"
+   ],
+   [
+    "2026-07-31",
+    "2026-08-03"
+   ],
+   [
+    "2026-08-03",
+    "2026-08-04"
+   ],
+   [
+    "2026-08-04",
+    "2026-08-05"
+   ],
+   [
+    "2026-08-05",
+    "2026-08-06"
+   ],
+   [
+    "2026-08-06",
+    "2026-08-07"
+   ],
+   [
+    "2026-08-07",
+    "2026-08-10"
+   ],
+   [
+    "2026-08-10",
+    "2026-08-11"
+   ],
+   [
+    "2026-08-11",
+    "2026-08-12"
+   ],
+   [
+    "2026-08-12",
+    "2026-08-13"
+   ],
+   [
+    "2026-08-13",
+    "2026-08-14"
+   ],
+   [
+    "2026-08-14",
+    "2026-08-17"
+   ],
+   [
+    "2026-08-17",
+    "2026-08-18"
+   ],
+   [
+    "2026-08-18",
+    "2026-08-19"
+   ],
+   [
+    "2026-08-19",
+    "2026-08-20"
+   ],
+   [
+    "2026-08-20",
+    "2026-08-21"
+   ],
+   [
+    "2026-08-21",
+    "2026-08-24"
+   ],
+   [
+    "2026-08-24",
+    "2026-08-25"
+   ],
+   [
+    "2026-08-25",
+    "2026-08-26"
+   ],
+   [
+    "2026-08-26",
+    "2026-08-27"
+   ],
+   [
+    "2026-08-27",
+    "2026-08-28"
+   ],
+   [
+    "2026-08-28",
+    "2026-08-31"
+   ],
+   [
+    "2026-08-31",
+    "2026-09-01"
+   ],
+   [
+    "2026-09-01",
+    "2026-09-02"
+   ],
+   [
+    "2026-09-02",
+    "2026-09-03"
+   ],
+   [
+    "2026-09-03",
+    "2026-09-04"
+   ],
+   [
+    "2026-09-04",
+    "2026-09-07"
+   ],
+   [
+    "2026-09-07",
+    "2026-09-08"
+   ],
+   [
+    "2026-09-08",
+    "2026-09-09"
+   ],
+   [
+    "2026-09-09",
+    "2026-09-10"
+   ],
+   [
+    "2026-09-10",
+    "2026-09-11"
+   ],
+   [
+    "2026-09-11",
+    "2026-09-14"
+   ],
+   [
+    "2026-09-14",
+    "2026-09-15"
+   ],
+   [
+    "2026-09-15",
+    "2026-09-16"
+   ],
+   [
+    "2026-09-16",
+    "2026-09-17"
+   ],
+   [
+    "2026-09-17",
+    "2026-09-18"
+   ],
+   [
+    "2026-09-18",
+    "2026-09-21"
+   ],
+   [
+    "2026-09-21",
+    "2026-09-22"
+   ],
+   [
+    "2026-09-22",
+    "2026-09-23"
+   ],
+   [
+    "2026-09-23",
+    "2026-09-24"
+   ],
+   [
+    "2026-09-24",
+    "2026-09-25"
+   ],
+   [
+    "2026-09-25",
+    "2026-09-28"
+   ],
+   [
+    "2026-09-28",
+    "2026-09-29"
+   ],
+   [
+    "2026-09-29",
+    "2026-09-30"
+   ],
+   [
+    "2026-09-30",
+    "2026-10-01"
+   ],
+   [
+    "2026-10-01",
+    "2026-10-02"
+   ],
+   [
+    "2026-10-02",
+    "2026-10-05"
+   ],
+   [
+    "2026-10-05",
+    "2026-10-06"
+   ],
+   [
+    "2026-10-06",
+    "2026-10-07"
+   ],
+   [
+    "2026-10-07",
+    "2026-10-08"
+   ],
+   [
+    "2026-10-08",
+    "2026-10-09"
+   ],
+   [
+    "2026-10-09",
+    "2026-10-12"
+   ],
+   [
+    "2026-10-12",
+    "2026-10-13"
+   ],
+   [
+    "2026-10-13",
+    "2026-10-14"
+   ],
+   [
+    "2026-10-14",
+    "2026-10-15"
+   ],
+   [
+    "2026-10-15",
+    "2026-10-16"
+   ],
+   [
+    "2026-10-16",
+    "2026-10-19"
+   ],
+   [
+    "2026-10-19",
+    "2026-10-20"
+   ],
+   [
+    "2026-10-20",
+    "2026-10-21"
+   ],
+   [
+    "2026-10-21",
+    "2026-10-22"
+   ],
+   [
+    "2026-10-22",
+    "2026-10-23"
+   ],
+   [
+    "2026-10-23",
+    "2026-10-26"
+   ],
+   [
+    "2026-10-26",
+    "2026-10-27"
+   ],
+   [
+    "2026-10-27",
+    "2026-10-28"
+   ],
+   [
+    "2026-10-28",
+    "2026-10-29"
+   ],
+   [
+    "2026-10-29",
+    "2026-10-30"
+   ],
+   [
+    "2026-10-30",
+    "2026-11-02"
+   ],
+   [
+    "2026-11-02",
+    "2026-11-03"
+   ],
+   [
+    "2026-11-03",
+    "2026-11-04"
+   ],
+   [
+    "2026-11-04",
+    "2026-11-05"
+   ],
+   [
+    "2026-11-05",
+    "2026-11-06"
+   ],
+   [
+    "2026-11-06",
+    "2026-11-09"
+   ],
+   [
+    "2026-11-09",
+    "2026-11-10"
+   ]
+  ],
+  "refit_alpha_x1": [
+   "2026-03-02",
+   "2026-04-01",
+   "2026-05-04",
+   "2026-06-01",
+   "2026-07-01",
+   "2026-08-03",
+   "2026-09-01",
+   "2026-10-01",
+   "2026-11-02"
+  ],
+  "refit_cfg8": [
+   "2026-03-02",
+   "2026-04-01",
+   "2026-05-04",
+   "2026-06-01",
+   "2026-07-01",
+   "2026-08-03",
+   "2026-09-01",
+   "2026-10-01",
+   "2026-11-02"
+  ],
+  "refit_zb": [
+   "2026-03-02",
+   "2026-04-01",
+   "2026-05-04",
+   "2026-06-01",
+   "2026-07-01",
+   "2026-08-03",
+   "2026-09-01",
+   "2026-10-01",
+   "2026-11-02"
+  ],
+  "rule": "IMOEX: daily.build_daily, index_days = сессии IMOEX на склейке архив + новые; по begin, без цен"
+ },
+ "candidates": [
+  "X1",
+  "ZB"
+ ],
+ "code_sha256": {
+  "models_v2/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/daily.py": "d69c6b0f74a5cfdebe9cfdc22f90c14bab5940a3fdafd22f65cf76664a6fe01c",
+  "models_v2/har.py": "cf6da1f83d991bc7a77b89217c35a368bf528fb9e78c9ba42964b2d34aea32be",
+  "models_v2/metrics.py": "fddfd122415e8353b033fc7cfc35b62fc88e328dd89089d9dcfaa71f42f8d7c2",
+  "models_v2/prov.py": "c7cb16e6655cad168766f83d27d68c4cf319feba12128af0301cd5dc0ef0e89d",
+  "models_v2/s10/__init__.py": "710496437186587246d08af75c1f4a980d4b6e9770de8f1cd45cef81828b8b97",
+  "models_v2/s10/hp_daily.py": "88d61d290398432a0757351371c33756cedaf5c20fcaecedb450d26079b6c8e6",
+  "models_v2/s10/hp_har.py": "c8136b0d71fe0fe7c1c58628bd8618f7938e1cf7c376c0926e17e80eadfce11f",
+  "models_v2/s10/hp_hyb_out.py": "e32bafde3440ea9dd88ac91821d4c6e813fdd0565e8ebcec635c7c78789c1d7a",
+  "models_v2/s10/hp_k23_calc.py": "a75ec4eec11ce2fa5ba03bb5c2a37facfa33540baf789f06b5b840cae34c7307",
+  "models_v2/s10/hp_k23_world.py": "2f177dfd2da2fe574f73cad678ccb9f1af064ac11fa725e2e65e484fa74d3471",
+  "models_v2/s10/hp_paths.py": "423f2313d4b90a68eacc6c7119bb03e5da23fc4bb4e166e1a98ea013a18bfbc9",
+  "models_v2/s10/hp_stats_cmp.py": "ba21fcb24c2b373f161de88e013cc955918ec2eb5e5dd5b87f60775469af3762",
+  "models_v2/s10/hp_stats_sel.py": "7441fc5a855604a0c098e765de6c3112ccc6411ca7a04bc31c6aa2b2ea91a7c7",
+  "models_v2/s10/hp_stats_tst.py": "56bd1ee8500ec0eae0c3effcebc235a9e306fed51a4048d0d536d3cb78136d33",
+  "models_v2/s11/__init__.py": "65862ffdacd9bfe7c6a17cd4166f8be0b033a04a88cab832bdd06405400165eb",
+  "models_v2/s11/v4_b_stats.py": "e5d8f2ca01064446fa96a77587fc7a0e0efcbe2b6cc09bfdace9a7b3dea963d9",
+  "models_v2/s11/v4_cld_brk.py": "dc21d6aee98c67336626a579353760bbe4795d87cd0626970e76cde99cca902b",
+  "models_v2/s11/v4_io.py": "3a96894bcc54c1efb993013227a186fcec55e30513431451749e1412581b5ede",
+  "models_v2/s11/v4_ntp_state.py": "d8cd710655a573f7a3b7e819f9589d9991241a9420db3eb5b0bc651c176ca40b",
+  "models_v2/s13/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s13/v6_0_q.py": "5b3e0ee42df7b059f5843aa1017c721ef39b1ec10304945dfacd280698d41541",
+  "models_v2/s13/v6_1_eval.py": "09f29173f3fd77d8dcd7f758e8eb4259c71b258a55d7a583494a02d8f6b9dd29",
+  "models_v2/s13/v6_1_fit.py": "736476145e6ccc67f749f26528d38cce502922b0c752227b52929f162721ade0",
+  "models_v2/s13/v6_1_wf.py": "8ed79464d88b3f2ceae415d0ea80f829fc7ad0a25707c50fff2abda0a5e5b08e",
+  "models_v2/s14/__init__.py": "644224f4619ef774d13540a62836641cc1304d1fc0016e7c1864a6d428b1d73d",
+  "models_v2/s14/run_v7.py": "18cad6a2935af56c8aa24dc8e04974239bfb612b728c41f69ea20c190869cc12",
+  "models_v2/s14/v7_0_audit.py": "5ce2ac8f9cd0d94d3c827e2742566383121fd04dcd9eaf82baf7ddd186c9fbfb",
+  "models_v2/s14/v7_0_ctrl.py": "1df1b861d4622b6d179b802fcefe34d79fc137f921b65e3b7a34059a85f398da",
+  "models_v2/s14/v7_0_io.py": "e895e09d14e42495fe94b64a2ddf5d37bbf78ebb8c680b5966fcc2f134bd9bd1",
+  "models_v2/s14/v7_0_pass.py": "ccf3032f5e6206993bae168efec4a633d58dcae947a42327276c04333822df9d",
+  "models_v2/s14/v7_0_reuse.py": "a1ede40af926879852528d23149d20252de0d06c6e542f08b11476cb92c69929",
+  "models_v2/s14/v7_0_samples.py": "717b6398df475c48f4a81213a28bf365f49d421bbe9df705eb4bc68073f15dc1",
+  "models_v2/s14/v7_0_seq.py": "d8db1e419b375048a00f94d90e2199a7cc4a1f31415e57428de4c9d5f58d920e",
+  "models_v2/s14/v7_1b_cfg.py": "f054abf2b0406a80c814d6049463f975fee737524d6ef6722af2ea1347f7e453",
+  "models_v2/s14/v7_1b_sta.py": "71dae6fd4f2ef26df7a6887b7b1cc7b52eeb06eee28bd0343027bd8a879e50dc",
+  "models_v2/s14/v7_1e_net.py": "7655f9baa0c0628c5aaae3f817af03c811f16cb64a82b65f3454e0923f2c87da",
+  "models_v2/s14/v7_1e_pre.py": "dbc18fa5bb1b835ebc0c96ba3ffb750136b8bd41684af7f5fc33a13469496b3c",
+  "models_v2/s14/v7_1e_rep.py": "de3d660dc47fb8351a9d4b98fd2866ddf77ffaf41664c53916dc120db26f748c",
+  "models_v2/s14/v7_1m_feat.py": "92a80f29849175aaa6f4b59600b27456078079cea3c0f7141966bfb8216449a7",
+  "models_v2/s14/v7_1m_fit.py": "54b7e4c910773ae16b85ed9a3b8d8ce5973eb22e8cf30c8a9e9a138ef772b5e1",
+  "models_v2/s14/v7_1m_forms.py": "800b022dbe9c068475e3422486dfc8631451f69da7a43b548aba2453ff0537fe",
+  "models_v2/s14/v7_1m_loss.py": "27f5aaa27b1dd17050dc070f8165e777a2c126808b90f83a26368ace36890f2f",
+  "models_v2/s14/v7_1m_wf.py": "269f8216e342666c44e97391ee82f6ad99d1b3a2bc264ee4247f0e05dfa4c9e0",
+  "models_v2/s14/v7_2_cfg.py": "0dc583459986d60235b561b70bd797b94ed3b0355a23626b2715a69ffd773b79",
+  "models_v2/s14/v7_3_cfg.py": "55dd439be87d6f7a0bdcb4a0755adef3792ffecc526ef4c425ce36ea2fad8d21",
+  "models_v2/s15/__init__.py": "79c00e606e43249e5de662efa2c934a0af7a6e8d6ad446203227b5534fd3008b",
+  "models_v2/s15/de0_groups.py": "f50a5c464a2901cbb0f38332a97560f986aacc24f7acc88ae9234e87b62a0834",
+  "models_v2/s15/de_e1_state.py": "62f2cb540ca98e4432eb4c9fcd95b6e9e66736e9341b6bc5b2a899e583298aa2",
+  "models_v2/s16/__init__.py": "76d3da715e6550c88c8c6f19dd4f0e4abb2c0ae06ded466f682c9efa1827dac0",
+  "models_v2/s16/x1_ya_feat.py": "7f52a9236c35ca5220b9e73deac907978bfb39a519288afe7cbe2598cf5911d4",
+  "models_v2/s16/x1_ya_fit.py": "07690af6b2ef6dd965f001c790bbfef3750158dba62bdc1c02428d021078497b",
+  "models_v2/s16/x1_ya_walk.py": "3d9f87b51272d7120610f198264f57e643dcbd77dd1076476fbe7b4422807447",
+  "models_v2/s16/x1_z_feat.py": "6f86ef51eee89c2a6b1623518d9a0f7cb1c5e949460918e62ffac768e1e69d17",
+  "models_v2/s16/x1_z_fit.py": "eaa1741edb89746e63a4a7cf397fbfd03a61a6657e1c52a3c9377ba0433357e7",
+  "models_v2/s16/x1_z_walk.py": "69e9c06191bd5e300e285d154c932113c4f4f7c66e18077d6f2a8c8c0a91612b",
+  "models_v2/s17/__init__.py": "0e0a2d8c66be3df4a79531f4825f2a8d7154a3f36c7bb41e291000ab81a512a8",
+  "models_v2/s17/fwd_cal.py": "fb512250bf65521bd5f246ae6d0898dae98fb48464837f2ed207399f4f7a112d",
+  "models_v2/s17/fwd_cfg8.py": "f8375bfead3911ff73598d9ce34427822c129a1a7212fbf205cb55ec4128137d",
+  "models_v2/s17/fwd_doc.py": "45c4d4d2504e419ffb97b15807c16c900bc884434ff47baedda07938b44171c4",
+  "models_v2/s17/fwd_eval.py": "85405e915395104db91a3e08dfbe22826323491f4cfce49e2984b8837d9e3d8e",
+  "models_v2/s17/fwd_freeze.py": "e15bf6a8620eeb73ba3e647d65389a5086fbdb75c0ae47a4bc6275aac5dfc985",
+  "models_v2/s17/fwd_frz_parts.py": "c547ac806463fcfeb03bfae09bca1ce97a8fa0c2aec079ccd6b68adf1971b5e1",
+  "models_v2/s17/fwd_k1.py": "cc59081dde372c18fee7ae71d5391a407180af096f46dd64d5842b77e2c55a32",
+  "models_v2/s17/fwd_k23.py": "e4fa3541820f7c1328111c07ddce8079ed25a938d76f5c510faf5830ec2955ff",
+  "models_v2/s17/fwd_power.py": "209db1092ca2adee6475c977c02ce299755b307354f3612b553605737fe95995",
+  "models_v2/s17/fwd_reh_cut.py": "8c91beac46b1bb3b91e57c8e6ce38efb833a3ea58ba3537df89e9c4794c99c37",
+  "models_v2/s17/fwd_reh_ref.py": "352efcf82ebb667fa1399c650e8222e78b4c8fcae923870310bb47291b180921",
+  "models_v2/s17/fwd_rehearsal.py": "01d59cf7a31413cabcf9fff4c0fd80144bee80f212f5a7dc0227d23a23ab63e5",
+  "models_v2/s17/fwd_src.py": "b577f68a2f7b9f5045a95eec67cf1742eb10fd7150cc66972860decfa71cb916",
+  "models_v2/s17/fwd_store.py": "c6e0deb859dc03d9e0879dea5dd0fb4057869bee752e0809071dfda2ad0e6809",
+  "models_v2/s17/fwd_x1.py": "7989ea2be00e5c9dd1d348ca587731cd3545a1dc85c326f393fc799074bdfbdb",
+  "models_v2/s17/fwd_z.py": "d4dfb8e7fac5084e29f0e1f4e87e10c608764abedbd46a549f77412485c0bbb8",
+  "models_v2/s17/fwd_zb.py": "55b8478a002b228ddcad1a75a0cea9dd30c26bbef31e420d131e59c45e8122d4",
+  "models_v2/s2/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s2/boost.py": "eb141658f0a332c625bb03f54b3b1f0a3f5f62351a4e76cd9e8698a74c764bb2",
+  "models_v2/s2/features.py": "2ccb660ec6e3cfafb4ae14c6f0c6ecf547c764e7232ca51177f09e5f56782618",
+  "models_v2/s3/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s3/dm.py": "9421de268dbd1d3e089cda5e9064ca79b95a5c6fbf2f834b34f2c20bad604290",
+  "models_v2/s3/post.py": "29beb711437d20507ad7b10babfd730c2068076f08e46c1c518a041cb86df08b",
+  "models_v2/s3/resid.py": "d0c18c03ded6025af40a8d6eb144d6f67935f9798599710367ece953bf946501",
+  "models_v2/s3/scale.py": "a6f6fa25bdd0d7e3ce92aa202b5a1f69e905f09f16d7667f18b55bfe62454734",
+  "models_v2/s4/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s4/design.py": "9fa514bbf438835b9479702de38c56fd8f4976890ea57228487564eb0026c38f",
+  "models_v2/s4/fit.py": "984ca879f4b16cc180c36d253cadec47dab1eb0395021f0e4824d54218f90143",
+  "models_v2/s4/mkt.py": "7938e41e92fdf06ab1653075157c0d9cbf98c580f9052125b2baca2e26e84eed",
+  "models_v2/s4/prov4.py": "28cc973ec56981068f26e6b7ebd69e4b9e0509c0de1747270b8900312d32a1e8",
+  "models_v2/s4/rows.py": "0fee5f7f581475f6ec1073349f185f51107b03827c92672fb306e42e78f4cf2f",
+  "models_v2/s4/runner.py": "13a88182e95818622b9af1344cafe2e90fddd4f1270b92cf060a2d63c982e42d",
+  "models_v2/s4/select.py": "7f33e95054d01f26a9ed909e1e56e0f1c459bfa1ac0d1092441235fc5d338d92",
+  "models_v2/s5/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s5/b1/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s5/b1/designs.py": "c900c50cd3ddd4d498ae11429c08d72049af895883aa2c0dd3f2b9060e6658bf",
+  "models_v2/s5/b1/evalrows.py": "4663e94034564c367cbece0d831ed9141bcbc214fbd2faf6f98a491d6d7b8150",
+  "models_v2/s5/b1/fitobj.py": "1bba3eccb5138c92b0fbedd800f4c055c2f95db133e3a2889848111de1c2aee0",
+  "models_v2/s5/b1/jobs.py": "73a8069bef611d63c9d91ec73a3ae1702748911b0005f3bcd6c1a6d253ff5493",
+  "models_v2/s5/b1/losses.py": "1c1c69f74bbda6ed695dcef13d67a949076b40878e663c879f2ed25b50596a35",
+  "models_v2/s5/b2/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s5/b2/cusum.py": "8ac97f260196662e85849d9d2c0adcf6085c0b27fb8a1efa21f06660ecd558a7",
+  "models_v2/s5/b2/engine.py": "b4ec2cb95ad1560cbd4944c66bac7e687f89ce8850e96546e099e42cd5a37dee",
+  "models_v2/s5/b2/feat.py": "151713333b32f08e5c8993f3b6a8ea86c6bbd0815d83f0909935b80781b17d50",
+  "models_v2/s5/b2/feat_day.py": "e29d5d5a9ffc93d70d3f37abe098dec9d27e56ace861b0e58d87f3dfed93114b",
+  "models_v2/s5/b2/loyo.py": "e9c9927cb1b3eafd5b23494a34c5004cd68df78cbbebe91ea74a3bb1572d212c",
+  "models_v2/s5/b2/tab.py": "e82f9ccdd22acece90db7c17f45fb3a8153c8c68fbd20c8b1c80550c89a90f3c",
+  "models_v2/s5/b2/util.py": "d905a527eeb64fc75c46e56d1029f13a74288a3afbcce6d5b42748c2f792d364",
+  "models_v2/s5/b2/world.py": "57b02a2c5d52196771697e34095130fb68e1789f7c15677ffae804b9d0f05524",
+  "models_v2/s5/c/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s5/c/fitx.py": "6eabfd8bb5aa5ef0b766878dbd937c031e669a1308dba85ceca3ba22959c4aa3",
+  "models_v2/s5/common.py": "8be6c3b8cf00286499c4a1d475543188d60c39fc11632940079440aaadc83925",
+  "models_v2/s5/d/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s5/d/stats_d.py": "efea24be6b949ab2c4556d45b87e962d1101cb5cfb5aa4d77773157b0e3f0d96",
+  "models_v2/s5/pit.py": "325623d3aad360f04637ae670caf3cef67dc23e86456d0241545db53a300cdef",
+  "models_v2/s5/registry.py": "515e534efb9a6d941fdc5c05f59c2bb04a9b77067c6fb2bbc1c1eb1a1147ff25",
+  "models_v2/s6/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s6/diag.py": "82d5e975e4f52e28b47d288288592a4185df3d9a3ef2a5e5a6ada3f3021c2b06",
+  "models_v2/s6/lgbm/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s6/lgbm/c_hp.py": "58b8c11c761cf87471013cbccf989c0aa7f4abe143d7da768a00934d2d4f55e4",
+  "models_v2/s6/lgbm/c_l0.py": "75761a5404f38803f2353186757af012b3dd27e18566155e275d9f77a125642f",
+  "models_v2/s6/lgbm/c_world.py": "c7a3fad2ef9e69035e23523bf0173556b7a9e8501f18abe9695f59a2dc5ab6a1",
+  "models_v2/s6/lgbm/cfg.py": "e947b6026e8d23feb4fac5c989812880646ade06850baba573027b64da7bca8b",
+  "models_v2/s6/lgbm/crit.py": "bcada9a83d7730c1fa0f8f6cd15f0cc82d9953527d809d09baa469d10e733e45",
+  "models_v2/s6/lgbm/fitl.py": "add006446539dd802acfbb61f83cd800177460f7a1f1537ad0398e059388113d",
+  "models_v2/s6/lgbm/grid.py": "9e9bbc42714e17f63972d86dfa15db3a7330f76df92562ea9dc849e37d4f2be6",
+  "models_v2/s6/lgbm/job.py": "3e0933ed26adc981188dd6b13cea733133b307c88832121716b94772b1a76414",
+  "models_v2/s6/lgbm/st_cfgs.py": "45ca6491fd2d9c045f7eae8b78a0526802a275932da0d293800f88ba6d459ee0",
+  "models_v2/s6/lgbm/st_lb0.py": "f75910ca40e59671987b05576215a57408cfd97415dd315ae688e932e109e7fc",
+  "models_v2/s6/lgbm/tab.py": "3c5f2040c0cf6c8279902d7d57c58fbdc68563a260b63d4ad45eb9fe5bec08b7",
+  "models_v2/s6/lgbm/world.py": "fc7eaa17a065e71afd93a29e09634b231802000725816ff76429043e6b5bcdbb",
+  "models_v2/s6/paths6.py": "f03e3e963584efdf81065af8db96f272a77f4482f1dde513cd971fd7fc98f772",
+  "models_v2/s6/xgb/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s6/xgb/c_calc.py": "c5229ed83f034f823898caae8f7e0637590ae18343c2f8b5b6bccdc0e966b1cf",
+  "models_v2/s6/xgb/c_fit.py": "cbf9d7773a2bf347f2bc7c907f3d72e4fcaf40a15f5dc1611be937cfcc0af0a3",
+  "models_v2/s6/xgb/c_space.py": "c1529b9c756952de3649ddccea9db0e26c50a4e6166f2d3d6e6f05f8a966a4ff",
+  "models_v2/s6/xgb/cfgx.py": "44a1d0dbc3e9236ed0612d016f910385842673afd19329dbc7c9987e06d79975",
+  "models_v2/s6/xgb/d_comp.py": "350bf9e0749e2bd450d6174c79104ef7733d49893bb5c25d0c983a8b0cebf296",
+  "models_v2/s6/xgb/worldx.py": "655ce3757ebad7a523a7012d428f1e5354270d9e24bacf5dbbece45cd6876539",
+  "models_v2/s9/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "models_v2/s9/hv2_m10.py": "2be51e3857420a60f9f8f09d1bce0906896676606ba87ca79279dc7d2e295370",
+  "models_v2/s9/hv2_sched.py": "7f5d580099f7cac193d0120633142aa38d37f6321b1644a0cba5c24c0a7eb0f9",
+  "models_v2/s9/hv2_sync.py": "f0aef28e862efdce2c9d4313f9c47bb15ea9cd4a245247609144892e6719e3ba",
+  "scripts/fwd/freeze_v2.py": "d04e73fa5e0eec3fc8e1b22eee26c423347a8c96ada583d2a274dc92b28ad4ef",
+  "scripts/fwd/otkrytie_gates.py": "3b6337453ed42901769a54dcec2f74f08478e923939965f00a6734e301b69056",
+  "scripts/fwd/otkrytie_guard.py": "60d342fa870ec2e4107d178f536695ebd5f8f6c8a305d93fbc906e9e56af4569",
+  "scripts/fwd/otkrytie_harj_fwd.py": "e2caaa0d0e3274793d29fc8b51a3f9ed1ac44d8188b3498483166e25ff4d0a59",
+  "scripts/fwd/otkrytie_pes_povtor.py": "ae6f7af1c2e16083b7b8065d7ca33da41a13a3a019cbd897525d58fe654d75db",
+  "scripts/fwd/otkrytie_pesochnica.py": "00b28d4f5d545807a7efdbc75b322608912da17706fb4f4c554d44652657ef8a",
+  "scripts/fwd/otkrytie_povtor.py": "6f74ee031d342df308cfca134ec6bc1c24b43bee57c156f4fc38cb96e41f5216",
+  "scripts/fwd/otkrytie_proverki.py": "07fbb3eafdf2bbc2ba497a770508dde80897c2282a23a9ba64f82592e227490e",
+  "scripts/fwd/otkrytie_raschet.py": "52a88b42d7fa016776275eec7733e932b64ec66860174e465c1cbb37b84e98dc"
+ },
+ "controls": [
+  "K1",
+  "K2",
+  "K3"
+ ],
+ "dates": {
+  "first_d": "2026-02-27",
+  "first_t_plus": "2026-03-02",
+  "last_d": "2026-11-09",
+  "last_session": "2026-11-10",
+  "last_t_plus": "2026-11-10"
+ },
+ "derived_archive_sha256": {
+  "data/fwd/models/X_w5.npz": "6f61b4ce7487eb072a1c87d2f81ec8809ff9dec447dfa1810435cffe4f23a80e",
+  "data/fwd/models/calendar.parquet": "6fc6fb60b8625f85b8bfc9b43b562a39cfb831ceeb05b501da4453aa7af7e09f",
+  "data/fwd/models/cfg8.parquet": "9b7062774189ad89f32805318a210ae8e28a762095e6bb21836c9f976978053b",
+  "data/fwd/models/k1.parquet": "4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9",
+  "data/fwd/models/k23.parquet": "61f0548e385ebeb295e19f727bab80c3d0cbbe5f36e0419dc2aeaf6857d1e20d",
+  "data/fwd/models/state_es.parquet": "4ca82999bc8a6fb87eeff7fd03484bf7c91003e733f2aaa82a2769647fca5a0b",
+  "data/fwd/models/store.npz": "7495791933f2c561407179aed6694b746a49e7f8109a47053a4dcbaf2be17c51",
+  "data/fwd/models/x1.parquet": "56d9351607780959a3e2710809f8e4871ccb44cb1f825373c8430a0a3058fea3",
+  "data/fwd/models/z_tcn2026_s0.npz": "5791b79625644f0c2070e3ae2b9ba8634b59af3bd1b8e098cb803c2ea726cb43",
+  "data/fwd/models/z_tcn2026_s1.npz": "23b7b7b4b75853bc3431f5002ddd711e3c07c265e007dbd44e5fb4c59e2c265a",
+  "data/fwd/models/z_tcn2026_s2.npz": "e3f41f468250e58571cc86faf1ca9ac62e8aeacdd9b9b5d0d20bc87b6c1236b1",
+  "data/fwd/models/z_tcn2026_s3.npz": "731bb44cffee7181096b63b97260f28f497bd567b6ff49a671ddbf103ec474e4",
+  "data/fwd/models/z_tcn2026_s4.npz": "d7856eda3a5ad7ec017263cfacebca3cf639bf63bd3c4ab76f7606e1156d364d",
+  "data/fwd/models/zb.parquet": "7dc542f52b06a9f0318215b819b67729d02915b7f68b910b91884db16d14f43c",
+  "data/fwd/models/zb0.parquet": "dd0e5df7edd72bacd8b3a0ab33da7dd1064f8139ad7164931bd948bcd4574a37"
+ },
+ "diff_v1": [
+  {
+   "key": "code_sha256",
+   "kind": "технический"
+  },
+  {
+   "key": "fix_commit",
+   "kind": "технический"
+  },
+  {
+   "key": "git",
+   "kind": "технический"
+  },
+  {
+   "key": "outputs",
+   "kind": "технический"
+  },
+  {
+   "key": "owner_yes",
+   "kind": "технический"
+  },
+  {
+   "key": "prev_commit",
+   "kind": "технический"
+  },
+  {
+   "key": "prev_freeze",
+   "kind": "технический"
+  },
+  {
+   "key": "prev_lock",
+   "kind": "технический"
+  },
+  {
+   "key": "v",
+   "kind": "технический"
+  },
+  {
+   "key": "written_at",
+   "kind": "технический"
+  }
+ ],
+ "family": {
+  "alpha": 0.05,
+  "bootstrap": {
+   "B": 2000,
+   "block": 10,
+   "seed": 0
+  },
+  "dm": "односторонний, Ньюи–Уэст, лаг 5",
+  "holm_m": 7,
+  "hypotheses": [
+   "H1 X1<K2",
+   "H2 X1<K3",
+   "H3 ZB<K2",
+   "H4 ZB<K3",
+   "H5 ZB<X1",
+   "H6 X1<K1",
+   "H7 ZB<K1"
+  ],
+  "interval": "90 % двусторонний"
+ },
+ "fix_commit": "d850a2a897f0acf07920c6e39d785e2b9c639808",
+ "git": {
+  "branch": "harj-x1",
+  "commit": "d850a2a897f0acf07920c6e39d785e2b9c639808",
+  "commit_on_branch": true,
+  "differs_from_commit": [],
+  "head_workdir": "cc5f73018c1c3d190286f3cc66caab81343a5118",
+  "not_in_commit": [],
+  "status_dirty_paths": [
+   "models_v2/__init__.py",
+   "models_v2/daily.py",
+   "models_v2/har.py",
+   "models_v2/metrics.py",
+   "models_v2/prov.py",
+   "models_v2/s10/__init__.py",
+   "models_v2/s10/hp_daily.py",
+   "models_v2/s10/hp_har.py",
+   "models_v2/s10/hp_hyb_out.py",
+   "models_v2/s10/hp_k23_calc.py",
+   "models_v2/s10/hp_k23_world.py",
+   "models_v2/s10/hp_paths.py",
+   "models_v2/s10/hp_stats_cmp.py",
+   "models_v2/s10/hp_stats_sel.py",
+   "models_v2/s10/hp_stats_tst.py",
+   "models_v2/s11/__init__.py",
+   "models_v2/s11/v4_b_stats.py",
+   "models_v2/s11/v4_cld_brk.py",
+   "models_v2/s11/v4_io.py",
+   "models_v2/s11/v4_ntp_state.py",
+   "models_v2/s13/__init__.py",
+   "models_v2/s13/v6_0_q.py",
+   "models_v2/s13/v6_1_eval.py",
+   "models_v2/s13/v6_1_fit.py",
+   "models_v2/s13/v6_1_wf.py",
+   "models_v2/s14/__init__.py",
+   "models_v2/s14/run_v7.py",
+   "models_v2/s14/v7_0_audit.py",
+   "models_v2/s14/v7_0_ctrl.py",
+   "models_v2/s14/v7_0_io.py",
+   "models_v2/s14/v7_0_pass.py",
+   "models_v2/s14/v7_0_reuse.py",
+   "models_v2/s14/v7_0_samples.py",
+   "models_v2/s14/v7_0_seq.py",
+   "models_v2/s14/v7_1b_cfg.py",
+   "models_v2/s14/v7_1b_sta.py",
+   "models_v2/s14/v7_1e_net.py",
+   "models_v2/s14/v7_1e_pre.py",
+   "models_v2/s14/v7_1e_rep.py",
+   "models_v2/s14/v7_1m_feat.py",
+   "models_v2/s14/v7_1m_fit.py",
+   "models_v2/s14/v7_1m_forms.py",
+   "models_v2/s14/v7_1m_loss.py",
+   "models_v2/s14/v7_1m_wf.py",
+   "models_v2/s14/v7_2_cfg.py",
+   "models_v2/s14/v7_3_cfg.py",
+   "models_v2/s15/__init__.py",
+   "models_v2/s15/de0_groups.py",
+   "models_v2/s15/de_e1_state.py",
+   "models_v2/s16/__init__.py",
+   "models_v2/s16/x1_ya_feat.py",
+   "models_v2/s16/x1_ya_fit.py",
+   "models_v2/s16/x1_ya_walk.py",
+   "models_v2/s16/x1_z_feat.py",
+   "models_v2/s16/x1_z_fit.py",
+   "models_v2/s16/x1_z_walk.py",
+   "models_v2/s17/__init__.py",
+   "models_v2/s17/fwd_cal.py",
+   "models_v2/s17/fwd_cfg8.py",
+   "models_v2/s17/fwd_doc.py",
+   "models_v2/s17/fwd_eval.py",
+   "models_v2/s17/fwd_freeze.py",
+   "models_v2/s17/fwd_frz_parts.py",
+   "models_v2/s17/fwd_k1.py",
+   "models_v2/s17/fwd_k23.py",
+   "models_v2/s17/fwd_power.py",
+   "models_v2/s17/fwd_reh_cut.py",
+   "models_v2/s17/fwd_reh_ref.py",
+   "models_v2/s17/fwd_rehearsal.py",
+   "models_v2/s17/fwd_src.py",
+   "models_v2/s17/fwd_store.py",
+   "models_v2/s17/fwd_x1.py",
+   "models_v2/s17/fwd_z.py",
+   "models_v2/s17/fwd_zb.py",
+   "models_v2/s2/__init__.py",
+   "models_v2/s2/boost.py",
+   "models_v2/s2/features.py",
+   "models_v2/s3/__init__.py",
+   "models_v2/s3/dm.py",
+   "models_v2/s3/post.py",
+   "models_v2/s3/resid.py",
+   "models_v2/s3/scale.py",
+   "models_v2/s4/__init__.py",
+   "models_v2/s4/design.py",
+   "models_v2/s4/fit.py",
+   "models_v2/s4/mkt.py",
+   "models_v2/s4/prov4.py",
+   "models_v2/s4/rows.py",
+   "models_v2/s4/runner.py",
+   "models_v2/s4/select.py",
+   "models_v2/s5/__init__.py",
+   "models_v2/s5/b1/__init__.py",
+   "models_v2/s5/b1/designs.py",
+   "models_v2/s5/b1/evalrows.py",
+   "models_v2/s5/b1/fitobj.py",
+   "models_v2/s5/b1/jobs.py",
+   "models_v2/s5/b1/losses.py",
+   "models_v2/s5/b2/__init__.py",
+   "models_v2/s5/b2/cusum.py",
+   "models_v2/s5/b2/engine.py",
+   "models_v2/s5/b2/feat.py",
+   "models_v2/s5/b2/feat_day.py",
+   "models_v2/s5/b2/loyo.py",
+   "models_v2/s5/b2/tab.py",
+   "models_v2/s5/b2/util.py",
+   "models_v2/s5/b2/world.py",
+   "models_v2/s5/c/__init__.py",
+   "models_v2/s5/c/fitx.py",
+   "models_v2/s5/common.py",
+   "models_v2/s5/d/__init__.py",
+   "models_v2/s5/d/stats_d.py",
+   "models_v2/s5/pit.py",
+   "models_v2/s5/registry.py",
+   "models_v2/s6/__init__.py",
+   "models_v2/s6/diag.py",
+   "models_v2/s6/lgbm/__init__.py",
+   "models_v2/s6/lgbm/c_hp.py",
+   "models_v2/s6/lgbm/c_l0.py",
+   "models_v2/s6/lgbm/c_world.py",
+   "models_v2/s6/lgbm/cfg.py",
+   "models_v2/s6/lgbm/crit.py",
+   "models_v2/s6/lgbm/fitl.py",
+   "models_v2/s6/lgbm/grid.py",
+   "models_v2/s6/lgbm/job.py",
+   "models_v2/s6/lgbm/st_cfgs.py",
+   "models_v2/s6/lgbm/st_lb0.py",
+   "models_v2/s6/lgbm/tab.py",
+   "models_v2/s6/lgbm/world.py",
+   "models_v2/s6/paths6.py",
+   "models_v2/s6/xgb/__init__.py",
+   "models_v2/s6/xgb/c_calc.py",
+   "models_v2/s6/xgb/c_fit.py",
+   "models_v2/s6/xgb/c_space.py",
+   "models_v2/s6/xgb/cfgx.py",
+   "models_v2/s6/xgb/d_comp.py",
+   "models_v2/s6/xgb/worldx.py",
+   "models_v2/s9/__init__.py",
+   "models_v2/s9/hv2_m10.py",
+   "models_v2/s9/hv2_sched.py",
+   "models_v2/s9/hv2_sync.py",
+   "scripts/fwd/freeze_v2.py",
+   "scripts/fwd/otkrytie_gates.py",
+   "scripts/fwd/otkrytie_guard.py",
+   "scripts/fwd/otkrytie_harj_fwd.py",
+   "scripts/fwd/otkrytie_pes_povtor.py",
+   "scripts/fwd/otkrytie_pesochnica.py",
+   "scripts/fwd/otkrytie_povtor.py",
+   "scripts/fwd/otkrytie_proverki.py",
+   "scripts/fwd/otkrytie_raschet.py"
+  ],
+  "workdir_branch": "gl3-r6-h5-dev"
+ },
+ "initial_state": {
+  "I2_2026": {
+   "hp_k2": "d3 mc10 l2 0.588862 lr0.034005 ss0.92752 cs0.69814 g0 a0 mds0",
+   "hp_k3": "nl8_md10_l20.5_lr0.05_ff1_bag0.8_dp3",
+   "hp_year": 2026
+  },
+  "X1": {
+   "a0": 0.05,
+   "a1": 0.05,
+   "eta": 12.39260135751014,
+   "pi0": 0.29591277863421417,
+   "pi1": 0.16355620862717835
+  },
+  "ZB": {
+   "a": 0.1874300654472991,
+   "b": 0.18044160593429562,
+   "lam": 0.1,
+   "n_ext": 335.0
+  },
+  "ZB_refit": "2026-02-02",
+  "cfg8_lam_by_seed": [
+   [
+    0.1,
+    0.1
+   ],
+   [
+    0.1,
+    0.0
+   ],
+   [
+    1.0,
+    0.1
+   ],
+   [
+    0.1,
+    0.1
+   ],
+   [
+    0.1,
+    0.1
+   ]
+  ],
+  "cfg8_refit": "2026-02-02",
+  "d": "2026-02-27",
+  "forecast_d0227": {
+   "K2": 0.3772519879577839,
+   "K3": 0.3593997944793474,
+   "X1": 0.3711728380217326,
+   "ZB": 0.3711728380217326,
+   "cfg8": 0.37829987805292487
+  },
+  "t_plus": "2026-03-02"
+ },
+ "inputs_archive_sha256": {
+  "data/iss_check/bars_10m_full/AFLT.parquet": "beb1b23feed761b65679c6bc21371472d5bf228b5fc0a00f94b501d638afeb5a",
+  "data/iss_check/bars_10m_full/ALRS.parquet": "6a1954b5de238304a7c47f2d4faa1490b65f0ea87758584c69c994d66a38a162",
+  "data/iss_check/bars_10m_full/HYDR.parquet": "ea956d5360a6841cf27c4398e22d72a770c38afb1abd21a5fbf843a7c3331566",
+  "data/iss_check/bars_10m_full/IRAO.parquet": "caca555be22bf34fd5965383e99520ef7828772ebf3870b05b3a288445fc012e",
+  "data/iss_check/bars_10m_full/LKOH.parquet": "6995daf9220f07c23d09c61ed658eac7af7f2d92f8a4192f94288ad58771667d",
+  "data/iss_check/bars_10m_full/LSRG.parquet": "87059ca179242d37a7f5bf19428b8b3046ba1c3f86131b0e1d8f886d876623d0",
+  "data/iss_check/bars_10m_full/MGNT.parquet": "ac456554ead4ed1c025b5d22892f97f7071c9ab6fdcaab386bb1dcae567e592b",
+  "data/iss_check/bars_10m_full/MOEX.parquet": "896a3103dd7c203ca6a5cb38209b5df6b60e00c7f1fd82cb86f71d123733d2c9",
+  "data/iss_check/bars_10m_full/MTLR.parquet": "e60214432d7fc452dc219f1a2422a626d466bcdf73104d4234c2b9cdfad9bbd6",
+  "data/iss_check/bars_10m_full/MTSS.parquet": "72269c31f4a9b15774c5d5b95ff0a53c023d50756c7c7a6c69ec40e396369a1d",
+  "data/iss_check/bars_10m_full/NVTK.parquet": "f00b73fec22d7fc48f11937f3a8a05b097ff43fe5801f7deb11f521916b356d0",
+  "data/iss_check/bars_10m_full/OGKB.parquet": "980badf59480ade7298ee9da49708af075437fc6d93c84900deb4ea994ef9b48",
+  "data/iss_check/bars_10m_full/PHOR.parquet": "b430547c1681cbc71cc9002b8bc09e6422b40548817530e90b285979507ca925",
+  "data/iss_check/bars_10m_full/RTKM.parquet": "983ba969119932c5e6d1591bde75590f76b813ef7ef2d5fa4bd561de1cc27039",
+  "data/iss_check/bars_10m_full/SBER.parquet": "b451cb48473ac15c246e5d2df0dae64704dff718039e7f34ca0a05ab47d76b9f",
+  "data/iss_check/bars_10m_full/TATN.parquet": "fddab76960db6593c9af5e0357e72499ccb90cd553b0c0a13b4b411ffddf36fe",
+  "data/iss_check/bars_10m_full/VTBR.parquet": "44fabdf7627147234eb1c3475edf6a8276ea2604ca99422178168041fd1dd9e3",
+  "data/iss_check/index_10m/IMOEX.parquet": "cadc3e41cda115331db482c89b64e3cd27b0f392072114a0affb8389267be935",
+  "data/regen/harj_deep/E1/x1.parquet": "56d9351607780959a3e2710809f8e4871ccb44cb1f825373c8430a0a3058fea3",
+  "data/regen/harj_hybrid_v7/3/cfg8.parquet": "9b7062774189ad89f32805318a210ae8e28a762095e6bb21836c9f976978053b",
+  "data/regen/harj_hybrid_v7/X_w5.npz": "6f61b4ce7487eb072a1c87d2f81ec8809ff9dec447dfa1810435cffe4f23a80e",
+  "data/regen/harj_hybrid_v7/stageA/tcn_w5_2026_s0.npz": "708c2fdd9575beaaf6a3813dee0408cf30f00c28ffadc80e98c38a480899179d",
+  "data/regen/harj_hybrid_v7/stageA/tcn_w5_2026_s1.npz": "e693737185b379ca3f19e4fe8470c3befe7a8b22c5abc2a3cf20c568cc7d0ae5",
+  "data/regen/harj_hybrid_v7/stageA/tcn_w5_2026_s2.npz": "75e77bdce9a66ae584c44720def2411236b479d198fc6ee12e77a3bd713e24c4",
+  "data/regen/harj_hybrid_v7/stageA/tcn_w5_2026_s3.npz": "16762efe90b977e836a2e998dc28e15894c4beb1d5cc4a9f74f1906da5c7eef5",
+  "data/regen/harj_hybrid_v7/stageA/tcn_w5_2026_s4.npz": "e7e6e60951529ebab9c32ecb8baf5f33439ad51afbd10dafb6ac88e60516a863",
+  "data/regen/harj_hybrid_v7/store_raw.npz": "7495791933f2c561407179aed6694b746a49e7f8109a47053a4dcbaf2be17c51",
+  "data/regen/harj_panel_hybrid/daily_SBER.parquet": "f3333936313f9c89017d33ca9be474c5c747f8b79247eb0e814ee22c13ff1b94",
+  "data/regen/harj_panel_hybrid/har_SBER.parquet": "4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9",
+  "data/regen/harj_panel_hybrid/k23_SBER.parquet": "d19679f827513aafe78f424a40ae86d747e05aa37d5277177d7ef4ffd62139fc",
+  "data/regen/harj_panel_hybrid/k23_meta_SBER.json": "d2d3c2f52041d3f1fccb0ae3918c92108ae7538fafb9ef0a0c78ef37c090c1f6",
+  "data/regen/harj_panel_hybrid/panel_base.parquet": "6e2988c6a8615ac6b45f5e5d99d369e0d9abbdf21f22f978faacd1a1d441741e",
+  "data/regen/harj_x1/Z/zb.parquet": "7dc542f52b06a9f0318215b819b67729d02915b7f68b910b91884db16d14f43c",
+  "data/regen/harj_x1/Z/zb0.parquet": "dd0e5df7edd72bacd8b3a0ab33da7dd1064f8139ad7164931bd948bcd4574a37",
+  "data/regen/v2_sber_h1_deep_v1/b2/accepted.json": "1e2dec7bbe9675cfa575b7b221d3a3f60b76eb9c512e4cd5cbae1b840abbd048",
+  "docs/otchety/harj_hybrid_v7/CHECKPOINT.json": "766fbc2db816dc5424f81d35b0ec06c5ffdc1c5ddcfa25716f881eb709ef34b6",
+  "docs/otchety/xgb_lgbm_full_v1/xgboost/X2_DECISION.json": "703058d20c4fc9c5332c59bef619bab23c5a0b814c0e9b9095a1e3d8d0435951"
+ },
+ "inputs_new_sha256": {
+  "data/fwd/mkt_m10/AFLT_m10_fwd.parquet": "1c27b036339894fb78ca12193d04dff5042530d90e38c63b750fde864d19f7e0",
+  "data/fwd/mkt_m10/AFLT_m10_overlap.parquet": "335aeb2519dace16a8504c39f5cebb7c2b4eeab911bdd6fe0f69bf5c0315ba82",
+  "data/fwd/mkt_m10/ALRS_m10_fwd.parquet": "505a8298c4fe601df292f45bb6289b27dd122c09a48bebffde5c3b54db0d3b09",
+  "data/fwd/mkt_m10/ALRS_m10_overlap.parquet": "1bc6356bfd3d360811dd0e76a79b7141f4ed2670310fa863a65336b7b1ead9e3",
+  "data/fwd/mkt_m10/HYDR_m10_fwd.parquet": "810b67313cfe1bb250d2bf7b16a5b26fb5aaa65f26ca527105dd2f41a785b6dd",
+  "data/fwd/mkt_m10/HYDR_m10_overlap.parquet": "ad7d5b26c7453c8cd39a7e41a894085f9abfad3da6c9aeae9d1f3c2196651b9b",
+  "data/fwd/mkt_m10/IMOEX_m10_fwd.parquet": "967bd294ed0c6c626415699e1f003c544322f0d7d9fb0f918feac67304f5aa5d",
+  "data/fwd/mkt_m10/IMOEX_m10_overlap.parquet": "97f29f2b17879a5e8c5a805a09e6aa2ce8ef25910361c3b2107f626a74aa061d",
+  "data/fwd/mkt_m10/IRAO_m10_fwd.parquet": "40f5e2c24c9fa4fda08afa2585fdc7730ea939a3a456f9fba915f244f4603636",
+  "data/fwd/mkt_m10/IRAO_m10_overlap.parquet": "2188219a58d8e490e92e8709086e2bc130dca66270a83f657706a8d0d77b9531",
+  "data/fwd/mkt_m10/LKOH_m10_fwd.parquet": "7f288de9ebc17d83b894f5a807236446114baf69c99aede7ef1d798406d558bb",
+  "data/fwd/mkt_m10/LKOH_m10_overlap.parquet": "cf7fc4098be87485a8e27fa2cd4b9f8fde29ddaae7506a259af8f990f9ee6bdb",
+  "data/fwd/mkt_m10/LSRG_m10_fwd.parquet": "5541e45b32b0c6f9c8db34752b3035f5d21952c45e5f89c733a8580e01c51c24",
+  "data/fwd/mkt_m10/LSRG_m10_overlap.parquet": "9b31413c8b2d4f6b2073a14fe33501edbca3864d794f4c42bc7a43d47b27231a",
+  "data/fwd/mkt_m10/MANIFEST.json": "1b12ade3d28daf372dba874208402fdf1a059744bed912457b55856e07ab0c2a",
+  "data/fwd/mkt_m10/MGNT_m10_fwd.parquet": "1e4e237754450af04373052aea7f7fa3dce83cca8ffcb173150ff48a9fc8adfc",
+  "data/fwd/mkt_m10/MGNT_m10_overlap.parquet": "b9ce49b2da9388009ab415c6f596b807bb1da3b430c4b3e9ceb2ba6559d6ea97",
+  "data/fwd/mkt_m10/MOEX_m10_fwd.parquet": "47bf743d898a9de4b185781afe773e791d665209338a795ba3f28b47d46ce3d2",
+  "data/fwd/mkt_m10/MOEX_m10_overlap.parquet": "c10acf56c28cae36e002b0e6814753843b9edbf27d5b2ae654d31037020a68be",
+  "data/fwd/mkt_m10/MTLR_m10_fwd.parquet": "e922dacf75db738012dba21a860f589f8e6ee6ae041fa9989c9efd1845530ad9",
+  "data/fwd/mkt_m10/MTLR_m10_overlap.parquet": "54c744e260335ed8893c60b53d07b9dfa665ac30990dd4cbc933e9d993a2c9e5",
+  "data/fwd/mkt_m10/MTSS_m10_fwd.parquet": "cdab8bb58f0e0e1ababee2d036e49fa98fa1d377625308488f51ec14779e3982",
+  "data/fwd/mkt_m10/MTSS_m10_overlap.parquet": "46b458232c522d8cf96f5f7179525e994f7126826d08688dcb1fb071af402f93",
+  "data/fwd/mkt_m10/NVTK_m10_fwd.parquet": "61e43b0dc1538967c906ace9747bcc8c29137ec5cf15a24c08364575b61fae0d",
+  "data/fwd/mkt_m10/NVTK_m10_overlap.parquet": "392a6e7ca34f6414c0c83f9bda2d67b5c6a47e0e420349c5b0b6bf12a5e77c00",
+  "data/fwd/mkt_m10/OGKB_m10_fwd.parquet": "d403a415dea031a846e043e98cfd2e87e3ee39275c441155156aa118f341b62e",
+  "data/fwd/mkt_m10/OGKB_m10_overlap.parquet": "bee9adca84655401fcfc8dd91a72e6d64d91ea9f539ed1f0e19be503e5ea4c39",
+  "data/fwd/mkt_m10/PHOR_m10_fwd.parquet": "d78d45b8841404f19f3dfff5678e7e7a9b64a45562b451e75d1b01e65c80ed80",
+  "data/fwd/mkt_m10/PHOR_m10_overlap.parquet": "33513dbc11da42b97c0506a1de0159483aba10e03617cb1f4814dbec4a6f8c87",
+  "data/fwd/mkt_m10/RTKM_m10_fwd.parquet": "a733313fff8b58d775dae4c8f976bab6ba2f72d09a8b12f79d187027b08c4f68",
+  "data/fwd/mkt_m10/RTKM_m10_overlap.parquet": "e5ef57d5dc76b8c43801b039a1d521f4400a305adeaae228e54d3f01e9cd9a52",
+  "data/fwd/mkt_m10/TATN_m10_fwd.parquet": "db9e5e211780cddaaaceb8e2de49cdc769bb595f7f96efd8dcef5671b034b4e6",
+  "data/fwd/mkt_m10/TATN_m10_overlap.parquet": "c9775678668f14a4150ef2e91006cdf9e70c313eb61dd0212f04768a4bda47f9",
+  "data/fwd/mkt_m10/VTBR_m10_fwd.parquet": "1aa57db1c12234c0eb81269e018657c546bb2c55902e3d4b989d41e5ef348f57",
+  "data/fwd/mkt_m10/VTBR_m10_overlap.parquet": "4374cc74290b239e13ce9b55be1e76f714c247e6cfd400075219c2e43c8d6745",
+  "data/fwd/sber_m10/MANIFEST.json": "fe0560d390ccccfe0e513db7c308d7dd6322a716c2e3e8be7586bdf78fd544a8",
+  "data/fwd/sber_m10/SBER_m10_fwd.parquet": "d44469b4897a25c55d8c0431408d9b7a5ed5100299687c95e6172660ef503863",
+  "data/fwd/sber_m10/SBER_m10_overlap.parquet": "47e6e1c4d731e59e6f986aaeeea765a8d5d2c526e456ed920ade81693a72e77b",
+  "data/fwd/sber_m10/rv_fwd_SEALED.parquet": "1f13d53407e983ea9eab316010cf25e6b13d802d75f400415604e52139a8f846"
+ },
+ "not_admitted": {
+  "ZE": {
+   "ref": "docs/otchety/harj_x1/ZE_CRIT.csv",
+   "sha256": "ef62f55acce66eaf07b36e3221db6db17eaa557d671c3a751b0f1ed8ac0486cc",
+   "status": "не допущена"
+  }
+ },
+ "outputs": {
+  "lock": "data/fwd/models/OPENED_HARJ_FWD_r2.json",
+  "models": "data/fwd/models/",
+  "report": "docs/otchety/harj_fwd/FWD_*"
+ },
+ "owner_yes": {
+  "date": "2026-11-11",
+  "punkt": 1,
+  "quote": "Разрешаю один повтор запуска проверки на новом периоде после устранения технической ошибки.",
+  "zh": "Ж-249"
+ },
+ "packages": {
+  "lightgbm": "4.6.0",
+  "numpy": "2.0.2",
+  "pandas": "2.3.3",
+  "python": "3.9.6",
+  "scipy": "1.13.1",
+  "torch": "2.8.0",
+  "xgboost": "2.1.4"
+ },
+ "params": {
+  "E1": {
+   "A_DEF": 0.02,
+   "EPS": 1e-12,
+   "GRID": [
+    0.01,
+    0.02,
+    0.05
+   ],
+   "Q_EXTREME": 0.99,
+   "VAL": 126
+  },
+  "K1": {
+   "FIRST_TARGET": "2017-01-03",
+   "MIN_PAIRS": 252
+  },
+  "K2K3": {
+   "SEED": 42,
+   "i2_by_year": {
+    "2017": {
+     "colsample": 1.0,
+     "depth": 3,
+     "l2": 2.0,
+     "lr": 0.05,
+     "max_trees": 3000,
+     "min_child": 10.0,
+     "subsample": 0.8
+    },
+    "2018": {
+     "colsample": 0.5,
+     "depth": 3,
+     "l2": 30.0,
+     "lr": 0.02,
+     "max_trees": 300,
+     "min_child": 30.0,
+     "subsample": 0.6
+    },
+    "2019": {
+     "colsample": 1.0,
+     "depth": 3,
+     "l2": 2.0,
+     "lr": 0.1,
+     "max_trees": 3000,
+     "min_child": 10.0,
+     "subsample": 0.8
+    },
+    "2020": {
+     "colsample": 1.0,
+     "depth": 3,
+     "l2": 0.5,
+     "lr": 0.05,
+     "max_trees": 3000,
+     "min_child": 10.0,
+     "subsample": 0.8
+    },
+    "2021": {
+     "colsample": 0.5,
+     "depth": 3,
+     "l2": 30.0,
+     "lr": 0.05,
+     "max_trees": 300,
+     "min_child": 30.0,
+     "subsample": 0.8
+    },
+    "2022": {
+     "colsample": 1.0,
+     "depth": 2,
+     "l2": 0.5,
+     "lr": 0.05,
+     "max_trees": 3000,
+     "min_child": 30.0,
+     "subsample": 0.8
+    },
+    "2023": {
+     "colsample": 1.0,
+     "depth": 2,
+     "l2": 0.5,
+     "lr": 0.05,
+     "max_trees": 3000,
+     "min_child": 10.0,
+     "subsample": 0.8
+    },
+    "2024": {
+     "colsample": 1.0,
+     "depth": 5,
+     "l2": 0.5,
+     "lr": 0.05,
+     "max_trees": 3000,
+     "min_child": 10.0,
+     "subsample": 0.8
+    },
+    "2025": {
+     "colsample": 1.0,
+     "depth": 5,
+     "l2": 0.5,
+     "lr": 0.05,
+     "max_trees": 3000,
+     "min_child": 10.0,
+     "subsample": 0.8
+    },
+    "2026": {
+     "colsample": 1.0,
+     "depth": 3,
+     "l2": 0.5,
+     "lr": 0.05,
+     "max_trees": 3000,
+     "min_child": 10.0,
+     "subsample": 0.8
+    }
+   },
+   "i2_source": "k23_meta_SBER.json; новый выбор И2 не делается (период < 01.01.2027)"
+  },
+  "Z": {
+   "ACTIVATION": "2018-07-02",
+   "LAMS": [
+    0.0,
+    0.001,
+    0.01,
+    0.1
+   ],
+   "MIN_EXT": 30,
+   "MIN_PAIRS": 120,
+   "V_EXT": 60,
+   "V_FULL": 126
+  },
+  "cfg8": {
+   "FIRST_REFIT": "2017-01-01",
+   "GRID8": [
+    [
+     0.1,
+     0.0
+    ],
+    [
+     0.1,
+     0.1
+    ],
+    [
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.1
+    ]
+   ],
+   "HOLD": 126,
+   "MIN_TRAIN": 186,
+   "SEEDS": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "SPEC8": {
+    "K": 2,
+    "kind": "anchor",
+    "router": "B"
+   }
+  },
+  "stageA": {
+   "WINDOW": 5,
+   "kind": "tcn",
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "year": 2026
+  }
+ },
+ "power": {
+  "n_new": 180,
+  "sha256": "a5ea9427a767f0f99f4d042d044f373489f4c4a4dda8866e4ad409de7283538e"
+ },
+ "prev_commit": "37c3180cc6999b7b6bf53175217d07a542fc36c7",
+ "prev_freeze": {
+  "path": "docs/otchety/harj_fwd/FREEZE.json",
+  "sha256": "4c9085d64b193f508d4221e2f07ef5445582b6b222c07643ba34c0d503470fd6",
+  "v": 1
+ },
+ "prev_lock": {
+  "path": "data/fwd/models/OPENED_HARJ_FWD.json",
+  "prichina": "KeyError: 'date'",
+  "sha256": "1869be4539c20db27eb02a940e025250768477344f0bca642abbd0f76bacea1b",
+  "status": "сбой"
+ },
+ "rehearsal": {
+  "result": "0 расхождений",
+  "sha256": "8a174051187dfbb052748a3a34b27bc9dd5b8474ff7ce874204944874bbec3e2"
+ },
+ "v": 2,
+ "written_at": "2026-11-11T08:07:31+03:00"
+}

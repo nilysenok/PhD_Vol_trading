@@ -136,9 +136,25 @@ def _blob_sha_problems(z: dict) -> list:
     return bad
 
 
-def test_zamykanie_realnoj_zamorozki_polno(loaded):
+def _clean_loaded() -> dict:
+    """Замыкание цепочки открытия в чистом процессе (не sys.modules pytest)."""
+    r = subprocess.run([sys.executable, str(S.ROOT / "tests/_fwd_l5_chain_proc.py")], cwd=S.ROOT, capture_output=True, text=True, check=True)
+    return json.loads(r.stdout.strip().splitlines()[-1])
+
+
+def test_zamykanie_realnoj_zamorozki_polno():
+    clean = _clean_loaded()
     path, z = _active_freeze()
-    _active_problems(z, loaded, path.name)
+    _active_problems(z, clean, path.name)
+    extra = types.ModuleType("models_v2.fwd_l5_extra")                                             # посторонний модуль models_v2 в процессе pytest не влияет
+    extra.__file__ = str(S.ROOT / "models_v2/metrics.py")
+    sys.modules["models_v2.fwd_l5_extra"] = extra
+    try:
+        assert "models_v2/metrics.py" in P.loaded_files()                                          # в процессе pytest он виден; чистый процесс его не наследует
+        _active_problems(z, _clean_loaded(), path.name)
+    finally:
+        del sys.modules["models_v2.fwd_l5_extra"]
+    loaded = clean
     f = sorted(z["code_sha256"])[0]                                                                # мутация: sha одного файла подменён в копии (tmp)
     bad = {**z, "code_sha256": {**z["code_sha256"], f: "0" * 64}}
     with pytest.raises(AssertionError, match="действующей заморозки"):
