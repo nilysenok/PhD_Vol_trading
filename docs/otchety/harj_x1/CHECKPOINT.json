@@ -211,6 +211,79 @@
   "rows": 2,
   "spec_sha256": "7e84eb9368e553b5ddc1cece2637d8f2dd284c284a20ccc04e2184d426bcd3a0"
  },
+ "S.L.eval": {
+  "boot": 10000,
+  "boot_block": 20,
+  "boot_seed": 0,
+  "code": {
+   "l_eval.py": "49b6adf4dbf3394716801ab43bccdca9f8aaa717c3d48b28082a4f782859d365",
+   "l_eval_chk.py": "8a7896a91d2deb8bea367b795929b2e2abf8156c453776a13a780c0859f7062a",
+   "l_eval_par.py": "e33e84363b19fb897c61b1ec5aa1f81c0b6a4b34fd1b4cabf0a6ef39b83e1b51",
+   "l_eval_tab.py": "87270dd84457098301c63f664ab5c020371ad182592143fce093e88ac78d16f3"
+  },
+  "inputs": {
+   "data/regen/harj_struct/L/rl1.parquet": "28bddc1668d50f6c0b9bef977924f83c819591b9b9fa89781b9852b37f2a9bf3",
+   "data/regen/harj_struct/L/rl1a.parquet": "49fa6e976f7bddfa1376225a2a86b9c01fd637ae0254a7937a1b961b78afbb2a",
+   "data/regen/harj_struct/L/rl1b.parquet": "e7a0d594f3102a8a373a2cc6b6359f145d4d27e246356736c703305872b69355",
+   "data/regen/harj_struct/L/rl1b2.parquet": "6aee53de4c14005e3f552868b9a3a35b4006a307cdf7028b78d73d989abbb5b2",
+   "data/regen/harj_struct/R/rck.parquet": "97d6fff21834f09ef49a1fb92a396f2abc4a588979ca5e474d9daed65a51eb81",
+   "data/regen/harj_x1/W5/w5g.parquet": "0ae40e1bcc7691e1ea580ec52224a7f4736c629594505a8bafbd29ba80fca8fe",
+   "docs/otchety/harj_struct/S_D_ELEMENTS.csv": "46c70df7687b95337520630527977bdd57cb4ccda4ca8cd4a153dfd8a2d82405",
+   "docs/otchety/harj_struct/S_L_SPEC.md": "84d3ec0cb9ecb77c6c10e0b49813fa7b424680956bfff01360e56c8ca990c9c3",
+   "models_v2/s18/l_model.py": "6d878847aa775bce92e58ce3610215e3b5e37b7767e47172e8fd4a989cec978c",
+   "models_v2/s18/l_walk.py": "8c9d6a17755c27b62e81eaf251f95d76538bd7b762cae976e5f4d9220ffbffd3",
+   "models_v2/s18/r_loss.py": "3ae5c9b1af7e38e4025619db5a423c1724ba3b4b31bf50191e678da6b5bd783c",
+   "models_v2/s18/r_walk.py": "9021113db1d3a0bbba1ac5e3d6526063db23bef23d45b651ab0a57cf07c362f6"
+  },
+  "interaction": "да",
+  "interaction_ref": "да",
+  "ktrim": 22,
+  "lag_main": 8,
+  "n": 2198,
+  "n_holm": 852,
+  "n_holm_wide": 3409,
+  "outputs": {
+   "S_L_EVAL_DELTA.csv": "f65d20f51d6e5696f04f7287738be9897897135391afe27ebe66c3c264fa1556",
+   "S_L_EVAL_GUARD.csv": "ae4375789b8c9390cafffc48cd0bf2ab2e7b8bad5e66ae0930de36e4c7515032",
+   "S_L_EVAL_MECH.csv": "c87b51a00d81ccbbdbcbff4e4552fcde975ecc0114d097c79c6259a6bf6db302",
+   "S_L_EVAL_MONTHS.csv": "bfb04049a909dc8cc4e9a93b141b0eafd3650e0301c7ee78d1b0b8cfc3ab2da6",
+   "S_L_EVAL_SLICES.csv": "4537cbca02abd06a4ab767c7c9826f5b2dca4834834de8d3c11893b9210716da",
+   "S_L_EVAL_TABLE.csv": "46b6832326804e404adb166ef7a0366297e99183be636f8e8f8009edaf993adf",
+   "S_L_EVAL_VERDICT.csv": "80ae291cf65d65ee1067835212bc578879550e5591f58212b67f585222253e81",
+   "S_L_EVAL_YEARS.csv": "ae2f00f987c12d2445942ac199795322a3055b31219064ec1933209c4d374d4b"
+  },
+  "predictions": {
+   "P-L1": "выполнено",
+   "P-L2": "выполнено",
+   "P-L3": "выполнено",
+   "P-L4": "нет"
+  },
+  "rck_verdict": "worse_noise",
+  "stage": "проходит пороги этапа S",
+  "written_at": "11.11.2026 21:18:26"
+ },
+ "S.L.registered": {
+  "n": 851,
+  "n_base": 848,
+  "n_wide": 3407,
+  "n_wide_base": 3401,
+  "prior_bytes": 36392,
+  "prior_sha256": "c502b00fa375382b7115d8505f26251cb0280c397278ac018d93c21906d751bc",
+  "registered_at": "11.11.2026 21:13:03",
+  "rows": 3,
+  "spec_sha256": "84d3ec0cb9ecb77c6c10e0b49813fa7b424680956bfff01360e56c8ca990c9c3"
+ },
+ "S.L2.registered": {
+  "n": 852,
+  "n_base": 851,
+  "n_wide": 3409,
+  "n_wide_base": 3407,
+  "prior_bytes": 37544,
+  "prior_sha256": "206f17e351fd156fd8aa010e2152a0190f24aef286360036cbab79e6c6a2dd23",
+  "registered_at": "11.11.2026 21:16:32",
+  "rows": 1,
+  "spec_sha256": "84d3ec0cb9ecb77c6c10e0b49813fa7b424680956bfff01360e56c8ca990c9c3"
+ },
  "S.R.eval": {
   "boot": 10000,
   "code": {
