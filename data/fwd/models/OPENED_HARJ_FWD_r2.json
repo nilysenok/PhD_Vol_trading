@@ -1,0 +1,27 @@
+{
+ "freeze_sha256": "9e1065cfa98876d3a957cba95d51066b43f39e6112a034de2a39f88b8a63f603",
+ "pid": 91417,
+ "povtor": true,
+ "prev_lock_sha256": "1869be4539c20db27eb02a940e025250768477344f0bca642abbd0f76bacea1b",
+ "prev_freeze_sha256": "4c9085d64b193f508d4221e2f07ef5445582b6b222c07643ba34c0d503470fd6",
+ "status": "выполнено",
+ "vremya": "2026-11-11 08:50:09",
+ "outputs_sha256": {
+  "data/fwd/models/new/k1.parquet": "c1e4b23d67eebf721694bd31baebcffe1a8735424350aae4309309794c7d8842",
+  "data/fwd/models/new/k23.parquet": "0ff9ca293639f53830de6be6edd98c20870c28f0d095c0d5d0a2a2e818df20fa",
+  "data/fwd/models/new/cfg8.parquet": "c3a658bb8fdc7ad23707fa0f1c940ad181287bd4bdd1501edeacb40c47be8c02",
+  "data/fwd/models/new/x1.parquet": "12c2b3614fd2a63bdd027af98b0b9dd823217478a7d4f80a800c553a2c34e7d8",
+  "data/fwd/models/new/zb.parquet": "4a815f5a5037c9b70dd14efa95963f18494019ea4cf94e9a59fb4da5dd90c69d",
+  "data/fwd/models/new/zb0.parquet": "0f74658dd3ecb71a3c5c2bec12a1cafac07bb3169e3d1b1cbfad91d9b264d324",
+  "docs/otchety/harj_fwd/FWD_FAMILY.csv": "4fa377d31e08145d7810ae48e1c937d1b7833e7cb19cae26e42950168ee100d5",
+  "docs/otchety/harj_fwd/FWD_SERIES.csv": "a0eea6ff8175175aaa5797b1f4334cc7ebb8aa125ab1238bc70de795f37b1ff7",
+  "docs/otchety/harj_fwd/FWD_MCS.csv": "86760a625646374140135abcfadb08e0536956afa984f2b06de371373c43880e",
+  "docs/otchety/harj_fwd/FWD_MONTHS.csv": "1365b1323e4b53d8bfcb14c049f3e020973cfc4bda38d78600ad5c861ca7cb2c",
+  "docs/otchety/harj_fwd/FWD_STATES.csv": "8aee3ba095e186a16f41dd9506148f1909c6cea9368dc05fc5306ebf46e91edf",
+  "docs/otchety/harj_fwd/FWD_DESCR.csv": "7eb2732f8f3f3368da01ee082a027d20a64ad22cc270e8cd8c21b0b1d40f7dfa",
+  "docs/otchety/harj_fwd/FWD_PAIRS.csv": "3e64bf0d12e6591178a7ca5c080565c8b211bc8532a59401e1baab9e1323fdc2",
+  "docs/otchety/harj_fwd/FWD_CHECKS.csv": "87fe4df2a5b621a1ed6b3b48d718366ec2444122ae352b770e169691155c9730",
+  "docs/otchety/harj_fwd/FWD_REPORT.md": "034238e79003ae1476f4e143b9e294e354a9678f82e1a48a7fea72880d07cac4"
+ },
+ "vremya_konets": "2026-11-11 08:55:44"
+}
