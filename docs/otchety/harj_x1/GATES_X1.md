@@ -300,3 +300,10 @@
 - **B.G-reg — реестр до прогноза.** CHECK: `require` для W5-G, W5-Ga, W5-Gb, W5-GK2 вызывается первым действием прогона. EXPECT: отказ при отсутствии id (тестами кодер не покрывает). EVIDENCE: `compute` (gap) и `load_inputs` (eval) вызывают `REG.require` для 4 id первым действием; прогон прошёл при 28 строках реестра. Закрыт по коду; тест отказа — у тестировщика.
 - **B.G-ckpt — ключ.** CHECK: сравнение `CHECKPOINT.json` до и после записи оценки. EXPECT: добавлен только ключ `W5.eval`, записанный до таблиц с p; прочие ключи побайтно. EVIDENCE: `diff` копии до и после: 0 удалённых строк, добавлен ключ `W5.eval` (n_holm 798, n_holm_wide 3301). Закрыт. Побочное: `x1_w5_reg --check` теперь отказывает по замыслу (в W5 есть parquet).
 - **B.G5 — тесты тестировщика.** CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_w5_gap*.py tests/test_v2_x1_w5_eval*.py -q`. EXPECT: все прошли. EVIDENCE: ОТКРЫТ (тесты пишет тестировщик; на 14:03 есть `test_v2_x1_w5_gap_cal.py` — 22 passed; тестов оценки пока нет).
+
+## W6-reg — регистрация диагностических рядов W6D-* (11.11.2026, 14:48)
+
+- **R.G1 — реестр.** CHECK: `python3 -W ignore -m models_v2.s16.x1_w6_reg --check`. EXPECT: 4 строки W6D-GJS, W6D-ZJS, W6D-U1, W6D-U2, одна `registered_at`, пометка «ПОСЛЕ расчёта» в каждой. EVIDENCE: rc 0, «check ok: строк 4; registered_at ['11.11.2026 14:48:42']». Закрыт.
+- **R.G2 — ключ.** CHECK: diff `CHECKPOINT.json` до и после. EXPECT: добавлен только `W6.registered` (n 802, n_wide 3309). EVIDENCE: diff — 7 добавленных строк, удалённых 0. Закрыт.
+- **R.G3 — тесты.** CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_w4_reg*.py tests/test_v2_x1_w5_reg*.py tests/test_v2_x1_w6_reg.py -q`. EXPECT: все прошли. EVIDENCE: «48 passed». Закрыт.
+- Отступление: сторож «реестр до прогноза» не применяется — расчёт W6D сделан до регистрации, это записано в status каждой строки. Своя ошибка: первый запуск тестов я дал с запрещённым `2>&1`; хук не остановил, результат не использован как доказательство, прогон повторён без него.

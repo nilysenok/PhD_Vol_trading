@@ -180,6 +180,13 @@
   "rows": 28,
   "spec_sha256": "c40917bb43ca178a119416842fd187b68953917d97312c1d60463ecf75596c4b"
  },
+ "W6.registered": {
+  "n": 802,
+  "n_wide": 3309,
+  "registered_at": "11.11.2026 14:48:42",
+  "rows": 4,
+  "spec_sha256": "430059e7151c3eaba02211987d9d24b02d35d5204f64065907ae60be2a01d7b2"
+ },
  "YA": {
   "code": "81e0434a7c8115a3",
   "columns": [
