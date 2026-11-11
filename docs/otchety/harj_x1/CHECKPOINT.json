@@ -25,6 +25,13 @@
   "status": "DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-241, лист P0 (SBER, h = 1; аудит и проверки до обучения; конфигураций 0, прогнозов не записано)",
   "written_at": "2026-11-10 04:35"
  },
+ "S.A.registered": {
+  "n": 831,
+  "n_wide": 3367,
+  "registered_at": "11.11.2026 17:26:07",
+  "rows": 7,
+  "spec_sha256": "537af12d0288b9f19ae691d14089226f93e9eab7edef87854b12795f7eebdd11"
+ },
  "W1": {
   "configurations": 0,
   "forecasts_written": 0,
