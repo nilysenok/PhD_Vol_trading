@@ -23,6 +23,7 @@ def env(tmp_path):
     t.write_text("".join(ln for ln in lines if not ln.startswith("S-A")), encoding="utf-8")
     cp = json.loads(GUARDED[1].read_text(encoding="utf-8"))
     cp.pop(R.KEY, None)
+    cp.pop("S.A.eval", None)   # ключ стадии позже регистрации не должен влиять на копию «до прогноза»
     c.write_text(json.dumps(cp, indent=1, sort_keys=True, ensure_ascii=False), encoding="utf-8")
     shutil.copy(ROOT / "docs/otchety/harj_struct/S_A_SPEC.md", s)
     (tmp_path / "A").mkdir()
