@@ -25,6 +25,55 @@
   "status": "DEVELOPMENT / HISTORICAL WALK-FORWARD, не независимый OOS, первая цифра — потолок; Ж-241, лист P0 (SBER, h = 1; аудит и проверки до обучения; конфигураций 0, прогнозов не записано)",
   "written_at": "2026-11-10 04:35"
  },
+ "S.A.eval": {
+  "boot": 10000,
+  "code": {
+   "a_eval.py": "9a856f1db1fc5a57bca19c8a49b346afeb23385019713a7ee8041c853432b3dd",
+   "a_eval_chk.py": "5b75d3514b92a4b8d7f4e3f649a53d6970f1023d91a4d1813f24a64f7d4d7b5d",
+   "a_eval_par.py": "891dcdc5200abedf63c69588216aee3c96ef71836d840ef7f6fe9e550c52b64f",
+   "a_eval_spa.py": "b941131469704d0cca6ec33f6ca8e3e583135655f06b83e1907d7cd2d6016652",
+   "a_eval_stat.py": "74fb64773aafeb271784dfafd127176e665f1e8c605b6fed3b18f818413f6f5f",
+   "a_eval_tab.py": "625f701bf795780378b6ab5a52f15c89748192d052896bbfe5b74e571d3ecbdb",
+   "a_eval_yr.py": "0121f37ffbf2cfa1e35e906f664db6bc388e9f601923ba30de3c3915820cd45d"
+  },
+  "decision": "не прошёл — S-A2: У1-S|М1 (+0.5982), У3-S|М1 (+1.9112), У1-S|М2 (+0.5642), У3-S|М2 (+1.8649), У5-S|М2 (+0.6364); S-A1: М1 (+0.5989), У1-S|М1 (+0.7995), У3-S|М1 (+2.0641), М2 (+0.6402), У1-S|М2 (+0.7854), У2-S|М2 (+0.5650), У3-S|М2 (+2.0014), У5-S|М2 (+0.7627); X1 и W5-G остаются контрольными версиями; W8-G — экспериментальная",
+  "inputs": {
+   "data/fwd/models/cfg8.parquet": "9b7062774189ad89f32805318a210ae8e28a762095e6bb21836c9f976978053b",
+   "data/fwd/models/k1.parquet": "4092d6080c98de9de78be9c9084f6dfd0256fef78973858abb57a001a1fd3cc9",
+   "data/fwd/models/k23.parquet": "61f0548e385ebeb295e19f727bab80c3d0cbbe5f36e0419dc2aeaf6857d1e20d",
+   "data/fwd/models/new/cfg8.parquet": "c3a658bb8fdc7ad23707fa0f1c940ad181287bd4bdd1501edeacb40c47be8c02",
+   "data/fwd/models/new/k1.parquet": "c1e4b23d67eebf721694bd31baebcffe1a8735424350aae4309309794c7d8842",
+   "data/fwd/models/new/k23.parquet": "0ff9ca293639f53830de6be6edd98c20870c28f0d095c0d5d0a2a2e818df20fa",
+   "data/fwd/models/new/x1.parquet": "12c2b3614fd2a63bdd027af98b0b9dd823217478a7d4f80a800c553a2c34e7d8",
+   "data/fwd/models/new/zb.parquet": "4a815f5a5037c9b70dd14efa95963f18494019ea4cf94e9a59fb4da5dd90c69d",
+   "data/fwd/models/zb.parquet": "7dc542f52b06a9f0318215b819b67729d02915b7f68b910b91884db16d14f43c",
+   "data/regen/harj_deep/E1/x1.parquet": "56d9351607780959a3e2710809f8e4871ccb44cb1f825373c8430a0a3058fea3",
+   "data/regen/harj_struct/A/a0.parquet": "61bebb2b2b6c613421824be9c5cabf5b399e825aedebd6ca4d97fdfc9f62c6a9",
+   "data/regen/harj_struct/A/a1.parquet": "f13c5e30069aec7cb5dd0ed38244de0d673b5db574dba84efb02c9c12efaf567",
+   "data/regen/harj_struct/A/a2.parquet": "b67eacad25acef73601cff30abfbd7f0334de7e9847e88c59803572ed035e94c",
+   "data/regen/harj_struct/A/a2p.parquet": "c6ebedd3713129c202f6d653089ecc6b293783ad293853ab1cb064d5cd7f9ece",
+   "data/regen/harj_x1/W5/w5g.parquet": "0ae40e1bcc7691e1ea580ec52224a7f4736c629594505a8bafbd29ba80fca8fe",
+   "data/regen/harj_x1/W8/w8g.parquet": "1c91df7fab8b4eddf9fb0b690ac098b84bc5cbd7970771f6943499cf11c0dee8",
+   "docs/otchety/harj_x1/W5_GAP_PIT.csv": "dfd3092330ccda090b3a4c71f8941c9087c7dcaf82ab8c636e4d3e7197ec948c"
+  },
+  "lag_main": 8,
+  "m_family": 12,
+  "n": 2198,
+  "n_holm": 831,
+  "n_holm_wide": 3367,
+  "outputs": {
+   "S_A_CONC.csv": "bab5724d1fe3a01d1f41f3b9aaf316a7030624542bca46774b420e0a3cacc6ab",
+   "S_A_GUARD.csv": "dd709ab7d8eb6b14be044ac5ca6769980085539e9da95295bcbe69fc3ae4b749",
+   "S_A_MCS.csv": "365fa7b5410419efb1b5e69382144b085dbfbbb111a9eb870e7182b3350f22f9",
+   "S_A_PARAMS.csv": "1574f5ef3d7062f59fc53059d4b522176ded6c2dec14336004662e9677e56dbf",
+   "S_A_POWER.csv": "9d8b473ae009be92cebbab0f79c2947be7799f0df2beb9b2e0e35b5693d8c876",
+   "S_A_SPA.csv": "bf5e01410e00063b27a7ce53edd35f6fe2ca57536ad302fe20f195c675593eca",
+   "S_A_STATS.csv": "34fa03d84ea085b910f27222520ef02aeea88856253e432a1d4af0d3aee3728b",
+   "S_A_TABLE.csv": "b270b44f7d1a8ea1c9ecb4cb29236235a4cd1f9b56a09fa089b527807da3455e",
+   "S_A_YEARS.csv": "c76a62967fec9f41e45dd7ce75a4fb52268f58decffa7a0953c269173210c5f7"
+  },
+  "written_at": "11.11.2026 17:52:04"
+ },
  "S.A.registered": {
   "n": 831,
   "n_wide": 3367,
