@@ -1,0 +1,19 @@
+# исследовательский результат, процедура выбрана после разбора S-C-WHY, не независимый OOS (Ж-254 п. 11)
+# критерии разд. 4 S_R_SPEC.md объявлены и зарегистрированы до счёта; «подтверждено» только при p Холма (N программы) < 0,05 и p SPA < 0,05 по своей строке
+# D_M: t⁺ 2018-01-04…2026-11-10, n = 2198; l = RV/F − ln(RV/F) − 1, QLIKE = среднее дневных потерь (без обрезки); Δ в % QLIKE базы, минус — лучше; DEVELOPMENT / HISTORICAL WALK-FORWARD
+candidate,kind,item,window,n,value
+S-RA2,decomp,total_F_vs_W5G,D_M,2198,0.101637724002
+S-RA2,decomp,frozen_pi,D_M,2198,-0.00637032508068
+S-RA2,decomp,layer_reaction,D_M,2198,0.108008049083
+S-RA2,common_window,R_vs_W5G,d>=2020-08-03,1549,0.0732685784017
+S-RA2,common_window,old_vs_W5G,d>=2020-08-03,1549,-0.392000499666
+S-RA2,common_window,R_vs_old,d>=2020-08-03,1549,0.467100112844
+S-RA2,common_window,R_vs_W5G,d>=2019-08-01,1799,0.123206802996
+S-RA2,common_window,old_vs_W5G,d>=2019-08-01,1799,-0.382805426943
+S-RA2,common_window,R_vs_old,d>=2019-08-01,1799,0.507956715814
+S-RCK,decomp,total_F_vs_W5G,D_M,2198,-0.208776141455
+S-RCK,decomp,frozen_pi,D_M,2198,-0.183729935574
+S-RCK,decomp,layer_reaction,D_M,2198,-0.0250462058807
+S-RCK,common_window,R_vs_W5G,d>=2020-08-03,1549,-0.279818382281
+S-RCK,common_window,old_vs_W5G,d>=2020-08-03,1549,1.06773018804
+S-RCK,common_window,R_vs_old,d>=2020-08-03,1549,-1.33331239142

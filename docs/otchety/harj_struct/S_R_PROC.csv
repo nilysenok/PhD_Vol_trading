@@ -1,0 +1,6 @@
+# исследовательский результат, процедура выбрана после разбора S-C-WHY, не независимый OOS (Ж-254 п. 11)
+# критерии разд. 4 S_R_SPEC.md объявлены и зарегистрированы до счёта; «подтверждено» только при p Холма (N программы) < 0,05 и p SPA < 0,05 по своей строке
+# D_M: t⁺ 2018-01-04…2026-11-10, n = 2198; l = RV/F − ln(RV/F) − 1, QLIKE = среднее дневных потерь (без обрезки); Δ в % QLIKE базы, минус — лучше; DEVELOPMENT / HISTORICAL WALK-FORWARD
+pid,candidate,old,qlike_new,qlike_old,delta_pct,delta_trim_pct,cond_qlike,cond_trim,passed,p_holm_N,p_spa_c,confirmed,qlike_rb,qlike_rc,r_lt_rb,r_lt_rc,both_needed
+П1,S-RA2,S-A2,0.215695651202,0.215475882188,0.10199239539,-0.297488832063,False,True,False,1,1,False,0.215691744118,0.215726869769,False,True,False
+П2,S-RCK,S-CK,0.215026781817,0.217893959139,-1.31585902287,-1.48647844001,True,True,True,0.00165392487352,0.0001,True,0.215204937389,0.21499980221,True,False,False
