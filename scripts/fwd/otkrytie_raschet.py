@@ -27,7 +27,7 @@ class ArchiveMismatch(RuntimeError):
 def real_nodes(ctx) -> types.SimpleNamespace:
     from models_v2.s17 import fwd_cfg8, fwd_k1, fwd_k23, fwd_src, fwd_store, fwd_x1, fwd_zb
     return types.SimpleNamespace(
-        Src=fwd_src.Src, AE=fwd_src.ARCHIVE_END, LAST=fwd_src.LAST_SESSION, daily=fwd_k1.build_daily_sber, k1=fwd_k1.build_k1, k23=fwd_k23.build_k23,
+        Src=lambda: fwd_src.Src(fwd_src.Paths(lock=ctx.lock)), AE=fwd_src.ARCHIVE_END, LAST=fwd_src.LAST_SESSION, daily=fwd_k1.build_daily_sber, k1=fwd_k1.build_k1, k23=fwd_k23.build_k23,
         store=fwd_store.build_store, xw=fwd_store.build_xw5, states=fwd_store.build_states, inputs=fwd_cfg8.inputs_at,
         cfg8=lambda cut, src, inp: fwd_cfg8.build_cfg8(cut, src, inp=inp, full=True), x1=fwd_x1.build_x1, zb=fwd_zb.build_zb,
         archive=lambda name: pd.read_parquet(ctx.root / "data/fwd/models" / f"{name}.parquet"))

@@ -10,22 +10,23 @@ GATE_LISTS = ("Л1", "Л2", "Л3", "Л4", "Л5")
 ZERO_DIFF = "0 расхождений"
 BAD = re.compile(r"\bpending\b|\bABANDON\b|\bTODO\b", re.I)
 SKIP_ID = "L6.8"   # гейт «открытие выполнено» — по id, запускает дирижёр
+POVTOR_LISTS, POVTOR_SKIP = GATE_LISTS + ("Л7",), (SKIP_ID, "Л7.8")   # Л7: повтор (Ж-249); Л7.8 «повтор выполнен» — по id, запускает дирижёр
 MANIFEST_DIRS = ("sber_m10", "mkt_m10")
 
 
-def check_gates(gates: Path) -> list:
-    """У Л1–Л5: нет pending / ABANDON / TODO в любой строке (таблица, список, текст) и нет пустого EVIDENCE (последняя ячейка строки таблицы)."""
+def check_gates(gates: Path, lists: tuple = GATE_LISTS, skip: tuple = (SKIP_ID,)) -> list:
+    """У Л1–Л5 (при повторе и Л7): нет pending / ABANDON / TODO в любой строке (таблица, список, текст) и нет пустого EVIDENCE (последняя ячейка строки таблицы)."""
     if not gates.is_file():
         return ["нет GATES_FWD.md"]
     secs = {m.group(1): b for b in re.split(r"(?m)^## ", gates.read_text(encoding="utf-8"))[1:] for m in [re.match(r"(Л\d)\.", b)] if m}
     bad = []
-    for g in GATE_LISTS:
+    for g in lists:
         if g not in secs:
             bad.append(f"нет раздела {g} в GATES_FWD.md")
             continue
         for ln in secs[g].splitlines():
             s = ln.strip()
-            if re.match(rf"^[|\-*\s]*{re.escape(SKIP_ID)}(?![\w.])", s):  # id гейта — первая метка строки, точно
+            if any(re.match(rf"^[|\-*\s]*{re.escape(i)}(?![\w.])", s) for i in skip):  # id гейта — первая метка строки, точно
                 continue
             if BAD.search(s):
                 bad.append(f"{g}: незакрыто (pending/ABANDON/TODO): {s[:70]}")

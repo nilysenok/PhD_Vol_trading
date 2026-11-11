@@ -17,6 +17,7 @@ import pandas as pd
 
 import otkrytie_guard as GD
 import otkrytie_harj_fwd as OP
+import otkrytie_pes_povtor as PP
 import otkrytie_proverki as PV
 import otkrytie_raschet as RS
 
@@ -35,15 +36,15 @@ def cut_bars(src_path: Path, new_path: Path, arch_path: Path) -> None:
         part.reset_index(drop=True).to_parquet(p, index=False)
 
 
-def prepare_data(tmp: Path):
-    """Файлы данных песочницы в tmp: обрезанный архив, «новые» бары, запечатанная RV, обрезанные архивные выходы Л1–Л4. -> (Paths, каталог моделей)."""
+def prepare_data(tmp: Path, lock_name: str = "OPENED_HARJ_FWD.json"):
+    """Файлы данных песочницы в tmp: обрезанный архив, «новые» бары, запечатанная RV, обрезанные архивные выходы Л1–Л4. -> (Paths, каталог моделей). Повтор (Л7): замок r2."""
     from models_v2.s10 import hp_k23_world as KW
     from models_v2.s17 import fwd_src as S
     import fwd_sber_m10_check as CHK
     from models_v2 import daily as D
     real, r = S.Paths(), tmp / "repo"
     p = S.Paths(bars_dir=r / "data/iss_check/bars_10m_full", imoex_archive=r / "data/iss_check/index_10m/IMOEX.parquet", new_sber=r / "data/fwd/sber_m10/SBER_m10_fwd.parquet",
-                new_mkt_dir=r / "data/fwd/mkt_m10", sealed_rv=r / "data/fwd/sber_m10/rv_fwd_SEALED.parquet", lock=r / "data/fwd/models/OPENED_HARJ_FWD.json")
+                new_mkt_dir=r / "data/fwd/mkt_m10", sealed_rv=r / "data/fwd/sber_m10/rv_fwd_SEALED.parquet", lock=r / "data/fwd/models" / lock_name)
     srcp = {t: S.Src(real).archive_path(t) for t in KW.POOL + ["IMOEX"]}
     for t, sp in srcp.items():
         cut_bars(sp, S.Src(p).new_path(t), S.Src(p).archive_path(t))
@@ -82,16 +83,17 @@ def freeze_patches(p, tmp: Path, rep: Path):
     return patches, FZ, arch, new
 
 
-def main(tmp_arg: str) -> int:
+def main(tmp_arg: str, povtor: bool = False) -> int:
     from models_v2.s17 import fwd_cal, fwd_cfg8, fwd_k23, fwd_src as S
     tmp = Path(tmp_arg).resolve()
     lock_state = lambda: (S.Paths().lock.exists(), S.Paths().lock.stat().st_mtime_ns if S.Paths().lock.exists() else None)  # noqa: E731
-    real_lock_before, log = lock_state(), []
-    p, models = prepare_data(tmp)
+    real_lock_before, real_before, log = lock_state(), PP.real_state(), []
+    p, models = prepare_data(tmp, PP.LOCK2_NAME if povtor else "OPENED_HARJ_FWD.json")
     assert not paths_ok(p), paths_ok(p)
     rep = tmp / "repo/docs/otchety/harj_fwd"
     rep.mkdir(parents=True, exist_ok=True)
-    (rep / "GATES_FWD.md").write_text(GATES, encoding="utf-8")
+    (rep / "GATES_FWD.md").write_text(GATES + (PP.GATES_L7 if povtor else ""), encoding="utf-8")
+    lock1 = PP.fake_first_lock(tmp / "repo") if povtor else None
     consts = [mock.patch.object(mod, name, AE if name == "ARCHIVE_END" else LAST) for mod, name in ((fwd_cal, "ARCHIVE_END"), (fwd_cal, "LAST_SESSION"), (fwd_k23, "LAST_SESSION"), (fwd_cfg8, "LAST_SESSION"))]
     with ExitStack() as st:
         for m in consts:
@@ -100,9 +102,11 @@ def main(tmp_arg: str) -> int:
         for m in patches:
             st.enter_context(m)
         frz = FZ.build(None)
-    (rep / "FREEZE.json").write_text(json.dumps(frz, ensure_ascii=False), encoding="utf-8")
-    ctx = PV.Ctx(root=ROOT, rep_dir=rep, freeze=rep / "FREEZE.json", gates=rep / "GATES_FWD.md", lock=p.lock, rehearsal=rep / "REHEARSAL.csv", power=rep / "POWER.csv", new_dir=tmp / "repo/data/fwd/models/new",
-                 required=lambda: (list(arch), list(new)), rh_problems=lambda f: [])
+        (rep / "FREEZE.json").write_text(json.dumps(frz, ensure_ascii=False), encoding="utf-8")
+        frz_path = PP.write_v2(rep, lock1, p.lock) if povtor else rep / "FREEZE.json"  # Л7: v2 — настоящим писателем, под теми же подменами
+    ctx = PV.Ctx(root=ROOT, rep_dir=rep, freeze=frz_path, gates=rep / "GATES_FWD.md", lock=p.lock, rehearsal=rep / "REHEARSAL.csv", power=rep / "POWER.csv", new_dir=tmp / "repo/data/fwd/models/new",
+                 required=lambda: (list(arch), list(new)), rh_problems=lambda f: [], povtor=povtor, prev_lock=lock1, prev_freeze=rep / "FREEZE.json")
+    first_before = (PV.sha256_file(lock1), PV.sha256_file(rep / "FREEZE.json")) if povtor else None
     nodes = RS.real_nodes(ctx)
     nodes.Src, nodes.AE, nodes.LAST, nodes.archive = (lambda: S.Src(p)), AE, LAST, (lambda n: pd.read_parquet(models / f"{n}.parquet"))
     with ExitStack() as st:
@@ -110,7 +114,9 @@ def main(tmp_arg: str) -> int:
             st.enter_context(m)
         st.enter_context(GD.guard(ROOT, log))
         rc = OP.run(ctx, dry=False, nodes=nodes)
-    out = dict(rc=rc, lock_status=json.loads(p.lock.read_text(encoding="utf-8")).get("status"), real_lock_unchanged=lock_state() == real_lock_before, data_paths_read=len(log))
+    out = dict(rc=rc, lock_status=json.loads(p.lock.read_text(encoding="utf-8")).get("status"), real_lock_unchanged=lock_state() == real_lock_before and PP.real_state() == real_before, data_paths_read=len(log))
+    if povtor:  # Л7: первый замок и v1 песочницы побайтно те же; повтор шёл по v2 и замку r2
+        out.update(povtor=True, first_lock_and_v1_unchanged=first_before == (PV.sha256_file(lock1), PV.sha256_file(rep / "FREEZE.json")), lock2_name=p.lock.name, freeze=frz_path.name)
     for name, col in MODELS:
         got = pd.read_parquet(ctx.new_dir / f"{name}.parquet")
         ref = pd.read_parquet(ROOT / "data/fwd/models" / f"{name}.parquet")
@@ -118,4 +124,4 @@ def main(tmp_arg: str) -> int:
     out["report_first_line"] = (rep / "FWD_REPORT.md").read_text(encoding="utf-8").splitlines()[0]
     out["family_rows"] = len(pd.read_csv(rep / "FWD_FAMILY.csv"))
     print(json.dumps(out, ensure_ascii=False, indent=1))
-    return 0 if rc == 0 and out["real_lock_unchanged"] else 1
+    return 0 if rc == 0 and out["real_lock_unchanged"] and out.get("first_lock_and_v1_unchanged", True) else 1

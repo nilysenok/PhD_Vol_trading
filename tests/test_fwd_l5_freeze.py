@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import sys
 import types
 
@@ -110,8 +111,50 @@ def test_merge_cp_sohranyaet_chuzhie_klyuchi_i_ne_pishet_dvazhdy(tmp_path, monke
         FZ.merge_cp(frz, cp)
 
 
-@pytest.mark.skipif(not HAVE, reason="FREEZE.json ещё не записан")
-def test_zamykanie_realnoj_zamorozki_polno(loaded):
-    z = json.loads(FZ.OUT.read_text(encoding="utf-8"))
+V2 = FZ.OUT.with_name("FREEZE_v2.json")
+
+
+def _active_freeze(v2=V2, v1=None):
+    """Действующая заморозка (Ж-249): FREEZE_v2.json, если есть, иначе FREEZE.json (v1)."""
+    p = v2 if v2.exists() else (v1 or FZ.OUT)
+    return p, json.loads(p.read_text(encoding="utf-8"))
+
+
+def _active_problems(z: dict, loaded: dict, name: str) -> dict:
     p = P.closure_problems(z["code_sha256"], loaded)
-    assert p == {"not_in_freeze": [], "sha_differs": []}, p
+    assert p == {"not_in_freeze": [], "sha_differs": []}, f"действующей заморозки для текущего кода нет ({name}): {p}"
+    return p
+
+
+def _blob_sha_problems(z: dict) -> list:
+    """Файлы замыкания, у которых sha256 содержимого `git show <commit>:<path>` ≠ записанному (только чтение git)."""
+    bad = []
+    for f, s in z["code_sha256"].items():
+        r = subprocess.run(["git", "show", f"{z['git']['commit']}:{f}"], cwd=S.ROOT, capture_output=True)
+        if r.returncode != 0 or hashlib.sha256(r.stdout).hexdigest() != s:
+            bad.append(f)
+    return bad
+
+
+def test_zamykanie_realnoj_zamorozki_polno(loaded):
+    path, z = _active_freeze()
+    _active_problems(z, loaded, path.name)
+    f = sorted(z["code_sha256"])[0]                                                                # мутация: sha одного файла подменён в копии (tmp)
+    bad = {**z, "code_sha256": {**z["code_sha256"], f: "0" * 64}}
+    with pytest.raises(AssertionError, match="действующей заморозки"):
+        _active_problems(bad, loaded, "mut")
+
+
+def test_vybor_dejstvuyushchej_zamorozki_v2_pervee_v1(tmp_path):
+    v1, v2 = tmp_path / "FREEZE.json", tmp_path / "FREEZE_v2.json"
+    v1.write_text('{"v": 1}', encoding="utf-8")
+    assert _active_freeze(v2, v1)[1] == {"v": 1}
+    v2.write_text('{"v": 2}', encoding="utf-8")
+    assert _active_freeze(v2, v1)[1] == {"v": 2}
+
+
+def test_zamykanie_v1_sovpadaet_s_blobami_svoego_kommita():
+    z = json.loads(FZ.OUT.read_text(encoding="utf-8"))
+    assert z["code_sha256"] and _blob_sha_problems(z) == []
+    f = sorted(z["code_sha256"])[0]                                                                # мутация: подменённый sha одного файла в копии
+    assert _blob_sha_problems({**z, "code_sha256": {**z["code_sha256"], f: "0" * 64}}) == [f]

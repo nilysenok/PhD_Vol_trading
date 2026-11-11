@@ -3,6 +3,7 @@
 Запуск (только дирижёр, один раз, после «да» владельца, репетиции и закрытых гейтов Л1–Л5):
     python3 scripts/fwd/otkrytie_harj_fwd.py            # без флагов и с --check: только проверки до замка, ничего не пишет, замка нет
     python3 scripts/fwd/otkrytie_harj_fwd.py --otkryt   # открытие
+    python3 scripts/fwd/otkrytie_harj_fwd.py --povtor [--otkryt]   # Л7: единственный повтор после сбоя (Ж-249): FREEZE_v2.json, замок OPENED_HARJ_FWD_r2.json; без --otkryt — только проверки
 Порядок: (1) отказ без owner_yes в FREEZE и без строки «да» в журнале; (2) отказ при несовпадении sha кода (с замыканием импортов), входов, манифестов, пакетов;
 (3) отказ, если репетиция не «0 расхождений» или у Л1–Л5 есть pending; (4) отказ, если замок уже есть; (5) замок O_EXCL ДО первого чтения цен
 (`Src` открывает новые файлы только по замку); (6) один прогон узлов, таблицы, отчёт из таблиц, sha выходов в замок; (7) сбой после замка — причина в замок,
@@ -108,8 +109,11 @@ def run(ctx, run_nodes=RS.run_nodes, dry: bool = True, nodes=None) -> int:
         print("проверки до замка пройдены; ничего не записано (для открытия — флаг --otkryt)")
         return 0
     fz = json.loads(ctx.freeze.read_text(encoding="utf-8"))
+    info = dict(freeze_sha256=PV.sha256_file(ctx.freeze), pid=os.getpid())
+    if ctx.povtor:  # Л7: замок r2 со ссылкой на первый замок и v1 (оба только читаются)
+        info.update(povtor=True, prev_lock_sha256=fz["prev_lock"]["sha256"], prev_freeze_sha256=fz["prev_freeze"]["sha256"])
     try:
-        acquire_lock(ctx, dict(freeze_sha256=PV.sha256_file(ctx.freeze), pid=os.getpid()))
+        acquire_lock(ctx, info)
     except FileExistsError:
         print("СТОП: замок уже есть — открытие было", file=sys.stderr, flush=True)
         return 2
@@ -132,8 +136,8 @@ def main(argv: list) -> int:
     import_chain()
     if "--pesochnica" in argv:  # сквозной путь на поддельном периоде из архива, всё в tmp; реальный замок и новые файлы не открываются
         import otkrytie_pesochnica as PS
-        return PS.main(argv[argv.index("--pesochnica") + 1])
-    return run(PV.Ctx(), dry="--otkryt" not in argv)
+        return PS.main(argv[argv.index("--pesochnica") + 1], povtor="--povtor" in argv)
+    return run(PV.Ctx(povtor="--povtor" in argv), dry="--otkryt" not in argv)  # Л7: --povtor — повтор по FREEZE_v2 и замку r2; без --otkryt — только проверки
 
 
 if __name__ == "__main__":

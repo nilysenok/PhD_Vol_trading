@@ -16,9 +16,11 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import otkrytie_gates as G
+import otkrytie_povtor as PT
 
 ROOT = Path(__file__).resolve().parents[2]
 YES_PHRASE = "разрешаю проверить доступный новый период"
+YES_PHRASES = {PT.OWNER_ZH: PT.YES_PHRASE}   # Л7: повтор после сбоя (Ж-249); остальные номера — фраза Ж-248
 PACKAGES = ("python", "numpy", "pandas", "scipy", "torch", "xgboost", "lightgbm")
 REQ = ("v", "code_sha256", "packages", "inputs_archive_sha256", "inputs_new_sha256", "calendar", "dates", "candidates", "controls", "family", "outputs", "rehearsal", "power", "owner_yes")
 CLOSURE_DIRS = ("models_v2", "scripts/fwd")
@@ -79,15 +81,20 @@ class Ctx:
     closure: Optional[Callable] = None
     required: Optional[Callable] = None
     rh_problems: Callable = G.rehearsal_problems
+    povtor: bool = False                  # Л7: повтор по FREEZE_v2 и замку r2 (первый замок и v1 — только чтение)
+    prev_lock: Optional[Path] = None
+    prev_freeze: Optional[Path] = None
 
     def __post_init__(self):
         self.required = self.required or (lambda: G.required_inputs(self.root))
         r, rep = self.root, self.root / "docs/otchety/harj_fwd"
         self.rep_dir = self.rep_dir or rep
-        self.freeze = self.freeze or rep / "FREEZE.json"
+        self.freeze = self.freeze or rep / ("FREEZE_v2.json" if self.povtor else "FREEZE.json")
         self.resheniya = self.resheniya or r / "docs/resheniya/resheniya.md"
         self.gates = self.gates or rep / "GATES_FWD.md"
-        self.lock = self.lock or r / "data/fwd/models/OPENED_HARJ_FWD.json"
+        self.prev_lock = self.prev_lock or r / "data/fwd/models/OPENED_HARJ_FWD.json"
+        self.prev_freeze = self.prev_freeze or rep / "FREEZE.json"
+        self.lock = self.lock or (r / PT.LOCK2 if self.povtor else self.prev_lock)
         self.rehearsal = self.rehearsal or rep / "REHEARSAL.csv"
         self.power = self.power or rep / "POWER.csv"
         self.new_dir = self.new_dir or r / "data/fwd/models/new"
@@ -107,12 +114,13 @@ def check_owner(fz: dict, ctx: Ctx) -> list:
         return [f"owner_yes.date не ГГГГ-ММ-ДД: {oy['date']}"]
     if not ctx.resheniya.is_file():
         return [f"нет журнала {ctx.resheniya}"]
+    phrase = YES_PHRASES.get(oy["zh"], YES_PHRASE)
     parts = re.split(r"(?m)^### ", ctx.resheniya.read_text(encoding="utf-8"))
     for body in parts[1:]:
         head = body.split("\n", 1)[0]
-        if head.startswith(f"{oy['zh']} ") and dd in head and YES_PHRASE in body:
+        if head.startswith(f"{oy['zh']} ") and dd in head and phrase in body:
             return []
-    return [f"в журнале нет строки «да» {oy['zh']} от {dd} ({YES_PHRASE})"]
+    return [f"в журнале нет строки «да» {oy['zh']} от {dd} ({phrase})"]
 
 
 def _hash_problem(ctx: Ctx, key: str, want) -> Optional[str]:
@@ -155,8 +163,9 @@ def preflight(ctx: Ctx) -> list:
     if not ctx.freeze.is_file():
         return [f"нет {ctx.freeze.name}"]
     fz = json.loads(ctx.freeze.read_text(encoding="utf-8"))
-    bad = [f"в FREEZE.json нет ключа {k}" for k in REQ if k not in fz]
-    if fz.get("v") != 1 or fz.get("candidates") != ["X1", "ZB"] or fz.get("controls") != ["K1", "K2", "K3"]:
+    bad = [f"в {ctx.freeze.name} нет ключа {k}" for k in REQ if k not in fz]
+    if fz.get("v") != (2 if ctx.povtor else 1) or fz.get("candidates") != ["X1", "ZB"] or fz.get("controls") != ["K1", "K2", "K3"]:
         bad.append("FREEZE: версия, кандидаты (X1, ZB) или контроли (K1, K2, K3) не по протоколу")
-    return (bad + check_owner(fz, ctx) + G.check_required(fz, ctx.required()) + check_sha(fz, ctx) + G.check_rehearsal(fz, ctx.rehearsal, ctx.rh_problems)
-            + G.check_gates(ctx.gates) + check_free(ctx))
+    gates = G.check_gates(ctx.gates, *((G.POVTOR_LISTS, G.POVTOR_SKIP) if ctx.povtor else ()))
+    return (bad + (PT.check_povtor(fz, ctx) if ctx.povtor else []) + check_owner(fz, ctx) + G.check_required(fz, ctx.required()) + check_sha(fz, ctx)
+            + G.check_rehearsal(fz, ctx.rehearsal, ctx.rh_problems) + gates + check_free(ctx))
