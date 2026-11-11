@@ -204,3 +204,60 @@
 - **W1.9 — регрессия.**
   - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_*.py tests/test_fwd_l*.py -q -p no:warnings`.
   - EXPECT: rc 0; число passed записать (красное вне владения называть красным). EVIDENCE: `python3 -W ignore -m pytest tests/test_v2_x1_*.py tests/test_fwd_l*.py -q -p no:warnings -x` → rc 0, 553 passed in 754.70 s (11.11.2026; в том числе 36 новых тестов W1). Красного нет. Закрыт.
+
+## W4-A — перенос W3 и регистрация (Ж-250; `W4_SPEC.md`, раздел 9)
+
+Гейты записаны до кода; EVIDENCE — ниже, по мере закрытия.
+
+- **A.G1 — перенос W3, `--check` читает.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w3_diag --check`; `shasum -a 256 docs/otchety/harj_x1/W3_DIAG.csv` до и после.
+  - EXPECT: строки данных `W3_DIAG.csv` (без шапки-комментария) совпадают побитно с пересчётом; sha файла до и после равны.
+  - EVIDENCE: rc 0 «check ok: строк данных файла 94, пересчёта 94; совпадение побитно True; sha до = после True»; sha256 `W3_DIAG.csv` до и после b95827debf5a95fb… (11.11.2026). Закрыт.
+- **A.G2 — тесты W3 и регистратора.**
+  - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_w3_*.py tests/test_v2_x1_w4_reg*.py -q`.
+  - EXPECT: все прошли.
+  - EVIDENCE: rc 0, 48 passed in 7.30s (11.11.2026, тесты тестировщика: test_v2_x1_w3_core/diag/pit, test_v2_x1_w4_reg, test_v2_x1_w4_reg_iso). Закрыт.
+- **A.G3 — 19 строк в реестре.**
+  - CHECK: `grep -c -E "^(W3D[0-9]+|W4-)" docs/otchety/harj_x1/ALL_TRIALS.csv`.
+  - EXPECT: 19.
+  - EVIDENCE: 19 (после `register()` 11.11.2026 12:39:42; до — 0). Закрыт.
+- **A.G4 — сторож «реестр до прогноза».**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w4_reg --check`.
+  - EXPECT: `registered_at` у 19 строк одна; ни одного `data/regen/harj_x1/W4/*.parquet`; sha остальных ключей CHECKPOINT не изменились.
+  - EVIDENCE: rc 0 «check ok: строк 19; registered_at ['11.11.2026 12:39:42']; parquet в W4: 0»; `git diff --no-index` копии CHECKPOINT до и после: только +19 строк (ключи W3, W4.registered), остальное побайтно прежнее. Закрыт.
+
+## W4-B1 — признаки S и Σ на продолжение 2026-02-27…2026-11-09 (Ж-250; `W4_SPEC.md`, 2.2, 2.4; гейты B.G1–B.G3). Признаки, не прогнозы; M⁺ не считался
+
+- **B.G1 — архив.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w4_feat --check-archive`.
+  - EXPECT: архивные строки S побитно = `S_features.parquet`; Σ max |Δ| ≤ 1e-12 к `SIGMA_features.parquet` — и для ext-файлов, и для пересчёта по cut = 2026-02-26.
+  - EVIDENCE: rc 0, `S_ext_bitwise True, S_recompute_bitwise True, G_ext_maxdiff 0.0, G_recompute_maxdiff 0.0, n_arch 2649, n_ext 2829`. Закрыт.
+- **B.G2 — PIT.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w4_feat --check-pit`.
+  - EXPECT: на 180 новых днях строка по cut = d (бары begin ≤ d 18:40) побитно равна строке ext-файла; d ≡ d `new/x1.parquet`.
+  - EVIDENCE: rc 0, `n_days 180, n_bad 0, max_abs_diff 0.0, d_equals_x1 True`. Закрыт.
+- **B.G3 — объёмы.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w4_feat --check-volume`.
+  - EXPECT: перечень дней со скачком медианы объёма бара в ≥ 10 раз к прошлым 20 сессиям записан в `W4_VOLUME.csv` (может быть пустым).
+  - EVIDENCE: rc 0, 2 дня: 2018-04-28, 2021-02-20 (оба — вниз, ×0,096 и ×0,099; рабочие субботы, тонкие сессии; скачков вверх «лоты → штуки» нет). Ничего не правилось. Закрыт.
+- **B.G-ro — `--check` только читает.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w4_feat --check`; sha256 `S_ext`, `SIGMA_ext`, `W4_VOLUME.csv` до и после.
+  - EXPECT: все три проверки ok, хэши равны.
+  - EVIDENCE: rc 0, `hash_unchanged True`; sha256 S_ext 935dd8dc…, SIGMA_ext 81b9fe0e…, W4_VOLUME ac55d2d1… до и после. Закрыт.
+
+## W4-B2 — ступень 1: компонент M⁺ (Ж-250; `W4_SPEC.md`, разделы 2, 4, 7; гейты B.G4–B.G6). Гейты записаны до кода (11.11.2026, ~13:08 по `date`)
+
+- **B2.G4 — конвейер и `--check` читают.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w4_comp --check`; sha256 всех выходов до и после.
+  - EXPECT: при ρ ≡ 0 M⁺ = M побитно; M⁺, K_a, K_b на 2198 датах окна M; первая переоценка с g ≠ 0 — первый месяц с ≥ 312 закрытыми парами; пересчёт основных рядов совпадает с файлами побитно; хэши равны.
+  - EVIDENCE: rc 0, «check ok; пересчитано проходов 41; хэши выходов до = после True» (11.11.2026, ~13:20; 41 = 39 проходов + пересчёт K_b как основных рядов; все 39 рядов и 38 перестановок побитно). Отступление: первые две переоценки (2018-04-02, 313 пар; 2018-05-02, 335 пар) — `fit_gbm` падает (обучающих строк 61 и 83 < 100), g = 0; первая обученная — 2018-06-01. Закрыт с отступлением.
+- **B2.G5 — решение выведено из CSV.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w4_comp --check-decision`.
+  - EXPECT: решение по 2.5 пересчитано из `W4_STAGE1.csv` и равно ключу `W4.stage1`; sha256 CSV в ключе = фактический; прочие ключи CHECKPOINT не изменились.
+  - EVIDENCE: rc 0, «check-decision ok; прошли ни один; набор ступени 2 None; ступень 2: не считается, условие ложно». Прочие ключи — проверка внутри `write_stage1` (стоп при изменении). Закрыт.
+- **B2.G6 — тесты тестировщика.**
+  - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_w4_feat*.py tests/test_v2_x1_w4_comp*.py -q`.
+  - EXPECT: все прошли.
+  - EVIDENCE: rc 0, 56 passed in 56.22s (после правки `write_stage1` по замечанию тестировщика). Закрыт.
+- **B2.G-reg — реестр до прогноза.** CHECK: прогон без строки W4-S1 в реестре даёт SystemExit (`x1_w4_reg.require`). EXPECT: отказ. EVIDENCE: `run()` и `check()` вызывают `require_all()` первым действием; отказ `require` покрыт тестами W4-A/W4-B (в 56 passed). Закрыт.
+- **B2.G-rep — отчёт из CSV.** CHECK: `--check` перерисовывает `W4_STAGE1_REPORT.md` из CSV. EXPECT: побитное совпадение. EVIDENCE: входит в `--check` (ok выше). Закрыт.

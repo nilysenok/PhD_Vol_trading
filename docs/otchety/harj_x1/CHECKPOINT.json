@@ -75,6 +75,46 @@
   "rows": 19,
   "spec_sha256": "7af6ff4ae3bacba349cabf5af9dbc45286881d641a33fc8002b0494771702b60"
  },
+ "W4.stage1": {
+  "csv_sha256": "c4b9e105bc7ac55229a96e8a333ed3b5355b6def785603f3f7bff590b830565b",
+  "decision": {
+   "chosen": null,
+   "half_tol": 0.005,
+   "passed": [],
+   "sets": {
+    "S1": {
+     "c1_better_than_M": true,
+     "c2_half_excess": {
+      "h1": 0.008868205093740533,
+      "h2": -0.0297471169440634
+     },
+     "c2_ok": false,
+     "c3_better_than_Ka": true,
+     "passed": false
+    },
+    "S2": {
+     "c1_better_than_M": false,
+     "c2_half_excess": {
+      "h1": -0.005269671652903263,
+      "h2": 0.005905768264156119
+     },
+     "c2_ok": false,
+     "c3_better_than_Ka": false,
+     "passed": false
+    }
+   },
+   "stage2": "не считается, условие ложно"
+  },
+  "n_window": 2198,
+  "nofit_note": "переоценки 2018-04-02, 2018-05-02: g = 0 (обучатель не строится)",
+  "registered": [
+   "W4-S1",
+   "W4-S2",
+   "W4-Ka",
+   "W4-Kb1",
+   "W4-Kb2"
+  ]
+ },
  "YA": {
   "code": "81e0434a7c8115a3",
   "columns": [
