@@ -30,4 +30,4 @@ noise_rule,Z_vs_RCK|active,не отличим от шума процедуры,
 noise_real,Z_vs_Zs|D_M,,-0.238721896293
 noise_rule,Z_vs_Zs|D_M,не отличим от шума процедуры,-0.238721896293
 noise_real,Z_vs_Zs|active,,-0.319997359984
-noise_rule,Z_vs_Zs|active,вне 5–95 % нулевого распределения,-0.319997359984
+noise_rule,Z_vs_Zs|active,не отличим от шума процедуры,-0.319997359984

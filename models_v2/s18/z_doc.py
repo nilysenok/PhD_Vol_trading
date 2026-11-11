@@ -43,7 +43,8 @@ def layer_table(tb: pd.DataFrame) -> str:
 def build(t: dict, cp: dict) -> str:
     tb, d = t["table"], t["dec"].set_index("id")
     cp_ = cap(tb["first_tplus"].iloc[0], tb["last_tplus"].iloc[0], tb["n"].iloc[0])
-    nr = lambda k: mv(t["mech"], "noise_rule", k)["key"]
+    lo, hi = E.ZN.abs_bounds(E.ZN.read()[0])
+    nr = lambda k: E.ZN.rule_abs(mv(t["mech"], "noise_real", k)["value"], lo, hi)
     hz = lambda i: "выполнено численно" if d.loc[i, "passed"] else "не выполнено"
     rule = "H-Z1 %s; H-Z2 %s (статистика — по вердиктам выше, разд. 7.5); по нулевому распределению: Δ(S-RCKZ к S-RCK) на D_M — %s, на активных датах — %s; Δ(S-RCKZ к S-RCKZs) на D_M — %s, на активных датах — %s" % (
         hz("H-Z1"), hz("H-Z2"), nr("Z_vs_RCK|D_M"), nr("Z_vs_RCK|active"), nr("Z_vs_Zs|D_M"), nr("Z_vs_Zs|active"))

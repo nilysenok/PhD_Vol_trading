@@ -47,6 +47,16 @@ def rule(delta: float, lo: float, hi: float) -> str:
     return "не отличим от шума процедуры" if lo <= delta <= hi else "вне 5–95 % нулевого распределения"
 
 
+def abs_bounds(seeds: pd.DataFrame) -> tuple:
+    """Буквальное чтение журнала 01:34: квантили 5 и 95 % распределения |Δ_null| по seeds шума (при 10 шумах — почти min и max)."""
+    a = np.abs(seeds["qlike_rel_pct"].to_numpy(float))
+    return float(np.percentile(a, 5)), float(np.percentile(a, 95))
+
+
+def rule_abs(delta: float, lo: float, hi: float) -> str:
+    return "не отличим от шума процедуры" if lo <= abs(delta) <= hi else "вне 5–95 % распределения |Δ_null|"
+
+
 def texts(rows: pd.DataFrame) -> str:
     return HEAD.replace("%%", "%") + pd.concat([rows, summary(rows)], ignore_index=True).to_csv(index=False, lineterminator="\n", float_format="%.12g")
 

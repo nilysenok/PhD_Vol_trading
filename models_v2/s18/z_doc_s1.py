@@ -40,21 +40,23 @@ def mech_lines(t: dict) -> list:
                 sgn(h1["delta_pct"]), sgn(h1["lo90"]), sgn(h1["hi90"]), pv(h1["p_boot"]), pv(h1["p_dm"]), int(h1["n_holm"]), pv(h1["p_holm_N"]), pv(h1["p_spa_c"]), h1["verdict"], "выполнено" if hz1 else "не выполнено"),
             "- **H-Z2** (S-RCKZ против S-RCKZs, механизм): Δ = %s %%, 90 %% интервал [%s; %s], p Холма (N) %s, p SPA %s — **%s**; условие H-Z2 %s." % (
                 sgn(h2["delta_pct"]), sgn(h2["lo90"]), sgn(h2["hi90"]), pv(h2["p_holm_N"]), pv(h2["p_spa_c"]), h2["verdict"], "выполнено" if hz2 else "не выполнено"),
-            "- **Доля выигрыша, которую даёт контроль:** Δ(S-RCKZs к S-RCK) = %s %%, Δ(S-RCKZ к S-RCK) = %s %%; доля = Δ(S-RCKZs, S-RCK)/Δ(S-RCKZ, S-RCK) = %s; %s." % (sgn(dzs), sgn(dz), sgn(sh["value"]), sh["key"]),
+            "- **Доля выигрыша, которую даёт контроль:** Δ(S-RCKZs к S-RCK) = %s %%, Δ(S-RCKZ к S-RCK) = %s %%; доля = Δ(S-RCKZs, S-RCK)/Δ(S-RCKZ, S-RCK) = %s; %s%s." % (sgn(dzs), sgn(dz), sgn(sh["value"]), "контроль S-RCKZs хуже S-RCK (%s %%), доля отрицательна; " % sgn(dzs) if dzs > 0 and sh["value"] < 0 else "", sh["key"]),
             "- **Разложение Δ(S-RCKZ к S-RCK)** на «эффект при замороженном π» (F^fr) и «реакцию слоя»: всего %s %% = заморожено %s %% + реакция слоя %s %%." % (sgn(tot), sgn(fr), sgn(lay)), ""]
 
 
 def null_section(t: dict) -> list:
     me, (s, m) = t["mech"], ZN.read()
     q = lambda i, st: float(m[(m["item"] == i) & (m["stat"] == st)]["value"].iloc[0])
-    rows = [{"величина": lab, "реальный Δ, %": sgn(mv(me, "noise_real", k)["value"]), "5 % нуля": sgn(mv(me, "noise", "q05")["value"]), "95 % нуля": sgn(mv(me, "noise", "q95")["value"]), "правило": mv(me, "noise_rule", k)["key"]}
+    lo, hi = ZN.abs_bounds(s)
+    rows = [{"величина": lab, "реальный Δ по модулю, %": "%.4f" % abs(mv(me, "noise_real", k)["value"]), "5 % модуля нуля": "%.4f" % lo, "95 % модуля нуля": "%.4f" % hi, "правило": ZN.rule_abs(mv(me, "noise_real", k)["value"], lo, hi)}
             for lab, k in (("Δ(S-RCKZ к S-RCK), D_M", "Z_vs_RCK|D_M"), ("Δ(S-RCKZ к S-RCK), активные даты", "Z_vs_RCK|active"), ("Δ(S-RCKZ к S-RCKZs), D_M", "Z_vs_Zs|D_M"), ("Δ(S-RCKZ к S-RCKZs), активные даты", "Z_vs_Zs|active"))]
     pm = pick(t["params"], variant="S-RCKZ", kind="months", item="share_theta_nonzero")
     return ["Объявленная диагностика (журнал 12.11 01:34, до QLIKE; не условие Z-DEC): синтетика `z_walk_syn` (цель ln RV = ln F⁰ + шум без связи с z), процедура S-RCKZ, реальные z̃, seeds шума %d–%d, n = %d шумов." % (ZN.SEEDS[0], ZN.SEEDS[-1], len(s)),
             "QLIKE(R) − QLIKE(θ = 0), %% QLIKE(θ = 0) на датах активных месяцев: среднее %s, СКО %s, 5 %% %s, 95 %% %s; доля месяцев θ ≠ 0 — среднее %.3f (реальный S-RCKZ: %.3f)." % (
                 sgn(q("qlike_rel_pct", "mean")), sgn(q("qlike_rel_pct", "std")), sgn(q("qlike_rel_pct", "q05")), sgn(q("qlike_rel_pct", "q95")), q("share_theta_nonzero", "mean"), pm["value"]), "",
             md(pd.DataFrame(rows), {c: "%s" for c in rows[0]}), "",
-            "Правило: реальный Δ внутри [5 %; 95 %] нулевого распределения ⇒ «не отличим от шума процедуры». Сопоставление приближённое: нуль — разность QLIKE(R) и QLIKE(θ = 0) уровня F с замороженными π на активных датах; реальный Δ — разность итоговых F двух рядов. Знак шума процедуры не симметричен.",
+            "Правило (журнал 01:34, буквальное чтение ↺): |Δ| внутри [5 %%; 95 %%] распределения |Δ_null| по %d шумам ⇒ «не отличим от шума процедуры»; Δ_null — QLIKE(R) − QLIKE(θ = 0) на активных датах." % len(s),
+            "Оговорка о соразмерности: нуль — разность одной процедуры с θ = 0, а реальные Δ к S-RCK и S-RCKZs — разности двух обученных процедур, их шум примерно в √2 шире; при %d шумах квантили 5 и 95 %% — это фактически минимум и максимум |Δ_null|. Поэтому вывод — справочно, грубая граница шума процедуры, а не тест." % len(s),
             "", "Нулевое распределение по seeds шума:", md(s, {"seed": "%d", "n_active": "%d", "qlike_rel_pct": "%+.4f", "share_theta_nonzero": "%.3f"}), ""]
 
 

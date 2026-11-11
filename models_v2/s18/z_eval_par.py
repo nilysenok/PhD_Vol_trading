@@ -78,7 +78,7 @@ def _null_rows(ls: dict, act: np.ndarray, null: tuple) -> list:
     for tag, h, b in (("Z_vs_RCK", "S-RCKZ", "S-RCK"), ("Z_vs_Zs", "S-RCKZ", "S-RCKZs")):
         for w, mk in (("D_M", None), ("active", act)):
             d = _dp(ls[h], ls[b], mk)
-            out += [("noise_real", "%s|%s" % (tag, w), "", d), ("noise_rule", "%s|%s" % (tag, w), ZN.rule(d, lo, hi), d)]    # секции не «null»: pandas читает слово как NaN
+            out += [("noise_real", "%s|%s" % (tag, w), "", d), ("noise_rule", "%s|%s" % (tag, w), ZN.rule_abs(d, *ZN.abs_bounds(s)), d)]    # правило по |Δ| и |Δ_null| (журнал 01:34, замечание проверяющего); секции не «null»: pandas читает слово как NaN
     return out
 
 

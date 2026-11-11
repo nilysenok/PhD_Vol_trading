@@ -369,20 +369,27 @@
   "spec_sha256": "45359d39dbad5c7f60721dc2dadc00dabe36122dc94a861a46bbb5f8b2e01aac"
  },
  "S.Z.eval": {
+  "amended": {
+   "at": "12.11.2026 01:58:56",
+   "reason": "правило нулевого распределения по |Δ|, замечание проверяющего",
+   "tables": [
+    "S_Z_MECH.csv"
+   ]
+  },
   "boot": 10000,
   "boot_block": 20,
   "boot_seed": 0,
   "code": {
-   "z_doc.py": "bb58eefb4235aec227efaa36d81584cd73252e598e12593757ea9cbdf2347d10",
+   "z_doc.py": "58a6d89e30ccbec9a1c2b5c0d0c85124abd27a8d8fd7d64d129a1067e42b711d",
    "z_doc_fmt.py": "96a296a2c4a42109fbb0d2c1a52165bbb916139b7a7ea216f853e9307a1ac93f",
-   "z_doc_s1.py": "fa848ed3d943d59eb64d407b97ca61056cb53e5e6715d3825cbc505193244011",
+   "z_doc_s1.py": "1327f16b7b21961d6990a7b2e34d73728a33ff6bf0df290dbbcf3660619ca040",
    "z_doc_s2.py": "08036794d52693d6529f1af98876091a4ab516b6d3de67b0cf57443766da1156",
-   "z_eval.py": "d1ec8d9d96bee33167a34017d377711f248efa7276cad1c0adb8c61483c911a6",
+   "z_eval.py": "7fd56f6a684cb338c100d89197c1ae88cbc808f66f1b8d15f2aa5c3ad770e253",
    "z_eval_cfg.py": "d4d0b229163305bb97d6bf78900b20c3d1e08be5a7220fda911fc9be89b28342",
    "z_eval_chk.py": "842c4c194da6064910fe423fcd9140b1db31884900ed853dd45135e5e8c99c23",
    "z_eval_gd.py": "7a2e78625f9644be8af865a6127a00b83f2a39a0f53514088a81a1f4b582c730",
-   "z_eval_null.py": "da9b78e157ac2a0eea5ec82f04cd4075bfbd25018991d2c423e4016db4e99f54",
-   "z_eval_par.py": "3dc1b9a6572d74c1e10b6062922214ba11a872ecf0ff53c1f7aff9cda46e35e5",
+   "z_eval_null.py": "5e2655f2c936d3eec25a50571ccbebb44ef36a4b61670a61d8e890a8e588ed5b",
+   "z_eval_par.py": "52df27b29c43994ac1a6252d1140a3aeb38032c3a26747695c72d82b3f3d076b",
    "z_eval_tab.py": "3486c31043510c6afe28dc41db103a40b3e9b5bc13b59fd7244d7f5d3a6e35e9"
   },
   "decision": "3",
@@ -412,7 +419,7 @@
    "S_Z_DEC.csv": "0e36a28602aee0335b5f31797e8493721db5c49176586555f292793362a77f8e",
    "S_Z_GUARD.csv": "611648784aa620ac06a7e77bb1830819ef0e9d4d32216a1d13cf4567dff9922d",
    "S_Z_MCS.csv": "15e51b95a9fad5c3fb60aecc2702b2cd48043be315d600f77d08e50f742df8b8",
-   "S_Z_MECH.csv": "957497bf25b36cd718d3116814c6436f5c3b6c7e57d2cf9a6965ef08e9c9d98d",
+   "S_Z_MECH.csv": "67facd8b4008b6ce996e04a9ee59b2a46ba1c0ff37392dc5cc3e93cac93750f1",
    "S_Z_PARAMS.csv": "3a28fb651cdeef5a67b279d23993994e115ef9d48eec1a748820f0980a948d32",
    "S_Z_POWER.csv": "bf38a4e6aaf3aa9a3787ba2154bf0adfc47973238d999dba876b57b425a9ba9b",
    "S_Z_SEL.csv": "b9755f4981340e64897bbeae9aa2c87976934898c2946716d4bd8e105b27f0db",

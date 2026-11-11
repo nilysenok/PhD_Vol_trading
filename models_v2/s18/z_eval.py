@@ -96,6 +96,25 @@ def write(rep: Path = REP, ckpt: Path = CKPT) -> dict:
     return t
 
 
+def amend(reason: str, rep: Path = REP, ckpt: Path = CKPT) -> None:
+    """Поправка одной таблицы (MECH): пересчёт, запись, слияние хэша таблицы и кода в ключ `S.Z.eval` + поле `amended` (время, причина); прочие ключи и таблицы не трогаются."""
+    from models_v2.s18 import r_reg as RR
+    inp = load_inputs(ckpt)
+    t = compute(inp)
+    tx = texts(t, inp["tp"])
+    cp = json.loads(ckpt.read_text(encoding="utf-8"))
+    k, code = cp[KEY], Path(__file__).resolve().parent
+    old = {n: (rep / n).read_text(encoding="utf-8") for n in tx}
+    changed = [n for n in tx if tx[n] != old[n]]
+    if changed != ["S_Z_MECH.csv"]:
+        raise SystemExit("поправка касается не только MECH: %s" % changed)
+    (rep / "S_Z_MECH.csv").write_text(tx["S_Z_MECH.csv"], encoding="utf-8")
+    k["outputs"]["S_Z_MECH.csv"] = hashlib.sha256(tx["S_Z_MECH.csv"].encode("utf-8")).hexdigest()
+    k["code"] = {p.name: _sha(p) for p in sorted(code.glob("z_eval*.py")) + sorted(code.glob("z_doc*.py"))}
+    k["amended"] = dict(at=RR.now_text(), reason=reason, tables=changed)
+    ckpt.write_text(json.dumps(cp, indent=1, sort_keys=True, ensure_ascii=False), encoding="utf-8")
+
+
 def tree_hash(rep: Path = REP, ckpt: Path = CKPT) -> dict:
     ps = [rep / n for n in OUTS + (REPORT, "S_Z_NULL.csv") if (rep / n).exists()] + [ckpt] + list(C.FILES.values()) + [ROOT / "data/regen/harj_struct/Z/zmaps.npz"]
     return {str(p): _sha(p) for p in ps}
@@ -117,6 +136,8 @@ if __name__ == "__main__":
     if "--write" in sys.argv:
         t = write()
         print("Z-DEC:", t["dec"].iloc[-1]["value"], "|", t["dec"].iloc[-1]["text"])
+    elif "--amend" in sys.argv:
+        amend("правило нулевого распределения по |Δ|, замечание проверяющего")
     elif "--check" in sys.argv:
         b = check()
         print("S-Z eval --check: %s" % ("ok" if not b else "FAIL " + "; ".join(b)))
