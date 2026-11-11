@@ -56,6 +56,25 @@
    "W1_YEARS.csv": "c328292fb7968d6f27dad03ebf55b48c5c04e0af7ec78ce527bbe2f20124083d"
   }
  },
+ "W3": {
+  "code": {
+   "x1_w3_core.py": "44b80cc5a13c7cbcb31f5bdc8e69181f7f5a5c6813b6ba8561bb4d264ce5b96b",
+   "x1_w3_diag.py": "3986cea806cad6b1dc1cdc16b1f4f75c325c69089f279ffbe448f96e8b2dea88"
+  },
+  "configurations": 0,
+  "forecasts_written": 0,
+  "sha256": {
+   "W3_DIAG.csv": "b95827debf5a95fb2340b2164e9d9720747fb3bcab8c3c26295a01c0115c190e",
+   "W3_SPEC.md": "48fab1505b45a7678fd807b31c7d130919f501f3620e0fc690cd6993492aca00"
+  }
+ },
+ "W4.registered": {
+  "n": 770,
+  "n_wide": 3245,
+  "registered_at": "11.11.2026 12:39:42",
+  "rows": 19,
+  "spec_sha256": "7af6ff4ae3bacba349cabf5af9dbc45286881d641a33fc8002b0494771702b60"
+ },
  "YA": {
   "code": "81e0434a7c8115a3",
   "columns": [
