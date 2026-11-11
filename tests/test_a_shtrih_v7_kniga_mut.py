@@ -8,7 +8,7 @@ import pytest
 from fastbt import a_shtrih_v7_kniga as K
 from fastbt import progon_urovni as pu
 from fastbt.kniga_msp import mnozhitel_vola
-from tests.test_a_shtrih_v7_kniga import _kniga_2beta, _mk, _run
+from test_a_shtrih_v7_kniga import _kniga_2beta, _mk, _run
 
 KOM = 0.0004
 
@@ -115,7 +115,7 @@ def test_kommissiya_pri_smene_mnozhitelya_beretsya_zh149():
 
 # ---- Ж-149: нетто сектора от капитала, а не от валовой сектора (усиление мутации автора, она связана через `or`)
 def _poz_itog(poz_tikerov, sektora):
-    from tests.test_a_shtrih_v7_kniga import _odin_den
+    from test_a_shtrih_v7_kniga import _odin_den
     N = len(poz_tikerov)                         # _odin_den делит позицию на N (P = poz/N)
     return _odin_den(np.asarray(poz_tikerov) * N, sektora).poz_itog[:, 0]
 

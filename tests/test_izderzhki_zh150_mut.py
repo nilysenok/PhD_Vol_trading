@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from fastbt import izderzhki_zh150 as iz
-from tests.test_izderzhki_zh150 import SINT, _df, _istoriya
+from test_izderzhki_zh150 import SINT, _df, _istoriya
 
 H = "sid,variant,tiker,data_vhoda,data_vyhoda,uderzhanie_dn,storona,tip_vhoda,tf,vhod,sila,tercil_sily,pnl_do_izderzhek,komissiya,plata_za_short,stavka,pnl_posle\n"
 
