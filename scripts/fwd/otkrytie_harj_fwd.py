@@ -130,6 +130,9 @@ def run(ctx, run_nodes=RS.run_nodes, dry: bool = True, nodes=None) -> int:
 
 def main(argv: list) -> int:
     import_chain()
+    if "--pesochnica" in argv:  # сквозной путь на поддельном периоде из архива, всё в tmp; реальный замок и новые файлы не открываются
+        import otkrytie_pesochnica as PS
+        return PS.main(argv[argv.index("--pesochnica") + 1])
     return run(PV.Ctx(), dry="--otkryt" not in argv)
 
 

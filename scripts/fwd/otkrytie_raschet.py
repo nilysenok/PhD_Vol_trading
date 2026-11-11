@@ -75,7 +75,9 @@ def check_calendar(daily: pd.DataFrame, fz: dict, ae) -> dict:
 
 def check_sealed(daily: pd.DataFrame, sealed: pd.DataFrame) -> dict:
     """RV новых дней против запечатанной по общим датам (значения не печатаются, только максимум отн. расхождения и числа дат)."""
-    s = sealed.assign(date=pd.to_datetime(sealed["date"])).set_index("date")["rv"]
+    if "date" in sealed.columns:  # контракт писателя (`fwd_sber_m10_check.rv_rows`): date — индекс; колонка тоже допустима
+        sealed = sealed.set_index("date")
+    s = pd.Series(sealed["rv"].to_numpy(float), index=pd.to_datetime(sealed.index))
     com = daily.index.intersection(s.index)
     err = float(np.max(np.abs(daily.loc[com, "rv"].to_numpy() - s.loc[com].to_numpy()) / s.loc[com].to_numpy())) if len(com) else float("nan")
     only_o, only_s = len(daily.index[daily.index > s.index.min()].difference(s.index)), len(s.index.difference(daily.index))

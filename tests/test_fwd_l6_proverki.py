@@ -22,7 +22,7 @@ def test_pisatel_fwd_freeze_build_prokhodit_preflight(tmp_path, monkeypatch):
     monkeypatch.setattr(FZ.P, "calendar_section", lambda src: (dict(days=[], n_new=1), pairs))
     monkeypatch.setattr(FZ.P, "import_chain", lambda: None)
     monkeypatch.setattr(FZ.P, "loaded_files", lambda: old["code_sha256"])
-    monkeypatch.setattr(FZ.P, "git_section", lambda files: {})
+    monkeypatch.setattr(FZ.P, "git_section", lambda files, commit=None: {})
     monkeypatch.setattr(FZ.P, "packages", lambda: dict(VERS))
     monkeypatch.setattr(FZ.P, "inputs_archive", lambda: old["inputs_archive_sha256"])
     monkeypatch.setattr(FZ.P, "derived_sha", lambda: {})

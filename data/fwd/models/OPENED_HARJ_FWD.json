@@ -1,0 +1,9 @@
+{
+ "freeze_sha256": "4c9085d64b193f508d4221e2f07ef5445582b6b222c07643ba34c0d503470fd6",
+ "pid": 39820,
+ "status": "сбой",
+ "vremya": "2026-11-11 03:23:47",
+ "prichina": "KeyError: 'date'",
+ "trassa": "n self._engine.get_loc(casted_key)\n  File \"pandas/_libs/index.pyx\", line 167, in pandas._libs.index.IndexEngine.get_loc\n  File \"pandas/_libs/index.pyx\", line 196, in pandas._libs.index.IndexEngine.get_loc\n  File \"pandas/_libs/hashtable_class_helper.pxi\", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item\n  File \"pandas/_libs/hashtable_class_helper.pxi\", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item\nKeyError: 'date'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/scripts/fwd/otkrytie_harj_fwd.py\", line 117, in run\n    res = run_nodes(ctx, fz) if nodes is None else run_nodes(ctx, fz, nodes)\n  File \"/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/scripts/fwd/otkrytie_raschet.py\", line 98, in run_nodes\n    chk = [check_calendar(daily, fz, ae), check_sealed(daily, src.sealed_rv()), check_units(src.bars(\"SBER\", cut), ae)]\n  File \"/Users/nilysenok/Desktop/Старое/PhD_Vol_trading/scripts/fwd/otkrytie_raschet.py\", line 78, in check_sealed\n    s = sealed.assign(date=pd.to_datetime(sealed[\"date\"])).set_index(\"date\")[\"rv\"]\n  File \"/Users/nilysenok/Library/Python/3.9/lib/python/site-packages/pandas/core/frame.py\", line 4113, in __getitem__\n    indexer = self.columns.get_loc(key)\n  File \"/Users/nilysenok/Library/Python/3.9/lib/python/site-packages/pandas/core/indexes/base.py\", line 3819, in get_loc\n    raise KeyError(key) from err\nKeyError: 'date'\n",
+ "vremya_konets": "2026-11-11 03:23:47"
+}
