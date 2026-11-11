@@ -446,6 +446,27 @@
   "rows": 3,
   "spec_sha256": "3ab588cd1a15898927552477f15d873357dace2eb29805d6c372cfbea4936e7f"
  },
+ "S.status": {
+  "candidate": "S-RCK",
+  "closed_stages": {
+   "S-D": "e683432b",
+   "S-L": "10d4afc5",
+   "S-R": "bd4d3a59",
+   "S-Z": "604aa2ed"
+  },
+  "comparison": [
+   "S-RL1",
+   "S-RCKZ"
+  ],
+  "control_versions": [
+   "X1",
+   "W5-G"
+  ],
+  "n_program": 855,
+  "n_wide": 3415,
+  "next": "S-RCD (спецификация до счёта, Ж-259)",
+  "written_at": "12.11.2026 02:20:28"
+ },
  "W1": {
   "configurations": 0,
   "forecasts_written": 0,
