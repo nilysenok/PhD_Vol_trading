@@ -187,6 +187,70 @@
   "rows": 4,
   "spec_sha256": "430059e7151c3eaba02211987d9d24b02d35d5204f64065907ae60be2a01d7b2"
  },
+ "W8.registered": {
+  "decomp_sha256": "0e0032469f5178cfdc14ae5bb53d268d053438c7194d825f311dfffcb42434fb",
+  "n": 814,
+  "n_wide": 3333,
+  "registered_at": "11.11.2026 15:27:28",
+  "rows": 12,
+  "spec_sha256": "af538154390df53150dec6a00da38f16c6fb69566d73b254f6e06ef948f3ec7f"
+ },
+ "W8.stage1": {
+  "code": {
+   "x1_w8_diag.py": "e00fd0af6364afa371a84727b17f0087ef538d6843158c86cf8f92ab95a3444d",
+   "x1_w8_diag_cde.py": "2181fa89b3a1f7538eed230b4bd31ac911fdbba24cddfdd6a529faab6899d6a9",
+   "x1_w8_diag_core.py": "c889e94d8fb03d3af0cba038b1dae9fdcadc7d6d312940b6d4e188629bce3d11",
+   "x1_w8_diag_feat.py": "500b9df36b87403eaf8778b197f95f9c34fbf444983fb22e5e0ce4f01ab24113",
+   "x1_w8_diag_null.py": "3cdb9f935393fb6b770781b158bac9e9cc09649d751d08fd8458aae1f0bd638c",
+   "x1_w8_diag_v.py": "3dc03147de6f2771607f46f0bed648d21c9195e061e3c7faeb60352305b0a4d5",
+   "x1_w8_doc.py": "8b7b8760a3ffc1ecfbc2ed8c33c65d9e686690218590ab57a00393e463124e59",
+   "x1_w8_eval.py": "b33066f53306e9f6ca64017ea68ed5b8c6f5af45e54317ebbdf01653b93ba45e",
+   "x1_w8_eval_t.py": "e74e5280de538a98d7c65ab1b4269d82dbe5efd22dd9e45a7056658c09990b34",
+   "x1_w8_gap.py": "17f50fc2da30638717060591a59e99dc5a678491dfcafb286ab95d54e2ae9206",
+   "x1_w8_gap_z.py": "631abd6448b3224c4f9ed709c0903864b631734fe317896da15658a52ed9b904",
+   "x1_w8_reg.py": "4589ce2a2e93351b8d257a48a9af331024f1b8b11d73a29322f3b6fba18d91d8"
+  },
+  "configurations": 2,
+  "decision": "W8-G не прошёл: У6 (+0.1500); X1 и W5-G остаются контрольными версиями",
+  "inputs": {
+   "shift_01.parquet": "d8e3e78c52688e4df2b206bcf5dfe66a90f712c83f55dd6668e1095969ed7198",
+   "shift_02.parquet": "de1c4fc7bcce4642f9948a8a1c87c420f39aee1eba41d05ef8df2bcd132304db",
+   "shift_03.parquet": "5c1042cddfeb991e8980def9e87410cbfe8ed7b216c37452c98ec42ff507794f",
+   "shift_04.parquet": "bd9d8304934bdd30e6b5869f4ad05f86496cf43968234d3207defc349be82ec9",
+   "shift_05.parquet": "856e6d9dc6d9d86e4d56507a8b82cfe4046683b14672edde705b75b5a351392a",
+   "shift_06.parquet": "1c1c0d717738818d8d934aca302a6ac2ed9487211042e83f367d4c4e28089c8a",
+   "shift_07.parquet": "02ba8054a02cbb24dc98f2442ebd2d0c33116eb0713d6ef887c4a2094e0484bc",
+   "shift_08.parquet": "0e49da1d2fe596b020a26052d310b9d2fb886732e392e3a809f94c4666c4a7f8",
+   "shift_09.parquet": "b4badc2ac12e88db4069c8d983eb034ad05e70fdec0a8d4ad9f993c34923e523",
+   "shift_10.parquet": "9de055250378198f1d798687d5d7c46b389750ca3439ae8ebc785f1c942f5f83",
+   "shift_11.parquet": "0029ebd5869f7a013c3bfe9c8a19bedb66dc2171d82207cc951978def9cffa0a",
+   "shift_12.parquet": "4f1291ac94f97dcda8c42a162d84139ea0d693f847217a264c8e9696eb01f4eb",
+   "shift_13.parquet": "e49ce8aed541865fa4788bf7a680fc37d7d2db20e98201b0d386da13f3694adb",
+   "shift_14.parquet": "dabc6f32aa46e086669ec850e03d68eec5052f6567c607ed1b5df43e9a0d8d32",
+   "shift_15.parquet": "8c68d4e943b28f92d6005b1abb1eb5f2084a110767fd3bf61a8b4e58e41ec572",
+   "shift_16.parquet": "6f2010c55a58fddf95bf784c95780d0806bd1b25cd01b48ccb1cbaa1cbbee675",
+   "shift_17.parquet": "2d68b8d942f65f165242546869c94704fefbec92de752079d998c5355931672b",
+   "shift_18.parquet": "e4005ea61051d6cfd8d7798fcf4849b1054e6c12627c9a0d5756b794c81118a5",
+   "shift_19.parquet": "8a19731554f715855e59bd27bc80327d6a110798545ab00652ab7b45657bcbc0",
+   "w5g.parquet": "0ae40e1bcc7691e1ea580ec52224a7f4736c629594505a8bafbd29ba80fca8fe",
+   "w8g.parquet": "1c91df7fab8b4eddf9fb0b690ac098b84bc5cbd7970771f6943499cf11c0dee8",
+   "w8gb.parquet": "d8e3e78c52688e4df2b206bcf5dfe66a90f712c83f55dd6668e1095969ed7198"
+  },
+  "n_holm": 814,
+  "n_holm_wide": 3333,
+  "outputs": {
+   "W8_BETA.csv": "1977eaa262f0ff3b9de750c93626669ae496a12d9f7c281e998dd08fb176ada0",
+   "W8_CELLS.csv": "963512e8d99c79a2fab61af2e9eb859b7fe58ce8f7d92e301b9875440d5a555d",
+   "W8_CONC.csv": "7772593c19b21ff0253224f8f252c9b9aeb5faa5d6cdb52cc02abcbb8ba69d9b",
+   "W8_GUARD.csv": "24d1fe3ea8c9ea4bd91a29a3e46f1f4350ff8f00eb5b4cfb620964e375ba594e",
+   "W8_MCS.csv": "4a10141e2cca12298a8b7d081ece0fec1b86697915ff90907098b61ca8059084",
+   "W8_STATS.csv": "85288c9b0392d878138891b2ccf5e8b385f744b997505e6a3987c06df1ddb600",
+   "W8_TABLE.csv": "3fb15973794b272d6a9ee845db070a5c6457b3f6abf96730529fa7d5aced32e1",
+   "W8_YEARS.csv": "7699c79dac294223e0d2120c3cd9bff45b2b684ed1494930c30a84ec08bde0fa"
+  },
+  "shifts": 19,
+  "written_at": "11.11.2026 15:35:44"
+ },
  "YA": {
   "code": "81e0434a7c8115a3",
   "columns": [
