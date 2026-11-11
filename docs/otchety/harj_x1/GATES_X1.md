@@ -261,3 +261,29 @@
   - EVIDENCE: rc 0, 56 passed in 56.22s (после правки `write_stage1` по замечанию тестировщика). Закрыт.
 - **B2.G-reg — реестр до прогноза.** CHECK: прогон без строки W4-S1 в реестре даёт SystemExit (`x1_w4_reg.require`). EXPECT: отказ. EVIDENCE: `run()` и `check()` вызывают `require_all()` первым действием; отказ `require` покрыт тестами W4-A/W4-B (в 56 passed). Закрыт.
 - **B2.G-rep — отчёт из CSV.** CHECK: `--check` перерисовывает `W4_STAGE1_REPORT.md` из CSV. EXPECT: побитное совпадение. EVIDENCE: входит в `--check` (ok выше). Закрыт.
+
+## W5-A — перенос диагностики и регистрация (Ж-250, Ж-251; `W5_SPEC.md`, разделы 7 и 9; гейты A.G1–A.G5)
+
+Отступление: раздел записан 11.11.2026 ~13:44 по `date`, ПОСЛЕ написания модулей переноса (поручение требовало «до кода»). Регистрация реестра — после зелёных тестов тестировщика.
+
+- **A.G1 — перенос диагностики.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w5_diag --check`.
+  - EXPECT: строки данных `W5_DIAG.csv` и `W5_TABLE0.csv` совпадают с пересчётом побитно; sha файлов до и после равны.
+  - EVIDENCE: rc 0, «check ok: строки данных W5_DIAG.csv и W5_TABLE0.csv равны пересчёту; sha файлов до и после равны» (11.11.2026 13:53; повтор после регистрации — то же). Отступление: блок E и W5_TABLE0 считаются прямо из `build()`, без `days.pkl`/`noise.csv` scratchpad (текст блока E проходит через CSV, как в оригинале). Закрыт.
+- **A.G2 — вердикт из CSV.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w5_diag --check-verdict`.
+  - EXPECT: `прошли: B_level/gap`, всего проверено 24.
+  - EVIDENCE: rc 0, «прошли: B_level/gap» / «всего проверено: 24». Закрыт.
+- **A.G3 — 28 строк реестра.**
+  - CHECK: `grep -c -E "^(W5D[0-9]+|W5-)" docs/otchety/harj_x1/ALL_TRIALS.csv`.
+  - EXPECT: 28.
+  - EVIDENCE: `28` (регистрация 11.11.2026 13:52:24, `x1_w5_reg` без флагов, после 56 зелёных тестов тестировщика; `diff` реестра до/после: 0 удалённых, 28 добавленных строк). Закрыт.
+- **A.G4 — сторож «реестр до прогноза» и перечень перерывов.**
+  - CHECK: `python3 -W ignore -m models_v2.s16.x1_w5_reg --check`.
+  - EXPECT: одна `registered_at` у 28 строк; `data/regen/harj_x1/W5/*.parquet` нет; 66 пар в `W5_GAPS.csv` равны пересчёту; пары с d = 2022-02-25 нет. Ручной гейт (вне команды): сверка 66 пар с производственным календарём — отдельный исследователь.
+  - EVIDENCE: rc 0, «check ok: строк 28; registered_at ['11.11.2026 13:52:24']; parquet в W5: 0; пар в W5_GAPS.csv: 66»; `data/regen/harj_x1/`: W4, YA, YB, Z, ZE (каталога W5 нет). Автоматическая часть закрыта; ручная сверка 66 пар — ОТКРЫТ (ручной гейт, не выполнялся).
+- **A.G5 — тесты тестировщика.**
+  - CHECK: `python3 -W ignore -m pytest tests/test_v2_x1_w5_diag*.py tests/test_v2_x1_w5_reg*.py -q`.
+  - EXPECT: все прошли.
+  - EVIDENCE: rc 0, 56 passed до регистрации; после регистрации вместе с `tests/test_v2_x1_w4_reg*.py` — 73 passed (W4 не менялся). Закрыт.
+- **A.G-ckpt — ключи CHECKPOINT.** CHECK: сравнение копии `CHECKPOINT.json` до и после регистрации. EXPECT: добавлены только ключи `W5`, `W5.registered`; прочие побайтно. EVIDENCE: `diff` копии до и после: 0 удалённых строк, добавлены только ключи `W5` и `W5.registered` (n 798, n_wide 3301, rows 28, registered_at 11.11.2026 13:52:24). Закрыт.

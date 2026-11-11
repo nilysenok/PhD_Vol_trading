@@ -115,6 +115,32 @@
    "W4-Kb2"
   ]
  },
+ "W5": {
+  "code": {
+   "x1_w5_diag.py": "b54b4bfe6818fb06c109f0b36d99cfb1bfd113966768e76bf4f80b20a163977a",
+   "x1_w5_diag_abc.py": "13c610364d88d009c9a804603ba56ac4855d75229c3459bb00068455e6d38b59",
+   "x1_w5_diag_d.py": "a880ecc428046a7205c066f0478e7bb3c470719b5ca9b0e8a4146d6c7a74d0f4",
+   "x1_w5_diag_t.py": "c83a590ca3198605671832a59e7018c6a43a9e35af2d776080fbd6924c5d686b",
+   "x1_w5_diag_v.py": "40e29f10c766ea443935df936582e1129b7293e535f097f57ba5ae4a69fa927a",
+   "x1_w5_gaps.py": "48724e1dfc4d560e60ebf6b28ad989fa88852f5a09341c0abe2b2f49e9b5102d",
+   "x1_w5_reg.py": "5956500aa9608fd670ac38361322a27bd6a4e5f0bddda86e9877884846007790"
+  },
+  "configurations": 0,
+  "forecasts_written": 0,
+  "sha256": {
+   "W5_DIAG.csv": "14765ed738972f3285f52ad6511791a8c6110e2d0c5ae4355f47233c09bbb459",
+   "W5_GAPS.csv": "716a1d06460e182907804919e60106c58c6514ef5256012ba5fb7e95a43672d9",
+   "W5_SPEC.md": "c40917bb43ca178a119416842fd187b68953917d97312c1d60463ecf75596c4b",
+   "W5_TABLE0.csv": "1ab0cc24938c72f99c8047b903a32364eeedde48466c8e1fca255187a09cffc5"
+  }
+ },
+ "W5.registered": {
+  "n": 798,
+  "n_wide": 3301,
+  "registered_at": "11.11.2026 13:52:24",
+  "rows": 28,
+  "spec_sha256": "c40917bb43ca178a119416842fd187b68953917d97312c1d60463ecf75596c4b"
+ },
  "YA": {
   "code": "81e0434a7c8115a3",
   "columns": [
