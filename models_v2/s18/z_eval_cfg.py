@@ -3,7 +3,7 @@
 Публичное API:
 - `THR` = {У1-S: 0,415; У2-S: 0,50; У3-S: 1,00} (%), `KTRIM` = 22, `N_HOLM` = 855, `N_WIDE` = 3415, `M_FAMILY` = 6; `KEY` = "S.Z.eval", `REP`, `CKPT`.
 - `FILES`: ряд → parquet; `SHOWN` — 11 рядов первой таблицы; `MCS_SET` — 12 рядов MCS; `REAL_Z` = (S-RCKZ, S-RZ, S-RCKZs).
-- `registered_n(ckpt) -> (N, N_wide)`: максимум по ключам `S.*.registered` CHECKPOINT (как у регистратора); `load_inputs(ckpt)`: ряды F и слои X1_R на одних датах D_M (2198 пар);
+- `registered_n(ckpt) -> (N, N_wide)`: n, n_wide из СВОЕГО ключа `S.Z.registered` (не максимум по `S.*.registered`: позднейшие регистрации не меняют N оценки; при записи значения те же, что у прежнего максимума — регистрация этапа была последней); `load_inputs(ckpt)`: ряды F и слои X1_R на одних датах D_M (2198 пар);
   расхождение d, rv, cfg8 с окном M или нечисловой прогноз — SystemExit."""
 from __future__ import annotations
 
@@ -30,10 +30,10 @@ BASES = ("S-RCK", "W5-G", "X1", "K2", "K3")
 
 def registered_n(ckpt: Path = CKPT) -> tuple:
     cp = json.loads(Path(ckpt).read_text(encoding="utf-8"))
-    ks = [v for k, v in cp.items() if k.startswith("S.") and k.endswith(".registered")]
-    if not (ks and all(isinstance(v.get("n"), int) and isinstance(v.get("n_wide"), int) for v in ks)) or not cp.get("S.Z.registered"):
-        raise SystemExit("нет ключей S.*.registered с N или нет S.Z.registered — оценка отказана")
-    return max(v["n"] for v in ks), max(v["n_wide"] for v in ks)
+    own = cp.get("S.Z.registered")
+    if not (isinstance(own, dict) and isinstance(own.get("n"), int) and isinstance(own.get("n_wide"), int)):
+        raise SystemExit("нет S.Z.registered с N — оценка отказана")
+    return own["n"], own["n_wide"]
 
 
 def load_inputs(ckpt: Path = CKPT) -> dict:

@@ -368,6 +368,86 @@
   "rows": 12,
   "spec_sha256": "45359d39dbad5c7f60721dc2dadc00dabe36122dc94a861a46bbb5f8b2e01aac"
  },
+ "S.RCD.eval": {
+  "amended": {
+   "at": "12.11.2026 03:03:50",
+   "reason": "текст RCD-DEC-2 («численно улучшает … не подтверждено»), проверка строки «S-RCD против S-RCK» в p_dec, замечания проверяющего; числа и код решения не менялись",
+   "tables": [
+    "S_RCD_DEC.csv"
+   ]
+  },
+  "boot": 10000,
+  "boot_block": 20,
+  "boot_seed": 0,
+  "code": {
+   "rd_doc.py": "d7775cc44608a46ffea4aab98b3906fa0f1157076f49f5c21fb13418fb724f57",
+   "rd_doc_s1.py": "2cdd33ca5616bcde4fd57b988ecacddfd52902cb7b479631d2ae4273b8bd0426",
+   "rd_doc_s2.py": "91f34d3e638a6188701aa8963bc91baae38fb95b7fb38066953db132b3015956",
+   "rd_eval.py": "7837079a127e13a6adc2b60ac299522caa2e07a92db60b2ecd3243b56343797a",
+   "rd_eval_cfg.py": "6c37f7d45c52970f051995f33830251518f017c8bf04880329967f4565750e2f",
+   "rd_eval_chk.py": "2d4184368ab74f0fd3cb0714fdc857de71ab00680ba7403397f7d5f58e3266b7",
+   "rd_eval_dc.py": "57c3724b77a9c322eeb6e8686b25a2ff2e9758849474fe894fa228c290cd6b9a",
+   "rd_eval_gd.py": "ce74c356f13889b989ca1cd303189b659ac9e2c76b0e8a4def49f2ec6fe4dbae",
+   "rd_eval_null.py": "5d65d417211541f024c5f3b64b7e9d1cdb2fbeb1973c3dc41774e249ab97c467",
+   "rd_eval_par.py": "100091d79a9c709d14e392703002f05fe0c6b2efd8daa741d44be94aca3205bf",
+   "rd_eval_tab.py": "217b0dd2a68eb8d552202b309367ab20f198b93691f32d6cb4fb77e3d7219f4d"
+  },
+  "decision": "2",
+  "h_rcd1": true,
+  "inputs": {
+   "data/regen/harj_struct/CM/cd.parquet": "7bd9f5690950cda4df959ee87fe45fcda843ecb914179d215a6381c802bb3f98",
+   "data/regen/harj_struct/CM/ck.parquet": "979e71ad28ba16b9255302007fae22eb227ec94f0e3543e3bf14ae19a997bea6",
+   "data/regen/harj_struct/D/rckf.parquet": "52740db6f9811952c7f16d792673d360a634aefdcb36038a90a6f4f6a7e2991b",
+   "data/regen/harj_struct/L/rl1.parquet": "28bddc1668d50f6c0b9bef977924f83c819591b9b9fa89781b9852b37f2a9bf3",
+   "data/regen/harj_struct/R/rck.parquet": "97d6fff21834f09ef49a1fb92a396f2abc4a588979ca5e474d9daed65a51eb81",
+   "data/regen/harj_struct/R/rckb.parquet": "e35ebf7248958bfada75bc112c003cf6899dd0d1c4f5f88b38159c5109ac79b7",
+   "data/regen/harj_struct/RD/cdf.parquet": "da11d58bbd9151c973f6af2587be61f8d03f522c0a1a1cbb3a77e3b15135dd66",
+   "data/regen/harj_struct/RD/ckf.parquet": "a980d86d8edd71d3195d5dbcc2b24ed1b351dc3088c1fc3090b084d8bd6d0d4c",
+   "data/regen/harj_struct/RD/rcd.parquet": "88b6b8e2e25fc3dccb8887ebfa04ad86c23ad087b7b6aad45b1c06d8d01ec199",
+   "data/regen/harj_struct/Z/rckz.parquet": "e8284586b668126e2cf1babe7740fbbbe9ca17535212438ace110a2f5538c670",
+   "data/regen/harj_x1/W5/w5g.parquet": "0ae40e1bcc7691e1ea580ec52224a7f4736c629594505a8bafbd29ba80fca8fe",
+   "docs/otchety/harj_struct/GATES_SRCD_IMPL.md": "1ac97a50477e1d96f1a7b14065d5ff09e6df003b6af9eb5ccb2af7d8acf0932f",
+   "docs/otchety/harj_struct/S_RCD_NULL.csv": "9fa1197d8ae0c518d79493b8ae7457e799216e760b468c4ada510646db23fc50",
+   "docs/otchety/harj_struct/S_RCD_SPEC.md": "2d8e4110be819a26239e0cb6a8a4a21faa74686d210b2b1023c13dfee74922ec"
+  },
+  "ktrim": 22,
+  "lag_main": 8,
+  "m_family": 6,
+  "n": 2198,
+  "n_holm": 858,
+  "n_holm_wide": 3421,
+  "outputs": {
+   "S_RCD_CONC.csv": "dc9eeef182ad3fbe2ce0399f5f8cfa8a825e6d70a0b763fd5f804df16e923094",
+   "S_RCD_DEC.csv": "1eb9fb8af43087ec3c661c7a9e35440930e11825d14afb55c15b845a67b3f790",
+   "S_RCD_DECOMP.csv": "9b7a11853cf1c420b60a543c1e5f2518329253c39f450ab3c9ba9ed56666b4a7",
+   "S_RCD_GUARD.csv": "1173cffa121c070bf6608c048e50dd8c7855d02fcd00f9e8b17586be5406d845",
+   "S_RCD_MCS.csv": "c3f12dc95cd4818741e622ab5bb9961d538d27b530e35ac5e6ce2d0180a2d85e",
+   "S_RCD_PARAMS.csv": "862e826f34b5c112658990566e33d7f316759fcf09948101b80d0e48dbedba52",
+   "S_RCD_POWER.csv": "f18b1ce7ca41868d3b8b070e46358ff2db35b9325ad5d27096d669b81116a06d",
+   "S_RCD_SEL.csv": "c3aa042599736dc8fecf9e5e509a3b84744514ff85f19b9d7e1153b0a0e62852",
+   "S_RCD_SPA.csv": "fc6f225cd624eefbf335e4cd68098cb54c97954ac83baac569637cb18984adb0",
+   "S_RCD_STATS.csv": "1f30068b7b4d67605988c9b9166203f319ec478b6310b0db00b8cb095544ff3d",
+   "S_RCD_TABLE.csv": "453dae70980167e49805ba0d7e967fccd95ea415746c795d63406d91f3a360ab",
+   "S_RCD_YEARS.csv": "44bbb56a7e9b12dae56ecefe85f459a253a7a8447781ac6de94d705e59db7c27"
+  },
+  "thr": {
+   "У1-S": 0.415,
+   "У2-S": 0.5,
+   "У3-S": 1.0
+  },
+  "written_at": "12.11.2026 02:54:43"
+ },
+ "S.RCD.registered": {
+  "n": 858,
+  "n_base": 855,
+  "n_wide": 3421,
+  "n_wide_base": 3415,
+  "prior_bytes": 39309,
+  "prior_sha256": "70af68330266ec366a53e4513f76732c60bf3989e4cc5aa5d41c0007b167e54f",
+  "registered_at": "12.11.2026 02:43:23",
+  "rows": 3,
+  "spec_sha256": "2d8e4110be819a26239e0cb6a8a4a21faa74686d210b2b1023c13dfee74922ec"
+ },
  "S.Z.eval": {
   "amended": {
    "at": "12.11.2026 01:58:56",
@@ -452,20 +532,22 @@
    "S-D": "e683432b",
    "S-L": "10d4afc5",
    "S-R": "bd4d3a59",
+   "S-RCD": "коммит будет у дирижёра",
    "S-Z": "604aa2ed"
   },
   "comparison": [
    "S-RL1",
-   "S-RCKZ"
+   "S-RCKZ",
+   "S-RCD"
   ],
   "control_versions": [
    "X1",
    "W5-G"
   ],
-  "n_program": 855,
-  "n_wide": 3415,
-  "next": "S-RCD (спецификация до счёта, Ж-259)",
-  "written_at": "12.11.2026 02:20:28"
+  "n_program": 858,
+  "n_wide": 3421,
+  "next": "решение владельца после S-RCD",
+  "written_at": "12.11.2026 03:03:51"
  },
  "W1": {
   "configurations": 0,

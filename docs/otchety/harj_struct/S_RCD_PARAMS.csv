@@ -1,0 +1,129 @@
+# исследовательский результат на раскрытой истории, не OOS; гипотеза выбрана после просмотра результатов S-R, S-D, S-L, S-Z
+# критерии разд. 7 S_RCD_SPEC.md объявлены и зарегистрированы до счёта; «подтверждено» только при p Холма (N программы) < 0,05 и p SPA < 0,05 по своей строке; S-RCK не заменяется без решения владельца
+# D_M: t⁺ 2018-01-04…2026-11-10, n = 2198; l = RV/F − ln(RV/F) − 1, QLIKE = среднее дневных потерь (без обрезки); Δ в % QLIKE базы, минус — лучше; DEVELOPMENT / HISTORICAL WALK-FORWARD
+variant,kind,item,key,value
+S-RCD,months,active,,75
+S-RCD,months,theta_zero,,15
+S-RCD,months,share_theta_nonzero,,0.8
+S-RCD,lam,0,,15
+S-RCD,lam,0.001,,4
+S-RCD,lam,0.01,,2
+S-RCD,lam,0.1,,54
+S-RCD,clip,c_median,,3.95990570517
+S-RCD,clip,c_min,,3.15010748686
+S-RCD,clip,c_max,,4.45789499257
+S-RCD,clip,m_median,,0.971945547617
+S-RCD,clip,kappa_median,,4.10659377353
+S-RCD,spread,median,,1.63319052726e-10
+S-RCD,spread,max,,1.19261309162e-09
+S-RCD,l0,min,,5
+S-RCD,l0,median,,5
+S-RCD,l0,max,,6
+S-RCD,at_bound,th0,[-3; 3],0
+S-RCD,theta_q,th0,q05,-0.0825900590541
+S-RCD,theta_q,th0,q50,-0.0382808377225
+S-RCD,theta_q,th0,q95,-0.0261623170782
+S-RCD,at_bound,rho_c,[0; 1],0.966666666667
+S-RCD,theta_q,rho_c,q05,0
+S-RCD,theta_q,rho_c,q50,0
+S-RCD,theta_q,rho_c,q95,0
+S-RCD,at_bound,rho_p,[0; 1],0
+S-RCD,theta_q,rho_p,q05,0.00552341023341
+S-RCD,theta_q,rho_p,q50,0.00941348207872
+S-RCD,theta_q,rho_p,q95,0.13600406444
+S-RCD,at_bound,th_c1,[-3; 3],0
+S-RCD,theta_q,th_c1,q05,-0.0360528171232
+S-RCD,theta_q,th_c1,q50,-0.0147602838267
+S-RCD,theta_q,th_c1,q95,-0.00305267619531
+S-RCD,at_bound,th_p1,[-3; 3],0
+S-RCD,theta_q,th_p1,q05,0.0141790072396
+S-RCD,theta_q,th_p1,q50,0.0210088259186
+S-RCD,theta_q,th_p1,q95,0.0504152205858
+S-RCD,at_bound,th_s,[-3; 3],0
+S-RCD,theta_q,th_s,q05,-0.0779891771617
+S-RCD,theta_q,th_s,q50,-0.00854672788199
+S-RCD,theta_q,th_s,q95,0.015213586449
+S-CDF,months,active,,100
+S-CDF,months,theta_zero,,0
+S-CDF,months,share_theta_nonzero,,1
+S-CDF,lam,0.0001,,25
+S-CDF,lam,0.001,,12
+S-CDF,lam,0.01,,63
+S-CDF,n_small_pool,lam_1e-2_below_252,,6
+S-CDF,spread,median,,9.93064061539e-10
+S-CDF,spread,max,,1.51445989083e-08
+S-CDF,l0,min,,5
+S-CDF,l0,median,,6
+S-CDF,l0,max,,6
+S-CDF,at_bound,th0,[-3; 3],0
+S-CDF,theta_q,th0,q05,-0.206775007274
+S-CDF,theta_q,th0,q50,-0.0691631975155
+S-CDF,theta_q,th0,q95,0.0638028850407
+S-CDF,at_bound,rho_c,[0; 1],0.17
+S-CDF,theta_q,rho_c,q05,0
+S-CDF,theta_q,rho_c,q50,0.0733316556539
+S-CDF,theta_q,rho_c,q95,0.454895114332
+S-CDF,at_bound,rho_p,[0; 1],0.03
+S-CDF,theta_q,rho_p,q05,0.0244781394612
+S-CDF,theta_q,rho_p,q50,0.123170678385
+S-CDF,theta_q,rho_p,q95,0.59336442608
+S-CDF,at_bound,th_c1,[-3; 3],0
+S-CDF,theta_q,th_c1,q05,-0.0934239392207
+S-CDF,theta_q,th_c1,q50,-0.0407957717959
+S-CDF,theta_q,th_c1,q95,-0.0108189465113
+S-CDF,at_bound,th_p1,[-3; 3],0
+S-CDF,theta_q,th_p1,q05,0.0299114729778
+S-CDF,theta_q,th_p1,q50,0.076569515795
+S-CDF,theta_q,th_p1,q95,0.217955763019
+S-CDF,at_bound,th_s,[-3; 3],0
+S-CDF,theta_q,th_s,q05,-0.165949039967
+S-CDF,theta_q,th_s,q50,-0.0829727537501
+S-CDF,theta_q,th_s,q95,0.00509177663706
+S-CKF,months,active,,100
+S-CKF,months,theta_zero,,0
+S-CKF,months,share_theta_nonzero,,1
+S-CKF,lam,0.0001,,32
+S-CKF,lam,0.001,,14
+S-CKF,lam,0.01,,54
+S-CKF,n_small_pool,lam_1e-2_below_252,,6
+S-CKF,spread,median,,1.41377508311e-09
+S-CKF,spread,max,,2.12121807286e-07
+S-CKF,l0,min,,5
+S-CKF,l0,median,,5
+S-CKF,l0,max,,6
+S-CKF,at_bound,gam_c,[0; 1],0.68
+S-CKF,theta_q,gam_c,q05,0
+S-CKF,theta_q,gam_c,q50,0
+S-CKF,theta_q,gam_c,q95,1
+S-CKF,at_bound,gam_p,[0; 1],0.05
+S-CKF,theta_q,gam_p,q05,0.0339300137333
+S-CKF,theta_q,gam_p,q50,0.186067692232
+S-CKF,theta_q,gam_p,q95,0.957293695059
+S-CKF,at_bound,th_c0,[-3; 3],0
+S-CKF,theta_q,th_c0,q05,-1.0970979685
+S-CKF,theta_q,th_c0,q50,-0.125917208083
+S-CKF,theta_q,th_c0,q95,0.0164635513884
+S-CKF,at_bound,th_p0,[-3; 3],0
+S-CKF,theta_q,th_p0,q05,0.00554582519975
+S-CKF,theta_q,th_p0,q50,0.102335710729
+S-CKF,theta_q,th_p0,q95,0.28824303546
+S-CKF,at_bound,th_c1,[-3; 3],0
+S-CKF,theta_q,th_c1,q05,-0.376155576938
+S-CKF,theta_q,th_c1,q50,-0.0111085497357
+S-CKF,theta_q,th_c1,q95,0.0757318559765
+S-CKF,at_bound,th_p1,[-3; 3],0
+S-CKF,theta_q,th_p1,q05,-0.0143434772406
+S-CKF,theta_q,th_p1,q50,0.0334769426125
+S-CKF,theta_q,th_p1,q95,0.144424375441
+S-RCK,months,active,,75
+S-RCK,months,theta_zero,,16
+S-RCK,months,share_theta_nonzero,,0.786666666667
+S-RCK,lam,0,,16
+S-RCK,lam,0.001,,3
+S-RCK,lam,0.01,,4
+S-RCK,lam,0.1,,52
+S-RCK,clip,c_median,,3.95990570517
+S-RCK,clip,c_min,,3.15010748686
+S-RCK,clip,c_max,,4.45789499257
+S-RCK,clip,m_median,,0.971945547617
+S-RCK,clip,kappa_median,,4.10659377353

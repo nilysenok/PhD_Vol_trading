@@ -1,0 +1,76 @@
+# исследовательский результат на раскрытой истории, не OOS; гипотеза выбрана после просмотра результатов S-R, S-D, S-L, S-Z
+# критерии разд. 7 S_RCD_SPEC.md объявлены и зарегистрированы до счёта; «подтверждено» только при p Холма (N программы) < 0,05 и p SPA < 0,05 по своей строке; S-RCK не заменяется без решения владельца
+# D_M: t⁺ 2018-01-04…2026-11-10, n = 2198; l = RV/F − ln(RV/F) − 1, QLIKE = среднее дневных потерь (без обрезки); Δ в % QLIKE базы, минус — лучше; DEVELOPMENT / HISTORICAL WALK-FORWARD
+section,item,key,value
+e_D_M,S-RCD,,-0.294795982556
+e_D_M,S-CDF,,0.610844872695
+e_D_M,S-CKF,,0.549896509539
+e_D_M,S-CD,,1.21674142081
+e_D_M,S-CK,,1.12184477714
+e_D_M,S-RCK,,-0.208776141455
+ident_D_M,id1_form_at_R,,0.0860198411009
+ident_D_M,id1_R_on_CD,,-0.905640855251
+ident_D_M,id1_level_without_R,,-0.605896548112
+ident_D_M,id1_S_CD,,1.21674142081
+ident_D_M,id1_gap,,1.11022302463e-16
+ident_D_M,id2_R_on_CK_at_F,,-0.758672650994
+ident_D_M,id2_level_without_R_CK,,-0.571948267602
+ident_D_M,id2_total_vs_S_CK,,-1.3306209186
+ident_D_M,id2_gap,,0
+ident_D_M,id3_interaction,,0.146968204257
+ident_D_M,id3_gap,,0
+share_D_M,s,выигрыш S-RCK над W5-G в основном воспроизводится прямой коррекцией под R; разложение C-K для него не обязательно,1.4120194985
+share_D_M,n_dates,,2198
+e_active,S-RCD,,-0.39510901182
+e_active,S-CDF,,0.348160621572
+e_active,S-CKF,,0.282389183722
+e_active,S-CD,,1.22335440811
+e_active,S-CK,,1.06773018804
+e_active,S-RCK,,-0.279818382281
+ident_active,id1_form_at_R,,0.115290629538
+ident_active,id1_R_on_CD,,-0.743269633392
+ident_active,id1_level_without_R,,-0.875193786542
+ident_active,id1_S_CD,,1.22335440811
+ident_active,id1_gap,,5.55111512313e-17
+ident_active,id2_R_on_CK_at_F,,-0.562207566004
+ident_active,id2_level_without_R_CK,,-0.785341004318
+ident_active,id2_total_vs_S_CK,,-1.34754857032
+ident_active,id2_gap,,0
+ident_active,id3_interaction,,0.181062067388
+ident_active,id3_gap,,0
+share_active,s,выигрыш S-RCK над W5-G в основном воспроизводится прямой коррекцией под R; разложение C-K для него не обязательно,1.4120194985
+share_active,n_dates,,1549
+decomp_vs_W5G,total,,-0.294795982556
+decomp_vs_W5G,frozen_pi,,-0.259780271975
+decomp_vs_W5G,layer_reaction,,-0.0350157105805
+decomp_vs_CDF,total,,-0.900142381665
+decomp_vs_CDF,frozen_pi,,-0.905020174399
+decomp_vs_CDF,layer_reaction,,0.00487779273332
+lnratio_n,n_active_dates,,1549
+lnratio_cfg8,q,q01,-0.147830103682
+lnratio_cfg8,q,q05,-0.0835960114663
+lnratio_cfg8,q,q50,-0.0380149817528
+lnratio_cfg8,q,q95,0
+lnratio_cfg8,q,q99,0.0183128261713
+lnratio_cfg8,share_abs_gt_1e-3,,0.788896061975
+lnratio_rck,q,q01,-0.121916840373
+lnratio_rck,q,q05,-0.0507197725963
+lnratio_rck,q,q50,-0.0100179313166
+lnratio_rck,q,q95,0.0220122656813
+lnratio_rck,q,q99,0.083139968371
+lnratio_rck,share_abs_gt_1e-3,,0.772756617172
+noise,q05,,-0.103773772474
+noise,q95,,0.50045024432
+noise,mean,,0.177371101439
+noise,std,,0.229831498031
+noise,share_nonzero_mean,,0.629333333333
+noise,abs_q05,,0.0297311976496
+noise,abs_q95,,0.50045024432
+noise_real,RCD_vs_CDF|D_M,,-0.900142381665
+noise_rule,RCD_vs_CDF|D_M,вне 5–95 % распределения модуля Δ_null,-0.900142381665
+noise_real,RCD_vs_CDF|active,,-0.740690839561
+noise_rule,RCD_vs_CDF|active,вне 5–95 % распределения модуля Δ_null,-0.740690839561
+noise_real,RCD_vs_RCK|D_M,,-0.0861998057292
+noise_rule,RCD_vs_RCK|D_M,не отличим от шума процедуры,-0.0861998057292
+noise_real,RCD_vs_RCK|active,,-0.115614139152
+noise_rule,RCD_vs_RCK|active,не отличим от шума процедуры,-0.115614139152

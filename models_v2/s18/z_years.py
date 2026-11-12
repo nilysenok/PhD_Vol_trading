@@ -107,8 +107,17 @@ def sha_all() -> dict:
     return {str(p): hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None for p in (CSV, MD, CKPT)}
 
 
+def program_n(ckpt: Path) -> tuple:
+    """N, N_wide программы: максимум по всем ключам `S.*.registered` (для `S.status`)."""
+    cp = json.loads(Path(ckpt).read_text(encoding="utf-8"))
+    ks = [v for k, v in cp.items() if k.startswith("S.") and k.endswith(".registered")]
+    if not (ks and all(isinstance(v.get("n"), int) and isinstance(v.get("n_wide"), int) for v in ks)):
+        raise SystemExit("нет ключей S.*.registered с N")
+    return max(v["n"] for v in ks), max(v["n_wide"] for v in ks)
+
+
 def status_block(cp: dict) -> dict:
-    n, nw = C.registered_n(CKPT)
+    n, nw = program_n(CKPT)
     return dict(written_at=time.strftime("%d.%m.%Y %H:%M:%S"), candidate="S-RCK", comparison=["S-RL1", "S-RCKZ"], control_versions=["X1", "W5-G"],
                 closed_stages={"S-R": "bd4d3a59", "S-D": "e683432b", "S-L": "10d4afc5", "S-Z": "604aa2ed"}, next="S-RCD (спецификация до счёта, Ж-259)", n_program=n, n_wide=nw)
 
@@ -155,7 +164,7 @@ def check() -> list:
     if not (set(f["n"][f["period"] == "весь D_M"]) == {C.N_D} and set(f["series"]) == set(SERIES)):
         bad.append("n ≠ 2198 или набор рядов")
     cp = json.loads(CKPT.read_text(encoding="utf-8")).get("S.status", {})
-    n, nw = C.registered_n(CKPT)
+    n, nw = program_n(CKPT)
     if not (cp.get("n_program") == n and cp.get("n_wide") == nw and cp.get("candidate") == "S-RCK" and cp.get("next")):
         bad.append("ключ S.status отсутствует или не сходится с S.*.registered")
     if sha_all() != before:
